@@ -1297,3 +1297,672 @@ mod tests {
         );
     }
 }
+
+// ============================================================================
+// EXTREME TDD Round 134: Additional comprehensive tests
+// Target: 39 → 60+ tests
+// ============================================================================
+#[cfg(test)]
+mod round_134_tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    fn dummy_values_equal(left: &Value, right: &Value) -> bool {
+        match (left, right) {
+            (Value::Integer(a), Value::Integer(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Float(a), Value::Float(b)) => (a - b).abs() < f64::EPSILON,
+            _ => false,
+        }
+    }
+
+    // --- sum edge cases ---
+    #[test]
+    fn test_sum_empty_columns() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_sum_empty_values() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![],
+        }];
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_sum_multiple_columns() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(3), Value::Integer(4)],
+            },
+        ];
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Integer(10)); // 1+2+3+4
+    }
+
+    #[test]
+    fn test_sum_mixed_int_float() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(10), Value::Float(0.5)],
+        }];
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Float(10.5));
+    }
+
+    #[test]
+    fn test_sum_all_non_numeric() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![
+                Value::from_string("a".to_string()),
+                Value::Bool(true),
+                Value::Nil,
+            ],
+        }];
+        let result = eval_dataframe_sum(&columns, &[]).unwrap();
+        assert_eq!(result, Value::Integer(0)); // Non-numeric skipped
+    }
+
+    // --- slice edge cases ---
+    #[test]
+    fn test_slice_zero_length() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
+        let args = vec![Value::Integer(0), Value::Integer(0)];
+        let result = eval_dataframe_slice(&columns, &args).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols[0].values.len(), 0);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_slice_multi_column() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)],
+            },
+        ];
+        let args = vec![Value::Integer(1), Value::Integer(2)];
+        let result = eval_dataframe_slice(&columns, &args).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols.len(), 2);
+            assert_eq!(cols[0].values, vec![Value::Integer(2), Value::Integer(3)]);
+            assert_eq!(cols[1].values, vec![Value::Integer(20), Value::Integer(30)]);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    // --- select edge cases ---
+    #[test]
+    fn test_select_preserves_all_values() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "x".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+            DataFrameColumn {
+                name: "y".to_string(),
+                values: vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)],
+            },
+        ];
+        let args = vec![Value::from_string("x".to_string())];
+        let result = eval_dataframe_select(&columns, &args).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols.len(), 1);
+            assert_eq!(cols[0].values.len(), 3);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    // --- groupby edge cases ---
+    #[test]
+    fn test_groupby_single_group() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "cat".to_string(),
+                values: vec![
+                    Value::from_string("A".to_string()),
+                    Value::from_string("A".to_string()),
+                ],
+            },
+            DataFrameColumn {
+                name: "val".to_string(),
+                values: vec![Value::Integer(10), Value::Integer(20)],
+            },
+        ];
+        let args = vec![Value::from_string("cat".to_string())];
+        let result = eval_dataframe_groupby(&columns, &args).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols.len(), 2); // cat + val_sum
+            // Check the sum column
+            let sum_col = cols.iter().find(|c| c.name == "val_sum").unwrap();
+            assert_eq!(sum_col.values.len(), 1);
+            assert_eq!(sum_col.values[0], Value::Integer(30));
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_groupby_with_integer_keys() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "val".to_string(),
+                values: vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)],
+            },
+        ];
+        let args = vec![Value::from_string("id".to_string())];
+        let result = eval_dataframe_groupby(&columns, &args).unwrap();
+        assert!(matches!(result, Value::DataFrame { .. }));
+    }
+
+    #[test]
+    fn test_groupby_with_bool_keys() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "active".to_string(),
+                values: vec![Value::Bool(true), Value::Bool(false), Value::Bool(true)],
+            },
+            DataFrameColumn {
+                name: "val".to_string(),
+                values: vec![Value::Integer(10), Value::Integer(20), Value::Integer(30)],
+            },
+        ];
+        let args = vec![Value::from_string("active".to_string())];
+        let result = eval_dataframe_groupby(&columns, &args).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            // Should have 2 groups: true and false
+            assert_eq!(cols[0].values.len(), 2);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    // --- join edge cases ---
+    #[test]
+    fn test_join_no_matches() {
+        let left = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "left_val".to_string(),
+                values: vec![Value::Integer(100), Value::Integer(200)],
+            },
+        ];
+        let right = Value::DataFrame {
+            columns: vec![
+                DataFrameColumn {
+                    name: "id".to_string(),
+                    values: vec![Value::Integer(3), Value::Integer(4)], // No matching IDs
+                },
+                DataFrameColumn {
+                    name: "right_val".to_string(),
+                    values: vec![Value::Integer(10), Value::Integer(20)],
+                },
+            ],
+        };
+        let args = vec![right, Value::from_string("id".to_string())];
+        let result = eval_dataframe_join(&left, &args, dummy_values_equal).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            // All columns should be empty (no matches)
+            for col in &cols {
+                assert_eq!(col.values.len(), 0);
+            }
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_join_partial_matches() {
+        let left = vec![
+            DataFrameColumn {
+                name: "id".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![
+                    Value::from_string("A".to_string()),
+                    Value::from_string("B".to_string()),
+                    Value::from_string("C".to_string()),
+                ],
+            },
+        ];
+        let right = Value::DataFrame {
+            columns: vec![
+                DataFrameColumn {
+                    name: "id".to_string(),
+                    values: vec![Value::Integer(2)], // Only matches ID 2
+                },
+                DataFrameColumn {
+                    name: "score".to_string(),
+                    values: vec![Value::Integer(100)],
+                },
+            ],
+        };
+        let args = vec![right, Value::from_string("id".to_string())];
+        let result = eval_dataframe_join(&left, &args, dummy_values_equal).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            // Should have only 1 row (ID 2)
+            assert_eq!(cols[0].values.len(), 1);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    // --- filter edge cases ---
+    #[test]
+    fn test_filter_all_false() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        }];
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
+        let result =
+            eval_dataframe_filter_op(&columns, &condition, |_, _, _| Ok(Value::Bool(false)))
+                .unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols[0].values.len(), 0);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_filter_alternating() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3),
+                Value::Integer(4),
+            ],
+        }];
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+        let mut call_count = 0;
+        let result = eval_dataframe_filter_op(&columns, &condition, |_, _, _| {
+            call_count += 1;
+            Ok(Value::Bool(call_count % 2 == 1)) // Odd rows
+        })
+        .unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols[0].values.len(), 2);
+            assert_eq!(cols[0].values[0], Value::Integer(1));
+            assert_eq!(cols[0].values[1], Value::Integer(3));
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    // --- create_groups edge cases ---
+    #[test]
+    fn test_create_groups_string_values() {
+        let col = DataFrameColumn {
+            name: "cat".to_string(),
+            values: vec![
+                Value::from_string("apple".to_string()),
+                Value::from_string("banana".to_string()),
+                Value::from_string("apple".to_string()),
+            ],
+        };
+        let groups = create_groups(&col);
+        assert_eq!(groups.len(), 2);
+        assert_eq!(groups.get("apple").unwrap().len(), 2);
+        assert_eq!(groups.get("banana").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_create_groups_all_nil() {
+        let col = DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Nil, Value::Nil],
+        };
+        let groups = create_groups(&col);
+        assert_eq!(groups.len(), 1);
+        assert!(groups.contains_key("null"));
+    }
+
+    // --- aggregate edge cases ---
+    #[test]
+    fn test_aggregate_out_of_bounds_index() {
+        let col = DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(10)],
+        };
+        let mut groups = HashMap::new();
+        groups.insert("g".to_string(), vec![0, 5, 10]); // Indices 5, 10 out of bounds
+        let result = aggregate_column_values(&col, &groups);
+        // Should only sum index 0
+        assert_eq!(result[0], Value::Integer(10));
+    }
+
+    // --- select_op edge cases ---
+    #[test]
+    fn test_select_op_multiple_columns() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "c".to_string(),
+                values: vec![Value::Integer(3)],
+            },
+        ];
+        let result =
+            eval_dataframe_select_op(&columns, &["a".to_string(), "c".to_string()]).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols.len(), 2);
+            assert_eq!(cols[0].name, "a");
+            assert_eq!(cols[1].name, "c");
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_select_op_empty_selection() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_select_op(&columns, &[]).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols.len(), 0);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    // --- groupby_op edge cases ---
+    #[test]
+    fn test_groupby_op_missing_column() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = eval_dataframe_groupby_op(&columns, &["nonexistent".to_string()]);
+        assert!(result.is_err());
+    }
+
+    // --- create_filtered_dataframe edge cases ---
+    #[test]
+    fn test_filtered_dataframe_multi_column() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![
+                    Value::from_string("x".to_string()),
+                    Value::from_string("y".to_string()),
+                    Value::from_string("z".to_string()),
+                ],
+            },
+        ];
+        let mask = vec![true, false, true];
+        let result = create_filtered_dataframe(&columns, &mask).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols[0].values, vec![Value::Integer(1), Value::Integer(3)]);
+            assert_eq!(
+                cols[1].values,
+                vec![
+                    Value::from_string("x".to_string()),
+                    Value::from_string("z".to_string())
+                ]
+            );
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    // === EXTREME TDD Round 137 - Push to 75+ Tests ===
+
+    #[test]
+    fn test_create_groups_float_values() {
+        let col = DataFrameColumn {
+            name: "float_col".to_string(),
+            values: vec![
+                Value::Float(1.0),
+                Value::Float(2.0),
+                Value::Float(1.0),
+            ],
+        };
+        let groups = create_groups(&col);
+        assert_eq!(groups.len(), 2);
+    }
+
+    #[test]
+    fn test_create_groups_bool_values() {
+        let col = DataFrameColumn {
+            name: "bool_col".to_string(),
+            values: vec![
+                Value::Bool(true),
+                Value::Bool(false),
+                Value::Bool(true),
+            ],
+        };
+        let groups = create_groups(&col);
+        assert_eq!(groups.len(), 2);
+    }
+
+    #[test]
+    fn test_create_groups_single_value() {
+        let col = DataFrameColumn {
+            name: "single".to_string(),
+            values: vec![Value::Integer(42)],
+        };
+        let groups = create_groups(&col);
+        assert_eq!(groups.len(), 1);
+        assert_eq!(groups.get("42").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn test_create_groups_empty_column() {
+        let col = DataFrameColumn {
+            name: "empty".to_string(),
+            values: vec![],
+        };
+        let groups = create_groups(&col);
+        assert!(groups.is_empty());
+    }
+
+    #[test]
+    fn test_select_op_duplicate_columns() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1)],
+            },
+        ];
+        let result = eval_dataframe_select_op(&columns, &["a".to_string(), "a".to_string()]).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols.len(), 2); // Both selected
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_filtered_dataframe_all_false() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        }];
+        let mask = vec![false, false, false];
+        let result = create_filtered_dataframe(&columns, &mask).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert!(cols[0].values.is_empty());
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_filtered_dataframe_all_true() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
+        let mask = vec![true, true];
+        let result = create_filtered_dataframe(&columns, &mask).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols[0].values.len(), 2);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_filtered_dataframe_empty_columns() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let mask = vec![];
+        let result = create_filtered_dataframe(&columns, &mask).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert!(cols.is_empty());
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_aggregate_column_values_empty_group() {
+        let col = DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        };
+        let mut groups = HashMap::new();
+        groups.insert("g".to_string(), vec![]); // Empty group
+        let result = aggregate_column_values(&col, &groups);
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0], Value::Integer(0)); // Sum of empty is 0
+    }
+
+    #[test]
+    fn test_aggregate_column_values_single_element() {
+        let col = DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(42)],
+        };
+        let mut groups = HashMap::new();
+        groups.insert("g".to_string(), vec![0]);
+        let result = aggregate_column_values(&col, &groups);
+        assert_eq!(result[0], Value::Integer(42));
+    }
+
+    #[test]
+    fn test_groupby_op_single_group() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "key".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(1)],
+            },
+            DataFrameColumn {
+                name: "val".to_string(),
+                values: vec![Value::Integer(10), Value::Integer(20)],
+            },
+        ];
+        let result = eval_dataframe_groupby_op(&columns, &["key".to_string()]).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols.len(), 2);
+            // Single group should have one row
+            assert_eq!(cols[0].values.len(), 1);
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_groupby_op_many_groups() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "key".to_string(),
+                values: vec![
+                    Value::Integer(1),
+                    Value::Integer(2),
+                    Value::Integer(3),
+                    Value::Integer(1),
+                ],
+            },
+            DataFrameColumn {
+                name: "val".to_string(),
+                values: vec![
+                    Value::Integer(10),
+                    Value::Integer(20),
+                    Value::Integer(30),
+                    Value::Integer(40),
+                ],
+            },
+        ];
+        let result = eval_dataframe_groupby_op(&columns, &["key".to_string()]).unwrap();
+        if let Value::DataFrame { columns: cols } = result {
+            assert_eq!(cols[0].values.len(), 3); // 3 unique keys
+        } else {
+            panic!("Expected DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_create_groups_mixed_types() {
+        let col = DataFrameColumn {
+            name: "mixed".to_string(),
+            values: vec![
+                Value::Integer(1),
+                Value::from_string("hello".to_string()),
+                Value::Bool(true),
+            ],
+        };
+        let groups = create_groups(&col);
+        assert_eq!(groups.len(), 3); // Each is unique
+    }
+
+    #[test]
+    fn test_create_groups_large_integers() {
+        let col = DataFrameColumn {
+            name: "large".to_string(),
+            values: vec![
+                Value::Integer(i64::MAX),
+                Value::Integer(i64::MIN),
+                Value::Integer(i64::MAX),
+            ],
+        };
+        let groups = create_groups(&col);
+        assert_eq!(groups.len(), 2);
+    }
+}

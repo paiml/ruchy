@@ -285,6 +285,173 @@ mod tests {
         assert!(unifier.unify(&MonoType::Float, &MonoType::Float).is_ok());
         assert!(unifier.unify(&MonoType::Float, &MonoType::Int).is_err());
     }
+
+    // === EXTREME TDD Round 125 tests ===
+
+    #[test]
+    fn test_unify_named_types_same() {
+        let mut unifier = Unifier::new();
+        let n1 = MonoType::Named("Point".to_string());
+        let n2 = MonoType::Named("Point".to_string());
+        assert!(unifier.unify(&n1, &n2).is_ok());
+    }
+
+    #[test]
+    fn test_unify_named_types_different() {
+        let mut unifier = Unifier::new();
+        let n1 = MonoType::Named("Point".to_string());
+        let n2 = MonoType::Named("Vector".to_string());
+        assert!(unifier.unify(&n1, &n2).is_err());
+    }
+
+    #[test]
+    fn test_unify_result_types() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let r1 = MonoType::Result(
+            Box::new(MonoType::Var(var.clone())),
+            Box::new(MonoType::String),
+        );
+        let r2 = MonoType::Result(Box::new(MonoType::Int), Box::new(MonoType::String));
+        assert!(unifier.unify(&r1, &r2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Int);
+    }
+
+    #[test]
+    fn test_unify_result_types_err_part() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let r1 = MonoType::Result(
+            Box::new(MonoType::Int),
+            Box::new(MonoType::Var(var.clone())),
+        );
+        let r2 = MonoType::Result(Box::new(MonoType::Int), Box::new(MonoType::String));
+        assert!(unifier.unify(&r1, &r2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::String);
+    }
+
+    #[test]
+    fn test_unify_series_types() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let s1 = MonoType::Series(Box::new(MonoType::Var(var.clone())));
+        let s2 = MonoType::Series(Box::new(MonoType::Float));
+        assert!(unifier.unify(&s1, &s2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Float);
+    }
+
+    #[test]
+    fn test_unify_nested_functions() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let f1 = MonoType::Function(
+            Box::new(MonoType::Function(
+                Box::new(MonoType::Int),
+                Box::new(MonoType::Var(var.clone())),
+            )),
+            Box::new(MonoType::Bool),
+        );
+        let f2 = MonoType::Function(
+            Box::new(MonoType::Function(
+                Box::new(MonoType::Int),
+                Box::new(MonoType::String),
+            )),
+            Box::new(MonoType::Bool),
+        );
+        assert!(unifier.unify(&f1, &f2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::String);
+    }
+
+    #[test]
+    fn test_unify_nested_lists() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let l1 = MonoType::List(Box::new(MonoType::List(Box::new(MonoType::Var(var.clone())))));
+        let l2 = MonoType::List(Box::new(MonoType::List(Box::new(MonoType::Int))));
+        assert!(unifier.unify(&l1, &l2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Int);
+    }
+
+    #[test]
+    fn test_occurs_check_in_function() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let f = MonoType::Function(
+            Box::new(MonoType::Int),
+            Box::new(MonoType::Var(var.clone())),
+        );
+        assert!(unifier.unify(&MonoType::Var(var), &f).is_err());
+    }
+
+    #[test]
+    fn test_occurs_check_in_optional() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        let opt = MonoType::Optional(Box::new(MonoType::Var(var.clone())));
+        assert!(unifier.unify(&MonoType::Var(var), &opt).is_err());
+    }
+
+    #[test]
+    fn test_apply_after_unification() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Int)
+            .unwrap();
+        // Apply should substitute var with Int
+        let result = unifier.apply(&MonoType::Var(var));
+        assert_eq!(result, MonoType::Int);
+    }
+
+    #[test]
+    fn test_solve_unbound_var() {
+        let unifier = Unifier::new();
+        let var = TyVar(99);
+        // Unbound var should return itself
+        assert_eq!(unifier.solve(&var), MonoType::Var(var));
+    }
+
+    #[test]
+    fn test_unify_multiple_vars() {
+        let mut unifier = Unifier::new();
+        let var1 = TyVar(0);
+        let var2 = TyVar(1);
+        let var3 = TyVar(2);
+        // var1 = var2
+        assert!(unifier
+            .unify(&MonoType::Var(var1.clone()), &MonoType::Var(var2.clone()))
+            .is_ok());
+        // var2 = var3
+        assert!(unifier
+            .unify(&MonoType::Var(var2.clone()), &MonoType::Var(var3.clone()))
+            .is_ok());
+        // var3 = Int
+        assert!(unifier.unify(&MonoType::Var(var3), &MonoType::Int).is_ok());
+        // All should resolve to Int
+        assert_eq!(unifier.solve(&var1), MonoType::Int);
+        assert_eq!(unifier.solve(&var2), MonoType::Int);
+    }
+
+    #[test]
+    fn test_unify_var_with_self() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(0);
+        // Unifying a var with itself should always succeed
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Var(var))
+            .is_ok());
+    }
+
+    #[test]
+    fn test_unify_concrete_types_mismatch() {
+        let mut unifier = Unifier::new();
+        // Int and String cannot unify
+        assert!(unifier.unify(&MonoType::Int, &MonoType::String).is_err());
+        // Bool and Float cannot unify
+        assert!(unifier.unify(&MonoType::Bool, &MonoType::Float).is_err());
+        // Unit and Int cannot unify
+        assert!(unifier.unify(&MonoType::Unit, &MonoType::Int).is_err());
+    }
 }
 #[cfg(test)]
 mod property_tests_unify {
@@ -302,5 +469,314 @@ mod property_tests_unify {
                 // This is a template - adjust based on actual function signature
             });
         }
+    }
+}
+
+// === EXTREME TDD Round 164 - Unification Tests ===
+
+#[cfg(test)]
+mod unify_tests_r164 {
+    use super::*;
+
+    #[test]
+    fn test_unify_int_with_int_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Int, &MonoType::Int).is_ok());
+    }
+
+    #[test]
+    fn test_unify_float_with_float_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Float, &MonoType::Float).is_ok());
+    }
+
+    #[test]
+    fn test_unify_bool_with_bool_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Bool, &MonoType::Bool).is_ok());
+    }
+
+    #[test]
+    fn test_unify_string_with_string_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::String, &MonoType::String).is_ok());
+    }
+
+    #[test]
+    fn test_unify_unit_with_unit_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Unit, &MonoType::Unit).is_ok());
+    }
+
+    #[test]
+    fn test_unify_int_with_float_fails_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Int, &MonoType::Float).is_err());
+    }
+
+    #[test]
+    fn test_unify_int_with_string_fails_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Int, &MonoType::String).is_err());
+    }
+
+    #[test]
+    fn test_unify_int_with_bool_fails_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Int, &MonoType::Bool).is_err());
+    }
+
+    #[test]
+    fn test_unify_float_with_string_fails_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Float, &MonoType::String).is_err());
+    }
+
+    #[test]
+    fn test_unify_float_with_bool_fails_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Float, &MonoType::Bool).is_err());
+    }
+
+    #[test]
+    fn test_unify_bool_with_string_fails_r164() {
+        let mut unifier = Unifier::new();
+        assert!(unifier.unify(&MonoType::Bool, &MonoType::String).is_err());
+    }
+
+    #[test]
+    fn test_unify_var_with_int_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(10);
+        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Int);
+    }
+
+    #[test]
+    fn test_unify_var_with_float_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(11);
+        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Float).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Float);
+    }
+
+    #[test]
+    fn test_unify_var_with_string_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(12);
+        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::String).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::String);
+    }
+
+    #[test]
+    fn test_unify_var_with_bool_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(13);
+        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Bool).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Bool);
+    }
+
+    #[test]
+    fn test_unify_int_with_var_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(14);
+        // Order reversed - concrete then var
+        assert!(unifier.unify(&MonoType::Int, &MonoType::Var(var.clone())).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Int);
+    }
+
+    #[test]
+    fn test_unify_two_vars_r164() {
+        let mut unifier = Unifier::new();
+        let var1 = TyVar(20);
+        let var2 = TyVar(21);
+        assert!(unifier.unify(&MonoType::Var(var1.clone()), &MonoType::Var(var2.clone())).is_ok());
+        // Now bind one to Int
+        assert!(unifier.unify(&MonoType::Var(var1.clone()), &MonoType::Int).is_ok());
+        // Both should resolve to Int
+        assert_eq!(unifier.solve(&var1), MonoType::Int);
+    }
+
+    #[test]
+    fn test_unify_chain_of_vars_r164() {
+        let mut unifier = Unifier::new();
+        let var1 = TyVar(30);
+        let var2 = TyVar(31);
+        let var3 = TyVar(32);
+        let var4 = TyVar(33);
+
+        // Create chain: var1 -> var2 -> var3 -> var4 -> String
+        assert!(unifier.unify(&MonoType::Var(var1.clone()), &MonoType::Var(var2.clone())).is_ok());
+        assert!(unifier.unify(&MonoType::Var(var2.clone()), &MonoType::Var(var3.clone())).is_ok());
+        assert!(unifier.unify(&MonoType::Var(var3.clone()), &MonoType::Var(var4.clone())).is_ok());
+        assert!(unifier.unify(&MonoType::Var(var4.clone()), &MonoType::String).is_ok());
+
+        // All should resolve to String
+        assert_eq!(unifier.solve(&var1), MonoType::String);
+    }
+
+    #[test]
+    fn test_unify_function_types_r164() {
+        let mut unifier = Unifier::new();
+        let fn1 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
+        let fn2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
+        assert!(unifier.unify(&fn1, &fn2).is_ok());
+    }
+
+    #[test]
+    fn test_unify_function_types_arg_mismatch_r164() {
+        let mut unifier = Unifier::new();
+        let fn1 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
+        let fn2 = MonoType::Function(Box::new(MonoType::String), Box::new(MonoType::Bool));
+        assert!(unifier.unify(&fn1, &fn2).is_err());
+    }
+
+    #[test]
+    fn test_unify_function_types_ret_mismatch_r164() {
+        let mut unifier = Unifier::new();
+        let fn1 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
+        let fn2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::String));
+        assert!(unifier.unify(&fn1, &fn2).is_err());
+    }
+
+    #[test]
+    fn test_unify_function_with_var_arg_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(40);
+        let fn1 = MonoType::Function(Box::new(MonoType::Var(var.clone())), Box::new(MonoType::Bool));
+        let fn2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
+        assert!(unifier.unify(&fn1, &fn2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::Int);
+    }
+
+    #[test]
+    fn test_unify_function_with_var_ret_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(41);
+        let fn1 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Var(var.clone())));
+        let fn2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::String));
+        assert!(unifier.unify(&fn1, &fn2).is_ok());
+        assert_eq!(unifier.solve(&var), MonoType::String);
+    }
+
+    #[test]
+    fn test_apply_to_int_r164() {
+        let unifier = Unifier::new();
+        let result = unifier.apply(&MonoType::Int);
+        assert_eq!(result, MonoType::Int);
+    }
+
+    #[test]
+    fn test_apply_to_unbound_var_r164() {
+        let unifier = Unifier::new();
+        let var = TyVar(50);
+        let result = unifier.apply(&MonoType::Var(var.clone()));
+        assert_eq!(result, MonoType::Var(var));
+    }
+
+    #[test]
+    fn test_apply_to_bound_var_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(51);
+        unifier.unify(&MonoType::Var(var.clone()), &MonoType::Float).unwrap();
+        let result = unifier.apply(&MonoType::Var(var));
+        assert_eq!(result, MonoType::Float);
+    }
+
+    #[test]
+    fn test_apply_to_function_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(52);
+        unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).unwrap();
+        let fn_type = MonoType::Function(Box::new(MonoType::Var(var)), Box::new(MonoType::Bool));
+        let result = unifier.apply(&fn_type);
+        if let MonoType::Function(arg, _ret) = result {
+            assert_eq!(*arg, MonoType::Int);
+        } else {
+            panic!("Expected function type");
+        }
+    }
+
+    #[test]
+    fn test_substitution_empty_r164() {
+        let unifier = Unifier::new();
+        let subst = unifier.substitution();
+        assert!(subst.is_empty());
+    }
+
+    #[test]
+    fn test_substitution_after_unify_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(60);
+        unifier.unify(&MonoType::Var(var), &MonoType::Int).unwrap();
+        let subst = unifier.substitution();
+        assert!(!subst.is_empty());
+    }
+
+    #[test]
+    fn test_unifier_default_r164() {
+        let unifier = Unifier::default();
+        let subst = unifier.substitution();
+        assert!(subst.is_empty());
+    }
+
+    #[test]
+    fn test_unify_same_var_twice_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(70);
+        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+        // Unifying again with same type should succeed
+        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+    }
+
+    #[test]
+    fn test_unify_var_with_different_types_fails_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(71);
+        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+        // Unifying with different type should fail
+        assert!(unifier.unify(&MonoType::Var(var), &MonoType::String).is_err());
+    }
+
+    #[test]
+    fn test_unify_named_types_same_r164() {
+        let mut unifier = Unifier::new();
+        let named1 = MonoType::Named("Foo".to_string());
+        let named2 = MonoType::Named("Foo".to_string());
+        assert!(unifier.unify(&named1, &named2).is_ok());
+    }
+
+    #[test]
+    fn test_unify_named_types_different_r164() {
+        let mut unifier = Unifier::new();
+        let named1 = MonoType::Named("Foo".to_string());
+        let named2 = MonoType::Named("Bar".to_string());
+        assert!(unifier.unify(&named1, &named2).is_err());
+    }
+
+    #[test]
+    fn test_solve_bound_var_r164() {
+        let mut unifier = Unifier::new();
+        let var = TyVar(80);
+        unifier.unify(&MonoType::Var(var.clone()), &MonoType::Bool).unwrap();
+        assert_eq!(unifier.solve(&var), MonoType::Bool);
+    }
+
+    #[test]
+    fn test_solve_unbound_var_r164() {
+        let unifier = Unifier::new();
+        let var = TyVar(81);
+        // Unbound var should return itself
+        assert_eq!(unifier.solve(&var), MonoType::Var(var));
+    }
+
+    #[test]
+    fn test_unify_complex_nested_function_r164() {
+        let mut unifier = Unifier::new();
+        // (Int -> Bool) -> String
+        let inner = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
+        let fn1 = MonoType::Function(Box::new(inner.clone()), Box::new(MonoType::String));
+        let fn2 = MonoType::Function(Box::new(inner), Box::new(MonoType::String));
+        assert!(unifier.unify(&fn1, &fn2).is_ok());
     }
 }

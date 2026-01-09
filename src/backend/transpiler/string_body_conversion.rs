@@ -1,7 +1,7 @@
 //! String Body Conversion Module
 //!
 //! This module handles transpilation of function bodies that need to return String,
-//! including proper .to_string() wrapping and string literal handling.
+//! including proper `.to_string()` wrapping and string literal handling.
 //!
 //! **EXTREME TDD Round 73**: Extracted from statements.rs for modularization.
 
@@ -12,7 +12,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
-    /// Generate body tokens with .to_string() wrapper on last expression
+    /// Generate body tokens with `.to_string()` wrapper on last expression
     /// Complexity: 10 (at Toyota Way limit)
     pub(crate) fn generate_body_tokens_with_string_conversion_impl(
         &self,
@@ -79,7 +79,7 @@ impl Transpiler {
                 body: let_body,
                 is_mutable,
                 ..
-            } => self.convert_let_body_to_string(name, type_annotation, value, let_body, *is_mutable),
+            } => self.convert_let_body_to_string(name, type_annotation.as_ref(), value, let_body, *is_mutable),
             ExprKind::Match { expr, arms } => self.transpile_match_with_string_arms_impl(expr, arms),
             _ => {
                 let expr_tokens = self.transpile_expr(expr)?;
@@ -92,7 +92,7 @@ impl Transpiler {
     fn convert_let_body_to_string(
         &self,
         name: &str,
-        type_annotation: &Option<crate::frontend::ast::Type>,
+        type_annotation: Option<&crate::frontend::ast::Type>,
         value: &Expr,
         let_body: &Expr,
         is_mutable: bool,
@@ -108,7 +108,7 @@ impl Transpiler {
             quote! {}
         };
 
-        let type_annotation_tokens = if let Some(ty) = type_annotation {
+        let type_annotation_tokens = if let Some(ty) = &type_annotation {
             let ty_tokens = self.transpile_type(ty)?;
             quote! { : #ty_tokens }
         } else {
@@ -135,7 +135,7 @@ impl Transpiler {
         &self,
         name: &str,
         value: &Expr,
-        type_annotation: &Option<crate::frontend::ast::Type>,
+        type_annotation: Option<&crate::frontend::ast::Type>,
         is_mutable_var: bool,
     ) -> Result<TokenStream> {
         match (&value.kind, type_annotation) {
@@ -204,7 +204,7 @@ impl Transpiler {
         Ok(arm_tokens)
     }
 
-    /// Convert arm body to string (adding .to_string() for literals)
+    /// Convert arm body to string (adding `.to_string()` for literals)
     fn convert_arm_body_to_string(&self, body: &Expr) -> Result<TokenStream> {
         match &body.kind {
             ExprKind::Literal(Literal::String(s)) => Ok(quote! { #s.to_string() }),
@@ -419,7 +419,7 @@ mod tests {
         let value = string_expr("hello");
         let type_ann = Some(make_type("String"));
         let result = transpiler
-            .convert_value_for_string_context("x", &value, &type_ann, false)
+            .convert_value_for_string_context("x", &value, type_ann.as_ref(), false)
             .unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("hello"));
@@ -431,7 +431,7 @@ mod tests {
         let transpiler = make_transpiler();
         let value = string_expr("hello");
         let result = transpiler
-            .convert_value_for_string_context("x", &value, &None, true)
+            .convert_value_for_string_context("x", &value, None, true)
             .unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("String :: from"));
@@ -442,7 +442,7 @@ mod tests {
         let transpiler = make_transpiler();
         let value = int_expr(42);
         let result = transpiler
-            .convert_value_for_string_context("x", &value, &None, false)
+            .convert_value_for_string_context("x", &value, None, false)
             .unwrap();
         assert!(result.to_string().contains("42"));
     }

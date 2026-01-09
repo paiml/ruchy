@@ -201,6 +201,7 @@ pub fn generate_bench_csv_output(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::{NamedTempFile, TempDir};
 
     #[test]
     fn test_generate_text_output() {
@@ -236,5 +237,164 @@ mod tests {
         let output = generate_bench_csv_output(file, 1, 1, &[], 0.0, 0.0, 0.0, 0.0);
         let lines: Vec<&str> = output.lines().collect();
         assert_eq!(lines[0], "file,warmup,iterations,min_ms,max_ms,mean_ms,stddev_ms");
+    }
+
+    // ===== EXTREME TDD Round 149 - Bench Handler Tests =====
+
+    #[test]
+    fn test_generate_text_output_zero_values() {
+        let file = Path::new("test.ruchy");
+        let output = generate_bench_text_output(file, 0, 0, &[], 0.0, 0.0, 0.0, 0.0);
+        assert!(output.contains("Benchmark Results"));
+    }
+
+    #[test]
+    fn test_generate_text_output_large_values() {
+        let file = Path::new("test.ruchy");
+        let output = generate_bench_text_output(file, 1000000, 100000, &[], 0.001, 10000.0, 500.0, 100.0);
+        assert!(output.contains("Benchmark Results"));
+    }
+
+    #[test]
+    fn test_generate_json_output_empty_timings() {
+        let file = Path::new("test.ruchy");
+        let output = generate_bench_json_output(file, 0, 0, &[], 0.0, 0.0, 0.0, 0.0);
+        assert!(output.contains("\"timings_ms\": []"));
+    }
+
+    #[test]
+    fn test_generate_json_output_many_timings() {
+        let file = Path::new("test.ruchy");
+        let timings: Vec<f64> = (0..100).map(|x| x as f64 * 0.1).collect();
+        let output = generate_bench_json_output(file, 100, 10, &timings, 0.0, 9.9, 4.95, 2.0);
+        assert!(output.contains("\"iterations\": 100"));
+    }
+
+    #[test]
+    fn test_generate_csv_output_special_chars_in_path() {
+        let file = Path::new("path with spaces/test.ruchy");
+        let output = generate_bench_csv_output(file, 5, 2, &[], 1.0, 5.0, 2.5, 1.0);
+        assert!(output.contains("path with spaces"));
+    }
+
+    #[test]
+    fn test_handle_bench_command_nonexistent_file() {
+        let result = handle_bench_command(
+            Path::new("/nonexistent/file.ruchy"),
+            1,
+            0,
+            "text",
+            None,
+            false,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_bench_command_basic() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_bench_command(
+            temp.path(),
+            1,
+            0,
+            "text",
+            None,
+            false,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_bench_command_with_warmup() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_bench_command(
+            temp.path(),
+            2,
+            1, // warmup
+            "text",
+            None,
+            false,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_bench_command_json_format() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_bench_command(
+            temp.path(),
+            1,
+            0,
+            "json",
+            None,
+            false,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_bench_command_csv_format() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_bench_command(
+            temp.path(),
+            1,
+            0,
+            "csv",
+            None,
+            false,
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_bench_command_with_output() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let output_path = temp_dir.path().join("output.txt");
+        let result = handle_bench_command(
+            temp.path(),
+            1,
+            0,
+            "text",
+            Some(&output_path),
+            false,
+        );
+        assert!(result.is_ok());
+        assert!(output_path.exists());
+    }
+
+    #[test]
+    fn test_handle_bench_command_verbose() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_bench_command(
+            temp.path(),
+            1,
+            0,
+            "text",
+            None,
+            true, // verbose
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_bench_command_multiple_iterations() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let result = handle_bench_command(
+            temp.path(),
+            5, // multiple iterations
+            2,
+            "text",
+            None,
+            false,
+        );
+        assert!(result.is_ok());
     }
 }

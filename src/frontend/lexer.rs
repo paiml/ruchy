@@ -1268,6 +1268,723 @@ mod tests {
         );
     }
 
+    // ===== EXTREME TDD Round 117 - Additional Tests =====
+
+    #[test]
+    fn test_tokenize_float_zero() {
+        let mut stream = TokenStream::new("0.0");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Float(f), _)) if (f - 0.0).abs() < 0.001));
+    }
+
+    #[test]
+    fn test_tokenize_negative_integer() {
+        let mut stream = TokenStream::new("-42");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Minus, _))));
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Integer(i), _)) if i == "42"));
+    }
+
+    #[test]
+    fn test_tokenize_scientific_notation() {
+        let mut stream = TokenStream::new("1e10");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Float(_), _)) | Some((Token::Integer(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_underscore_in_number() {
+        let mut stream = TokenStream::new("1_000_000");
+        let token = stream.next();
+        // Should parse as integer or identifier
+        assert!(token.is_some());
+    }
+
+    #[test]
+    fn test_tokenize_empty_string() {
+        let mut stream = TokenStream::new(r#""""#);
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::String(ref s), _)) if s.is_empty()));
+    }
+
+    #[test]
+    fn test_tokenize_string_with_newline() {
+        let mut stream = TokenStream::new("\"hello\\nworld\"");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::String(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_string_with_tab() {
+        let mut stream = TokenStream::new("\"hello\\tworld\"");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::String(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_arrow() {
+        let mut stream = TokenStream::new("->");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Arrow, _))));
+    }
+
+    #[test]
+    fn test_tokenize_fat_arrow() {
+        let mut stream = TokenStream::new("=>");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::FatArrow, _))));
+    }
+
+    #[test]
+    fn test_tokenize_colon_colon() {
+        let mut stream = TokenStream::new("::");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::ColonColon, _))));
+    }
+
+    #[test]
+    fn test_tokenize_dot_dot() {
+        let mut stream = TokenStream::new("..");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::DotDot, _))));
+    }
+
+    #[test]
+    fn test_tokenize_range_inclusive() {
+        let mut stream = TokenStream::new("..=");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::DotDotEqual, _))));
+    }
+
+    #[test]
+    fn test_tokenize_pipe() {
+        let mut stream = TokenStream::new("|");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Pipe, _))));
+    }
+
+    #[test]
+    fn test_tokenize_ampersand() {
+        let mut stream = TokenStream::new("&");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Ampersand, _))));
+    }
+
+    #[test]
+    fn test_tokenize_bang() {
+        let mut stream = TokenStream::new("!");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Bang, _))));
+    }
+
+    #[test]
+    fn test_tokenize_question_mark() {
+        let mut stream = TokenStream::new("?");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Question, _))));
+    }
+
+    #[test]
+    fn test_tokenize_at_sign() {
+        let mut stream = TokenStream::new("@test");
+        let token = stream.next();
+        // @ followed by identifier becomes a Label
+        assert!(matches!(token, Some((Token::Label(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_hash_comment() {
+        let mut stream = TokenStream::new("# this is a comment");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::HashComment(_), _))));
+    }
+
+    // === EXTREME TDD Round 161 - Lexer Coverage Push ===
+
+    #[test]
+    fn test_tokenize_integer_zero_r161() {
+        let mut stream = TokenStream::new("0");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Integer(i), _)) if i == "0"));
+    }
+
+    #[test]
+    fn test_tokenize_integer_large_r161() {
+        let mut stream = TokenStream::new("9223372036854775807");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Integer(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_float_simple_r161() {
+        let mut stream = TokenStream::new("3.14");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Float(f), _)) if (f - 3.14).abs() < f64::EPSILON));
+    }
+
+    #[test]
+    fn test_tokenize_float_no_integer_part_r161() {
+        let mut stream = TokenStream::new(".5");
+        let token = stream.next();
+        // This might be tokenized as Dot followed by Integer
+        assert!(token.is_some());
+    }
+
+    #[test]
+    fn test_tokenize_float_scientific_r161() {
+        let mut stream = TokenStream::new("1.5e10");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Float(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_float_negative_exponent_r161() {
+        let mut stream = TokenStream::new("1.5e-10");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Float(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_string_empty_r161() {
+        let mut stream = TokenStream::new(r#""""#);
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::String(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_string_with_newline_r161() {
+        let mut stream = TokenStream::new(r#""hello\nworld""#);
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::String(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_string_with_tab_r161() {
+        let mut stream = TokenStream::new(r#""hello\tworld""#);
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::String(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_string_with_escape_quote_r161() {
+        let mut stream = TokenStream::new(r#""he said \"hi\"""#);
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::String(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_char_simple_r161() {
+        let mut stream = TokenStream::new("'a'");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Char(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_char_escape_n_r161() {
+        let mut stream = TokenStream::new(r"'\n'");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Char(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_char_escape_t_r161() {
+        let mut stream = TokenStream::new(r"'\t'");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Char(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_byte_literal_r161() {
+        let mut stream = TokenStream::new("0b101");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Integer(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_hex_literal_r161() {
+        let mut stream = TokenStream::new("0xFF");
+        let token = stream.next();
+        // Hex literals are tokenized as HexInteger, not Integer
+        assert!(matches!(token, Some((Token::HexInteger(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_octal_literal_r161() {
+        let mut stream = TokenStream::new("0o777");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Integer(_), _))));
+    }
+
+    #[test]
+    fn test_tokenize_plus_r161() {
+        let mut stream = TokenStream::new("+");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Plus, _))));
+    }
+
+    #[test]
+    fn test_tokenize_minus_r161() {
+        let mut stream = TokenStream::new("-");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Minus, _))));
+    }
+
+    #[test]
+    fn test_tokenize_star_r161() {
+        let mut stream = TokenStream::new("*");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Star, _))));
+    }
+
+    #[test]
+    fn test_tokenize_slash_r161() {
+        let mut stream = TokenStream::new("/");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Slash, _))));
+    }
+
+    #[test]
+    fn test_tokenize_percent_r161() {
+        let mut stream = TokenStream::new("%");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Percent, _))));
+    }
+
+    #[test]
+    fn test_tokenize_double_star_r161() {
+        let mut stream = TokenStream::new("**");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Power, _))));
+    }
+
+    #[test]
+    fn test_tokenize_equal_r161() {
+        let mut stream = TokenStream::new("=");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Equal, _))));
+    }
+
+    #[test]
+    fn test_tokenize_double_equal_r161() {
+        let mut stream = TokenStream::new("==");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::EqualEqual, _))));
+    }
+
+    #[test]
+    fn test_tokenize_not_equal_r161() {
+        let mut stream = TokenStream::new("!=");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::NotEqual, _))));
+    }
+
+    #[test]
+    fn test_tokenize_less_than_r161() {
+        let mut stream = TokenStream::new("<");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Less, _))));
+    }
+
+    #[test]
+    fn test_tokenize_less_equal_r161() {
+        let mut stream = TokenStream::new("<=");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::LessEqual, _))));
+    }
+
+    #[test]
+    fn test_tokenize_greater_than_r161() {
+        let mut stream = TokenStream::new(">");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Greater, _))));
+    }
+
+    #[test]
+    fn test_tokenize_greater_equal_r161() {
+        let mut stream = TokenStream::new(">=");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::GreaterEqual, _))));
+    }
+
+    #[test]
+    fn test_tokenize_and_r161() {
+        let mut stream = TokenStream::new("&&");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::AndAnd, _))));
+    }
+
+    #[test]
+    fn test_tokenize_or_r161() {
+        let mut stream = TokenStream::new("||");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::OrOr, _))));
+    }
+
+    #[test]
+    fn test_tokenize_not_r161() {
+        let mut stream = TokenStream::new("!");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Bang, _))));
+    }
+
+    #[test]
+    fn test_tokenize_ampersand_r161() {
+        let mut stream = TokenStream::new("&");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Ampersand, _))));
+    }
+
+    #[test]
+    fn test_tokenize_pipe_r161() {
+        let mut stream = TokenStream::new("|");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Pipe, _))));
+    }
+
+    #[test]
+    fn test_tokenize_caret_r161() {
+        let mut stream = TokenStream::new("^");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Caret, _))));
+    }
+
+    #[test]
+    fn test_tokenize_tilde_r161() {
+        let mut stream = TokenStream::new("~");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Tilde, _))));
+    }
+
+    #[test]
+    fn test_tokenize_left_shift_r161() {
+        let mut stream = TokenStream::new("<<");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::LeftShift, _))));
+    }
+
+    #[test]
+    fn test_tokenize_right_shift_r161() {
+        let mut stream = TokenStream::new(">>");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::RightShift, _))));
+    }
+
+    #[test]
+    fn test_tokenize_lparen_r161() {
+        let mut stream = TokenStream::new("(");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::LeftParen, _))));
+    }
+
+    #[test]
+    fn test_tokenize_rparen_r161() {
+        let mut stream = TokenStream::new(")");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::RightParen, _))));
+    }
+
+    #[test]
+    fn test_tokenize_lbracket_r161() {
+        let mut stream = TokenStream::new("[");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::LeftBracket, _))));
+    }
+
+    #[test]
+    fn test_tokenize_rbracket_r161() {
+        let mut stream = TokenStream::new("]");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::RightBracket, _))));
+    }
+
+    #[test]
+    fn test_tokenize_lbrace_r161() {
+        let mut stream = TokenStream::new("{");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::LeftBrace, _))));
+    }
+
+    #[test]
+    fn test_tokenize_rbrace_r161() {
+        let mut stream = TokenStream::new("}");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::RightBrace, _))));
+    }
+
+    #[test]
+    fn test_tokenize_comma_r161() {
+        let mut stream = TokenStream::new(",");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Comma, _))));
+    }
+
+    #[test]
+    fn test_tokenize_dot_r161() {
+        let mut stream = TokenStream::new(".");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Dot, _))));
+    }
+
+    #[test]
+    fn test_tokenize_colon_r161() {
+        let mut stream = TokenStream::new(":");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Colon, _))));
+    }
+
+    #[test]
+    fn test_tokenize_double_colon_r161() {
+        let mut stream = TokenStream::new("::");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::ColonColon, _))));
+    }
+
+    #[test]
+    fn test_tokenize_semicolon_r161() {
+        let mut stream = TokenStream::new(";");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Semicolon, _))));
+    }
+
+    #[test]
+    fn test_tokenize_arrow_r161() {
+        let mut stream = TokenStream::new("->");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Arrow, _))));
+    }
+
+    #[test]
+    fn test_tokenize_fat_arrow_r161() {
+        let mut stream = TokenStream::new("=>");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::FatArrow, _))));
+    }
+
+    #[test]
+    fn test_tokenize_question_mark_r161() {
+        let mut stream = TokenStream::new("?");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Question, _))));
+    }
+
+    #[test]
+    fn test_tokenize_underscore_r161() {
+        let mut stream = TokenStream::new("_");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Underscore, _))));
+    }
+
+    #[test]
+    fn test_tokenize_dotdot_r161() {
+        let mut stream = TokenStream::new("..");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::DotDot, _))));
+    }
+
+    #[test]
+    fn test_tokenize_dotdoteq_r161() {
+        let mut stream = TokenStream::new("..=");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::DotDotEqual, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_fun_r161() {
+        let mut stream = TokenStream::new("fun");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Fun, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_fn_r161() {
+        let mut stream = TokenStream::new("fn");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Fn, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_let_r161() {
+        let mut stream = TokenStream::new("let");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Let, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_var_r161() {
+        let mut stream = TokenStream::new("var");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Var, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_if_r161() {
+        let mut stream = TokenStream::new("if");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::If, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_else_r161() {
+        let mut stream = TokenStream::new("else");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Else, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_match_r161() {
+        let mut stream = TokenStream::new("match");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Match, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_for_r161() {
+        let mut stream = TokenStream::new("for");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::For, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_while_r161() {
+        let mut stream = TokenStream::new("while");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::While, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_loop_r161() {
+        let mut stream = TokenStream::new("loop");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Loop, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_return_r161() {
+        let mut stream = TokenStream::new("return");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Return, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_break_r161() {
+        let mut stream = TokenStream::new("break");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Break, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_continue_r161() {
+        let mut stream = TokenStream::new("continue");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Continue, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_true_r161() {
+        let mut stream = TokenStream::new("true");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Bool(true), _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_false_r161() {
+        let mut stream = TokenStream::new("false");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Bool(false), _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_null_r161() {
+        let mut stream = TokenStream::new("null");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Null, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_struct_r161() {
+        let mut stream = TokenStream::new("struct");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Struct, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_enum_r161() {
+        let mut stream = TokenStream::new("enum");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Enum, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_impl_r161() {
+        let mut stream = TokenStream::new("impl");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Impl, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_trait_r161() {
+        let mut stream = TokenStream::new("trait");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Trait, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_async_r161() {
+        let mut stream = TokenStream::new("async");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Async, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_await_r161() {
+        let mut stream = TokenStream::new("await");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Await, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_try_r161() {
+        let mut stream = TokenStream::new("try");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Try, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_catch_r161() {
+        let mut stream = TokenStream::new("catch");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Catch, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_throw_r161() {
+        let mut stream = TokenStream::new("throw");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Throw, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_pub_r161() {
+        let mut stream = TokenStream::new("pub");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Pub, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_use_r161() {
+        let mut stream = TokenStream::new("use");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Use, _))));
+    }
+
+    #[test]
+    fn test_tokenize_kw_mod_r161() {
+        let mut stream = TokenStream::new("mod");
+        let token = stream.next();
+        assert!(matches!(token, Some((Token::Mod, _))));
+    }
+
     proptest! {
         #[test]
         fn test_tokenize_identifiers(s in "[a-zA-Z_][a-zA-Z0-9_]{0,100}") {

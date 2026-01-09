@@ -1,8 +1,8 @@
-//! DataFrame transpilation helpers
+//! `DataFrame` transpilation helpers
 //! EXTREME TDD Round 80: Extracted from statements.rs
 //!
-//! This module handles DataFrame builder pattern transpilation.
-//! Note: try_transpile_dataframe_function_impl is in call_transpilation.rs
+//! This module handles `DataFrame` builder pattern transpilation.
+//! Note: `try_transpile_dataframe_function_impl` is in `call_transpilation.rs`
 
 use crate::frontend::ast::{Expr, ExprKind};
 use anyhow::Result;
@@ -182,6 +182,157 @@ mod tests {
         let mut parser = Parser::new(r#"foo()"#);
         let ast = parser.parse().expect("parse");
         // This should still transpile - just not as a DataFrame builder
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    // ===== EXTREME TDD Round 156 - DataFrame Transpilation Tests =====
+
+    #[test]
+    fn test_dataframe_builder_multiple_columns() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"DataFrame::new().column("a", [1]).column("b", [2]).build()"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("polars"));
+    }
+
+    #[test]
+    fn test_dataframe_builder_string_values() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"DataFrame::new().column("name", ["Alice", "Bob"]).build()"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dataframe_builder_without_build() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"DataFrame::new().column("x", [1, 2, 3])"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dataframe_qualified_name() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"DataFrame.new().build()"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_non_dataframe_method_call() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"vec.push(42)"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(!tokens.contains("DataFrame::empty"));
+    }
+
+    #[test]
+    fn test_dataframe_builder_float_values() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"DataFrame::new().column("vals", [1.0, 2.5, 3.7]).build()"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dataframe_builder_empty_array() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"DataFrame::new().column("empty", []).build()"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dataframe_nested_method_chain() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"x.y.z()"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpiler_new_returns_valid_instance() {
+        let transpiler = create_transpiler();
+        // Verify transpiler can process basic expressions
+        let expr = Expr {
+            kind: ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
+            span: crate::frontend::ast::Span::new(0, 0),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dataframe_builder_inline_impl_none_on_non_build() {
+        let transpiler = create_transpiler();
+        let expr = Expr {
+            kind: ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
+            span: crate::frontend::ast::Span::new(0, 0),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.try_transpile_dataframe_builder_inline_impl(&expr).unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_dataframe_builder_three_columns() {
+        let mut transpiler = create_transpiler();
+        let code = r#"DataFrame::new().column("a", [1]).column("b", [2]).column("c", [3]).build()"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_dataframe_builder_mixed_types() {
+        let mut transpiler = create_transpiler();
+        let code = r#"DataFrame::new().column("nums", [1, 2]).column("strs", ["a", "b"]).build()"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_extract_columns_returns_none_for_invalid() {
+        // Test that extract_dataframe_columns_impl returns None for invalid expressions
+        let expr = Expr {
+            kind: ExprKind::Identifier("foo".to_string()),
+            span: crate::frontend::ast::Span::new(0, 0),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = Transpiler::extract_dataframe_columns_impl(&expr);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_dataframe_variable_binding() {
+        let mut transpiler = create_transpiler();
+        let code = r#"let df = DataFrame::new().column("x", [1]).build()"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("parse");
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
     }

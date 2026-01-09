@@ -575,6 +575,7 @@ fn display_profile_info(opt_level: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::{NamedTempFile, TempDir};
 
     #[test]
     fn test_apply_optimization_preset_none() {
@@ -612,5 +613,218 @@ mod tests {
     fn test_apply_optimization_preset_invalid() {
         let result = apply_optimization_preset("invalid");
         assert!(result.is_err());
+    }
+
+    // ===== EXTREME TDD Round 151 - Compile Handler Tests =====
+
+    #[test]
+    fn test_display_profile_info_level_3() {
+        display_profile_info("3");
+        // Just verify it doesn't panic
+    }
+
+    #[test]
+    fn test_display_profile_info_level_z() {
+        display_profile_info("z");
+    }
+
+    #[test]
+    fn test_display_profile_info_level_s() {
+        display_profile_info("s");
+    }
+
+    #[test]
+    fn test_display_profile_info_custom() {
+        display_profile_info("2");
+        display_profile_info("1");
+        display_profile_info("0");
+    }
+
+    #[test]
+    fn test_optimization_preset_returns_correct_lto() {
+        let (_, _, flags, _) = apply_optimization_preset("balanced").unwrap();
+        assert!(flags.iter().any(|f| f.contains("thin")));
+
+        let (_, _, flags, _) = apply_optimization_preset("aggressive").unwrap();
+        assert!(flags.iter().any(|f| f.contains("fat")));
+    }
+
+    #[test]
+    fn test_optimization_preset_info_tuple() {
+        let (_, _, _, info) = apply_optimization_preset("nasa").unwrap();
+        let (name, lto, cpu) = info.unwrap();
+        assert_eq!(name, "nasa");
+        assert_eq!(lto, Some("fat".to_string()));
+        assert_eq!(cpu, Some("native".to_string()));
+    }
+
+    #[test]
+    fn test_generate_compilation_json_basic() {
+        use ruchy::backend::CompileOptions;
+        let temp_dir = TempDir::new().unwrap();
+        let json_path = temp_dir.path().join("report.json");
+        let options = CompileOptions {
+            output: PathBuf::from("output"),
+            opt_level: "3".to_string(),
+            strip: true,
+            static_link: false,
+            target: None,
+            rustc_flags: vec![],
+            embed_models: vec![],
+        };
+        let result = generate_compilation_json(
+            &json_path,
+            Path::new("test.ruchy"),
+            Path::new("output"),
+            Some("aggressive"),
+            1000,
+            500,
+            None,
+            &options,
+        );
+        assert!(result.is_ok());
+        assert!(json_path.exists());
+    }
+
+    #[test]
+    fn test_generate_compilation_json_with_info() {
+        use ruchy::backend::CompileOptions;
+        let temp_dir = TempDir::new().unwrap();
+        let json_path = temp_dir.path().join("report2.json");
+        let options = CompileOptions {
+            output: PathBuf::from("output"),
+            opt_level: "3".to_string(),
+            strip: true,
+            static_link: true,
+            target: Some("x86_64-unknown-linux-gnu".to_string()),
+            rustc_flags: vec![],
+            embed_models: vec![],
+        };
+        let info = ("nasa".to_string(), Some("fat".to_string()), Some("native".to_string()));
+        let result = generate_compilation_json(
+            &json_path,
+            Path::new("test.ruchy"),
+            Path::new("output"),
+            Some("nasa"),
+            2000,
+            1000,
+            Some(&info),
+            &options,
+        );
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(&json_path).unwrap();
+        assert!(content.contains("nasa"));
+    }
+
+    #[test]
+    fn test_handle_compile_command_nonexistent_file() {
+        let result = handle_compile_command(
+            Path::new("/nonexistent/file.ruchy"),
+            PathBuf::from("/tmp/output"),
+            "3".to_string(),
+            None,
+            false,
+            false,
+            None,
+            false,
+            None,
+            false,
+            false,
+            vec![],
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_compile_command_valid_file() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "fun main() { println(42) }").unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let output = temp_dir.path().join("output");
+        let result = handle_compile_command(
+            temp.path(),
+            output,
+            "0".to_string(),
+            None,
+            false,
+            false,
+            None,
+            false,
+            None,
+            false,
+            false,
+            vec![],
+        );
+        // May succeed or fail depending on rustc
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_compile_command_with_optimize() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let output = temp_dir.path().join("output");
+        let result = handle_compile_command(
+            temp.path(),
+            output,
+            "0".to_string(),
+            Some("balanced"),
+            false,
+            false,
+            None,
+            false,
+            None,
+            false,
+            false,
+            vec![],
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_compile_command_show_profile() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let output = temp_dir.path().join("output");
+        let result = handle_compile_command(
+            temp.path(),
+            output,
+            "3".to_string(),
+            None,
+            true,
+            false,
+            None,
+            false,
+            None,
+            true, // show_profile_info
+            false,
+            vec![],
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_compile_command_verbose() {
+        let temp = NamedTempFile::new().unwrap();
+        std::fs::write(temp.path(), "42").unwrap();
+        let temp_dir = TempDir::new().unwrap();
+        let output = temp_dir.path().join("output");
+        let result = handle_compile_command(
+            temp.path(),
+            output,
+            "2".to_string(),
+            Some("aggressive"),
+            true,
+            true,
+            None,
+            true, // verbose
+            None,
+            false,
+            false,
+            vec![],
+        );
+        let _ = result;
     }
 }

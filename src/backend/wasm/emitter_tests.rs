@@ -1070,6 +1070,284 @@ fn test_emit_less_or_equal() {
     assert!(bytes.contains(&0x4c));
 }
 
+// ============== EXTREME TDD Round 123: Additional WASM Tests ==============
+
+#[test]
+fn test_emit_division() {
+    let code = "10 / 2";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+    let bytes = result.expect("operation should succeed");
+    // Should contain i32.div_s instruction (0x6d)
+    assert!(bytes.contains(&0x6d));
+}
+
+#[test]
+fn test_emit_modulo() {
+    let code = "10 % 3";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+    let bytes = result.expect("operation should succeed");
+    // Should contain i32.rem_s instruction (0x6f)
+    assert!(bytes.contains(&0x6f));
+}
+
+#[test]
+fn test_emit_logical_and() {
+    let code = "true && false";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_logical_or() {
+    let code = "true || false";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_unary_negate() {
+    let code = "-42";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_unary_not() {
+    let code = "!true";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_greater_than() {
+    let code = "10 > 5";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+    let bytes = result.expect("operation should succeed");
+    // Should contain i32.gt_s instruction (0x4a)
+    assert!(bytes.contains(&0x4a));
+}
+
+#[test]
+fn test_emit_less_than() {
+    let code = "5 < 10";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+    let bytes = result.expect("operation should succeed");
+    // Should contain i32.lt_s instruction (0x48)
+    assert!(bytes.contains(&0x48));
+}
+
+#[test]
+fn test_emit_nested_function_calls() {
+    let code = "fun f(x) { x + 1 }; f(f(1))";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_multiple_functions() {
+    let code = "fun a() { 1 }; fun b() { 2 }; a() + b()";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_empty_block() {
+    let code = "{ }";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_block_with_expressions() {
+    let code = "{ 1; 2; 3 }";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+// === EXTREME TDD Round 124 tests ===
+
+#[test]
+fn test_emit_comparison_equal() {
+    let code = "1 == 1";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+    let bytes = result.expect("should succeed");
+    assert!(!bytes.is_empty());
+}
+
+#[test]
+fn test_emit_comparison_not_equal() {
+    let code = "1 != 2";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_float_literal_r124() {
+    let code = "3.14159";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_float_addition() {
+    let code = "1.5 + 2.5";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_bool_true() {
+    let code = "true";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_bool_false() {
+    let code = "false";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_unary_negate_r124() {
+    let code = "-42";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_unary_not_r124() {
+    let code = "!true";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_parenthesized_expr() {
+    let code = "(1 + 2) * 3";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_nested_function_calls_r124() {
+    let code = "fun f(x) { x + 1 }; f(f(1))";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_function_multiple_params() {
+    let code = "fun triple(a, b, c) { a + b + c }; triple(1, 2, 3)";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_if_expression() {
+    let code = "if true { 1 } else { 0 }";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_large_integer_r124() {
+    let code = "999999999";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_emit_negative_integer_r124() {
+    let code = "-999";
+    let mut parser = Parser::new(code);
+    let ast = parser.parse().expect("should parse");
+    let emitter = WasmEmitter::new();
+    let result = emitter.emit(&ast);
+    assert!(result.is_ok());
+}
+
 #[cfg(test)]
 mod property_tests_mod {
 use proptest::proptest;
@@ -1087,4 +1365,351 @@ proptest! {
         });
     }
 }
+}
+
+// ============================================================================
+// EXTREME TDD Round 157: Additional WASM emitter tests
+// Target: Push coverage further
+// ============================================================================
+#[cfg(test)]
+mod round_157_wasm_tests {
+    use super::*;
+    use crate::frontend::parser::Parser;
+
+    #[test]
+    fn test_emit_large_integer() {
+        let code = "2147483647";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_negative_integer() {
+        let code = "-2147483647";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_zero() {
+        let code = "0";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_small_float() {
+        let code = "0.001";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_large_float() {
+        let code = "1e38";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_negative_float() {
+        let code = "-3.14";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_simple_let_chain() {
+        let code = "let a = 1; let b = 2; let c = 3; a + b + c";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_let_with_computation() {
+        let code = "let x = 10 * 5; let y = x + 3; y * 2";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_nested_if() {
+        let code = "if true { if false { 1 } else { 2 } } else { 3 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_if_with_comparison() {
+        let code = "if 5 > 3 { 100 } else { 200 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_if_with_logical_and() {
+        let code = "if true && false { 1 } else { 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_if_with_logical_or() {
+        let code = "if true || false { 1 } else { 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_function_no_params() {
+        let code = "fun answer() { 42 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_function_one_param() {
+        let code = "fun double(x) { x * 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_function_two_params() {
+        let code = "fun add(a, b) { a + b }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_function_call() {
+        let code = "fun id(x) { x }; id(42)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_function_with_local_var() {
+        let code = "fun compute() { let x = 10; x * 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_while_break() {
+        let code = "while true { break }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_while_with_counter() {
+        let code = "let mut i = 0; while i < 10 { i = i + 1 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_block_single_expr() {
+        let code = "{ 42 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_block_multiple_expr() {
+        let code = "{ 1; 2; 3; 4; 5 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_deeply_nested_blocks() {
+        let code = "{ { { { 42 } } } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_subtraction() {
+        let code = "100 - 57";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+        let bytes = result.expect("should succeed");
+        // Should contain i32.sub instruction (0x6b)
+        assert!(bytes.contains(&0x6b));
+    }
+
+    #[test]
+    fn test_emit_complex_arithmetic() {
+        let code = "(1 + 2) * (3 - 4) / 5";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_chained_comparisons() {
+        let code = "1 < 2 && 2 < 3 && 3 < 4";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_list_integers() {
+        let code = "[1, 2, 3, 4, 5]";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_list_empty() {
+        let code = "[]";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_tuple_integers() {
+        let code = "(1, 2, 3)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_tuple_mixed() {
+        let code = "(1, true, 3.14)";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_collect_functions_multiple() {
+        let emitter = WasmEmitter::new();
+        let code = r#"
+            fun foo() { 1 }
+            fun bar() { 2 }
+            fun baz() { 3 }
+        "#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let funcs = emitter.collect_functions(&ast);
+        assert_eq!(funcs.len(), 3);
+    }
+
+    #[test]
+    fn test_collect_functions_none() {
+        let emitter = WasmEmitter::new();
+        let code = "1 + 2";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let funcs = emitter.collect_functions(&ast);
+        assert!(funcs.is_empty());
+    }
+
+    #[test]
+    fn test_emit_mutable_assignment() {
+        let code = "let mut x = 1; x = 2; x";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_emit_function_with_if() {
+        let code = "fun max(a, b) { if a > b { a } else { b } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("should parse");
+        let emitter = WasmEmitter::new();
+        let result = emitter.emit(&ast);
+        assert!(result.is_ok());
+    }
 }

@@ -252,10 +252,157 @@ mod tests {
     #[test]
     fn test_generate_cell_id() {
         let id1 = generate_cell_id();
-        let id2 = generate_cell_id();
         assert!(id1.starts_with("cell_"));
+        // Add small delay to ensure different timestamps
+        std::thread::sleep(std::time::Duration::from_micros(10));
+        let id2 = generate_cell_id();
         assert!(id2.starts_with("cell_"));
         // IDs should be different (timing-based)
         assert_ne!(id1, id2);
+    }
+
+    // ===== EXTREME TDD Round 143 - Additional Coverage Tests =====
+
+    #[test]
+    fn test_add_multiple_code_cells() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        let id1 = runtime.add_cell("code", "let a = 1");
+        let id2 = runtime.add_cell("code", "let b = 2");
+        let id3 = runtime.add_cell("code", "a + b");
+        assert!(id1.starts_with("cell_"));
+        assert!(id2.starts_with("cell_"));
+        assert!(id3.starts_with("cell_"));
+        assert_eq!(runtime.cell_count(), 3);
+    }
+
+    #[test]
+    fn test_mixed_cell_types() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "let x = 10");
+        runtime.add_cell("markdown", "# Section 1");
+        runtime.add_cell("code", "x * 2");
+        runtime.add_cell("markdown", "Some notes");
+        assert_eq!(runtime.cell_count(), 4);
+    }
+
+    #[test]
+    fn test_execute_multiple_code_cells_sequentially() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "let x = 5");
+        runtime.add_cell("code", "let y = 3");
+        runtime.add_cell("code", "x * y");
+
+        runtime.execute_cell("0");
+        runtime.execute_cell("1");
+        let output = runtime.execute_cell("2");
+
+        assert_eq!(output, "15");
+        assert_eq!(runtime.execution_count(), 3);
+    }
+
+    #[test]
+    fn test_to_json_multiple_cells() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "1 + 1");
+        runtime.add_cell("markdown", "# Header");
+        runtime.add_cell("code", "2 * 2");
+
+        let json = runtime.to_json();
+        assert!(json.contains("cells"));
+        assert!(json.contains("1 + 1"));
+        assert!(json.contains("# Header"));
+        assert!(json.contains("2 * 2"));
+    }
+
+    #[test]
+    fn test_clear_resets_execution_count() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "1");
+        runtime.add_cell("code", "2");
+        runtime.execute_cell("0");
+        runtime.execute_cell("1");
+
+        assert_eq!(runtime.execution_count(), 2);
+        runtime.clear();
+        assert_eq!(runtime.execution_count(), 0);
+        assert_eq!(runtime.cell_count(), 0);
+    }
+
+    #[test]
+    fn test_get_cell_output_after_execution() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "100");
+        runtime.execute_cell("0");
+
+        let output = runtime.get_cell_output("0");
+        assert!(output.is_some());
+        assert_eq!(output.unwrap(), "100");
+    }
+
+    #[test]
+    fn test_get_cell_output_nonexistent() {
+        let runtime = NotebookRuntime::new().unwrap();
+        let output = runtime.get_cell_output("nonexistent");
+        assert!(output.is_none());
+    }
+
+    #[test]
+    fn test_find_cell_index_by_number() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "a");
+        runtime.add_cell("code", "b");
+        runtime.add_cell("code", "c");
+
+        // Direct index access
+        let idx = runtime.find_cell_index("1");
+        assert_eq!(idx, Some(1));
+    }
+
+    #[test]
+    fn test_find_cell_index_out_of_range() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "test");
+
+        let idx = runtime.find_cell_index("100");
+        assert!(idx.is_none());
+    }
+
+    #[test]
+    fn test_execute_cell_updates_output() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "42");
+
+        let output = runtime.execute_cell("0");
+        assert_eq!(output, "42");
+
+        // Check output is stored
+        assert!(runtime.cell_outputs.contains_key("0"));
+    }
+
+    #[test]
+    fn test_cell_type_default_to_code() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        // Unknown type should default to code
+        runtime.add_cell("unknown_type", "let x = 1");
+        runtime.add_cell("random", "let y = 2");
+
+        assert_eq!(runtime.cell_count(), 2);
+        // Should execute as code
+        let output = runtime.execute_cell("0");
+        assert!(!output.contains("Error") || output.contains("undefined"));
+    }
+
+    #[test]
+    fn test_execution_count_increments_on_code_only() {
+        let mut runtime = NotebookRuntime::new().unwrap();
+        runtime.add_cell("code", "1");
+        runtime.add_cell("markdown", "# Note");
+        runtime.add_cell("code", "2");
+
+        runtime.execute_cell("0");
+        runtime.execute_cell("1"); // markdown doesn't increment
+        runtime.execute_cell("2");
+
+        assert_eq!(runtime.execution_count(), 2);
     }
 }

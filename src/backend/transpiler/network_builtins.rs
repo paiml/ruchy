@@ -1,11 +1,13 @@
 //! Network and Data Format Built-in Function Transpilation
 //!
 //! This module handles transpilation of network and data format functions:
-//! - JSON: json_parse, json_stringify, json_pretty, json_read, json_write,
-//!         json_validate, json_type, json_merge, json_get, json_set
-//! - HTTP: http_get, http_post, http_put, http_delete
+//! - JSON: `json_parse`, `json_stringify`, `json_pretty`, `json_read`, `json_write`,
+//!   `json_validate`, `json_type`, `json_merge`, `json_get`, `json_set`
+//! - HTTP: `http_get`, `http_post`, `http_put`, `http_delete`
 //!
 //! **EXTREME TDD Round 62**: Extracted from statements.rs for modularization.
+
+#![allow(clippy::doc_markdown)]
 
 use super::Transpiler;
 use crate::frontend::ast::Expr;

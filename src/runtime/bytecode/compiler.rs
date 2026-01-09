@@ -1754,4 +1754,156 @@ mod tests {
         assert!(jump_found, "Should have Jump instruction");
         assert!(result_reg < 10);
     }
+
+    // ===== EXTREME TDD Round 116 - Additional Tests =====
+
+    #[test]
+    fn test_compile_boolean_true() {
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        assert!(result_reg < 10);
+        assert!(!chunk.constants.is_empty());
+    }
+
+    #[test]
+    fn test_compile_boolean_false() {
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        assert!(result_reg < 10);
+        assert!(!chunk.constants.is_empty());
+    }
+
+    #[test]
+    fn test_compile_float_literal_pi() {
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Float(3.14)),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        assert!(result_reg < 10);
+        assert!(!chunk.constants.is_empty());
+        // Verify constant is a float
+        match &chunk.constants[0] {
+            Value::Float(f) => assert!((*f - 3.14).abs() < 0.001),
+            _ => panic!("Expected float constant"),
+        }
+    }
+
+    #[test]
+    fn test_compile_nil_literal() {
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Null),
+            crate::frontend::ast::Span::default(),
+        );
+
+        let result_reg = compiler.compile_expr(&expr).expect("Compilation failed");
+        let chunk = compiler.finalize();
+
+        assert!(result_reg < 10);
+        // Should have nil constant
+        assert!(chunk.constants.iter().any(|c| matches!(c, Value::Nil)));
+    }
+
+    #[test]
+    fn test_register_allocator_many_allocations() {
+        let mut allocator = RegisterAllocator::new();
+
+        // Allocate many registers
+        let registers: Vec<u8> = (0..100).map(|_| allocator.allocate()).collect();
+
+        assert_eq!(allocator.max_count(), 100);
+        assert_eq!(registers[0], 0);
+        assert_eq!(registers[99], 99);
+    }
+
+    #[test]
+    fn test_register_allocator_free_all_reuse() {
+        let mut allocator = RegisterAllocator::new();
+
+        // Allocate 10 registers
+        let registers: Vec<u8> = (0..10).map(|_| allocator.allocate()).collect();
+
+        // Free all in reverse order
+        for r in registers.into_iter().rev() {
+            allocator.free(r);
+        }
+
+        // Reallocate should reuse
+        let r0 = allocator.allocate();
+        assert_eq!(r0, 0);
+        assert_eq!(allocator.max_count(), 10, "Max count should remain 10");
+    }
+
+    #[test]
+    fn test_values_equal_integers() {
+        assert!(values_equal(&Value::Integer(42), &Value::Integer(42)));
+        assert!(!values_equal(&Value::Integer(42), &Value::Integer(43)));
+    }
+
+    #[test]
+    fn test_values_equal_floats() {
+        assert!(values_equal(&Value::Float(3.14), &Value::Float(3.14)));
+        assert!(!values_equal(&Value::Float(3.14), &Value::Float(2.71)));
+    }
+
+    #[test]
+    fn test_values_equal_bools() {
+        assert!(values_equal(&Value::Bool(true), &Value::Bool(true)));
+        assert!(values_equal(&Value::Bool(false), &Value::Bool(false)));
+        assert!(!values_equal(&Value::Bool(true), &Value::Bool(false)));
+    }
+
+    #[test]
+    fn test_values_equal_nil() {
+        assert!(values_equal(&Value::Nil, &Value::Nil));
+    }
+
+    #[test]
+    fn test_values_equal_different_types() {
+        assert!(!values_equal(&Value::Integer(42), &Value::Float(42.0)));
+        assert!(!values_equal(&Value::Bool(true), &Value::Integer(1)));
+        assert!(!values_equal(&Value::Nil, &Value::Integer(0)));
+    }
+
+    #[test]
+    fn test_bytecode_chunk_name() {
+        let chunk = BytecodeChunk::new("my_function".to_string());
+        assert_eq!(chunk.name, "my_function");
+        assert!(chunk.constants.is_empty());
+        assert!(chunk.instructions.is_empty());
+    }
+
+    #[test]
+    fn test_constant_pool_different_types() {
+        let mut chunk = BytecodeChunk::new("test".to_string());
+
+        let int_idx = chunk.add_constant(Value::Integer(42));
+        let float_idx = chunk.add_constant(Value::Float(3.14));
+        let bool_idx = chunk.add_constant(Value::Bool(true));
+        let nil_idx = chunk.add_constant(Value::Nil);
+
+        assert_ne!(int_idx, float_idx);
+        assert_ne!(float_idx, bool_idx);
+        assert_ne!(bool_idx, nil_idx);
+        assert_eq!(chunk.constants.len(), 4);
+    }
 }

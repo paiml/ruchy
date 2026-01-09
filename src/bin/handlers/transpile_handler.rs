@@ -173,4 +173,96 @@ mod tests {
         log_transpile_start(file, false, true);
         log_transpile_start(file, true, false);
     }
+
+    // ===== EXTREME TDD Round 152 - Transpile Handler Tests =====
+
+    #[test]
+    fn test_derive_default_output_path_nested() {
+        let path = Path::new("/path/to/nested/script.ruchy");
+        let output = derive_default_output_path(path);
+        assert_eq!(output, Some(PathBuf::from("/path/to/nested/script.rs")));
+    }
+
+    #[test]
+    fn test_derive_default_output_path_current_dir() {
+        let path = Path::new("./script.ruchy");
+        let output = derive_default_output_path(path);
+        assert_eq!(output, Some(PathBuf::from("./script.rs")));
+    }
+
+    #[test]
+    fn test_read_source_file_nonexistent() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = read_source_file(path, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_read_source_file_verbose_nonexistent() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = read_source_file(path, true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_parse_source_empty() {
+        let source = "";
+        let result = parse_source(source);
+        assert!(result.is_ok()); // Empty source is valid (produces unit)
+    }
+
+    #[test]
+    fn test_parse_source_function() {
+        let source = "fun add(a, b) { a + b }";
+        let result = parse_source(source);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_ast_with_function() {
+        let source = "fun greet(name) { println(name) }";
+        let ast = parse_source(source).unwrap();
+        let rust_code = transpile_ast(&ast, false);
+        assert!(rust_code.is_ok());
+        let code = rust_code.unwrap();
+        assert!(code.contains("fn greet"));
+    }
+
+    #[test]
+    fn test_handle_transpile_command_nonexistent() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_transpile_command(path, None, false, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_transpile_command_verbose_nonexistent() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_transpile_command(path, None, false, true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_write_output_to_stdout() {
+        let rust_code = "fn main() {}";
+        let result = write_output(rust_code, None, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_output_to_explicit_stdout() {
+        let rust_code = "fn main() {}";
+        let result = write_output(rust_code, Some(Path::new("-")), false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_log_transpile_start_all_combinations() {
+        let file = Path::new("test.ruchy");
+        // All 4 combinations
+        log_transpile_start(file, false, false);
+        log_transpile_start(file, true, false);
+        log_transpile_start(file, false, true);
+        log_transpile_start(file, true, true);
+    }
 }

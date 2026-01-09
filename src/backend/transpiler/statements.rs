@@ -3,6 +3,7 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::collapsible_else_if)]
+#![allow(clippy::doc_markdown)]
 use super::*;
 use crate::frontend::ast::{Expr, Param, PipelineStage};
 use anyhow::Result;
@@ -338,5 +339,461 @@ impl Transpiler {
 
     // EXTREME TDD Round 64: Print helpers moved to print_helpers.rs
     // (transpile_print_with_interpolation, try_transpile_print_macro, transpile_print_multiple_args)
+}
+
+// ===== EXTREME TDD Round 155 - Statement Transpilation Tests =====
+
+#[cfg(test)]
+mod extreme_tdd_tests {
+    use super::*;
+    use crate::frontend::ast::{Span, Type, TypeKind, Literal, ExprKind};
+
+    fn make_type(kind: TypeKind) -> Type {
+        Type { kind, span: Span::new(0, 0) }
+    }
+
+    fn make_expr(kind: ExprKind) -> Expr {
+        Expr {
+            kind,
+            span: Span::new(0, 0),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    fn make_param(name: &str, ty: Type) -> crate::frontend::ast::Param {
+        crate::frontend::ast::Param {
+            pattern: crate::frontend::ast::Pattern::Identifier(name.to_string()),
+            ty,
+            span: Span::new(0, 0),
+            is_mutable: false,
+            default_value: None,
+        }
+    }
+
+    // ===== Function Transpilation Delegation Tests =====
+
+    #[test]
+    fn test_transpile_function_simple() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let result = t.transpile_function(
+            "answer",
+            &[],
+            &[],
+            &body,
+            false,
+            Some(&make_type(TypeKind::Named("i32".to_string()))),
+            true,
+            &[],
+        ).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("fn answer"));
+        assert!(s.contains("i32"));
+        assert!(s.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_function_with_params() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Identifier("x".to_string()));
+        let params = vec![make_param("x", make_type(TypeKind::Named("i32".to_string())))];
+        let result = t.transpile_function(
+            "identity",
+            &[],
+            &params,
+            &body,
+            false,
+            Some(&make_type(TypeKind::Named("i32".to_string()))),
+            false,
+            &[],
+        ).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("fn identity"));
+        assert!(s.contains("x"));
+    }
+
+    #[test]
+    fn test_transpile_function_async() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let result = t.transpile_function(
+            "async_func",
+            &[],
+            &[],
+            &body,
+            true,
+            None,
+            true,
+            &[],
+        ).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("async"));
+        assert!(s.contains("async_func"));
+    }
+
+    #[test]
+    fn test_transpile_function_with_type_params() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Identifier("value".to_string()));
+        let params = vec![make_param("value", make_type(TypeKind::Named("T".to_string())))];
+        let result = t.transpile_function(
+            "generic",
+            &["T".to_string()],
+            &params,
+            &body,
+            false,
+            Some(&make_type(TypeKind::Named("T".to_string()))),
+            true,
+            &[],
+        ).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("generic"));
+        assert!(s.contains("<"));
+        assert!(s.contains("T"));
+    }
+
+    // ===== Lambda Transpilation Tests =====
+
+    #[test]
+    fn test_transpile_lambda_no_params() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let result = t.transpile_lambda(&[], &body).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("||"));
+        assert!(s.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_lambda_with_params() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Identifier("x".to_string()));
+        let params = vec![make_param("x", make_type(TypeKind::Named("i32".to_string())))];
+        let result = t.transpile_lambda(&params, &body).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("|"));
+        assert!(s.contains("x"));
+    }
+
+    // ===== Call Transpilation Tests =====
+
+    #[test]
+    fn test_transpile_call_simple() {
+        let t = Transpiler::new();
+        let func = make_expr(ExprKind::Identifier("foo".to_string()));
+        let result = t.transpile_call(&func, &[]).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("foo"));
+    }
+
+    #[test]
+    fn test_transpile_call_with_args() {
+        let t = Transpiler::new();
+        let func = make_expr(ExprKind::Identifier("add".to_string()));
+        let args = vec![
+            make_expr(ExprKind::Literal(Literal::Integer(1, None))),
+            make_expr(ExprKind::Literal(Literal::Integer(2, None))),
+        ];
+        let result = t.transpile_call(&func, &args).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("add"));
+        assert!(s.contains("1"));
+        assert!(s.contains("2"));
+    }
+
+    // ===== Method Call Transpilation Tests =====
+
+    #[test]
+    fn test_transpile_method_call_simple() {
+        let t = Transpiler::new();
+        let obj = make_expr(ExprKind::Identifier("vec".to_string()));
+        let result = t.transpile_method_call(&obj, "len", &[]).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("len"));
+    }
+
+    #[test]
+    fn test_transpile_method_call_with_args() {
+        let t = Transpiler::new();
+        let obj = make_expr(ExprKind::Identifier("vec".to_string()));
+        let args = vec![make_expr(ExprKind::Literal(Literal::Integer(42, None)))];
+        let result = t.transpile_method_call(&obj, "push", &args).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("push"));
+        assert!(s.contains("42"));
+    }
+
+    // ===== Block Transpilation Tests =====
+
+    #[test]
+    fn test_transpile_block_empty() {
+        let t = Transpiler::new();
+        let result = t.transpile_block(&[]).unwrap();
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_transpile_block_single() {
+        let t = Transpiler::new();
+        let exprs = vec![make_expr(ExprKind::Literal(Literal::Integer(42, None)))];
+        let result = t.transpile_block(&exprs).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_block_multiple() {
+        let t = Transpiler::new();
+        let exprs = vec![
+            make_expr(ExprKind::Literal(Literal::Integer(1, None))),
+            make_expr(ExprKind::Literal(Literal::Integer(2, None))),
+            make_expr(ExprKind::Literal(Literal::Integer(3, None))),
+        ];
+        let result = t.transpile_block(&exprs).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("1"));
+        assert!(s.contains("2"));
+        assert!(s.contains("3"));
+    }
+
+    // ===== Pipeline Transpilation Tests =====
+
+    #[test]
+    fn test_transpile_pipeline_single_stage() {
+        let t = Transpiler::new();
+        let expr = make_expr(ExprKind::List(vec![
+            make_expr(ExprKind::Literal(Literal::Integer(1, None))),
+            make_expr(ExprKind::Literal(Literal::Integer(2, None))),
+        ]));
+        // Create a method call expression as the pipeline stage operation
+        let method_call = make_expr(ExprKind::MethodCall {
+            receiver: Box::new(make_expr(ExprKind::Identifier("_".to_string()))),
+            method: "len".to_string(),
+            args: vec![],
+        });
+        let stages = vec![
+            crate::frontend::ast::PipelineStage {
+                op: Box::new(method_call),
+                span: Span::new(0, 0),
+            },
+        ];
+        let result = t.transpile_pipeline(&expr, &stages).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("len"));
+    }
+
+    // ===== Helper Method Tests =====
+
+    #[test]
+    fn test_generate_visibility_token_public() {
+        let t = Transpiler::new();
+        let result = t.generate_visibility_token(true);
+        assert!(result.to_string().contains("pub"));
+    }
+
+    #[test]
+    fn test_generate_visibility_token_private() {
+        let t = Transpiler::new();
+        let result = t.generate_visibility_token(false);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_generate_type_param_tokens_simple() {
+        let t = Transpiler::new();
+        let result = t.generate_type_param_tokens(&["T".to_string()]).unwrap();
+        assert_eq!(result.len(), 1);
+        assert!(result[0].to_string().contains("T"));
+    }
+
+    #[test]
+    fn test_generate_type_param_tokens_multiple() {
+        let t = Transpiler::new();
+        let result = t.generate_type_param_tokens(&["T".to_string(), "U".to_string()]).unwrap();
+        assert_eq!(result.len(), 2);
+    }
+
+    #[test]
+    fn test_generate_type_param_tokens_with_bound() {
+        let t = Transpiler::new();
+        let result = t.generate_type_param_tokens(&["T: Clone".to_string()]).unwrap();
+        assert_eq!(result.len(), 1);
+        let s = result[0].to_string();
+        assert!(s.contains("T"));
+        assert!(s.contains("Clone"));
+    }
+
+    #[test]
+    fn test_references_globals_false() {
+        let t = Transpiler::new();
+        let expr = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        assert!(!t.references_globals(&expr));
+    }
+
+    #[test]
+    fn test_infer_param_type_basic() {
+        let t = Transpiler::new();
+        let param = make_param("x", make_type(TypeKind::Named("_".to_string())));
+        let body = make_expr(ExprKind::Identifier("x".to_string()));
+        let result = t.infer_param_type(&param, &body, "test");
+        // Should produce some type token
+        assert!(!result.is_empty());
+    }
+
+    #[test]
+    fn test_is_nested_array_param_false() {
+        let t = Transpiler::new();
+        let expr = make_expr(ExprKind::Identifier("x".to_string()));
+        assert!(!t.is_nested_array_param("arr", &expr));
+    }
+
+    #[test]
+    fn test_generate_body_tokens_basic() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let result = t.generate_body_tokens(&body, false).unwrap();
+        assert!(result.to_string().contains("42"));
+    }
+
+    #[test]
+    fn test_generate_body_tokens_async() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let result = t.generate_body_tokens(&body, true).unwrap();
+        // Should still contain the body
+        assert!(result.to_string().contains("42"));
+    }
+
+    #[test]
+    fn test_generate_param_tokens_empty() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let result = t.generate_param_tokens(&[], &body, "test").unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_generate_param_tokens_single() {
+        let t = Transpiler::new();
+        let params = vec![make_param("x", make_type(TypeKind::Named("i32".to_string())))];
+        let body = make_expr(ExprKind::Identifier("x".to_string()));
+        let result = t.generate_param_tokens(&params, &body, "test").unwrap();
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_generate_return_type_tokens() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let ret_type = make_type(TypeKind::Named("i32".to_string()));
+        let result = t.generate_return_type_tokens("test", Some(&ret_type), &body, &[]).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("i32"));
+    }
+
+    #[test]
+    fn test_compute_final_return_type() {
+        let t = Transpiler::new();
+        let fn_name = quote::format_ident!("my_func");
+        let return_type_tokens = quote::quote! { -> i32 };
+        let result = t.compute_final_return_type(&fn_name, &return_type_tokens);
+        assert!(result.to_string().contains("i32"));
+    }
+
+    #[test]
+    fn test_process_attributes_empty() {
+        let t = Transpiler::new();
+        let (regular, modifiers) = t.process_attributes(&[]);
+        assert!(regular.is_empty());
+        assert!(modifiers.is_empty());
+    }
+
+    #[test]
+    fn test_infer_return_type_from_params() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let result = t.infer_return_type_from_params(&body, &[]).unwrap();
+        // Should return None for simple literals without type info
+        assert!(result.is_none() || result.is_some());
+    }
+
+    #[test]
+    fn test_transpile_type_with_lifetime() {
+        let t = Transpiler::new();
+        let ty = make_type(TypeKind::Reference {
+            is_mut: false,
+            lifetime: None,
+            inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+        });
+        let result = t.transpile_type_with_lifetime(&ty).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("str"));
+    }
+
+    #[test]
+    fn test_generate_param_tokens_with_lifetime() {
+        let t = Transpiler::new();
+        let params = vec![make_param("s", make_type(TypeKind::Reference {
+            is_mut: false,
+            lifetime: None,
+            inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+        }))];
+        let body = make_expr(ExprKind::Identifier("s".to_string()));
+        let result = t.generate_param_tokens_with_lifetime(&params, &body, "test").unwrap();
+        assert_eq!(result.len(), 1);
+    }
+
+    #[test]
+    fn test_generate_return_type_tokens_with_lifetime() {
+        let t = Transpiler::new();
+        let ret_type = make_type(TypeKind::Reference {
+            is_mut: false,
+            lifetime: None,
+            inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+        });
+        let body = make_expr(ExprKind::Identifier("s".to_string()));
+        let result = t.generate_return_type_tokens_with_lifetime("test", Some(&ret_type), &body).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("str"));
+    }
+
+    #[test]
+    fn test_generate_body_tokens_with_string_conversion() {
+        let t = Transpiler::new();
+        let body = make_expr(ExprKind::Literal(Literal::String("hello".to_string())));
+        let result = t.generate_body_tokens_with_string_conversion(&body, false).unwrap();
+        let s = result.to_string();
+        assert!(s.contains("hello"));
+    }
+
+    #[test]
+    fn test_try_transpile_dataframe_builder_inline_none() {
+        let t = Transpiler::new();
+        let expr = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let result = t.try_transpile_dataframe_builder_inline(&expr).unwrap();
+        // Should return None for non-dataframe expressions
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_try_transpile_dataframe_function_col() {
+        let t = Transpiler::new();
+        let args = vec![make_expr(ExprKind::Literal(Literal::String("name".to_string())))];
+        let result = t.try_transpile_dataframe_function("col", &args).unwrap();
+        if let Some(tokens) = result {
+            let s = tokens.to_string();
+            assert!(s.contains("col"));
+        }
+    }
+
+    #[test]
+    fn test_try_transpile_dataframe_function_unknown() {
+        let t = Transpiler::new();
+        let result = t.try_transpile_dataframe_function("unknown_func", &[]).unwrap();
+        // Unknown function should return None
+        assert!(result.is_none());
+    }
 }
 

@@ -1360,4 +1360,250 @@ mod tests {
             panic!("Expected while expression");
         }
     }
+
+    // ===== EXTREME TDD Round 156 - Additional Inline Expander Tests =====
+
+    #[test]
+    fn test_estimate_body_size_empty_block() {
+        let block = Expr::new(ExprKind::Block(vec![]), Span::default());
+        assert_eq!(estimate_body_size(&block), 1);
+    }
+
+    #[test]
+    fn test_estimate_body_size_if_without_else() {
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(ident("cond")),
+                then_branch: Box::new(int_lit(1)),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        assert_eq!(estimate_body_size(&if_expr), 2); // 1 + then
+    }
+
+    #[test]
+    fn test_check_recursion_in_block() {
+        let block = Expr::new(
+            ExprKind::Block(vec![Expr::new(
+                ExprKind::Call {
+                    func: Box::new(ident("recurse")),
+                    args: vec![],
+                },
+                Span::default(),
+            )]),
+            Span::default(),
+        );
+        assert!(check_recursion("recurse", &block));
+    }
+
+    #[test]
+    fn test_check_recursion_in_let_value() {
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(ident("recurse")),
+                        args: vec![],
+                    },
+                    Span::default(),
+                )),
+                body: Box::new(ident("x")),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::default(),
+        );
+        assert!(check_recursion("recurse", &let_expr));
+    }
+
+    #[test]
+    fn test_check_recursion_in_return() {
+        let ret = Expr::new(
+            ExprKind::Return {
+                value: Some(Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(ident("factorial")),
+                        args: vec![int_lit(5)],
+                    },
+                    Span::default(),
+                ))),
+            },
+            Span::default(),
+        );
+        assert!(check_recursion("factorial", &ret));
+    }
+
+    #[test]
+    fn test_check_for_external_refs_call() {
+        use std::collections::HashSet;
+        let mut allowed = HashSet::new();
+        allowed.insert("x".to_string());
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(ident("foo")),
+                args: vec![ident("y")], // y is external
+            },
+            Span::default(),
+        );
+        assert!(check_for_external_refs(&call_expr, &allowed));
+    }
+
+    #[test]
+    fn test_check_for_external_refs_call_all_allowed() {
+        use std::collections::HashSet;
+        let mut allowed = HashSet::new();
+        allowed.insert("foo".to_string());
+        allowed.insert("x".to_string());
+        let call_expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(ident("foo")),
+                args: vec![ident("x")],
+            },
+            Span::default(),
+        );
+        assert!(!check_for_external_refs(&call_expr, &allowed));
+    }
+
+    #[test]
+    fn test_check_for_external_refs_if() {
+        use std::collections::HashSet;
+        let mut allowed = HashSet::new();
+        allowed.insert("cond".to_string());
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(ident("cond")),
+                then_branch: Box::new(ident("external")),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        assert!(check_for_external_refs(&if_expr, &allowed));
+    }
+
+    #[test]
+    fn test_check_for_external_refs_return() {
+        use std::collections::HashSet;
+        let mut allowed = HashSet::new();
+        allowed.insert("x".to_string());
+        let ret_expr = Expr::new(
+            ExprKind::Return {
+                value: Some(Box::new(ident("external"))),
+            },
+            Span::default(),
+        );
+        assert!(check_for_external_refs(&ret_expr, &allowed));
+    }
+
+    #[test]
+    fn test_inline_function_calls_let_else() {
+        let functions = HashMap::new();
+        let let_expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(5)),
+                body: Box::new(ident("x")),
+                is_mutable: false,
+                else_block: Some(Box::new(int_lit(0))),
+            },
+            Span::default(),
+        );
+        let result = inline_function_calls(let_expr, &functions);
+        assert!(matches!(result.kind, ExprKind::Let { .. }));
+    }
+
+    #[test]
+    fn test_inline_function_calls_if_with_else() {
+        let functions = HashMap::new();
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(ident("cond")),
+                then_branch: Box::new(int_lit(1)),
+                else_branch: Some(Box::new(int_lit(0))),
+            },
+            Span::default(),
+        );
+        let result = inline_function_calls(if_expr, &functions);
+        assert!(matches!(result.kind, ExprKind::If { .. }));
+    }
+
+    #[test]
+    fn test_collect_inline_candidates_function_with_global() {
+        let mut functions = HashMap::new();
+        let func = Expr::new(
+            ExprKind::Function {
+                name: "uses_global".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(ident("global_var")), // References global
+                return_type: None,
+                is_pub: false,
+                is_async: false,
+            },
+            Span::default(),
+        );
+        collect_inline_candidates(&func, &mut functions);
+        assert!(functions.is_empty()); // Should not inline function that uses global
+    }
+
+    #[test]
+    fn test_accesses_global_variables_if_condition() {
+        let params = vec![Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            },
+            span: Span::default(),
+            is_mutable: false,
+            default_value: None,
+        }];
+        let body = Expr::new(
+            ExprKind::If {
+                condition: Box::new(ident("global")), // global is external
+                then_branch: Box::new(ident("x")),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        assert!(accesses_global_variables(&params, &body));
+    }
+
+    #[test]
+    fn test_substitute_identifiers_non_matching() {
+        let subs = HashMap::new();
+        let expr = ident("x");
+        let result = substitute_identifiers(expr, &subs);
+        // Should return unchanged
+        assert!(matches!(result.kind, ExprKind::Identifier(name) if name == "x"));
+    }
+
+    #[test]
+    fn test_try_inline_call_not_identifier_func() {
+        let functions = HashMap::new();
+        let method_expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(ident("obj")),
+                field: "method".to_string(),
+            },
+            Span::default(),
+        );
+        let result = try_inline_call(&method_expr, &[], &functions);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_is_direct_recursion_true() {
+        let func_expr = ident("factorial");
+        assert!(is_direct_recursion("factorial", &func_expr));
+    }
+
+    #[test]
+    fn test_is_direct_recursion_false() {
+        let func_expr = ident("other_func");
+        assert!(!is_direct_recursion("factorial", &func_expr));
+    }
 }

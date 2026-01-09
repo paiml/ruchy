@@ -239,4 +239,123 @@ edition = "2021"
             "Multiple calls should have same result"
         );
     }
+
+    // ===== EXTREME TDD Round 152 - Add Handler Tests =====
+
+    #[test]
+    fn test_print_success_message_all_combinations() {
+        // All combinations of version and dev
+        print_success_message("pkg", None, false);
+        print_success_message("pkg", None, true);
+        print_success_message("pkg", Some("1.0"), false);
+        print_success_message("pkg", Some("1.0"), true);
+    }
+
+    #[test]
+    fn test_handle_add_command_no_cargo_toml() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        let result = handle_add_command("serde", None, false, false);
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Cargo.toml not found"));
+    }
+
+    #[test]
+    fn test_handle_add_command_verbose() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        let result = handle_add_command("serde", None, false, true);
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+
+        // Still fails without Cargo.toml, but verbose path is tested
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_add_command_dev_flag() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        let result = handle_add_command("proptest", Some("1.0"), true, false);
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_print_success_message_various_packages() {
+        let packages = ["serde", "tokio", "anyhow", "thiserror", "tracing"];
+        for pkg in &packages {
+            print_success_message(pkg, None, false);
+            print_success_message(pkg, Some("0.1"), true);
+        }
+    }
+
+    #[test]
+    fn test_print_success_message_version_formats() {
+        let versions = ["1.0", "^1.0", "~1.0", ">=1.0", "0.1.0-beta", "*"];
+        for ver in &versions {
+            print_success_message("pkg", Some(ver), false);
+        }
+    }
+
+    #[test]
+    fn test_verify_cargo_project_in_nested_dir() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        // Create nested directory without Cargo.toml
+        let nested = temp_dir.path().join("nested").join("deep");
+        fs::create_dir_all(&nested).expect("Failed to create nested dirs");
+        env::set_current_dir(&nested).expect("Failed to change dir");
+
+        let result = verify_cargo_project();
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_add_all_parameters() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        // Test all parameter combinations (will fail without Cargo.toml)
+        let _ = handle_add_command("pkg", None, false, false);
+        let _ = handle_add_command("pkg", None, true, false);
+        let _ = handle_add_command("pkg", Some("1"), false, true);
+        let _ = handle_add_command("pkg", Some("1"), true, true);
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+    }
+
+    #[test]
+    fn test_create_test_project_structure() {
+        let (temp_dir, project_path) = create_test_project();
+
+        let cargo_path = Path::new(&project_path).join("Cargo.toml");
+        assert!(cargo_path.exists(), "Cargo.toml should exist");
+
+        let content = fs::read_to_string(&cargo_path).expect("Should read");
+        assert!(content.contains("[package]"));
+        assert!(content.contains("test_project"));
+
+        drop(temp_dir);
+    }
 }

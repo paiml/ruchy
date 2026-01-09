@@ -194,6 +194,7 @@ pub fn execute_binary(binary_path: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::TempDir;
 
     #[test]
     fn test_vm_mode_values() {
@@ -223,5 +224,115 @@ mod tests {
         let file = Path::new("test.ruchy");
         log_run_start(file, true);
         log_run_start(file, false);
+    }
+
+    // ===== EXTREME TDD Round 149 - Run Handler Tests =====
+
+    #[test]
+    fn test_vm_mode_copy() {
+        let mode = VmMode::Bytecode;
+        let copied = mode;
+        assert_eq!(mode, copied);
+    }
+
+    #[test]
+    fn test_vm_mode_all_variants() {
+        let modes = [VmMode::Ast, VmMode::Bytecode];
+        assert_eq!(modes.len(), 2);
+    }
+
+    #[test]
+    fn test_log_run_start_various_paths() {
+        let paths = [
+            Path::new("simple.ruchy"),
+            Path::new("path/to/file.ruchy"),
+            Path::new("/absolute/path.ruchy"),
+        ];
+        for path in paths {
+            log_run_start(path, true);
+            log_run_start(path, false);
+        }
+    }
+
+    #[test]
+    fn test_transpile_for_execution_nonexistent() {
+        use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let ast = Expr {
+            kind: ExprKind::Literal(Literal::Integer(42, None)),
+            span: Span::new(0, 0),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpile_for_execution(&ast, Path::new("/test.ruchy"));
+        // May succeed or fail
+        let _ = result;
+    }
+
+    #[test]
+    fn test_prepare_compilation_basic() {
+        let result = prepare_compilation("fn main() {}", false);
+        if let Ok((temp_source, binary_path)) = result {
+            assert!(temp_source.path().exists());
+            // Binary path should not exist yet (not compiled)
+            let _ = binary_path;
+        }
+    }
+
+    #[test]
+    fn test_prepare_compilation_verbose() {
+        let result = prepare_compilation("fn main() { println!(\"test\"); }", true);
+        // Just verify it runs with verbose mode
+        let _ = result;
+    }
+
+    #[test]
+    fn test_compile_rust_code_invalid() {
+        let temp_dir = TempDir::new().unwrap();
+        let source_path = temp_dir.path().join("invalid.rs");
+        std::fs::write(&source_path, "invalid rust code !!!").unwrap();
+        let binary_path = temp_dir.path().join("output");
+        let result = compile_rust_code(&source_path, &binary_path);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_execute_binary_nonexistent() {
+        let result = execute_binary(Path::new("/nonexistent/binary"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_vm_mode_pattern_matching() {
+        let mode = VmMode::Ast;
+        let msg = match mode {
+            VmMode::Ast => "ast",
+            VmMode::Bytecode => "bytecode",
+        };
+        assert_eq!(msg, "ast");
+    }
+
+    #[test]
+    fn test_vm_mode_bytecode_pattern() {
+        let mode = VmMode::Bytecode;
+        let msg = match mode {
+            VmMode::Ast => "ast",
+            VmMode::Bytecode => "bytecode",
+        };
+        assert_eq!(msg, "bytecode");
+    }
+
+    #[test]
+    fn test_log_run_start_unicode_path() {
+        let path = Path::new("日本語/test.ruchy");
+        log_run_start(path, true);
+        log_run_start(path, false);
+    }
+
+    #[test]
+    fn test_log_run_start_empty_path() {
+        let path = Path::new("");
+        log_run_start(path, true);
+        log_run_start(path, false);
     }
 }

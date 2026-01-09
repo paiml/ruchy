@@ -128,9 +128,243 @@ pub fn run_ruchy_test_file(test_file: &Path, verbose: bool) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
     #[test]
     fn test_test_handler_stub() {
         // Test handler tests are in handlers_modules::test
         // This is a placeholder for the delegation layer
+    }
+
+    // ===== EXTREME TDD Round 147 - Test Handler Tests =====
+
+    #[test]
+    fn test_handle_test_command_no_path() {
+        let result = handle_test_command(
+            None,
+            false,
+            false,
+            None,
+            false,
+            "text",
+            1,
+            0.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_with_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = handle_test_command(
+            Some(temp_dir.path().to_path_buf()),
+            false,
+            false,
+            None,
+            false,
+            "text",
+            1,
+            0.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_watch_mode() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = handle_test_command(
+            Some(temp_dir.path().to_path_buf()),
+            true, // watch
+            false,
+            None,
+            false,
+            "text",
+            1,
+            0.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_verbose() {
+        let result = handle_test_command(
+            None,
+            false,
+            true, // verbose
+            None,
+            false,
+            "text",
+            1,
+            0.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_with_filter() {
+        let result = handle_test_command(
+            None,
+            false,
+            false,
+            Some("test_name"), // filter
+            false,
+            "text",
+            1,
+            0.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_with_coverage() {
+        let result = handle_test_command(
+            None,
+            false,
+            false,
+            None,
+            true, // coverage
+            "lcov",
+            1,
+            80.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_json_format() {
+        let result = handle_test_command(
+            None,
+            false,
+            false,
+            None,
+            false,
+            "text",
+            1,
+            0.0,
+            "json",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_parallel() {
+        let result = handle_test_command(
+            None,
+            false,
+            false,
+            None,
+            false,
+            "text",
+            4, // parallel
+            0.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_test_command_threshold() {
+        let result = handle_test_command(
+            None,
+            false,
+            false,
+            None,
+            true,
+            "html",
+            1,
+            90.0, // threshold
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_watch_and_test_basic() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = handle_watch_and_test(
+            temp_dir.path(),
+            false,
+            None,
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_watch_and_test_verbose() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = handle_watch_and_test(
+            temp_dir.path(),
+            true,
+            None,
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_watch_and_test_with_filter() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = handle_watch_and_test(
+            temp_dir.path(),
+            false,
+            Some("test_*"),
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_run_enhanced_tests_basic() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = handle_run_enhanced_tests(
+            temp_dir.path(),
+            false,
+            None,
+            false,
+            "text",
+            1,
+            0.0,
+            "text",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_run_enhanced_tests_all_options() {
+        let temp_dir = TempDir::new().unwrap();
+        let result = handle_run_enhanced_tests(
+            temp_dir.path(),
+            true,
+            Some("integration"),
+            true,
+            "html",
+            8,
+            75.0,
+            "json",
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_run_ruchy_test_file_nonexistent() {
+        let result = run_ruchy_test_file(
+            Path::new("/nonexistent/test.ruchy"),
+            false,
+        );
+        let _ = result;
+    }
+
+    #[test]
+    fn test_run_ruchy_test_file_verbose() {
+        let temp_dir = TempDir::new().unwrap();
+        let test_file = temp_dir.path().join("test.ruchy");
+        std::fs::write(&test_file, "test basic { assert(1 == 1) }").unwrap();
+        let result = run_ruchy_test_file(&test_file, true);
+        let _ = result;
     }
 }

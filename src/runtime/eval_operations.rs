@@ -1347,4 +1347,335 @@ mod tests {
         // Same Arc pointer for fields - should be equal
         assert!(equal_values(&class1, &class2));
     }
+
+    // === EXTREME TDD Round 137 - Push to 75+ Tests ===
+
+    #[test]
+    fn test_add_integers_negative() {
+        let result = add_values(&Value::Integer(-5), &Value::Integer(-3)).unwrap();
+        assert_eq!(result, Value::Integer(-8));
+    }
+
+    #[test]
+    fn test_sub_integers_negative() {
+        let result = sub_values(&Value::Integer(-5), &Value::Integer(-3)).unwrap();
+        assert_eq!(result, Value::Integer(-2));
+    }
+
+    #[test]
+    fn test_mul_integers_negative() {
+        let result = mul_values(&Value::Integer(-5), &Value::Integer(3)).unwrap();
+        assert_eq!(result, Value::Integer(-15));
+    }
+
+    #[test]
+    fn test_div_integers_exact() {
+        let result = div_values(&Value::Integer(10), &Value::Integer(2)).unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_div_floats() {
+        let result = div_values(&Value::Float(10.0), &Value::Float(4.0)).unwrap();
+        if let Value::Float(f) = result {
+            assert!((f - 2.5).abs() < f64::EPSILON);
+        } else {
+            panic!("Expected float");
+        }
+    }
+
+    #[test]
+    fn test_modulo_integers() {
+        let result = modulo_values(&Value::Integer(10), &Value::Integer(3)).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_modulo_integers_zero_remainder() {
+        let result = modulo_values(&Value::Integer(10), &Value::Integer(5)).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_equal_nil_values() {
+        assert!(equal_values(&Value::Nil, &Value::Nil));
+    }
+
+    #[test]
+    fn test_not_equal_nil_and_int() {
+        assert!(!equal_values(&Value::Nil, &Value::Integer(0)));
+    }
+
+    #[test]
+    fn test_less_than_floats() {
+        let result = less_than_values(&Value::Float(1.5), &Value::Float(2.5)).unwrap();
+        assert!(result);
+    }
+
+    #[test]
+    fn test_less_than_floats_equal() {
+        let result = less_than_values(&Value::Float(2.5), &Value::Float(2.5)).unwrap();
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_greater_than_integers() {
+        let result = greater_than_values(&Value::Integer(10), &Value::Integer(5)).unwrap();
+        assert!(result);
+    }
+
+    #[test]
+    fn test_greater_than_integers_equal() {
+        let result = greater_than_values(&Value::Integer(5), &Value::Integer(5)).unwrap();
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_equal_arrays() {
+        use std::sync::Arc;
+        let arr1 = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let arr2 = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        assert!(equal_values(&arr1, &arr2));
+    }
+
+    #[test]
+    fn test_not_equal_arrays_different_length() {
+        use std::sync::Arc;
+        let arr1 = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let arr2 = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        assert!(!equal_values(&arr1, &arr2));
+    }
+
+    // === EXTREME TDD Round 160 - Coverage Push Tests ===
+
+    #[test]
+    fn test_add_integer_overflow_r160() {
+        // Test large integers near boundary
+        let result = add_values(&Value::Integer(i64::MAX - 1), &Value::Integer(1)).unwrap();
+        assert_eq!(result, Value::Integer(i64::MAX));
+    }
+
+    #[test]
+    fn test_add_floats_r160() {
+        let result = add_values(&Value::Float(1.5), &Value::Float(2.5)).unwrap();
+        assert_eq!(result, Value::Float(4.0));
+    }
+
+    #[test]
+    fn test_add_string_concat_r160() {
+        let result = add_values(
+            &Value::from_string("hello".to_string()),
+            &Value::from_string(" world".to_string()),
+        ).unwrap();
+        assert_eq!(result, Value::from_string("hello world".to_string()));
+    }
+
+    #[test]
+    fn test_sub_integers_r160() {
+        let result = sub_values(&Value::Integer(10), &Value::Integer(3)).unwrap();
+        assert_eq!(result, Value::Integer(7));
+    }
+
+    #[test]
+    fn test_sub_floats_r160() {
+        let result = sub_values(&Value::Float(5.5), &Value::Float(2.5)).unwrap();
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    #[test]
+    fn test_sub_negative_result_r160() {
+        let result = sub_values(&Value::Integer(3), &Value::Integer(10)).unwrap();
+        assert_eq!(result, Value::Integer(-7));
+    }
+
+    #[test]
+    fn test_mul_integers_r160() {
+        let result = mul_values(&Value::Integer(7), &Value::Integer(6)).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_mul_floats_r160() {
+        let result = mul_values(&Value::Float(2.5), &Value::Float(4.0)).unwrap();
+        assert_eq!(result, Value::Float(10.0));
+    }
+
+    #[test]
+    fn test_mul_zero_r160() {
+        let result = mul_values(&Value::Integer(12345), &Value::Integer(0)).unwrap();
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_div_integers_r160() {
+        let result = div_values(&Value::Integer(20), &Value::Integer(5)).unwrap();
+        assert_eq!(result, Value::Integer(4));
+    }
+
+    #[test]
+    fn test_div_floats_r160() {
+        let result = div_values(&Value::Float(10.0), &Value::Float(4.0)).unwrap();
+        assert_eq!(result, Value::Float(2.5));
+    }
+
+    #[test]
+    fn test_div_by_zero_integer_r160() {
+        let result = div_values(&Value::Integer(10), &Value::Integer(0));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_div_by_zero_float_r160() {
+        let result = div_values(&Value::Float(10.0), &Value::Float(0.0));
+        // Float division by zero returns infinity, not error
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_modulo_integers_r160() {
+        let result = modulo_values(&Value::Integer(17), &Value::Integer(5)).unwrap();
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_modulo_negative_r160() {
+        let result = modulo_values(&Value::Integer(-17), &Value::Integer(5)).unwrap();
+        assert_eq!(result, Value::Integer(-2));
+    }
+
+    #[test]
+    fn test_modulo_by_zero_r160() {
+        let result = modulo_values(&Value::Integer(10), &Value::Integer(0));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_negate_integer_r160() {
+        let result = eval_unary_op(UnaryOp::Negate, &Value::Integer(42)).unwrap();
+        assert_eq!(result, Value::Integer(-42));
+    }
+
+    #[test]
+    fn test_negate_float_r160() {
+        let result = eval_unary_op(UnaryOp::Negate, &Value::Float(3.14)).unwrap();
+        assert_eq!(result, Value::Float(-3.14));
+    }
+
+    #[test]
+    fn test_negate_already_negative_r160() {
+        let result = eval_unary_op(UnaryOp::Negate, &Value::Integer(-100)).unwrap();
+        assert_eq!(result, Value::Integer(100));
+    }
+
+    #[test]
+    fn test_not_bool_true_r160() {
+        let result = eval_unary_op(UnaryOp::Not, &Value::Bool(true)).unwrap();
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_not_bool_false_r160() {
+        let result = eval_unary_op(UnaryOp::Not, &Value::Bool(false)).unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_less_than_equal_integers_r160() {
+        assert!(less_or_equal_values(&Value::Integer(5), &Value::Integer(5)).unwrap());
+        assert!(less_or_equal_values(&Value::Integer(4), &Value::Integer(5)).unwrap());
+        assert!(!less_or_equal_values(&Value::Integer(6), &Value::Integer(5)).unwrap());
+    }
+
+    #[test]
+    fn test_greater_than_equal_integers_r160() {
+        assert!(greater_or_equal_values(&Value::Integer(5), &Value::Integer(5)).unwrap());
+        assert!(greater_or_equal_values(&Value::Integer(6), &Value::Integer(5)).unwrap());
+        assert!(!greater_or_equal_values(&Value::Integer(4), &Value::Integer(5)).unwrap());
+    }
+
+    #[test]
+    fn test_less_than_strings_r160() {
+        let result = less_than_values(
+            &Value::from_string("apple".to_string()),
+            &Value::from_string("banana".to_string()),
+        ).unwrap();
+        assert!(result);
+    }
+
+    #[test]
+    fn test_greater_than_strings_r160() {
+        let result = greater_than_values(
+            &Value::from_string("zebra".to_string()),
+            &Value::from_string("apple".to_string()),
+        ).unwrap();
+        assert!(result);
+    }
+
+    #[test]
+    fn test_equal_bools_r160() {
+        assert!(equal_values(&Value::Bool(true), &Value::Bool(true)));
+        assert!(equal_values(&Value::Bool(false), &Value::Bool(false)));
+        assert!(!equal_values(&Value::Bool(true), &Value::Bool(false)));
+    }
+
+    #[test]
+    fn test_equal_nil_r160() {
+        assert!(equal_values(&Value::Nil, &Value::Nil));
+    }
+
+    #[test]
+    fn test_equal_mixed_int_float_r160() {
+        // Integer and Float with same value are equal in Ruchy
+        assert!(equal_values(&Value::Integer(42), &Value::Float(42.0)));
+        // But different types with incompatible semantics are not
+        assert!(!equal_values(&Value::Integer(1), &Value::Bool(true)));
+    }
+
+    #[test]
+    fn test_equal_strings_r160() {
+        assert!(equal_values(
+            &Value::from_string("hello".to_string()),
+            &Value::from_string("hello".to_string()),
+        ));
+        assert!(!equal_values(
+            &Value::from_string("hello".to_string()),
+            &Value::from_string("world".to_string()),
+        ));
+    }
+
+    #[test]
+    fn test_equal_tuples_r160() {
+        use std::sync::Arc;
+        let t1 = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let t2 = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        assert!(equal_values(&t1, &t2));
+    }
+
+    #[test]
+    fn test_not_equal_tuples_different_length_r160() {
+        use std::sync::Arc;
+        let t1 = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
+        let t2 = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        assert!(!equal_values(&t1, &t2));
+    }
+
+    #[test]
+    fn test_logical_and_values_r160() {
+        let result = eval_logical_op(AstBinaryOp::And, &Value::Bool(true), &Value::Bool(true)).unwrap();
+        assert!(result.is_truthy());
+        let result = eval_logical_op(AstBinaryOp::And, &Value::Bool(true), &Value::Bool(false)).unwrap();
+        assert!(!result.is_truthy());
+        let result = eval_logical_op(AstBinaryOp::And, &Value::Bool(false), &Value::Bool(true)).unwrap();
+        assert!(!result.is_truthy());
+    }
+
+    #[test]
+    fn test_logical_or_values_r160() {
+        let result = eval_logical_op(AstBinaryOp::Or, &Value::Bool(true), &Value::Bool(false)).unwrap();
+        assert!(result.is_truthy());
+        let result = eval_logical_op(AstBinaryOp::Or, &Value::Bool(false), &Value::Bool(true)).unwrap();
+        assert!(result.is_truthy());
+        let result = eval_logical_op(AstBinaryOp::Or, &Value::Bool(false), &Value::Bool(false)).unwrap();
+        assert!(!result.is_truthy());
+    }
 }

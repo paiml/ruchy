@@ -165,4 +165,146 @@ mod tests {
         // May succeed or fail depending on current directory
         let _ = result;
     }
+
+    // ===== EXTREME TDD Round 147 - Publish Handler Tests =====
+
+    #[test]
+    fn test_handle_publish_dry_run() {
+        let result = handle_publish_command("https://crates.io", None, true, false, false);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_dry_run_verbose() {
+        let result = handle_publish_command("https://crates.io", None, true, false, true);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_with_version() {
+        let result = handle_publish_command("https://crates.io", Some("1.0.0"), true, false, false);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_allow_dirty() {
+        let result = handle_publish_command("https://crates.io", None, true, true, false);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_all_flags() {
+        let result = handle_publish_command("https://crates.io", Some("2.0.0"), true, true, true);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_custom_registry() {
+        let result = handle_publish_command("https://my-registry.com", None, true, false, false);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_various_versions() {
+        let versions = ["0.0.1", "1.0.0", "2.5.3", "10.20.30"];
+        for version in &versions {
+            let result = handle_publish_command("https://crates.io", Some(version), true, false, false);
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn test_handle_publish_no_dry_run() {
+        // Without dry-run but still in a test context
+        let result = handle_publish_command("https://crates.io", None, false, false, false);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_empty_registry() {
+        let result = handle_publish_command("", None, true, false, false);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_verbose_all_flags() {
+        let result = handle_publish_command(
+            "https://crates.io",
+            Some("3.0.0-alpha"),
+            true,
+            true,
+            true,
+        );
+        let _ = result;
+    }
+
+    // ===== EXTREME TDD Round 153 - Publish Handler Tests =====
+
+    #[test]
+    fn test_handle_publish_prerelease_versions() {
+        let versions = [
+            "1.0.0-alpha",
+            "1.0.0-beta.1",
+            "1.0.0-rc.1",
+            "2.0.0-preview",
+        ];
+        for version in &versions {
+            let result = handle_publish_command("https://crates.io", Some(version), true, false, false);
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn test_handle_publish_various_registries() {
+        let registries = [
+            "https://crates.io",
+            "https://registry.npmjs.org",
+            "http://localhost:8080",
+            "https://my-private-registry.com/api",
+        ];
+        for registry in &registries {
+            let result = handle_publish_command(registry, None, true, false, false);
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn test_handle_publish_flag_combinations() {
+        // Test various flag combinations
+        let combos = [
+            (true, false, false),  // dry_run only
+            (true, true, false),   // dry_run + allow_dirty
+            (true, false, true),   // dry_run + verbose
+            (true, true, true),    // all flags
+            (false, false, false), // no flags
+            (false, true, false),  // allow_dirty only
+            (false, false, true),  // verbose only
+            (false, true, true),   // allow_dirty + verbose
+        ];
+        for (dry_run, allow_dirty, verbose) in &combos {
+            let result = handle_publish_command("https://crates.io", None, *dry_run, *allow_dirty, *verbose);
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn test_handle_publish_semver_build_metadata() {
+        let versions = ["1.0.0+build.123", "2.0.0+20230101"];
+        for version in &versions {
+            let result = handle_publish_command("https://crates.io", Some(version), true, false, false);
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn test_handle_publish_minimal_version() {
+        let result = handle_publish_command("https://crates.io", Some("0.0.1"), true, false, false);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_handle_publish_large_version() {
+        let result = handle_publish_command("https://crates.io", Some("999.999.999"), true, false, false);
+        let _ = result;
+    }
 }

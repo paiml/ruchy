@@ -3,8 +3,8 @@
 //! This module handles transpilation of advanced math functions:
 //! - Trigonometric: sin, cos, tan
 //! - Logarithmic: log (natural), log10
-//! - Random: random()
-//! - Trueno SIMD: trueno_sum, trueno_mean, trueno_variance, trueno_std_dev, trueno_dot
+//! - Random: `random()`
+//! - Trueno SIMD: `trueno_sum`, `trueno_mean`, `trueno_variance`, `trueno_std_dev`, `trueno_dot`
 //!
 //! **EXTREME TDD Round 59**: Extracted from statements.rs for modularization.
 

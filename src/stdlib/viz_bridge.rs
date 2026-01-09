@@ -109,3 +109,89 @@ mod property_tests {
         }
     }
 }
+
+// ===== EXTREME TDD Round 154 - Viz Bridge Tests =====
+
+#[cfg(test)]
+mod extreme_tdd_tests {
+    use super::*;
+
+    #[test]
+    fn test_point_zero() {
+        let p = point(0.0, 0.0);
+        assert!((p.x - 0.0).abs() < 1e-5);
+        assert!((p.y - 0.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_point_negative() {
+        let p = point(-10.0, -20.0);
+        assert!((p.x - (-10.0)).abs() < 1e-5);
+        assert!((p.y - (-20.0)).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_point_large_values() {
+        let p = point(1e6, 1e6);
+        assert!((p.x - 1e6).abs() < 1.0);
+        assert!((p.y - 1e6).abs() < 1.0);
+    }
+
+    #[test]
+    fn test_point_f64_zero() {
+        let p = point_f64(0.0, 0.0);
+        assert!((p.x - 0.0).abs() < 1e-5);
+        assert!((p.y - 0.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_point_f64_negative() {
+        let p = point_f64(-100.0, -200.0);
+        assert!((p.x - (-100.0)).abs() < 1e-3);
+        assert!((p.y - (-200.0)).abs() < 1e-3);
+    }
+
+    #[test]
+    fn test_point_f64_precision() {
+        let p = point_f64(0.123456789, 0.987654321);
+        assert!((p.x - 0.123456789_f32).abs() < 1e-5);
+        assert!((p.y - 0.987654321_f32).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_points_from_slices_empty() {
+        let x: Vec<f64> = vec![];
+        let y: Vec<f64> = vec![];
+        let pts = points_from_slices(&x, &y);
+        assert!(pts.is_empty());
+    }
+
+    #[test]
+    fn test_points_from_slices_single() {
+        let x = vec![42.0];
+        let y = vec![84.0];
+        let pts = points_from_slices(&x, &y);
+        assert_eq!(pts.len(), 1);
+        assert!((pts[0].x - 42.0).abs() < 1e-3);
+        assert!((pts[0].y - 84.0).abs() < 1e-3);
+    }
+
+    #[test]
+    fn test_points_from_slices_mismatched_shorter_y() {
+        let x = vec![1.0, 2.0, 3.0, 4.0];
+        let y = vec![10.0, 20.0];
+        let pts = points_from_slices(&x, &y);
+        // Only pairs up to shortest length
+        assert_eq!(pts.len(), 2);
+    }
+
+    #[test]
+    fn test_points_from_slices_negative_values() {
+        let x = vec![-1.0, -2.0, -3.0];
+        let y = vec![-4.0, -5.0, -6.0];
+        let pts = points_from_slices(&x, &y);
+        assert_eq!(pts.len(), 3);
+        assert!((pts[0].x - (-1.0)).abs() < 1e-3);
+        assert!((pts[2].y - (-6.0)).abs() < 1e-3);
+    }
+}

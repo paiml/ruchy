@@ -803,4 +803,113 @@ mod tests {
         // Keys should be sorted
         assert!(display1.find("a:").unwrap() < display1.find("z:").unwrap());
     }
+
+    // === EXTREME TDD Round 138 tests ===
+
+    #[test]
+    fn test_display_integer_min_value() {
+        let val = Value::Integer(i64::MIN);
+        assert_eq!(val.to_string(), "-9223372036854775808");
+    }
+
+    #[test]
+    fn test_display_integer_max_value() {
+        let val = Value::Integer(i64::MAX);
+        assert_eq!(val.to_string(), "9223372036854775807");
+    }
+
+    #[test]
+    fn test_display_float_negative_zero() {
+        let val = Value::Float(-0.0);
+        let s = val.to_string();
+        assert!(s.contains("0"));
+    }
+
+    #[test]
+    fn test_display_float_infinity() {
+        let val = Value::Float(f64::INFINITY);
+        let s = val.to_string();
+        assert!(s.contains("inf"));
+    }
+
+    #[test]
+    fn test_display_float_neg_infinity() {
+        let val = Value::Float(f64::NEG_INFINITY);
+        let s = val.to_string();
+        assert!(s.contains("-inf"));
+    }
+
+    #[test]
+    fn test_display_byte_128() {
+        let val = Value::Byte(128);
+        assert_eq!(val.to_string(), "128");
+    }
+
+    #[test]
+    fn test_display_byte_max_value() {
+        let val = Value::Byte(255);
+        assert_eq!(val.to_string(), "255");
+    }
+
+    #[test]
+    fn test_display_string_with_embedded_quotes() {
+        let val = Value::from_string("has \"quotes\"".to_string());
+        let s = val.to_string();
+        assert!(s.starts_with('"'));
+        assert!(s.contains("quotes"));
+    }
+
+    #[test]
+    fn test_display_array_with_single_item() {
+        let val = Value::Array(Arc::from(vec![Value::Integer(42)]));
+        assert_eq!(val.to_string(), "[42]");
+    }
+
+    #[test]
+    fn test_display_tuple_with_single_item() {
+        let val = Value::Tuple(Arc::from(vec![Value::Integer(42)]));
+        assert_eq!(val.to_string(), "(42)");
+    }
+
+    #[test]
+    fn test_display_range_inclusive_equal_bounds() {
+        let val = Value::Range {
+            start: Box::new(Value::Integer(5)),
+            end: Box::new(Value::Integer(5)),
+            inclusive: true,
+        };
+        assert_eq!(val.to_string(), "5..=5");
+    }
+
+    #[test]
+    fn test_display_range_with_negative_bounds() {
+        let val = Value::Range {
+            start: Box::new(Value::Integer(-10)),
+            end: Box::new(Value::Integer(-5)),
+            inclusive: false,
+        };
+        assert_eq!(val.to_string(), "-10..-5");
+    }
+
+    #[test]
+    fn test_display_enum_variant_none() {
+        let val = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        assert_eq!(val.to_string(), "None");
+    }
+
+    #[test]
+    fn test_display_enum_variant_some() {
+        let val = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(42)]),
+        };
+        let s = val.to_string();
+        assert!(s.contains("Some"));
+        assert!(s.contains("42"));
+    }
 }

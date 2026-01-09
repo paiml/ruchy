@@ -228,4 +228,134 @@ mod tests {
         let result = benchmark_wasm(&PathBuf::from("test.wasm"), "sum", &[1, 2, 3], 10000);
         assert!(result.is_err());
     }
+
+    // Additional coverage tests for BenchmarkResults usage
+    #[test]
+    fn test_benchmark_results_struct() {
+        use super::super::BenchmarkResults;
+        use std::time::Duration;
+
+        let results = BenchmarkResults {
+            total_requests: 100,
+            successful_requests: 95,
+            failed_requests: 5,
+            total_duration: Duration::from_secs(10),
+            request_times: vec![Duration::from_millis(100); 95],
+        };
+
+        assert_eq!(results.total_requests, 100);
+        assert_eq!(results.successful_requests, 95);
+        assert_eq!(results.failed_requests, 5);
+        assert_eq!(results.total_duration, Duration::from_secs(10));
+        assert_eq!(results.request_times.len(), 95);
+    }
+
+    #[test]
+    fn test_benchmark_results_mean_time() {
+        use super::super::BenchmarkResults;
+        use std::time::Duration;
+
+        let results = BenchmarkResults {
+            total_requests: 10,
+            successful_requests: 10,
+            failed_requests: 0,
+            total_duration: Duration::from_secs(1),
+            request_times: vec![Duration::from_millis(100); 10],
+        };
+
+        let mean = results.mean_time();
+        assert_eq!(mean, Duration::from_millis(100));
+    }
+
+    #[test]
+    fn test_benchmark_results_empty_times() {
+        use super::super::BenchmarkResults;
+        use std::time::Duration;
+
+        let results = BenchmarkResults {
+            total_requests: 0,
+            successful_requests: 0,
+            failed_requests: 0,
+            total_duration: Duration::ZERO,
+            request_times: vec![],
+        };
+
+        // Empty results should return zero duration
+        let mean = results.mean_time();
+        assert_eq!(mean, Duration::ZERO);
+    }
+
+    #[test]
+    fn test_benchmark_results_percentiles() {
+        use super::super::BenchmarkResults;
+        use std::time::Duration;
+
+        let results = BenchmarkResults {
+            total_requests: 100,
+            successful_requests: 100,
+            failed_requests: 0,
+            total_duration: Duration::from_secs(10),
+            request_times: (1..=100).map(|i| Duration::from_millis(i)).collect(),
+        };
+
+        let p50 = results.percentile(50.0);
+        let p90 = results.percentile(90.0);
+        let p99 = results.percentile(99.0);
+
+        assert!(p50 <= p90);
+        assert!(p90 <= p99);
+    }
+
+    #[test]
+    fn test_benchmark_results_success_ratio() {
+        use super::super::BenchmarkResults;
+        use std::time::Duration;
+
+        let results = BenchmarkResults {
+            total_requests: 100,
+            successful_requests: 80,
+            failed_requests: 20,
+            total_duration: Duration::from_secs(10),
+            request_times: vec![Duration::from_millis(100); 80],
+        };
+
+        // Calculate success rate manually
+        let rate = results.successful_requests as f64 / results.total_requests as f64;
+        assert!((rate - 0.8).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_benchmark_results_requests_per_second() {
+        use super::super::BenchmarkResults;
+        use std::time::Duration;
+
+        let results = BenchmarkResults {
+            total_requests: 100,
+            successful_requests: 100,
+            failed_requests: 0,
+            total_duration: Duration::from_secs(10),
+            request_times: vec![Duration::from_millis(100); 100],
+        };
+
+        let rps = results.requests_per_second();
+        assert!((rps - 10.0).abs() < 0.001); // 100 requests / 10 seconds = 10 req/s
+    }
+
+    #[test]
+    fn test_benchmark_results_zero_duration_rps() {
+        use super::super::BenchmarkResults;
+        use std::time::Duration;
+
+        let results = BenchmarkResults {
+            total_requests: 0,
+            successful_requests: 0,
+            failed_requests: 0,
+            total_duration: Duration::ZERO,
+            request_times: vec![],
+        };
+
+        // Zero duration should return 0.0 (handles gracefully)
+        let rps = results.requests_per_second();
+        assert_eq!(rps, 0.0);
+    }
 }

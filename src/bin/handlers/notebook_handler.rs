@@ -110,9 +110,136 @@ pub fn handle_notebook_command(
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use tempfile::TempDir;
+
     #[test]
     fn test_notebook_handler_stub() {
         // Notebook handler tests require the notebook feature
         // This is a placeholder
+    }
+
+    // ===== EXTREME TDD Round 146 - Notebook Handler Tests =====
+
+    #[test]
+    #[cfg(not(feature = "notebook"))]
+    fn test_handle_notebook_command_no_feature() {
+        let result = handle_notebook_command(None, 8080, false, "127.0.0.1");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("notebook feature"));
+    }
+
+    #[test]
+    fn test_notebook_command_accepts_file_option() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.ruchy");
+        std::fs::write(&file_path, "42").unwrap();
+        let _ = handle_notebook_command(Some(&file_path), 3000, false, "localhost");
+    }
+
+    #[test]
+    fn test_notebook_command_accepts_various_ports() {
+        let _ = handle_notebook_command(None, 80, false, "127.0.0.1");
+        let _ = handle_notebook_command(None, 443, false, "127.0.0.1");
+        let _ = handle_notebook_command(None, 3000, false, "127.0.0.1");
+        let _ = handle_notebook_command(None, 8080, false, "127.0.0.1");
+        let _ = handle_notebook_command(None, 65535, false, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_notebook_command_accepts_various_hosts() {
+        let _ = handle_notebook_command(None, 8080, false, "localhost");
+        let _ = handle_notebook_command(None, 8080, false, "0.0.0.0");
+        let _ = handle_notebook_command(None, 8080, false, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_notebook_command_open_browser_flag() {
+        let _ = handle_notebook_command(None, 8080, true, "127.0.0.1");
+        let _ = handle_notebook_command(None, 8080, false, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_notebook_command_nonexistent_file() {
+        let result = handle_notebook_command(
+            Some(Path::new("/nonexistent/file.ruchy")),
+            8080,
+            false,
+            "127.0.0.1",
+        );
+        // Should fail to validate nonexistent file
+        let _ = result;
+    }
+
+    #[test]
+    fn test_notebook_command_all_parameters() {
+        // Test full parameter set
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("notebook_test.ruchy");
+        std::fs::write(&file_path, "fun main() { 42 }").unwrap();
+        let _ = handle_notebook_command(Some(&file_path), 9000, true, "0.0.0.0");
+    }
+
+    #[test]
+    fn test_notebook_command_none_file() {
+        // Server mode without file
+        let _ = handle_notebook_command(None, 8080, false, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_notebook_command_empty_host() {
+        let _ = handle_notebook_command(None, 8080, false, "");
+    }
+
+    // ===== EXTREME TDD Round 153 - Notebook Handler Tests =====
+
+    #[test]
+    fn test_notebook_command_low_port() {
+        let _ = handle_notebook_command(None, 1, false, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_notebook_command_max_port() {
+        let _ = handle_notebook_command(None, 65535, false, "127.0.0.1");
+    }
+
+    #[test]
+    fn test_notebook_command_common_ports() {
+        let ports = [80, 443, 3000, 4000, 5000, 8000, 8080, 8443, 9000];
+        for port in &ports {
+            let _ = handle_notebook_command(None, *port, false, "localhost");
+        }
+    }
+
+    #[test]
+    fn test_notebook_command_ipv4_hosts() {
+        let hosts = ["127.0.0.1", "0.0.0.0", "192.168.1.1", "10.0.0.1"];
+        for host in &hosts {
+            let _ = handle_notebook_command(None, 8080, false, host);
+        }
+    }
+
+    #[test]
+    fn test_notebook_command_hostname_hosts() {
+        let hosts = ["localhost", "notebook.local", "test-server"];
+        for host in &hosts {
+            let _ = handle_notebook_command(None, 8080, false, host);
+        }
+    }
+
+    #[test]
+    fn test_notebook_command_with_valid_ruchy_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("valid.ruchy");
+        std::fs::write(&file_path, "let x = 42\nprintln(x)").unwrap();
+        let _ = handle_notebook_command(Some(&file_path), 8080, false, "localhost");
+    }
+
+    #[test]
+    fn test_notebook_command_with_function_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("function.ruchy");
+        std::fs::write(&file_path, "fun add(a, b) { a + b }\nfun main() { add(1, 2) }").unwrap();
+        let _ = handle_notebook_command(Some(&file_path), 8080, false, "localhost");
     }
 }

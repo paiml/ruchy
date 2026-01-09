@@ -196,4 +196,117 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("only supports checking a single file"));
     }
+
+    // ===== EXTREME TDD Round 152 - Check Handler Tests =====
+
+    #[test]
+    fn test_estimate_error_line_single_line() {
+        let source = "let x = 42";
+        let line = estimate_error_line(source, "error");
+        assert_eq!(line, Some(1));
+    }
+
+    #[test]
+    fn test_estimate_error_line_all_comments() {
+        let source = "// comment1\n// comment2\n// comment3";
+        let line = estimate_error_line(source, "error");
+        assert_eq!(line, Some(3)); // Returns last line when all comments
+    }
+
+    #[test]
+    fn test_estimate_error_line_mixed_content() {
+        let source = "let x = 1\n// comment\nlet y = 2\n// trailing";
+        let line = estimate_error_line(source, "error");
+        assert_eq!(line, Some(3)); // Last non-comment line
+    }
+
+    #[test]
+    fn test_handle_check_command_empty_files() {
+        let result = handle_check_command(&[], false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("No files specified"));
+    }
+
+    #[test]
+    fn test_handle_check_command_nonexistent_file() {
+        let files = vec![PathBuf::from("/nonexistent/file.ruchy")];
+        let result = handle_check_command(&files, false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_check_multiple_files_all_nonexistent() {
+        let files = vec![
+            PathBuf::from("/nonexistent/a.ruchy"),
+            PathBuf::from("/nonexistent/b.ruchy"),
+        ];
+        let result = check_multiple_files(&files);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_validate_file_list_multiple_files() {
+        let files = vec![
+            PathBuf::from("a.ruchy"),
+            PathBuf::from("b.ruchy"),
+            PathBuf::from("c.ruchy"),
+        ];
+        let result = validate_file_list(&files);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_estimate_error_line_whitespace_only() {
+        let source = "   \n   \n   ";
+        let line = estimate_error_line(source, "error");
+        assert_eq!(line, Some(3));
+    }
+
+    #[test]
+    fn test_handle_check_syntax_valid_file() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("valid.ruchy");
+        fs::write(&file_path, "let x = 42").unwrap();
+
+        let result = handle_check_syntax(&file_path);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_check_syntax_invalid_file() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("invalid.ruchy");
+        fs::write(&file_path, "let x = {").unwrap();
+
+        let result = handle_check_syntax(&file_path);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_check_command_single_file() {
+        let temp_dir = tempfile::TempDir::new().unwrap();
+        let file_path = temp_dir.path().join("test.ruchy");
+        fs::write(&file_path, "42").unwrap();
+
+        let files = vec![file_path];
+        let result = handle_check_command(&files, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_estimate_error_line_code_then_comment() {
+        let source = "fun foo() { }\n// end of file";
+        let line = estimate_error_line(source, "error");
+        assert_eq!(line, Some(1));
+    }
+
+    #[test]
+    fn test_check_watch_mode_single_file() {
+        // Note: We can't actually test watch mode since it loops forever
+        // Just test the early validation
+        let files = vec![PathBuf::from("/nonexistent/file.ruchy")];
+        let result = check_watch_mode(&files);
+        // This will fail on file read, not watch mode validation
+        assert!(result.is_err());
+    }
 }

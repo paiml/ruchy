@@ -79,7 +79,7 @@ pub(crate) fn generate_and_validate_wasm(ast: &Expr, verbose: bool) -> Result<Ve
 }
 
 /// Determine output path for WASM file
-fn determine_wasm_output_path(file: &Path, output: Option<&Path>) -> PathBuf {
+pub(crate) fn determine_wasm_output_path(file: &Path, output: Option<&Path>) -> PathBuf {
     if let Some(out) = output {
         out.to_path_buf()
     } else {
@@ -237,5 +237,116 @@ mod tests {
     fn test_handle_optimization_and_deployment_does_not_panic() {
         handle_optimization_and_deployment("0", false, None, false);
         handle_optimization_and_deployment("2", true, Some("cloudflare"), true);
+    }
+
+    // ===== EXTREME TDD Round 152 - WASM Handler Tests =====
+
+    #[test]
+    fn test_determine_wasm_output_path_nested() {
+        let file = Path::new("/path/to/nested/test.ruchy");
+        let result = determine_wasm_output_path(file, None);
+        assert_eq!(result, PathBuf::from("/path/to/nested/test.wasm"));
+    }
+
+    #[test]
+    fn test_determine_wasm_output_path_custom_extension() {
+        let file = Path::new("test.ruchy");
+        let output = Path::new("custom.wasm");
+        let result = determine_wasm_output_path(file, Some(output));
+        assert_eq!(result, PathBuf::from("custom.wasm"));
+    }
+
+    #[test]
+    fn test_print_wasm_compilation_status_all_options() {
+        let file = Path::new("test.ruchy");
+        print_wasm_compilation_status(file, "wasm32-unknown-unknown", true, true);
+        print_wasm_compilation_status(file, "wasm32-wasi", false, true);
+        print_wasm_compilation_status(file, "wasm32", true, false);
+        print_wasm_compilation_status(file, "wasm64", false, false);
+    }
+
+    #[test]
+    fn test_handle_optimization_and_deployment_opt_levels() {
+        let levels = ["0", "1", "2", "3", "s", "z"];
+        for level in &levels {
+            handle_optimization_and_deployment(level, false, None, true);
+        }
+    }
+
+    #[test]
+    fn test_handle_optimization_and_deployment_deploy_targets() {
+        let targets = ["cloudflare", "vercel", "fastly", "deno", "node"];
+        for target in &targets {
+            handle_optimization_and_deployment("2", true, Some(target), true);
+        }
+    }
+
+    #[test]
+    fn test_handle_wasm_command_nonexistent() {
+        let result = handle_wasm_command(
+            Path::new("/nonexistent/file.ruchy"),
+            None,
+            "wasm32",
+            false,
+            false,
+            None,
+            false,
+            "0",
+            false,
+            false,
+            false,
+            false,
+            None,
+            "0.1.0",
+            false,
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_wasm_command_all_flags() {
+        let result = handle_wasm_command(
+            Path::new("/nonexistent/file.ruchy"),
+            Some(Path::new("output.wasm")),
+            "wasm32-wasi",
+            true,  // wit
+            true,  // deploy
+            Some("cloudflare"),
+            true,  // portability
+            "3",   // opt_level
+            true,  // debug
+            true,  // simd
+            true,  // threads
+            true,  // component_model
+            Some("my-module"),
+            "1.0.0",
+            true,  // verbose
+        );
+        assert!(result.is_err()); // File doesn't exist
+    }
+
+    #[test]
+    fn test_compile_ruchy_to_wasm_nonexistent() {
+        let result = compile_ruchy_to_wasm(Path::new("/nonexistent/file.ruchy"), false);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_compile_ruchy_to_wasm_verbose() {
+        let result = compile_ruchy_to_wasm(Path::new("/nonexistent/file.ruchy"), true);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_determine_wasm_output_various_extensions() {
+        let files = [
+            ("test.ruchy", "test.wasm"),
+            ("a.b.ruchy", "a.b.wasm"),
+            ("noext", "noext.wasm"),
+        ];
+        for (input, expected) in &files {
+            let result = determine_wasm_output_path(Path::new(input), None);
+            assert_eq!(result, PathBuf::from(*expected));
+        }
     }
 }

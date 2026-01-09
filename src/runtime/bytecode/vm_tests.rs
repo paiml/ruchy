@@ -821,4 +821,287 @@ mod tests {
         let instr = Instruction::asbx(OpCode::Jump, 0, -5);
         assert_eq!(instr.get_sbx(), -5);
     }
+
+    // === EXTREME TDD Round 125 tests ===
+
+    #[test]
+    fn test_vm_integer_zero() {
+        let expr = make_int_expr(0);
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_vm_integer_negative() {
+        let expr = make_int_expr(-42);
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(-42));
+    }
+
+    #[test]
+    fn test_vm_integer_large() {
+        let expr = make_int_expr(1_000_000);
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(1_000_000));
+    }
+
+    #[test]
+    fn test_vm_float_zero() {
+        let expr = make_float_expr(0.0);
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::Float(f) => assert!((f - 0.0).abs() < 0.0001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_vm_float_pi() {
+        let expr = make_float_expr(3.14159);
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::Float(f) => assert!((f - 3.14159).abs() < 0.0001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_vm_string_empty() {
+        let expr = make_string_expr("");
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::String("".into()));
+    }
+
+    #[test]
+    fn test_vm_string_unicode() {
+        let expr = make_string_expr("日本語");
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::String("日本語".into()));
+    }
+
+    #[test]
+    fn test_vm_add_floats_r125() {
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(make_float_expr(1.5)),
+                op: crate::frontend::ast::BinaryOp::Add,
+                right: Box::new(make_float_expr(2.5)),
+            },
+            Span::default(),
+        );
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::Float(f) => assert!((f - 4.0).abs() < 0.0001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_vm_modulo_positive() {
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(make_int_expr(17)),
+                op: crate::frontend::ast::BinaryOp::Modulo,
+                right: Box::new(make_int_expr(5)),
+            },
+            Span::default(),
+        );
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_vm_comparison_less_equal() {
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(make_int_expr(5)),
+                op: crate::frontend::ast::BinaryOp::LessEqual,
+                right: Box::new(make_int_expr(5)),
+            },
+            Span::default(),
+        );
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_comparison_greater_equal() {
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(make_int_expr(5)),
+                op: crate::frontend::ast::BinaryOp::GreaterEqual,
+                right: Box::new(make_int_expr(5)),
+            },
+            Span::default(),
+        );
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_instruction_opcode_const() {
+        let instr = Instruction::abx(OpCode::Const, 1, 50);
+        assert_eq!(instr.opcode(), OpCode::Const as u8);
+    }
+
+    #[test]
+    fn test_instruction_opcode_return() {
+        let instr = Instruction::abc(OpCode::Return, 0, 0, 0);
+        assert_eq!(instr.opcode(), OpCode::Return as u8);
+    }
+
+    // ============================================================================
+    // EXTREME TDD Round 158: Additional VM tests
+    // ============================================================================
+
+    #[test]
+    fn test_vm_r158_float_negative() {
+        let expr = make_float_expr(-2.5);
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::Float(f) => assert!((f + 2.5).abs() < 0.0001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_vm_r158_empty_string() {
+        let expr = make_string_expr("");
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::String(s) => assert!(s.is_empty()),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_vm_r158_long_string() {
+        let long_str = "x".repeat(1000);
+        let expr = make_string_expr(&long_str);
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::String(s) => assert_eq!(s.len(), 1000),
+            _ => panic!("Expected string"),
+        }
+    }
+
+    #[test]
+    fn test_vm_r158_add_ints() {
+        let expr = make_binary_expr(BinaryOp::Add, make_int_expr(100), make_int_expr(200));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(300));
+    }
+
+    #[test]
+    fn test_vm_r158_add_negative_ints() {
+        let expr = make_binary_expr(BinaryOp::Add, make_int_expr(-100), make_int_expr(-200));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(-300));
+    }
+
+    #[test]
+    fn test_vm_r158_subtract_floats() {
+        let expr = make_binary_expr(BinaryOp::Subtract, make_float_expr(10.5), make_float_expr(3.5));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::Float(f) => assert!((f - 7.0).abs() < 0.0001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_vm_r158_multiply_floats() {
+        let expr = make_binary_expr(BinaryOp::Multiply, make_float_expr(2.5), make_float_expr(4.0));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::Float(f) => assert!((f - 10.0).abs() < 0.0001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_vm_r158_comparison_not_equal_true() {
+        let expr = make_binary_expr(BinaryOp::NotEqual, make_int_expr(5), make_int_expr(10));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_r158_comparison_not_equal_false() {
+        let expr = make_binary_expr(BinaryOp::NotEqual, make_int_expr(5), make_int_expr(5));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_r158_comparison_less_false() {
+        let expr = make_binary_expr(BinaryOp::Less, make_int_expr(10), make_int_expr(5));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_r158_comparison_greater_false() {
+        let expr = make_binary_expr(BinaryOp::Greater, make_int_expr(5), make_int_expr(10));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_r158_unary_not_false() {
+        let expr = make_unary_expr(UnaryOp::Not, make_bool_expr(true));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_r158_unary_not_true() {
+        let expr = make_unary_expr(UnaryOp::Not, make_bool_expr(false));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_r158_unary_negate_float() {
+        let expr = make_unary_expr(UnaryOp::Negate, make_float_expr(3.14));
+        let result = compile_and_execute(&expr).expect("execution should succeed");
+        match result {
+            Value::Float(f) => assert!((f + 3.14).abs() < 0.0001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_vm_r158_nested_unary() {
+        let inner = make_unary_expr(UnaryOp::Not, make_bool_expr(true));
+        let outer = make_unary_expr(UnaryOp::Not, inner);
+        let result = compile_and_execute(&outer).expect("execution should succeed");
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_r158_complex_expression() {
+        // (2 + 3) * 4 = 20
+        let add = make_binary_expr(BinaryOp::Add, make_int_expr(2), make_int_expr(3));
+        let mul = make_binary_expr(BinaryOp::Multiply, add, make_int_expr(4));
+        let result = compile_and_execute(&mul).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_vm_r158_deeply_nested_binary() {
+        // ((1 + 2) * 3) - 4 = 5
+        let add = make_binary_expr(BinaryOp::Add, make_int_expr(1), make_int_expr(2));
+        let mul = make_binary_expr(BinaryOp::Multiply, add, make_int_expr(3));
+        let sub = make_binary_expr(BinaryOp::Subtract, mul, make_int_expr(4));
+        let result = compile_and_execute(&sub).expect("execution should succeed");
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_vm_r158_compiler_creates_successfully() {
+        let compiler = Compiler::new("test_module".to_string());
+        // Compiler should be created without panicking
+        drop(compiler);
+    }
 }

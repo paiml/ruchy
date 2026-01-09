@@ -1,13 +1,15 @@
 //! Collection and String Method Transpilation
 //!
 //! This module handles transpilation of method calls on collections and strings:
-//! - Iterator methods: map, filter, reduce
-//! - HashMap/HashSet methods: contains_key, items, update
-//! - Set operations: union, intersection, difference
-//! - String methods: to_upper, strip, split, etc.
-//! - Advanced collection methods: slice, concat, flatten, unique, join
+//! - Iterator methods: `map`, `filter`, `reduce`
+//! - `HashMap`/`HashSet` methods: `contains_key`, `items`, `update`
+//! - Set operations: `union`, `intersection`, `difference`
+//! - String methods: `to_upper`, `strip`, `split`, etc.
+//! - Advanced collection methods: `slice`, `concat`, `flatten`, `unique`, `join`
 //!
 //! **EXTREME TDD Round 65**: Extracted from statements.rs for modularization.
+
+#![allow(clippy::doc_markdown)]
 
 use super::Transpiler;
 use anyhow::Result;

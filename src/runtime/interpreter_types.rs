@@ -1,9 +1,9 @@
 //! Interpreter Type Definitions
 //!
 //! This module contains the core type definitions for the Ruchy interpreter:
-//! - InterpreterError: All error types that can occur during interpretation
-//! - InterpreterResult: Execution result enum
-//! - CallFrame: Function call frame for stack management
+//! - `InterpreterError`: All error types that can occur during interpretation
+//! - `InterpreterResult`: Execution result enum
+//! - `CallFrame`: Function call frame for stack management
 //!
 //! **EXTREME TDD Round 52**: Extracted from interpreter.rs for modularization.
 

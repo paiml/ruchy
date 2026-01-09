@@ -740,3 +740,803 @@ mod coverage_push_round31 {
         assert!(result.is_ok());
     }
 }
+
+// ============================================================================
+// EXTREME TDD Round 133: Additional comprehensive tests
+// Target: 28 → 50+ tests
+// ============================================================================
+#[cfg(test)]
+mod round_133_tests {
+    use super::*;
+    use crate::frontend::ast::{ExprKind, Literal, Span, StructPatternField};
+    use std::collections::HashMap;
+
+    fn make_int_expr(n: i64) -> Expr {
+        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+    }
+
+    fn make_string_expr(s: &str) -> Expr {
+        Expr::new(ExprKind::Literal(Literal::String(s.to_string())), Span::default())
+    }
+
+    // --- error_to_value edge cases ---
+    #[test]
+    fn test_error_to_value_throw_with_nil() {
+        let error = InterpreterError::Throw(Value::Nil);
+        let result = error_to_value(error);
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_error_to_value_throw_with_bool() {
+        let error = InterpreterError::Throw(Value::Bool(true));
+        let result = error_to_value(error);
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_error_to_value_throw_with_float() {
+        let error = InterpreterError::Throw(Value::Float(3.14));
+        let result = error_to_value(error);
+        assert_eq!(result, Value::Float(3.14));
+    }
+
+    #[test]
+    fn test_error_to_value_throw_with_array() {
+        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let error = InterpreterError::Throw(arr.clone());
+        let result = error_to_value(error);
+        assert_eq!(result, arr);
+    }
+
+    #[test]
+    fn test_error_to_value_type_error_empty_message() {
+        let error = InterpreterError::TypeError(String::new());
+        let result = error_to_value(error);
+        if let Value::Object(obj) = result {
+            assert!(obj.get("type").is_some());
+            if let Some(Value::String(msg)) = obj.get("message") {
+                assert!(msg.is_empty());
+            }
+        }
+    }
+
+    #[test]
+    fn test_error_to_value_runtime_error_long_message() {
+        let long_msg = "x".repeat(1000);
+        let error = InterpreterError::RuntimeError(long_msg.clone());
+        let result = error_to_value(error);
+        if let Value::Object(obj) = result {
+            if let Some(Value::String(msg)) = obj.get("message") {
+                assert_eq!(msg.as_ref(), long_msg);
+            }
+        }
+    }
+
+    // --- value_to_error edge cases ---
+    #[test]
+    fn test_value_to_error_with_nil() {
+        let value = Value::Nil;
+        let error = value_to_error(value.clone());
+        if let InterpreterError::Throw(v) = error {
+            assert_eq!(v, value);
+        } else {
+            panic!("Expected Throw");
+        }
+    }
+
+    #[test]
+    fn test_value_to_error_with_object() {
+        let mut obj = HashMap::new();
+        obj.insert("key".to_string(), Value::Integer(42));
+        let value = Value::Object(Arc::new(obj));
+        let error = value_to_error(value.clone());
+        if let InterpreterError::Throw(v) = error {
+            assert_eq!(v, value);
+        } else {
+            panic!("Expected Throw");
+        }
+    }
+
+    // --- bind_pattern_variables edge cases ---
+    #[test]
+    fn test_bind_pattern_variables_literal_pattern() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
+        let value = Value::Integer(42);
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_or_pattern() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]);
+        let value = Value::Integer(1);
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_struct_with_nested_pattern() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let mut obj = HashMap::new();
+        obj.insert("inner".to_string(), Value::Integer(42));
+        let value = Value::Object(Arc::new(obj));
+
+        let pattern = Pattern::Struct {
+            name: "Wrapper".to_string(),
+            fields: vec![StructPatternField {
+                name: "inner".to_string(),
+                pattern: Some(Pattern::Identifier("x".to_string())),
+            }],
+            has_rest: false,
+        };
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_struct_with_none_pattern_field() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let mut obj = HashMap::new();
+        obj.insert("field".to_string(), Value::Integer(42));
+        let value = Value::Object(Arc::new(obj));
+
+        let pattern = Pattern::Struct {
+            name: "Test".to_string(),
+            fields: vec![StructPatternField {
+                name: "field".to_string(),
+                pattern: None, // No pattern for this field
+            }],
+            has_rest: false,
+        };
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_at_binding() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::AtBinding {
+            name: "x".to_string(),
+            pattern: Box::new(Pattern::Identifier("y".to_string())),
+        };
+        let value = Value::Integer(42);
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    // --- try_catch_clause edge cases ---
+    #[test]
+    fn test_try_catch_clause_wildcard_pattern() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error_value = Value::Integer(999);
+        let catch_clause = CatchClause {
+            pattern: Pattern::Wildcard,
+            body: Box::new(make_int_expr(100)),
+        };
+
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[test]
+    fn test_try_catch_clause_with_string_error() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error_value = Value::from_string("error message".to_string());
+        let catch_clause = CatchClause {
+            pattern: Pattern::Identifier("e".to_string()),
+            body: Box::new(make_string_expr("caught")),
+        };
+
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause);
+        assert!(result.is_ok());
+        let val = result.unwrap().unwrap();
+        if let Value::String(s) = val {
+            assert_eq!(s.as_ref(), "caught");
+        }
+    }
+
+    #[test]
+    fn test_try_catch_clause_literal_pattern_match() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error_value = Value::Integer(42);
+        let catch_clause = CatchClause {
+            pattern: Pattern::Literal(Literal::Integer(42, None)),
+            body: Box::new(make_string_expr("matched")),
+        };
+
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    // --- handle_catch_clauses edge cases ---
+    #[test]
+    fn test_handle_catch_clauses_empty_clauses() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error = InterpreterError::RuntimeError("test".to_string());
+        let catch_clauses: Vec<CatchClause> = vec![];
+
+        let result = handle_catch_clauses(&mut interp, error, &catch_clauses);
+        assert!(result.is_err()); // No match, should re-throw
+    }
+
+    #[test]
+    fn test_handle_catch_clauses_second_match() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error = InterpreterError::Throw(Value::Integer(42));
+        let catch_clauses = vec![
+            CatchClause {
+                pattern: Pattern::Literal(Literal::Integer(99, None)), // Won't match
+                body: Box::new(make_int_expr(1)),
+            },
+            CatchClause {
+                pattern: Pattern::Identifier("e".to_string()), // Will match
+                body: Box::new(make_int_expr(2)),
+            },
+        ];
+
+        let result = handle_catch_clauses(&mut interp, error, &catch_clauses);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Integer(2));
+    }
+
+    #[test]
+    fn test_handle_catch_clauses_type_error() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error = InterpreterError::TypeError("type mismatch".to_string());
+        let catch_clauses = vec![CatchClause {
+            pattern: Pattern::Identifier("e".to_string()),
+            body: Box::new(make_string_expr("handled")),
+        }];
+
+        let result = handle_catch_clauses(&mut interp, error, &catch_clauses);
+        assert!(result.is_ok());
+    }
+
+    // --- eval_throw edge cases ---
+    #[test]
+    fn test_eval_throw_bool() {
+        let mut interp = Interpreter::new();
+
+        let expr = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
+
+        let result = eval_throw(&mut interp, &expr);
+        assert!(result.is_err());
+        if let Err(InterpreterError::Throw(value)) = result {
+            assert_eq!(value, Value::Bool(false));
+        }
+    }
+
+    #[test]
+    fn test_eval_throw_float() {
+        let mut interp = Interpreter::new();
+
+        let expr = Expr::new(ExprKind::Literal(Literal::Float(2.718)), Span::default());
+
+        let result = eval_throw(&mut interp, &expr);
+        assert!(result.is_err());
+        if let Err(InterpreterError::Throw(value)) = result {
+            assert_eq!(value, Value::Float(2.718));
+        }
+    }
+
+    #[test]
+    fn test_eval_throw_nil() {
+        let mut interp = Interpreter::new();
+
+        let expr = Expr::new(ExprKind::Literal(Literal::Null), Span::default());
+
+        let result = eval_throw(&mut interp, &expr);
+        assert!(result.is_err());
+    }
+
+    // --- eval_finally_block edge cases ---
+    #[test]
+    fn test_eval_finally_block_with_string() {
+        let mut interp = Interpreter::new();
+
+        let finally_expr = make_string_expr("cleanup");
+
+        let result = eval_finally_block(&mut interp, &finally_expr);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_finally_block_with_bool() {
+        let mut interp = Interpreter::new();
+
+        let finally_expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+
+        let result = eval_finally_block(&mut interp, &finally_expr);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    // --- pattern_matches edge cases ---
+    #[test]
+    fn test_pattern_matches_wildcard() {
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Wildcard;
+        let value = Value::Integer(42);
+
+        let result = pattern_matches(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_identifier() {
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Identifier("x".to_string());
+        let value = Value::from_string("any value".to_string());
+
+        let result = pattern_matches(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_literal_match() {
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
+        let value = Value::Integer(42);
+
+        let result = pattern_matches(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_literal_no_match() {
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
+        let value = Value::Integer(99);
+
+        let result = pattern_matches(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+}
+
+// === EXTREME TDD Round 136 - Push to 70+ Tests ===
+#[cfg(test)]
+mod round_136_tests {
+    use super::*;
+    use crate::frontend::ast::{ExprKind, Literal, Span, StructPatternField};
+    use std::collections::HashMap;
+
+    fn make_int_expr(n: i64) -> Expr {
+        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+    }
+
+    #[test]
+    fn test_error_to_value_throw_with_object() {
+        let mut obj = HashMap::new();
+        obj.insert("key".to_string(), Value::Integer(42));
+        let error = InterpreterError::Throw(Value::Object(Arc::new(obj.clone())));
+        let result = error_to_value(error);
+        if let Value::Object(result_obj) = result {
+            assert_eq!(result_obj.get("key"), Some(&Value::Integer(42)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_error_to_value_throw_with_tuple() {
+        let tuple = Value::Tuple(vec![Value::Integer(1), Value::Integer(2)].into());
+        let error = InterpreterError::Throw(tuple.clone());
+        let result = error_to_value(error);
+        assert_eq!(result, tuple);
+    }
+
+    #[test]
+    fn test_error_to_value_type_error_unicode_message() {
+        let msg = "错误消息".to_string();
+        let error = InterpreterError::TypeError(msg.clone());
+        let result = error_to_value(error);
+        if let Value::Object(obj) = result {
+            if let Some(Value::String(s)) = obj.get("message") {
+                assert_eq!(s.as_ref(), msg);
+            }
+        }
+    }
+
+    #[test]
+    fn test_error_to_value_runtime_error_special_chars() {
+        let msg = "error: 'quoted' and \"double\"".to_string();
+        let error = InterpreterError::RuntimeError(msg.clone());
+        let result = error_to_value(error);
+        if let Value::Object(obj) = result {
+            if let Some(Value::String(s)) = obj.get("message") {
+                assert_eq!(s.as_ref(), msg);
+            }
+        }
+    }
+
+    #[test]
+    fn test_value_to_error_with_string() {
+        let value = Value::from_string("error".to_string());
+        let error = value_to_error(value.clone());
+        if let InterpreterError::Throw(v) = error {
+            assert_eq!(v, value);
+        } else {
+            panic!("Expected Throw");
+        }
+    }
+
+    #[test]
+    fn test_value_to_error_with_array() {
+        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2)].into());
+        let error = value_to_error(arr.clone());
+        if let InterpreterError::Throw(v) = error {
+            assert_eq!(v, arr);
+        } else {
+            panic!("Expected Throw");
+        }
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_range_pattern() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+            inclusive: true,
+        };
+        let value = Value::Integer(5);
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_list_pattern_round136() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let pattern = Pattern::List(vec![
+            Pattern::Identifier("x".to_string()),
+        ]);
+        let value = Value::Integer(42);
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_try_catch_clause_with_object_error() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let mut obj = HashMap::new();
+        obj.insert("code".to_string(), Value::Integer(404));
+        let error_value = Value::Object(Arc::new(obj));
+
+        let catch_clause = CatchClause {
+            pattern: Pattern::Identifier("e".to_string()),
+            body: Box::new(make_int_expr(0)),
+        };
+
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_some());
+    }
+
+    #[test]
+    fn test_try_catch_clause_with_array_error() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error_value = Value::Array(vec![Value::from_string("error".to_string())].into());
+
+        let catch_clause = CatchClause {
+            pattern: Pattern::Wildcard,
+            body: Box::new(make_int_expr(1)),
+        };
+
+        let result = try_catch_clause(&mut interp, &error_value, &catch_clause);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().unwrap(), Value::Integer(1));
+    }
+
+    #[test]
+    fn test_handle_catch_clauses_three_clauses() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let error = InterpreterError::Throw(Value::Integer(50));
+        let catch_clauses = vec![
+            CatchClause {
+                pattern: Pattern::Literal(Literal::Integer(10, None)),
+                body: Box::new(make_int_expr(1)),
+            },
+            CatchClause {
+                pattern: Pattern::Literal(Literal::Integer(20, None)),
+                body: Box::new(make_int_expr(2)),
+            },
+            CatchClause {
+                pattern: Pattern::Identifier("e".to_string()), // Will match
+                body: Box::new(make_int_expr(3)),
+            },
+        ];
+
+        let result = handle_catch_clauses(&mut interp, error, &catch_clauses);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Integer(3));
+    }
+
+    #[test]
+    fn test_pattern_matches_string_literal() {
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Literal(Literal::String("hello".to_string()));
+        let value = Value::from_string("hello".to_string());
+
+        let result = pattern_matches(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_bool_literal() {
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Literal(Literal::Bool(true));
+        let value = Value::Bool(true);
+
+        let result = pattern_matches(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_bool_literal_no_match() {
+        let mut interp = Interpreter::new();
+
+        let pattern = Pattern::Literal(Literal::Bool(true));
+        let value = Value::Bool(false);
+
+        let result = pattern_matches(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    #[test]
+    fn test_eval_throw_negative_int() {
+        let mut interp = Interpreter::new();
+
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(-999, None)),
+            Span::default(),
+        );
+
+        let result = eval_throw(&mut interp, &expr);
+        assert!(result.is_err());
+        if let Err(InterpreterError::Throw(value)) = result {
+            assert_eq!(value, Value::Integer(-999));
+        } else {
+            panic!("Expected Throw");
+        }
+    }
+
+    #[test]
+    fn test_bind_pattern_variables_struct_has_rest() {
+        let mut interp = Interpreter::new();
+        interp.push_scope();
+
+        let mut obj = HashMap::new();
+        obj.insert("a".to_string(), Value::Integer(1));
+        obj.insert("b".to_string(), Value::Integer(2));
+        obj.insert("c".to_string(), Value::Integer(3));
+        let value = Value::Object(Arc::new(obj));
+
+        let pattern = Pattern::Struct {
+            name: "Test".to_string(),
+            fields: vec![StructPatternField {
+                name: "a".to_string(),
+                pattern: Some(Pattern::Identifier("x".to_string())),
+            }],
+            has_rest: true,
+        };
+
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_finally_block_with_nil() {
+        let mut interp = Interpreter::new();
+
+        let finally_expr = Expr::new(ExprKind::Literal(Literal::Null), Span::default());
+
+        let result = eval_finally_block(&mut interp, &finally_expr);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_error_to_value_division_by_zero() {
+        let error = InterpreterError::DivisionByZero;
+        let result = error_to_value(error);
+        // Should fall through to default case
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_error_to_value_stack_overflow() {
+        let error = InterpreterError::StackOverflow;
+        let result = error_to_value(error);
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    // === EXTREME TDD Round 159 - Coverage Push Tests ===
+
+    #[test]
+    fn test_error_to_value_throw_r159() {
+        let error = InterpreterError::Throw(Value::Integer(42));
+        let result = error_to_value(error);
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_error_to_value_type_error_r159() {
+        let error = InterpreterError::TypeError("type mismatch".to_string());
+        let result = error_to_value(error);
+        if let Value::Object(obj) = result {
+            assert!(obj.get("type").is_some());
+            assert!(obj.get("message").is_some());
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_error_to_value_runtime_error_r159() {
+        let error = InterpreterError::RuntimeError("something failed".to_string());
+        let result = error_to_value(error);
+        if let Value::Object(obj) = result {
+            assert!(obj.get("type").is_some());
+            assert!(obj.get("message").is_some());
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_value_to_error_r159() {
+        let value = Value::from_string("error message".to_string());
+        let error = value_to_error(value.clone());
+        if let InterpreterError::Throw(v) = error {
+            assert_eq!(v, value);
+        } else {
+            panic!("Expected Throw error");
+        }
+    }
+
+    #[test]
+    fn test_bind_pattern_wildcard_r159() {
+        let mut interp = Interpreter::new();
+        let pattern = Pattern::Wildcard;
+        let value = Value::Integer(42);
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_literal_r159() {
+        let mut interp = Interpreter::new();
+        let pattern = Pattern::Literal(Literal::Integer(42, None));
+        let value = Value::Integer(42);
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_tuple_r159() {
+        let mut interp = Interpreter::new();
+        let pattern = Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ]);
+        let value = Value::Tuple(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_list_r159() {
+        let mut interp = Interpreter::new();
+        let pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
+        let value = Value::Array(std::sync::Arc::from(vec![Value::Integer(1)]));
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_rest_r159() {
+        let mut interp = Interpreter::new();
+        let pattern = Pattern::Rest;
+        let value = Value::Array(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_bind_pattern_rest_named_r159() {
+        let mut interp = Interpreter::new();
+        let pattern = Pattern::RestNamed("rest".to_string());
+        let value = Value::Array(std::sync::Arc::from(vec![Value::Integer(1)]));
+        let result = bind_pattern_variables(&mut interp, &pattern, &value);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_error_to_value_break_r159() {
+        let error = InterpreterError::Break(None, Value::Nil);
+        let result = error_to_value(error);
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_error_to_value_continue_r159() {
+        let error = InterpreterError::Continue(None);
+        let result = error_to_value(error);
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_error_to_value_return_r159() {
+        let error = InterpreterError::Return(Value::Integer(42));
+        let result = error_to_value(error);
+        assert!(matches!(result, Value::String(_)));
+    }
+
+    #[test]
+    fn test_error_to_value_assertion_failed_r159() {
+        let error = InterpreterError::AssertionFailed("assertion failed".to_string());
+        let result = error_to_value(error);
+        assert!(matches!(result, Value::String(_)));
+    }
+}

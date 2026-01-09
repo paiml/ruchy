@@ -123,6 +123,16 @@ mod tests {
     use super::*;
     use std::path::PathBuf;
 
+    fn make_expr(kind: ExprKind) -> Expr {
+        Expr {
+            kind,
+            span: ruchy::frontend::ast::Span::new(0, 0),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
     #[test]
     fn test_handle_stdin_input_simple_expression() {
         // This would require a more sophisticated test setup
@@ -139,71 +149,157 @@ mod tests {
 
     #[test]
     fn test_needs_module_resolution_empty_block() {
-        let expr = Expr {
-            kind: ExprKind::Block(vec![]),
-            span: ruchy::frontend::ast::Span::new(0, 0),
-        };
+        let expr = make_expr(ExprKind::Block(vec![]));
         assert!(!needs_module_resolution(&expr));
     }
 
     #[test]
     fn test_needs_module_resolution_with_import() {
-        let expr = Expr {
-            kind: ExprKind::Import {
-                module: "test".to_string(),
-                items: vec![],
-            },
-            span: ruchy::frontend::ast::Span::new(0, 0),
-        };
+        let expr = make_expr(ExprKind::Import {
+            module: "test".to_string(),
+            items: None,
+        });
         assert!(needs_module_resolution(&expr));
     }
 
     #[test]
     fn test_needs_module_resolution_with_module_decl() {
-        let expr = Expr {
-            kind: ExprKind::ModuleDeclaration {
-                name: "test".to_string(),
-            },
-            span: ruchy::frontend::ast::Span::new(0, 0),
-        };
+        let expr = make_expr(ExprKind::ModuleDeclaration {
+            name: "test".to_string(),
+        });
         assert!(needs_module_resolution(&expr));
     }
 
     #[test]
     fn test_needs_module_resolution_with_import_all() {
-        let expr = Expr {
-            kind: ExprKind::ImportAll {
-                module: "test".to_string(),
-            },
-            span: ruchy::frontend::ast::Span::new(0, 0),
-        };
+        let expr = make_expr(ExprKind::ImportAll {
+            module: "test".to_string(),
+            alias: "t".to_string(),
+        });
         assert!(needs_module_resolution(&expr));
     }
 
     #[test]
     fn test_needs_module_resolution_nested_in_block() {
-        let import = Expr {
-            kind: ExprKind::Import {
-                module: "test".to_string(),
-                items: vec![],
-            },
-            span: ruchy::frontend::ast::Span::new(0, 0),
-        };
-        let block = Expr {
-            kind: ExprKind::Block(vec![import]),
-            span: ruchy::frontend::ast::Span::new(0, 0),
-        };
+        let import = make_expr(ExprKind::Import {
+            module: "test".to_string(),
+            items: None,
+        });
+        let block = make_expr(ExprKind::Block(vec![import]));
         assert!(needs_module_resolution(&block));
     }
 
     #[test]
     fn test_resolve_modules_for_execution_nonexistent_path() {
-        let expr = Expr {
-            kind: ExprKind::Block(vec![]),
-            span: ruchy::frontend::ast::Span::new(0, 0),
-        };
+        let expr = make_expr(ExprKind::Block(vec![]));
         let path = PathBuf::from("/nonexistent/dir/file.ruchy");
         // Should succeed for empty block (no modules to resolve)
+        let result = resolve_modules_for_execution(&path, expr);
+        assert!(result.is_ok());
+    }
+
+    // ===== EXTREME TDD Round 152 - Execution Handler Tests =====
+
+    #[test]
+    fn test_needs_module_resolution_simple_literal() {
+        let expr = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(42, None)));
+        assert!(!needs_module_resolution(&expr));
+    }
+
+    #[test]
+    fn test_needs_module_resolution_import_default() {
+        let expr = make_expr(ExprKind::ImportDefault {
+            module: "test".to_string(),
+            name: "t".to_string(),
+        });
+        assert!(needs_module_resolution(&expr));
+    }
+
+    #[test]
+    fn test_needs_module_resolution_module() {
+        let inner = make_expr(ExprKind::Block(vec![]));
+        let expr = make_expr(ExprKind::Module {
+            name: "test".to_string(),
+            body: Box::new(inner),
+        });
+        assert!(needs_module_resolution(&expr));
+    }
+
+    #[test]
+    fn test_needs_module_resolution_let_binding() {
+        let val = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(1, None)));
+        let body = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(2, None)));
+        let expr = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            is_mutable: false,
+            type_annotation: None,
+            value: Box::new(val),
+            body: Box::new(body),
+            else_block: None,
+        });
+        assert!(!needs_module_resolution(&expr));
+    }
+
+    #[test]
+    fn test_needs_module_resolution_let_with_import_body() {
+        let val = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(1, None)));
+        let body = make_expr(ExprKind::Import {
+            module: "test".to_string(),
+            items: None,
+        });
+        let expr = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            is_mutable: false,
+            type_annotation: None,
+            value: Box::new(val),
+            body: Box::new(body),
+            else_block: None,
+        });
+        assert!(needs_module_resolution(&expr));
+    }
+
+    #[test]
+    fn test_needs_module_resolution_function_with_import() {
+        let body = make_expr(ExprKind::Import {
+            module: "test".to_string(),
+            items: None,
+        });
+        let expr = make_expr(ExprKind::Function {
+            name: "foo".to_string(),
+            type_params: vec![],
+            params: vec![],
+            return_type: None,
+            body: Box::new(body),
+            is_async: false,
+            is_pub: false,
+        });
+        assert!(needs_module_resolution(&expr));
+    }
+
+    #[test]
+    fn test_handle_stdin_input_error() {
+        let result = handle_stdin_input("invalid syntax {");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_stdin_input_valid_expression() {
+        let result = handle_stdin_input("42");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_resolve_modules_with_parent_directory() {
+        let expr = make_expr(ExprKind::Block(vec![]));
+        let path = PathBuf::from("/root/src/test.ruchy");
+        let result = resolve_modules_for_execution(&path, expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_resolve_modules_for_execution_relative_path() {
+        let expr = make_expr(ExprKind::Block(vec![]));
+        let path = PathBuf::from("test.ruchy");
         let result = resolve_modules_for_execution(&path, expr);
         assert!(result.is_ok());
     }

@@ -1,14 +1,14 @@
 //! System Built-in Function Transpilation
 //!
 //! This module handles transpilation of system-level built-in functions:
-//! - Environment: env_args, env_var, env_set_var, env_remove_var, env_vars,
-//!                env_current_dir, env_set_current_dir, env_temp_dir
-//! - Filesystem: fs_read, fs_write, fs_exists, fs_create_dir, fs_remove_file,
-//!               fs_remove_dir, fs_copy, fs_rename, fs_metadata, fs_read_dir,
-//!               fs_canonicalize, fs_is_file
-//! - Path: path_join, path_join_many, path_parent, path_file_name, path_file_stem,
-//!         path_extension, path_is_absolute, path_is_relative, path_canonicalize,
-//!         path_with_extension, path_with_file_name, path_components, path_normalize
+//! - Environment: `env_args`, `env_var`, `env_set_var`, `env_remove_var`, `env_vars`,
+//!   `env_current_dir`, `env_set_current_dir`, `env_temp_dir`
+//! - Filesystem: `fs_read`, `fs_write`, `fs_exists`, `fs_create_dir`, `fs_remove_file`,
+//!   `fs_remove_dir`, `fs_copy`, `fs_rename`, `fs_metadata`, `fs_read_dir`,
+//!   `fs_canonicalize`, `fs_is_file`
+//! - Path: `path_join`, `path_join_many`, `path_parent`, `path_file_name`, `path_file_stem`,
+//!   `path_extension`, `path_is_absolute`, `path_is_relative`, `path_canonicalize`,
+//!   `path_with_extension`, `path_with_file_name`, `path_components`, `path_normalize`
 //!
 //! **EXTREME TDD Round 61**: Extracted from statements.rs for modularization.
 

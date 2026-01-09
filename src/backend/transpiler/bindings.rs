@@ -7,6 +7,7 @@
 //! - Let-else patterns
 //!
 //! **EXTREME TDD Round 54**: Extracted from statements.rs for modularization.
+#![allow(clippy::doc_markdown)]
 
 use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern, Type, TypeKind};

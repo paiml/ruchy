@@ -411,4 +411,390 @@ mod tests {
         assert!(!config.partial_credit);
         assert_eq!(config.max_attempts, 1);
     }
+
+    // EXTREME TDD Round 108: Additional coverage tests
+
+    fn make_test_notebook() -> crate::notebook::testing::types::Notebook {
+        crate::notebook::testing::types::Notebook {
+            cells: vec![],
+            metadata: None,
+        }
+    }
+
+    fn make_submission(student_id: &str) -> StudentSubmission {
+        StudentSubmission {
+            student_id: student_id.to_string(),
+            assignment_id: "test_assignment".to_string(),
+            notebook: make_test_notebook(),
+            submitted_at: chrono::Utc::now(),
+            grade: None,
+        }
+    }
+
+    #[test]
+    fn test_grade_with_rubric_single_item() {
+        use crate::notebook::testing::educational::RubricItem;
+
+        let grader = Grader::new();
+        let submission = make_submission("test_student");
+        let rubric = vec![RubricItem {
+            id: "item1".to_string(),
+            description: "Test item".to_string(),
+            points: 10,
+            criteria: vec![],
+        }];
+        let scores = vec![("item1".to_string(), 8u32)];
+
+        let grade = grader.grade_with_rubric(&submission, &rubric, &scores);
+        assert_eq!(grade.total_points, 8);
+        assert_eq!(grade.max_points, 10);
+        assert!((grade.percentage - 80.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_grade_with_rubric_multiple_items() {
+        use crate::notebook::testing::educational::RubricItem;
+
+        let grader = Grader::new();
+        let submission = make_submission("student2");
+        let rubric = vec![
+            RubricItem {
+                id: "item1".to_string(),
+                description: "Part A".to_string(),
+                points: 50,
+                criteria: vec![],
+            },
+            RubricItem {
+                id: "item2".to_string(),
+                description: "Part B".to_string(),
+                points: 50,
+                criteria: vec![],
+            },
+        ];
+        let scores = vec![("item1".to_string(), 45u32), ("item2".to_string(), 50u32)];
+
+        let grade = grader.grade_with_rubric(&submission, &rubric, &scores);
+        assert_eq!(grade.total_points, 95);
+        assert_eq!(grade.max_points, 100);
+        assert_eq!(grade.feedback.len(), 2);
+    }
+
+    #[test]
+    fn test_grade_with_rubric_score_capping() {
+        use crate::notebook::testing::educational::RubricItem;
+
+        let grader = Grader::new();
+        let submission = make_submission("student3");
+        let rubric = vec![RubricItem {
+            id: "item1".to_string(),
+            description: "Test".to_string(),
+            points: 10,
+            criteria: vec![],
+        }];
+        // Score exceeds max points - should be capped
+        let scores = vec![("item1".to_string(), 15u32)];
+
+        let grade = grader.grade_with_rubric(&submission, &rubric, &scores);
+        assert_eq!(grade.total_points, 10); // Capped at max
+    }
+
+    #[test]
+    fn test_grade_with_rubric_feedback_severity() {
+        use crate::notebook::testing::educational::RubricItem;
+
+        let grader = Grader::new();
+        let submission = make_submission("student4");
+        let rubric = vec![
+            RubricItem {
+                id: "perfect".to_string(),
+                description: "Perfect score".to_string(),
+                points: 10,
+                criteria: vec![],
+            },
+            RubricItem {
+                id: "good".to_string(),
+                description: "Good score".to_string(),
+                points: 10,
+                criteria: vec![],
+            },
+            RubricItem {
+                id: "poor".to_string(),
+                description: "Poor score".to_string(),
+                points: 10,
+                criteria: vec![],
+            },
+        ];
+        let scores = vec![
+            ("perfect".to_string(), 10u32), // 100% -> Success
+            ("good".to_string(), 7u32),     // 70% -> Warning
+            ("poor".to_string(), 5u32),     // 50% -> Error
+        ];
+
+        let grade = grader.grade_with_rubric(&submission, &rubric, &scores);
+        assert_eq!(grade.feedback.len(), 3);
+    }
+
+    #[test]
+    fn test_apply_late_penalty_no_penalty() {
+        use crate::notebook::testing::educational::Grade;
+        use std::collections::HashMap;
+
+        let grader = Grader::new();
+        let mut grade = Grade {
+            total_points: 100,
+            max_points: 100,
+            percentage: 100.0,
+            feedback: vec![],
+            rubric_scores: HashMap::new(),
+        };
+
+        grader.apply_late_penalty(&mut grade, 0.0);
+        assert_eq!(grade.total_points, 100);
+        assert_eq!(grade.feedback.len(), 0);
+    }
+
+    #[test]
+    fn test_apply_late_penalty_negative_hours() {
+        use crate::notebook::testing::educational::Grade;
+        use std::collections::HashMap;
+
+        let grader = Grader::new();
+        let mut grade = Grade {
+            total_points: 100,
+            max_points: 100,
+            percentage: 100.0,
+            feedback: vec![],
+            rubric_scores: HashMap::new(),
+        };
+
+        grader.apply_late_penalty(&mut grade, -5.0);
+        assert_eq!(grade.total_points, 100); // No change
+    }
+
+    #[test]
+    fn test_apply_late_penalty_one_day() {
+        use crate::notebook::testing::educational::Grade;
+        use std::collections::HashMap;
+
+        let grader = Grader::new(); // 10% penalty per day
+        let mut grade = Grade {
+            total_points: 100,
+            max_points: 100,
+            percentage: 100.0,
+            feedback: vec![],
+            rubric_scores: HashMap::new(),
+        };
+
+        grader.apply_late_penalty(&mut grade, 24.0); // 1 day
+        assert_eq!(grade.total_points, 90); // 10% penalty
+        assert_eq!(grade.feedback.len(), 1);
+    }
+
+    #[test]
+    fn test_apply_late_penalty_multiple_days() {
+        use crate::notebook::testing::educational::Grade;
+        use std::collections::HashMap;
+
+        let grader = Grader::new();
+        let mut grade = Grade {
+            total_points: 100,
+            max_points: 100,
+            percentage: 100.0,
+            feedback: vec![],
+            rubric_scores: HashMap::new(),
+        };
+
+        grader.apply_late_penalty(&mut grade, 48.0); // 2 days
+        assert_eq!(grade.total_points, 81); // 0.9^2 = 0.81
+    }
+
+    fn make_cell(source: &str) -> crate::notebook::testing::types::Cell {
+        crate::notebook::testing::types::Cell {
+            id: "1".to_string(),
+            source: source.to_string(),
+            cell_type: CellType::Code,
+            metadata: crate::notebook::testing::types::CellMetadata { test: None },
+        }
+    }
+
+    #[test]
+    fn test_grade_code_quality_empty_notebook() {
+        let grader = Grader::new();
+        let notebook = make_test_notebook();
+
+        let score = grader.grade_code_quality(&notebook);
+        assert_eq!(score.overall, 0);
+    }
+
+    #[test]
+    fn test_grade_code_quality_with_documentation() {
+        let grader = Grader::new();
+        let notebook = Notebook {
+            cells: vec![make_cell("/// This is documented\nfn foo() {}")],
+            metadata: None,
+        };
+
+        let score = grader.grade_code_quality(&notebook);
+        assert!(score.documentation_score >= 10);
+    }
+
+    #[test]
+    fn test_grade_code_quality_without_unwrap() {
+        let grader = Grader::new();
+        let notebook = Notebook {
+            cells: vec![make_cell("fn safe_code() -> Option<i32> { Some(1) }")],
+            metadata: None,
+        };
+
+        let score = grader.grade_code_quality(&notebook);
+        assert!(score.style_score >= 5);
+    }
+
+    #[test]
+    fn test_grade_code_quality_with_tests() {
+        let grader = Grader::new();
+        let notebook = Notebook {
+            cells: vec![make_cell("#[test]\nfn test_foo() { assert!(true); }")],
+            metadata: None,
+        };
+
+        let score = grader.grade_code_quality(&notebook);
+        assert!(score.testing_score >= 15);
+    }
+
+    #[test]
+    fn test_grade_code_quality_low_complexity() {
+        let grader = Grader::new();
+        let notebook = Notebook {
+            cells: vec![make_cell("fn simple() { let x = 1; }")],
+            metadata: None,
+        };
+
+        let score = grader.grade_code_quality(&notebook);
+        assert!(score.complexity_score >= 10);
+    }
+
+    #[test]
+    fn test_count_nesting_simple() {
+        let grader = Grader::new();
+        assert_eq!(grader.count_nesting("fn f() { }"), 1);
+    }
+
+    #[test]
+    fn test_count_nesting_nested() {
+        let grader = Grader::new();
+        assert_eq!(grader.count_nesting("fn f() { if true { while x { } } }"), 3);
+    }
+
+    #[test]
+    fn test_count_nesting_empty() {
+        let grader = Grader::new();
+        assert_eq!(grader.count_nesting("let x = 1;"), 0);
+    }
+
+    #[test]
+    fn test_exercise_validator_new() {
+        let validator = ExerciseValidator::new();
+        assert_eq!(validator.timeout_ms, 5000);
+    }
+
+    #[test]
+    fn test_exercise_validator_default() {
+        let validator = ExerciseValidator::default();
+        assert_eq!(validator.timeout_ms, 5000);
+    }
+
+    #[test]
+    fn test_exercise_validate_missing_function() {
+        let validator = ExerciseValidator::new();
+        let exercise = Exercise {
+            id: "ex1".to_string(),
+            description: "Test".to_string(),
+            function_name: "fibonacci".to_string(),
+            starter_code: "".to_string(),
+            test_cases: vec![("5", "5")],
+            difficulty: Difficulty::Easy,
+            hints: vec![],
+        };
+
+        let result = validator.validate(&exercise, "fn other() {}");
+        assert!(!result.is_correct);
+        assert_eq!(result.passed_tests, 0);
+    }
+
+    #[test]
+    fn test_exercise_validate_correct_solution() {
+        let validator = ExerciseValidator::new();
+        let exercise = Exercise {
+            id: "ex1".to_string(),
+            description: "Fibonacci".to_string(),
+            function_name: "fibonacci".to_string(),
+            starter_code: "".to_string(),
+            test_cases: vec![("5", "5")],
+            difficulty: Difficulty::Medium,
+            hints: vec![],
+        };
+
+        let result = validator.validate(&exercise, "fn fibonacci(n: i32) -> i32 { n - 1 + n }");
+        assert_eq!(result.total_tests, 1);
+    }
+
+    #[test]
+    fn test_exercise_difficulty_variants() {
+        let _easy = Difficulty::Easy;
+        let _medium = Difficulty::Medium;
+        let _hard = Difficulty::Hard;
+        let _expert = Difficulty::Expert;
+    }
+
+    #[test]
+    fn test_quality_score_default() {
+        let score = QualityScore::default();
+        assert_eq!(score.documentation_score, 0);
+        assert_eq!(score.style_score, 0);
+        assert_eq!(score.testing_score, 0);
+        assert_eq!(score.complexity_score, 0);
+        assert_eq!(score.overall, 0);
+    }
+
+    #[test]
+    fn test_quality_score_clone() {
+        let score = QualityScore {
+            documentation_score: 80,
+            style_score: 90,
+            testing_score: 70,
+            complexity_score: 85,
+            overall: 81,
+        };
+        let cloned = score.clone();
+        assert_eq!(cloned.overall, 81);
+    }
+
+    #[test]
+    fn test_exercise_clone() {
+        let exercise = Exercise {
+            id: "test".to_string(),
+            description: "Test exercise".to_string(),
+            function_name: "test_fn".to_string(),
+            starter_code: "fn test_fn() {}".to_string(),
+            test_cases: vec![],
+            difficulty: Difficulty::Easy,
+            hints: vec!["Hint 1".to_string()],
+        };
+        let cloned = exercise.clone();
+        assert_eq!(cloned.id, "test");
+        assert_eq!(cloned.hints.len(), 1);
+    }
+
+    #[test]
+    fn test_validation_result_clone() {
+        let result = ValidationResult {
+            passed_tests: 5,
+            total_tests: 10,
+            is_correct: false,
+            feedback: vec!["msg".to_string()],
+        };
+        let cloned = result.clone();
+        assert_eq!(cloned.passed_tests, 5);
+    }
 }

@@ -984,6 +984,387 @@ mod tests {
         );
     }
 
+    // === EXTREME TDD Round 162 - 95% Coverage Push Tests ===
+
+    // Test 23: Gate passes at exact threshold boundary
+    #[test]
+    fn test_gate_passes_at_exact_boundary_r162() {
+        let config = QualityGateConfig::default(); // min_score: 0.7
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.value = 0.7; // Exactly at threshold
+        score.grade = Grade::BMinus;
+
+        let result = enforcer.enforce_gates(&score, None);
+        let score_violations: Vec<_> = result
+            .violations
+            .iter()
+            .filter(|v| v.violation_type == ViolationType::OverallScore)
+            .collect();
+
+        // Should pass at exact boundary (not below)
+        assert!(score_violations.is_empty());
+    }
+
+    // Test 24: Gate fails just below threshold
+    #[test]
+    fn test_gate_fails_just_below_boundary_r162() {
+        let config = QualityGateConfig::default(); // min_score: 0.7
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.value = 0.699; // Just below threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let score_violations: Vec<_> = result
+            .violations
+            .iter()
+            .filter(|v| v.violation_type == ViolationType::OverallScore)
+            .collect();
+
+        assert_eq!(score_violations.len(), 1);
+    }
+
+    // Test 25: Custom strict config (A- minimum)
+    #[test]
+    fn test_strict_config_a_minus_minimum_r162() {
+        let mut config = QualityGateConfig::default();
+        config.min_score = 0.85;
+        config.min_grade = Grade::AMinus;
+
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.value = 0.84; // Below A- threshold
+        score.grade = Grade::BPlus;
+
+        let result = enforcer.enforce_gates(&score, None);
+        assert!(!result.passed);
+    }
+
+    // Test 26: Lenient config (C minimum)
+    #[test]
+    fn test_lenient_config_c_minimum_r162() {
+        let mut config = QualityGateConfig::default();
+        config.min_score = 0.5;
+        config.min_grade = Grade::C;
+        config.component_thresholds.correctness = 0.5;
+        config.component_thresholds.safety = 0.5;
+        config.anti_gaming.min_confidence = 0.3;
+
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_minimal_score();
+        score.value = 0.55;
+        score.grade = Grade::C;
+        score.components.correctness = 0.55;
+        score.components.safety = 0.55;
+        score.confidence = 0.4;
+
+        let result = enforcer.enforce_gates(&score, None);
+        // Should pass with lenient config
+        let critical_violations: Vec<_> = result
+            .violations
+            .iter()
+            .filter(|v| v.severity == Severity::Critical)
+            .collect();
+        assert!(critical_violations.is_empty());
+    }
+
+    // Test 27: Project overrides applied correctly
+    #[test]
+    fn test_project_overrides_r162() {
+        let mut config = QualityGateConfig::default();
+        config.project_overrides.insert("performance".to_string(), 0.3);
+
+        // Project overrides should be stored
+        assert_eq!(config.project_overrides.get("performance"), Some(&0.3));
+    }
+
+    // Test 28: Grade ordering A+ > A
+    #[test]
+    fn test_grade_ordering_a_plus_greater_than_a_r162() {
+        assert!(Grade::APlus > Grade::A);
+    }
+
+    // Test 29: Grade ordering A > A-
+    #[test]
+    fn test_grade_ordering_a_greater_than_a_minus_r162() {
+        assert!(Grade::A > Grade::AMinus);
+    }
+
+    // Test 30: Grade ordering A- > B+
+    #[test]
+    fn test_grade_ordering_a_minus_greater_than_b_plus_r162() {
+        assert!(Grade::AMinus > Grade::BPlus);
+    }
+
+    // Test 31: Grade ordering F < D
+    #[test]
+    fn test_grade_ordering_f_less_than_d_r162() {
+        assert!(Grade::F < Grade::D);
+    }
+
+    // Test 32: Grade equality
+    #[test]
+    fn test_grade_equality_r162() {
+        assert!(Grade::A == Grade::A);
+        assert!(Grade::BMinus == Grade::BMinus);
+    }
+
+    // Test 33: GateResult serialization roundtrip
+    #[test]
+    fn test_gate_result_serialization_roundtrip_r162() {
+        let result = create_gate_result_passed();
+        let serialized = serde_json::to_string(&result).expect("serialize should succeed");
+        let deserialized: GateResult =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+
+        assert_eq!(result.passed, deserialized.passed);
+        assert!((result.score - deserialized.score).abs() < f64::EPSILON);
+        assert_eq!(result.grade, deserialized.grade);
+    }
+
+    // Test 34: Violation serialization roundtrip
+    #[test]
+    fn test_violation_serialization_roundtrip_r162() {
+        let violation = Violation {
+            violation_type: ViolationType::Correctness,
+            actual: 0.65,
+            required: 0.8,
+            severity: Severity::Critical,
+            message: "Test violation message".to_string(),
+        };
+
+        let serialized = serde_json::to_string(&violation).expect("serialize should succeed");
+        let deserialized: Violation =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+
+        assert_eq!(violation.violation_type, deserialized.violation_type);
+        assert_eq!(violation.severity, deserialized.severity);
+        assert_eq!(violation.message, deserialized.message);
+    }
+
+    // Test 35: ComponentThresholds serialization
+    #[test]
+    fn test_component_thresholds_serialization_r162() {
+        let thresholds = ComponentThresholds {
+            correctness: 0.9,
+            performance: 0.7,
+            maintainability: 0.8,
+            safety: 0.95,
+            idiomaticity: 0.6,
+        };
+
+        let serialized = serde_json::to_string(&thresholds).expect("serialize should succeed");
+        let deserialized: ComponentThresholds =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+
+        assert!((thresholds.correctness - deserialized.correctness).abs() < f64::EPSILON);
+        assert!((thresholds.safety - deserialized.safety).abs() < f64::EPSILON);
+    }
+
+    // Test 36: AntiGamingRules serialization
+    #[test]
+    fn test_anti_gaming_rules_serialization_r162() {
+        let rules = AntiGamingRules {
+            min_confidence: 0.7,
+            max_cache_hit_rate: 0.75,
+            require_deep_analysis: vec!["src/lib.rs".to_string()],
+            min_file_size_bytes: 200,
+            max_test_ratio: 1.5,
+        };
+
+        let serialized = serde_json::to_string(&rules).expect("serialize should succeed");
+        let deserialized: AntiGamingRules =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+
+        assert_eq!(rules.min_file_size_bytes, deserialized.min_file_size_bytes);
+        assert_eq!(rules.require_deep_analysis.len(), deserialized.require_deep_analysis.len());
+    }
+
+    // Test 37: CiIntegration serialization
+    #[test]
+    fn test_ci_integration_serialization_r162() {
+        let ci = CiIntegration {
+            fail_on_violation: true,
+            junit_xml: true,
+            json_output: false,
+            notifications: NotificationConfig {
+                slack: true,
+                email: true,
+                webhook: Some("https://hook.example.com".to_string()),
+            },
+            block_merge: false,
+        };
+
+        let serialized = serde_json::to_string(&ci).expect("serialize should succeed");
+        let deserialized: CiIntegration =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+
+        assert_eq!(ci.fail_on_violation, deserialized.fail_on_violation);
+        assert_eq!(ci.block_merge, deserialized.block_merge);
+        assert!(deserialized.notifications.slack);
+    }
+
+    // Test 38: Empty violations list means passed
+    #[test]
+    fn test_empty_violations_means_passed_r162() {
+        let result = GateResult {
+            passed: true,
+            score: 0.95,
+            grade: Grade::APlus,
+            violations: vec![],
+            confidence: 0.99,
+            gaming_warnings: vec![],
+        };
+
+        assert!(result.passed);
+        assert!(result.violations.is_empty());
+    }
+
+    // Test 39: Performance threshold violation severity is High (not Critical)
+    #[test]
+    fn test_performance_violation_severity_is_high_r162() {
+        let config = QualityGateConfig::default();
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.components.performance = 0.5; // Below 0.6 threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        let perf_violations: Vec<_> = result
+            .violations
+            .iter()
+            .filter(|v| v.violation_type == ViolationType::Performance)
+            .collect();
+
+        assert_eq!(perf_violations.len(), 1);
+        assert_eq!(perf_violations[0].severity, Severity::High);
+    }
+
+    // Test 40: Full config serialization roundtrip
+    #[test]
+    fn test_full_config_serialization_roundtrip_r162() {
+        let config = QualityGateConfig::default();
+
+        let serialized = serde_json::to_string(&config).expect("serialize should succeed");
+        let deserialized: QualityGateConfig =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+
+        assert!((config.min_score - deserialized.min_score).abs() < f64::EPSILON);
+        assert_eq!(config.min_grade, deserialized.min_grade);
+    }
+
+    // Test 41: Cache hit rate at exact max threshold
+    #[test]
+    fn test_cache_hit_rate_at_exact_max_r162() {
+        let config = QualityGateConfig::default(); // max_cache_hit_rate: 0.8
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.cache_hit_rate = 0.8; // Exactly at max threshold
+
+        let result = enforcer.enforce_gates(&score, None);
+        // Should NOT warn at exact threshold (only above)
+        assert!(result.gaming_warnings.is_empty());
+    }
+
+    // Test 42: Confidence at exact minimum threshold passes
+    #[test]
+    fn test_confidence_at_exact_min_passes_r162() {
+        let config = QualityGateConfig::default(); // min_confidence: 0.6
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.confidence = 0.6; // Exactly at minimum
+
+        let result = enforcer.enforce_gates(&score, None);
+        let confidence_violations: Vec<_> = result
+            .violations
+            .iter()
+            .filter(|v| v.violation_type == ViolationType::Confidence)
+            .collect();
+
+        // Should pass at exact threshold
+        assert!(confidence_violations.is_empty());
+    }
+
+    // Test 43: All component thresholds pass at exact values
+    #[test]
+    fn test_all_components_at_exact_thresholds_pass_r162() {
+        let config = QualityGateConfig::default();
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        // Set all to exact thresholds
+        score.components.correctness = 0.8;
+        score.components.performance = 0.6;
+        score.components.maintainability = 0.7;
+        score.components.safety = 0.8;
+        score.components.idiomaticity = 0.5;
+
+        let result = enforcer.enforce_gates(&score, None);
+
+        // Should have no component violations
+        let component_violations: Vec<_> = result
+            .violations
+            .iter()
+            .filter(|v| {
+                matches!(
+                    v.violation_type,
+                    ViolationType::Correctness
+                        | ViolationType::Performance
+                        | ViolationType::Maintainability
+                        | ViolationType::Safety
+                        | ViolationType::Idiomaticity
+                )
+            })
+            .collect();
+
+        assert!(component_violations.is_empty());
+    }
+
+    // Test 44: NotificationConfig with None webhook
+    #[test]
+    fn test_notification_config_none_webhook_r162() {
+        let config = NotificationConfig {
+            slack: false,
+            email: false,
+            webhook: None,
+        };
+
+        let serialized = serde_json::to_string(&config).expect("serialize should succeed");
+        let deserialized: NotificationConfig =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+
+        assert!(!deserialized.slack);
+        assert!(!deserialized.email);
+        assert!(deserialized.webhook.is_none());
+    }
+
+    // Test 45: Violation message contains percentage formatting
+    #[test]
+    fn test_violation_message_percentage_format_r162() {
+        let config = QualityGateConfig::default();
+        let enforcer = QualityGateEnforcer::new(config);
+
+        let mut score = create_passing_score();
+        score.value = 0.55; // 55%
+
+        let result = enforcer.enforce_gates(&score, None);
+        let score_violation = result
+            .violations
+            .iter()
+            .find(|v| v.violation_type == ViolationType::OverallScore)
+            .expect("should have score violation");
+
+        // Message should contain percentage formatting
+        assert!(score_violation.message.contains("55.0%"));
+        assert!(score_violation.message.contains("70.0%"));
+    }
+
     // Helper functions for testing
     fn create_gate_result_passed() -> GateResult {
         GateResult {

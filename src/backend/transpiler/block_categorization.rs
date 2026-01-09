@@ -9,6 +9,8 @@
 //!
 //! **EXTREME TDD Round 67**: Extracted from mod.rs for modularization.
 
+#![allow(clippy::doc_markdown)]
+
 use super::{BlockCategorization, Transpiler};
 use crate::frontend::ast::{Expr, ExprKind};
 use anyhow::Result;
@@ -405,7 +407,7 @@ impl Transpiler {
     fn is_statement_if(then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
         // If both branches are statements, the whole if is a statement
         Self::is_statement_expr(then_branch)
-            && else_branch.is_none_or(|e| Self::is_statement_expr(e))
+            && else_branch.is_none_or(Self::is_statement_expr)
     }
 }
 

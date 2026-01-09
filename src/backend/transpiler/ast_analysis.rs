@@ -6,9 +6,11 @@
 //! - Function signature collection: building signature map for type coercion
 //! - Module name collection: tracking module declarations
 //! - Import detection and resolution
-//! - AST content detection (HashMap, DataFrame, etc.)
+//! - AST content detection (`HashMap`, `DataFrame`, etc.)
 //!
 //! **EXTREME TDD Round 66**: Extracted from mod.rs for modularization.
+
+#![allow(clippy::doc_markdown)]
 
 use super::{FunctionSignature, Transpiler};
 use crate::backend::module_resolver::ModuleResolver;

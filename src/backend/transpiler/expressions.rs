@@ -1016,4 +1016,503 @@ mod tests {
         let tokens_str = result.to_string();
         assert!(tokens_str.contains("^="));
     }
+
+    // ===== EXTREME TDD Round 118 - Additional Tests =====
+
+    // Test 38: expr_references_var negative case
+    #[test]
+    fn test_expr_references_var_not_found() {
+        let expr = Expr::new(ExprKind::Identifier("other".to_string()), Span::default());
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(!result);
+    }
+
+    // Test 42: get_compound_op_token with Multiply
+    #[test]
+    fn test_get_compound_op_token_multiply() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::Multiply);
+        assert!(result.is_ok());
+        let tokens_str = result.expect("operation should succeed").to_string();
+        assert!(tokens_str.contains("*="));
+    }
+
+    // Test 43: get_compound_op_token with Divide
+    #[test]
+    fn test_get_compound_op_token_divide() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::Divide);
+        assert!(result.is_ok());
+        let tokens_str = result.expect("operation should succeed").to_string();
+        assert!(tokens_str.contains("/="));
+    }
+
+    // Test 44: get_bitwise_compound_token with BitwiseAnd
+    #[test]
+    fn test_get_bitwise_compound_token_and() {
+        let result = Transpiler::get_bitwise_compound_token(BinaryOp::BitwiseAnd);
+        let tokens_str = result.to_string();
+        assert!(tokens_str.contains("&="));
+    }
+
+    // Test 45: expr_references_var with literal (negative)
+    #[test]
+    fn test_expr_references_var_literal() {
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(!result);
+    }
+
+    // Test 46: expr_references_var with Binary
+    #[test]
+    fn test_expr_references_var_binary() {
+        let left = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = Transpiler::expr_references_var(&expr, "counter");
+        assert!(result);
+    }
+
+    // Test 47: transpile_string_interpolation with Text part
+    #[test]
+    fn test_transpile_string_interpolation_text_part() {
+        let transpiler = Transpiler::new();
+        let parts = vec![StringPart::Text("Hello, World!".to_string())];
+        let result = transpiler.transpile_string_interpolation(&parts);
+        assert!(result.is_ok());
+        let tokens_str = result.expect("operation should succeed").to_string();
+        assert!(tokens_str.contains("Hello") || tokens_str.contains("format"));
+    }
+
+    // Test 48: transpile_string_interpolation with empty parts list
+    #[test]
+    fn test_transpile_string_interpolation_no_parts() {
+        let transpiler = Transpiler::new();
+        let parts: Vec<StringPart> = vec![];
+        let result = transpiler.transpile_string_interpolation(&parts);
+        assert!(result.is_ok());
+    }
+
+    // ===== EXTREME TDD Round 140 - Increment/Decrement Tests =====
+
+    // Test 49: generate_inc_dec_op pre-increment
+    #[test]
+    fn test_generate_inc_dec_op_pre_increment() {
+        let target = quote::quote! { x };
+        let result = Transpiler::generate_inc_dec_op(target, true, true);
+        let code = result.to_string();
+        assert!(code.contains("+="));
+        assert!(code.contains("1"));
+    }
+
+    // Test 50: generate_inc_dec_op post-increment
+    #[test]
+    fn test_generate_inc_dec_op_post_increment() {
+        let target = quote::quote! { x };
+        let result = Transpiler::generate_inc_dec_op(target, true, false);
+        let code = result.to_string();
+        assert!(code.contains("+="));
+        assert!(code.contains("_tmp"));
+    }
+
+    // Test 51: generate_inc_dec_op pre-decrement
+    #[test]
+    fn test_generate_inc_dec_op_pre_decrement() {
+        let target = quote::quote! { y };
+        let result = Transpiler::generate_inc_dec_op(target, false, true);
+        let code = result.to_string();
+        assert!(code.contains("-="));
+    }
+
+    // Test 52: generate_inc_dec_op post-decrement
+    #[test]
+    fn test_generate_inc_dec_op_post_decrement() {
+        let target = quote::quote! { y };
+        let result = Transpiler::generate_inc_dec_op(target, false, false);
+        let code = result.to_string();
+        assert!(code.contains("-="));
+        assert!(code.contains("_tmp"));
+    }
+
+    // Test 53: transpile_pre_increment
+    #[test]
+    fn test_transpile_pre_increment() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let result = transpiler.transpile_pre_increment(&expr);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("+="));
+    }
+
+    // Test 54: transpile_post_increment
+    #[test]
+    fn test_transpile_post_increment() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("idx".to_string()), Span::default());
+        let result = transpiler.transpile_post_increment(&expr);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("_tmp"));
+    }
+
+    // Test 55: transpile_pre_decrement
+    #[test]
+    fn test_transpile_pre_decrement() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("count".to_string()), Span::default());
+        let result = transpiler.transpile_pre_decrement(&expr);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("-="));
+    }
+
+    // Test 56: transpile_post_decrement
+    #[test]
+    fn test_transpile_post_decrement() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("n".to_string()), Span::default());
+        let result = transpiler.transpile_post_decrement(&expr);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("_tmp"));
+    }
+
+    // Test 57: transpile_array_init
+    #[test]
+    fn test_transpile_array_init() {
+        let transpiler = Transpiler::new();
+        let value = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
+        let size = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_array_init(&value, &size);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        // Array init generates vec, array literal, or repeat syntax
+        assert!(code.contains("vec") || code.contains('[') || code.contains("10"));
+    }
+
+    // Test 58: transpile_index_lvalue simple
+    #[test]
+    fn test_transpile_index_lvalue_simple() {
+        let transpiler = Transpiler::new();
+        let object = Expr::new(ExprKind::Identifier("arr".to_string()), Span::default());
+        let index = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(object),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_index_lvalue(&expr);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("arr"));
+        assert!(code.contains("usize"));
+    }
+
+    // Test 59: transpile_index_lvalue nested
+    #[test]
+    fn test_transpile_index_lvalue_nested() {
+        let transpiler = Transpiler::new();
+        let matrix = Expr::new(ExprKind::Identifier("matrix".to_string()), Span::default());
+        let i = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
+        let j = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let inner = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(matrix),
+                index: Box::new(i),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(inner),
+                index: Box::new(j),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_index_lvalue(&expr);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("matrix"));
+    }
+
+    // Test 60: transpile_index_lvalue non-index
+    #[test]
+    fn test_transpile_index_lvalue_non_index() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let result = transpiler.transpile_index_lvalue(&expr);
+        assert!(result.is_ok());
+    }
+
+    // Test 61: is_definitely_string with StringInterpolation
+    #[test]
+    fn test_is_definitely_string_interpolation() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::StringInterpolation {
+                parts: vec![StringPart::Text("hello".to_string())],
+            },
+            Span::default(),
+        );
+        assert!(transpiler.is_definitely_string(&expr));
+    }
+
+    // Test 62: is_definitely_string with Binary Add of strings
+    #[test]
+    fn test_is_definitely_string_binary_add() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::String(" world".to_string())),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        assert!(transpiler.is_definitely_string(&expr));
+    }
+
+    // Test 63: is_definitely_string with MethodCall to_string
+    #[test]
+    fn test_is_definitely_string_method_to_string() {
+        let transpiler = Transpiler::new();
+        let receiver = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: "to_string".to_string(),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        assert!(transpiler.is_definitely_string(&expr));
+    }
+
+    // Test 64: is_definitely_string with Call (false)
+    #[test]
+    fn test_is_definitely_string_call_false() {
+        let transpiler = Transpiler::new();
+        let func = Expr::new(ExprKind::Identifier("compute".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(func),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        assert!(!transpiler.is_definitely_string(&expr));
+    }
+
+    // Test 65: looks_like_real_set with Identifier
+    #[test]
+    fn test_looks_like_real_set_identifier() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        assert!(transpiler.looks_like_real_set(&expr));
+    }
+
+    // Test 66: looks_like_real_set with Call
+    #[test]
+    fn test_looks_like_real_set_call() {
+        let transpiler = Transpiler::new();
+        let func = Expr::new(ExprKind::Identifier("f".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(func),
+                args: vec![],
+            },
+            Span::default(),
+        );
+        assert!(transpiler.looks_like_real_set(&expr));
+    }
+
+    // Test 67: looks_like_real_set with If (false)
+    #[test]
+    fn test_looks_like_real_set_if_false() {
+        let transpiler = Transpiler::new();
+        let cond = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+        let then_b = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(cond),
+                then_branch: Box::new(then_b),
+                else_branch: None,
+            },
+            Span::default(),
+        );
+        assert!(!transpiler.looks_like_real_set(&expr));
+    }
+
+    // Test 68: looks_like_real_set with Block (false)
+    #[test]
+    fn test_looks_like_real_set_block_false() {
+        let transpiler = Transpiler::new();
+        let inner = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(ExprKind::Block(vec![inner]), Span::default());
+        assert!(!transpiler.looks_like_real_set(&expr));
+    }
+
+    // Test 69: looks_like_real_set with Return (false)
+    #[test]
+    fn test_looks_like_real_set_return_false() {
+        let transpiler = Transpiler::new();
+        let val = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Return { value: Some(Box::new(val)) },
+            Span::default(),
+        );
+        assert!(!transpiler.looks_like_real_set(&expr));
+    }
+
+    // Test 70: get_compound_op_token BitwiseAnd
+    #[test]
+    fn test_get_compound_op_token_bitwise_and() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::BitwiseAnd);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("&="));
+    }
+
+    // Test 71: get_compound_op_token BitwiseOr
+    #[test]
+    fn test_get_compound_op_token_bitwise_or() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::BitwiseOr);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("|="));
+    }
+
+    // Test 72: get_compound_op_token BitwiseXor
+    #[test]
+    fn test_get_compound_op_token_bitwise_xor() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::BitwiseXor);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("^="));
+    }
+
+    // Test 73: get_compound_op_token LeftShift
+    #[test]
+    fn test_get_compound_op_token_left_shift() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::LeftShift);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains("<<="));
+    }
+
+    // Test 74: get_compound_op_token RightShift
+    #[test]
+    fn test_get_compound_op_token_right_shift() {
+        let result = Transpiler::get_compound_op_token(BinaryOp::RightShift);
+        assert!(result.is_ok());
+        let code = result.expect("should succeed").to_string();
+        assert!(code.contains(">>="));
+    }
+
+    // Test 75: transpile_simple_literal with Unit
+    #[test]
+    fn test_transpile_simple_literal_unit() {
+        let lit = Literal::Unit;
+        let result = Transpiler::transpile_simple_literal(&lit);
+        let code = result.to_string();
+        assert!(code.contains('('));
+    }
+
+    // Test 76: transpile_simple_literal with Null
+    #[test]
+    fn test_transpile_simple_literal_null() {
+        let lit = Literal::Null;
+        let result = Transpiler::transpile_simple_literal(&lit);
+        let code = result.to_string();
+        assert!(code.contains("None"));
+    }
+
+    // Test 77: transpile_simple_literal with Atom
+    #[test]
+    fn test_transpile_simple_literal_atom() {
+        let lit = Literal::Atom("hello".to_string());
+        let result = Transpiler::transpile_simple_literal(&lit);
+        let code = result.to_string();
+        assert!(code.contains("hello"));
+    }
+
+    // Test 78: expr_references_var with MethodCall in args
+    #[test]
+    fn test_expr_references_var_method_call_args() {
+        let receiver = Expr::new(ExprKind::Identifier("obj".to_string()), Span::default());
+        let arg = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(receiver),
+                method: "process".to_string(),
+                args: vec![arg],
+            },
+            Span::default(),
+        );
+        assert!(Transpiler::expr_references_var(&expr, "counter"));
+    }
+
+    // Test 79: expr_references_var with IndexAccess in index
+    #[test]
+    fn test_expr_references_var_index_access_index() {
+        let object = Expr::new(ExprKind::Identifier("arr".to_string()), Span::default());
+        let index = Expr::new(ExprKind::Identifier("counter".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(object),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        assert!(Transpiler::expr_references_var(&expr, "counter"));
+    }
 }

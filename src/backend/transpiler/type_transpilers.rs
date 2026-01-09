@@ -6,7 +6,7 @@
 //! **EXTREME TDD Round 75**: Extracted from types.rs for modularization.
 
 use super::Transpiler;
-use crate::frontend::ast::{Type, TypeKind};
+use crate::frontend::ast::Type;
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -40,7 +40,7 @@ impl Transpiler {
         }
     }
 
-    /// Transpile namespaced types (e.g., std::io::Error)
+    /// Transpile namespaced types (e.g., `std::io::Error`)
     fn transpile_namespaced_type(&self, name: &str) -> Result<TokenStream> {
         let segments: Vec<_> = name
             .split("::")
@@ -49,7 +49,7 @@ impl Transpiler {
         Ok(quote! { #(#segments)::* })
     }
 
-    /// Transpile generic types (e.g., Vec<T>, HashMap<K, V>)
+    /// Transpile generic types (e.g., `Vec<T>`, `HashMap<K, V>`)
     /// Complexity: 4 (within Toyota Way limits)
     pub(crate) fn transpile_generic_type_impl(
         &self,
@@ -131,7 +131,7 @@ impl Transpiler {
         }
     }
 
-    /// Parse type parameter string to TokenStream
+    /// Parse type parameter string to `TokenStream`
     /// Handles simple params ("T") and params with bounds ("T: Clone + Debug")
     /// Complexity: 5 (within Toyota Way limits)
     pub(crate) fn parse_type_param_to_tokens_impl(p: &str) -> TokenStream {
@@ -167,7 +167,7 @@ impl Transpiler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::Span;
+    use crate::frontend::ast::{Span, TypeKind};
 
     fn make_transpiler() -> Transpiler {
         Transpiler::new()

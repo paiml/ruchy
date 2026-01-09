@@ -1,17 +1,17 @@
 //! Standard library import transpilation
 //!
-//! This module handles transpilation of std:: imports including:
-//! - std::fs (file operations)
-//! - std::process (process management)
-//! - std::system (system information)
-//! - std::signal (signal handling)
-//! - std::time (time functions)
-//! - std::mem (memory management)
-//! - std::parallel (parallel processing)
-//! - std::simd (SIMD vectorization)
-//! - std::cache (caching)
-//! - std::bench (benchmarking)
-//! - std::profile (profiling)
+//! This module handles transpilation of `std::` imports including:
+//! - `std::fs` (file operations)
+//! - `std::process` (process management)
+//! - `std::system` (system information)
+//! - `std::signal` (signal handling)
+//! - `std::time` (time functions)
+//! - `std::mem` (memory management)
+//! - `std::parallel` (parallel processing)
+//! - `std::simd` (SIMD vectorization)
+//! - `std::cache` (caching)
+//! - `std::bench` (benchmarking)
+//! - `std::profile` (profiling)
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -28,7 +28,7 @@ pub fn transpile_import_inline(path: &str, items: &[ImportItem]) -> TokenStream 
     handle_generic_import(path, items)
 }
 
-/// Dispatch std:: module imports to appropriate handler
+/// Dispatch `std::` module imports to appropriate handler
 #[must_use]
 pub fn handle_std_module_import(path: &str, items: &[ImportItem]) -> Option<TokenStream> {
     if path.starts_with("std::fs") {
@@ -67,7 +67,7 @@ pub fn handle_std_module_import(path: &str, items: &[ImportItem]) -> Option<Toke
     None
 }
 
-/// Handle std::fs imports and generate file operation functions
+/// Handle `std::fs` imports and generate file operation functions
 #[must_use]
 pub fn transpile_std_fs_import(items: &[ImportItem]) -> TokenStream {
     let mut tokens = TokenStream::new();
@@ -131,7 +131,7 @@ fn generate_aliased_fs_function(name: &str, alias: &str) -> TokenStream {
     }
 }
 
-/// Handle std::fs imports with path-based syntax
+/// Handle `std::fs` imports with path-based syntax
 #[must_use]
 pub fn transpile_std_fs_import_with_path(path: &str, items: &[ImportItem]) -> TokenStream {
     let mut tokens = TokenStream::new();
@@ -175,7 +175,7 @@ pub fn is_known_fs_function(name: &str) -> bool {
     matches!(name, "read_file" | "write_file")
 }
 
-/// Handle std::process imports with process management functions
+/// Handle `std::process` imports with process management functions
 #[must_use]
 pub fn transpile_std_process_import() -> TokenStream {
     quote! {
@@ -196,7 +196,7 @@ pub fn transpile_std_process_import() -> TokenStream {
     }
 }
 
-/// Handle std::system imports with system information functions
+/// Handle `std::system` imports with system information functions
 #[must_use]
 pub fn transpile_std_system_import() -> TokenStream {
     quote! {
@@ -217,7 +217,7 @@ pub fn transpile_std_system_import() -> TokenStream {
     }
 }
 
-/// Handle std::signal imports with signal handling functions
+/// Handle `std::signal` imports with signal handling functions
 #[must_use]
 pub fn transpile_std_signal_import() -> TokenStream {
     quote! {
@@ -238,7 +238,7 @@ pub fn transpile_std_signal_import() -> TokenStream {
     }
 }
 
-/// Handle std::time imports
+/// Handle `std::time` imports
 #[must_use]
 pub fn transpile_std_time_import() -> TokenStream {
     quote! {
@@ -262,7 +262,7 @@ pub fn transpile_std_time_import() -> TokenStream {
     }
 }
 
-/// Handle std::mem imports with memory management
+/// Handle `std::mem` imports with memory management
 #[must_use]
 pub fn transpile_std_mem_import() -> TokenStream {
     quote! {
@@ -291,7 +291,7 @@ pub fn transpile_std_mem_import() -> TokenStream {
     }
 }
 
-/// Handle std::parallel imports with parallel processing
+/// Handle `std::parallel` imports with parallel processing
 #[must_use]
 pub fn transpile_std_parallel_import() -> TokenStream {
     quote! {
@@ -322,7 +322,7 @@ pub fn transpile_std_parallel_import() -> TokenStream {
     }
 }
 
-/// Handle std::simd imports with SIMD vectorization
+/// Handle `std::simd` imports with SIMD vectorization
 #[must_use]
 pub fn transpile_std_simd_import() -> TokenStream {
     quote! {
@@ -358,7 +358,7 @@ pub fn transpile_std_simd_import() -> TokenStream {
     }
 }
 
-/// Handle std::cache imports with caching
+/// Handle `std::cache` imports with caching
 #[must_use]
 pub fn transpile_std_cache_import() -> TokenStream {
     quote! {
@@ -382,7 +382,7 @@ pub fn transpile_std_cache_import() -> TokenStream {
     }
 }
 
-/// Handle std::bench imports with benchmarking
+/// Handle `std::bench` imports with benchmarking
 #[must_use]
 pub fn transpile_std_bench_import() -> TokenStream {
     quote! {
@@ -410,7 +410,7 @@ pub fn transpile_std_bench_import() -> TokenStream {
     }
 }
 
-/// Handle std::profile imports with profiling
+/// Handle `std::profile` imports with profiling
 #[must_use]
 pub fn transpile_std_profile_import() -> TokenStream {
     quote! {
@@ -521,7 +521,7 @@ pub fn process_import_items(items: &[ImportItem]) -> Vec<TokenStream> {
         .collect()
 }
 
-/// Check if path is a std:: import
+/// Check if path is a `std::` import
 #[must_use]
 pub fn is_std_import(path: &str) -> bool {
     path.starts_with("std::")

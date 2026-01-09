@@ -63,4 +63,145 @@ mod debug_tests {
             "Should have WASM version 1"
         );
     }
+
+    // === EXTREME TDD Round 124 tests ===
+
+    #[test]
+    fn test_emit_integer_zero() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+        assert_eq!(&bytes[0..4], b"\0asm");
+    }
+
+    #[test]
+    fn test_emit_integer_negative() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(-42, None)),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_integer_max() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(i32::MAX as i64, None)),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_float_zero() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Float(0.0)),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_float_pi() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Float(3.14159)),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_bool_true() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_bool_false() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Bool(false)),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_unit_literal() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Unit),
+            Default::default(),
+        );
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_empty_block() {
+        let emitter = WasmEmitter::new();
+        let expr = Expr::new(ExprKind::Block(vec![]), Default::default());
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_single_item_block() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let inner = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Default::default(),
+        );
+        let expr = Expr::new(ExprKind::Block(vec![inner]), Default::default());
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
+
+    #[test]
+    fn test_emit_multi_item_block() {
+        use crate::frontend::ast::Literal;
+        let emitter = WasmEmitter::new();
+        let item1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Default::default(),
+        );
+        let item2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Default::default(),
+        );
+        let item3 = Expr::new(
+            ExprKind::Literal(Literal::Integer(3, None)),
+            Default::default(),
+        );
+        let expr = Expr::new(ExprKind::Block(vec![item1, item2, item3]), Default::default());
+        let bytes = emitter.emit(&expr).expect("Should emit");
+        assert!(!bytes.is_empty());
+    }
 }

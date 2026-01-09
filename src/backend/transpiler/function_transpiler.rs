@@ -176,4 +176,192 @@ mod tests {
         let tokens = result.unwrap().to_string();
         assert!(tokens.contains("<T>") || tokens.contains("< T >"));
     }
+
+    // ===== EXTREME TDD Round 156 - Function Transpilation Tests =====
+
+    #[test]
+    fn test_transpile_function_multiple_params() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun calc(a: i32, b: i32, c: i32) -> i32 { a + b + c }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("fn calc"));
+    }
+
+    #[test]
+    fn test_transpile_function_string_return() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun greet(name: String) -> String { "Hello, " + name }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_no_return_type() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun do_nothing() { }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_with_body_block() {
+        let mut transpiler = create_transpiler();
+        let code = r#"fun complex(x: i32) -> i32 {
+            let y = x * 2
+            let z = y + 1
+            z
+        }"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_async_function_with_return() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"async fun fetch_data() -> i32 { 42 }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("async"));
+    }
+
+    #[test]
+    fn test_transpile_function_with_reference_param() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun process(data: &str) -> i32 { 0 }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_with_mutable_param() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun modify(mut x: i32) { x = x + 1 }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_returning_option() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun find(x: i32) -> Option<i32> { Some(x) }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_returning_result() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun try_parse(s: String) -> Result<i32, String> { Ok(42) }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_with_vec_param() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun sum_all(nums: Vec<i32>) -> i32 { 0 }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_multiple_generics() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun pair<T, U>(a: T, b: U) -> (T, U) { (a, b) }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_with_where_clause() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun display<T: Display>(x: T) { println(x) }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_recursive_function() {
+        let mut transpiler = create_transpiler();
+        let code = r#"fun factorial(n: i32) -> i32 {
+            if n <= 1 { 1 } else { n * factorial(n - 1) }
+        }"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_with_default_value() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun greet(name: String = "World") { println("Hello, " + name) }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_pub_async() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"pub async fun api_call() -> String { "response" }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("pub"));
+        assert!(tokens.contains("async"));
+    }
+
+    #[test]
+    fn test_transpile_function_returning_tuple() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun split(x: i32) -> (i32, i32) { (x / 2, x % 2) }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_with_bool_return() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun is_even(n: i32) -> bool { n % 2 == 0 }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_empty_body() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun noop() { () }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_function_with_float_param() {
+        let mut transpiler = create_transpiler();
+        let mut parser = Parser::new(r#"fun square(x: f64) -> f64 { x * x }"#);
+        let ast = parser.parse().expect("parse");
+        let result = transpiler.transpile(&ast);
+        assert!(result.is_ok());
+    }
 }

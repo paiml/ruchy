@@ -2372,4 +2372,85 @@ mod tests {
             Ordering::Less
         );
     }
+
+    // === EXTREME TDD Round 139 tests ===
+
+    #[test]
+    fn test_compare_sort_equal_integers() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            compare_values_for_sort(&Value::Integer(5), &Value::Integer(5)),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn test_compare_sort_floats_less() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            compare_values_for_sort(&Value::Float(1.5), &Value::Float(2.5)),
+            Ordering::Less
+        );
+    }
+
+    #[test]
+    fn test_compare_sort_floats_equal() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            compare_values_for_sort(&Value::Float(3.14), &Value::Float(3.14)),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn test_compare_sort_strings_order() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            compare_values_for_sort(
+                &Value::from_string("apple".to_string()),
+                &Value::from_string("banana".to_string())
+            ),
+            Ordering::Less
+        );
+    }
+
+    #[test]
+    fn test_compare_sort_strings_equal() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            compare_values_for_sort(
+                &Value::from_string("same".to_string()),
+                &Value::from_string("same".to_string())
+            ),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn test_compare_sort_bools_equal() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            compare_values_for_sort(&Value::Bool(true), &Value::Bool(true)),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn test_compare_sort_mixed_types() {
+        use std::cmp::Ordering;
+        // Different types should return Equal (fallback behavior)
+        assert_eq!(
+            compare_values_for_sort(&Value::Integer(5), &Value::from_string("5".to_string())),
+            Ordering::Equal
+        );
+    }
+
+    #[test]
+    fn test_compare_sort_integers_greater() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            compare_values_for_sort(&Value::Integer(10), &Value::Integer(5)),
+            Ordering::Greater
+        );
+    }
 }

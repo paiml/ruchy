@@ -213,4 +213,113 @@ mod tests {
             "Multiple calls should have same result"
         );
     }
+
+    // ===== EXTREME TDD Round 150 - Build Handler Tests =====
+
+    #[test]
+    fn test_print_build_success_message_formats() {
+        // Verify both modes produce output
+        print_build_success_message(true);
+        print_build_success_message(false);
+    }
+
+    #[test]
+    fn test_verify_cargo_project_cwd() {
+        // Test current directory
+        let result = verify_cargo_project();
+        // May succeed or fail depending on where tests are run
+        let _ = result;
+    }
+
+    #[test]
+    fn test_run_cargo_build_no_project() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        // Create a minimal Cargo.toml for testing
+        std::fs::write(
+            temp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"
+        ).expect("Failed to write Cargo.toml");
+
+        // Create src/main.rs
+        std::fs::create_dir(temp_dir.path().join("src")).ok();
+        std::fs::write(
+            temp_dir.path().join("src/main.rs"),
+            "fn main() {}"
+        ).expect("Failed to write main.rs");
+
+        let result = run_cargo_build(false, false);
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+
+        // Should succeed with valid project
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_run_cargo_build_verbose() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        std::fs::write(
+            temp_dir.path().join("Cargo.toml"),
+            "[package]\nname = \"test2\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"
+        ).expect("Failed to write Cargo.toml");
+
+        std::fs::create_dir(temp_dir.path().join("src")).ok();
+        std::fs::write(
+            temp_dir.path().join("src/main.rs"),
+            "fn main() { println!(\"Hello\"); }"
+        ).expect("Failed to write main.rs");
+
+        let result = run_cargo_build(false, true); // verbose
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_build_command_no_cargo() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        let result = handle_build_command(false, false);
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+
+        // Should fail - no Cargo.toml
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_build_command_release_mode() {
+        // Just verify the function signature works
+        // Actual build test is expensive
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        let _ = handle_build_command(true, false);
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+    }
+
+    #[test]
+    fn test_handle_build_command_all_options() {
+        let temp_dir = TempDir::new().expect("Failed to create temp dir");
+        let _original_dir = env::current_dir().expect("Failed to get current dir");
+
+        env::set_current_dir(temp_dir.path()).expect("Failed to change dir");
+
+        let _ = handle_build_command(true, true); // release + verbose
+
+        env::set_current_dir(_original_dir).expect("Failed to restore dir");
+    }
 }

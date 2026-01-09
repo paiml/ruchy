@@ -1,10 +1,10 @@
 //! Utility Built-in Function Transpilation
 //!
 //! This module handles transpilation of utility built-in functions:
-//! - Time: timestamp, get_time_ms, now_millis
-//! - Assertions: assert, assert_eq, assert_ne
-//! - Collections: HashMap, HashSet constructors
-//! - Range: range(end) and range(start, end)
+//! - Time: `timestamp`, `get_time_ms`, `now_millis`
+//! - Assertions: `assert`, `assert_eq`, `assert_ne`
+//! - Collections: `HashMap`, `HashSet` constructors
+//! - Range: `range(end)` and `range(start, end)`
 //!
 //! **EXTREME TDD Round 60**: Extracted from statements.rs for modularization.
 

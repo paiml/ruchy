@@ -4,7 +4,7 @@
 //! Extracted from interpreter.rs for EXTREME TDD modularization.
 //!
 //! **EXTREME TDD**: This module contains ONLY the Value type definitions.
-//! Utility methods are in value_utils.rs, formatting in value_format.rs.
+//! Utility methods are in `value_utils.rs`, formatting in `value_format.rs`.
 
 use crate::frontend::ast::Expr;
 use std::cell::RefCell;

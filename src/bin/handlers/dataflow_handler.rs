@@ -310,6 +310,7 @@ fn generate_dataflow_debug_interactive(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_generate_dataflow_debug_text() {
@@ -327,5 +328,216 @@ mod tests {
         )
         .unwrap();
         assert!(output.contains("\"mode\": \"overview\""));
+    }
+
+    // ===== EXTREME TDD Round 145 - Dataflow Handler Tests =====
+
+    #[test]
+    fn test_generate_dataflow_debug_text_with_color() {
+        let output = generate_dataflow_debug_text(
+            100, true, true, 5000, true, true, 0.5, 1000, "overview", true, &[],
+        );
+        assert!(output.contains("Dataflow Debugger"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_text_stages_mode() {
+        let output = generate_dataflow_debug_text(
+            100, false, false, 5000, false, false, 0.5, 1000, "stages", false, &[],
+        );
+        assert!(output.contains("Mode: stages"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_text_data_mode() {
+        let output = generate_dataflow_debug_text(
+            100, false, false, 5000, false, false, 0.5, 1000, "data", false, &[],
+        );
+        assert!(output.contains("Mode: data"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_text_metrics_mode() {
+        let output = generate_dataflow_debug_text(
+            100, false, false, 5000, false, false, 0.5, 1000, "metrics", false, &[],
+        );
+        assert!(output.contains("Mode: metrics"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_text_history_mode() {
+        let output = generate_dataflow_debug_text(
+            100, false, false, 5000, false, false, 0.5, 1000, "history", false, &[],
+        );
+        assert!(output.contains("Mode: history"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_text_with_breakpoints() {
+        let breakpoints = vec!["stage1".to_string(), "stage2".to_string()];
+        let output = generate_dataflow_debug_text(
+            100, false, false, 5000, false, false, 0.5, 1000, "overview", false, &breakpoints,
+        );
+        assert!(output.contains("Breakpoints"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_text_all_features() {
+        let output = generate_dataflow_debug_text(
+            100, true, true, 5000, true, true, 0.5, 1000, "overview", false, &[],
+        );
+        assert!(output.contains("Auto-Materialize"));
+        assert!(output.contains("Performance Profiling"));
+        assert!(output.contains("Memory Tracking"));
+        assert!(output.contains("Stage Diffs"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_json_stages_mode() {
+        let output = generate_dataflow_debug_json(
+            50, false, false, 3000, false, false, 0.25, 500, "stages", &[],
+        ).unwrap();
+        assert!(output.contains("\"mode\": \"stages\""));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_json_with_breakpoints() {
+        let breakpoints = vec!["bp1".to_string()];
+        let output = generate_dataflow_debug_json(
+            100, false, false, 5000, false, false, 0.5, 1000, "overview", &breakpoints,
+        ).unwrap();
+        assert!(output.contains("\"breakpoints\""));
+        assert!(output.contains("bp1"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_interactive_basic() {
+        let output = generate_dataflow_debug_interactive(
+            100, true, true, 5000, true, true, 0.5, 1000, "overview", false, &[],
+        );
+        assert!(output.contains("Dataflow Debugger"));
+        assert!(output.contains("Interactive"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_interactive_with_color() {
+        let output = generate_dataflow_debug_interactive(
+            100, true, true, 5000, true, true, 0.5, 1000, "overview", true, &[],
+        );
+        assert!(output.contains("Dataflow Debugger"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_interactive_with_breakpoints() {
+        let breakpoints = vec!["step1".to_string(), "step2".to_string()];
+        let output = generate_dataflow_debug_interactive(
+            100, false, false, 5000, false, false, 0.5, 1000, "stages", false, &breakpoints,
+        );
+        assert!(output.contains("Breakpoints"));
+    }
+
+    #[test]
+    fn test_generate_dataflow_debug_interactive_features() {
+        let output = generate_dataflow_debug_interactive(
+            100, true, true, 5000, true, true, 0.5, 1000, "overview", false, &[],
+        );
+        assert!(output.contains("auto-materialize"));
+        assert!(output.contains("profiling"));
+        assert!(output.contains("memory-tracking"));
+        assert!(output.contains("diffs"));
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_text_format() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
+            None, false, &[], "overview",
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_json_format() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "json",
+            None, false, &[], "overview",
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_interactive_format() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "interactive",
+            None, false, &[], "overview",
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_invalid_format() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "invalid",
+            None, false, &[], "overview",
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_invalid_mode() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
+            None, false, &[], "invalid_mode",
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_invalid_sample_rate_high() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 1.5, 1000, false, "text",
+            None, false, &[], "overview",
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_invalid_sample_rate_negative() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, -0.1, 1000, false, "text",
+            None, false, &[], "overview",
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_with_export() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
+            Some(temp.path()), false, &[], "overview",
+        );
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(temp.path()).unwrap();
+        assert!(content.contains("Dataflow Debugger"));
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_verbose() {
+        let result = handle_dataflow_debug_command(
+            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
+            None, true, &[], "overview",
+        );
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_dataflow_debug_with_all_options() {
+        let breakpoints = vec!["bp1".to_string()];
+        let result = handle_dataflow_debug_command(
+            None, 200, true, true, 10000, true, true, 1.0, 2000, true, "text",
+            None, true, &breakpoints, "stages",
+        );
+        assert!(result.is_ok());
     }
 }

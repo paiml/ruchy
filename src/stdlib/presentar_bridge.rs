@@ -191,3 +191,139 @@ mod property_tests {
         }
     }
 }
+
+// ===== EXTREME TDD Round 154 - Presentar Bridge Tests =====
+
+#[cfg(test)]
+mod extreme_tdd_tests {
+    use super::*;
+
+    #[test]
+    fn test_color_default() {
+        let c = Color::default();
+        assert_eq!(c.r, 0);
+        assert_eq!(c.g, 0);
+        assert_eq!(c.b, 0);
+        assert_eq!(c.a, 255);
+    }
+
+    #[test]
+    fn test_color_equality() {
+        let c1 = Color::rgb(100, 150, 200);
+        let c2 = Color::rgb(100, 150, 200);
+        assert_eq!(c1, c2);
+    }
+
+    #[test]
+    fn test_color_inequality() {
+        let c1 = Color::rgb(100, 150, 200);
+        let c2 = Color::rgb(100, 151, 200);
+        assert_ne!(c1, c2);
+    }
+
+    #[test]
+    fn test_color_clone() {
+        let c1 = Color::rgba(10, 20, 30, 40);
+        let c2 = c1;
+        assert_eq!(c1, c2);
+    }
+
+    #[test]
+    fn test_color_to_f32_black() {
+        let c = Color::BLACK;
+        let f = c.to_f32();
+        assert!((f[0] - 0.0).abs() < 1e-5);
+        assert!((f[1] - 0.0).abs() < 1e-5);
+        assert!((f[2] - 0.0).abs() < 1e-5);
+        assert!((f[3] - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_color_to_f32_white() {
+        let c = Color::WHITE;
+        let f = c.to_f32();
+        assert!((f[0] - 1.0).abs() < 1e-5);
+        assert!((f[1] - 1.0).abs() < 1e-5);
+        assert!((f[2] - 1.0).abs() < 1e-5);
+        assert!((f[3] - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_color_to_f32_transparent() {
+        let c = Color::TRANSPARENT;
+        let f = c.to_f32();
+        assert!((f[3] - 0.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_parse_hex_color_lowercase() {
+        let c = parse_hex_color("ff8000").unwrap();
+        assert_eq!(c.r, 255);
+        assert_eq!(c.g, 128);
+        assert_eq!(c.b, 0);
+    }
+
+    #[test]
+    fn test_parse_hex_color_with_hash() {
+        let c = parse_hex_color("#00FF00").unwrap();
+        assert_eq!(c.r, 0);
+        assert_eq!(c.g, 255);
+        assert_eq!(c.b, 0);
+    }
+
+    #[test]
+    fn test_parse_hex_color_invalid_length_3() {
+        assert!(parse_hex_color("FFF").is_err());
+    }
+
+    #[test]
+    fn test_parse_hex_color_invalid_length_5() {
+        assert!(parse_hex_color("FFFFF").is_err());
+    }
+
+    #[test]
+    fn test_parse_hex_color_invalid_length_9() {
+        assert!(parse_hex_color("FFFFFFFFF").is_err());
+    }
+
+    #[test]
+    fn test_parse_hex_color_invalid_chars() {
+        assert!(parse_hex_color("GGGGGG").is_err());
+        assert!(parse_hex_color("ZZZZZZ").is_err());
+    }
+
+    #[test]
+    fn test_color_debug() {
+        let c = Color::rgb(10, 20, 30);
+        let debug_str = format!("{:?}", c);
+        assert!(debug_str.contains("Color"));
+        assert!(debug_str.contains("10"));
+        assert!(debug_str.contains("20"));
+        assert!(debug_str.contains("30"));
+    }
+
+    #[test]
+    fn test_all_color_constants() {
+        assert_eq!(Color::WHITE.r, 255);
+        assert_eq!(Color::WHITE.g, 255);
+        assert_eq!(Color::WHITE.b, 255);
+
+        assert_eq!(Color::BLACK.r, 0);
+        assert_eq!(Color::BLACK.g, 0);
+        assert_eq!(Color::BLACK.b, 0);
+
+        assert_eq!(Color::RED.r, 255);
+        assert_eq!(Color::RED.g, 0);
+        assert_eq!(Color::RED.b, 0);
+
+        assert_eq!(Color::GREEN.r, 0);
+        assert_eq!(Color::GREEN.g, 255);
+        assert_eq!(Color::GREEN.b, 0);
+
+        assert_eq!(Color::BLUE.r, 0);
+        assert_eq!(Color::BLUE.g, 0);
+        assert_eq!(Color::BLUE.b, 255);
+
+        assert_eq!(Color::TRANSPARENT.a, 0);
+    }
+}

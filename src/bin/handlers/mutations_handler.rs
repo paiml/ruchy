@@ -224,12 +224,113 @@ pub fn handle_mutations_command(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
 
     #[test]
     fn test_handle_mutations_nonexistent() {
         let path = Path::new("/nonexistent/file.ruchy");
         // Should succeed with "Found 0 mutants" message
         let result = handle_mutations_command(path, 60, "text", None, 0.0, false);
+        assert!(result.is_ok());
+    }
+
+    // ===== EXTREME TDD Round 144 - Handler Tests =====
+
+    #[test]
+    fn test_handle_mutations_nonexistent_verbose() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_mutations_command(path, 60, "text", None, 0.0, true);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_mutations_json_format() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_mutations_command(path, 60, "json", None, 0.0, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_mutations_with_output_path() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let temp = NamedTempFile::new().unwrap();
+        let result =
+            handle_mutations_command(path, 60, "text", Some(temp.path()), 0.0, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_mutations_with_min_coverage() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_mutations_command(path, 60, "text", None, 0.5, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_mutations_invalid_ruchy_file() {
+        let mut temp = NamedTempFile::with_suffix(".ruchy").unwrap();
+        writeln!(temp, "this is {{ invalid syntax").unwrap();
+        let result = handle_mutations_command(temp.path(), 60, "text", None, 0.0, false);
+        assert!(result.is_ok()); // Returns "Found 0 mutants" for invalid files
+    }
+
+    #[test]
+    fn test_write_json_mutation_report_success() {
+        let result = write_json_mutation_report(None, true, 0.75, "test output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_mutation_report_failure() {
+        let result = write_json_mutation_report(None, false, 0.5, "test output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_json_mutation_report_to_file() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_json_mutation_report(Some(temp.path()), true, 0.8, "test");
+        assert!(result.is_ok());
+        let content = std::fs::read_to_string(temp.path()).unwrap();
+        assert!(content.contains("passed"));
+    }
+
+    #[test]
+    fn test_write_text_mutation_report() {
+        let result = write_text_mutation_report(None, 0.75, "test output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_write_text_mutation_report_to_file() {
+        let temp = NamedTempFile::new().unwrap();
+        let result = write_text_mutation_report(Some(temp.path()), 0.8, "test output");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_mutations_different_timeouts() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        // Very short timeout
+        let result = handle_mutations_command(path, 1, "text", None, 0.0, false);
+        assert!(result.is_ok());
+        // Long timeout
+        let result = handle_mutations_command(path, 300, "text", None, 0.0, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_mutations_zero_min_coverage() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_mutations_command(path, 60, "text", None, 0.0, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_handle_mutations_full_coverage() {
+        let path = Path::new("/nonexistent/file.ruchy");
+        let result = handle_mutations_command(path, 60, "text", None, 1.0, false);
         assert!(result.is_ok());
     }
 }

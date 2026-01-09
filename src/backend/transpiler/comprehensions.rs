@@ -4,6 +4,7 @@
 //! to Rust iterator chains.
 //!
 //! **EXTREME TDD Round 53**: Extracted from statements.rs for modularization.
+#![allow(clippy::doc_markdown)]
 
 use super::Transpiler;
 use crate::frontend::ast::{ComprehensionClause, Expr};
@@ -52,7 +53,7 @@ impl Transpiler {
                 result_tokens = Some(Self::build_first_clause(
                     &iter_tokens,
                     &var_pattern,
-                    clause.condition.as_ref().map(|v| &**v),
+                    clause.condition.as_deref(),
                     self,
                 )?);
             } else {
@@ -66,7 +67,7 @@ impl Transpiler {
                     &outer_pattern,
                     &iter_tokens,
                     &var_pattern,
-                    clause.condition.as_ref().map(|v| &**v),
+                    clause.condition.as_deref(),
                     self,
                 )?);
             }
@@ -250,7 +251,7 @@ impl Transpiler {
                 result_tokens = Some(Self::build_first_clause(
                     &iter_tokens,
                     &var_pattern,
-                    clause.condition.as_ref().map(|v| &**v),
+                    clause.condition.as_deref(),
                     self,
                 )?);
             } else {
@@ -264,7 +265,7 @@ impl Transpiler {
                     &outer_pattern,
                     &iter_tokens,
                     &var_pattern,
-                    clause.condition.as_ref().map(|v| &**v),
+                    clause.condition.as_deref(),
                     self,
                 )?);
             }
@@ -351,7 +352,7 @@ impl Transpiler {
                 result_tokens = Some(Self::build_first_clause(
                     &iter_tokens,
                     &var_pattern,
-                    clause.condition.as_ref().map(|v| &**v),
+                    clause.condition.as_deref(),
                     self,
                 )?);
             } else {
@@ -365,7 +366,7 @@ impl Transpiler {
                     &outer_pattern,
                     &iter_tokens,
                     &var_pattern,
-                    clause.condition.as_ref().map(|v| &**v),
+                    clause.condition.as_deref(),
                     self,
                 )?);
             }

@@ -565,4 +565,223 @@ mod tests {
         let result_str = result.to_string();
         assert!(result_str.contains("Data") && result_str.contains("numbers"));
     }
+
+    // ===== EXTREME TDD Round 142 - Spread and Edge Case Tests =====
+
+    // Test 21: transpile_list with spread expression
+    #[test]
+    fn test_transpile_list_with_spread() {
+        let transpiler = test_transpiler();
+        let inner = Expr {
+            kind: ExprKind::Identifier("other_vec".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let spread = Expr {
+            kind: ExprKind::Spread {
+                expr: Box::new(inner),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let elements = vec![spread];
+        let result = transpiler
+            .transpile_list(&elements)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        // Spread generates Vec with extend
+        assert!(result_str.contains("Vec") || result_str.contains("vec"));
+        assert!(result_str.contains("extend"));
+    }
+
+    // Test 22: transpile_list with spread and regular elements
+    #[test]
+    fn test_transpile_list_mixed_spread() {
+        let transpiler = test_transpiler();
+        let inner = Expr {
+            kind: ExprKind::Identifier("arr".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let spread = Expr {
+            kind: ExprKind::Spread {
+                expr: Box::new(inner),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let elements = vec![int_expr(1), spread, int_expr(3)];
+        let result = transpiler
+            .transpile_list(&elements)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        assert!(result_str.contains("push"));
+        assert!(result_str.contains("extend"));
+    }
+
+    // Test 23: transpile_set with spread expression
+    #[test]
+    fn test_transpile_set_with_spread() {
+        let transpiler = test_transpiler();
+        let inner = Expr {
+            kind: ExprKind::Identifier("other_set".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let spread = Expr {
+            kind: ExprKind::Spread {
+                expr: Box::new(inner),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let elements = vec![spread];
+        let result = transpiler
+            .transpile_set(&elements)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        // Spread generates HashSet with extend
+        assert!(result_str.contains("HashSet"));
+        assert!(result_str.contains("extend"));
+    }
+
+    // Test 24: transpile_set with mixed spread and regular
+    #[test]
+    fn test_transpile_set_mixed_spread() {
+        let transpiler = test_transpiler();
+        let inner = Expr {
+            kind: ExprKind::Identifier("s".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let spread = Expr {
+            kind: ExprKind::Spread {
+                expr: Box::new(inner),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let elements = vec![int_expr(1), spread];
+        let result = transpiler
+            .transpile_set(&elements)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        assert!(result_str.contains("insert"));
+        assert!(result_str.contains("extend"));
+    }
+
+    // Test 25: transpile_object_literal with spread
+    #[test]
+    fn test_transpile_object_literal_spread() {
+        let transpiler = test_transpiler();
+        let other_map = Expr {
+            kind: ExprKind::Identifier("defaults".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let fields = vec![ObjectField::Spread { expr: other_map }];
+        let result = transpiler
+            .transpile_object_literal(&fields)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        assert!(result_str.contains("BTreeMap"));
+        assert!(result_str.contains("defaults"));
+    }
+
+    // Test 26: transpile_struct_literal with enum path
+    #[test]
+    fn test_transpile_struct_literal_enum_path() {
+        let transpiler = test_transpiler();
+        let fields = vec![("radius".to_string(), int_expr(10))];
+        let result = transpiler
+            .transpile_struct_literal("Shape::Circle", &fields, None)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        assert!(result_str.contains("Shape"));
+        assert!(result_str.contains("Circle"));
+    }
+
+    // Test 27: transpile_tuple with many elements
+    #[test]
+    fn test_transpile_tuple_many_elements() {
+        let transpiler = test_transpiler();
+        let elements = vec![
+            int_expr(1),
+            int_expr(2),
+            int_expr(3),
+            int_expr(4),
+            int_expr(5),
+        ];
+        let result = transpiler
+            .transpile_tuple(&elements)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        assert!(result_str.contains('1'));
+        assert!(result_str.contains('5'));
+    }
+
+    // Test 28: transpile_range with negative numbers
+    #[test]
+    fn test_transpile_range_negative() {
+        let transpiler = test_transpiler();
+        let start = Expr {
+            kind: ExprKind::Literal(Literal::Integer(-5, None)),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let end = int_expr(5);
+        let result = transpiler
+            .transpile_range(&start, &end, false)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        // Negative numbers may be represented with or without spaces
+        assert!(result_str.contains("- 5") || result_str.contains("-5"));
+        assert!(result_str.contains(".."));
+    }
+
+    // Test 29: transpile_list with strings
+    #[test]
+    fn test_transpile_list_strings() {
+        let transpiler = test_transpiler();
+        let elements = vec![string_expr("hello"), string_expr("world")];
+        let result = transpiler
+            .transpile_list(&elements)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        assert!(result_str.contains("hello"));
+        assert!(result_str.contains("world"));
+    }
+
+    // Test 30: transpile_set with strings
+    #[test]
+    fn test_transpile_set_strings() {
+        let transpiler = test_transpiler();
+        let elements = vec![string_expr("a"), string_expr("b")];
+        let result = transpiler
+            .transpile_set(&elements)
+            .expect("operation should succeed");
+        let result_str = result.to_string();
+        assert!(result_str.contains("HashSet"));
+        assert!(result_str.contains("insert"));
+    }
 }

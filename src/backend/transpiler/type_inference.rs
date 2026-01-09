@@ -6,23 +6,19 @@
 //! Most functionality has been extracted to `param_usage_analysis` module.
 
 // Re-export functions from builtin_type_inference for backwards compatibility
+#[allow(unused_imports)]
 pub use super::builtin_type_inference::{
     get_builtin_param_type, get_builtin_return_type, infer_param_type_from_builtin_usage,
     infer_return_type_from_builtin_call, is_string_literal,
 };
 
 // Re-export functions from param_usage_analysis for backwards compatibility
+#[allow(unused_imports)]
 pub use super::param_usage_analysis::{
-    check_binary_for_param, check_binary_numeric_usage, check_block_numeric_usage,
-    check_call_contains_param, check_call_for_param_argument, check_call_numeric_usage,
-    check_expressions_for_param, check_func_call, check_if_for_func, check_if_for_param,
-    check_if_numeric_usage, check_let_and_binary_for_func, check_let_for_param,
-    check_let_numeric_usage, contains_param, find_param_in_direct_args, has_param_in_operation,
-    infer_param_type, is_nested_array_access, is_numeric_operator, is_param_used_as_array,
-    is_param_used_as_bool, is_param_used_as_function, is_param_used_as_function_argument,
-    is_param_used_as_index, is_param_used_in_print_macro, is_param_used_in_string_concat,
-    is_param_used_numerically, is_param_used_with_len, is_string_concatenation,
-    traverse_expr_for_check,
+    contains_param, infer_param_type, is_nested_array_access, is_numeric_operator,
+    is_param_used_as_array, is_param_used_as_bool, is_param_used_as_function,
+    is_param_used_as_function_argument, is_param_used_as_index, is_param_used_in_print_macro,
+    is_param_used_in_string_concat, is_param_used_numerically, is_param_used_with_len,
 };
 
 #[cfg(test)]
@@ -456,5 +452,188 @@ mod coverage_push_tests {
         // Just verify no panic on unknown functions
         let _ = get_builtin_return_type("timestamp");
         let _ = get_builtin_return_type("nonexistent");
+    }
+
+    // COVERAGE: Additional tests for builtin inference
+    #[test]
+    fn test_infer_param_type_numeric_comparison() {
+        let code = "fun test(n) { n > 0 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("n", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_less_equal() {
+        let code = "fun test(x) { x <= 100 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_subtraction() {
+        let code = "fun test(x) { 10 - x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_http_post() {
+        assert_eq!(get_builtin_return_type("http_post"), Some("String"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_http_put() {
+        assert_eq!(get_builtin_return_type("http_put"), Some("String"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_http_delete() {
+        assert_eq!(get_builtin_return_type("http_delete"), Some("String"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_json_stringify() {
+        assert_eq!(get_builtin_return_type("json_stringify"), Some("String"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_path_extension() {
+        assert_eq!(get_builtin_return_type("path_extension"), Some("String"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_path_filename() {
+        assert_eq!(get_builtin_return_type("path_filename"), Some("String"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_path_parent() {
+        assert_eq!(get_builtin_return_type("path_parent"), Some("String"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_print() {
+        assert_eq!(get_builtin_return_type("print"), Some("()"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_eprintln() {
+        assert_eq!(get_builtin_return_type("eprintln"), Some("()"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_eprint() {
+        assert_eq!(get_builtin_return_type("eprint"), Some("()"));
+    }
+
+    #[test]
+    fn test_get_builtin_return_type_env_current_dir() {
+        assert_eq!(get_builtin_return_type("env_current_dir"), Some("String"));
+    }
+
+    #[test]
+    fn test_infer_param_from_env_var() {
+        let code = "fun test(key) { env_var(key) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type_from_builtin_usage("key", body), Some("&str"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_used_as_array_with_method() {
+        let code = "fun test(arr) { arr.len() }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    // Used with .len() method suggests array/vec
+                    assert!(is_param_used_with_len("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_return_type_from_http_get() {
+        let code = "fun test(url) { http_get(url) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_return_type_from_builtin_call(body), Some("String"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_not_used_as_bool_when_numeric() {
+        let code = "fun test(x) { x + 1 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(!is_param_used_as_bool("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_division() {
+        let code = "fun test(x) { x / 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_modulo() {
+        let code = "fun test(x) { x % 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
     }
 }
