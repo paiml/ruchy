@@ -27,6 +27,14 @@ pub fn is_variable_mutated(name: &str, expr: &Expr) -> bool {
                     return true;
                 }
             }
+            // TRANSPILER-METHOD-SELF-001 FIX: Detect field mutation (self.field = value)
+            if let ExprKind::FieldAccess { object, .. } = &target.kind {
+                if let ExprKind::Identifier(var_name) = &object.kind {
+                    if var_name == name {
+                        return true;
+                    }
+                }
+            }
             false
         }
         // Compound assignment (+=, -=, etc.)
@@ -36,6 +44,14 @@ pub fn is_variable_mutated(name: &str, expr: &Expr) -> bool {
             if let ExprKind::Identifier(var_name) = &target.kind {
                 if var_name == name {
                     return true;
+                }
+            }
+            // TRANSPILER-METHOD-SELF-001 FIX: Detect field compound assignment (self.field += value)
+            if let ExprKind::FieldAccess { object, .. } = &target.kind {
+                if let ExprKind::Identifier(var_name) = &object.kind {
+                    if var_name == name {
+                        return true;
+                    }
                 }
             }
             false
@@ -585,5 +601,185 @@ mod tests {
     fn test_identifier_only() {
         let expr = ident("x");
         assert!(!is_variable_mutated("x", &expr));
+    }
+
+    // ===== EXTREME TDD Round 156 - Additional Mutation Detection Tests =====
+
+    #[test]
+    fn test_function_body_mutation() {
+        use crate::frontend::ast::{Param, Type, TypeKind};
+        let func = make_expr(ExprKind::Function {
+            name: "test".to_string(),
+            type_params: vec![],
+            params: vec![Param {
+                pattern: Pattern::Identifier("arg".to_string()),
+                ty: Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                },
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: None,
+            body: Box::new(assign(ident("x"), int_lit(1))),
+            is_async: false,
+            is_pub: false,
+        });
+        assert!(is_variable_mutated("x", &func));
+    }
+
+    #[test]
+    fn test_function_body_no_mutation() {
+        use crate::frontend::ast::{Param, Type, TypeKind};
+        let func = make_expr(ExprKind::Function {
+            name: "test".to_string(),
+            type_params: vec![],
+            params: vec![Param {
+                pattern: Pattern::Identifier("arg".to_string()),
+                ty: Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                },
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: None,
+            body: Box::new(int_lit(42)),
+            is_async: false,
+            is_pub: false,
+        });
+        assert!(!is_variable_mutated("x", &func));
+    }
+
+    #[test]
+    fn test_let_pattern_body_mutation() {
+        let let_pat = make_expr(ExprKind::LetPattern {
+            pattern: Pattern::Identifier("y".to_string()),
+            type_annotation: None,
+            value: Box::new(int_lit(5)),
+            body: Box::new(assign(ident("x"), int_lit(1))),
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(is_variable_mutated("x", &let_pat));
+    }
+
+    #[test]
+    fn test_let_pattern_body_no_mutation() {
+        let let_pat = make_expr(ExprKind::LetPattern {
+            pattern: Pattern::Identifier("y".to_string()),
+            type_annotation: None,
+            value: Box::new(int_lit(5)),
+            body: Box::new(int_lit(42)),
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(!is_variable_mutated("x", &let_pat));
+    }
+
+    #[test]
+    fn test_match_multiple_arms() {
+        let match_expr = match_expr(
+            int_lit(1),
+            vec![
+                match_arm(Pattern::Wildcard, int_lit(0)),
+                match_arm(Pattern::Wildcard, assign(ident("x"), int_lit(5))),
+            ],
+        );
+        assert!(is_variable_mutated("x", &match_expr));
+    }
+
+    #[test]
+    fn test_binary_nested_mutation() {
+        let nested = binary(binary(int_lit(1), assign(ident("x"), int_lit(2))), int_lit(3));
+        assert!(is_variable_mutated("x", &nested));
+    }
+
+    #[test]
+    fn test_unary_nested_mutation() {
+        let nested = unary(unary(assign(ident("x"), int_lit(1))));
+        assert!(is_variable_mutated("x", &nested));
+    }
+
+    #[test]
+    fn test_call_multiple_args_mutation() {
+        let expr = call(
+            ident("f"),
+            vec![int_lit(1), assign(ident("x"), int_lit(2)), int_lit(3)],
+        );
+        assert!(is_variable_mutated("x", &expr));
+    }
+
+    #[test]
+    fn test_method_call_multiple_args() {
+        let expr = method_call(
+            ident("obj"),
+            "method",
+            vec![int_lit(1), assign(ident("x"), int_lit(2))],
+        );
+        assert!(is_variable_mutated("x", &expr));
+    }
+
+    #[test]
+    fn test_deeply_nested_for_loop() {
+        let for_expr = for_expr(
+            "i",
+            ident("items"),
+            block(vec![if_expr(bool_lit(true), assign(ident("x"), int_lit(1)), None)]),
+        );
+        assert!(is_variable_mutated("x", &for_expr));
+    }
+
+    #[test]
+    fn test_while_nested_block_mutation() {
+        let while_expr_nested =
+            while_expr(bool_lit(true), block(vec![block(vec![assign(ident("x"), int_lit(1))])]));
+        assert!(is_variable_mutated("x", &while_expr_nested));
+    }
+
+    #[test]
+    fn test_pre_decrement_other_var() {
+        let expr = pre_decrement(ident("y"));
+        assert!(!is_variable_mutated("x", &expr));
+    }
+
+    #[test]
+    fn test_post_decrement_other_var() {
+        let expr = post_decrement(ident("y"));
+        assert!(!is_variable_mutated("x", &expr));
+    }
+
+    #[test]
+    fn test_compound_assign_nested_target() {
+        let nested_compound = make_expr(ExprKind::CompoundAssign {
+            target: Box::new(ident("x")),
+            value: Box::new(ident("y")),
+            op: BinaryOp::Multiply,
+        });
+        assert!(is_variable_mutated("x", &nested_compound));
+    }
+
+    #[test]
+    fn test_assign_nested_value() {
+        let nested_assign = assign(ident("y"), assign(ident("x"), int_lit(1)));
+        // Note: Assignment in value position doesn't mutate x as target
+        assert!(!is_variable_mutated("x", &nested_assign));
+    }
+
+    #[test]
+    fn test_empty_match() {
+        let empty_match = match_expr(int_lit(1), vec![]);
+        assert!(!is_variable_mutated("x", &empty_match));
+    }
+
+    #[test]
+    fn test_return_expression() {
+        let ret = make_expr(ExprKind::Return {
+            value: Some(Box::new(assign(ident("x"), int_lit(1)))),
+        });
+        // Return value is evaluated but doesn't count as mutation
+        assert!(!is_variable_mutated("x", &ret));
     }
 }
