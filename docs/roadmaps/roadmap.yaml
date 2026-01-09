@@ -1654,11 +1654,27 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'New task: Apex Hunt: PDCA Cycle - 95% Coverage Sprint 3'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-01-09T13:08:24.319508+00:00
-  updated: 2026-01-09T13:08:24.319508+00:00
+  updated: 2026-01-09T13:14:47.453792+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Formatter Tests Sprint 4'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Formatter Tests Sprint 4'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-09T15:00:08.465871+00:00
+  updated: 2026-01-09T15:00:08.465871+00:00
   spec: null
   acceptance_criteria: []
   phases: []
