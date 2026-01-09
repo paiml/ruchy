@@ -531,7 +531,8 @@ mod tests {
     fn test_verification_result_fields() {
         let result = verify_single_assertion("1 == 1", None);
         assert!(!result.assertion.is_empty());
-        assert!(result.verification_time_ms >= 0);
+        // Verify time was recorded (verification_time_ms is u64, always valid)
+        let _ = result.verification_time_ms;
     }
 
     #[test]

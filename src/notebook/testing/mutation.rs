@@ -679,11 +679,11 @@ mod tests {
         let cell = make_test_cell("for i in 0..n { }");
         let mutations = tester.generate_mutations(&cell);
         // Boundary mutations check for " 0" or "(0" patterns
-        let has_boundary = mutations
+        let _has_boundary = mutations
             .iter()
             .any(|m| m.mutation_type == MutationType::BoundaryValue);
-        // May or may not match depending on pattern
-        assert!(mutations.len() >= 0); // At minimum, test runs
+        // May or may not match depending on pattern - verify generate_mutations runs
+        let _ = mutations.len();
     }
 
     #[test]
@@ -691,11 +691,11 @@ mod tests {
         let tester = MutationTester::new();
         let cell = make_test_cell("let x = arr[ 1];");
         let mutations = tester.generate_mutations(&cell);
-        let has_boundary = mutations
+        let _has_boundary = mutations
             .iter()
             .any(|m| m.mutation_type == MutationType::BoundaryValue && m.mutated.contains(" 0"));
-        // May match " 1" to " 0"
-        assert!(mutations.len() >= 0);
+        // May match " 1" to " 0" - verify generate_mutations runs
+        let _ = mutations.len();
     }
 
     #[test]
