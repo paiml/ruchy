@@ -3648,20 +3648,20 @@ impl Interpreter {
             if let Some(Value::String(type_name)) = obj.get("__type") {
                 if type_name.as_ref() == "Module" {
                     // Look up the function in the module
-                    if let Some(func_value) = obj.get(method) {
-                        // Evaluate arguments
-                        let arg_values: Result<Vec<_>, _> =
-                            args.iter().map(|arg| self.eval_expr(arg)).collect();
-                        let arg_values = arg_values?;
-
-                        // Call the function using the existing call_function infrastructure
-                        return self.call_function(func_value.clone(), &arg_values);
-                    } else {
-                        return Err(InterpreterError::RuntimeError(format!(
+                    let func_value = obj.get(method).ok_or_else(|| {
+                        InterpreterError::RuntimeError(format!(
                             "Module has no function named '{}'",
                             method
-                        )));
-                    }
+                        ))
+                    })?;
+
+                    // Evaluate arguments
+                    let arg_values: Result<Vec<_>, _> =
+                        args.iter().map(|arg| self.eval_expr(arg)).collect();
+                    let arg_values = arg_values?;
+
+                    // Call the function using the existing call_function infrastructure
+                    return self.call_function(func_value.clone(), &arg_values);
                 }
             }
         }
