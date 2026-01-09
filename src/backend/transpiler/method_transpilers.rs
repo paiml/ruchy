@@ -54,12 +54,16 @@ impl Transpiler {
                 }
             }
             "filter" => {
-                // vec.filter(f) -> vec.into_iter().filter(f).collect::<Vec<_>>()
+                // TRANSPILER-ITERATOR-001 FIX: Wrap user closure to handle reference
+                // filter's closure signature is FnMut(&Item) - it ALWAYS receives a reference
+                // We wrap the user's closure to dereference: |__x| user_closure(*__x)
                 if already_iter {
                     Ok(quote! { #obj_tokens.filter(#(#arg_tokens),*).collect::<Vec<_>>() })
                 } else {
+                    // Wrap closure: |__x| { let __f = user_closure; __f(*__x) }
+                    let user_closure = &arg_tokens[0];
                     Ok(
-                        quote! { #obj_tokens.into_iter().filter(#(#arg_tokens),*).collect::<Vec<_>>() },
+                        quote! { #obj_tokens.into_iter().filter(|__x| { let __f = #user_closure; __f(*__x) }).collect::<Vec<_>>() },
                     )
                 }
             }

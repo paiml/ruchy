@@ -346,8 +346,10 @@ impl Transpiler {
             ExprKind::MethodCall {
                 receiver, method, ..
             } => {
-                // Check if it's a DataFrame method chain
-                matches!(
+                // TRANSPILER-ITERATOR-001 FIX: Only consider DataFrame method chain if receiver is DataFrame
+                // Previously, ANY .filter() was treated as DataFrame, which broke iterator chains
+                // Now we check: is this a DataFrame method AND is the receiver a DataFrame?
+                let is_df_method = matches!(
                     method.as_str(),
                     "column"
                         | "build"
@@ -358,7 +360,9 @@ impl Transpiler {
                         | "tail"
                         | "drop_nulls"
                         | "fill_null"
-                ) || Self::is_dataframe_expr(receiver)
+                );
+                // Only return true if receiver is a DataFrame, not just because method name matches
+                is_df_method && Self::is_dataframe_expr(receiver)
             }
             // DataFrame literals
             ExprKind::DataFrame { .. } => true,
