@@ -3585,8 +3585,9 @@ impl Interpreter {
                     let mut new_arr = arr.to_vec();
                     new_arr.push(arg_value);
 
-                    // Update the variable binding
-                    self.env_set(var_name.clone(), Value::Array(Arc::from(new_arr)));
+                    // Update the variable binding - CRITICAL: Use env_set_mut to update
+                    // in parent scopes (e.g., when push is called inside while loops)
+                    self.env_set_mut(var_name.clone(), Value::Array(Arc::from(new_arr)));
 
                     return Ok(Value::Nil); // push returns nil
                 }
@@ -3597,8 +3598,9 @@ impl Interpreter {
                     let mut new_arr = arr.to_vec();
                     let popped_value = new_arr.pop().unwrap_or(Value::Nil);
 
-                    // Update the variable binding
-                    self.env_set(var_name.clone(), Value::Array(Arc::from(new_arr)));
+                    // Update the variable binding - CRITICAL: Use env_set_mut to update
+                    // in parent scopes (e.g., when pop is called inside while loops)
+                    self.env_set_mut(var_name.clone(), Value::Array(Arc::from(new_arr)));
 
                     return Ok(popped_value); // pop returns the removed item
                 }
