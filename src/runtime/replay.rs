@@ -1192,5 +1192,364 @@ mod tests {
             assert_eq!(limits.stack_kb, deserialized.stack_kb);
             assert_eq!(limits.cpu_ms, deserialized.cpu_ms);
         }
+        // === EXTREME TDD Round 163 - Additional Replay Tests ===
+
+        // Test 33: SemVer Clone
+        #[test]
+        fn test_semver_clone_r163() {
+            let version = SemVer::new(2, 3, 4);
+            let cloned = version.clone();
+            assert_eq!(version, cloned);
+            assert_eq!(cloned.major, 2);
+            assert_eq!(cloned.minor, 3);
+            assert_eq!(cloned.patch, 4);
+        }
+
+        // Test 34: SemVer Debug
+        #[test]
+        fn test_semver_debug_r163() {
+            let version = SemVer::new(1, 2, 3);
+            let debug_str = format!("{:?}", version);
+            assert!(debug_str.contains("SemVer"));
+            assert!(debug_str.contains("major"));
+            assert!(debug_str.contains("minor"));
+            assert!(debug_str.contains("patch"));
+        }
+
+        // Test 35: EventId Debug
+        #[test]
+        fn test_event_id_debug_r163() {
+            let id = EventId(42);
+            let debug_str = format!("{:?}", id);
+            assert!(debug_str.contains("EventId"));
+            assert!(debug_str.contains("42"));
+        }
+
+        // Test 36: EventId Clone
+        #[test]
+        fn test_event_id_clone_r163() {
+            let id = EventId(100);
+            let cloned = id.clone();
+            assert_eq!(id, cloned);
+            assert_eq!(cloned.0, 100);
+        }
+
+        // Test 37: EventId Copy
+        #[test]
+        fn test_event_id_copy_r163() {
+            let id = EventId(50);
+            let copied = id; // Copy, not move
+            assert_eq!(id, copied); // Original still usable
+        }
+
+        // Test 38: ResourceUsage Clone
+        #[test]
+        fn test_resource_usage_clone_r163() {
+            let usage = ResourceUsage {
+                heap_bytes: 4096,
+                stack_depth: 20,
+                cpu_ns: 5_000_000,
+            };
+            let cloned = usage.clone();
+            assert_eq!(usage.heap_bytes, cloned.heap_bytes);
+            assert_eq!(usage.stack_depth, cloned.stack_depth);
+            assert_eq!(usage.cpu_ns, cloned.cpu_ns);
+        }
+
+        // Test 39: ResourceTolerance Clone
+        #[test]
+        fn test_resource_tolerance_clone_r163() {
+            let tolerance = ResourceTolerance {
+                heap_bytes_percent: 15.0,
+                cpu_ns_percent: 25.0,
+            };
+            let cloned = tolerance.clone();
+            assert!((tolerance.heap_bytes_percent - cloned.heap_bytes_percent).abs() < f64::EPSILON);
+            assert!((tolerance.cpu_ns_percent - cloned.cpu_ns_percent).abs() < f64::EPSILON);
+        }
+
+        // Test 40: ValidationReport Default
+        #[test]
+        fn test_validation_report_default_r163() {
+            let report = ValidationReport::default();
+            assert!(!report.passed);
+            assert_eq!(report.total_events, 0);
+            assert_eq!(report.successful_events, 0);
+            assert!(report.divergences.is_empty());
+        }
+
+        // Test 41: StateCheckpoint Clone
+        #[test]
+        fn test_state_checkpoint_clone_r163() {
+            let checkpoint = create_test_checkpoint();
+            let cloned = checkpoint.clone();
+            assert_eq!(checkpoint.state_hash, cloned.state_hash);
+            assert_eq!(checkpoint.bindings.len(), cloned.bindings.len());
+            assert_eq!(checkpoint.type_environment.len(), cloned.type_environment.len());
+        }
+
+        // Test 42: Environment Clone
+        #[test]
+        fn test_environment_clone_r163() {
+            let env = create_test_environment();
+            let cloned = env.clone();
+            assert_eq!(env.seed, cloned.seed);
+            assert_eq!(env.feature_flags.len(), cloned.feature_flags.len());
+        }
+
+        // Test 43: SessionMetadata Clone
+        #[test]
+        fn test_session_metadata_clone_r163() {
+            let metadata = create_test_metadata();
+            let cloned = metadata.clone();
+            assert_eq!(metadata.session_id, cloned.session_id);
+            assert_eq!(metadata.student_id, cloned.student_id);
+            assert_eq!(metadata.tags.len(), cloned.tags.len());
+        }
+
+        // Test 44: ReplSession Clone
+        #[test]
+        fn test_repl_session_clone_r163() {
+            let session = ReplSession {
+                version: SemVer::new(1, 0, 0),
+                metadata: create_test_metadata(),
+                environment: create_test_environment(),
+                timeline: vec![],
+                checkpoints: BTreeMap::new(),
+            };
+            let cloned = session.clone();
+            assert_eq!(session.version, cloned.version);
+            assert_eq!(session.metadata.session_id, cloned.metadata.session_id);
+        }
+
+        // Test 45: Divergence Clone
+        #[test]
+        fn test_divergence_clone_r163() {
+            let divergence = Divergence::Output {
+                expected: "foo".to_string(),
+                actual: "bar".to_string(),
+            };
+            let cloned = divergence.clone();
+            match cloned {
+                Divergence::Output { expected, actual } => {
+                    assert_eq!(expected, "foo");
+                    assert_eq!(actual, "bar");
+                }
+                _ => panic!("Expected Output divergence"),
+            }
+        }
+
+        // Test 46: TimestampedEvent Clone
+        #[test]
+        fn test_timestamped_event_clone_r163() {
+            let event = TimestampedEvent {
+                id: EventId(5),
+                timestamp_ns: 123456789,
+                event: Event::Input {
+                    text: "test".to_string(),
+                    mode: InputMode::File,
+                },
+                causality: vec![EventId(1), EventId(2)],
+            };
+            let cloned = event.clone();
+            assert_eq!(event.id, cloned.id);
+            assert_eq!(event.timestamp_ns, cloned.timestamp_ns);
+            assert_eq!(event.causality.len(), cloned.causality.len());
+        }
+
+        // Test 47: EvalResult Clone
+        #[test]
+        fn test_eval_result_clone_r163() {
+            let result = EvalResult::Success { value: "42".to_string() };
+            let cloned = result.clone();
+            match cloned {
+                EvalResult::Success { value } => assert_eq!(value, "42"),
+                _ => panic!("Expected Success"),
+            }
+        }
+
+        // Test 48: Event Clone Input
+        #[test]
+        fn test_event_clone_input_r163() {
+            let event = Event::Input {
+                text: "let x = 1".to_string(),
+                mode: InputMode::Paste,
+            };
+            let cloned = event.clone();
+            match cloned {
+                Event::Input { text, mode } => {
+                    assert_eq!(text, "let x = 1");
+                    assert_eq!(mode, InputMode::Paste);
+                }
+                _ => panic!("Expected Input event"),
+            }
+        }
+
+        // Test 49: Event Clone Output
+        #[test]
+        fn test_event_clone_output_r163() {
+            let event = Event::Output {
+                result: EvalResult::Unit,
+                stdout: vec![1, 2, 3],
+                stderr: vec![4, 5],
+            };
+            let cloned = event.clone();
+            match cloned {
+                Event::Output { result, stdout, stderr } => {
+                    assert!(matches!(result, EvalResult::Unit));
+                    assert_eq!(stdout, vec![1, 2, 3]);
+                    assert_eq!(stderr, vec![4, 5]);
+                }
+                _ => panic!("Expected Output event"),
+            }
+        }
+
+        // Test 50: SemVer Serialization Roundtrip
+        #[test]
+        fn test_semver_serialization_roundtrip_r163() {
+            let version = SemVer::new(3, 14, 159);
+            let json = serde_json::to_string(&version).expect("should serialize");
+            let deserialized: SemVer = serde_json::from_str(&json).expect("should deserialize");
+            assert_eq!(version, deserialized);
+        }
+
+        // Test 51: EventId Serialization Roundtrip
+        #[test]
+        fn test_event_id_serialization_roundtrip_r163() {
+            let id = EventId(999);
+            let json = serde_json::to_string(&id).expect("should serialize");
+            let deserialized: EventId = serde_json::from_str(&json).expect("should deserialize");
+            assert_eq!(id, deserialized);
+        }
+
+        // Test 52: ResourceUsage Debug
+        #[test]
+        fn test_resource_usage_debug_r163() {
+            let usage = ResourceUsage {
+                heap_bytes: 1024,
+                stack_depth: 10,
+                cpu_ns: 1000000,
+            };
+            let debug_str = format!("{:?}", usage);
+            assert!(debug_str.contains("ResourceUsage"));
+            assert!(debug_str.contains("heap_bytes"));
+            assert!(debug_str.contains("stack_depth"));
+            assert!(debug_str.contains("cpu_ns"));
+        }
+
+        // Test 53: ResourceTolerance Debug
+        #[test]
+        fn test_resource_tolerance_debug_r163() {
+            let tolerance = ResourceTolerance::default();
+            let debug_str = format!("{:?}", tolerance);
+            assert!(debug_str.contains("ResourceTolerance"));
+            assert!(debug_str.contains("heap_bytes_percent"));
+            assert!(debug_str.contains("cpu_ns_percent"));
+        }
+
+        // Test 54: ValidationReport Debug
+        #[test]
+        fn test_validation_report_debug_r163() {
+            let report = ValidationReport::new();
+            let debug_str = format!("{:?}", report);
+            assert!(debug_str.contains("ValidationReport"));
+            assert!(debug_str.contains("passed"));
+            assert!(debug_str.contains("total_events"));
+        }
+
+        // Test 55: ReplayResult Debug
+        #[test]
+        fn test_replay_result_debug_r163() {
+            let result = ReplayResult {
+                output: Ok(Value::Integer(42)),
+                state_hash: "hash123".to_string(),
+                resource_usage: ResourceUsage {
+                    heap_bytes: 100,
+                    stack_depth: 5,
+                    cpu_ns: 1000,
+                },
+            };
+            let debug_str = format!("{:?}", result);
+            assert!(debug_str.contains("ReplayResult"));
+            assert!(debug_str.contains("output"));
+            assert!(debug_str.contains("state_hash"));
+        }
+
+        // Test 56: ValidationResult Debug
+        #[test]
+        fn test_validation_result_debug_r163() {
+            let result = ValidationResult {
+                is_deterministic: true,
+                divergences: vec![],
+            };
+            let debug_str = format!("{:?}", result);
+            assert!(debug_str.contains("ValidationResult"));
+            assert!(debug_str.contains("is_deterministic"));
+            assert!(debug_str.contains("divergences"));
+        }
+
+        // Test 57: StateCheckpoint Debug
+        #[test]
+        fn test_state_checkpoint_debug_r163() {
+            let checkpoint = create_test_checkpoint();
+            let debug_str = format!("{:?}", checkpoint);
+            assert!(debug_str.contains("StateCheckpoint"));
+            assert!(debug_str.contains("bindings"));
+            assert!(debug_str.contains("state_hash"));
+        }
+
+        // Test 58: Empty Session Timeline
+        #[test]
+        fn test_empty_session_timeline_r163() {
+            let session = ReplSession {
+                version: SemVer::new(1, 0, 0),
+                metadata: create_test_metadata(),
+                environment: create_test_environment(),
+                timeline: vec![],
+                checkpoints: BTreeMap::new(),
+            };
+            assert!(session.timeline.is_empty());
+            assert_eq!(session.timeline.len(), 0);
+        }
+
+        // Test 59: Session With Feature Flags
+        #[test]
+        fn test_session_with_feature_flags_r163() {
+            let env = Environment {
+                seed: 54321,
+                feature_flags: vec!["experimental".to_string(), "debug".to_string()],
+                resource_limits: ResourceLimits {
+                    heap_mb: 256,
+                    stack_kb: 128,
+                    cpu_ms: 1000,
+                },
+            };
+            assert_eq!(env.feature_flags.len(), 2);
+            assert!(env.feature_flags.contains(&"experimental".to_string()));
+            assert!(env.feature_flags.contains(&"debug".to_string()));
+        }
+
+        // Test 60: ValidationReport Multiple Divergences
+        #[test]
+        fn test_validation_report_multiple_divergences_r163() {
+            let mut report = ValidationReport::new();
+            report.total_events = 5;
+
+            report.add_divergence(EventId(1), Divergence::Output {
+                expected: "1".to_string(),
+                actual: "2".to_string(),
+            });
+            report.add_divergence(EventId(2), Divergence::State {
+                expected_hash: "a".to_string(),
+                actual_hash: "b".to_string(),
+            });
+            report.add_divergence(EventId(3), Divergence::Resources {
+                expected: ResourceUsage { heap_bytes: 100, stack_depth: 1, cpu_ns: 100 },
+                actual: ResourceUsage { heap_bytes: 200, stack_depth: 2, cpu_ns: 200 },
+            });
+
+            assert_eq!(report.divergences.len(), 3);
+            assert!(!report.passed);
+        }
     } // End enabled_tests module
 }
