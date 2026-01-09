@@ -1054,15 +1054,16 @@ mod tests {
     fn test_gc_collect() {
         let mut interp = Interpreter::new();
         let stats = interp.gc_collect();
-        // Verify stats structure exists
-        assert!(stats.collections >= 0);
+        // Verify stats structure exists (collections is usize, always valid)
+        let _ = stats.collections;
     }
 
     #[test]
     fn test_gc_stats() {
         let interp = Interpreter::new();
         let stats = interp.gc_stats();
-        assert!(stats.collections >= 0);
+        // Verify stats structure exists (collections is usize, always valid)
+        let _ = stats.collections;
     }
 
     #[test]
@@ -4151,7 +4152,8 @@ mod tests {
     fn test_gc_track_value_r129() {
         let mut interp = Interpreter::new();
         let tracked = interp.gc_track(Value::Integer(42));
-        assert!(tracked >= 0);
+        // tracked is usize, just verify it exists (any value is valid)
+        let _ = tracked;
     }
 
     #[test]
@@ -4159,14 +4161,16 @@ mod tests {
         let mut interp = Interpreter::new();
         let _id = interp.gc_track(Value::Integer(100));
         let stats = interp.gc_collect();
-        assert!(stats.collections >= 0);
+        // Verify stats struct is returned (collections is usize, always valid)
+        let _ = stats.collections;
     }
 
     #[test]
     fn test_gc_stats_r129() {
         let interp = Interpreter::new();
         let stats = interp.gc_stats();
-        assert!(stats.collections >= 0);
+        // Verify stats struct is returned (collections is usize, always valid)
+        let _ = stats.collections;
     }
 
     #[test]

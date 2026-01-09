@@ -429,7 +429,8 @@ fn test_memory_used() {
     let repl = Repl::new(temp_dir.path().to_path_buf()).expect("repl creation");
 
     let mem = repl.memory_used();
-    assert!(mem >= 0);
+    // Verify memory_used returns a value (mem is usize, always valid)
+    let _ = mem;
 }
 
 #[test]

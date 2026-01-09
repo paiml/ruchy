@@ -888,7 +888,8 @@ mod tests {
         pd.record_attempt("student1", "test1", 45.0);
 
         let result = pd.use_hint("student1", "test1", "hint1");
-        assert!(result.hints_remaining >= 0);
+        // Verify hint was used (hints_remaining is usize, always valid)
+        let _ = result.hints_remaining;
     }
 
     #[test]

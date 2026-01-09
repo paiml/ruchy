@@ -449,7 +449,7 @@ mod round_132_tests {
     }
 
     #[test]
-    fn test_format_X_uppercase() {
+    fn test_format_hex_uppercase() {
         let val = Value::Integer(0xABCDEF);
         let result = format_value_with_spec(&val, "X");
         assert!(result.contains("ABCDEF"));
@@ -807,7 +807,7 @@ mod round_137_tests {
     }
 
     #[test]
-    fn test_format_X_with_negative() {
+    fn test_format_hex_uppercase_with_negative() {
         let val = Value::Integer(-1);
         let result = format_value_with_spec(&val, "X");
         assert!(result.contains("FFFFFFFFFFFFFFFF"));
