@@ -452,29 +452,40 @@ impl Transpiler {
                 }
                 false
             }
-            ExprKind::MethodCall { method, .. } => {
-                // Check for common DataFrame methods
-                matches!(
+            ExprKind::MethodCall { receiver, method, .. } => {
+                // DataFrame-specific methods (don't exist on iterators)
+                let is_df_only_method = matches!(
                     method.as_str(),
                     "select"
-                        | "filter"
                         | "groupby"
                         | "group_by"
                         | "agg"
-                        | "sort"
-                        | "head"
-                        | "tail"
-                        | "mean"
-                        | "std"
-                        | "min"
-                        | "max"
-                        | "sum"
-                        | "count"
                         | "column"
                         | "build"
                         | "rows"
                         | "columns"
-                )
+                        | "lazy"
+                        | "collect"
+                        | "with_column"
+                        | "drop"
+                        | "join"
+                        | "vstack"
+                        | "hstack"
+                );
+                if is_df_only_method {
+                    return true;
+                }
+                // Common methods (filter, sum, min, max, etc.) - only count as DataFrame
+                // if the receiver is already detected as a DataFrame
+                let is_common_method = matches!(
+                    method.as_str(),
+                    "filter" | "sort" | "head" | "tail" | "mean" | "std" | "min" | "max" | "sum" | "count"
+                );
+                if is_common_method {
+                    // Only return true if receiver is a DataFrame
+                    return Self::contains_dataframe(receiver);
+                }
+                false
             }
             ExprKind::Block(exprs) => exprs.iter().any(Self::contains_dataframe),
             ExprKind::Let { value, body, .. } => {
