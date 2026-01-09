@@ -537,7 +537,10 @@ fun main() {
 
         #[test]
         fn property_enums_always_at_top(
-            enum_name in "[A-Z][a-z]{2,8}",
+            enum_name in "[A-Z][a-z]{2,8}".prop_filter(
+                "Exclude Rust reserved type names",
+                |name| !matches!(name.as_str(), "Err" | "Ok" | "Some" | "None" | "Self" | "Box" | "Vec" | "Arc" | "Rc" | "Cow" | "Ref" | "Pin")
+            ),
             variant_count in 1usize..5
         ) {
             // Property: Enum declarations ALWAYS appear before main()
