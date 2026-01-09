@@ -273,7 +273,6 @@ impl Transpiler {
                 use polars::prelude::*;
                 use std::collections::HashMap;
                 #(#imports)*
-                #use_statements
                 fn main() {
                     #(#stmt_tokens)*
                 }
@@ -281,7 +280,6 @@ impl Transpiler {
             (true, false) => Ok(quote! {
                 use polars::prelude::*;
                 #(#imports)*
-                #use_statements
                 fn main() {
                     #(#stmt_tokens)*
                 }
@@ -289,7 +287,6 @@ impl Transpiler {
             (false, true) => Ok(quote! {
                 use std::collections::HashMap;
                 #(#imports)*
-                #use_statements
                 fn main() {
                     #(#stmt_tokens)*
                 }
@@ -485,8 +482,8 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
     ) -> Result<TokenStream> {
-        let use_statements = self.generate_use_statements(needs_polars, needs_hashmap);
-        let (functions, statements, modules, has_main, main_expr, imports, globals) =
+        let _use_statements = self.generate_use_statements(needs_polars, needs_hashmap);
+        let (functions, _statements, modules, has_main, main_expr, imports, globals) =
             self.categorize_block_expressions(exprs)?;
 
         if has_main {
@@ -907,5 +904,206 @@ mod tests {
         let not_func = int_expr(42);
         let result = transpiler.extract_main_function_body(&not_func);
         assert!(result.is_err());
+    }
+
+    // ========================================================================
+    // EXTREME TDD Round 141 - Additional edge case tests
+    // ========================================================================
+
+    // Test: transpile_import_program with polars and hashmap
+    #[test]
+    fn test_transpile_import_program_with_polars_and_hashmap() {
+        let transpiler = Transpiler::new();
+        let import = make_expr(ExprKind::Import {
+            module: "std::collections".to_string(),
+            items: None,
+        });
+        let result = transpiler.transpile_import_program(&import, true, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("polars"));
+        assert!(code.contains("HashMap"));
+    }
+
+    // Test: transpile_import_program with polars only
+    #[test]
+    fn test_transpile_import_program_with_polars_only() {
+        let transpiler = Transpiler::new();
+        let import = make_expr(ExprKind::Import {
+            module: "data".to_string(),
+            items: None,
+        });
+        let result = transpiler.transpile_import_program(&import, true, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("polars"));
+        assert!(!code.contains("HashMap"));
+    }
+
+    // Test: transpile_import_program with hashmap only
+    #[test]
+    fn test_transpile_import_program_with_hashmap_only() {
+        let transpiler = Transpiler::new();
+        let import = make_expr(ExprKind::Import {
+            module: "utils".to_string(),
+            items: None,
+        });
+        let result = transpiler.transpile_import_program(&import, false, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(!code.contains("polars"));
+        assert!(code.contains("HashMap"));
+    }
+
+    // Test: transpile_single_function with polars
+    #[test]
+    fn test_transpile_single_function_with_polars() {
+        let transpiler = Transpiler::new();
+        let func = func_expr("process_data", int_expr(0));
+        let result = transpiler.transpile_single_function(&func, "process_data", true, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("polars"));
+    }
+
+    // Test: transpile_single_function with hashmap
+    #[test]
+    fn test_transpile_single_function_with_hashmap() {
+        let transpiler = Transpiler::new();
+        let func = func_expr("build_map", int_expr(0));
+        let result = transpiler.transpile_single_function(&func, "build_map", false, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashMap"));
+    }
+
+    // Test: wrap_in_main_with_result_printing with both flags
+    #[test]
+    fn test_wrap_in_main_with_both_flags() {
+        let transpiler = Transpiler::new();
+        let body = quote! { "test" };
+        let result = transpiler.wrap_in_main_with_result_printing(body, true, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("polars"));
+        assert!(code.contains("HashMap"));
+    }
+
+    // Test: transpile_to_program with string
+    #[test]
+    fn test_transpile_to_program_string() {
+        let mut transpiler = Transpiler::new();
+        let expr = string_expr("hello");
+        let result = transpiler.transpile_to_program(&expr);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("hello"));
+    }
+
+    // Test: transpile_to_program with identifier
+    #[test]
+    fn test_transpile_to_program_identifier() {
+        let mut transpiler = Transpiler::new();
+        let expr = ident_expr("my_var");
+        let result = transpiler.transpile_to_program(&expr);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("my_var"));
+    }
+
+    // Test: transpile_module_declaration with multiple items
+    #[test]
+    fn test_transpile_module_declaration_multiple_items() {
+        let transpiler = Transpiler::new();
+        let func1 = func_expr("func_a", int_expr(1));
+        let func2 = func_expr("func_b", int_expr(2));
+        let body = block_expr(vec![func1, func2]);
+        let result = transpiler.transpile_module_declaration("utils", &body);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("mod utils"));
+        assert!(code.contains("fn func_a"));
+        assert!(code.contains("fn func_b"));
+    }
+
+    // Test: transpile_module_declaration with expression
+    #[test]
+    fn test_transpile_module_declaration_with_expression() {
+        let transpiler = Transpiler::new();
+        let body = block_expr(vec![int_expr(42), string_expr("test")]);
+        let result = transpiler.transpile_module_declaration("data", &body);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("mod data"));
+    }
+
+    // Test: transpile_to_string with block
+    #[test]
+    fn test_transpile_to_string_block() {
+        let mut transpiler = Transpiler::new();
+        let expr = block_expr(vec![int_expr(1), int_expr(2)]);
+        let result = transpiler.transpile_to_string(&expr);
+        assert!(result.is_ok());
+        let code = result.unwrap();
+        assert!(code.contains("1"));
+        assert!(code.contains("2"));
+    }
+
+    // Test: transpile_to_program with function in block
+    #[test]
+    fn test_transpile_to_program_function_in_block() {
+        let mut transpiler = Transpiler::new();
+        let func = func_expr("helper", int_expr(10));
+        let block = block_expr(vec![func]);
+        let result = transpiler.transpile_to_program(&block);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn helper"));
+    }
+
+    // Test: transpile_to_program_with_context
+    #[test]
+    fn test_transpile_to_program_with_context_simple() {
+        let mut transpiler = Transpiler::new();
+        let expr = int_expr(100);
+        let result = transpiler.transpile_to_program_with_context(&expr, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("100"));
+    }
+
+    // Test: wrap_in_main with hashmap
+    #[test]
+    fn test_wrap_in_main_with_hashmap() {
+        let transpiler = Transpiler::new();
+        let body = quote! { 42 };
+        let result = transpiler.wrap_in_main_with_result_printing(body, false, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashMap"));
+    }
+
+    // Test: generate_result_printing_tokens contains expected patterns
+    #[test]
+    fn test_generate_result_printing_tokens_patterns() {
+        let transpiler = Transpiler::new();
+        let tokens = transpiler.generate_result_printing_tokens();
+        let code = tokens.to_string();
+        assert!(code.contains("type_name_of_val"));
+        assert!(code.contains("\"()\""));
+    }
+
+    // Test: transpile_to_program with multiple functions
+    #[test]
+    fn test_transpile_to_program_multiple_functions() {
+        let mut transpiler = Transpiler::new();
+        let func1 = func_expr("helper", int_expr(1));
+        let func2 = func_expr("main", int_expr(0));
+        let block = block_expr(vec![func1, func2]);
+        let result = transpiler.transpile_to_program(&block);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn helper"));
+        assert!(code.contains("fn main"));
     }
 }
