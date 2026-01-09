@@ -1280,6 +1280,9 @@ impl Interpreter {
                 finally_block.as_deref(),
             ),
             ExprKind::Throw { expr } => crate::runtime::eval_try_catch::eval_throw(self, expr),
+            // Await: In synchronous interpreter, await just evaluates the expression
+            // This provides basic async/await syntax support without true async runtime
+            ExprKind::Await { expr } => self.eval_expr(expr),
             _ => unreachable!("Non-control-flow expression passed to eval_control_flow_expr"),
         }
     }
@@ -3638,6 +3641,30 @@ impl Interpreter {
         }
 
         let receiver_value = self.eval_expr(receiver)?;
+
+        // Special handling for Module method calls - look up function and call it
+        // This allows `mod math { pub fun add(a, b) { ... } }; math.add(1, 2)`
+        if let Value::Object(ref obj) = receiver_value {
+            if let Some(Value::String(type_name)) = obj.get("__type") {
+                if type_name.as_ref() == "Module" {
+                    // Look up the function in the module
+                    if let Some(func_value) = obj.get(method) {
+                        // Evaluate arguments
+                        let arg_values: Result<Vec<_>, _> =
+                            args.iter().map(|arg| self.eval_expr(arg)).collect();
+                        let arg_values = arg_values?;
+
+                        // Call the function using the existing call_function infrastructure
+                        return self.call_function(func_value.clone(), &arg_values);
+                    } else {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Module has no function named '{}'",
+                            method
+                        )));
+                    }
+                }
+            }
+        }
 
         // Special handling for DataFrame methods with closures - don't pre-evaluate the closure argument
         if matches!(receiver_value, Value::DataFrame { .. }) {

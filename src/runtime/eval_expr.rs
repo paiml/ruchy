@@ -82,6 +82,7 @@ pub fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
             | ExprKind::Return { .. }
             | ExprKind::TryCatch { .. }
             | ExprKind::Throw { .. }
+            | ExprKind::Await { .. }
     )
 }
 
