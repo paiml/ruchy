@@ -9,7 +9,7 @@
 //! **EXTREME TDD Round 54**: Extracted from statements.rs for modularization.
 
 use super::Transpiler;
-use crate::frontend::ast::{Expr, ExprKind, Literal, Param, Pattern, Type, TypeKind};
+use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern, Type, TypeKind};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -318,10 +318,19 @@ impl Transpiler {
             (ExprKind::Literal(Literal::String(s)), Some(type_ann))
                 if matches!(&type_ann.kind, TypeKind::Named(n) if n == "String") =>
             {
+                // TRANSPILER-STRING-CONCAT-001 FIX: Register string variable for concatenation tracking
+                self.string_vars.borrow_mut().insert(name.to_string());
                 Ok((quote! { #s.to_string() }, false))
             }
             (ExprKind::Literal(Literal::String(s)), None) if is_mutable_var => {
+                // TRANSPILER-STRING-CONCAT-001 FIX: Register string variable for concatenation tracking
+                self.string_vars.borrow_mut().insert(name.to_string());
                 Ok((quote! { String::from(#s) }, false))
+            }
+            // TRANSPILER-STRING-CONCAT-001 FIX: Handle immutable string literals too
+            (ExprKind::Literal(Literal::String(_)), None) => {
+                self.string_vars.borrow_mut().insert(name.to_string());
+                Ok((self.transpile_expr(value)?, false))
             }
             (ExprKind::List(_), Some(type_ann))
                 if matches!(&type_ann.kind, TypeKind::List(_)) =>
@@ -717,6 +726,271 @@ mod tests {
     fn test_value_creates_vec_non_list() {
         let transpiler = Transpiler::new();
         let expr = int_expr(42);
+        assert!(!transpiler.value_creates_vec(&expr));
+    }
+
+    // ===== EXTREME TDD Round 156 - Bindings Transpilation Tests =====
+
+    #[test]
+    fn test_generate_let_binding_mutable_with_vec_hint() {
+        let name_ident = format_ident!("data");
+        let value = quote! { vec![] };
+        let result = Transpiler::generate_let_binding(&name_ident, true, true, &value);
+        let result_str = result.to_string();
+        assert!(result_str.contains("let mut"));
+        assert!(result_str.contains("Vec"));
+    }
+
+    #[test]
+    fn test_require_exact_args_singular_message() {
+        let args: Vec<TokenStream> = vec![];
+        let result = Transpiler::require_exact_args("method", &args, 1);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("1 argument"));
+        assert!(!err.contains("arguments"));
+    }
+
+    #[test]
+    fn test_require_exact_args_plural_message() {
+        let args: Vec<TokenStream> = vec![];
+        let result = Transpiler::require_exact_args("method", &args, 3);
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("3 arguments"));
+    }
+
+    #[test]
+    fn test_transpile_let_with_empty_list() {
+        let transpiler = Transpiler::new();
+        let value = make_expr(ExprKind::List(vec![]));
+        let body = unit_expr();
+        let result = transpiler.transpile_let("items", &value, &body, false);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Vec"));
+    }
+
+    #[test]
+    fn test_transpile_let_with_block_body() {
+        let transpiler = Transpiler::new();
+        let value = int_expr(42);
+        let body = make_expr(ExprKind::Block(vec![ident_expr("x"), int_expr(10)]));
+        let result = transpiler.transpile_let("x", &value, &body, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_nested_let() {
+        let transpiler = Transpiler::new();
+        let value = int_expr(1);
+        let inner_let = make_expr(ExprKind::Let {
+            name: "y".to_string(),
+            type_annotation: None,
+            value: Box::new(int_expr(2)),
+            body: Box::new(ident_expr("y")),
+            is_mutable: false,
+            else_block: None,
+        });
+        let result = transpiler.transpile_let("x", &value, &inner_let, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_pattern_with_body() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Identifier("x".to_string());
+        let value = int_expr(42);
+        let body = ident_expr("x");
+        let result = transpiler.transpile_let_pattern(&pattern, &value, &body);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_pattern_list_with_unit_body() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::List(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ]);
+        let value = make_expr(ExprKind::List(vec![int_expr(1), int_expr(2)]));
+        let body = unit_expr();
+        let result = transpiler.transpile_let_pattern(&pattern, &value, &body);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_with_type_string() {
+        let transpiler = Transpiler::new();
+        let value = string_expr("hello");
+        let body = unit_expr();
+        let type_ann = crate::frontend::ast::Type {
+            kind: crate::frontend::ast::TypeKind::Named("String".to_string()),
+            span: Span::default(),
+        };
+        let result =
+            transpiler.transpile_let_with_type("s", Some(&type_ann), &value, &body, false, false);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("to_string"));
+    }
+
+    #[test]
+    fn test_transpile_let_with_type_const() {
+        let transpiler = Transpiler::new();
+        let value = int_expr(42);
+        let body = unit_expr();
+        let result = transpiler.transpile_let_with_type("X", None, &value, &body, false, true);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("const"));
+    }
+
+    #[test]
+    fn test_transpile_let_with_type_mutable() {
+        let transpiler = Transpiler::new();
+        let value = int_expr(42);
+        let body = unit_expr();
+        let result = transpiler.transpile_let_with_type("x", None, &value, &body, true, false);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("let mut"));
+    }
+
+    #[test]
+    fn test_transpile_let_with_type_empty_list() {
+        let transpiler = Transpiler::new();
+        let value = make_expr(ExprKind::List(vec![]));
+        let body = unit_expr();
+        let result = transpiler.transpile_let_with_type("items", None, &value, &body, false, false);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Vec"));
+    }
+
+    #[test]
+    fn test_transpile_let_with_type_and_body() {
+        let transpiler = Transpiler::new();
+        let value = int_expr(42);
+        let body = ident_expr("x");
+        let result = transpiler.transpile_let_with_type("x", None, &value, &body, false, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_pattern_with_type_and_unit_body() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Identifier("x".to_string());
+        let value = int_expr(42);
+        let body = unit_expr();
+        let result = transpiler.transpile_let_pattern_with_type(&pattern, None, &value, &body);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_pattern_with_type_and_expr_body() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Identifier("x".to_string());
+        let value = int_expr(42);
+        let body = ident_expr("x");
+        let type_ann = crate::frontend::ast::Type {
+            kind: crate::frontend::ast::TypeKind::Named("i32".to_string()),
+            span: Span::default(),
+        };
+        let result =
+            transpiler.transpile_let_pattern_with_type(&pattern, Some(&type_ann), &value, &body);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_pattern_else_multiple_vars() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ]);
+        let value = ident_expr("opt");
+        let body = ident_expr("a");
+        let else_block = int_expr(-1);
+        let result = transpiler.transpile_let_pattern_else(&pattern, &value, &body, &else_block);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_let_with_reserved_keyword() {
+        let transpiler = Transpiler::new();
+        let value = int_expr(42);
+        let body = unit_expr();
+        let result = transpiler.transpile_let("type", &value, &body, false);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("r#type"));
+    }
+
+    #[test]
+    fn test_transpile_let_with_type_reserved_keyword() {
+        let transpiler = Transpiler::new();
+        let value = int_expr(42);
+        let body = unit_expr();
+        let result = transpiler.transpile_let_with_type("fn", None, &value, &body, false, false);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("r#fn"));
+    }
+
+    #[test]
+    fn test_transpile_let_pattern_list_slice_conversion() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::List(vec![Pattern::Identifier("first".to_string())]);
+        let value = make_expr(ExprKind::List(vec![int_expr(1), int_expr(2)]));
+        let body = ident_expr("first");
+        let result = transpiler.transpile_let_pattern(&pattern, &value, &body);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        // Should contain slice conversion
+        assert!(tokens.contains('['));
+    }
+
+    #[test]
+    fn test_transpile_let_with_call_value() {
+        let transpiler = Transpiler::new();
+        let value = make_expr(ExprKind::Call {
+            func: Box::new(ident_expr("get_string")),
+            args: vec![],
+        });
+        let body = unit_expr();
+        let result = transpiler.transpile_let_with_type("s", None, &value, &body, false, false);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_pattern_needs_slice_tuple() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Tuple(vec![Pattern::Identifier("a".to_string())]);
+        assert!(!transpiler.pattern_needs_slice(&pattern));
+    }
+
+    #[test]
+    fn test_pattern_needs_slice_wildcard() {
+        let transpiler = Transpiler::new();
+        let pattern = Pattern::Wildcard;
+        assert!(!transpiler.pattern_needs_slice(&pattern));
+    }
+
+    #[test]
+    fn test_value_creates_vec_call() {
+        let transpiler = Transpiler::new();
+        let expr = make_expr(ExprKind::Call {
+            func: Box::new(ident_expr("vec")),
+            args: vec![],
+        });
+        assert!(!transpiler.value_creates_vec(&expr));
+    }
+
+    #[test]
+    fn test_value_creates_vec_identifier() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("items");
         assert!(!transpiler.value_creates_vec(&expr));
     }
 }

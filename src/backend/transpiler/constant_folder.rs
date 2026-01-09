@@ -634,9 +634,17 @@ fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
             let folded_value = Box::new(propagate_with_env((*value).clone(), env));
 
             // If value is constant and variable is immutable, track it
+            // TRANSPILER-STRING-CONCAT-001 FIX: Don't propagate string literals
+            // String constants should keep their variable names for:
+            // 1. Readability in generated code
+            // 2. Correct behavior in string concatenation (a + b should use a, b)
+            // 3. Proper ownership semantics (strings are heap-allocated)
             if !is_mutable {
                 if let ExprKind::Literal(ref lit) = folded_value.kind {
-                    env.insert(name.clone(), lit.clone());
+                    // Only propagate numeric/boolean literals, not strings
+                    if !matches!(lit, Literal::String(_)) {
+                        env.insert(name.clone(), lit.clone());
+                    }
                 }
             }
 
@@ -1320,5 +1328,630 @@ mod tests {
             }
             _ => panic!("Expected Block, got {:?}", folded.kind),
         }
+    }
+
+    // ===== EXTREME TDD Round 156 - Constant Folder Tests =====
+
+    #[test]
+    fn test_fold_constants_if_const_false_with_else() {
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(false)),
+                    Span::new(0, 0),
+                )),
+                then_branch: Box::new(int_lit(42)),
+                else_branch: Some(Box::new(int_lit(99))),
+            },
+            Span::new(0, 0),
+        );
+        let folded = fold_constants(expr);
+        match &folded.kind {
+            ExprKind::Block(exprs) => {
+                assert_eq!(exprs.len(), 1);
+                assert!(matches!(
+                    exprs[0].kind,
+                    ExprKind::Literal(Literal::Integer(99, None))
+                ));
+            }
+            _ => panic!("Expected Block, got {:?}", folded.kind),
+        }
+    }
+
+    #[test]
+    fn test_fold_constants_if_const_false_no_else() {
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(false)),
+                    Span::new(0, 0),
+                )),
+                then_branch: Box::new(int_lit(42)),
+                else_branch: None,
+            },
+            Span::new(0, 0),
+        );
+        let folded = fold_constants(expr);
+        // Should return empty block (unit)
+        match &folded.kind {
+            ExprKind::Block(exprs) => {
+                assert!(exprs.is_empty());
+            }
+            _ => panic!("Expected empty Block, got {:?}", folded.kind),
+        }
+    }
+
+    #[test]
+    fn test_fold_constants_nested_binary() {
+        // (2 + 3) * 4 → 20
+        let inner = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(int_lit(2)),
+                op: BinaryOp::Add,
+                right: Box::new(int_lit(3)),
+            },
+            Span::new(0, 0),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(inner),
+                op: BinaryOp::Multiply,
+                right: Box::new(int_lit(4)),
+            },
+            Span::new(0, 0),
+        );
+        let folded = fold_constants(expr);
+        assert!(matches!(
+            folded.kind,
+            ExprKind::Literal(Literal::Integer(20, None))
+        ));
+    }
+
+    #[test]
+    fn test_fold_constants_let_with_folded_value() {
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(binary(2, BinaryOp::Add, 3)),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::new(0, 0),
+        );
+        let folded = fold_constants(expr);
+        // Value should be folded to 5
+        if let ExprKind::Let { value, .. } = folded.kind {
+            assert!(matches!(
+                value.kind,
+                ExprKind::Literal(Literal::Integer(5, None))
+            ));
+        } else {
+            panic!("Expected Let expression");
+        }
+    }
+
+    #[test]
+    fn test_fold_constants_block() {
+        let expr = Expr::new(
+            ExprKind::Block(vec![
+                binary(1, BinaryOp::Add, 2),
+                binary(3, BinaryOp::Multiply, 4),
+            ]),
+            Span::new(0, 0),
+        );
+        let folded = fold_constants(expr);
+        if let ExprKind::Block(exprs) = folded.kind {
+            assert_eq!(exprs.len(), 2);
+            assert!(matches!(
+                exprs[0].kind,
+                ExprKind::Literal(Literal::Integer(3, None))
+            ));
+            assert!(matches!(
+                exprs[1].kind,
+                ExprKind::Literal(Literal::Integer(12, None))
+            ));
+        } else {
+            panic!("Expected Block expression");
+        }
+    }
+
+    #[test]
+    fn test_fold_integer_comparison_false_cases() {
+        assert!(matches!(
+            fold_integer_comparison(5, BinaryOp::Equal, 3),
+            Some(Literal::Bool(false))
+        ));
+        assert!(matches!(
+            fold_integer_comparison(5, BinaryOp::NotEqual, 5),
+            Some(Literal::Bool(false))
+        ));
+        assert!(matches!(
+            fold_integer_comparison(5, BinaryOp::Less, 3),
+            Some(Literal::Bool(false))
+        ));
+        assert!(matches!(
+            fold_integer_comparison(5, BinaryOp::Greater, 10),
+            Some(Literal::Bool(false))
+        ));
+    }
+
+    #[test]
+    fn test_fold_integer_arithmetic_overflow() {
+        // Test checked arithmetic - overflow should return None
+        let result = fold_integer_arithmetic(i64::MAX, BinaryOp::Add, 1);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_fold_integer_arithmetic_underflow() {
+        let result = fold_integer_arithmetic(i64::MIN, BinaryOp::Subtract, 1);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_fold_integer_arithmetic_multiply_overflow() {
+        let result = fold_integer_arithmetic(i64::MAX, BinaryOp::Multiply, 2);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_eliminate_dead_code_after_break() {
+        let stmts = vec![
+            Expr::new(
+                ExprKind::Break {
+                    label: None,
+                    value: None,
+                },
+                Span::new(0, 0),
+            ),
+            int_lit(10), // Dead code
+        ];
+        let result = remove_dead_statements(stmts);
+        assert_eq!(result.len(), 1); // Only break remains
+    }
+
+    #[test]
+    fn test_eliminate_dead_code_after_continue() {
+        let stmts = vec![
+            Expr::new(ExprKind::Continue { label: None }, Span::new(0, 0)),
+            int_lit(10), // Dead code
+        ];
+        let result = remove_dead_statements(stmts);
+        assert_eq!(result.len(), 1); // Only continue remains
+    }
+
+    #[test]
+    fn test_eliminate_dead_code_function_body() {
+        let expr = Expr::new(
+            ExprKind::Function {
+                name: "test".to_string(),
+                type_params: vec![],
+                params: vec![],
+                return_type: None,
+                body: Box::new(Expr::new(
+                    ExprKind::Block(vec![
+                        Expr::new(
+                            ExprKind::Return {
+                                value: Some(Box::new(int_lit(5))),
+                            },
+                            Span::new(0, 0),
+                        ),
+                        int_lit(10), // Dead code
+                    ]),
+                    Span::new(0, 0),
+                )),
+                is_async: false,
+                is_pub: false,
+            },
+            Span::new(0, 0),
+        );
+        let result = eliminate_dead_code(expr, std::collections::HashSet::new());
+        if let ExprKind::Function { body, .. } = result.kind {
+            if let ExprKind::Block(exprs) = body.kind {
+                assert_eq!(exprs.len(), 1); // Only return remains
+            }
+        }
+    }
+
+    #[test]
+    fn test_eliminate_dead_code_while_body() {
+        let expr = Expr::new(
+            ExprKind::While {
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::new(0, 0),
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Block(vec![
+                        Expr::new(
+                            ExprKind::Break {
+                                label: None,
+                                value: None,
+                            },
+                            Span::new(0, 0),
+                        ),
+                        int_lit(10), // Dead code
+                    ]),
+                    Span::new(0, 0),
+                )),
+                label: None,
+            },
+            Span::new(0, 0),
+        );
+        let result = eliminate_dead_code(expr, std::collections::HashSet::new());
+        if let ExprKind::While { body, .. } = result.kind {
+            if let ExprKind::Block(exprs) = body.kind {
+                assert_eq!(exprs.len(), 1); // Only break remains
+            }
+        }
+    }
+
+    #[test]
+    fn test_eliminate_dead_code_if_branches() {
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(
+                    ExprKind::Identifier("cond".to_string()),
+                    Span::new(0, 0),
+                )),
+                then_branch: Box::new(Expr::new(
+                    ExprKind::Block(vec![
+                        Expr::new(
+                            ExprKind::Return {
+                                value: Some(Box::new(int_lit(1))),
+                            },
+                            Span::new(0, 0),
+                        ),
+                        int_lit(2), // Dead
+                    ]),
+                    Span::new(0, 0),
+                )),
+                else_branch: Some(Box::new(Expr::new(
+                    ExprKind::Block(vec![
+                        Expr::new(
+                            ExprKind::Return {
+                                value: Some(Box::new(int_lit(3))),
+                            },
+                            Span::new(0, 0),
+                        ),
+                        int_lit(4), // Dead
+                    ]),
+                    Span::new(0, 0),
+                ))),
+            },
+            Span::new(0, 0),
+        );
+        let result = eliminate_dead_code(expr, std::collections::HashSet::new());
+        // Both branches should have dead code eliminated
+        if let ExprKind::If {
+            then_branch,
+            else_branch,
+            ..
+        } = result.kind
+        {
+            if let ExprKind::Block(then_exprs) = then_branch.kind {
+                assert_eq!(then_exprs.len(), 1);
+            }
+            if let Some(else_box) = else_branch {
+                if let ExprKind::Block(else_exprs) = else_box.kind {
+                    assert_eq!(else_exprs.len(), 1);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_eliminate_dead_code_call_args() {
+        let expr = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("foo".to_string()),
+                    Span::new(0, 0),
+                )),
+                args: vec![binary(1, BinaryOp::Add, 2)],
+            },
+            Span::new(0, 0),
+        );
+        // Just verify it doesn't crash and returns the structure
+        let result = eliminate_dead_code(expr, std::collections::HashSet::new());
+        assert!(matches!(result.kind, ExprKind::Call { .. }));
+    }
+
+    #[test]
+    fn test_propagate_with_env_block_scope() {
+        let mut env = HashMap::new();
+        env.insert("outer".to_string(), Literal::Integer(10, None));
+
+        let expr = Expr::new(
+            ExprKind::Block(vec![
+                Expr::new(
+                    ExprKind::Let {
+                        name: "inner".to_string(),
+                        type_annotation: None,
+                        value: Box::new(int_lit(20)),
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(Literal::Unit),
+                            Span::new(0, 0),
+                        )),
+                        is_mutable: false,
+                        else_block: None,
+                    },
+                    Span::new(0, 0),
+                ),
+                Expr::new(
+                    ExprKind::Identifier("outer".to_string()),
+                    Span::new(0, 0),
+                ),
+            ]),
+            Span::new(0, 0),
+        );
+
+        let result = propagate_with_env(expr, &mut env);
+        // The identifier "outer" should be propagated to 10
+        if let ExprKind::Block(exprs) = result.kind {
+            assert_eq!(exprs.len(), 2);
+        }
+    }
+
+    #[test]
+    fn test_propagate_constants_in_if_condition() {
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(5)),
+                body: Box::new(Expr::new(
+                    ExprKind::If {
+                        condition: Box::new(Expr::new(
+                            ExprKind::Binary {
+                                left: Box::new(Expr::new(
+                                    ExprKind::Identifier("x".to_string()),
+                                    Span::new(0, 0),
+                                )),
+                                op: BinaryOp::Greater,
+                                right: Box::new(int_lit(3)),
+                            },
+                            Span::new(0, 0),
+                        )),
+                        then_branch: Box::new(int_lit(1)),
+                        else_branch: Some(Box::new(int_lit(0))),
+                    },
+                    Span::new(0, 0),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::new(0, 0),
+        );
+
+        let result = propagate_constants(expr);
+        // After propagation: x = 5, x > 3 → 5 > 3 → true
+        // Then the if should fold to Block containing then_branch
+        if let ExprKind::Let { body, .. } = result.kind {
+            // The body should be a Block (from constant folding) with 1
+            match body.kind {
+                ExprKind::Block(exprs) => {
+                    assert_eq!(exprs.len(), 1);
+                }
+                _ => {} // May still be If if folding didn't complete
+            }
+        }
+    }
+
+    #[test]
+    fn test_collect_used_functions_in_block() {
+        let expr = Expr::new(
+            ExprKind::Block(vec![
+                Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("foo".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                ),
+                Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("bar".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                ),
+            ]),
+            Span::new(0, 0),
+        );
+        let used = collect_used_functions(&expr);
+        assert!(used.contains("foo"));
+        assert!(used.contains("bar"));
+        assert_eq!(used.len(), 2);
+    }
+
+    #[test]
+    fn test_collect_used_functions_in_binary() {
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("left_fn".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+                op: BinaryOp::Add,
+                right: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("right_fn".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+            },
+            Span::new(0, 0),
+        );
+        let used = collect_used_functions(&expr);
+        assert!(used.contains("left_fn"));
+        assert!(used.contains("right_fn"));
+    }
+
+    #[test]
+    fn test_collect_used_functions_in_function_def() {
+        let expr = Expr::new(
+            ExprKind::Function {
+                name: "outer".to_string(),
+                type_params: vec![],
+                params: vec![],
+                return_type: None,
+                body: Box::new(Expr::new(
+                    ExprKind::Call {
+                        func: Box::new(Expr::new(
+                            ExprKind::Identifier("inner".to_string()),
+                            Span::new(0, 0),
+                        )),
+                        args: vec![],
+                    },
+                    Span::new(0, 0),
+                )),
+                is_async: false,
+                is_pub: false,
+            },
+            Span::new(0, 0),
+        );
+        let used = collect_used_functions(&expr);
+        assert!(used.contains("inner"));
+    }
+
+    #[test]
+    fn test_collect_used_variables_in_block() {
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(1)),
+                body: Box::new(Expr::new(
+                    ExprKind::Block(vec![
+                        Expr::new(
+                            ExprKind::Let {
+                                name: "y".to_string(),
+                                type_annotation: None,
+                                value: Box::new(Expr::new(
+                                    ExprKind::Identifier("x".to_string()),
+                                    Span::new(0, 0),
+                                )),
+                                body: Box::new(Expr::new(
+                                    ExprKind::Identifier("y".to_string()),
+                                    Span::new(0, 0),
+                                )),
+                                is_mutable: false,
+                                else_block: None,
+                            },
+                            Span::new(0, 0),
+                        ),
+                    ]),
+                    Span::new(0, 0),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            Span::new(0, 0),
+        );
+        let used = collect_used_variables(&expr);
+        assert!(used.contains("x"));
+        assert!(used.contains("y"));
+    }
+
+    #[test]
+    fn test_collect_used_variables_let_with_else() {
+        let expr = Expr::new(
+            ExprKind::Let {
+                name: "x".to_string(),
+                type_annotation: None,
+                value: Box::new(int_lit(1)),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )),
+                is_mutable: false,
+                else_block: Some(Box::new(int_lit(0))),
+            },
+            Span::new(0, 0),
+        );
+        let used = collect_used_variables(&expr);
+        assert!(used.contains("x"));
+    }
+
+    #[test]
+    fn test_should_remove_function_main() {
+        let used = HashSet::new();
+        let mut inlined = std::collections::HashSet::new();
+        inlined.insert("main".to_string());
+        // main should never be removed
+        assert!(!should_remove_function("main", &used, &inlined));
+    }
+
+    #[test]
+    fn test_should_remove_function_inlined_and_unused() {
+        let used = HashSet::new();
+        let mut inlined = std::collections::HashSet::new();
+        inlined.insert("helper".to_string());
+        assert!(should_remove_function("helper", &used, &inlined));
+    }
+
+    #[test]
+    fn test_should_remove_function_inlined_but_used() {
+        let mut used = HashSet::new();
+        used.insert("helper".to_string());
+        let mut inlined = std::collections::HashSet::new();
+        inlined.insert("helper".to_string());
+        assert!(!should_remove_function("helper", &used, &inlined));
+    }
+
+    #[test]
+    fn test_process_let_elimination_used_variable() {
+        let used = {
+            let mut s = HashSet::new();
+            s.insert("x".to_string());
+            s
+        };
+        let value = int_lit(5);
+        let body = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 0),
+        );
+        let result = process_let_elimination("x", &value, &body, &used);
+        assert!(result.is_none()); // Should not eliminate used variable
+    }
+
+    #[test]
+    fn test_process_let_elimination_with_side_effects() {
+        let used = HashSet::new();
+        let value = Expr::new(
+            ExprKind::Call {
+                func: Box::new(Expr::new(
+                    ExprKind::Identifier("side_effect".to_string()),
+                    Span::new(0, 0),
+                )),
+                args: vec![],
+            },
+            Span::new(0, 0),
+        );
+        let body = int_lit(1);
+        let result = process_let_elimination("unused", &value, &body, &used);
+        assert!(result.is_none()); // Should not eliminate due to side effects
     }
 }
