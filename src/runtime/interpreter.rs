@@ -1326,6 +1326,15 @@ impl Interpreter {
 
         match (&object_value, &index_value) {
             (Value::Array(ref array), Value::Integer(idx)) => Self::index_array(array, *idx),
+            // ARRAY-SLICE-FIX: Support array slicing with ranges like arr[0..3]
+            (
+                Value::Array(ref array),
+                Value::Range {
+                    start,
+                    end,
+                    inclusive,
+                },
+            ) => Self::slice_array(array, start, end, *inclusive),
             (Value::String(ref s), Value::Integer(idx)) => Self::index_string(s, *idx),
             (
                 Value::String(ref s),
@@ -1382,6 +1391,16 @@ impl Interpreter {
         inclusive: bool,
     ) -> Result<Value, InterpreterError> {
         crate::runtime::eval_index::slice_string(s, start, end, inclusive)
+    }
+
+    /// ARRAY-SLICE-FIX: Slice an array using a range like arr[0..3]
+    fn slice_array(
+        array: &[Value],
+        start: &Value,
+        end: &Value,
+        inclusive: bool,
+    ) -> Result<Value, InterpreterError> {
+        crate::runtime::eval_index::slice_array(array, start, end, inclusive)
     }
 
     fn index_tuple(tuple: &[Value], idx: i64) -> Result<Value, InterpreterError> {
@@ -7095,6 +7114,95 @@ impl Interpreter {
         eval_func::eval_lambda(params, body, self.current_env())
     }
 
+    /// Extract named arguments from assignment expressions and reorder them
+    /// to match function parameter order.
+    ///
+    /// Named arguments use the syntax `param_name = value` and can be in any order.
+    /// This function detects such assignment expressions and reorders them to match
+    /// the function's parameter order.
+    ///
+    /// # Arguments
+    /// * `args` - The argument expressions from the call site
+    /// * `param_names` - The parameter names from the function definition
+    ///
+    /// # Returns
+    /// A reordered list of argument expressions matching parameter order
+    fn reorder_named_args<'a>(
+        &self,
+        args: &'a [Expr],
+        param_names: &[String],
+    ) -> Vec<&'a Expr> {
+        // Extract named args: (name, expr) for Assign expressions, (None, expr) for positional
+        let mut named_args: Vec<(Option<String>, &Expr)> = Vec::new();
+
+        for arg in args {
+            if let ExprKind::Assign { target, value } = &arg.kind {
+                if let ExprKind::Identifier(name) = &target.kind {
+                    // This is a named argument: name = value
+                    named_args.push((Some(name.clone()), value.as_ref()));
+                } else {
+                    // Assignment to non-identifier, treat as positional
+                    named_args.push((None, arg));
+                }
+            } else {
+                // Positional argument
+                named_args.push((None, arg));
+            }
+        }
+
+        // Check if we have any named arguments
+        let has_named = named_args.iter().any(|(name, _)| name.is_some());
+        if !has_named {
+            // No named args, return original order
+            return args.iter().collect();
+        }
+
+        // Reorder arguments to match parameter order
+        // Only include slots up to the number of provided args
+        let mut result: Vec<Option<&Expr>> = vec![None; param_names.len()];
+        let mut positional_idx = 0;
+
+        for (name, expr) in &named_args {
+            if let Some(param_name) = name {
+                // Named argument - find its position
+                if let Some(pos) = param_names.iter().position(|p| p == param_name) {
+                    result[pos] = Some(*expr);
+                } else {
+                    // Unknown parameter name - this will be an error at call time
+                    // For now, just append to results
+                    if positional_idx < result.len() {
+                        while positional_idx < result.len() && result[positional_idx].is_some() {
+                            positional_idx += 1;
+                        }
+                        if positional_idx < result.len() {
+                            result[positional_idx] = Some(*expr);
+                        }
+                    }
+                }
+            } else {
+                // Positional argument - find next empty slot
+                while positional_idx < result.len() && result[positional_idx].is_some() {
+                    positional_idx += 1;
+                }
+                if positional_idx < result.len() {
+                    result[positional_idx] = Some(*expr);
+                    positional_idx += 1;
+                }
+            }
+        }
+
+        // Count how many args were actually provided
+        let provided_count = named_args.len();
+
+        // Only return up to the number of provided args, in parameter order
+        // This allows default params to kick in for any trailing None slots
+        result
+            .into_iter()
+            .take(provided_count)
+            .filter_map(|opt| opt)
+            .collect()
+    }
+
     /// Evaluate function call
     fn eval_function_call(
         &mut self,
@@ -7184,9 +7292,40 @@ impl Interpreter {
             }
         }
 
+        // NAMED-PARAMS-FIX: Check for named arguments (assignment expressions) and reorder
+        // Named arguments allow: greet(greeting = "Hi", name = "Bob") -> greet("Bob", "Hi")
+        let has_named_args = args.iter().any(|arg| {
+            matches!(
+                &arg.kind,
+                ExprKind::Assign { target, .. } if matches!(&target.kind, ExprKind::Identifier(_))
+            )
+        });
+
+        // If we have named arguments, try to look up the function first to get parameter names
+        let reordered_args: Vec<&Expr> = if has_named_args {
+            // Try to get function's parameter names
+            if let ExprKind::Identifier(func_name) = &func.kind {
+                if let Ok(func_val) = self.lookup_variable(func_name) {
+                    if let Value::Closure { params, .. } = &func_val {
+                        let param_names: Vec<String> =
+                            params.iter().map(|(name, _)| name.clone()).collect();
+                        self.reorder_named_args(args, &param_names)
+                    } else {
+                        args.iter().collect()
+                    }
+                } else {
+                    args.iter().collect()
+                }
+            } else {
+                args.iter().collect()
+            }
+        } else {
+            args.iter().collect()
+        };
+
         // ISSUE-119 FIX: Evaluate args ONCE at the start to prevent double-evaluation
         // This ensures that side-effects (like counter++) only happen once
-        let arg_vals: Vec<Value> = args
+        let arg_vals: Vec<Value> = reordered_args
             .iter()
             .map(|arg| self.eval_expr(arg))
             .collect::<Result<Vec<_>, _>>()?;

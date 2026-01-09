@@ -131,6 +131,86 @@ pub fn slice_string(
     Ok(Value::from_string(sliced))
 }
 
+/// ARRAY-SLICE-FIX: Slice an array using a range like arr[0..3]
+/// Supports: arr[0..3], arr[..3], arr[3..], arr[..], arr[0..=3] (inclusive)
+/// Cyclomatic complexity: 9 (A+ standard: ≤10)
+pub fn slice_array(
+    array: &[Value],
+    start: &Value,
+    end: &Value,
+    inclusive: bool,
+) -> Result<Value, InterpreterError> {
+    let len = array.len();
+
+    // Extract start index (default to 0 for open ranges like ..5)
+    let start_idx = match start {
+        Value::Nil => 0,
+        Value::Integer(i) => {
+            if *i < 0 {
+                let adjusted = len as i64 + i;
+                if adjusted < 0 {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "Range start {i} is out of bounds for array of length {len}"
+                    )));
+                }
+                adjusted as usize
+            } else {
+                *i as usize
+            }
+        }
+        _ => {
+            let type_name = start.type_name();
+            return Err(InterpreterError::RuntimeError(format!(
+                "Range start must be integer or nil, got {type_name}"
+            )));
+        }
+    };
+
+    // Extract end index (default to len for open ranges like 5..)
+    let end_idx = match end {
+        Value::Nil => len,
+        Value::Integer(i) => {
+            let base_idx = if *i < 0 {
+                let adjusted = len as i64 + i;
+                if adjusted < 0 {
+                    return Err(InterpreterError::RuntimeError(format!(
+                        "Range end {i} is out of bounds for array of length {len}"
+                    )));
+                }
+                adjusted as usize
+            } else {
+                *i as usize
+            };
+            // For inclusive ranges, add 1 to include the end index
+            if inclusive {
+                base_idx + 1
+            } else {
+                base_idx
+            }
+        }
+        _ => {
+            let type_name = end.type_name();
+            return Err(InterpreterError::RuntimeError(format!(
+                "Range end must be integer or nil, got {type_name}"
+            )));
+        }
+    };
+
+    // Validate range
+    if start_idx > end_idx {
+        return Err(InterpreterError::RuntimeError(format!(
+            "Invalid range: start {start_idx} is greater than end {end_idx}"
+        )));
+    }
+
+    // Clamp end_idx to len (allow slicing to end without error)
+    let end_idx = end_idx.min(len);
+
+    // Perform the slice
+    let sliced: Vec<Value> = array[start_idx..end_idx].to_vec();
+    Ok(Value::Array(Arc::from(sliced)))
+}
+
 /// Index into a tuple (complexity: 5 - added negative indexing support)
 /// FEATURE-042 (GitHub Issue #46): Support Python/Ruby-style negative indexing
 pub fn index_tuple(tuple: &[Value], idx: i64) -> Result<Value, InterpreterError> {
