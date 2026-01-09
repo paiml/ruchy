@@ -2872,4 +2872,14 @@ mod scoring_tests_r162 {
             assert!((0.0..=100.0).contains(&maintainability));
         }
     }
+
+    #[test]
+    fn test_score_idiomaticity_compound_expression_r162() {
+        let code = "fun map_values(arr) { arr.map(|x| x * 2) }";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let idiomaticity = score_idiomaticity(&ast);
+            assert!((0.0..=100.0).contains(&idiomaticity));
+        }
+    }
 }
