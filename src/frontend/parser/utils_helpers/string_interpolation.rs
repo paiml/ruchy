@@ -224,11 +224,32 @@ fn parse_interpolated_expr(expr_text: &str) -> StringPart {
 }
 
 /// Split format specifier from expression
+/// Fixed: Don't confuse :: (path separator) with : (format specifier)
 fn split_format_specifier(expr_text: &str) -> (&str, Option<&str>) {
-    if let Some(colon_pos) = expr_text.find(':') {
-        let before_colon = &expr_text[..colon_pos];
+    // Find a single colon that is NOT followed by another colon (i.e., not ::)
+    let mut chars = expr_text.char_indices().peekable();
+    let mut colon_pos = None;
+
+    while let Some((i, ch)) = chars.next() {
+        if ch == ':' {
+            // Check if next char is also ':' (path separator ::)
+            if let Some((_, next_ch)) = chars.peek() {
+                if *next_ch == ':' {
+                    // This is ::, skip both
+                    chars.next();
+                    continue;
+                }
+            }
+            // This is a single colon, potential format specifier
+            colon_pos = Some(i);
+            break;
+        }
+    }
+
+    if let Some(pos) = colon_pos {
+        let before_colon = &expr_text[..pos];
         if !before_colon.contains('"') && !before_colon.contains('\'') {
-            (before_colon, Some(&expr_text[colon_pos..]))
+            (before_colon, Some(&expr_text[pos..]))
         } else {
             (expr_text, None)
         }
@@ -534,6 +555,30 @@ mod tests {
         let (expr, spec) = split_format_specifier("\"key:value\"");
         assert_eq!(expr, "\"key:value\"");
         assert_eq!(spec, None);
+    }
+
+    #[test]
+    fn test_split_format_specifier_path_expression() {
+        // MODULE-001 FIX: :: should not be confused with : format specifier
+        let (expr, spec) = split_format_specifier("math::double(5)");
+        assert_eq!(expr, "math::double(5)");
+        assert_eq!(spec, None);
+    }
+
+    #[test]
+    fn test_split_format_specifier_path_with_format() {
+        // Path expression followed by format specifier
+        let (expr, spec) = split_format_specifier("math::double(5):d");
+        assert_eq!(expr, "math::double(5)");
+        assert_eq!(spec, Some(":d"));
+    }
+
+    #[test]
+    fn test_parse_path_expression_in_interpolation() {
+        let mut state = create_state();
+        let parts = parse_string_interpolation(&mut state, "{math::double(5)}");
+        assert_eq!(parts.len(), 1);
+        assert!(matches!(&parts[0], StringPart::Expr(_)));
     }
 
     #[test]

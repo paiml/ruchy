@@ -112,6 +112,7 @@ fn flush_text_part(parts: &mut Vec<StringPart>, current: &mut String) {
 /// - `{expr}` - Simple expression
 /// - `{expr:format}` - Expression with format specifier
 /// - `{}` - Empty placeholder (positional argument)
+/// Fixed: Don't confuse :: (path separator) with : (format specifier)
 fn parse_interpolation(expr_str: &str) -> Result<StringPart> {
     use crate::frontend::parser::Parser;
 
@@ -121,10 +122,13 @@ fn parse_interpolation(expr_str: &str) -> Result<StringPart> {
         return Ok(StringPart::Text("{}".to_string()));
     }
 
-    if let Some(colon_pos) = expr_str.find(':') {
+    // Find single colon (format specifier) while ignoring :: (path separator)
+    let colon_pos = find_format_specifier_colon(expr_str);
+
+    if let Some(pos) = colon_pos {
         // Expression with format specifier: {expr:spec}
-        let expr_part = &expr_str[..colon_pos];
-        let format_spec = &expr_str[colon_pos..];
+        let expr_part = &expr_str[..pos];
+        let format_spec = &expr_str[pos..];
         let mut parser = Parser::new(expr_part);
         let expr = parser.parse_expr()?;
         Ok(StringPart::ExprWithFormat {
@@ -137,6 +141,31 @@ fn parse_interpolation(expr_str: &str) -> Result<StringPart> {
         let expr = parser.parse_expr()?;
         Ok(StringPart::Expr(Box::new(expr)))
     }
+}
+
+/// Find the position of a format specifier colon, ignoring :: path separators
+fn find_format_specifier_colon(expr_str: &str) -> Option<usize> {
+    let mut chars = expr_str.char_indices().peekable();
+
+    while let Some((i, ch)) = chars.next() {
+        if ch == ':' {
+            // Check if next char is also ':' (path separator ::)
+            if let Some((_, next_ch)) = chars.peek() {
+                if *next_ch == ':' {
+                    // This is ::, skip both colons
+                    chars.next();
+                    continue;
+                }
+            }
+            // Single colon found - this is a format specifier
+            // But only if the part before it doesn't contain quotes
+            let before_colon = &expr_str[..i];
+            if !before_colon.contains('"') && !before_colon.contains('\'') {
+                return Some(i);
+            }
+        }
+    }
+    None
 }
 
 /// Extract expression from f-string interpolation
