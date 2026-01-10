@@ -2,6 +2,34 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [4.0.0] - 2026-01-10
+
+### Ruchy 4.0 - Book 2.0 Quality Release
+
+This release implements the ruchy-book-2.0 specification with comprehensive quality validation.
+
+#### Added
+- **[BOOK-200] Falsification Tooling** - 200-point Karl Popper validation framework
+- **[PARSER-079] Labeled Loops** - Support for `'label: loop/while/for` with `break 'label` and `continue 'label`
+- **[BOOK-200-01] Closure Scope Fix** - Closures now correctly capture outer scope variables
+
+#### Fixed
+- **[CLIPPY] Quality Fixes** - Resolved all clippy warnings including:
+  - `empty_enum` lint name correction
+  - `finish_non_exhaustive()` for Debug impls
+  - Doc comment formatting with backticks
+  - Uninlined format args across computebrick module
+- **[STRING-INTERP] Path Separator Fix** - Don't confuse `::` (path separator) with `:` (format specifier)
+
+#### Quality Metrics
+| Metric | Value |
+|--------|-------|
+| Tests | 16,102 passed |
+| Clippy | 0 warnings |
+| Ch01 Book Examples | 8/8 @ 180/200 PASS |
+
+---
+
 ## [Unreleased]
 
 ### PDCA-070: Test Suite Stabilization (2025-12-09)
