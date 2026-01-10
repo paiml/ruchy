@@ -195,7 +195,15 @@ fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> R
         Token::If | Token::Match | Token::While | Token::For | Token::Try | Token::Loop => {
             parse_control_flow_token(state, token)
         }
-        Token::Lifetime(label_name) => parse_loop_label(state, label_name),
+        Token::Lifetime(label_name) => {
+            state.tokens.advance(); // consume the Lifetime token (LABELED-LOOP-FIX)
+            // Strip the leading quote from 'outer to get just "outer"
+            let stripped_label = label_name
+                .strip_prefix('\'')
+                .unwrap_or(&label_name)
+                .to_string();
+            parse_loop_label(state, stripped_label)
+        }
         // PARSER-081: @label syntax for labeled loops
         // BUG-033: Distinguish between @label: (loop label) and @decorator (attribute)
         // Check if next token (after Label) is Colon to decide

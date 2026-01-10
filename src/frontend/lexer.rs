@@ -161,9 +161,10 @@ pub enum Token {
     // PARSER-072: Single-quoted strings (multi-char only, single-char handled by Char)
     // PARSER-080: Exclude '>' and newlines to prevent matching across lifetime boundaries
     // PARSER-079: Extend exclusions to prevent String pattern from interfering with Lifetime tokens
-    //   Exclude: space, ;, }, ), , to allow lifetime tokens like 'outer to parse correctly
+    //   Exclude: space, ;, }, ), , : to allow lifetime tokens like 'outer: to parse correctly
+    //   BUG-FIX: Added : to exclusion list - 'outer: was matching String pattern and failing
     //   Pattern: empty string ('') OR 2+ characters between single quotes
-    #[regex(r"'(([^'\\>\n \t;},)]|\\.)([^'\\>\n \t;},)]|\\.)+|)'", |lex| {
+    #[regex(r"'(([^'\\>\n \t;},):]|\\.)([^'\\>\n \t;},):]|\\.)+|)'", |lex| {
         let s = lex.slice();
         let inner = &s[1..s.len()-1];
         // Only match if it's NOT a single character (let Char handle that)
@@ -1215,6 +1216,49 @@ mod tests {
         assert_eq!(
             stream.next().map(|(t, _)| t),
             Some(Token::Lifetime("'inner".to_string()))
+        );
+    }
+
+    // PARSER-079b: Lifetime token followed by colon (labeled loop)
+    #[test]
+    fn test_parser_079_lifetime_with_colon() {
+        let mut stream = TokenStream::new("'outer:");
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Lifetime("'outer".to_string())),
+            "Lifetime followed by colon should tokenize as Lifetime"
+        );
+        assert_eq!(
+            stream.next().map(|(t, _)| t),
+            Some(Token::Colon),
+            "Second token should be Colon"
+        );
+    }
+
+    #[test]
+    fn test_parser_079_lifetime_for_loop_full() {
+        let code = "'outer: for i in [1] { }";
+        let mut stream = TokenStream::new(code);
+        let tokens: Vec<Token> = std::iter::from_fn(|| stream.next().map(|(t, _)| t)).collect();
+        println!("Tokens for '{}': {:?}", code, tokens);
+
+        // First token MUST be Lifetime('outer)
+        assert!(
+            matches!(&tokens[0], Token::Lifetime(s) if s == "'outer"),
+            "First token should be Lifetime('outer), got: {:?}",
+            tokens[0]
+        );
+        // Second token should be Colon
+        assert!(
+            matches!(&tokens[1], Token::Colon),
+            "Second token should be Colon, got: {:?}",
+            tokens[1]
+        );
+        // Third token should be For
+        assert!(
+            matches!(&tokens[2], Token::For),
+            "Third token should be For, got: {:?}",
+            tokens[2]
         );
     }
 
