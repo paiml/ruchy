@@ -919,23 +919,76 @@ impl Interpreter {
             // SPEC-001-C: Pipeline operator evaluation (|> not >>)
             // Evaluates: initial_expr |> func1 |> func2 |> ...
             // Example: 5 |> double |> add_one → add_one(double(5)) → 11
+            // PIPELINE-001 FIX: Also supports method calls: "hello" |> upper → "hello".upper()
+            // PIPELINE-001 FIX v2: Use dispatch_method_call for proper Value handling
             ExprKind::Pipeline { expr, stages } => {
                 // Start with the initial expression value
                 let mut current_value = self.eval_expr(expr)?;
 
-                // Apply each pipeline stage (function call) in sequence
+                // Apply each pipeline stage in sequence
                 for stage in stages {
-                    // Each stage.op is a function (identifier or call)
-                    // We need to call it with current_value as argument
-                    current_value = self.eval_function_call(
-                        &stage.op,
-                        &[Expr::new(
-                            ExprKind::Literal(crate::frontend::ast::Literal::from_value(
-                                &current_value,
-                            )),
-                            expr.span,
-                        )],
-                    )?;
+                    // PIPELINE-001: Check if stage is an identifier that could be a method
+                    if let ExprKind::Identifier(method_name) = &stage.op.kind {
+                        // First, try to look up as a user-defined function (Closure)
+                        // Don't use builtins like __builtin_join__ - those are methods
+                        let is_user_function = self
+                            .lookup_variable(method_name)
+                            .map(|v| matches!(v, Value::Closure { .. }))
+                            .unwrap_or(false);
+
+                        if is_user_function {
+                            // It's a user-defined function - call it with current_value as argument
+                            let func_val = self.lookup_variable(method_name)?;
+                            current_value = self.call_function(func_val, &[current_value])?;
+                        } else {
+                            // Not a user function - try calling as a method on current_value
+                            // This enables: "hello" |> upper → "hello".upper()
+                            current_value =
+                                self.dispatch_method_call(&current_value, method_name, &[], true)?;
+                        }
+                    } else if let ExprKind::Call { func, args } = &stage.op.kind {
+                        // It's a call expression like filter(x => x > 0)
+                        // Check if func is an identifier we should treat as a method
+                        if let ExprKind::Identifier(method_name) = &func.kind {
+                            // Check if it's a user-defined function (Closure)
+                            let is_user_function = self
+                                .lookup_variable(method_name)
+                                .map(|v| matches!(v, Value::Closure { .. }))
+                                .unwrap_or(false);
+
+                            if is_user_function {
+                                // It's a user function call - prepend current_value to args
+                                let func_val = self.lookup_variable(method_name)?;
+                                let arg_values: Result<Vec<_>, _> =
+                                    args.iter().map(|arg| self.eval_expr(arg)).collect();
+                                let mut all_args = vec![current_value];
+                                all_args.extend(arg_values?);
+                                current_value = self.call_function(func_val, &all_args)?;
+                            } else {
+                                // It's a method call with args: arr |> filter(pred) → arr.filter(pred)
+                                let arg_values: Result<Vec<_>, _> =
+                                    args.iter().map(|arg| self.eval_expr(arg)).collect();
+                                current_value = self.dispatch_method_call(
+                                    &current_value,
+                                    method_name,
+                                    &arg_values?,
+                                    args.is_empty(),
+                                )?;
+                            }
+                        } else {
+                            // Complex function expression - evaluate and call with current_value as first arg
+                            let func_val = self.eval_expr(func)?;
+                            let arg_values: Result<Vec<_>, _> =
+                                args.iter().map(|arg| self.eval_expr(arg)).collect();
+                            let mut all_args = vec![current_value];
+                            all_args.extend(arg_values?);
+                            current_value = self.call_function(func_val, &all_args)?;
+                        }
+                    } else {
+                        // Other expression types - evaluate as function and call with current_value
+                        let func_val = self.eval_expr(&stage.op)?;
+                        current_value = self.call_function(func_val, &[current_value])?;
+                    }
                 }
 
                 Ok(current_value)
@@ -5541,60 +5594,103 @@ impl Interpreter {
 
     /// ISSUE-106: Evaluate module expression
     /// Creates a namespace object containing all functions defined in the module body
-    /// Complexity: 7
+    /// MODULE-001 FIX: Two-pass approach so intra-module calls work
+    /// Complexity: 8
     fn eval_module_expr(&mut self, name: &str, body: &Expr) -> Result<Value, InterpreterError> {
         use std::collections::HashMap;
         use std::sync::Arc;
 
-        // Create a new namespace object for the module
-        let mut module_namespace: HashMap<String, Value> = HashMap::new();
+        // Extract function definitions from the module body
+        let exprs = match &body.kind {
+            ExprKind::Block(exprs) => exprs.clone(),
+            _ => vec![body.clone()],
+        };
 
-        // Mark as module type
+        // PASS 1: Create a module-scoped environment with all functions
+        // This allows intra-module function calls to work (MODULE-001 fix)
+        // Start with a copy of parent environment
+        let parent_env = self.env_stack.last().unwrap_or(&self.env_stack[0]);
+        let module_env_map: HashMap<String, Value> = parent_env.borrow().clone();
+        let module_env = Rc::new(RefCell::new(module_env_map));
+
+        // Collect all functions and nested modules for module-internal access
+        for expr in &exprs {
+            match &expr.kind {
+                // Handle function definitions
+                ExprKind::Function {
+                    name: fn_name,
+                    params,
+                    body: fn_body,
+                    ..
+                } => {
+                    let closure_params: Vec<(String, Option<Arc<Expr>>)> = params
+                        .iter()
+                        .map(|p| {
+                            let param_name = p.name();
+                            let default = p
+                                .default_value
+                                .as_ref()
+                                .map(|d| Arc::new(d.as_ref().clone()));
+                            (param_name, default)
+                        })
+                        .collect();
+                    // Create closure with module-scoped environment
+                    let closure = Value::Closure {
+                        params: closure_params,
+                        body: Arc::new(fn_body.as_ref().clone()),
+                        env: Rc::clone(&module_env),
+                    };
+                    // Add to module environment so sibling functions can call each other
+                    module_env.borrow_mut().insert(fn_name.clone(), closure);
+                }
+                // MODULE-002 FIX: Handle nested module definitions
+                ExprKind::Module {
+                    name: nested_name,
+                    body: nested_body,
+                } => {
+                    // Push module environment for nested module evaluation
+                    self.env_stack.push(Rc::clone(&module_env));
+                    // Recursively evaluate nested module
+                    let nested_module = self.eval_module_expr(nested_name, nested_body)?;
+                    self.env_stack.pop();
+                    // Add nested module to parent module's environment
+                    module_env.borrow_mut().insert(nested_name.clone(), nested_module);
+                }
+                _ => {}
+            }
+        }
+
+        // PASS 2: Build the public namespace for external access
+        let mut module_namespace: HashMap<String, Value> = HashMap::new();
         module_namespace.insert(
             "__type".to_string(),
             Value::from_string("Module".to_string()),
         );
         module_namespace.insert("__name".to_string(), Value::from_string(name.to_string()));
 
-        // Extract function definitions from the module body
-        // The body is typically a Block containing function definitions
-        let exprs = match &body.kind {
-            ExprKind::Block(exprs) => exprs.clone(),
-            _ => vec![body.clone()],
-        };
-
-        // Process each expression in the module body
+        // Only expose public functions and modules in the module namespace
         for expr in &exprs {
-            // Only process public function definitions
-            if let ExprKind::Function {
-                name: fn_name,
-                params,
-                body: fn_body,
-                is_pub: true,
-                ..
-            } = &expr.kind
-            {
-                // Create a closure for this function
-                // Params are (name, optional_default_value)
-                let closure_params: Vec<(String, Option<Arc<Expr>>)> = params
-                    .iter()
-                    .map(|p| {
-                        let name = p.name(); // Returns String directly
-                        let default = p
-                            .default_value
-                            .as_ref()
-                            .map(|d| Arc::new(d.as_ref().clone()));
-                        (name, default)
-                    })
-                    .collect();
-                let closure = Value::Closure {
-                    params: closure_params,
-                    body: Arc::new(fn_body.as_ref().clone()),
-                    env: Rc::clone(self.env_stack.last().unwrap_or(&self.env_stack[0])),
-                };
-                module_namespace.insert(fn_name.clone(), closure);
+            match &expr.kind {
+                // Public functions
+                ExprKind::Function {
+                    name: fn_name,
+                    is_pub: true,
+                    ..
+                } => {
+                    // Get the closure from module_env (already created with correct scope)
+                    if let Some(closure) = module_env.borrow().get(fn_name) {
+                        module_namespace.insert(fn_name.clone(), closure.clone());
+                    }
+                }
+                // MODULE-002 FIX: Public nested modules
+                ExprKind::Module { name: nested_name, .. } => {
+                    // Check if nested module is public (currently all modules are public)
+                    if let Some(nested_mod) = module_env.borrow().get(nested_name) {
+                        module_namespace.insert(nested_name.clone(), nested_mod.clone());
+                    }
+                }
+                _ => {}
             }
-            // Skip other expressions (let bindings, private functions, etc.)
         }
 
         // Register the module in the global environment

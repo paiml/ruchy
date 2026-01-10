@@ -3,8 +3,8 @@ fun quicksort(arr: [i32]) -> [i32] {
         arr
     } else {
         let pivot = arr[0]
-        let less = arr >> filter(|x| x < pivot)
-        let greater = arr >> filter(|x| x > pivot)
+        let less = arr |> filter(x => x < pivot)
+        let greater = arr |> filter(x => x > pivot)
         quicksort(less) + [pivot] + quicksort(greater)
     }
 }

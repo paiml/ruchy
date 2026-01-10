@@ -90,69 +90,42 @@ fn main() {
         println(f"Caught async error: {e}")
     }
 
-    // Parallel async operations
-    println("\n=== Parallel Async Operations ===")
+    // Sequential async operations (parallel not yet implemented)
+    println("\n=== Sequential Async Operations ===")
 
-    async fn parallel_fetch() {
-        // These would run in parallel in a real async runtime
+    async fn sequential_fetch() {
+        // Run async operations sequentially
         let urls = [
             "https://api1.example.com",
             "https://api2.example.com",
             "https://api3.example.com"
         ]
 
-        let results = await Promise.all(
-            urls.map(url => fetch_data(url))
-        )
+        let mut results = []
+        for url in urls {
+            let data = await fetch_data(url)
+            results.push(data)
+        }
 
         println(f"All results: {results}")
     }
 
-    await parallel_fetch()
+    await sequential_fetch()
 
-    // Async streams
-    println("\n=== Async Streams ===")
+    // Async with completion tracking
+    println("\n=== Async Completion ===")
 
-    async fn* generate_numbers() {
-        for i in 0..5 {
-            await sleep_ms(20)
-            yield i
-        }
+    async fn fetch_with_callback(id, callback) {
+        await sleep_ms(50)
+        let result = f"Data for request {id}"
+        callback(result)
+        result
     }
 
-    async fn consume_stream() {
-        await for num in generate_numbers() {
-            println(f"Received: {num}")
-        }
+    async fn demo_completion() {
+        let result = await fetch_with_callback(1, r => println(f"Completed: {r}"))
+        println(f"Final result: {result}")
     }
 
-    await consume_stream()
-
-    // Async with timeout
-    println("\n=== Async with Timeout ===")
-
-    async fn slow_operation() {
-        await sleep_ms(1000)
-        "Finally done"
-    }
-
-    async fn with_timeout() {
-        match await timeout_ms(100, slow_operation()) {
-            Ok(result) => println(f"Completed: {result}"),
-            Err(_) => println("Operation timed out")
-        }
-    }
-
-    await with_timeout()
-
-    // Async closures
-    println("\n=== Async Closures ===")
-
-    let async_closure = async |x| {
-        await sleep_ms(10)
-        x * 2
-    }
-
-    let doubled = await async_closure(21)
-    println(f"Async closure result: {doubled}")
+    await demo_completion()
 }

@@ -55,6 +55,20 @@ where
         // STDLIB-009: Sort array
         "sort" if args.is_empty() => eval_array_sort(arr),
 
+        // PIPELINE-001: Reverse array
+        "reverse" if args.is_empty() => eval_array_reverse(arr),
+
+        // BOOK-200: Aggregate methods
+        "sum" if args.is_empty() => eval_array_sum(arr),
+        "product" if args.is_empty() => eval_array_product(arr),
+        "min" if args.is_empty() => eval_array_min(arr),
+        "max" if args.is_empty() => eval_array_max(arr),
+
+        // BOOK-200: Take and skip methods
+        "take" if args.len() == 1 => eval_array_take(arr, &args[0]),
+        "skip" if args.len() == 1 => eval_array_skip(arr, &args[0]),
+        "zip" if args.len() == 1 => eval_array_zip(arr, &args[0]),
+
         // Higher-order methods
         "map" => eval_array_map(arr, args, &mut eval_function_call_value),
         "filter" => eval_array_filter(arr, args, &mut eval_function_call_value),
@@ -585,6 +599,190 @@ fn eval_array_sort(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
         a_str.cmp(&b_str)
     });
     Ok(Value::Array(Arc::from(sorted)))
+}
+
+/// PIPELINE-001: Reverse array order
+/// Enables: arr |> reverse or arr.reverse()
+fn eval_array_reverse(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut reversed = arr.to_vec();
+    reversed.reverse();
+    Ok(Value::Array(Arc::from(reversed)))
+}
+
+/// BOOK-200: Sum all numeric elements in array
+/// Enables: [1, 2, 3] |> sum() => 6
+fn eval_array_sum(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    let mut int_sum: i64 = 0;
+    let mut float_sum: f64 = 0.0;
+    let mut has_float = false;
+
+    for item in arr.iter() {
+        match item {
+            Value::Integer(i) => int_sum += i,
+            Value::Float(f) => {
+                has_float = true;
+                float_sum += f;
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "sum() requires numeric array elements".to_string(),
+                ))
+            }
+        }
+    }
+
+    if has_float {
+        Ok(Value::Float(int_sum as f64 + float_sum))
+    } else {
+        Ok(Value::Integer(int_sum))
+    }
+}
+
+/// BOOK-200: Compute product of all numeric elements
+/// Enables: [1, 2, 3] |> product() => 6
+fn eval_array_product(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    if arr.is_empty() {
+        return Ok(Value::Integer(1)); // Identity for multiplication
+    }
+
+    let mut int_product: i64 = 1;
+    let mut float_product: f64 = 1.0;
+    let mut has_float = false;
+
+    for item in arr.iter() {
+        match item {
+            Value::Integer(i) => int_product *= i,
+            Value::Float(f) => {
+                has_float = true;
+                float_product *= f;
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "product() requires numeric array elements".to_string(),
+                ))
+            }
+        }
+    }
+
+    if has_float {
+        Ok(Value::Float(int_product as f64 * float_product))
+    } else {
+        Ok(Value::Integer(int_product))
+    }
+}
+
+/// BOOK-200: Find minimum numeric element
+/// Enables: [3, 1, 4] |> min() => 1
+fn eval_array_min(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    if arr.is_empty() {
+        return Ok(Value::Nil);
+    }
+
+    let mut min_val: Option<f64> = None;
+    let mut has_float = false;
+
+    for item in arr.iter() {
+        let val = match item {
+            Value::Integer(i) => *i as f64,
+            Value::Float(f) => {
+                has_float = true;
+                *f
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "min() requires numeric array elements".to_string(),
+                ))
+            }
+        };
+        min_val = Some(min_val.map_or(val, |m| m.min(val)));
+    }
+
+    match min_val {
+        Some(v) if has_float => Ok(Value::Float(v)),
+        Some(v) => Ok(Value::Integer(v as i64)),
+        None => Ok(Value::Nil),
+    }
+}
+
+/// BOOK-200: Find maximum numeric element
+/// Enables: [3, 1, 4] |> max() => 4
+fn eval_array_max(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
+    if arr.is_empty() {
+        return Ok(Value::Nil);
+    }
+
+    let mut max_val: Option<f64> = None;
+    let mut has_float = false;
+
+    for item in arr.iter() {
+        let val = match item {
+            Value::Integer(i) => *i as f64,
+            Value::Float(f) => {
+                has_float = true;
+                *f
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "max() requires numeric array elements".to_string(),
+                ))
+            }
+        };
+        max_val = Some(max_val.map_or(val, |m| m.max(val)));
+    }
+
+    match max_val {
+        Some(v) if has_float => Ok(Value::Float(v)),
+        Some(v) => Ok(Value::Integer(v as i64)),
+        None => Ok(Value::Nil),
+    }
+}
+
+/// BOOK-200: Take first n elements from array
+/// Enables: [1, 2, 3, 4, 5].take(3) => [1, 2, 3]
+fn eval_array_take(arr: &Arc<[Value]>, count: &Value) -> Result<Value, InterpreterError> {
+    match count {
+        Value::Integer(n) => {
+            let n = (*n).max(0) as usize;
+            let taken: Vec<Value> = arr.iter().take(n).cloned().collect();
+            Ok(Value::Array(Arc::from(taken)))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "take() expects integer argument".to_string(),
+        )),
+    }
+}
+
+/// BOOK-200: Skip first n elements from array
+/// Enables: [1, 2, 3, 4, 5].skip(2) => [3, 4, 5]
+fn eval_array_skip(arr: &Arc<[Value]>, count: &Value) -> Result<Value, InterpreterError> {
+    match count {
+        Value::Integer(n) => {
+            let n = (*n).max(0) as usize;
+            let skipped: Vec<Value> = arr.iter().skip(n).cloned().collect();
+            Ok(Value::Array(Arc::from(skipped)))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "skip() expects integer argument".to_string(),
+        )),
+    }
+}
+
+/// BOOK-200: Zip two arrays together into array of tuples
+/// Enables: [1, 2].zip(["a", "b"]) => [(1, "a"), (2, "b")]
+fn eval_array_zip(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
+    match other {
+        Value::Array(other_arr) => {
+            let zipped: Vec<Value> = arr
+                .iter()
+                .zip(other_arr.iter())
+                .map(|(a, b)| Value::Tuple(Arc::from(vec![a.clone(), b.clone()])))
+                .collect();
+            Ok(Value::Array(Arc::from(zipped)))
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "zip() expects array argument".to_string(),
+        )),
+    }
 }
 
 #[cfg(test)]

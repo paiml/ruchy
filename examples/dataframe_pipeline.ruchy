@@ -11,14 +11,14 @@ let sales_data = df![
 
 // Pipeline 1: Filter and aggregate
 let high_value_products = sales_data
-    >> filter(price > 500.0)
-    >> select(["product", "price", "quantity"])
-    >> sort(["price"])
+    |> filter(price > 500.0)
+    |> select(["product", "price", "quantity"])
+    |> sort(["price"])
 
 // Pipeline 2: Group by category and aggregate
 let category_summary = sales_data
-    >> groupby(["category"])
-    >> agg([
+    |> groupby(["category"])
+    |> agg([
         sum("quantity"),
         mean("price"),
         count("product")
@@ -26,14 +26,14 @@ let category_summary = sales_data
 
 // Pipeline 3: Complex transformation
 let analysis = sales_data
-    >> filter(quantity > 10)
-    >> map(|row| {
+    |> filter(quantity > 10)
+    |> map(row => {
         revenue: row.price * row.quantity,
         product: row.product,
         margin: row.price * 0.3
     })
-    >> sort(["revenue"])
-    >> head(3)
+    |> sort(["revenue"])
+    |> head(3)
 
 // Pipeline 4: Join operation
 let inventory = df![
@@ -42,9 +42,9 @@ let inventory = df![
 ]
 
 let combined = sales_data
-    >> join(inventory, on: ["product"], how: "inner")
-    >> select(["product", "quantity", "stock"])
-    >> filter(quantity > stock)
+    |> join(inventory, on: ["product"], how: "inner")
+    |> select(["product", "quantity", "stock"])
+    |> filter(quantity > stock)
 
 // Print results
 println("High Value Products:")

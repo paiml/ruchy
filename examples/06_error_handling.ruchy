@@ -78,8 +78,17 @@ fn main() {
     // The ? operator for error propagation
     println("\n=== Error Propagation with ? ===")
 
+    // Helper function that returns Result - wraps to_int with try/catch
+    fn try_parse_int(s) {
+        try {
+            Ok(s.to_int())
+        } catch e {
+            Err(f"Failed to parse: {e}")
+        }
+    }
+
     fn parse_and_double(s) -> Result {
-        let num = s.to_int()?
+        let num = try_parse_int(s)?
         Ok(num * 2)
     }
 
@@ -93,7 +102,7 @@ fn main() {
 
     match bad {
         Ok(v) => println(f"Parsed and doubled: {v}"),
-        Err(e) => println(f"Failed to parse")
+        Err(e) => println(f"Failed to parse: {e}")
     }
 
     // Custom error types

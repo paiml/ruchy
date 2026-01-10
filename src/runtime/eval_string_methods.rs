@@ -70,6 +70,8 @@ fn eval_single_arg_string_method(
         "split" => eval_string_split(s, arg),
         "repeat" => eval_string_repeat(s, arg),
         "char_at" => eval_string_char_at(s, arg),
+        // PIPELINE-001: Add append for pipeline string concatenation
+        "append" => eval_string_append(s, arg),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown single-argument string method: {method}"
         ))),
@@ -181,6 +183,21 @@ fn eval_string_repeat(s: &str, count: &Value) -> Result<Value, InterpreterError>
     } else {
         Err(InterpreterError::RuntimeError(
             "repeat expects integer argument".to_string(),
+        ))
+    }
+}
+
+/// Append string to end (for pipeline operator support)
+/// PIPELINE-001: Enables "hello" |> append("_suffix")
+///
+/// # Complexity
+/// Cyclomatic complexity: 2
+fn eval_string_append(s: &Arc<str>, suffix: &Value) -> Result<Value, InterpreterError> {
+    if let Value::String(suffix_str) = suffix {
+        Ok(Value::from_string(format!("{}{}", s, suffix_str)))
+    } else {
+        Err(InterpreterError::RuntimeError(
+            "append expects string argument".to_string(),
         ))
     }
 }

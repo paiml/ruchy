@@ -1,8 +1,7 @@
 // 15_modules.ruchy - Module system and code organization
 
-// Define a module
+// Math utilities module with nested geometry module
 module math_utils {
-    // Public function
     pub fn add(a, b) {
         a + b
     }
@@ -11,17 +10,18 @@ module math_utils {
         a * b
     }
 
-    // Private function (not exported)
+    // Private helper function (not exported)
     fn internal_helper(x) {
         x * 2
     }
 
+    // Public function that calls private helper
     pub fn complex_calc(x, y) {
         let temp = internal_helper(x)
         temp + multiply(y, 2)
     }
 
-    // Nested module
+    // Nested geometry module
     pub module geometry {
         pub fn area_circle(radius) {
             3.14159 * radius * radius
@@ -36,9 +36,14 @@ module math_utils {
         }
     }
 
-    // Constants
-    pub const PI = 3.14159
-    pub const E = 2.71828
+    // Constants as functions (pub const not yet supported)
+    pub fn PI() {
+        3.14159
+    }
+
+    pub fn E() {
+        2.71828
+    }
 }
 
 // String utilities module
@@ -48,17 +53,32 @@ module string_utils {
             return s
         }
         let first = s[0].upper()
-        let rest = s.slice(1)
+        let chars = s.chars()
+        let rest = chars[1..].join("")
         first + rest
     }
 
+    // Internal helper for reversing
+    fn reverse_chars(chars) {
+        let mut reversed = []
+        let mut i = chars.len() - 1
+        while i >= 0 {
+            reversed.push(chars[i])
+            i -= 1
+        }
+        reversed
+    }
+
     pub fn reverse(s) {
-        s.chars().reverse().join("")
+        let chars = s.chars()
+        let reversed = reverse_chars(chars)
+        reversed.join("")
     }
 
     pub fn is_palindrome(s) {
         let cleaned = s.lower().replace(" ", "")
-        cleaned == reverse(cleaned)
+        let reversed = reverse(cleaned)
+        cleaned == reversed
     }
 
     pub fn word_count(text) {
@@ -66,182 +86,57 @@ module string_utils {
     }
 }
 
-// Data structures module
-module data_structures {
-    pub struct Stack {
-        items: list
-    }
+// Main execution
+println("=== Module System ===\n")
 
-    impl Stack {
-        pub fn new() {
-            Stack { items: [] }
-        }
+// Using module functions
+println("=== Math Utils Module ===")
 
-        pub fn push(mut self, item) {
-            self.items.append(item)
-        }
+let sum = math_utils::add(10, 20)
+println(f"10 + 20 = {sum}")
 
-        pub fn pop(mut self) {
-            if self.items.len() > 0 {
-                Some(self.items.remove_last())
-            } else {
-                None
-            }
-        }
+let product = math_utils::multiply(5, 6)
+println(f"5 * 6 = {product}")
 
-        pub fn peek(self) {
-            if self.items.len() > 0 {
-                Some(self.items[self.items.len() - 1])
-            } else {
-                None
-            }
-        }
+// Call function that uses private helper
+let complex = math_utils::complex_calc(3, 4)
+println(f"Complex calculation (uses internal helper): {complex}")
 
-        pub fn is_empty(self) {
-            self.items.len() == 0
-        }
-    }
+// Using nested geometry module
+println("\n=== Nested Geometry Module ===")
 
-    pub struct Queue {
-        items: list
-    }
+let circle_area = math_utils::geometry::area_circle(5.0)
+println(f"Area of circle (r=5): {circle_area}")
 
-    impl Queue {
-        pub fn new() {
-            Queue { items: [] }
-        }
+let rect_area = math_utils::geometry::area_rectangle(10.0, 20.0)
+println(f"Area of rectangle (10x20): {rect_area}")
 
-        pub fn enqueue(mut self, item) {
-            self.items.append(item)
-        }
+let perimeter = math_utils::geometry::perimeter_rectangle(10.0, 20.0)
+println(f"Perimeter of rectangle: {perimeter}")
 
-        pub fn dequeue(mut self) {
-            if self.items.len() > 0 {
-                Some(self.items.remove(0))
-            } else {
-                None
-            }
-        }
+// Using constants (as functions)
+let pi_val = math_utils::PI()
+let e_val = math_utils::E()
+println(f"PI constant: {pi_val}")
+println(f"E constant: {e_val}")
 
-        pub fn size(self) {
-            self.items.len()
-        }
-    }
-}
+// String utilities
+println("\n=== String Utils Module ===")
 
-fn main() {
-    println("=== Module System ===\n")
+let text = "hello world"
+let capitalized = string_utils::capitalize(text)
+println(f"Capitalized: {capitalized}")
 
-    // Using module functions
-    println("=== Math Utils Module ===")
+let reversed = string_utils::reverse(text)
+println(f"Reversed: {reversed}")
 
-    let sum = math_utils::add(10, 20)
-    println(f"10 + 20 = {sum}")
+let palindrome1 = "racecar"
+let palindrome2 = "hello"
+let is_pal1 = string_utils::is_palindrome(palindrome1)
+let is_pal2 = string_utils::is_palindrome(palindrome2)
+println(f"Is '{palindrome1}' a palindrome? {is_pal1}")
+println(f"Is '{palindrome2}' a palindrome? {is_pal2}")
 
-    let product = math_utils::multiply(5, 6)
-    println(f"5 * 6 = {product}")
-
-    let complex = math_utils::complex_calc(3, 4)
-    println(f"Complex calculation: {complex}")
-
-    // Using nested modules
-    println("\n=== Geometry Submodule ===")
-
-    let circle_area = math_utils::geometry::area_circle(5.0)
-    println(f"Area of circle (r=5): {circle_area}")
-
-    let rect_area = math_utils::geometry::area_rectangle(10.0, 20.0)
-    println(f"Area of rectangle (10x20): {rect_area}")
-
-    let perimeter = math_utils::geometry::perimeter_rectangle(10.0, 20.0)
-    println(f"Perimeter of rectangle: {perimeter}")
-
-    // Using constants
-    println(f"PI constant: {math_utils::PI}")
-    println(f"E constant: {math_utils::E}")
-
-    // String utilities
-    println("\n=== String Utils Module ===")
-
-    let text = "hello world"
-    let capitalized = string_utils::capitalize(text)
-    println(f"Capitalized: {capitalized}")
-
-    let reversed = string_utils::reverse(text)
-    println(f"Reversed: {reversed}")
-
-    let palindrome1 = "racecar"
-    let palindrome2 = "hello"
-    println(f"Is '{palindrome1}' a palindrome? {string_utils::is_palindrome(palindrome1)}")
-    println(f"Is '{palindrome2}' a palindrome? {string_utils::is_palindrome(palindrome2)}")
-
-    let sentence = "The quick brown fox jumps"
-    let count = string_utils::word_count(sentence)
-    println(f"Word count: {count}")
-
-    // Data structures
-    println("\n=== Data Structures Module ===")
-
-    // Stack usage
-    let mut stack = data_structures::Stack::new()
-    stack.push(1)
-    stack.push(2)
-    stack.push(3)
-
-    println("Stack operations:")
-    match stack.pop() {
-        Some(val) => println(f"  Popped: {val}"),
-        None => println("  Stack is empty")
-    }
-
-    match stack.peek() {
-        Some(val) => println(f"  Top element: {val}"),
-        None => println("  Stack is empty")
-    }
-
-    // Queue usage
-    let mut queue = data_structures::Queue::new()
-    queue.enqueue("First")
-    queue.enqueue("Second")
-    queue.enqueue("Third")
-
-    println("\nQueue operations:")
-    println(f"  Queue size: {queue.size()}")
-
-    match queue.dequeue() {
-        Some(val) => println(f"  Dequeued: {val}"),
-        None => println("  Queue is empty")
-    }
-
-    println(f"  Queue size after dequeue: {queue.size()}")
-
-    // Using 'use' statements for convenience
-    use math_utils::{add, multiply}
-    use string_utils::reverse
-
-    println("\n=== Using 'use' Statements ===")
-
-    let result = add(5, 3)
-    println(f"Direct call to add: {result}")
-
-    let text_reversed = reverse("Ruchy")
-    println(f"Direct call to reverse: {text_reversed}")
-
-    // Wildcard imports
-    use math_utils::geometry::*
-
-    let area = area_circle(10.0)
-    println(f"Circle area with wildcard import: {area}")
-
-    // Module aliasing
-    use math_utils as math
-    use string_utils as str_util
-
-    println("\n=== Module Aliases ===")
-
-    let calc = math::add(100, 200)
-    println(f"Using alias 'math': {calc}")
-
-    let cap = str_util::capitalize("ruchy language")
-    println(f"Using alias 'str_util': {cap}")
-}
+let sentence = "The quick brown fox jumps"
+let count = string_utils::word_count(sentence)
+println(f"Word count: {count}")
