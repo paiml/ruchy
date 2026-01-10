@@ -7311,7 +7311,7 @@ impl Interpreter {
         result
             .into_iter()
             .take(provided_count)
-            .filter_map(|opt| opt)
+            .flatten()
             .collect()
     }
 

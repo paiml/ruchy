@@ -112,7 +112,8 @@ fn flush_text_part(parts: &mut Vec<StringPart>, current: &mut String) {
 /// - `{expr}` - Simple expression
 /// - `{expr:format}` - Expression with format specifier
 /// - `{}` - Empty placeholder (positional argument)
-/// Fixed: Don't confuse :: (path separator) with : (format specifier)
+///
+/// Note: Don't confuse `::` (path separator) with `:` (format specifier)
 fn parse_interpolation(expr_str: &str) -> Result<StringPart> {
     use crate::frontend::parser::Parser;
 

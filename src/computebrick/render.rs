@@ -10,7 +10,7 @@ use std::io::{self, Write};
 pub enum RenderBackend {
     /// Direct terminal via crossterm.
     Terminal,
-    /// WebAssembly Canvas2D.
+    /// WebAssembly `Canvas2D`.
     WasmCanvas,
     /// WebAssembly WebGL.
     WasmWebGL,
@@ -216,11 +216,11 @@ impl DiffRenderer {
         match self.color_mode {
             ColorMode::TrueColor => {
                 let (r, g, b) = color.to_rgb8();
-                write!(output, "\x1b[38;2;{};{};{}m", r, g, b)?;
+                write!(output, "\x1b[38;2;{r};{g};{b}m")?;
             }
             ColorMode::Color256 => {
                 let idx = color_to_256(color);
-                write!(output, "\x1b[38;5;{}m", idx)?;
+                write!(output, "\x1b[38;5;{idx}m")?;
             }
             ColorMode::Color16 | ColorMode::Color8 => {
                 let idx = color_to_16(color);
@@ -236,11 +236,11 @@ impl DiffRenderer {
         match self.color_mode {
             ColorMode::TrueColor => {
                 let (r, g, b) = color.to_rgb8();
-                write!(output, "\x1b[48;2;{};{};{}m", r, g, b)?;
+                write!(output, "\x1b[48;2;{r};{g};{b}m")?;
             }
             ColorMode::Color256 => {
                 let idx = color_to_256(color);
-                write!(output, "\x1b[48;5;{}m", idx)?;
+                write!(output, "\x1b[48;5;{idx}m")?;
             }
             ColorMode::Color16 | ColorMode::Color8 => {
                 let idx = color_to_16(color);
@@ -273,7 +273,7 @@ impl Default for DiffRenderer {
     }
 }
 
-/// Clone a CellBuffer (for diff comparison).
+/// Clone a `CellBuffer` (for diff comparison).
 fn clone_buffer(buffer: &CellBuffer) -> CellBuffer {
     let mut new_buf = CellBuffer::new(buffer.width(), buffer.height());
     for y in 0..buffer.height() {
@@ -302,9 +302,9 @@ fn color_to_256(color: Color) -> u8 {
     }
 
     // Map to 6x6x6 color cube (indices 16-231)
-    let r_idx = (r as u16 * 5 / 255) as u8;
-    let g_idx = (g as u16 * 5 / 255) as u8;
-    let b_idx = (b as u16 * 5 / 255) as u8;
+    let r_idx = (u16::from(r) * 5 / 255) as u8;
+    let g_idx = (u16::from(g) * 5 / 255) as u8;
+    let b_idx = (u16::from(b) * 5 / 255) as u8;
 
     16 + 36 * r_idx + 6 * g_idx + b_idx
 }

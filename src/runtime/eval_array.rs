@@ -602,7 +602,7 @@ fn eval_array_sort(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
 }
 
 /// PIPELINE-001: Reverse array order
-/// Enables: arr |> reverse or arr.reverse()
+/// Enables: arr |> reverse or `arr.reverse()`
 fn eval_array_reverse(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     let mut reversed = arr.to_vec();
     reversed.reverse();
@@ -610,7 +610,7 @@ fn eval_array_reverse(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
 }
 
 /// BOOK-200: Sum all numeric elements in array
-/// Enables: [1, 2, 3] |> sum() => 6
+/// Enables: [1, 2, 3] |> `sum()` => 6
 fn eval_array_sum(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     let mut int_sum: i64 = 0;
     let mut float_sum: f64 = 0.0;
@@ -639,7 +639,7 @@ fn eval_array_sum(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
 }
 
 /// BOOK-200: Compute product of all numeric elements
-/// Enables: [1, 2, 3] |> product() => 6
+/// Enables: [1, 2, 3] |> `product()` => 6
 fn eval_array_product(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     if arr.is_empty() {
         return Ok(Value::Integer(1)); // Identity for multiplication
@@ -672,7 +672,7 @@ fn eval_array_product(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
 }
 
 /// BOOK-200: Find minimum numeric element
-/// Enables: [3, 1, 4] |> min() => 1
+/// Enables: [3, 1, 4] |> `min()` => 1
 fn eval_array_min(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     if arr.is_empty() {
         return Ok(Value::Nil);
@@ -705,7 +705,7 @@ fn eval_array_min(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
 }
 
 /// BOOK-200: Find maximum numeric element
-/// Enables: [3, 1, 4] |> max() => 4
+/// Enables: [3, 1, 4] |> `max()` => 4
 fn eval_array_max(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     if arr.is_empty() {
         return Ok(Value::Nil);
@@ -768,7 +768,7 @@ fn eval_array_skip(arr: &Arc<[Value]>, count: &Value) -> Result<Value, Interpret
 }
 
 /// BOOK-200: Zip two arrays together into array of tuples
-/// Enables: [1, 2].zip(["a", "b"]) => [(1, "a"), (2, "b")]
+/// Enables: `[1, 2].zip(["a", "b"]) => [(1, "a"), (2, "b")]`
 fn eval_array_zip(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
     match other {
         Value::Array(other_arr) => {

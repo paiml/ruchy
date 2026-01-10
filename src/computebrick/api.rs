@@ -51,7 +51,7 @@ pub fn plot(
 /// * `value` - Current value
 /// * `max` - Maximum value
 /// * `label` - Optional label
-/// * `gradient` - Optional gradient colors ["start", "end"]
+/// * `gradient` - Optional gradient colors `["start", "end"]`
 ///
 /// # Example
 /// ```ruchy

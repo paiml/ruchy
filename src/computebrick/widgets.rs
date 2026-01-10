@@ -145,7 +145,7 @@ impl BrailleGraph {
         if right_dots >= 3 { pattern |= 0x10; } // dot 5
         if right_dots >= 4 { pattern |= 0x08; } // dot 4
 
-        char::from_u32(0x2800 + pattern as u32).unwrap_or(' ')
+        char::from_u32(0x2800 + u32::from(pattern)).unwrap_or(' ')
     }
 
     /// Get block character for value.
@@ -534,7 +534,7 @@ impl Table {
     }
 
     fn compute_column_widths(headers: &[String], rows: &[Vec<String>]) -> Vec<usize> {
-        let mut widths: Vec<usize> = headers.iter().map(|h| h.len()).collect();
+        let mut widths: Vec<usize> = headers.iter().map(std::string::String::len).collect();
 
         for row in rows {
             for (i, cell) in row.iter().enumerate() {

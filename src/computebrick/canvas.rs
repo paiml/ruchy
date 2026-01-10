@@ -410,7 +410,7 @@ impl fmt::Debug for CellBuffer {
         f.debug_struct("CellBuffer")
             .field("width", &self.width)
             .field("height", &self.height)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -506,7 +506,7 @@ impl Canvas for CellBuffer {
     }
 
     fn draw_braille(&mut self, x: f32, y: f32, pattern: u8, color: Color) {
-        let ch = char::from_u32(0x2800 + pattern as u32).unwrap_or(' ');
+        let ch = char::from_u32(0x2800 + u32::from(pattern)).unwrap_or(' ');
         self.set_char(x as usize, y as usize, ch, color, Color::TRANSPARENT);
     }
 }
