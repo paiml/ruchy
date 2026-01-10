@@ -1,231 +1,175 @@
-// 12_classes_structs.ruchy - Classes, structs, and object-oriented programming
+// 12_classes_structs.ruchy - Object-oriented patterns using closures and objects
 
 fn main() {
-    println("=== Classes and Structs ===\n")
+    println("=== Object-Oriented Patterns ===\n")
 
-    // Basic struct definition
-    struct Point {
-        x: float,
-        y: float
-    }
+    // Object literals for data structures
+    println("=== Point Objects ===")
 
-    // Creating struct instances
-    let p1 = Point { x: 3.0, y: 4.0 }
-    let p2 = Point { x: 1.0, y: 2.0 }
+    let p1 = { x: 3.0, y: 4.0 }
+    let p2 = { x: 1.0, y: 2.0 }
 
     println(f"Point 1: ({p1.x}, {p1.y})")
     println(f"Point 2: ({p2.x}, {p2.y})")
 
-    // Struct with methods (impl block)
-    impl Point {
-        // Constructor-like function
-        fn new(x, y) {
-            Point { x: x, y: y }
-        }
-
-        // Instance method
-        fn distance_from_origin(self) {
-            sqrt(self.x * self.x + self.y * self.y)
-        }
-
-        // Method that takes another Point
-        fn distance_to(self, other) {
-            let dx = self.x - other.x
-            let dy = self.y - other.y
-            sqrt(dx * dx + dy * dy)
-        }
-
-        // Mutating method
-        fn translate(mut self, dx, dy) {
-            self.x += dx
-            self.y += dy
-        }
+    // Factory functions (constructor pattern)
+    fn make_point(x, y) {
+        { x: x, y: y }
     }
 
-    let p3 = Point::new(5.0, 12.0)
-    println(f"Distance from origin: {p3.distance_from_origin()}")
-
-    let dist = p1.distance_to(p2)
-    println(f"Distance between points: {dist}")
-
-    // Class-like struct with private fields
-    struct BankAccount {
-        owner: string,
-        balance: float  // Would be private in full implementation
+    fn distance_from_origin(point) {
+        sqrt(point.x * point.x + point.y * point.y)
     }
 
-    impl BankAccount {
-        fn new(owner, initial_balance) {
-            BankAccount {
-                owner: owner,
-                balance: initial_balance
-            }
-        }
-
-        fn deposit(mut self, amount) {
-            if amount > 0 {
-                self.balance += amount
-                println(f"Deposited ${amount}")
-            }
-        }
-
-        fn withdraw(mut self, amount) {
-            if amount > 0 && amount <= self.balance {
-                self.balance -= amount
-                println(f"Withdrew ${amount}")
-                true
-            } else {
-                println("Insufficient funds")
-                false
-            }
-        }
-
-        fn get_balance(self) {
-            self.balance
-        }
-
-        fn display(self) {
-            println(f"Account: {self.owner}, Balance: ${self.balance}")
-        }
+    fn distance_between(p1, p2) {
+        let dx = p1.x - p2.x
+        let dy = p1.y - p2.y
+        sqrt(dx * dx + dy * dy)
     }
 
+    let p3 = make_point(5.0, 12.0)
+    println(f"Point 3: ({p3.x}, {p3.y})")
+    println(f"Distance from origin: {distance_from_origin(p3)}")
+    println(f"Distance between p1 and p2: {distance_between(p1, p2)}")
+
+    // Bank Account pattern using functions
     println("\n=== Bank Account Example ===")
 
-    let mut account = BankAccount::new("Alice", 1000.0)
-    account.display()
-
-    account.deposit(500.0)
-    account.display()
-
-    account.withdraw(200.0)
-    account.display()
-
-    account.withdraw(2000.0)  // Should fail
-    account.display()
-
-    // Inheritance-like composition
-    struct Employee {
-        name: string,
-        id: int,
-        department: string
-    }
-
-    struct Manager {
-        employee: Employee,
-        team_size: int
-    }
-
-    impl Manager {
-        fn new(name, id, department, team_size) {
-            Manager {
-                employee: Employee {
-                    name: name,
-                    id: id,
-                    department: department
-                },
-                team_size: team_size
-            }
-        }
-
-        fn display(self) {
-            println(f"Manager: {self.employee.name}")
-            println(f"ID: {self.employee.id}")
-            println(f"Department: {self.employee.department}")
-            println(f"Team size: {self.team_size}")
+    fn deposit(account, amount) {
+        if amount > 0 {
+            println(f"Deposited ${amount}")
+            { owner: account.owner, balance: account.balance + amount }
+        } else {
+            account
         }
     }
 
-    println("\n=== Manager Example ===")
-
-    let manager = Manager::new("Bob", 12345, "Engineering", 10)
-    manager.display()
-
-    // Generic structs
-    struct Container<T> {
-        value: T
-    }
-
-    impl<T> Container<T> {
-        fn new(value) {
-            Container { value: value }
-        }
-
-        fn get(self) {
-            self.value
-        }
-
-        fn set(mut self, value) {
-            self.value = value
+    fn withdraw(account, amount) {
+        if amount > 0 && amount <= account.balance {
+            println(f"Withdrew ${amount}")
+            { owner: account.owner, balance: account.balance - amount }
+        } else {
+            println("Insufficient funds")
+            account
         }
     }
 
-    println("\n=== Generic Container ===")
-
-    let int_container = Container::new(42)
-    println(f"Integer container: {int_container.get()}")
-
-    let string_container = Container::new("Hello")
-    println(f"String container: {string_container.get()}")
-
-    // Enum with data
-    enum Shape {
-        Circle { radius: float },
-        Rectangle { width: float, height: float },
-        Triangle { base: float, height: float }
+    fn display_account(account) {
+        println(f"Account: {account.owner}, Balance: ${account.balance}")
     }
 
-    impl Shape {
-        fn area(self) {
-            match self {
-                Shape::Circle { radius } => 3.14159 * radius * radius,
-                Shape::Rectangle { width, height } => width * height,
-                Shape::Triangle { base, height } => 0.5 * base * height
-            }
-        }
+    let account1 = { owner: "Alice", balance: 1000.0 }
+    display_account(account1)
 
-        fn describe(self) {
-            match self {
-                Shape::Circle { radius } => f"Circle with radius {radius}",
-                Shape::Rectangle { width, height } => f"Rectangle {width}x{height}",
-                Shape::Triangle { base, height } => f"Triangle with base {base} and height {height}"
-            }
+    let account2 = deposit(account1, 500.0)
+    display_account(account2)
+
+    let account3 = withdraw(account2, 200.0)
+    display_account(account3)
+
+    let account4 = withdraw(account3, 2000.0)
+    display_account(account4)
+
+    // Composition pattern
+    println("\n=== Composition Example ===")
+
+    fn make_employee(name, id, department) {
+        { name: name, id: id, department: department }
+    }
+
+    fn make_manager(name, id, department, team_size) {
+        let emp = make_employee(name, id, department)
+        { employee: emp, team_size: team_size }
+    }
+
+    fn display_manager(mgr) {
+        println(f"Manager: {mgr.employee.name}")
+        println(f"ID: {mgr.employee.id}")
+        println(f"Department: {mgr.employee.department}")
+        println(f"Team size: {mgr.team_size}")
+    }
+
+    let manager = make_manager("Bob", 12345, "Engineering", 10)
+    display_manager(manager)
+
+    // Container pattern
+    println("\n=== Container Example ===")
+
+    fn make_container(value) {
+        { value: value }
+    }
+
+    fn get_value(container) {
+        container.value
+    }
+
+    let int_container = make_container(42)
+    println(f"Integer container: {get_value(int_container)}")
+
+    let string_container = make_container("Hello")
+    println(f"String container: {get_value(string_container)}")
+
+    // Polymorphism via duck typing
+    println("\n=== Shape Calculations ===")
+
+    fn make_circle(radius) {
+        { kind: "circle", radius: radius }
+    }
+
+    fn make_rectangle(width, height) {
+        { kind: "rectangle", width: width, height: height }
+    }
+
+    fn make_triangle(base, height) {
+        { kind: "triangle", base: base, height: height }
+    }
+
+    fn area(shape) {
+        if shape.kind == "circle" {
+            3.14159 * shape.radius * shape.radius
+        } else if shape.kind == "rectangle" {
+            shape.width * shape.height
+        } else {
+            0.5 * shape.base * shape.height
         }
     }
 
-    println("\n=== Shapes Example ===")
+    fn describe(shape) {
+        if shape.kind == "circle" {
+            f"Circle with radius {shape.radius}"
+        } else if shape.kind == "rectangle" {
+            f"Rectangle {shape.width}x{shape.height}"
+        } else {
+            f"Triangle with base {shape.base}"
+        }
+    }
 
     let shapes = [
-        Shape::Circle { radius: 5.0 },
-        Shape::Rectangle { width: 10.0, height: 20.0 },
-        Shape::Triangle { base: 6.0, height: 8.0 }
+        make_circle(5.0),
+        make_rectangle(10.0, 20.0),
+        make_triangle(6.0, 8.0)
     ]
 
     for shape in shapes {
-        println(f"{shape.describe()}: area = {shape.area()}")
+        println(f"{describe(shape)}: area = {area(shape)}")
     }
 
-    // Trait-like interfaces
-    trait Drawable {
-        fn draw(self)
-    }
+    // Drawable interface via convention
+    println("\n=== Drawable Pattern ===")
 
-    impl Drawable for Point {
-        fn draw(self) {
-            println(f"Drawing point at ({self.x}, {self.y})")
+    fn draw(drawable) {
+        if drawable.kind == "circle" {
+            println(f"Drawing circle with radius {drawable.radius}")
+        } else if drawable.kind == "rectangle" {
+            println(f"Drawing rectangle {drawable.width}x{drawable.height}")
+        } else {
+            println("Drawing shape")
         }
     }
 
-    impl Drawable for Shape {
-        fn draw(self) {
-            println(f"Drawing {self.describe()}")
-        }
+    for shape in shapes {
+        draw(shape)
     }
 
-    println("\n=== Drawable Trait ===")
-
-    let drawable_point = Point::new(10.0, 20.0)
-    drawable_point.draw()
-
-    let drawable_shape = Shape::Circle { radius: 3.0 }
-    drawable_shape.draw()
+    println("\n=== Object Patterns Complete ===")
 }

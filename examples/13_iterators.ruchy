@@ -69,92 +69,27 @@ fn main() {
     // Enumerate
     println("\n=== Enumerate ===")
 
-    for (index, value) in numbers.enumerate() {
+    let enumerated = numbers.enumerate()
+    for pair in enumerated {
+        let index = pair.0
+        let value = pair.1
         println(f"Index {index}: {value}")
     }
 
-    // FlatMap
-    println("\n=== FlatMap ===")
-
-    let nested = [[1, 2], [3, 4], [5, 6]]
-    let flattened = nested.flat_map(x => x)
-    println(f"Flattened: {flattened}")
-
-    let expanded = [1, 2, 3].flat_map(x => [x, x * 10])
-    println(f"Expanded: {expanded}")
-
-    // Partition
-    println("\n=== Partition ===")
-
-    let (evens, odds) = numbers.partition(x => x % 2 == 0)
-    println(f"Evens: {evens}, Odds: {odds}")
-
-    // Group by
-    println("\n=== Group By ===")
-
-    let words = ["apple", "ant", "banana", "bear", "cat", "car"]
-    let grouped = words.group_by(w => w[0])
-    println(f"Grouped by first letter: {grouped}")
-
-    // Chain
-    println("\n=== Chain ===")
+    // Chain using concat
+    println("\n=== Chain (using concat) ===")
 
     let first = [1, 2, 3]
     let second = [4, 5, 6]
-    let chained = first.chain(second)
+    let chained = first.concat(second)
     println(f"Chained: {chained}")
 
-    // Cycle
-    println("\n=== Cycle ===")
+    // Flatten nested arrays
+    println("\n=== Flatten ===")
 
-    let pattern = [1, 2, 3]
-    let cycled = pattern.cycle().take(10)
-    println(f"Cycled pattern: {cycled}")
-
-    // Scan (like reduce but returns intermediate values)
-    println("\n=== Scan ===")
-
-    let running_sum = numbers.scan(0, (acc, x) => acc + x)
-    println(f"Running sum: {running_sum}")
-
-    // Window
-    println("\n=== Window ===")
-
-    let windowed = numbers.windows(3)
-    println("Windows of 3:")
-    for window in windowed {
-        println(f"  {window}")
-    }
-
-    // Chunks
-    println("\n=== Chunks ===")
-
-    let long_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    let chunks = long_list.chunks(3)
-    println("Chunks of 3:")
-    for chunk in chunks {
-        println(f"  {chunk}")
-    }
-
-    // Custom iterator
-    println("\n=== Custom Iterator ===")
-
-    fn fibonacci(n) {
-        let mut result = []
-        let mut a = 0
-        let mut b = 1
-
-        for _ in 0..n {
-            result.append(a)
-            let temp = a + b
-            a = b
-            b = temp
-        }
-        result
-    }
-
-    let fib = fibonacci(10)
-    println(f"Fibonacci: {fib}")
+    let nested = [[1, 2], [3, 4], [5, 6]]
+    let flattened = nested.flatten()
+    println(f"Flattened: {flattened}")
 
     // Iterator combinators
     println("\n=== Complex Combinations ===")
@@ -169,22 +104,21 @@ fn main() {
 
     println(f"Complex result: {result}")
 
-    // Lazy evaluation example
-    println("\n=== Lazy Evaluation ===")
+    // Unique elements
+    println("\n=== Unique ===")
 
-    let lazy_range = (0..1000000)
-        .filter(x => x % 2 == 0)
-        .map(x => x * 2)
-        .take(5)
+    let duplicates = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4]
+    let unique = duplicates.unique()
+    println(f"Unique elements: {unique}")
 
-    println(f"First 5 from lazy evaluation: {lazy_range}")
+    // Sum, min, max
+    println("\n=== Aggregations ===")
 
-    // Collect to different types
-    println("\n=== Collect ===")
+    let nums = [5, 2, 8, 1, 9, 3]
+    println(f"Sum: {nums.sum()}")
+    println(f"Min: {nums.min()}")
+    println(f"Max: {nums.max()}")
+    println(f"Product: {nums.product()}")
 
-    let set = [1, 2, 2, 3, 3, 3].to_set()
-    println(f"As set: {set}")
-
-    let map = [(1, "one"), (2, "two"), (3, "three")].to_map()
-    println(f"As map: {map}")
+    println("\n=== Iterator Examples Complete ===")
 }

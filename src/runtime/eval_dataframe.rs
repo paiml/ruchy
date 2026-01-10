@@ -38,26 +38,55 @@ fn eval_dataframe_select(
 ) -> Result<Value, InterpreterError> {
     if arg_values.len() != 1 {
         return Err(InterpreterError::RuntimeError(
-            "DataFrame.select() requires exactly 1 argument (column_name)".to_string(),
+            "DataFrame.select() requires exactly 1 argument (column_name or [column_names])".to_string(),
         ));
     }
 
-    if let Value::String(column_name) = &arg_values[0] {
-        // Find the column
-        for col in columns {
-            if col.name == **column_name {
-                return Ok(Value::DataFrame {
-                    columns: vec![col.clone()],
-                });
+    match &arg_values[0] {
+        // Single column name
+        Value::String(column_name) => {
+            for col in columns {
+                if col.name == **column_name {
+                    return Ok(Value::DataFrame {
+                        columns: vec![col.clone()],
+                    });
+                }
             }
+            Err(InterpreterError::RuntimeError(format!(
+                "Column '{column_name}' not found in DataFrame"
+            )))
         }
-        Err(InterpreterError::RuntimeError(format!(
-            "Column '{column_name}' not found in DataFrame"
-        )))
-    } else {
-        Err(InterpreterError::RuntimeError(
-            "DataFrame.select() expects column name as string".to_string(),
-        ))
+        // Array of column names
+        Value::Array(col_names) => {
+            let mut selected_columns = Vec::new();
+            for name_val in col_names.iter() {
+                if let Value::String(column_name) = name_val {
+                    let mut found = false;
+                    for col in columns {
+                        if col.name == **column_name {
+                            selected_columns.push(col.clone());
+                            found = true;
+                            break;
+                        }
+                    }
+                    if !found {
+                        return Err(InterpreterError::RuntimeError(format!(
+                            "Column '{column_name}' not found in DataFrame"
+                        )));
+                    }
+                } else {
+                    return Err(InterpreterError::RuntimeError(
+                        "DataFrame.select() array elements must be strings".to_string(),
+                    ));
+                }
+            }
+            Ok(Value::DataFrame {
+                columns: selected_columns,
+            })
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "DataFrame.select() expects column name as string or array of strings".to_string(),
+        )),
     }
 }
 
