@@ -1,4 +1,4 @@
-//! ComputeBrick - Unified TUI/WASM Widget System
+//! `ComputeBrick` - Unified TUI/WASM Widget System
 //!
 //! Replaces the legacy WASM notebook system with a declarative widget API
 //! that compiles to both native terminal and WebAssembly targets.
@@ -200,8 +200,8 @@ impl Gradient {
     /// Precompute 101 colors for fast lookup.
     pub fn precompute(&mut self) {
         let mut colors = [Color::default(); 101];
-        for i in 0..=100 {
-            colors[i] = self.sample(i as f64 / 100.0);
+        for (i, color) in colors.iter_mut().enumerate() {
+            *color = self.sample(i as f64 / 100.0);
         }
         self.cache = Some(Arc::new(colors));
     }
@@ -241,7 +241,7 @@ impl Gradient {
         if let Some(ref cache) = self.cache {
             cache[pct.min(100) as usize]
         } else {
-            self.sample(pct as f64 / 100.0)
+            self.sample(f64::from(pct) / 100.0)
         }
     }
 }

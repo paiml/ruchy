@@ -29,7 +29,7 @@ impl Color {
     /// Create from 8-bit RGB values (0-255).
     #[inline]
     pub fn from_rgb8(r: u8, g: u8, b: u8) -> Self {
-        Self::rgb(r as f32 / 255.0, g as f32 / 255.0, b as f32 / 255.0)
+        Self::rgb(f32::from(r) / 255.0, f32::from(g) / 255.0, f32::from(b) / 255.0)
     }
 
     /// Convert to 8-bit RGB tuple.

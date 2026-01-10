@@ -1,4 +1,4 @@
-//! Widget implementations for ComputeBrick.
+//! Widget implementations for `ComputeBrick`.
 //!
 //! All widgets implement the `Brick` trait for unified rendering.
 
