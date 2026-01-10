@@ -1,209 +1,167 @@
-// 14_macros.ruchy - Using macros for code generation and metaprogramming
+// 14_macros.ruchy - Macro-like patterns using higher-order functions
 
 fn main() {
-    println("=== Macros ===\n")
+    println("=== Macro-like Patterns ===\n")
 
-    // Built-in macros
-    println("=== Built-in Macros ===")
+    // Higher-order functions as macro-like patterns
+    println("=== Higher-Order Functions ===")
 
-    // println! macro
-    println!("Using println! macro")
-
-    // format! macro
-    let formatted = format!("Number: {}, String: {}", 42, "hello")
-    println(formatted)
-
-    // assert! macro
-    assert!(2 + 2 == 4)
-    println("Assertion passed!")
-
-    // debug! macro
-    let value = { x: 10, y: 20 }
-    debug!(value)
-
-    // DataFrame macro
-    println("\n=== DataFrame Macro ===")
-
-    let df = df![
-        "id" => [1, 2, 3],
-        "name" => ["Alice", "Bob", "Charlie"],
-        "score" => [95, 87, 92]
-    ]
-    println(df)
-
-    // Vector macro
-    let vec = vec![1, 2, 3, 4, 5]
-    println(f"Vector: {vec}")
-
-    // HashMap macro
-    let map = hashmap![
-        "key1" => "value1",
-        "key2" => "value2",
-        "key3" => "value3"
-    ]
-    println(f"HashMap: {map}")
-
-    // Custom macro-like functions
-    println("\n=== Macro-like Functions ===")
-
-    // Timing macro
-    fn time_it(label, func) {
-        let start = now()
-        let result = func()
-        let elapsed = now() - start
-        println(f"{label}: {elapsed}ms")
-        result
+    // Repeat pattern
+    fn repeat(n, func) {
+        for i in 0..n {
+            func(i)
+        }
     }
 
-    let result = time_it("Computation", || {
-        let mut sum = 0
-        for i in 0..1000 {
-            sum += i
-        }
-        sum
-    })
-    println(f"Result: {result}")
+    repeat(3, i => println(f"Iteration {i}"))
 
-    // Memoization macro-like function
-    fn memoize(func) {
-        let cache = {}
-        |x| {
-            if cache.contains_key(x) {
-                cache[x]
-            } else {
-                let result = func(x)
-                cache[x] = result
-                result
+    // Apply to all
+    fn apply_all(items, func) {
+        items.map(func)
+    }
+
+    let numbers = [1, 2, 3, 4, 5]
+    let squared = apply_all(numbers, x => x * x)
+    println(f"Squared: {squared}")
+
+    // Conditional execution
+    println("\n=== Conditional Execution ===")
+
+    fn when(condition, func) {
+        if condition {
+            func()
+        }
+    }
+
+    fn say_greater() {
+        println("5 is greater than 3")
+    }
+
+    when(5 > 3, say_greater)
+
+    fn unless(condition, func) {
+        if !condition {
+            func()
+        }
+    }
+
+    fn say_not_greater() {
+        println("3 is not greater than 5")
+    }
+
+    unless(3 > 5, say_not_greater)
+
+    // Builder pattern using pipelines
+    println("\n=== Builder Pattern ===")
+
+    fn make_config() {
+        { debug: false, verbose: false, max_retries: 3 }
+    }
+
+    fn with_debug(config, value) {
+        { debug: value, verbose: config.verbose, max_retries: config.max_retries }
+    }
+
+    fn with_verbose(config, value) {
+        { debug: config.debug, verbose: value, max_retries: config.max_retries }
+    }
+
+    fn with_max_retries(config, value) {
+        { debug: config.debug, verbose: config.verbose, max_retries: value }
+    }
+
+    let config = make_config()
+        |> with_debug(true)
+        |> with_verbose(true)
+        |> with_max_retries(5)
+
+    println(f"Config: debug={config.debug}, verbose={config.verbose}, retries={config.max_retries}")
+
+    // Pipeline patterns
+    println("\n=== Pipeline Patterns ===")
+
+    let data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+
+    let result = data
+        |> filter(x => x % 2 == 0)
+        |> map(x => x * x)
+        |> sum()
+
+    println(f"Sum of squares of evens: {result}")
+
+    // Validation pattern
+    println("\n=== Validation Pattern ===")
+
+    fn validate(value, validators) {
+        for validator in validators {
+            let result = validator(value)
+            if !result {
+                return false
             }
         }
+        true
     }
 
-    fn expensive_computation(n) {
-        println(f"Computing for {n}...")
-        n * n * n
+    let is_positive = x => x > 0
+    let is_even = x => x % 2 == 0
+    let is_small = x => x < 100
+
+    let validators = [is_positive, is_even, is_small]
+
+    println(f"Is 10 valid? {validate(10, validators)}")
+    println(f"Is -2 valid? {validate(-2, validators)}")
+    println(f"Is 101 valid? {validate(101, validators)}")
+
+    // Decorator pattern
+    println("\n=== Decorator Pattern ===")
+
+    let double = x => x * 2
+    println(f"Double of 21: {double(21)}")
+
+    // Currying pattern (simplified)
+    println("\n=== Currying Pattern ===")
+
+    fn add(a, b) {
+        a + b
     }
 
-    let memoized = memoize(expensive_computation)
-    println("\n=== Memoization ===")
-    println(f"First call: {memoized(5)}")
-    println(f"Second call (cached): {memoized(5)}")
-    println(f"New value: {memoized(7)}")
+    println(f"5 + 3 = {add(5, 3)}")
+    println(f"5 + 10 = {add(5, 10)}")
 
-    // DSL-like macros
-    println("\n=== DSL Macros ===")
+    // Composition pattern (simplified)
+    println("\n=== Composition Pattern ===")
 
-    // SQL-like query macro
-    macro sql_select {
-        SELECT $fields:expr FROM $table:ident WHERE $condition:expr => {
-            $table.filter($condition).select($fields)
-        }
+    let triple = x => x * 3
+    let add_one = x => x + 1
+
+    // Manual composition
+    let composed_result = add_one(triple(5))
+    println(f"(5 * 3) + 1 = {composed_result}")
+
+    // Partial application (simplified)
+    println("\n=== Partial Application ===")
+
+    let results = [1, 2, 3, 4, 5] |> map(x => x * 10)
+    println(f"Multiplied by 10: {results}")
+
+    // Tap pattern (for debugging)
+    println("\n=== Tap Pattern ===")
+
+    fn tap(value, func) {
+        func(value)
+        value
     }
 
-    // HTML-like template macro
-    macro html {
-        <$tag:ident>$content:expr</$tag:ident> => {
-            f"<{stringify!($tag)}>{$content}</{stringify!($tag)}>"
-        }
+    fn debug_print(x) {
+        println(f"Debug: {x}")
     }
 
-    // Test framework macro
-    macro test {
-        $name:ident { $body:expr } => {
-            fn $name() {
-                println(f"Running test: {stringify!($name)}")
-                $body
-                println("  ✓ Passed")
-            }
-        }
-    }
+    let final_result = [1, 2, 3]
+        |> map(x => x * 2)
+        |> tap(debug_print)
+        |> map(x => x + 1)
 
-    test! simple_test {
-        assert!(1 + 1 == 2)
-    }
+    println(f"Final result: {final_result}")
 
-    test! string_test {
-        let s = "hello"
-        assert!(s.len() == 5)
-    }
-
-    simple_test()
-    string_test()
-
-    // Derive-like macros
-    println("\n=== Derive-like Macros ===")
-
-    #[derive(Debug, Clone, PartialEq)]
-    struct User {
-        name: string,
-        age: int
-    }
-
-    let user1 = User { name: "Alice", age: 30 }
-    let user2 = user1.clone()
-
-    println(f"User1: {debug!(user1)}")
-    println(f"User2: {debug!(user2)}")
-    println(f"Equal: {user1 == user2}")
-
-    // Attribute macros
-    println("\n=== Attribute Macros ===")
-
-    #[test]
-    fn test_addition() {
-        assert!(2 + 2 == 4)
-    }
-
-    #[bench]
-    fn bench_iteration() {
-        for i in 0..1000 {
-            // benchmark code
-        }
-    }
-
-    #[deprecated("Use new_function instead")]
-    fn old_function() {
-        println("This is deprecated")
-    }
-
-    // Conditional compilation
-    println("\n=== Conditional Compilation ===")
-
-    #[cfg(debug)]
-    fn debug_only() {
-        println("Debug mode only")
-    }
-
-    #[cfg(release)]
-    fn release_only() {
-        println("Release mode only")
-    }
-
-    #[cfg(target_os = "linux")]
-    fn linux_specific() {
-        println("Linux-specific code")
-    }
-
-    // Variadic macros
-    println("\n=== Variadic Macros ===")
-
-    macro sum {
-        () => { 0 },
-        ($x:expr) => { $x },
-        ($x:expr, $($rest:expr),+) => {
-            $x + sum!($($rest),+)
-        }
-    }
-
-    let total = sum!(1, 2, 3, 4, 5)
-    println(f"Sum: {total}")
-
-    // Recursive macros
-    macro factorial {
-        (0) => { 1 },
-        ($n:expr) => {
-            $n * factorial!($n - 1)
-        }
-    }
-
-    println(f"Factorial of 5: {factorial!(5)}")
+    println("\n=== Macro Patterns Complete ===")
 }
