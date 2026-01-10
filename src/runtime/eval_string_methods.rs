@@ -194,7 +194,7 @@ fn eval_string_repeat(s: &str, count: &Value) -> Result<Value, InterpreterError>
 /// Cyclomatic complexity: 2
 fn eval_string_append(s: &Arc<str>, suffix: &Value) -> Result<Value, InterpreterError> {
     if let Value::String(suffix_str) = suffix {
-        Ok(Value::from_string(format!("{}{}", s, suffix_str)))
+        Ok(Value::from_string(format!("{s}{suffix_str}")))
     } else {
         Err(InterpreterError::RuntimeError(
             "append expects string argument".to_string(),
