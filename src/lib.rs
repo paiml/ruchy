@@ -60,6 +60,7 @@ pub mod backend;
 pub mod bench;
 pub mod build_transpiler;
 pub mod cli;
+pub mod computebrick;
 pub mod debugger;
 pub mod docs;
 pub mod error_recovery_enhanced;
