@@ -2111,9 +2111,25 @@ impl Interpreter {
 
                 // Evaluate function body
                 // Catch InterpreterError::Return and extract value (early return support)
-                let result = match self.eval_expr(&body) {
-                    Err(InterpreterError::Return(val)) => Ok(val),
-                    other => other,
+                // BOOK-200-01 FIX: If body is a Block, evaluate statements directly
+                // without pushing an additional scope. The function already has its
+                // parameter scope (local_env), and pushing another scope would cause
+                // lambdas to capture the wrong environment.
+                let result = match &body.kind {
+                    crate::frontend::ast::ExprKind::Block(statements) => {
+                        // Evaluate block statements directly without pushing new scope
+                        match crate::runtime::eval_control_flow_new::eval_block_expr(
+                            statements,
+                            |e| self.eval_expr(e),
+                        ) {
+                            Err(InterpreterError::Return(val)) => Ok(val),
+                            other => other,
+                        }
+                    }
+                    _ => match self.eval_expr(&body) {
+                        Err(InterpreterError::Return(val)) => Ok(val),
+                        other => other,
+                    },
                 };
 
                 // ISSUE-119: Pop BOTH environments (local scope + captured environment)

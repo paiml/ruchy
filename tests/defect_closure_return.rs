@@ -12,9 +12,8 @@ fn ruchy_cmd() -> Command {
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
-// RED: This test MUST fail before the fix
+// BOOK-200-01: Fixed - closures now correctly capture function parameters
 #[test]
-#[ignore = "RED phase: closure return type inference not yet implemented - DEFECT-CLOSURE-RETURN"]
 fn test_defect_closure_return_simple_adder() {
     let temp_file = std::env::temp_dir().join("defect_closure_return_adder.ruchy");
     std::fs::write(
@@ -42,8 +41,8 @@ fn main() {
     std::fs::remove_file(&temp_file).ok();
 }
 
+// BOOK-200-01: Fixed - closures now correctly capture function parameters
 #[test]
-#[ignore = "RED phase: closure return type inference not yet implemented - DEFECT-CLOSURE-RETURN"]
 fn test_defect_closure_return_multiplier() {
     let temp_file = std::env::temp_dir().join("defect_closure_return_mult.ruchy");
     std::fs::write(
@@ -71,8 +70,8 @@ fn main() {
     std::fs::remove_file(&temp_file).ok();
 }
 
+// BOOK-200-01: Fixed - closures now correctly capture function parameters
 #[test]
-#[ignore = "RED phase: closure return type inference not yet implemented - DEFECT-CLOSURE-RETURN"]
 fn test_defect_closure_return_counter() {
     let temp_file = std::env::temp_dir().join("defect_closure_return_counter.ruchy");
     std::fs::write(
@@ -102,8 +101,8 @@ fn main() {
     std::fs::remove_file(&temp_file).ok();
 }
 
+// BOOK-200-01: Fixed - closures now correctly capture function parameters
 #[test]
-#[ignore = "RED phase: closure return type inference not yet implemented - DEFECT-CLOSURE-RETURN"]
 fn test_defect_closure_return_transpile() {
     // Verify transpiler generates correct Rust code
     let temp_file = std::env::temp_dir().join("defect_closure_return_transpile.ruchy");
