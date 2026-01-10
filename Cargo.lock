@@ -6629,6 +6629,65 @@ dependencies = [
 [[package]]
 name = "ruchy"
 version = "3.213.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "64871ac40de261296b3c0d6929c6d27e7b976ea1617d91eee9368abf2c510e43"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "clap",
+ "colored",
+ "console_error_panic_hook",
+ "env_logger 0.11.8",
+ "getrandom 0.2.16",
+ "glob",
+ "html5ever",
+ "im",
+ "js-sys",
+ "lazy_static",
+ "local-ip-address",
+ "log",
+ "logos",
+ "markup5ever 0.13.0",
+ "markup5ever_rcdom",
+ "md5",
+ "mime_guess",
+ "nix 0.29.0",
+ "num_cpus",
+ "once_cell",
+ "pest",
+ "pest_derive",
+ "prettyplease",
+ "proc-macro2",
+ "quickcheck",
+ "quote",
+ "rand 0.8.5",
+ "rayon",
+ "regex",
+ "ruchyruchy",
+ "semver",
+ "serde",
+ "serde-wasm-bindgen",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "signal-hook",
+ "smallvec",
+ "syn",
+ "tempfile",
+ "thiserror 2.0.17",
+ "toml 0.9.8",
+ "tracing",
+ "uuid",
+ "walkdir",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-encoder 0.207.0",
+ "web-sys",
+]
+
+[[package]]
+name = "ruchy"
+version = "4.0.0"
 dependencies = [
  "alimentar",
  "anyhow",
@@ -6722,72 +6781,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ruchy"
-version = "3.213.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64871ac40de261296b3c0d6929c6d27e7b976ea1617d91eee9368abf2c510e43"
-dependencies = [
- "anyhow",
- "chrono",
- "clap",
- "colored",
- "console_error_panic_hook",
- "env_logger 0.11.8",
- "getrandom 0.2.16",
- "glob",
- "html5ever",
- "im",
- "js-sys",
- "lazy_static",
- "local-ip-address",
- "log",
- "logos",
- "markup5ever 0.13.0",
- "markup5ever_rcdom",
- "md5",
- "mime_guess",
- "nix 0.29.0",
- "num_cpus",
- "once_cell",
- "pest",
- "pest_derive",
- "prettyplease",
- "proc-macro2",
- "quickcheck",
- "quote",
- "rand 0.8.5",
- "rayon",
- "regex",
- "ruchyruchy",
- "semver",
- "serde",
- "serde-wasm-bindgen",
- "serde_json",
- "serde_yaml",
- "sha2",
- "signal-hook",
- "smallvec",
- "syn",
- "tempfile",
- "thiserror 2.0.17",
- "toml 0.9.8",
- "tracing",
- "uuid",
- "walkdir",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-encoder 0.207.0",
- "web-sys",
-]
-
-[[package]]
 name = "ruchy-wasm"
 version = "3.213.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "jugar-probar 0.2.0",
- "ruchy 3.213.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruchy 3.213.0",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
