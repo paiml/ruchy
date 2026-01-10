@@ -1,4 +1,4 @@
-//! Render backend for ComputeBrick.
+//! Render backend for `ComputeBrick`.
 //!
 //! Supports both native terminal (via crossterm) and WASM targets.
 

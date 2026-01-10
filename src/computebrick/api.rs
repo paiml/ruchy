@@ -1,4 +1,4 @@
-//! User-facing API for ComputeBrick widgets.
+//! User-facing API for `ComputeBrick` widgets.
 //!
 //! Provides simple functions like `plot()`, `table()`, `meter()` that
 //! create and render widgets from Ruchy data.
