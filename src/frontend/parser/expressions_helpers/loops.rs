@@ -244,6 +244,7 @@ fn parse_labeled_loop(state: &mut ParserState, label: Option<String>) -> Result<
 #[cfg(test)]
 mod tests {
 
+    use crate::frontend::ast::ExprKind;
     use crate::frontend::parser::Parser;
 
     #[test]
@@ -301,8 +302,8 @@ mod tests {
         assert!(result.is_ok(), "Infinite loop should parse");
     }
 
+    // PARSER-079: Fixed - Labeled loops now work correctly
     #[test]
-    #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Break statements in blocks not yet working
     fn test_labeled_for_loop() {
         let code = "'outer: for i in 0..10 { break 'outer }";
         let result = Parser::new(code).parse();
@@ -310,7 +311,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Break statements in blocks not yet working
     fn test_labeled_while_loop() {
         let code = "'outer: while true { break 'outer }";
         let result = Parser::new(code).parse();
@@ -318,7 +318,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Break statements in blocks not yet working
     fn test_labeled_infinite_loop() {
         let code = "'outer: loop { break 'outer }";
         let result = Parser::new(code).parse();
@@ -540,6 +539,40 @@ mod tests {
         let code = "'outer: loop { loop { break 'outer } }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Loop with labeled break should parse");
+    }
+
+    // Test 39b: PARSER-079 - Verify label is actually set in the AST
+    #[test]
+    fn test_labeled_for_loop_label_is_set() {
+        let code = "'outer: for i in [1, 2] { }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Labeled for loop should parse");
+
+        let expr = result.unwrap();
+        // Navigate to the For expression - it should be inside a Block
+        let for_expr = match &expr.kind {
+            ExprKind::Block(exprs) if !exprs.is_empty() => &exprs[0],
+            _ => &expr,
+        };
+
+        match &for_expr.kind {
+            ExprKind::For { label, var, .. } => {
+                assert!(
+                    label.is_some(),
+                    "For loop label should be Some, got None. var={:?}",
+                    var
+                );
+                // The label should be stripped of the leading quote
+                // 'outer becomes "outer"
+                let label_val = label.as_ref().unwrap();
+                assert!(
+                    !label_val.starts_with('\''),
+                    "Label should not start with quote, got: {:?}",
+                    label_val
+                );
+            }
+            other => panic!("Expected For expression, got: {:?}", other),
+        }
     }
 
     // Test 40: For loop over array literal

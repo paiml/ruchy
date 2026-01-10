@@ -45,8 +45,18 @@ pub(in crate::frontend::parser) fn parse_break_token(
 
     // Optional label ('label or @label syntax)
     // PARSER-081: Support both 'lifetime and @label syntax
+    // PARSER-079: Strip leading quote from Lifetime tokens ('outer -> "outer")
     let label = match state.tokens.peek() {
-        Some((Token::Lifetime(name) | Token::Label(name), _)) => {
+        Some((Token::Lifetime(name), _)) => {
+            // Strip the leading quote from 'outer to get "outer"
+            let stripped = name
+                .strip_prefix('\'')
+                .unwrap_or(name)
+                .to_string();
+            state.tokens.advance();
+            Some(stripped)
+        }
+        Some((Token::Label(name), _)) => {
             let label = Some(name.clone());
             state.tokens.advance();
             label
@@ -90,8 +100,18 @@ pub(in crate::frontend::parser) fn parse_continue_token(
 
     // Optional label ('label or @label syntax)
     // PARSER-081: Support both 'lifetime and @label syntax
+    // PARSER-079: Strip leading quote from Lifetime tokens ('outer -> "outer")
     let label = match state.tokens.peek() {
-        Some((Token::Lifetime(name) | Token::Label(name), _)) => {
+        Some((Token::Lifetime(name), _)) => {
+            // Strip the leading quote from 'outer to get "outer"
+            let stripped = name
+                .strip_prefix('\'')
+                .unwrap_or(name)
+                .to_string();
+            state.tokens.advance();
+            Some(stripped)
+        }
+        Some((Token::Label(name), _)) => {
             let label = Some(name.clone());
             state.tokens.advance();
             label
