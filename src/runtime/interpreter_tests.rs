@@ -15844,7 +15844,7 @@ mod coverage_tests {
     fn test_compare_values_incompatible() {
         let interp = Interpreter::new();
         let result = interp.compare_values(
-            &Value::from_string("hello"),
+            &Value::from_string("hello".to_string()),
             &Value::Integer(5),
             |a, b| a > b,
         );
@@ -15878,12 +15878,12 @@ mod coverage_tests {
     fn test_values_equal_strings() {
         let interp = Interpreter::new();
         assert!(interp.values_equal(
-            &Value::from_string("hello"),
-            &Value::from_string("hello")
+            &Value::from_string("hello".to_string()),
+            &Value::from_string("hello".to_string())
         ));
         assert!(!interp.values_equal(
-            &Value::from_string("hello"),
-            &Value::from_string("world")
+            &Value::from_string("hello".to_string()),
+            &Value::from_string("world".to_string())
         ));
     }
 
