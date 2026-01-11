@@ -69,7 +69,26 @@ pub mod cache;
 pub mod completion;
 pub mod grammar_coverage;
 pub mod interpreter;
+#[cfg(test)]
+pub mod interpreter_inline_tests; // Extracted tests from interpreter.rs
 pub mod interpreter_types; // EXTREME TDD Round 52: InterpreterError, CallFrame extracted
+pub mod interpreter_types_impl; // Class/struct/enum/actor definitions (re-export)
+pub mod interpreter_types_actor; // Actor definition and instantiation
+pub mod interpreter_types_struct; // Struct definition and instantiation
+pub mod interpreter_types_class; // Class definition, instantiation, methods
+pub mod interpreter_types_enum; // Enum and impl block definitions
+pub mod interpreter_types_module; // Module expression evaluation
+pub mod interpreter_methods; // Method dispatch for all value types (re-export)
+pub mod interpreter_methods_string; // String/array method dispatch
+pub mod interpreter_methods_dispatch; // Core method dispatch logic
+#[cfg(not(target_arch = "wasm32"))]
+pub mod interpreter_methods_html; // HTML document/element methods
+pub mod interpreter_methods_instance; // Mutable object instance methods
+pub mod interpreter_methods_actor; // Actor/struct/object methods
+pub mod interpreter_dataframe; // DataFrame operations and methods
+pub mod interpreter_control_flow; // Control flow: loops, match, assignments
+pub mod interpreter_functions; // Function definitions, lambdas, and calls
+pub mod interpreter_index; // Index access, field access, qualified names
 pub mod module_loader; // PARSER-060: Module resolution and import system
 pub mod object_helpers; // EXTREME TDD: RefCell-based mutable objects
 pub mod value; // EXTREME TDD Round 52: Value type extracted from interpreter.rs
