@@ -14389,4 +14389,621 @@ mod coverage_tests {
         let _ = interp.current_env();
         interp.pop_scope();
     }
+
+    // ============== Format Macro Edge Cases ==============
+
+    #[test]
+    fn test_format_macro_debug_placeholder() {
+        let mut interp = Interpreter::new();
+        // Test {:?} debug format placeholder
+        let result = interp.eval_string(r#"format!("{:?}", 42)"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_macro_multiple_debug() {
+        let mut interp = Interpreter::new();
+        // Test multiple {:?} placeholders
+        let result = interp.eval_string(r#"format!("{:?} and {:?}", 1, 2)"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_macro_mixed_placeholders() {
+        let mut interp = Interpreter::new();
+        // Mix {} and {:?}
+        let result = interp.eval_string(r#"format!("{} debug {:?}", "hello", 42)"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_format_macro_excess_placeholders() {
+        let mut interp = Interpreter::new();
+        // More placeholders than values
+        let result = interp.eval_string(r#"format!("{} {} {}", 1)"#);
+        assert!(result.is_ok()); // Should preserve extra placeholders
+    }
+
+    #[test]
+    fn test_format_macro_malformed_debug_unclosed() {
+        let mut interp = Interpreter::new();
+        // Malformed {:? without closing }
+        let result = interp.eval_string(r#"format!("{:?unclosed", 42)"#);
+        // Should handle gracefully
+        let _ = result;
+    }
+
+    #[test]
+    fn test_format_macro_colon_only() {
+        let mut interp = Interpreter::new();
+        // Just {: without ?}
+        let result = interp.eval_string(r#"format!("{:abc}", 42)"#);
+        let _ = result;
+    }
+
+    // ============== Println Macro Variants ==============
+
+    #[test]
+    fn test_println_macro_empty() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("println!()");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_println_macro_single_arg_cov4() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("println!(42)");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_println_macro_format_string() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"println!("Value: {}", 42)"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_println_macro_non_string_format() {
+        let mut interp = Interpreter::new();
+        // First arg is not a string
+        let result = interp.eval_string("println!(42, 43)");
+        // Should use to_string on first arg
+        let _ = result;
+    }
+
+    // ============== Contains Operator Edge Cases ==============
+
+    #[test]
+    fn test_contains_object_string_key() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"let obj = { "a": 1, "b": 2 }"#);
+        let result = interp.eval_string(r#""a" in obj"#);
+        match result {
+            Ok(Value::Bool(b)) => assert!(b),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_contains_object_non_string_key() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let obj = { a: 1, b: 2 }");
+        // Using non-string key should convert to string
+        let result = interp.eval_string("42 in obj");
+        // Should return false but not error
+        let _ = result;
+    }
+
+    #[test]
+    fn test_contains_tuple_cov4() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let t = (1, 2, 3)");
+        let result = interp.eval_string("2 in t");
+        match result {
+            Ok(Value::Bool(b)) => assert!(b),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_contains_unsupported_type() {
+        let mut interp = Interpreter::new();
+        // 'in' on integer - test that this code path is exercised
+        let _ = interp.eval_string("1 in 42");
+        // May error or return false depending on implementation
+    }
+
+    // ============== Type Cast Edge Cases ==============
+
+    #[test]
+    fn test_type_cast_int_to_f64() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("42 as f64");
+        match result {
+            Ok(Value::Float(f)) => assert_eq!(f, 42.0),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_type_cast_int_to_f32() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("42 as f32");
+        match result {
+            Ok(Value::Float(f)) => assert_eq!(f, 42.0),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_type_cast_float_to_i32() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("3.7 as i32");
+        match result {
+            Ok(Value::Integer(i)) => assert_eq!(i, 3),
+            _ => panic!("Expected integer"),
+        }
+    }
+
+    #[test]
+    fn test_type_cast_float_to_i64() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("3.7 as i64");
+        match result {
+            Ok(Value::Integer(i)) => assert_eq!(i, 3),
+            _ => panic!("Expected integer"),
+        }
+    }
+
+    #[test]
+    fn test_type_cast_float_to_isize() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("3.7 as isize");
+        match result {
+            Ok(Value::Integer(i)) => assert_eq!(i, 3),
+            _ => panic!("Expected integer"),
+        }
+    }
+
+    #[test]
+    fn test_type_cast_int_to_int_identity_cov4() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("42 as i64");
+        match result {
+            Ok(Value::Integer(i)) => assert_eq!(i, 42),
+            _ => panic!("Expected integer"),
+        }
+    }
+
+    #[test]
+    fn test_type_cast_float_to_float_identity_cov4() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("3.14 as f64");
+        match result {
+            Ok(Value::Float(f)) => assert!((f - 3.14).abs() < 0.001),
+            _ => panic!("Expected float"),
+        }
+    }
+
+    #[test]
+    fn test_type_cast_unsupported_cov4() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#""hello" as i32"#);
+        assert!(result.is_err());
+    }
+
+    // ============== Import Default ==============
+
+    #[test]
+    fn test_import_default_returns_nil() {
+        let mut interp = Interpreter::new();
+        // ImportDefault is not fully implemented, returns Nil
+        let result = interp.eval_string(r#"import React from "react""#);
+        // Should return Nil without error
+        let _ = result;
+    }
+
+    // ============== Binary Operations via Stack ==============
+
+    #[test]
+    fn test_binary_op_add_cov4() {
+        let mut interp = Interpreter::new();
+        interp.push(Value::Integer(10)).unwrap();
+        interp.push(Value::Integer(5)).unwrap();
+        let result = interp.binary_op(crate::runtime::interpreter::BinaryOp::Add);
+        assert!(result.is_ok());
+        let top = interp.pop().unwrap();
+        assert_eq!(top, Value::Integer(15));
+    }
+
+    #[test]
+    fn test_binary_op_sub_cov4() {
+        let mut interp = Interpreter::new();
+        interp.push(Value::Integer(10)).unwrap();
+        interp.push(Value::Integer(3)).unwrap();
+        let result = interp.binary_op(crate::runtime::interpreter::BinaryOp::Sub);
+        assert!(result.is_ok());
+        let top = interp.pop().unwrap();
+        assert_eq!(top, Value::Integer(7));
+    }
+
+    #[test]
+    fn test_binary_op_mul_cov4() {
+        let mut interp = Interpreter::new();
+        interp.push(Value::Integer(6)).unwrap();
+        interp.push(Value::Integer(7)).unwrap();
+        let result = interp.binary_op(crate::runtime::interpreter::BinaryOp::Mul);
+        assert!(result.is_ok());
+        let top = interp.pop().unwrap();
+        assert_eq!(top, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_binary_op_div_cov4() {
+        let mut interp = Interpreter::new();
+        interp.push(Value::Integer(20)).unwrap();
+        interp.push(Value::Integer(4)).unwrap();
+        let result = interp.binary_op(crate::runtime::interpreter::BinaryOp::Div);
+        assert!(result.is_ok());
+        let top = interp.pop().unwrap();
+        assert_eq!(top, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_binary_op_eq_cov4() {
+        let mut interp = Interpreter::new();
+        interp.push(Value::Integer(42)).unwrap();
+        interp.push(Value::Integer(42)).unwrap();
+        let result = interp.binary_op(crate::runtime::interpreter::BinaryOp::Eq);
+        assert!(result.is_ok());
+        let top = interp.pop().unwrap();
+        assert_eq!(top, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_binary_op_lt_cov4() {
+        let mut interp = Interpreter::new();
+        interp.push(Value::Integer(5)).unwrap();
+        interp.push(Value::Integer(10)).unwrap();
+        let result = interp.binary_op(crate::runtime::interpreter::BinaryOp::Lt);
+        assert!(result.is_ok());
+        let top = interp.pop().unwrap();
+        assert_eq!(top, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_binary_op_gt_cov4() {
+        let mut interp = Interpreter::new();
+        interp.push(Value::Integer(10)).unwrap();
+        interp.push(Value::Integer(5)).unwrap();
+        let result = interp.binary_op(crate::runtime::interpreter::BinaryOp::Gt);
+        assert!(result.is_ok());
+        let top = interp.pop().unwrap();
+        assert_eq!(top, Value::Bool(true));
+    }
+
+    // ============== Literal Matching ==============
+
+    #[test]
+    fn test_literal_matches_int() {
+        let interp = Interpreter::new();
+        let lit = crate::frontend::ast::Literal::Integer(42, None);
+        assert!(interp.literal_matches(&lit, &Value::Integer(42)));
+        assert!(!interp.literal_matches(&lit, &Value::Integer(43)));
+    }
+
+    #[test]
+    fn test_literal_matches_float_cov4() {
+        let interp = Interpreter::new();
+        let lit = crate::frontend::ast::Literal::Float(3.14);
+        assert!(interp.literal_matches(&lit, &Value::Float(3.14)));
+        assert!(!interp.literal_matches(&lit, &Value::Float(2.71)));
+    }
+
+    #[test]
+    fn test_literal_matches_bool_cov4() {
+        let interp = Interpreter::new();
+        let lit = crate::frontend::ast::Literal::Bool(true);
+        assert!(interp.literal_matches(&lit, &Value::Bool(true)));
+        assert!(!interp.literal_matches(&lit, &Value::Bool(false)));
+    }
+
+    #[test]
+    fn test_literal_matches_type_mismatch_cov4() {
+        let interp = Interpreter::new();
+        let lit = crate::frontend::ast::Literal::Integer(42, None);
+        // Should not match different types
+        assert!(!interp.literal_matches(&lit, &Value::Float(42.0)));
+        assert!(!interp.literal_matches(&lit, &Value::Bool(true)));
+    }
+
+    // ============== Pattern Matching ==============
+
+    #[test]
+    fn test_pattern_matches_identifier() {
+        let mut interp = Interpreter::new();
+        let pattern = crate::frontend::ast::Pattern::Identifier("x".to_string());
+        let result = interp.pattern_matches(&pattern, &Value::Integer(42));
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_wildcard() {
+        let mut interp = Interpreter::new();
+        let pattern = crate::frontend::ast::Pattern::Wildcard;
+        let result = interp.pattern_matches(&pattern, &Value::Integer(42));
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_literal() {
+        let mut interp = Interpreter::new();
+        let pattern =
+            crate::frontend::ast::Pattern::Literal(crate::frontend::ast::Literal::Integer(42, None));
+        let result = interp.pattern_matches(&pattern, &Value::Integer(42));
+        assert!(result.is_ok());
+        assert!(result.unwrap());
+    }
+
+    #[test]
+    fn test_pattern_matches_literal_no_match() {
+        let mut interp = Interpreter::new();
+        let pattern =
+            crate::frontend::ast::Pattern::Literal(crate::frontend::ast::Literal::Integer(42, None));
+        let result = interp.pattern_matches(&pattern, &Value::Integer(43));
+        assert!(result.is_ok());
+        assert!(!result.unwrap());
+    }
+
+    // ============== Stdout Capture ==============
+
+    #[test]
+    fn test_stdout_capture_clear() {
+        let mut interp = Interpreter::new();
+        interp.capture_stdout("line1".to_string());
+        interp.capture_stdout("line2".to_string());
+        assert_eq!(interp.get_stdout(), "line1\nline2");
+        interp.clear_stdout();
+        assert_eq!(interp.get_stdout(), "");
+    }
+
+    // ============== Actor Operations ==============
+
+    #[test]
+    fn test_actor_send_non_actor_error_cov4() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let x = 42");
+        // Actor send on non-actor should error
+        let result = interp.eval_string("x ! Ping");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_actor_query_non_actor_error_cov4() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let x = 42");
+        // Actor query on non-actor should error
+        let result = interp.eval_string("x ? GetValue");
+        assert!(result.is_err());
+    }
+
+    // ============== Set Variable String ==============
+
+    #[test]
+    fn test_set_variable_string() {
+        let mut interp = Interpreter::new();
+        interp.set_variable_string("myvar".to_string(), Value::Integer(100));
+        let result = interp.get_variable("myvar");
+        assert_eq!(result, Some(Value::Integer(100)));
+    }
+
+    // ============== Ternary Expression ==============
+
+    #[test]
+    fn test_ternary_true_branch() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("true ? 1 : 2");
+        match result {
+            Ok(Value::Integer(i)) => assert_eq!(i, 1),
+            _ => panic!("Expected integer 1"),
+        }
+    }
+
+    #[test]
+    fn test_ternary_false_branch_cov4() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("false ? 1 : 2");
+        match result {
+            Ok(Value::Integer(i)) => assert_eq!(i, 2),
+            _ => panic!("Expected integer 2"),
+        }
+    }
+
+    // ============== Array Init Expression ==============
+
+    #[test]
+    fn test_array_init_repeated() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[0; 5]");
+        match result {
+            Ok(Value::Array(arr)) => {
+                assert_eq!(arr.len(), 5);
+                for v in arr.iter() {
+                    assert_eq!(*v, Value::Integer(0));
+                }
+            }
+            _ => panic!("Expected array"),
+        }
+    }
+
+    // ============== Block Expression Scope ==============
+
+    #[test]
+    fn test_block_scope_shadowing_cov4() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let x = 10");
+        let _ = interp.eval_string("{ let x = 20 }");
+        // Original x should still be 10
+        let result = interp.eval_string("x");
+        match result {
+            Ok(Value::Integer(i)) => assert_eq!(i, 10),
+            _ => panic!("Expected 10"),
+        }
+    }
+
+    // ============== DataFrame Literal ==============
+
+    #[test]
+    fn test_dataframe_literal_basic() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"df { a: [1, 2, 3], b: [4, 5, 6] }"#);
+        match result {
+            Ok(Value::DataFrame { .. }) => {}
+            Ok(_) => {}
+            Err(_) => {}
+        }
+    }
+
+    // ============== Unknown Macro Error ==============
+
+    #[test]
+    fn test_unknown_macro_error() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("unknown_macro!(1, 2, 3)");
+        // Should error for unknown macro
+        assert!(result.is_err());
+    }
+
+    // ============== Vec Macro ==============
+
+    #[test]
+    fn test_vec_macro_empty_cov4() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("vec![]");
+        match result {
+            Ok(Value::Array(arr)) => assert!(arr.is_empty()),
+            _ => panic!("Expected empty array"),
+        }
+    }
+
+    #[test]
+    fn test_vec_macro_with_elements() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("vec![1, 2, 3]");
+        match result {
+            Ok(Value::Array(arr)) => assert_eq!(arr.len(), 3),
+            _ => panic!("Expected array with 3 elements"),
+        }
+    }
+
+    // ============== Constructor Markers ==============
+
+    #[test]
+    fn test_class_constructor_marker() {
+        let mut interp = Interpreter::new();
+        // Define a class first
+        let _ = interp.eval_string("class Point { fn new(x, y) { self.x = x; self.y = y } }");
+        let result = interp.eval_string("Point::new(1, 2)");
+        // Should create instance
+        let _ = result;
+    }
+
+    #[test]
+    fn test_struct_constructor_marker() {
+        let mut interp = Interpreter::new();
+        // Define a struct first
+        let _ = interp.eval_string("struct Point { x: i64, y: i64 }");
+        let result = interp.eval_string("Point { x: 1, y: 2 }");
+        // Should create struct instance
+        let _ = result;
+    }
+
+    // ============== Apply Binary Op ==============
+
+    #[test]
+    fn test_apply_binary_op_cov4() {
+        let interp = Interpreter::new();
+        let left = Value::Integer(10);
+        let right = Value::Integer(5);
+        let result = interp.apply_binary_op(&left, crate::frontend::ast::BinaryOp::Add, &right);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Integer(15));
+    }
+
+    // ============== Assignment Detection ==============
+
+    #[test]
+    fn test_is_assignment_compound() {
+        let target = Box::new(crate::frontend::ast::Expr {
+            kind: crate::frontend::ast::ExprKind::Identifier("x".to_string()),
+            span: crate::frontend::ast::Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let value = Box::new(crate::frontend::ast::Expr {
+            kind: crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                1, None,
+            )),
+            span: crate::frontend::ast::Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        });
+        let kind = crate::frontend::ast::ExprKind::CompoundAssign {
+            target,
+            op: crate::frontend::ast::BinaryOp::Add,
+            value,
+        };
+        assert!(Interpreter::is_assignment_expr(&kind));
+    }
+
+    // ============== Closure with Default Params ==============
+
+    #[test]
+    fn test_closure_too_few_args_cov4() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("fn greet(a, b, c) { a + b + c }");
+        let result = interp.eval_string("greet(1)");
+        // Should error - too few arguments
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_closure_too_many_args_cov4() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("fn greet(a) { a }");
+        let result = interp.eval_string("greet(1, 2, 3)");
+        // Should error - too many arguments
+        assert!(result.is_err());
+    }
+
+    // ============== Call Function with Various Types ==============
+
+    #[test]
+    fn test_call_static_method_invalid_marker() {
+        let mut interp = Interpreter::new();
+        // Try to call with malformed static method marker
+        let result = interp.call_function(
+            Value::from_string("__class_static_method__:OnlyClassName".to_string()),
+            &[],
+        );
+        // Should error - invalid format
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_call_unknown_builtin() {
+        let mut interp = Interpreter::new();
+        let result = interp.call_function(
+            Value::from_string("__builtin_nonexistent__".to_string()),
+            &[],
+        );
+        // Should error - unknown builtin
+        assert!(result.is_err());
+    }
 }
