@@ -274,7 +274,7 @@ rayon = "1.11"  # STDLIB-005: Parallel directory walking
 md5 = "0.7"  # STDLIB-005: File hashing for duplicate detection
 anyhow = { workspace = true }
 thiserror = { workspace = true }
-serde = { workspace = true }
+serde.workspace = true
 serde_json.workspace = true
 tracing = { workspace = true }
 logos = { workspace = true }
