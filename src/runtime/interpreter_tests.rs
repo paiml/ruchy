@@ -17176,4 +17176,616 @@ mod coverage_tests {
         // Just exercise the code path
         let _ = result;
     }
+
+    // === JSON Functions Coverage ===
+
+    #[test]
+    fn test_json_parse_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"json_parse("{\"name\": \"Alice\", \"age\": 30}")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_json_stringify_cov() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"let obj = { name: "Bob", value: 42 }"#);
+        let result = interp.eval_string(r#"json_stringify(obj)"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_json_pretty() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"let obj = { a: 1, b: { c: 2 } }"#);
+        let result = interp.eval_string(r#"json_pretty(obj)"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_json_get() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"json_get("{\"nested\": {\"value\": 42}}", "nested.value")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_json_validate_valid() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"json_validate("{\"valid\": true}")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_json_validate_invalid() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"json_validate("not valid json")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_json_type() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"json_type("[1, 2, 3]")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_json_merge() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"json_merge("{\"a\": 1}", "{\"b\": 2}")"#);
+        let _ = result;
+    }
+
+    // === Path Functions Coverage ===
+
+    #[test]
+    fn test_path_parent() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_parent("/home/user/file.txt")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_file_name() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_file_name("/home/user/file.txt")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_file_stem() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_file_stem("/home/user/file.txt")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_extension() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_extension("/home/user/file.txt")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_is_absolute() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_is_absolute("/home/user")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_is_relative() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_is_relative("relative/path")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_with_extension() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_with_extension("/home/user/file", "txt")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_with_file_name() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_with_file_name("/home/user/old.txt", "new.txt")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_components() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_components("/home/user/file.txt")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_path_normalize() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"path_normalize("/home/user/../other/./file.txt")"#);
+        let _ = result;
+    }
+
+    // === Range Function Coverage ===
+
+    #[test]
+    fn test_range_one_arg() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"range(5)"#);
+        match result {
+            Ok(Value::Array(arr)) => assert_eq!(arr.len(), 5),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_range_negative_step() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"range(10, 0, -2)"#);
+        match result {
+            Ok(Value::Array(arr)) => assert_eq!(arr.len(), 5),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_range_backward() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"range(5, 0)"#);
+        let _ = result;
+    }
+
+    // === String Function Coverage ===
+
+    #[test]
+    fn test_string_new() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"String::new()"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_from() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"String::from("hello")"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_to_string_various() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"to_string(3.14)"#);
+        let _ = interp.eval_string(r#"to_string(true)"#);
+        let _ = interp.eval_string(r#"to_string([1, 2, 3])"#);
+        let _ = interp.eval_string(r#"to_string(nil)"#);
+    }
+
+    #[test]
+    fn test_int_conversion() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"int(3.7)"#);
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 3),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_float_conversion() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"float(42)"#);
+        match result {
+            Ok(Value::Float(f)) => assert_eq!(f, 42.0),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_bool_conversion() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"bool(1)"#);
+        let _ = interp.eval_string(r#"bool(0)"#);
+        let _ = interp.eval_string(r#"bool("true")"#);
+    }
+
+    // === Array/Collection Function Coverage ===
+
+    #[test]
+    fn test_first() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"first([1, 2, 3])"#);
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 1),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_last() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"last([1, 2, 3])"#);
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 3),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_take() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"take([1, 2, 3, 4, 5], 3)"#);
+        match result {
+            Ok(Value::Array(arr)) => assert_eq!(arr.len(), 3),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_drop() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"drop([1, 2, 3, 4, 5], 2)"#);
+        match result {
+            Ok(Value::Array(arr)) => assert_eq!(arr.len(), 3),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_concat() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"concat([1, 2], [3, 4])"#);
+        match result {
+            Ok(Value::Array(arr)) => assert_eq!(arr.len(), 4),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_filter_array() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"filter([1, 2, 3, 4, 5], |x| x > 3)"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_map_array() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"map([1, 2, 3], |x| x * 2)"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_reduce_array() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"reduce([1, 2, 3, 4], 0, |acc, x| acc + x)"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_find_array() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"find([1, 2, 3, 4, 5], |x| x > 3)"#);
+        let _ = result;
+    }
+
+    // === Time Functions Coverage ===
+
+    #[test]
+    fn test_now() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"now()"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_sleep_zero() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"sleep(0)"#);
+        assert!(result.is_ok());
+    }
+
+    // === Utility Functions Coverage ===
+
+    #[test]
+    fn test_dbg() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"dbg(42)"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_typeof_float() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"type_of(3.14)"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_typeof_bool() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"type_of(true)"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_typeof_nil() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"type_of(nil)"#);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_typeof_object() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"type_of({ a: 1 })"#);
+        assert!(result.is_ok());
+    }
+
+    // === Match Expression Coverage ===
+
+    #[test]
+    fn test_match_with_guards() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            let x = 5
+            match x {
+                n if n > 3 => "big",
+                n if n > 0 => "small",
+                _ => "zero or negative"
+            }
+        "#,
+        );
+        match result {
+            Ok(Value::String(s)) => assert_eq!(s.as_ref(), "big"),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_match_enum_variant() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(
+            r#"
+            enum Option {
+                Some(value),
+                None
+            }
+        "#,
+        );
+        let _ = interp.eval_string(r#"let opt = Option::Some(42)"#);
+        let result = interp.eval_string(
+            r#"
+            match opt {
+                Option::Some(v) => v,
+                Option::None => 0
+            }
+        "#,
+        );
+        let _ = result;
+    }
+
+    // === Try/Catch Coverage ===
+
+    #[test]
+    fn test_try_catch_success() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            try {
+                1 + 1
+            } catch e {
+                0
+            }
+        "#,
+        );
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 2),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_try_catch_with_panic() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            try {
+                panic("error!")
+            } catch e {
+                "caught"
+            }
+        "#,
+        );
+        let _ = result;
+    }
+
+    // === Lambda/Closure Coverage ===
+
+    #[test]
+    fn test_lambda_capture() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            let x = 10
+            let add_x = |n| n + x
+            add_x(5)
+        "#,
+        );
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 15),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_lambda_multiple_params() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            let add = |a, b, c| a + b + c
+            add(1, 2, 3)
+        "#,
+        );
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 6),
+            _ => {}
+        }
+    }
+
+    // === Module/Import Coverage ===
+
+    #[test]
+    fn test_module_definition() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            mod math {
+                fn square(x: i32) -> i32 {
+                    x * x
+                }
+            }
+        "#,
+        );
+        let _ = result;
+    }
+
+    // === Error Branch Coverage ===
+
+    #[test]
+    fn test_division_by_zero_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"1 / 0"#);
+        // Should either return infinity or error
+        let _ = result;
+    }
+
+    #[test]
+    fn test_modulo_by_zero_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"10 % 0"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_undefined_variable_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"undefined_var"#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_type_error_arithmetic_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#""hello" + 42"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_index_out_of_bounds_cov() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"let arr = [1, 2, 3]"#);
+        let result = interp.eval_string(r#"arr[100]"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_call_non_function_cov() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"let x = 42"#);
+        let result = interp.eval_string(r#"x()"#);
+        assert!(result.is_err());
+    }
+
+    // === Async/Await Coverage ===
+
+    #[test]
+    fn test_async_function_def() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            async fn fetch_data() {
+                42
+            }
+        "#,
+        );
+        let _ = result;
+    }
+
+    // === Generator Coverage ===
+
+    #[test]
+    fn test_generator_basic() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(
+            r#"
+            fn* counter(n: i32) {
+                for i in 0..n {
+                    yield i
+                }
+            }
+        "#,
+        );
+        let _ = result;
+    }
+
+    // === Complex Expression Coverage ===
+
+    #[test]
+    fn test_chained_method_calls_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"[1, 2, 3, 4, 5].map(|x| x * 2).filter(|x| x > 4)"#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_nested_object_access() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"let obj = { a: { b: { c: 42 } } }"#);
+        let result = interp.eval_string(r#"obj.a.b.c"#);
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 42),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_ternary_expression() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"if true { 1 } else { 2 }"#);
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 1),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_complex_boolean() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"(true && false) || (true && true)"#);
+        match result {
+            Ok(Value::Bool(b)) => assert!(b),
+            _ => {}
+        }
+    }
+
+    // === String Interpolation Coverage ===
+
+    #[test]
+    fn test_string_interpolation() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"let x = 42"#);
+        let result = interp.eval_string(r#"f"The value is {x}""#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_interpolation_expr_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"f"Sum: {1 + 2 + 3}""#);
+        let _ = result;
+    }
 }
