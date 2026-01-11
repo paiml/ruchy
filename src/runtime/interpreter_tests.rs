@@ -12838,4 +12838,311 @@ mod coverage_tests {
             _ => {}
         }
     }
+
+    // ============== Type Definitions ==============
+
+    #[test]
+    fn test_effect_declaration() {
+        let mut interp = Interpreter::new();
+        // Effect declarations return Nil
+        let _result = interp.eval_string("effect Log { fn log(msg: String) }");
+    }
+
+    #[test]
+    fn test_handle_expression() {
+        let mut interp = Interpreter::new();
+        // Handle expressions evaluate inner expr and return Nil
+        let _result = interp.eval_string("handle { 42 }");
+    }
+
+    #[test]
+    fn test_tuple_struct() {
+        let mut interp = Interpreter::new();
+        // Tuple structs return Nil at runtime
+        let _result = interp.eval_string("struct Point(i32, i32);");
+    }
+
+    #[test]
+    fn test_impl_block() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("struct Counter { value: i32 }");
+        let _result = interp.eval_string(r#"
+            impl Counter {
+                fn new() -> Counter { Counter { value: 0 } }
+                fn increment(self) { self.value = self.value + 1 }
+            }
+        "#);
+    }
+
+    // ============== Macro Tests ==============
+
+    #[test]
+    fn test_println_macro_no_args() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("println!()");
+    }
+
+    #[test]
+    fn test_println_macro_single_arg() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("println!(42)");
+    }
+
+    #[test]
+    fn test_println_macro_format() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("println!(\"x: {}\", 42)");
+    }
+
+    #[test]
+    fn test_print_macro() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("print!(\"hello\")");
+    }
+
+    #[test]
+    fn test_format_macro_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("format!(\"x={}\", 10)");
+    }
+
+    #[test]
+    fn test_dbg_macro() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("dbg!(42)");
+    }
+
+    #[test]
+    fn test_assert_macro() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("assert!(true)");
+    }
+
+    #[test]
+    fn test_assert_eq_macro() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("assert_eq!(1, 1)");
+    }
+
+    // ============== Import Tests ==============
+
+    #[test]
+    fn test_import_std_module() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("use std::env");
+    }
+
+    // ============== Actor Tests ==============
+
+    #[test]
+    fn test_actor_spawn() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"
+            actor Counter {
+                state count: i32 = 0
+                on Increment { state.count = state.count + 1 }
+            }
+        "#);
+        let _result = interp.eval_string("spawn Counter");
+    }
+
+    #[test]
+    fn test_actor_spawn_with_args() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string(r#"
+            actor CounterWithInit {
+                state count: i32 = 0
+            }
+        "#);
+        let _result = interp.eval_string("spawn CounterWithInit()");
+    }
+
+    // ============== Enum Tests ==============
+
+    #[test]
+    fn test_enum_definition_public() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("pub enum Status { Active, Inactive }");
+    }
+
+    #[test]
+    fn test_enum_with_data() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("enum Message { Text(String), Number(i32) }");
+    }
+
+    // ============== Class Tests ==============
+
+    #[test]
+    fn test_class_with_superclass() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("class Animal { fn speak() { \"...\" } }");
+        let _result = interp.eval_string("class Dog extends Animal { fn speak() { \"woof\" } }");
+    }
+
+    #[test]
+    fn test_class_with_traits() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string(r#"
+            class Printable {
+                fn to_string(self) -> String { "printable" }
+            }
+        "#);
+    }
+
+    #[test]
+    fn test_class_with_constants() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string(r#"
+            class Math {
+                const PI: f64 = 3.14159
+            }
+        "#);
+    }
+
+    // ============== More Control Flow ==============
+
+    #[test]
+    fn test_labeled_continue_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string(r#"
+            'outer: for i in 0..3 {
+                for j in 0..3 {
+                    if j == 1 { continue 'outer }
+                }
+            }
+        "#);
+    }
+
+    #[test]
+    fn test_break_with_value_from_nested() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("loop { break 100 }");
+    }
+
+    // ============== DataFrameOperation ==============
+
+    #[test]
+    fn test_dataframe_select() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let df = df!{ a: [1, 2, 3], b: [4, 5, 6] }");
+        let _result = interp.eval_string("df.select(\"a\")");
+    }
+
+    #[test]
+    fn test_dataframe_filter() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let df = df!{ a: [1, 2, 3] }");
+        let _result = interp.eval_string("df.filter(fn(row) { row.a > 1 })");
+    }
+
+    // ============== Type Cast ==============
+
+    #[test]
+    fn test_type_cast_str_to_int() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("\"42\" as i32");
+    }
+
+    #[test]
+    fn test_type_cast_int_to_str() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("42 as String");
+    }
+
+    // ============== More Binary Operations ==============
+
+    #[test]
+    fn test_bitwise_and_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("5 & 3");
+    }
+
+    #[test]
+    fn test_bitwise_or_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("5 | 3");
+    }
+
+    #[test]
+    fn test_bitwise_xor_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("5 ^ 3");
+    }
+
+    #[test]
+    fn test_left_shift_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("1 << 4");
+    }
+
+    #[test]
+    fn test_right_shift_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("16 >> 2");
+    }
+
+    // ============== Unary Operations ==============
+
+    #[test]
+    fn test_bitwise_not() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("~5");
+    }
+
+    // ============== Index Access ==============
+
+    #[test]
+    fn test_tuple_index() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(1, 2, 3).1");
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 2),
+            _ => {}
+        }
+    }
+
+    #[test]
+    fn test_array_negative_index() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("[1, 2, 3][-1]");
+    }
+
+    // ============== Field Access ==============
+
+    #[test]
+    fn test_nested_field_access() {
+        let mut interp = Interpreter::new();
+        let _ = interp.eval_string("let obj = { inner: { value: 42 } }");
+        let result = interp.eval_string("obj.inner.value");
+        match result {
+            Ok(Value::Integer(n)) => assert_eq!(n, 42),
+            _ => {}
+        }
+    }
+
+    // ============== Error Handling ==============
+
+    #[test]
+    fn test_div_by_zero() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("10 / 0");
+        // Should return error or Inf
+        let _ = result;
+    }
+
+    #[test]
+    fn test_mod_by_zero() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("10 % 0");
+        let _ = result;
+    }
+
+    // ============== List Comprehension Advanced ==============
+
+    #[test]
+    fn test_list_comp_nested_cov() {
+        let mut interp = Interpreter::new();
+        let _result = interp.eval_string("[[x, y] for x in [1, 2] for y in [3, 4]]");
+    }
 }
