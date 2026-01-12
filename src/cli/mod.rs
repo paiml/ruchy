@@ -1569,10 +1569,10 @@ mod tests {
         assert_eq!(result, PathBuf::from(""));
     }
 
-    // COVERAGE: Test execute_report path
+    // COVERAGE: Test execute_report path - use truly nonexistent path
     #[test]
     fn test_execute_report_verbose() {
-        let target = PathBuf::from("/nonexistent");
+        let target = PathBuf::from("/this_path_definitely_does_not_exist_abc123xyz789");
         let result = execute_report(target, "human".to_string(), None, true);
         // Should fail because path doesn't exist
         assert!(result.is_err());
@@ -1581,21 +1581,21 @@ mod tests {
     // COVERAGE: Test different report formats
     #[test]
     fn test_execute_report_json_format() {
-        let target = PathBuf::from("/nonexistent");
+        let target = PathBuf::from("/this_path_definitely_does_not_exist_abc123xyz789");
         let result = execute_report(target, "json".to_string(), None, false);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_execute_report_markdown_format() {
-        let target = PathBuf::from("/nonexistent");
+        let target = PathBuf::from("/this_path_definitely_does_not_exist_abc123xyz789");
         let result = execute_report(target, "markdown".to_string(), None, false);
         assert!(result.is_err());
     }
 
     #[test]
     fn test_execute_report_sarif_format() {
-        let target = PathBuf::from("/nonexistent");
+        let target = PathBuf::from("/this_path_definitely_does_not_exist_abc123xyz789");
         let result = execute_report(target, "sarif".to_string(), None, false);
         assert!(result.is_err());
     }

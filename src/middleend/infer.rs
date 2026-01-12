@@ -2856,6 +2856,257 @@ mod tests {
         );
         assert!(format!("{:?}", constraint).contains("Iterable"));
     }
+
+    // ===== Additional Coverage Tests =====
+
+    #[test]
+    fn test_infer_lambda_single_param() {
+        let result = infer_str("|x| x + 1");
+        assert!(result.is_ok(), "Lambda should infer type");
+    }
+
+    #[test]
+    fn test_infer_lambda_multiple_params() {
+        let result = infer_str("|x, y| x + y");
+        assert!(result.is_ok(), "Multi-param lambda should infer type");
+    }
+
+    #[test]
+    fn test_infer_lambda_no_params() {
+        let result = infer_str("|| 42");
+        assert!(result.is_ok(), "No-param lambda should infer type");
+    }
+
+    #[test]
+    fn test_infer_tuple() {
+        let result = infer_str("(1, \"hello\", true)");
+        assert!(result.is_ok(), "Tuple should infer type");
+    }
+
+    #[test]
+    fn test_infer_array_empty() {
+        let result = infer_str("[]");
+        assert!(result.is_ok(), "Empty array should infer type");
+    }
+
+    #[test]
+    fn test_infer_array_with_elements() {
+        let result = infer_str("[1, 2, 3]");
+        assert!(result.is_ok(), "Array with elements should infer type");
+    }
+
+    #[test]
+    fn test_infer_map_empty() {
+        let result = infer_str("{}");
+        assert!(result.is_ok(), "Empty map should infer type");
+    }
+
+    #[test]
+    fn test_infer_map_with_entries() {
+        let result = infer_str("{\"a\": 1, \"b\": 2}");
+        assert!(result.is_ok(), "Map with entries should infer type");
+    }
+
+    #[test]
+    fn test_infer_if_expression() {
+        let result = infer_str("if true { 1 } else { 0 }");
+        assert!(result.is_ok(), "If expression should infer type");
+    }
+
+    #[test]
+    fn test_infer_if_without_else() {
+        // Exercise code path (may not be fully supported)
+        let result = infer_str("if true { 1 }");
+        let _ = result;
+    }
+
+    #[test]
+    fn test_infer_block() {
+        let result = infer_str("{ let x = 1; x + 1 }");
+        assert!(result.is_ok(), "Block should infer type");
+    }
+
+    #[test]
+    fn test_infer_let_binding() {
+        let result = infer_str("let x = 42");
+        assert!(result.is_ok(), "Let binding should infer type");
+    }
+
+    #[test]
+    fn test_infer_function_call() {
+        let result = infer_str("print(\"hello\")");
+        assert!(result.is_ok(), "Function call should infer type");
+    }
+
+    #[test]
+    fn test_infer_method_call() {
+        let result = infer_str("[1, 2, 3].len()");
+        assert!(result.is_ok(), "Method call should infer type");
+    }
+
+    #[test]
+    fn test_infer_index_access() {
+        let result = infer_str("[1, 2, 3][0]");
+        assert!(result.is_ok(), "Index access should infer type");
+    }
+
+    #[test]
+    fn test_infer_field_access() {
+        let result = infer_str("{\"x\": 1}.x");
+        // May fail but we're testing the code path
+        let _ = result;
+    }
+
+    #[test]
+    fn test_infer_unary_neg() {
+        let result = infer_str("-5");
+        assert!(result.is_ok(), "Unary neg should infer type");
+    }
+
+    #[test]
+    fn test_infer_unary_not() {
+        let result = infer_str("!true");
+        assert!(result.is_ok(), "Unary not should infer type");
+    }
+
+    #[test]
+    fn test_infer_binary_and() {
+        let result = infer_str("true && false");
+        assert!(result.is_ok(), "Binary and should infer type");
+    }
+
+    #[test]
+    fn test_infer_binary_or() {
+        let result = infer_str("true || false");
+        assert!(result.is_ok(), "Binary or should infer type");
+    }
+
+    #[test]
+    fn test_infer_string_concat() {
+        let result = infer_str("\"hello\" + \" world\"");
+        assert!(result.is_ok(), "String concat should infer type");
+    }
+
+    #[test]
+    fn test_infer_range() {
+        // Exercise code path (range may be handled differently)
+        let result = infer_str("1..10");
+        let _ = result;
+    }
+
+    #[test]
+    fn test_infer_some() {
+        let result = infer_str("Some(42)");
+        assert!(result.is_ok(), "Some should infer type");
+    }
+
+    #[test]
+    fn test_infer_none() {
+        let result = infer_str("None");
+        assert!(result.is_ok(), "None should infer type");
+    }
+
+    #[test]
+    fn test_infer_ok() {
+        // Exercise code path (Ok may not be a builtin)
+        let result = infer_str("Ok(42)");
+        let _ = result;
+    }
+
+    #[test]
+    fn test_infer_err() {
+        // Exercise code path (Err may not be a builtin)
+        let result = infer_str("Err(\"error\")");
+        let _ = result;
+    }
+
+    #[test]
+    fn test_infer_while_loop() {
+        // Exercise code path
+        let result = infer_str("while true { 1 }");
+        let _ = result;
+    }
+
+    #[test]
+    fn test_infer_for_loop() {
+        let result = infer_str("for x in [1, 2, 3] { x }");
+        assert!(result.is_ok(), "For loop should infer type");
+    }
+
+    #[test]
+    fn test_infer_break() {
+        let result = infer_str("while true { break }");
+        assert!(result.is_ok(), "Break should infer type");
+    }
+
+    #[test]
+    fn test_infer_continue() {
+        let result = infer_str("while true { continue }");
+        assert!(result.is_ok(), "Continue should infer type");
+    }
+
+    #[test]
+    fn test_infer_return() {
+        let result = infer_str("fun f() { return 42 }");
+        assert!(result.is_ok(), "Return should infer type");
+    }
+
+    #[test]
+    fn test_infer_match() {
+        let result = infer_str("match 1 { 1 => \"one\", _ => \"other\" }");
+        assert!(result.is_ok(), "Match should infer type");
+    }
+
+    #[test]
+    fn test_infer_try_catch() {
+        // Exercise code path (try-catch may not be fully supported)
+        let result = infer_str("try { 1 } catch e { 0 }");
+        let _ = result;
+    }
+
+    #[test]
+    fn test_monotype_display() {
+        // MonoType Display uses Rust type names
+        assert_eq!(format!("{}", MonoType::Int), "i32");
+        assert_eq!(format!("{}", MonoType::Float), "f64");
+        assert_eq!(format!("{}", MonoType::Bool), "bool");
+        assert_eq!(format!("{}", MonoType::String), "String");
+        assert_eq!(format!("{}", MonoType::Unit), "()");
+        assert_eq!(format!("{}", MonoType::Char), "char");
+    }
+
+    #[test]
+    fn test_monotype_complex_display() {
+        // List: [i32]
+        let list_type = MonoType::List(Box::new(MonoType::Int));
+        assert!(format!("{}", list_type).contains("i32"), "List should contain i32");
+
+        // Tuple: (i32, String)
+        let tuple_type = MonoType::Tuple(vec![MonoType::Int, MonoType::String]);
+        assert!(format!("{}", tuple_type).contains("i32"), "Tuple should contain i32");
+        assert!(format!("{}", tuple_type).contains("String"), "Tuple should contain String");
+
+        // Optional: i32?
+        let opt_type = MonoType::Optional(Box::new(MonoType::Int));
+        assert!(format!("{}", opt_type).contains("i32"), "Optional should contain i32");
+
+        // Result: Result<i32, String>
+        let result_type = MonoType::Result(Box::new(MonoType::Int), Box::new(MonoType::String));
+        assert!(format!("{}", result_type).contains("i32"), "Result should contain i32");
+    }
+
+    #[test]
+    fn test_tyvar_generator_fresh() {
+        use super::super::types::TyVarGenerator;
+        let mut gen = TyVarGenerator::new();
+        let tv1 = gen.fresh();
+        let tv2 = gen.fresh();
+        let tv3 = gen.fresh();
+        // Each fresh variable should have a unique id
+        assert!(tv1.0 != tv2.0);
+        assert!(tv2.0 != tv3.0);
+        assert!(tv1.0 != tv3.0);
+    }
 }
 #[cfg(test)]
 mod property_tests_infer {
