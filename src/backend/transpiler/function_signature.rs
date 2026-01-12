@@ -32,6 +32,23 @@ impl Transpiler {
         use super::type_inference::infer_return_type_from_builtin_call;
 
         if let Some(ty) = return_type {
+            // BOOK-COMPAT-017: Handle &str return type without input borrows
+            // When return type is &str and there are no reference params, use 'static
+            use crate::frontend::ast::TypeKind;
+            if let TypeKind::Reference { inner, is_mut, .. } = &ty.kind {
+                if let TypeKind::Named(inner_name) = &inner.kind {
+                    if inner_name == "str" {
+                        // Check if any params are references
+                        let has_ref_params = params
+                            .iter()
+                            .any(|p| matches!(&p.ty.kind, TypeKind::Reference { .. }));
+                        if !has_ref_params && !is_mut {
+                            // No input refs, use 'static for string literals
+                            return Ok(quote! { -> &'static str });
+                        }
+                    }
+                }
+            }
             let ty_tokens = self.transpile_type(ty)?;
             return Ok(quote! { -> #ty_tokens });
         }
@@ -60,7 +77,18 @@ impl Transpiler {
             return Ok(quote! { -> String });
         }
 
+        // BOOK-COMPAT-017: Check call-site types for numeric return type
+        // Check if function has float arguments - if so, infer f64 return type
+        let has_float_args = self.call_site_arg_types.borrow().get(name).is_some_and(|call_types| {
+            !call_types.is_empty() && call_types.iter().all(|t| t == "f64")
+        });
+        if has_float_args && super::function_analysis::has_non_unit_expression(body) {
+            return Ok(quote! { -> f64 });
+        }
         if super::function_analysis::looks_like_numeric_function(name) {
+            if has_float_args {
+                return Ok(quote! { -> f64 });
+            }
             return Ok(quote! { -> i32 });
         }
 
@@ -70,6 +98,12 @@ impl Transpiler {
 
         if returns_object_literal(body) {
             return Ok(quote! { -> std::collections::BTreeMap<String, String> });
+        }
+
+        // BOOK-COMPAT-017: If body returns a parameter and we have call-site types, use those
+        // This MUST come before infer_return_type_from_params_impl because untyped params return `_`
+        if let Some(return_ty) = self.infer_return_from_call_site(name, body, params) {
+            return Ok(return_ty);
         }
 
         if let Some(return_ty) = self.infer_return_type_from_params_impl(body, params)? {
@@ -97,7 +131,57 @@ impl Transpiler {
             }
             "bool" => Ok(quote! { -> bool }),
             "()" => Ok(quote! {}),
+            // BOOK-COMPAT-011: DataFrame returns HashMap<String, Vec<String>>
+            "std::collections::HashMap<String, Vec<String>>" => {
+                Ok(quote! { -> std::collections::HashMap<String, Vec<String>> })
+            }
             _ => Ok(quote! { -> i32 }),
+        }
+    }
+
+    /// BOOK-COMPAT-017: Infer return type from call-site types when body returns a parameter
+    fn infer_return_from_call_site(
+        &self,
+        func_name: &str,
+        body: &Expr,
+        params: &[crate::frontend::ast::Param],
+    ) -> Option<TokenStream> {
+        // Check if body returns a parameter identifier
+        let returned_param = Self::get_returned_param_name(body)?;
+
+        // Find the parameter index
+        let param_index = params.iter().position(|p| p.name() == returned_param)?;
+
+        // Get call-site type for this parameter
+        let call_types = self.call_site_arg_types.borrow();
+        let arg_types = call_types.get(func_name)?;
+        let arg_type = arg_types.get(param_index)?;
+
+        // Generate the return type based on call-site type
+        match arg_type.as_str() {
+            t if t.starts_with("Vec<") => {
+                // Parse Vec<T> and generate proper type
+                let inner = &t[4..t.len() - 1];
+                let inner_ident = format_ident!("{}", inner);
+                Some(quote! { -> Vec<#inner_ident> })
+            }
+            "String" => Some(quote! { -> String }),
+            "f64" => Some(quote! { -> f64 }),
+            "i32" => Some(quote! { -> i32 }),
+            "bool" => Some(quote! { -> bool }),
+            _ => None,
+        }
+    }
+
+    /// Helper to get the name of the parameter being returned from the function body
+    fn get_returned_param_name(body: &Expr) -> Option<String> {
+        match &body.kind {
+            ExprKind::Identifier(name) => Some(name.clone()),
+            ExprKind::Block(exprs) => {
+                // Get the last expression in the block
+                exprs.last().and_then(Self::get_returned_param_name)
+            }
+            _ => None,
         }
     }
 

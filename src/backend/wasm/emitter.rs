@@ -2144,18 +2144,24 @@ mod tests {
             .structs
             .borrow_mut()
             .insert("Point".to_string(), vec!["x".to_string(), "y".to_string()]);
-        emitter
-            .structs
-            .borrow_mut()
-            .insert("Rect".to_string(), vec!["width".to_string(), "height".to_string()]);
+        emitter.structs.borrow_mut().insert(
+            "Rect".to_string(),
+            vec!["width".to_string(), "height".to_string()],
+        );
         assert_eq!(emitter.structs.borrow().len(), 2);
     }
 
     #[test]
     fn test_multiple_functions_registration() {
         let emitter = WasmEmitter::new();
-        emitter.functions.borrow_mut().insert("main".to_string(), (0, false));
-        emitter.functions.borrow_mut().insert("helper".to_string(), (1, true));
+        emitter
+            .functions
+            .borrow_mut()
+            .insert("main".to_string(), (0, false));
+        emitter
+            .functions
+            .borrow_mut()
+            .insert("helper".to_string(), (1, true));
         assert_eq!(emitter.functions.borrow().len(), 2);
         assert_eq!(emitter.functions.borrow()["helper"], (1, true));
     }

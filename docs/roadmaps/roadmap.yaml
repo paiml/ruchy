@@ -1874,3 +1874,35 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: Qualify books + fix broken features
+  github_issue: null
+  item_type: task
+  title: 'New task: Qualify books + fix broken features'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T15:29:49.897813820+00:00
+  updated: 2026-01-12T15:29:49.897813820+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Fix ruchy-book: WASM (60%), fmt (14%), compile (84%)'
+  github_issue: null
+  item_type: task
+  title: 'New task: Fix ruchy-book: WASM (60%), fmt (14%), compile (84%)'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T15:54:52.574489148+00:00
+  updated: 2026-01-12T15:54:52.574489148+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

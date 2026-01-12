@@ -267,6 +267,14 @@ impl Transpiler {
                 }
             }
             TypeKind::Reference { inner, .. } => format!("&{}", Self::type_to_string(inner)),
+            // BOOK-COMPAT-017: Handle array types [T; N] for signature lookup
+            TypeKind::Array { elem_type, size } => {
+                format!("[{}; {}]", Self::type_to_string(elem_type), size)
+            }
+            // Handle list types Vec<T>
+            TypeKind::List(elem_type) => {
+                format!("Vec<{}>", Self::type_to_string(elem_type))
+            }
             _ => "Unknown".to_string(),
         }
     }
@@ -536,6 +544,115 @@ impl Transpiler {
             // Single top-level Function
             ExprKind::Function { .. } => true,
             _ => false,
+        }
+    }
+
+    // ========================================================================
+    // Call-Site Argument Type Collection (BOOK-COMPAT-017)
+    // ========================================================================
+
+    /// BOOK-COMPAT-017: Collect call-site argument types for parameter inference
+    ///
+    /// When functions have untyped parameters, we can infer their types from
+    /// how the function is called. For example, if `divide(a, b)` is called
+    /// with `divide(10.5, 2.5)`, we infer that both parameters are f64.
+    pub fn collect_call_site_types(&self, exprs: &[Expr]) {
+        for expr in exprs {
+            self.collect_call_site_types_from_expr(expr);
+        }
+    }
+
+    /// BOOK-COMPAT-017: Helper to recursively collect call-site types from an expression
+    fn collect_call_site_types_from_expr(&self, expr: &Expr) {
+        match &expr.kind {
+            ExprKind::Call { func, args } => {
+                // Check if this is a direct function call (not a method call)
+                if let ExprKind::Identifier(func_name) = &func.kind {
+                    let arg_types: Vec<String> = args
+                        .iter()
+                        .map(Self::infer_arg_type)
+                        .collect();
+                    // Only store if we inferred at least one concrete type
+                    if arg_types.iter().any(|t| t != "_") {
+                        self.call_site_arg_types
+                            .borrow_mut()
+                            .insert(func_name.clone(), arg_types);
+                    }
+                }
+                // Recurse into arguments
+                for arg in args {
+                    self.collect_call_site_types_from_expr(arg);
+                }
+                self.collect_call_site_types_from_expr(func);
+            }
+            ExprKind::Block(exprs) => {
+                for e in exprs {
+                    self.collect_call_site_types_from_expr(e);
+                }
+            }
+            ExprKind::Function { body, .. } => {
+                self.collect_call_site_types_from_expr(body);
+            }
+            ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
+                self.collect_call_site_types_from_expr(value);
+                self.collect_call_site_types_from_expr(body);
+            }
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
+                self.collect_call_site_types_from_expr(condition);
+                self.collect_call_site_types_from_expr(then_branch);
+                if let Some(eb) = else_branch {
+                    self.collect_call_site_types_from_expr(eb);
+                }
+            }
+            ExprKind::While { condition, body, .. } => {
+                self.collect_call_site_types_from_expr(condition);
+                self.collect_call_site_types_from_expr(body);
+            }
+            ExprKind::For { iter, body, .. } => {
+                self.collect_call_site_types_from_expr(iter);
+                self.collect_call_site_types_from_expr(body);
+            }
+            ExprKind::Binary { left, right, .. } => {
+                self.collect_call_site_types_from_expr(left);
+                self.collect_call_site_types_from_expr(right);
+            }
+            _ => {}
+        }
+    }
+
+    /// BOOK-COMPAT-017: Infer argument type from a literal expression
+    fn infer_arg_type(expr: &Expr) -> String {
+        match &expr.kind {
+            ExprKind::Literal(crate::frontend::ast::Literal::Float(..)) => "f64".to_string(),
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(_, Some(suffix))) => {
+                suffix.clone()
+            }
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(..)) => "i32".to_string(),
+            ExprKind::Literal(crate::frontend::ast::Literal::String(..)) => "String".to_string(),
+            ExprKind::Literal(crate::frontend::ast::Literal::Bool(..)) => "bool".to_string(),
+            ExprKind::List(elements) => {
+                if elements.is_empty() {
+                    "Vec<_>".to_string()
+                } else {
+                    let elem_type = Self::infer_arg_type(&elements[0]);
+                    format!("Vec<{}>", elem_type)
+                }
+            }
+            _ => "_".to_string(),
+        }
+    }
+
+    /// BOOK-COMPAT-017: Get call-site argument type for a function parameter
+    pub fn get_call_site_param_type(&self, func_name: &str, param_index: usize) -> Option<String> {
+        let call_site_types = self.call_site_arg_types.borrow();
+        if let Some(arg_types) = call_site_types.get(func_name) {
+            arg_types.get(param_index).cloned()
+        } else {
+            None
         }
     }
 }

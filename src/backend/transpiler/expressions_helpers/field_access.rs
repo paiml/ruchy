@@ -47,8 +47,9 @@ impl Transpiler {
         if let Some(root) = Self::get_root_identifier(expr) {
             // BOOK-COMPAT-003 FIX: Variables can have underscores
             // Only exclude known modules and types (PascalCase)
-            let is_not_module =
-                !self.module_names.contains(root) && root != "std" && !Self::is_module_like_identifier(root);
+            let is_not_module = !self.module_names.contains(root)
+                && root != "std"
+                && !Self::is_module_like_identifier(root);
             let is_not_type = root.chars().next().is_some_and(char::is_lowercase);
 
             is_not_module && is_not_type
@@ -336,9 +337,11 @@ mod tests {
     // Test 1: is_module_like_identifier - valid module names
     #[test]
     fn test_is_module_like_identifier_valid() {
-        assert!(Transpiler::is_module_like_identifier("http_client"));
-        assert!(Transpiler::is_module_like_identifier("my_module"));
+        // BOOK-COMPAT-003: Only specific prefixes are module-like
         assert!(Transpiler::is_module_like_identifier("std_env"));
+        assert!(Transpiler::is_module_like_identifier("ruchy_core"));
+        assert!(Transpiler::is_module_like_identifier("aws_lambda"));
+        assert!(Transpiler::is_module_like_identifier("tokio_runtime"));
     }
 
     // Test 2: is_module_like_identifier - invalid (no underscore)
@@ -376,8 +379,9 @@ mod tests {
     // Test 6: is_module_path - module-like identifier
     #[test]
     fn test_is_module_path_module_like() {
+        // BOOK-COMPAT-003: Only known module prefixes are module-like
         let transpiler = test_transpiler();
-        let expr = ident_expr("http_client");
+        let expr = ident_expr("std_env");
         assert!(transpiler.is_module_path(&expr));
     }
 
@@ -424,9 +428,11 @@ mod tests {
     // Test 12: is_variable_chain - not a module
     #[test]
     fn test_is_variable_chain_not_module() {
+        // BOOK-COMPAT-003: Variables CAN have underscores now
+        // Only known module prefixes (std_, ruchy_, aws_, tokio_) are excluded
         let transpiler = test_transpiler();
-        let expr = ident_expr("http_client");
-        assert!(!transpiler.is_variable_chain(&expr)); // Has underscore
+        let expr = ident_expr("std_env");
+        assert!(!transpiler.is_variable_chain(&expr)); // Known module prefix
     }
 
     // Test 13: transpile_field_access - tuple field (numeric)
@@ -493,12 +499,13 @@ mod tests {
     // Test 18: transpile_field_access - module-like identifier
     #[test]
     fn test_transpile_field_access_module_like_identifier() {
+        // BOOK-COMPAT-003: Only known module prefixes use :: syntax
         let transpiler = test_transpiler();
-        let http_client = ident_expr("http_client");
+        let std_env = ident_expr("std_env");
         let result = transpiler
-            .transpile_field_access(&http_client, "get")
+            .transpile_field_access(&std_env, "var")
             .expect("operation should succeed in test");
-        assert_eq!(result.to_string(), "http_client :: get");
+        assert_eq!(result.to_string(), "std_env :: var");
     }
 
     // Test 19: transpile_field_access - invalid field (starts with digit)

@@ -94,7 +94,8 @@ impl Transpiler {
                     Ok(Some(quote! { assert_eq!(#left, #right) }))
                 } else {
                     let message = self.transpile_expr(&args[2])?;
-                    Ok(Some(quote! { assert_eq!(#left, #right, "{}", #message) }))
+                    // BOOK-COMPAT-012: Rust assert_eq! takes message as format string directly
+                    Ok(Some(quote! { assert_eq!(#left, #right, #message) }))
                 }
             }
             "assert_ne" => {
@@ -107,7 +108,8 @@ impl Transpiler {
                     Ok(Some(quote! { assert_ne!(#left, #right) }))
                 } else {
                     let message = self.transpile_expr(&args[2])?;
-                    Ok(Some(quote! { assert_ne!(#left, #right, "{}", #message) }))
+                    // BOOK-COMPAT-012: Rust assert_ne! takes message as format string directly
+                    Ok(Some(quote! { assert_ne!(#left, #right, #message) }))
                 }
             }
             _ => Ok(None),

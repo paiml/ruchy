@@ -1401,7 +1401,7 @@ mod tests {
 
         let r0 = allocator.allocate();
         let r1 = allocator.allocate();
-        let r2 = allocator.allocate();
+        let _r2 = allocator.allocate();
 
         allocator.free(r1);
         allocator.free(r0);

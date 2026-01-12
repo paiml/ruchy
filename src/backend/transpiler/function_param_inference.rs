@@ -35,11 +35,45 @@ impl Transpiler {
         body: &Expr,
         func_name: &str,
     ) -> TokenStream {
+        self.infer_param_type_with_index(param, body, func_name, None)
+    }
+
+    /// BOOK-COMPAT-017: Infer parameter type with optional parameter index for call-site lookup
+    pub(crate) fn infer_param_type_with_index(
+        &self,
+        param: &Param,
+        body: &Expr,
+        func_name: &str,
+        param_index: Option<usize>,
+    ) -> TokenStream {
         use super::type_inference::{
             infer_param_type_from_builtin_usage, is_param_used_as_array, is_param_used_as_bool,
             is_param_used_as_function, is_param_used_as_index, is_param_used_in_print_macro,
             is_param_used_in_string_concat, is_param_used_numerically, is_param_used_with_len,
         };
+
+        // BOOK-COMPAT-017: Check call-site types first for more accurate inference
+        if let Some(idx) = param_index {
+            if let Some(call_site_type) = self.get_call_site_param_type(func_name, idx) {
+                if call_site_type != "_" {
+                    match call_site_type.as_str() {
+                        "f64" => return quote! { f64 },
+                        "f32" => return quote! { f32 },
+                        "i64" => return quote! { i64 },
+                        "i32" => return quote! { i32 },
+                        "String" => return quote! { String },
+                        "bool" => return quote! { bool },
+                        t if t.starts_with("Vec<") => {
+                            // Parse Vec<T> and generate proper type
+                            let inner = &t[4..t.len() - 1];
+                            let inner_ident = format_ident!("{}", inner);
+                            return quote! { Vec<#inner_ident> };
+                        }
+                        _ => {} // Fall through to body-based inference
+                    }
+                }
+            }
+        }
 
         // Check for function parameters first (higher-order functions)
         if is_param_used_as_function(&param.name(), body) {
@@ -72,10 +106,11 @@ impl Transpiler {
             return quote! { i32 };
         }
 
-        // Check if used numerically
+        // Check if used numerically - but check call-site first for float inference
         if is_param_used_numerically(&param.name(), body)
             || super::function_analysis::looks_like_numeric_function(func_name)
         {
+            // BOOK-COMPAT-017: If no call-site type, default to i32
             return quote! { i32 };
         }
 
@@ -183,7 +218,8 @@ impl Transpiler {
     ) -> Result<Vec<TokenStream>> {
         params
             .iter()
-            .map(|p| {
+            .enumerate()
+            .map(|(idx, p)| {
                 let param_name = format_ident!("{}", p.name());
 
                 // Handle special Rust receiver syntax (&self, &mut self, self)
@@ -198,15 +234,16 @@ impl Transpiler {
                 }
 
                 // Regular parameter handling
+                // BOOK-COMPAT-017: Pass parameter index for call-site type lookup
                 let type_tokens = if let Ok(tokens) = self.transpile_type(&p.ty) {
                     let token_str = tokens.to_string();
                     if token_str == "_" {
-                        self.infer_param_type_impl(p, body, func_name)
+                        self.infer_param_type_with_index(p, body, func_name, Some(idx))
                     } else {
                         tokens
                     }
                 } else {
-                    self.infer_param_type_impl(p, body, func_name)
+                    self.infer_param_type_with_index(p, body, func_name, Some(idx))
                 };
 
                 // Preserve mut keyword for mutable parameters

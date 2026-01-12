@@ -9,6 +9,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 impl Transpiler {
     /// Transpiles DataFrame literals (df![] syntax)
+    /// BOOK-COMPAT-011: Uses lightweight DataFrame (no Polars dependency)
     /// # Examples
     ///
     /// ```
@@ -22,40 +23,40 @@ impl Transpiler {
         if columns.is_empty() {
             // Empty DataFrame
             return Ok(quote! {
-                polars::prelude::DataFrame::empty()
+                {
+                    let df: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+                    df
+                }
             });
         }
-        let mut series_tokens = Vec::new();
+
+        // BOOK-COMPAT-011: Generate lightweight DataFrame as HashMap<String, Vec<String>>
+        // This allows book examples to compile without Polars dependency
+        let mut col_inserts = Vec::new();
         for column in columns {
             let col_name = &column.name;
-            // Transpile the column values
             let values_tokens = if column.values.is_empty() {
                 quote! { vec![] }
             } else {
-                // Collect all values into a vector
                 let value_tokens: Result<Vec<_>> = column
                     .values
                     .iter()
                     .map(|v| self.transpile_expr(v))
                     .collect();
                 let value_tokens = value_tokens?;
-                quote! { vec![#(#value_tokens),*] }
+                // Convert all values to strings for uniform storage
+                quote! { vec![#(format!("{:?}", #value_tokens)),*] }
             };
-            // Create a Series from the values using NamedFrom trait
-            series_tokens.push(quote! {
-                {
-                    use polars::prelude::NamedFrom;
-                    polars::prelude::Series::new(#col_name, #values_tokens)
-                }
+            col_inserts.push(quote! {
+                df.insert(#col_name.to_string(), #values_tokens);
             });
         }
-        // Create DataFrame from series
+
         Ok(quote! {
             {
-                use polars::prelude::NamedFrom;
-                polars::prelude::DataFrame::new(vec![
-                    #(#series_tokens),*
-                ]).expect("Failed to create DataFrame from columns")
+                let mut df: std::collections::HashMap<String, Vec<String>> = std::collections::HashMap::new();
+                #(#col_inserts)*
+                df
             }
         })
     }
@@ -473,16 +474,17 @@ mod tests {
     }
     #[test]
     fn test_empty_dataframe() {
+        // BOOK-COMPAT-011: DataFrame now generates HashMap for book compatibility
         let transpiler = make_test_transpiler();
         let result = transpiler
             .transpile_dataframe(&[])
             .expect("operation should succeed in test");
         let output = result.to_string();
-        assert!(output.contains("DataFrame"));
-        assert!(output.contains("empty"));
+        assert!(output.contains("HashMap"));
     }
     #[test]
     fn test_dataframe_with_columns() {
+        // BOOK-COMPAT-011: DataFrame now generates HashMap for book compatibility
         let transpiler = make_test_transpiler();
         let columns = vec![
             DataFrameColumn {
@@ -498,8 +500,8 @@ mod tests {
             .transpile_dataframe(&columns)
             .expect("operation should succeed in test");
         let output = result.to_string();
-        assert!(output.contains("DataFrame"));
-        assert!(output.contains("Series"));
+        assert!(output.contains("HashMap"));
+        assert!(output.contains("insert"));
         assert!(output.contains("col1"));
         assert!(output.contains("col2"));
     }
@@ -624,6 +626,7 @@ mod tests {
     }
     #[test]
     fn test_dataframe_with_empty_column_values() {
+        // BOOK-COMPAT-011: DataFrame now generates HashMap for book compatibility
         let transpiler = make_test_transpiler();
         let columns = vec![DataFrameColumn {
             name: "empty_col".to_string(),
@@ -633,7 +636,7 @@ mod tests {
             .transpile_dataframe(&columns)
             .expect("operation should succeed in test");
         let output = result.to_string();
-        assert!(output.contains("Series"));
+        assert!(output.contains("HashMap"));
         assert!(output.contains("empty_col"));
         assert!(output.contains("vec"));
     }

@@ -21,18 +21,22 @@ impl Transpiler {
         body: &Expr,
         func_name: &str,
     ) -> Result<Vec<TokenStream>> {
+        // BOOK-COMPAT-017: Use enumerate to pass parameter index for call-site type lookup
         params
             .iter()
-            .map(|p| self.generate_single_param_with_lifetime(p, body, func_name))
+            .enumerate()
+            .map(|(idx, p)| self.generate_single_param_with_lifetime(p, body, func_name, idx))
             .collect()
     }
 
     /// Generate a single parameter with lifetime annotation
+    /// BOOK-COMPAT-017: Added param_index for call-site type lookup
     fn generate_single_param_with_lifetime(
         &self,
         param: &Param,
         body: &Expr,
         func_name: &str,
+        param_index: usize,
     ) -> Result<TokenStream> {
         let param_name = format_ident!("{}", param.name());
 
@@ -42,7 +46,7 @@ impl Transpiler {
         }
 
         // Regular parameter handling
-        let type_tokens = self.get_param_type_with_lifetime(param, body, func_name)?;
+        let type_tokens = self.get_param_type_with_lifetime(param, body, func_name, param_index)?;
 
         if param.is_mutable {
             Ok(quote! { mut #param_name: #type_tokens })
@@ -65,21 +69,23 @@ impl Transpiler {
     }
 
     /// Get parameter type with lifetime, falling back to inference
+    /// BOOK-COMPAT-017: Added param_index for call-site type lookup
     fn get_param_type_with_lifetime(
         &self,
         param: &Param,
         body: &Expr,
         func_name: &str,
+        param_index: usize,
     ) -> Result<TokenStream> {
         if let Ok(tokens) = self.transpile_type_with_lifetime_impl(&param.ty) {
             let token_str = tokens.to_string();
             if token_str == "_" {
-                Ok(self.infer_param_type(param, body, func_name))
+                Ok(self.infer_param_type_with_index(param, body, func_name, Some(param_index)))
             } else {
                 Ok(tokens)
             }
         } else {
-            Ok(self.infer_param_type(param, body, func_name))
+            Ok(self.infer_param_type_with_index(param, body, func_name, Some(param_index)))
         }
     }
 

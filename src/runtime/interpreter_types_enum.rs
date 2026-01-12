@@ -565,7 +565,9 @@ mod tests {
         assert_eq!(result, Value::Nil);
 
         // Verify method was registered with params
-        let method_val = interp.lookup_variable("DefaultParam::with_default").unwrap();
+        let method_val = interp
+            .lookup_variable("DefaultParam::with_default")
+            .unwrap();
         if let Value::Closure { params, .. } = method_val {
             assert_eq!(params.len(), 2);
             // Second param should have a default

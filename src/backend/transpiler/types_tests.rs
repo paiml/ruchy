@@ -5,10 +5,8 @@
 
 use crate::backend::transpiler::Transpiler;
 use crate::frontend::ast::{
-    ClassMethod, Constructor, Expr, ExprKind, Literal, Param, Span, StructField, Type, TypeKind,
+    ClassMethod, Constructor, Param, Span, StructField, Type, TypeKind,
 };
-use crate::frontend::parser::Parser;
-use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 fn create_transpiler() -> Transpiler {

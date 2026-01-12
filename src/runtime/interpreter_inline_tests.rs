@@ -8,7 +8,6 @@
 mod tests {
     use crate::runtime::interpreter::Interpreter;
     use crate::runtime::interpreter::*;
-    use crate::runtime::InterpreterError;
     use crate::runtime::Value;
 
     #[test]

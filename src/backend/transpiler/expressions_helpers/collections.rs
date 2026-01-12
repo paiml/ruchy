@@ -33,9 +33,9 @@ impl Transpiler {
             // TRANSPILER-007: Use turbofish syntax to enable Rust type inference from context
             Ok(quote! { vec![] })
         } else {
-            // No spread expressions, use fixed-size array syntax [elem1, elem2, ...]
-            // This preserves array type and matches Rust's array literal syntax
-            // Rust will infer the type as [T; N] automatically
+            // Default: Use array literal syntax [elem1, elem2, ...]
+            // This works with explicitly typed [T; N] parameters
+            // For Vec<T> params with inferred types, call_helpers adds .to_vec() conversion
             let element_tokens: Result<Vec<_>> =
                 elements.iter().map(|e| self.transpile_expr(e)).collect();
             let element_tokens = element_tokens?;
@@ -209,6 +209,8 @@ impl Transpiler {
         } else {
             name
         };
+        // BOOK-COMPAT-007B: Check for auto-boxed recursive types
+        let auto_boxed = self.auto_boxed_fields.borrow();
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
             // BOOK-COMPAT-002 FIX: Add .to_string() for String fields with string literals
@@ -218,14 +220,33 @@ impl Transpiler {
             let needs_to_string = matches!(field_type, Some(t) if t == "String")
                 && matches!(&value.kind, ExprKind::Literal(Literal::String(_)));
 
-            let value_tokens = self.transpile_expr(value)?;
-            if needs_to_string {
-                field_tokens.push(quote! { #field_ident: #value_tokens.to_string() });
+            // BOOK-COMPAT-007B: Check if this field needs Box wrapping for recursive types
+            // When the value is Some(x) and the field is an auto-boxed Option<Box<T>>,
+            // we need to transform Some(x) to Some(Box::new(x))
+            let needs_box_wrap = if let ExprKind::Some { value: inner_value } = &value.kind {
+                // Check if this struct has an auto-boxed field for any recursive type
+                auto_boxed.keys().any(|(s, _)| s == base_struct_name)
+                    && matches!(&inner_value.kind, ExprKind::Identifier(_))
             } else {
-                field_tokens.push(quote! { #field_ident: #value_tokens });
+                false
+            };
+
+            if needs_box_wrap {
+                if let ExprKind::Some { value: inner_value } = &value.kind {
+                    let inner_tokens = self.transpile_expr(inner_value)?;
+                    field_tokens.push(quote! { #field_ident: Some(Box::new(#inner_tokens)) });
+                }
+            } else {
+                let value_tokens = self.transpile_expr(value)?;
+                if needs_to_string {
+                    field_tokens.push(quote! { #field_ident: #value_tokens.to_string() });
+                } else {
+                    field_tokens.push(quote! { #field_ident: #value_tokens });
+                }
             }
         }
         drop(field_types); // Release borrow before potential recursive calls
+        drop(auto_boxed);
 
         // Handle struct update syntax
         if let Some(base_expr) = base {
@@ -538,16 +559,13 @@ mod tests {
     // Test 17: transpile_struct_literal - empty struct
     #[test]
     fn test_transpile_struct_literal_empty() {
+        // BOOK-COMPAT-005: Empty struct literals use ::default()
         let transpiler = test_transpiler();
         let result = transpiler
             .transpile_struct_literal("EmptyStruct", &[], None)
             .expect("operation should succeed in test");
         let result_str = result.to_string();
-        assert!(
-            result_str.contains("EmptyStruct")
-                && result_str.contains('{')
-                && result_str.contains('}')
-        );
+        assert!(result_str.contains("EmptyStruct") && result_str.contains("default"));
     }
 
     // Test 18: collect_hashmap_field_tokens - key-value field

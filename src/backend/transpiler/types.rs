@@ -109,20 +109,67 @@ impl Transpiler {
         Ok(rust_type)
     }
     /// Transpile generic types with type parameters
+    /// BOOK-COMPAT-007: Auto-box recursive types in Option (e.g., Option<Node> -> Option<Box<Node>>)
     pub(crate) fn transpile_generic_type(
         &self,
         base: &str,
         params: &[Type],
     ) -> Result<TokenStream> {
+        use crate::frontend::ast::TypeKind;
+
+        // BOOK-COMPAT-007: Special handling for Option<RecursiveType> pattern
+        if base == "Option" && params.len() == 1 {
+            if let TypeKind::Named(inner_name) = &params[0].kind {
+                let current_struct = self.current_struct_name.borrow();
+                let is_recursive = current_struct.as_ref().is_some_and(|c| c == inner_name);
+
+                if is_recursive {
+                    // BOOK-COMPAT-007B: Record this field as auto-boxed for struct literal handling
+                    // Note: We need access to the field name, which comes from the caller context
+                    // For now, we'll record by struct name and inner type
+                    if let Some(struct_name) = current_struct.as_ref() {
+                        // Store in auto_boxed_fields - key is (struct_name, inner_type)
+                        // This will be used during struct literal transpilation
+                        self.auto_boxed_fields.borrow_mut().insert(
+                            (struct_name.clone(), inner_name.clone()),
+                            inner_name.clone(),
+                        );
+                    }
+                    drop(current_struct); // Release borrow before returning
+                    let inner_ident = format_ident!("{}", inner_name);
+                    return Ok(quote! { Option<Box<#inner_ident>> });
+                }
+            }
+        }
+
         let base_ident = format_ident!("{}", base);
         let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
         let param_tokens = param_tokens?;
         Ok(quote! { #base_ident<#(#param_tokens),*> })
     }
     /// Transpile optional types to Option<T>
+    /// BOOK-COMPAT-007: Auto-box recursive types (e.g., Option<Node> -> Option<Box<Node>>)
     pub(crate) fn transpile_optional_type(&self, inner: &Type) -> Result<TokenStream> {
+        use crate::frontend::ast::TypeKind;
+
+        // Check if this is a recursive type reference
+        let is_recursive = if let TypeKind::Named(name) = &inner.kind {
+            self.current_struct_name
+                .borrow()
+                .as_ref()
+                .is_some_and(|current| current == name)
+        } else {
+            false
+        };
+
         let inner_tokens = self.transpile_type(inner)?;
-        Ok(quote! { Option<#inner_tokens> })
+
+        if is_recursive {
+            // BOOK-COMPAT-007: Wrap recursive type in Box to break infinite size
+            Ok(quote! { Option<Box<#inner_tokens>> })
+        } else {
+            Ok(quote! { Option<#inner_tokens> })
+        }
     }
     /// Transpile list types to Vec<T>
     pub(crate) fn transpile_list_type(&self, elem_type: &Type) -> Result<TokenStream> {
@@ -323,6 +370,9 @@ impl Transpiler {
         derives: &[String],
         is_pub: bool,
     ) -> Result<TokenStream> {
+        // BOOK-COMPAT-007: Track current struct name for recursive type detection
+        *self.current_struct_name.borrow_mut() = Some(name.to_string());
+
         let struct_name = format_ident!("{}", name);
 
         // BOOK-COMPAT-001: Auto-add lifetime parameter if struct has reference fields
@@ -426,7 +476,8 @@ impl Transpiler {
                     if let Some(ref default_expr) = field.default_value {
                         let default_value = self.transpile_expr(default_expr)?;
                         // BOOK-COMPAT-004: Add .to_string() for String fields with string literal defaults
-                        let is_string_field = matches!(&field.ty.kind, TypeKind::Named(n) if n == "String");
+                        let is_string_field =
+                            matches!(&field.ty.kind, TypeKind::Named(n) if n == "String");
                         let is_string_literal =
                             matches!(&default_expr.kind, ExprKind::Literal(Literal::String(_)));
                         if is_string_field && is_string_literal {
@@ -604,6 +655,62 @@ impl Transpiler {
             .collect()
     }
 
+    /// BOOK-COMPAT-010: Transform constructor body with self.field = value patterns
+    /// into proper struct initialization: Self { field: value, ... }
+    fn transpile_constructor_body(&self, body: &Expr) -> Result<TokenStream> {
+        use crate::frontend::ast::ExprKind;
+
+        // Extract self-assignments from block body
+        if let ExprKind::Block(exprs) = &body.kind {
+            let mut field_inits: Vec<(String, TokenStream)> = Vec::new();
+
+            for expr in exprs {
+                if let ExprKind::Assign { target, value } = &expr.kind {
+                    // Check if target is self.field
+                    if let ExprKind::FieldAccess { object, field } = &target.kind {
+                        if let ExprKind::Identifier(name) = &object.kind {
+                            if name == "self" {
+                                let value_tokens = self.transpile_expr(value)?;
+                                field_inits.push((field.clone(), value_tokens));
+                                continue;
+                            }
+                        }
+                    }
+                }
+                // Non-self-assignment in constructor - fall back to regular transpilation
+                return self.transpile_expr(body);
+            }
+
+            // Generate Self { field1: value1, field2: value2, ... }
+            if !field_inits.is_empty() {
+                let fields: Vec<TokenStream> = field_inits
+                    .into_iter()
+                    .map(|(name, value)| {
+                        let field_ident = format_ident!("{}", name);
+                        quote! { #field_ident: #value }
+                    })
+                    .collect();
+                return Ok(quote! { Self { #(#fields),* } });
+            }
+        }
+
+        // Single self-assignment expression
+        if let ExprKind::Assign { target, value } = &body.kind {
+            if let ExprKind::FieldAccess { object, field } = &target.kind {
+                if let ExprKind::Identifier(name) = &object.kind {
+                    if name == "self" {
+                        let field_ident = format_ident!("{}", field);
+                        let value_tokens = self.transpile_expr(value)?;
+                        return Ok(quote! { Self { #field_ident: #value_tokens } });
+                    }
+                }
+            }
+        }
+
+        // Default: transpile as regular expression
+        self.transpile_expr(body)
+    }
+
     /// Transpile constructors to methods
     /// Complexity: 6 (within Toyota Way limits)
     pub(crate) fn transpile_constructors(
@@ -614,7 +721,8 @@ impl Transpiler {
             .iter()
             .map(|ctor| {
                 let params = self.transpile_params(&ctor.params)?;
-                let body = self.transpile_expr(&ctor.body)?;
+                // BOOK-COMPAT-010: Use special constructor body transpilation
+                let body = self.transpile_constructor_body(&ctor.body)?;
                 let visibility = if ctor.is_pub {
                     quote! { pub }
                 } else {
@@ -1090,8 +1198,19 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
+                // BOOK-COMPAT-016: Check if we need auto-clone for &self method returning owned type
+                let needs_auto_clone = !self_is_mutated
+                    && method
+                        .return_type
+                        .as_ref()
+                        .is_some_and(Self::is_owned_type)
+                    && Self::body_returns_self_field(&method.body);
                 // Process method body (always present in ImplMethod)
-                let body_tokens = self.transpile_expr(&method.body)?;
+                let body_tokens = if needs_auto_clone {
+                    self.transpile_body_with_auto_clone(&method.body)?
+                } else {
+                    self.transpile_expr(&method.body)?
+                };
                 // Process method visibility
                 let visibility = if method.is_pub {
                     quote! { pub }
@@ -1293,6 +1412,54 @@ impl Transpiler {
                 #(#impl_method_tokens)*
             }
         })
+    }
+
+    /// BOOK-COMPAT-016: Check if a type is an owned type that would need cloning
+    fn is_owned_type(ty: &Type) -> bool {
+        matches!(&ty.kind, TypeKind::Named(name) if name == "String" || name == "Vec" || name == "HashMap")
+    }
+
+    /// BOOK-COMPAT-016: Check if body returns a self.field expression
+    fn body_returns_self_field(body: &Expr) -> bool {
+        match &body.kind {
+            ExprKind::FieldAccess { object, .. } => {
+                matches!(&object.kind, ExprKind::Identifier(name) if name == "self")
+            }
+            ExprKind::Block(exprs) => {
+                if let Some(last) = exprs.last() {
+                    Self::body_returns_self_field(last)
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        }
+    }
+
+    /// BOOK-COMPAT-016: Transpile body with auto-clone for self.field
+    fn transpile_body_with_auto_clone(&self, body: &Expr) -> Result<TokenStream> {
+        match &body.kind {
+            ExprKind::FieldAccess { object, field } => {
+                if matches!(&object.kind, ExprKind::Identifier(name) if name == "self") {
+                    let field_ident = format_ident!("{}", field);
+                    Ok(quote! { self.#field_ident.clone() })
+                } else {
+                    self.transpile_expr(body)
+                }
+            }
+            ExprKind::Block(exprs) if !exprs.is_empty() => {
+                let mut tokens = Vec::new();
+                for expr in exprs.iter().take(exprs.len() - 1) {
+                    tokens.push(self.transpile_expr(expr)?);
+                }
+                if let Some(last) = exprs.last() {
+                    let last_tokens = self.transpile_body_with_auto_clone(last)?;
+                    tokens.push(last_tokens);
+                }
+                Ok(quote! { { #(#tokens)* } })
+            }
+            _ => self.transpile_expr(body),
+        }
     }
 }
 

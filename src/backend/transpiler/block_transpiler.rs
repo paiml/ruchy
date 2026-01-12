@@ -133,7 +133,7 @@ impl Transpiler {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{Literal, Pattern, Span, Type, TypeKind};
+    use crate::frontend::ast::{Literal, Pattern, Span};
 
     fn make_transpiler() -> Transpiler {
         Transpiler::new()

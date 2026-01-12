@@ -924,7 +924,7 @@ mod tests {
 #[cfg(test)]
 mod round_134_tests {
     use super::*;
-    use crate::frontend::ast::{Literal, Pattern, StructPatternField};
+    use crate::frontend::ast::{Literal, Pattern};
     use std::sync::Arc;
 
     // --- values_equal edge cases ---

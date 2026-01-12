@@ -5,9 +5,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::frontend::ast::{
-        BinaryOp, Expr, ExprKind, Literal, MatchArm, Param, Pattern, Type, TypeKind, UnaryOp,
-    };
+    use crate::frontend::ast::Expr;
     use crate::frontend::parser::Parser;
     use crate::middleend::environment::TypeEnv;
     use crate::middleend::infer::{InferenceContext, TypeConstraint};

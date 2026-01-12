@@ -339,7 +339,9 @@ mod tests {
         let response = server.handle_request(request).unwrap();
         assert_eq!(response["id"], 1);
         assert!(response["result"]["capabilities"].is_object());
-        assert!(response["result"]["capabilities"]["hoverProvider"].as_bool().unwrap());
+        assert!(response["result"]["capabilities"]["hoverProvider"]
+            .as_bool()
+            .unwrap());
     }
 
     #[test]
@@ -812,7 +814,9 @@ mod tests {
 
         assert_eq!(result["capabilities"]["textDocumentSync"], 1);
         assert!(result["capabilities"]["hoverProvider"].as_bool().unwrap());
-        assert!(result["capabilities"]["definitionProvider"].as_bool().unwrap());
+        assert!(result["capabilities"]["definitionProvider"]
+            .as_bool()
+            .unwrap());
         assert!(result["capabilities"]["completionProvider"].is_object());
     }
 }

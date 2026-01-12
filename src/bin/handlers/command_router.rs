@@ -18,7 +18,11 @@ use super::{
 /// Derive quality gate flags from CLI arguments
 ///
 /// Returns (strict, quiet, json)
-pub fn derive_quality_gate_flags(fail_fast: bool, verbose: bool, format: &str) -> (bool, bool, bool) {
+pub fn derive_quality_gate_flags(
+    fail_fast: bool,
+    verbose: bool,
+    format: &str,
+) -> (bool, bool, bool) {
     (fail_fast, !verbose, format == "json")
 }
 
@@ -40,10 +44,8 @@ pub fn derive_color_flag(no_color: bool) -> bool {
 }
 
 /// Validate lint command has required file argument
-pub fn validate_lint_args(file: &Option<String>, init_config: bool) -> Result<(), &'static str> {
-    if init_config {
-        Ok(())
-    } else if file.is_some() {
+pub fn validate_lint_args(file: Option<&String>, init_config: bool) -> Result<(), &'static str> {
+    if init_config || file.is_some() {
         Ok(())
     } else {
         Err("Error: Either provide a file or use --all flag")
@@ -252,7 +254,12 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             threshold,
             format,
             verbose,
-        } => handle_coverage_command(&path, derive_coverage_threshold(threshold), &format, verbose),
+        } => handle_coverage_command(
+            &path,
+            derive_coverage_threshold(threshold),
+            &format,
+            verbose,
+        ),
         crate::Commands::Notebook {
             file,
             port,
@@ -592,28 +599,30 @@ mod tests {
 
     #[test]
     fn test_lint_args_init_config() {
-        assert!(validate_lint_args(&None, true).is_ok());
+        assert!(validate_lint_args(None, true).is_ok());
     }
 
     #[test]
     fn test_lint_args_with_file() {
-        assert!(validate_lint_args(&Some("test.ruchy".to_string()), false).is_ok());
+        let file = "test.ruchy".to_string();
+        assert!(validate_lint_args(Some(&file), false).is_ok());
     }
 
     #[test]
     fn test_lint_args_no_file_no_init() {
-        assert!(validate_lint_args(&None, false).is_err());
+        assert!(validate_lint_args(None, false).is_err());
     }
 
     #[test]
     fn test_lint_args_file_and_init() {
         // init_config takes precedence
-        assert!(validate_lint_args(&Some("test.ruchy".to_string()), true).is_ok());
+        let file = "test.ruchy".to_string();
+        assert!(validate_lint_args(Some(&file), true).is_ok());
     }
 
     #[test]
     fn test_lint_args_error_message() {
-        let err = validate_lint_args(&None, false).unwrap_err();
+        let err = validate_lint_args(None, false).unwrap_err();
         assert!(err.contains("file") || err.contains("--all"));
     }
 }

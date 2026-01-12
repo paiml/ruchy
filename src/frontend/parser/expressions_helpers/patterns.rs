@@ -1577,7 +1577,7 @@ mod tests {
     // Additional comprehensive tests for EXTREME TDD coverage
     // ============================================================
 
-    use crate::frontend::ast::{Expr, ExprKind, Pattern};
+    use crate::frontend::ast::{Expr, ExprKind};
     use crate::frontend::parser::Result;
 
     fn parse(code: &str) -> Result<Expr> {

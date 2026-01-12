@@ -2,6 +2,29 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [4.0.1] - 2026-01-12
+
+### Quality & Maintenance Release
+
+#### Fixed
+- **[CLIPPY] Lint Compliance** - Fixed all clippy warnings:
+  - `redundant_closure` - Replaced closures with direct function references
+  - `cloned_ref_to_slice_refs` - Use `std::slice::from_ref` instead of cloning
+  - `ref_option` - Changed `&Option<T>` to `Option<&T>` for idiomatic API
+  - `if_same_then_else` - Combined identical conditional branches
+- **[IMPORTS] Unused Import Cleanup** - Removed unused imports across 15+ files
+- **[VARS] Unused Variable Fixes** - Prefixed intentionally unused variables with underscore
+- **[TEST] Walk Function Timeout** - Fixed `test_walk_function_cov` timeout by using smaller test path
+
+#### Quality Metrics
+| Metric | Value |
+|--------|-------|
+| Tests | 18,156 passed |
+| Clippy | 0 warnings |
+| Build | All features |
+
+---
+
 ## [4.0.0] - 2026-01-10
 
 ### Ruchy 4.0 - Book 2.0 Quality Release

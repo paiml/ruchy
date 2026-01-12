@@ -1124,7 +1124,7 @@ mod additional_tests {
     fn test_actor_ref_send_channel_closed() {
         // Create a channel and immediately drop the receiver
         let (sender, _) = mpsc::channel();
-        let actor_ref = ActorRef {
+        let _actor_ref = ActorRef {
             id: ActorId(1),
             name: "closed_actor".to_string(),
             sender,

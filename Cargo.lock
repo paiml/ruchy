@@ -6543,6 +6543,63 @@ dependencies = [
 [[package]]
 name = "ruchy"
 version = "4.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a115a9912d31bcf1b921394911043d8c21987ee1751e8c66bd987e193d7d1eab"
+dependencies = [
+ "alimentar",
+ "anyhow",
+ "aprender 0.16.0",
+ "chrono",
+ "clap",
+ "colored",
+ "console_error_panic_hook",
+ "entrenar",
+ "env_logger 0.11.8",
+ "getrandom 0.2.16",
+ "glob",
+ "html5ever",
+ "js-sys",
+ "lazy_static",
+ "local-ip-address",
+ "log",
+ "logos",
+ "markup5ever_rcdom",
+ "md5",
+ "nix 0.29.0",
+ "num_cpus",
+ "presentar",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "rand 0.8.5",
+ "rayon",
+ "regex",
+ "ruchyruchy",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "signal-hook",
+ "smallvec",
+ "syn",
+ "tempfile",
+ "thiserror 2.0.17",
+ "toml 0.9.8",
+ "tracing",
+ "trueno 0.8.1",
+ "trueno-viz",
+ "uuid",
+ "walkdir",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-encoder 0.207.0",
+ "web-sys",
+]
+
+[[package]]
+name = "ruchy"
+version = "4.0.1"
 dependencies = [
  "alimentar",
  "anyhow",
@@ -6635,70 +6692,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ruchy"
-version = "4.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a115a9912d31bcf1b921394911043d8c21987ee1751e8c66bd987e193d7d1eab"
-dependencies = [
- "alimentar",
- "anyhow",
- "aprender 0.16.0",
- "chrono",
- "clap",
- "colored",
- "console_error_panic_hook",
- "entrenar",
- "env_logger 0.11.8",
- "getrandom 0.2.16",
- "glob",
- "html5ever",
- "js-sys",
- "lazy_static",
- "local-ip-address",
- "log",
- "logos",
- "markup5ever_rcdom",
- "md5",
- "nix 0.29.0",
- "num_cpus",
- "presentar",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rand 0.8.5",
- "rayon",
- "regex",
- "ruchyruchy",
- "semver",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "signal-hook",
- "smallvec",
- "syn",
- "tempfile",
- "thiserror 2.0.17",
- "toml 0.9.8",
- "tracing",
- "trueno 0.8.1",
- "trueno-viz",
- "uuid",
- "walkdir",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-encoder 0.207.0",
- "web-sys",
-]
-
-[[package]]
 name = "ruchy-wasm"
 version = "4.0.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "jugar-probar 0.2.0",
- "ruchy 4.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruchy 4.0.0",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

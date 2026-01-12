@@ -228,11 +228,7 @@ mod tests {
     // WA04: WASM graph widget with color
     #[test]
     fn test_wasm_graph_with_color_wa04() {
-        let widget = WasmWidget::new_graph(
-            vec![10.0, 20.0, 30.0],
-            None,
-            Some("blue".to_string()),
-        );
+        let widget = WasmWidget::new_graph(vec![10.0, 20.0, 30.0], None, Some("blue".to_string()));
         assert_eq!(widget.buffer.width(), 80);
     }
 

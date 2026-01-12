@@ -72,9 +72,9 @@ pub use run_handler::{
     compile_rust_code, handle_run_command, prepare_compilation, transpile_for_execution, VmMode,
 };
 pub use transpile_handler::handle_transpile_command;
-pub use wasm_handler::handle_wasm_command;
 #[cfg(feature = "notebook")]
 pub use wasm_handler::compile_ruchy_to_wasm;
+pub use wasm_handler::handle_wasm_command;
 
 // Testing command handlers
 pub use fuzz_handler::handle_fuzz_command;

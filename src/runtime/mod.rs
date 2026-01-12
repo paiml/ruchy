@@ -127,7 +127,7 @@ pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
 pub mod type_feedback; // EXTREME TDD: JIT type feedback system (extracted from interpreter.rs)
 pub mod validation;
 pub mod value_format; // EXTREME TDD: Value formatting utilities (extracted from interpreter.rs)
-// pub mod interpreter_modules;  // Temporarily disabled - compilation errors
+                      // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
 pub mod pattern_matching;
 #[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]
