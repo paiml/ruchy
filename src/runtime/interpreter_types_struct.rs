@@ -496,4 +496,507 @@ mod tests {
             panic!("Expected Object");
         }
     }
+
+    // =========================================================================
+    // Coverage improvement: TypeKind branches in eval_struct_definition
+    // =========================================================================
+
+    fn make_array_type() -> Type {
+        Type {
+            kind: TypeKind::Array {
+                elem_type: Box::new(Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                }),
+                size: 0,
+            },
+            span: Span::default(),
+        }
+    }
+
+    fn make_optional_type() -> Type {
+        Type {
+            kind: TypeKind::Optional(Box::new(Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            })),
+            span: Span::default(),
+        }
+    }
+
+    fn make_list_type() -> Type {
+        Type {
+            kind: TypeKind::List(Box::new(Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            })),
+            span: Span::default(),
+        }
+    }
+
+    fn make_tuple_type() -> Type {
+        Type {
+            kind: TypeKind::Tuple(vec![
+                Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                },
+            ]),
+            span: Span::default(),
+        }
+    }
+
+    fn make_function_type() -> Type {
+        // Function types map to "Any" in the default branch
+        Type {
+            kind: TypeKind::Function {
+                params: vec![],
+                ret: Box::new(Type {
+                    kind: TypeKind::Named("void".to_string()),
+                    span: Span::default(),
+                }),
+            },
+            span: Span::default(),
+        }
+    }
+
+    #[test]
+    fn test_struct_field_array_type() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "items".to_string(),
+            ty: make_array_type(),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Public,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("Container", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("items") {
+                    assert_eq!(
+                        field_info.get("type"),
+                        Some(&Value::from_string("Array".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_struct_field_optional_type() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "maybe".to_string(),
+            ty: make_optional_type(),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Public,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("Maybe", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("maybe") {
+                    assert_eq!(
+                        field_info.get("type"),
+                        Some(&Value::from_string("Option".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_struct_field_list_type() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "items".to_string(),
+            ty: make_list_type(),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Public,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("ListContainer", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("items") {
+                    assert_eq!(
+                        field_info.get("type"),
+                        Some(&Value::from_string("List".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_struct_field_tuple_type() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "pair".to_string(),
+            ty: make_tuple_type(),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Public,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("TupleContainer", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("pair") {
+                    assert_eq!(
+                        field_info.get("type"),
+                        Some(&Value::from_string("Tuple".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_struct_field_function_type_as_any() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "callback".to_string(),
+            ty: make_function_type(),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Public,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("CallbackContainer", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("callback") {
+                    // Function type should map to "Any" (default branch)
+                    assert_eq!(
+                        field_info.get("type"),
+                        Some(&Value::from_string("Any".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // Coverage improvement: Visibility branches
+    // =========================================================================
+
+    #[test]
+    fn test_struct_field_visibility_pub_crate() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "internal".to_string(),
+            ty: make_type("i32"),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::PubCrate,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("Internal", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("internal") {
+                    assert_eq!(
+                        field_info.get("visibility"),
+                        Some(&Value::from_string("pub(crate)".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_struct_field_visibility_pub_super() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "parent".to_string(),
+            ty: make_type("i32"),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::PubSuper,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("ParentAccess", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("parent") {
+                    assert_eq!(
+                        field_info.get("visibility"),
+                        Some(&Value::from_string("pub(super)".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_struct_field_visibility_private() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "secret".to_string(),
+            ty: make_type("i32"),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Private,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("Private", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("secret") {
+                    assert_eq!(
+                        field_info.get("visibility"),
+                        Some(&Value::from_string("private".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_struct_field_visibility_protected() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "inherited".to_string(),
+            ty: make_type("i32"),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Protected,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("Protected", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("inherited") {
+                    assert_eq!(
+                        field_info.get("visibility"),
+                        Some(&Value::from_string("protected".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // Coverage improvement: is_mut flag
+    // =========================================================================
+
+    #[test]
+    fn test_struct_field_is_mut_true() {
+        let mut interp = make_interpreter();
+        let fields = vec![StructField {
+            name: "mutable_field".to_string(),
+            ty: make_type("i32"),
+            default_value: None,
+            is_mut: true,
+            visibility: Visibility::Public,
+            decorators: vec![],
+        }];
+
+        let result = interp
+            .eval_struct_definition("Mutable", &[], &fields, &[], false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                if let Some(Value::Object(field_info)) = fields_obj.get("mutable_field") {
+                    assert_eq!(field_info.get("is_mut"), Some(&Value::from_bool(true)));
+                }
+            }
+        }
+    }
+
+    // =========================================================================
+    // Coverage improvement: struct literal with unknown field
+    // =========================================================================
+
+    #[test]
+    fn test_struct_literal_unknown_field() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+
+        let mut interp = make_interpreter();
+        let fields = vec![make_struct_field("x", make_type("i32"))];
+        interp
+            .eval_struct_definition("Point", &[], &fields, &[], false)
+            .unwrap();
+
+        // Try to instantiate with unknown field
+        let unknown_field_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
+
+        let result = interp.eval_struct_literal("Point", &[("unknown".to_string(), unknown_field_expr)]);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("does not have field"));
+    }
+
+    // =========================================================================
+    // Coverage improvement: Class type instantiation
+    // =========================================================================
+
+    #[test]
+    fn test_struct_literal_class_type() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal};
+
+        let mut interp = make_interpreter();
+
+        // Create a class definition (with __type = "Class")
+        let mut class_def = HashMap::new();
+        class_def.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_def.insert(
+            "__name".to_string(),
+            Value::from_string("MyClass".to_string()),
+        );
+
+        // Add fields definition
+        let mut fields_obj = HashMap::new();
+        let mut x_field = HashMap::new();
+        x_field.insert("type".to_string(), Value::from_string("i32".to_string()));
+        x_field.insert("is_pub".to_string(), Value::from_bool(true));
+        x_field.insert("is_mut".to_string(), Value::from_bool(false));
+        x_field.insert("visibility".to_string(), Value::from_string("pub".to_string()));
+        fields_obj.insert("x".to_string(), Value::Object(Arc::new(x_field)));
+        class_def.insert("__fields".to_string(), Value::Object(Arc::new(fields_obj)));
+
+        // Add methods
+        let methods_obj = HashMap::new();
+        class_def.insert("__methods".to_string(), Value::Object(Arc::new(methods_obj)));
+
+        interp.set_variable("MyClass", Value::Object(Arc::new(class_def)));
+
+        // Instantiate the class
+        let x_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+
+        let result = interp
+            .eval_struct_literal("MyClass", &[("x".to_string(), x_expr)])
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("instance".to_string()))
+            );
+            assert_eq!(
+                obj.get("__class"),
+                Some(&Value::from_string("MyClass".to_string()))
+            );
+            assert_eq!(obj.get("x"), Some(&Value::Integer(42)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    // =========================================================================
+    // Coverage improvement: instantiate_struct_with_args default values
+    // =========================================================================
+
+    #[test]
+    fn test_instantiate_struct_with_defaults() {
+        let mut interp = make_interpreter();
+
+        // Create a struct with a field that has a default
+        let mut struct_def = HashMap::new();
+        struct_def.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+
+        // Fields with default value
+        let mut fields_obj = HashMap::new();
+        let mut field_meta = HashMap::new();
+        field_meta.insert("default".to_string(), Value::Integer(100));
+        fields_obj.insert("value".to_string(), Value::Object(Arc::new(field_meta)));
+        struct_def.insert("__fields".to_string(), Value::Object(Arc::new(fields_obj)));
+
+        interp.set_variable("DefaultStruct", Value::Object(Arc::new(struct_def)));
+
+        // Instantiate without providing args - should use default
+        let result = interp
+            .instantiate_struct_with_args("DefaultStruct", &[])
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("value"), Some(&Value::Integer(100)));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_instantiate_struct_field_no_default_fallback_to_nil() {
+        let mut interp = make_interpreter();
+
+        // Create a struct with a field that has NO default
+        let mut struct_def = HashMap::new();
+        struct_def.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+
+        // Field without default value
+        let mut fields_obj = HashMap::new();
+        let field_meta = HashMap::new(); // No "default" key
+        fields_obj.insert("value".to_string(), Value::Object(Arc::new(field_meta)));
+        struct_def.insert("__fields".to_string(), Value::Object(Arc::new(fields_obj)));
+
+        interp.set_variable("NoDefault", Value::Object(Arc::new(struct_def)));
+
+        // Instantiate without providing args - should fallback to Nil
+        let result = interp
+            .instantiate_struct_with_args("NoDefault", &[])
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("value"), Some(&Value::Nil));
+        } else {
+            panic!("Expected Object");
+        }
+    }
 }
