@@ -40,17 +40,18 @@ impl Transpiler {
     }
 
     /// TRANSPILER-011: Check if the root of a field access chain is a variable/parameter
-    /// Variables are lowercase identifiers that are NOT modules or types
-    /// Returns true for: event, obj, data, request (simple variables)
-    /// Returns false for: std, String, `http_client`, `MyType` (modules/types)
+    /// BOOK-COMPAT-003: Variables CAN have underscores (prod_config, default_value)
+    /// Returns true for: event, obj, data, request, prod_config (variables)
+    /// Returns false for: std, String, MyType (modules/types)
     fn is_variable_chain(&self, expr: &Expr) -> bool {
         if let Some(root) = Self::get_root_identifier(expr) {
-            // Variables are simple lowercase identifiers (no underscores, not modules, not types)
-            let is_simple_lowercase = root.chars().all(char::is_lowercase) && !root.contains('_');
-            let is_not_module = !self.module_names.contains(root) && root != "std";
+            // BOOK-COMPAT-003 FIX: Variables can have underscores
+            // Only exclude known modules and types (PascalCase)
+            let is_not_module =
+                !self.module_names.contains(root) && root != "std" && !Self::is_module_like_identifier(root);
             let is_not_type = root.chars().next().is_some_and(char::is_lowercase);
 
-            is_simple_lowercase && is_not_module && is_not_type
+            is_not_module && is_not_type
         } else {
             false
         }
@@ -58,21 +59,21 @@ impl Transpiler {
 
     /// Check if an identifier looks like a module name
     /// PARSER-094: Fix Issue #137 - distinguish module paths from instance fields
-    /// Heuristic: Module names are typically all lowercase with underscores (e.g., `http_client`, `std_env`)
+    /// BOOK-COMPAT-003: Be more conservative - only treat as module if explicitly registered
+    /// Heuristic now: Only known stdlib module prefixes, not arbitrary underscore names
     fn is_module_like_identifier(name: &str) -> bool {
-        // Module names are all lowercase with underscores
-        // Examples: http_client, my_module (with underscore)
-        // NOT module-like: myVar (camelCase), self, this, obj (no underscore)
+        // BOOK-COMPAT-003 FIX: The previous heuristic (underscore = module) was too aggressive
+        // Variables like `prod_config`, `default_config` were incorrectly treated as modules
+        // Now: Only treat as module if it matches known module patterns
         if name.is_empty() || name == "self" || name == "this" {
             return false;
         }
-        // Must be all lowercase/digits/underscores AND contain at least one underscore
-        // This distinguishes modules (http_client) from variables (obj, x)
-        let has_underscore = name.contains('_');
-        let is_lowercase = name
-            .chars()
-            .all(|c| c.is_lowercase() || c.is_ascii_digit() || c == '_');
-        has_underscore && is_lowercase
+        // Only specific known module prefixes are treated as modules
+        // User-defined modules should be registered in module_names
+        let known_module_prefixes = ["std_", "ruchy_", "aws_", "tokio_"];
+        known_module_prefixes
+            .iter()
+            .any(|prefix| name.starts_with(prefix))
     }
 
     pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {

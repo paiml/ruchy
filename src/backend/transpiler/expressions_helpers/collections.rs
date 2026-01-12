@@ -2,7 +2,7 @@
 #![allow(clippy::missing_errors_doc)]
 
 use super::super::Transpiler;
-use crate::frontend::ast::Expr;
+use crate::frontend::ast::{Expr, ExprKind, Literal};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -201,16 +201,31 @@ impl Transpiler {
             quote! { #ident }
         };
         let mut field_tokens = Vec::new();
+        // BOOK-COMPAT-002: Get struct field types for proper string conversion
+        let field_types = self.struct_field_types.borrow();
+        // Extract base struct name (handle enum variants like Shape::Circle)
+        let base_struct_name = if name.contains("::") {
+            name.split("::").next().unwrap_or(name)
+        } else {
+            name
+        };
         for (field_name, value) in fields {
             let field_ident = format_ident!("{}", field_name);
-            // BOOK-COMPAT-001 FIX: Don't add .to_string() to string literals
-            // String literals work correctly for both &str and String fields:
-            // - For &'a str fields: "Alice" works directly
-            // - For String fields: Rust requires explicit .to_string() in source code
-            // This keeps the transpiler simple and the generated code idiomatic
+            // BOOK-COMPAT-002 FIX: Add .to_string() for String fields with string literals
+            // When a struct field is typed as String and the value is a string literal,
+            // we need to add .to_string() for the Rust code to compile correctly.
+            let field_type = field_types.get(&(base_struct_name.to_string(), field_name.clone()));
+            let needs_to_string = matches!(field_type, Some(t) if t == "String")
+                && matches!(&value.kind, ExprKind::Literal(Literal::String(_)));
+
             let value_tokens = self.transpile_expr(value)?;
-            field_tokens.push(quote! { #field_ident: #value_tokens });
+            if needs_to_string {
+                field_tokens.push(quote! { #field_ident: #value_tokens.to_string() });
+            } else {
+                field_tokens.push(quote! { #field_ident: #value_tokens });
+            }
         }
+        drop(field_types); // Release borrow before potential recursive calls
 
         // Handle struct update syntax
         if let Some(base_expr) = base {
@@ -221,12 +236,40 @@ impl Transpiler {
                     ..#base_tokens
                 }
             })
-        } else {
+        } else if field_tokens.is_empty() {
+            // BOOK-COMPAT-005: Empty struct literal `Settings {}` becomes `Settings::default()`
+            // This works for structs with Default impl (from default field values)
             Ok(quote! {
-                #struct_name {
-                    #(#field_tokens,)*
-                }
+                #struct_name::default()
             })
+        } else {
+            // BOOK-COMPAT-006: For partial struct literals, check if struct might have defaults
+            // If struct has registered field types (meaning it has a definition we've seen),
+            // and we're not providing all fields, use struct update syntax with Default
+            let field_types = self.struct_field_types.borrow();
+            let struct_has_fields = field_types.keys().any(|(s, _)| s == base_struct_name);
+            let provided_count = fields.len();
+            let total_fields = field_types
+                .keys()
+                .filter(|(s, _)| s == base_struct_name)
+                .count();
+            drop(field_types);
+
+            if struct_has_fields && provided_count < total_fields {
+                // Partial struct literal - use struct update syntax with Default
+                Ok(quote! {
+                    #struct_name {
+                        #(#field_tokens,)*
+                        ..Default::default()
+                    }
+                })
+            } else {
+                Ok(quote! {
+                    #struct_name {
+                        #(#field_tokens,)*
+                    }
+                })
+            }
         }
     }
 }
