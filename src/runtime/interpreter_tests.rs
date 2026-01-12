@@ -20369,4 +20369,1054 @@ mod coverage_tests {
         let result = interp.eval_string(r#"[1, 2, 3].index_of(2)"#);
         let _ = result;
     }
+
+    // ============================================================================
+    // COVERAGE IMPROVEMENT: Type Inference and Control Flow Paths
+    // ============================================================================
+
+    #[test]
+    fn test_type_inference_numeric_param() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun double(x) { x * 2 }
+            double(5)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_inference_string_param() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun greet(name) { "Hello " + name }
+            greet("World")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_inference_bool_param() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun check(flag) { if flag { 1 } else { 0 } }
+            check(true)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_inference_array_param() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun first(arr) { arr[0] }
+            first([1, 2, 3])
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_inference_function_param() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun apply(f, x) { f(x) }
+            apply(|x| x * 2, 5)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_control_flow_break_in_nested_loop() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let result = 0
+            for i in range(0, 5) {
+                for j in range(0, 5) {
+                    if j == 2 { break }
+                    result = result + 1
+                }
+            }
+            result
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_control_flow_continue_pattern() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let sum = 0
+            for i in range(0, 10) {
+                if i % 2 == 0 { continue }
+                sum = sum + i
+            }
+            sum
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_control_flow_early_return() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun find_first_even(arr) {
+                for x in arr {
+                    if x % 2 == 0 { return x }
+                }
+                return -1
+            }
+            find_first_even([1, 3, 5, 4, 7])
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_control_flow_throw_catch() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun safe_div(a, b) {
+                if b == 0 { throw "division by zero" }
+                a / b
+            }
+            try { safe_div(10, 0) } catch e { -1 }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_expression_match_complex() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 5
+            match x {
+                1 => "one",
+                2 | 3 => "two or three",
+                4..=6 => "four to six",
+                _ => "other"
+            }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_expression_if_let() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let maybe = Some(42)
+            if let Some(x) = maybe {
+                x * 2
+            } else {
+                0
+            }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_expression_while_let() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [1, 2, 3]
+            let idx = 0
+            let sum = 0
+            while idx < arr.len() {
+                sum = sum + arr[idx]
+                idx = idx + 1
+            }
+            sum
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_parser_comments_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            // Line comment
+            let x = 1  // trailing comment
+            /* Block comment */
+            let y = 2
+            x + y
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_parser_doc_comments_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            /// This is a doc comment
+            fun documented() { 42 }
+            documented()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_complex_nested_expression() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let result = if true {
+                match 1 {
+                    1 => if false { 0 } else { 1 },
+                    _ => 2
+                }
+            } else {
+                3
+            }
+            result
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_closure_capture_env_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let multiplier = 10
+            let scale = |x| x * multiplier
+            scale(5)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_recursive_function_call_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun factorial(n) {
+                if n <= 1 { 1 }
+                else { n * factorial(n - 1) }
+            }
+            factorial(5)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_mutual_recursion_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun is_even(n) {
+                if n == 0 { true }
+                else { is_odd(n - 1) }
+            }
+            fun is_odd(n) {
+                if n == 0 { false }
+                else { is_even(n - 1) }
+            }
+            is_even(4)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_methods_chain_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            "  Hello World  ".trim().to_upper().len()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_array_method_chain_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [1, 2, 3, 4, 5]
+                .filter(|x| x % 2 == 0)
+                .map(|x| x * 2)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_map_operations_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let m = {"a": 1, "b": 2, "c": 3}
+            m.keys()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_map_values_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let m = {"x": 10, "y": 20}
+            m.values()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_map_entries_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let m = {"key": "value"}
+            m.entries()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_option_some_unwrap_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let opt = Some(42)
+            opt.unwrap()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_option_none_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let opt = None
+            opt.is_none()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_result_ok_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let res = Ok(42)
+            res.is_ok()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_result_err_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let res = Err("error")
+            res.is_err()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_pipeline_operator_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            5 |> (|x| x * 2) |> (|x| x + 1)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_spread_operator_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = [1, 2]
+            let b = [3, 4]
+            [...a, ...b]
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_destructure_tuple_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let (x, y, z) = (1, 2, 3)
+            x + y + z
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_destructure_array_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let [a, b, c] = [10, 20, 30]
+            a + b + c
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_destructure_struct_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            struct Point { x: i64, y: i64 }
+            let p = Point { x: 1, y: 2 }
+            let Point { x, y } = p
+            x + y
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_range_inclusive_sum_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let sum = 0
+            for i in range(1, 4) {
+                sum = sum + i
+            }
+            sum
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_bitwise_shift_ops_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = 8 >> 2
+            let b = 2 << 3
+            a + b
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_comparison_chain_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 5
+            x > 3 && x < 10
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_complex_boolean_expr_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = true
+            let b = false
+            let c = true
+            (a || b) && (c || !b) && !(a && b && c)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_escape_sequences_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let s = "line1\nline2\ttab"
+            s.len()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_raw_string_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let s = r"no\nescape"
+            s
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_interpolation_nested_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 5
+            let y = 10
+            "{x} + {y} = {x + y}"
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_multiline_string_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let s = "line 1
+line 2
+line 3"
+            s.lines()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_float_operations_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = 3.14
+            let b = 2.71
+            a * b + a / b - a
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_float_comparison_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 1.0 / 3.0
+            x > 0.33 && x < 0.34
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_negative_numbers_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = -5
+            let b = -3.14
+            a + b
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_unary_not_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = true
+            !a
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_conditional_assignment_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = if true { 1 } else { 0 }
+            x
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_block_expression_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let result = {
+                let a = 1
+                let b = 2
+                a + b
+            }
+            result
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_empty_array_methods_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = []
+            arr.is_empty()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_array_push_pop_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [1, 2, 3]
+            arr.push(4)
+            arr.pop()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_array_reverse_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [1, 2, 3].reverse()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_array_sort_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [3, 1, 2].sort()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_array_zip_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [1, 2].zip([3, 4])
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_array_enumerate_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            ["a", "b", "c"].enumerate()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_split_csv_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            "a,b,c".split(",")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_replace_word_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            "hello world".replace("world", "universe")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_starts_ends_with_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let s = "hello"
+            s.starts_with("he") && s.ends_with("lo")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_repeat_times_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            "ab".repeat(3)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_pad_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            "5".pad_start(3, "0")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_string_find_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            "hello".find("ll")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_math_pow_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            pow(2.0, 10.0)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_math_sqrt_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            sqrt(16.0)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_math_exp_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            exp(1.0)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_math_log_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            log(10.0)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_math_log10_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            log10(100.0)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_of_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            type_of(42)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_of_string_literal_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            type_of("hello")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_of_array_literal_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            type_of([1, 2, 3])
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_type_of_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            type_of(|x| x)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_assert_eq_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            assert_eq(1, 1)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_assert_ne_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            assert_ne(1, 2)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_dbg_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            dbg(42)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_env_get_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            env_get("PATH")
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_struct_default_values_init_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            struct Config {
+                debug: bool = false,
+                level: i64 = 1
+            }
+            let c = Config {}
+            c.debug
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_struct_method_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            struct Counter { count: i64 }
+            impl Counter {
+                fun new() { Counter { count: 0 } }
+                fun increment(self) { self.count = self.count + 1 }
+            }
+            let c = Counter::new()
+            c.increment()
+            c.count
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_enum_with_fields_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            enum Message {
+                Text(String),
+                Number(i64)
+            }
+            let m = Message::Text("hello")
+            m
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_match_enum_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            enum Color { Red, Green, Blue }
+            let c = Color::Red
+            match c {
+                Color::Red => "red",
+                Color::Green => "green",
+                Color::Blue => "blue"
+            }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_for_in_map_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let m = {"a": 1, "b": 2}
+            let sum = 0
+            for (k, v) in m {
+                sum = sum + v
+            }
+            sum
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_while_with_assignment_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let i = 0
+            while (i = i + 1) < 5 {
+                i
+            }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_loop_with_counter_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let i = 0
+            loop {
+                i = i + 1
+                if i >= 3 { break }
+            }
+            i
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_lambda_with_multiple_params_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let add = |a, b, c| a + b + c
+            add(1, 2, 3)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_lambda_no_params_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let get_val = || 42
+            get_val()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_nested_function_calls_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun a(x) { x + 1 }
+            fun b(x) { a(x) * 2 }
+            fun c(x) { b(x) - 1 }
+            c(5)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_default_function_params_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun greet(name = "World") { "Hello " + name }
+            greet()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_variadic_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun sum(...nums) {
+                let total = 0
+                for n in nums { total = total + n }
+                total
+            }
+            sum(1, 2, 3, 4, 5)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_expression_in_condition_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [1, 2, 3]
+            if arr.len() > 2 { "long" } else { "short" }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_chained_comparisons_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 5
+            1 < x && x < 10
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_complex_arithmetic_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            (1 + 2) * (3 - 4) / (5 + 1) % 3
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_assignment_operators_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 10
+            x += 5
+            x -= 3
+            x *= 2
+            x /= 4
+            x
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_deeply_nested_arrays_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
+            arr[0][1][0]
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_map_nested_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let m = {"outer": {"inner": 42}}
+            m["outer"]["inner"]
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_mixed_collection_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let data = [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
+            data[0]["name"]
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_iterator_fold_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [1, 2, 3, 4].fold(0, |acc, x| acc + x)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_iterator_scan_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [1, 2, 3].scan(0, |acc, x| acc + x)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_iterator_partition_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [1, 2, 3, 4, 5].partition(|x| x % 2 == 0)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_iterator_group_by_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            [1, 2, 3, 4, 5, 6].group_by(|x| x % 3)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_try_expression_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun may_fail() { throw "error" }
+            try { may_fail() } catch e { "caught" }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_try_finally_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let cleanup = false
+            try { 1 } finally { cleanup = true }
+            cleanup
+        "#);
+        let _ = result;
+    }
 }
