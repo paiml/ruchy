@@ -372,10 +372,16 @@ mod tests {
     }
 
     #[test]
-    fn test_keyword_in_keyword() {
+    fn test_keyword_in() {
         let engine = CompletionEngine::new();
         let completions = engine.complete("in");
         assert!(completions.contains(&"in".to_string()));
+    }
+
+    #[test]
+    fn test_keyword_impl_completion() {
+        let engine = CompletionEngine::new();
+        let completions = engine.complete("im");
         assert!(completions.contains(&"impl".to_string()));
     }
 
