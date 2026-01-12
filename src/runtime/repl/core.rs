@@ -473,3 +473,302 @@ impl Repl {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+
+    #[test]
+    fn test_repl_creation() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert!(repl.get_bindings().is_empty());
+    }
+
+    #[test]
+    fn test_repl_debug_trait() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let debug_str = format!("{:?}", repl);
+        assert!(debug_str.contains("Repl"));
+    }
+
+    #[test]
+    fn test_repl_with_config() {
+        let config = ReplConfig {
+            debug: true,
+            ..Default::default()
+        };
+        let repl = Repl::with_config(config).unwrap();
+        assert_eq!(repl.get_mode(), "debug");
+    }
+
+    #[test]
+    fn test_repl_sandboxed() {
+        let repl = Repl::sandboxed().unwrap();
+        // Sandboxed REPL should start in normal mode
+        assert_eq!(repl.get_mode(), "normal");
+    }
+
+    #[test]
+    fn test_repl_eval_simple_expression() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let result = repl.eval("2 + 2").unwrap();
+        assert_eq!(result, "4");
+    }
+
+    #[test]
+    fn test_repl_eval_string() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let result = repl.eval("\"hello\"").unwrap();
+        assert_eq!(result, "hello");
+    }
+
+    #[test]
+    fn test_repl_eval_nil() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let result = repl.eval("nil").unwrap();
+        // Nil returns empty string (REPL-005)
+        assert_eq!(result, "");
+    }
+
+    #[test]
+    fn test_repl_get_prompt_normal() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let prompt = repl.get_prompt();
+        assert_eq!(prompt, "ruchy> ");
+    }
+
+    #[test]
+    fn test_repl_get_prompt_debug() {
+        let config = ReplConfig {
+            debug: true,
+            ..Default::default()
+        };
+        let repl = Repl::with_config(config).unwrap();
+        let prompt = repl.get_prompt();
+        assert_eq!(prompt, "debug> ");
+    }
+
+    #[test]
+    fn test_repl_get_completions() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let completions = repl.get_completions(":he");
+        assert!(completions.contains(&":help".to_string()));
+    }
+
+    #[test]
+    fn test_repl_get_completions_keyword() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let completions = repl.get_completions("le");
+        assert!(completions.contains(&"let".to_string()));
+    }
+
+    #[test]
+    fn test_repl_memory_used() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let memory = repl.memory_used();
+        // Empty REPL should have minimal memory usage
+        assert_eq!(memory, 0);
+    }
+
+    #[test]
+    fn test_repl_memory_pressure() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let pressure = repl.memory_pressure();
+        // Pressure should be between 0 and 1
+        assert!(pressure >= 0.0 && pressure <= 1.0);
+    }
+
+    #[test]
+    fn test_repl_process_line_empty() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let should_exit = repl.process_line("").unwrap();
+        assert!(!should_exit);
+    }
+
+    #[test]
+    fn test_repl_process_line_whitespace() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let should_exit = repl.process_line("   ").unwrap();
+        assert!(!should_exit);
+    }
+
+    #[test]
+    fn test_repl_needs_continuation() {
+        assert!(!Repl::needs_continuation("let x = 5"));
+        assert!(!Repl::needs_continuation("fn foo() {}"));
+    }
+
+    #[test]
+    fn test_repl_get_last_error() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert!(repl.get_last_error().is_none());
+    }
+
+    #[test]
+    fn test_repl_evaluate_expr_str() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let value = repl.evaluate_expr_str("42", None).unwrap();
+        assert!(matches!(value, Value::Integer(42)));
+    }
+
+    #[test]
+    fn test_repl_result_history_len() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert_eq!(repl.result_history_len(), 0);
+    }
+
+    #[test]
+    fn test_repl_peak_memory() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let peak = repl.peak_memory();
+        // Peak should be at least 0
+        assert!(peak >= 0);
+    }
+
+    #[test]
+    fn test_repl_get_bindings() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        let bindings = repl.get_bindings();
+        assert!(bindings.is_empty());
+    }
+
+    #[test]
+    fn test_repl_get_bindings_mut() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let bindings = repl.get_bindings_mut();
+        bindings.insert("test".to_string(), Value::Integer(42));
+        assert!(repl.get_bindings().contains_key("test"));
+    }
+
+    #[test]
+    fn test_repl_clear_bindings() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        repl.get_bindings_mut().insert("x".to_string(), Value::Integer(1));
+        assert!(!repl.get_bindings().is_empty());
+        repl.clear_bindings();
+        assert!(repl.get_bindings().is_empty());
+    }
+
+    #[test]
+    fn test_repl_get_evaluator_mut() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let evaluator = repl.get_evaluator_mut();
+        assert!(evaluator.is_some());
+    }
+
+    #[test]
+    fn test_repl_can_accept_input() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert!(repl.can_accept_input());
+    }
+
+    #[test]
+    fn test_repl_bindings_valid() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert!(repl.bindings_valid());
+    }
+
+    #[test]
+    fn test_repl_is_failed() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert!(!repl.is_failed());
+    }
+
+    #[test]
+    fn test_repl_recover() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert!(repl.recover().is_ok());
+    }
+
+    #[test]
+    fn test_repl_get_mode() {
+        let repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert_eq!(repl.get_mode(), "normal");
+    }
+
+    #[test]
+    fn test_repl_handle_command() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let result = repl.handle_command("2 + 2");
+        assert_eq!(result, "Command executed");
+    }
+
+    #[test]
+    fn test_repl_eval_bounded() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let result = repl
+            .eval_bounded("1 + 1", 1024 * 1024, Duration::from_secs(5))
+            .unwrap();
+        assert_eq!(result, "2");
+    }
+
+    #[test]
+    fn test_repl_eval_transactional_success() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        let result = repl.eval_transactional("5 * 5").unwrap();
+        assert_eq!(result, "25");
+    }
+
+    #[test]
+    fn test_repl_eval_transactional_rollback() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        // Set up initial state
+        repl.eval("let x = 10").unwrap();
+
+        // Try to evaluate something that fails
+        let result = repl.eval_transactional("undefined_var");
+        assert!(result.is_err());
+
+        // Original binding should still exist
+        assert!(repl.get_bindings().contains_key("x"));
+    }
+
+    #[test]
+    fn test_repl_result_history_tracking() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        assert_eq!(repl.result_history_len(), 0);
+
+        repl.eval("1").unwrap();
+        assert_eq!(repl.result_history_len(), 1);
+
+        repl.eval("2").unwrap();
+        assert_eq!(repl.result_history_len(), 2);
+    }
+
+    #[test]
+    fn test_repl_let_binding() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+        repl.eval("let answer = 42").unwrap();
+        assert!(repl.get_bindings().contains_key("answer"));
+    }
+
+    #[test]
+    fn test_repl_arithmetic() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+
+        assert_eq!(repl.eval("10 + 5").unwrap(), "15");
+        assert_eq!(repl.eval("10 - 3").unwrap(), "7");
+        assert_eq!(repl.eval("4 * 5").unwrap(), "20");
+        assert_eq!(repl.eval("20 / 4").unwrap(), "5");
+    }
+
+    #[test]
+    fn test_repl_comparison() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+
+        assert_eq!(repl.eval("5 > 3").unwrap(), "true");
+        assert_eq!(repl.eval("3 < 5").unwrap(), "true");
+        assert_eq!(repl.eval("5 == 5").unwrap(), "true");
+        assert_eq!(repl.eval("5 != 3").unwrap(), "true");
+    }
+
+    #[test]
+    fn test_repl_boolean_logic() {
+        let mut repl = Repl::new(std::env::temp_dir()).unwrap();
+
+        assert_eq!(repl.eval("true && true").unwrap(), "true");
+        assert_eq!(repl.eval("true || false").unwrap(), "true");
+        assert_eq!(repl.eval("!false").unwrap(), "true");
+    }
+}

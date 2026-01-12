@@ -106,7 +106,20 @@ fn maybe_parse_lambda(state: &mut ParserState, expr: Expr, span: Span) -> Result
 #[cfg(test)]
 mod tests {
 
+    use crate::frontend::ast::{Expr, ExprKind, Literal};
     use crate::frontend::parser::Parser;
+
+    /// Helper to extract first expression from parsed result
+    fn get_first_expr(expr: &Expr) -> Option<&Expr> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => exprs.first(),
+            _ => Some(expr),
+        }
+    }
+
+    // ============================================================
+    // Unit Type Tests - Coverage for empty parentheses ()
+    // ============================================================
 
     #[test]
     fn test_unit_type() {
@@ -116,6 +129,43 @@ mod tests {
     }
 
     #[test]
+    fn test_unit_type_produces_literal_unit() {
+        let code = "()";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            assert!(
+                matches!(expr.kind, ExprKind::Literal(Literal::Unit)),
+                "Unit type should produce Literal::Unit"
+            );
+        }
+    }
+
+    #[test]
+    fn test_unit_type_in_function_return() {
+        let code = "fn nothing() -> () { () }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Function returning unit should parse");
+    }
+
+    #[test]
+    fn test_unit_type_in_let_binding() {
+        let code = "let u = ()";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Let binding with unit should parse");
+    }
+
+    #[test]
+    fn test_unit_type_as_function_argument() {
+        let code = "foo(())";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Unit as function argument should parse");
+    }
+
+    // ============================================================
+    // Grouped Expression Tests - Coverage for (expr)
+    // ============================================================
+
+    #[test]
     fn test_grouped_expression() {
         let code = "(42)";
         let result = Parser::new(code).parse();
@@ -123,10 +173,114 @@ mod tests {
     }
 
     #[test]
+    fn test_grouped_expression_preserves_value() {
+        let code = "(42)";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            assert!(
+                matches!(expr.kind, ExprKind::Literal(Literal::Integer(42, _))),
+                "Grouped expression should preserve the inner value"
+            );
+        }
+    }
+
+    #[test]
+    fn test_grouped_expression_with_binary() {
+        let code = "(1 + 2)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Grouped binary expression should parse");
+    }
+
+    #[test]
+    fn test_grouped_expression_with_identifier() {
+        let code = "(x)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Grouped identifier should parse");
+    }
+
+    #[test]
+    fn test_grouped_expression_with_function_call() {
+        let code = "(foo())";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Grouped function call should parse");
+    }
+
+    #[test]
+    fn test_grouped_expression_in_arithmetic() {
+        let code = "(1 + 2) * 3";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Grouped expression in arithmetic should parse");
+    }
+
+    #[test]
+    fn test_deeply_nested_grouped_expressions() {
+        let code = "(((((42)))))";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Deeply nested grouped expressions should parse");
+    }
+
+    // ============================================================
+    // Tuple Tests - Coverage for (expr, expr, ...)
+    // ============================================================
+
+    #[test]
     fn test_simple_tuple() {
         let code = "(1, 2)";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Simple tuple should parse");
+    }
+
+    #[test]
+    fn test_simple_tuple_produces_tuple_exprkind() {
+        let code = "(1, 2)";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            assert!(
+                matches!(expr.kind, ExprKind::Tuple(_)),
+                "Should produce Tuple ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_tuple_element_count() {
+        let code = "(1, 2, 3, 4)";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            if let ExprKind::Tuple(elements) = &expr.kind {
+                assert_eq!(elements.len(), 4, "Tuple should have 4 elements");
+            } else {
+                panic!("Expected Tuple ExprKind");
+            }
+        }
+    }
+
+    #[test]
+    fn test_tuple_with_string_elements() {
+        let code = "(\"hello\", \"world\")";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Tuple with strings should parse");
+    }
+
+    #[test]
+    fn test_tuple_with_mixed_types() {
+        let code = "(1, \"two\", true, 4.0)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Tuple with mixed types should parse");
+    }
+
+    #[test]
+    fn test_tuple_with_expressions() {
+        let code = "(1 + 2, 3 * 4, foo())";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Tuple with expressions should parse");
+    }
+
+    #[test]
+    fn test_single_element_with_trailing_comma() {
+        let code = "(1,)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Single element tuple should parse");
     }
 
     #[test]

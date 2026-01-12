@@ -164,7 +164,20 @@ pub(in crate::frontend::parser) fn parse_lambda_expression(
 #[cfg(test)]
 mod tests {
 
+    use crate::frontend::ast::{Expr, ExprKind};
     use crate::frontend::parser::Parser;
+
+    /// Helper to extract first expression from parsed result
+    fn get_first_expr(expr: &Expr) -> Option<&Expr> {
+        match &expr.kind {
+            ExprKind::Block(exprs) => exprs.first(),
+            _ => Some(expr),
+        }
+    }
+
+    // ============================================================
+    // No-parameter lambda tests (|| body)
+    // ============================================================
 
     #[test]
     fn test_lambda_no_params() {
@@ -174,6 +187,42 @@ mod tests {
     }
 
     #[test]
+    fn test_lambda_no_params_produces_lambda_exprkind() {
+        let code = "|| 42";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            assert!(
+                matches!(expr.kind, ExprKind::Lambda { .. }),
+                "No-param lambda should produce Lambda ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_lambda_no_params_empty_params_vec() {
+        let code = "|| 42";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            if let ExprKind::Lambda { params, .. } = &expr.kind {
+                assert!(params.is_empty(), "No-param lambda should have empty params vec");
+            } else {
+                panic!("Expected Lambda ExprKind");
+            }
+        }
+    }
+
+    #[test]
+    fn test_lambda_no_params_with_complex_body() {
+        let code = "|| { let x = 1; let y = 2; x + y }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "No-param lambda with complex body should parse");
+    }
+
+    // ============================================================
+    // Single parameter lambda tests (|x| body)
+    // ============================================================
+
+    #[test]
     fn test_lambda_single_param() {
         let code = "|x| x * 2";
         let result = Parser::new(code).parse();
@@ -181,11 +230,77 @@ mod tests {
     }
 
     #[test]
+    fn test_lambda_single_param_count() {
+        let code = "|x| x";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            if let ExprKind::Lambda { params, .. } = &expr.kind {
+                assert_eq!(params.len(), 1, "Single param lambda should have 1 param");
+            } else {
+                panic!("Expected Lambda ExprKind");
+            }
+        }
+    }
+
+    // ============================================================
+    // Multiple parameter lambda tests (|a, b| body)
+    // ============================================================
+
+    #[test]
     fn test_lambda_multiple_params() {
         let code = "|a, b| a + b";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Multi-parameter lambda should parse");
     }
+
+    #[test]
+    fn test_lambda_multiple_params_count() {
+        let code = "|a, b, c| a + b + c";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            if let ExprKind::Lambda { params, .. } = &expr.kind {
+                assert_eq!(params.len(), 3, "Lambda should have 3 params");
+            } else {
+                panic!("Expected Lambda ExprKind");
+            }
+        }
+    }
+
+    #[test]
+    fn test_lambda_five_params() {
+        let code = "|a, b, c, d, e| a + b + c + d + e";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Five-parameter lambda should parse");
+    }
+
+    // ============================================================
+    // Type-annotated parameter tests (|x: i32| body)
+    // ============================================================
+
+    #[test]
+    fn test_lambda_param_with_type() {
+        let code = "|x: i32| x * 2";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda with typed param should parse");
+    }
+
+    #[test]
+    fn test_lambda_multiple_typed_params() {
+        let code = "|x: i32, y: f64| x as f64 + y";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda with multiple typed params should parse");
+    }
+
+    #[test]
+    fn test_lambda_mixed_typed_untyped_params() {
+        let code = "|x: i32, y, z: String| x";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda with mixed typed/untyped params should parse");
+    }
+
+    // ============================================================
+    // Arrow syntax tests (x => body, (x, y) => body)
+    // ============================================================
 
     #[test]
     fn test_arrow_single_param() {
@@ -202,11 +317,51 @@ mod tests {
     }
 
     #[test]
+    fn test_arrow_syntax_produces_lambda() {
+        let code = "x => x";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            assert!(
+                matches!(expr.kind, ExprKind::Lambda { .. }),
+                "Arrow syntax should produce Lambda ExprKind"
+            );
+        }
+    }
+
+    #[test]
+    fn test_arrow_tuple_produces_lambda_with_multiple_params() {
+        let code = "(a, b, c) => a + b + c";
+        let result = Parser::new(code).parse().unwrap();
+        if let Some(expr) = get_first_expr(&result) {
+            if let ExprKind::Lambda { params, .. } = &expr.kind {
+                assert_eq!(params.len(), 3, "Arrow tuple lambda should have 3 params");
+            } else {
+                panic!("Expected Lambda ExprKind");
+            }
+        }
+    }
+
+    // ============================================================
+    // Lambda with block body tests
+    // ============================================================
+
+    #[test]
     fn test_lambda_with_block() {
         let code = "|x| { let y = x * 2; y }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Lambda with block should parse");
     }
+
+    #[test]
+    fn test_lambda_with_multiline_block() {
+        let code = "|x| {\n    let a = x;\n    let b = a + 1;\n    b\n}";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda with multiline block should parse");
+    }
+
+    // ============================================================
+    // Nested lambda tests
+    // ============================================================
 
     #[test]
     fn test_nested_lambda() {
@@ -215,11 +370,75 @@ mod tests {
         assert!(result.is_ok(), "Nested lambda should parse");
     }
 
+    #[test]
+    fn test_three_level_nested_lambda() {
+        let code = "|x| |y| |z| x + y + z";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Three-level nested lambda should parse");
+    }
+
+    #[test]
+    fn test_nested_lambda_with_arrow_syntax() {
+        let code = "x => y => x + y";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Nested arrow lambda should parse");
+    }
+
+    // ============================================================
+    // Return type annotation tests (|x| -> Type body)
+    // ============================================================
+
+    #[test]
+    fn test_lambda_with_return_type() {
+        let code = "|x| -> i32 x * 2";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda with return type should parse");
+    }
+
+    #[test]
+    fn test_lambda_with_return_type_and_block() {
+        let code = "|x| -> i32 { x + 1 }";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda with return type and block should parse");
+    }
+
+    // ============================================================
+    // Lambda as higher-order function argument
+    // ============================================================
+
+    #[test]
+    fn test_lambda_as_map_argument() {
+        let code = "[1, 2, 3].map(|x| x * 2)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda as map argument should parse");
+    }
+
+    #[test]
+    fn test_lambda_as_filter_argument() {
+        let code = "[1, 2, 3, 4].filter(|x| x > 2)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda as filter argument should parse");
+    }
+
+    #[test]
+    fn test_lambda_as_fold_argument() {
+        let code = "[1, 2, 3].fold(0, |acc, x| acc + x)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Lambda as fold argument should parse");
+    }
+
+    #[test]
+    fn test_chained_higher_order_with_lambdas() {
+        let code = "[1, 2, 3, 4, 5].filter(|x| x > 2).map(|x| x * 2)";
+        let result = Parser::new(code).parse();
+        assert!(result.is_ok(), "Chained higher-order functions with lambdas should parse");
+    }
+
     // ============================================================
     // Additional comprehensive tests for EXTREME TDD coverage
     // ============================================================
 
-    use crate::frontend::ast::{Expr, ExprKind};
+    // Note: Expr and ExprKind already imported at top of test module
     use crate::frontend::parser::Result;
 
     fn parse(code: &str) -> Result<Expr> {
@@ -390,7 +609,7 @@ mod tests {
     }
 
     #[test]
-    fn test_lambda_multiple_typed_params() {
+    fn test_lambda_multiple_typed_params_v2() {
         let result = parse("|x: i32, y: i32| x + y");
         assert!(result.is_ok(), "Lambda with multiple typed params should parse");
     }
