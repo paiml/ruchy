@@ -392,8 +392,8 @@ nix = { version = "0.29", features = ["signal", "process"] }
 axum = { version = "0.8", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
-# Probar: GUI coverage and Playwright-compatible testing
-jugar-probar = "0.4"
+# Probar: GUI coverage, Playwright-compatible testing, WASM worker harness
+jugar-probar = "1.0"
 
 # WASM QA Framework dependencies (following spec)
 wasm-bindgen-test = "0.3"
