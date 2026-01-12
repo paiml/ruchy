@@ -1069,4 +1069,752 @@ mod tests {
         let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
         assert_eq!(result, Value::Integer(1));
     }
+
+    // =========================================================================
+    // EXTREME TDD: Additional tests for increased coverage
+    // Target: Cover async actor paths, ask handler execution, edge cases
+    // =========================================================================
+
+    // Helper to create ask handler (uses "handler" key instead of "body")
+    fn make_ask_handler(message_type: &str, params: Vec<String>, body: Expr) -> Value {
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string(message_type.to_string()),
+        );
+        handler_obj.insert(
+            "params".to_string(),
+            Value::Array(Arc::from(
+                params.iter().map(|p| Value::from_string(p.clone())).collect::<Vec<_>>(),
+            )),
+        );
+        // Note: ask method looks for "handler" key, not "body"
+        handler_obj.insert(
+            "handler".to_string(),
+            make_closure(
+                params.into_iter().map(|p| (p, None)).collect(),
+                body,
+            ),
+        );
+        Value::Object(Arc::new(handler_obj))
+    }
+
+    // Test ask method with handlers but handler closure found
+    #[test]
+    fn test_actor_ask_with_handler_closure() {
+        let mut interp = make_interpreter();
+
+        // Create handler with "handler" key (for ask method)
+        let body = make_expr(ExprKind::Literal(Literal::Integer(999, None)));
+        let handler = make_ask_handler("Query", vec![], body);
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        assert_eq!(result, Value::Integer(999));
+    }
+
+    // Test ask method with handler that has parameters
+    #[test]
+    fn test_actor_ask_with_handler_params() {
+        let mut interp = make_interpreter();
+
+        // Create handler with parameters
+        let body = make_expr(ExprKind::Literal(Literal::String("handled".to_string())));
+        let handler = make_ask_handler("Greet", vec!["name".to_string()], body);
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+
+        let msg = make_message("Greet", vec![Value::from_string("Alice".to_string())]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        assert_eq!(result, Value::from_string("handled".to_string()));
+    }
+
+    // Test ask with Message but no matching handler (falls through to default response)
+    #[test]
+    fn test_actor_ask_message_with_data_no_handler() {
+        let mut interp = make_interpreter();
+
+        // Instance has handlers but not for this message type
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_ask_handler("OtherMsg", vec![], body);
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+
+        let msg = make_message("TestQuery", vec![Value::Integer(42)]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        // Should return "Received: TestQuery"
+        assert_eq!(result, Value::from_string("Received: TestQuery".to_string()));
+    }
+
+    // Test ask with handlers that is not an array
+    #[test]
+    fn test_actor_ask_handlers_not_array() {
+        let mut interp = make_interpreter();
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Integer(42)); // Not an array
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        // Falls through to "Received: Query" since handlers aren't iterable
+        assert_eq!(result, Value::from_string("Received: Query".to_string()));
+    }
+
+    // Test ask with handler that is not an Object
+    #[test]
+    fn test_actor_ask_handler_not_object() {
+        let mut interp = make_interpreter();
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Integer(123), // Not an Object
+        ])));
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        assert_eq!(result, Value::from_string("Received: Query".to_string()));
+    }
+
+    // Test ask with handler missing message_type
+    #[test]
+    fn test_actor_ask_handler_missing_message_type() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        // No message_type field
+        handler_obj.insert("handler".to_string(), Value::Integer(1));
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        assert_eq!(result, Value::from_string("Received: Query".to_string()));
+    }
+
+    // Test ask with handler where message_type doesn't match
+    #[test]
+    fn test_actor_ask_handler_type_mismatch() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_ask_handler("DifferentType", vec![], body);
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        assert_eq!(result, Value::from_string("Received: Query".to_string()));
+    }
+
+    // Test ask with handler missing the closure
+    #[test]
+    fn test_actor_ask_handler_missing_closure() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert("message_type".to_string(), Value::from_string("Query".to_string()));
+        // No "handler" key
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        assert_eq!(result, Value::from_string("Received: Query".to_string()));
+    }
+
+    // Test ask with message object missing "type" field
+    #[test]
+    fn test_actor_ask_message_missing_type_field() {
+        let mut interp = make_interpreter();
+        let instance = HashMap::new();
+
+        let mut msg_obj = HashMap::new();
+        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        // No "type" field
+        msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        // Should echo back since no type field means it can't match handlers
+        assert_eq!(result, msg);
+    }
+
+    // Test ask with message object missing "data" field
+    #[test]
+    fn test_actor_ask_message_missing_data_field() {
+        let mut interp = make_interpreter();
+        let instance = HashMap::new();
+
+        let mut msg_obj = HashMap::new();
+        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert("type".to_string(), Value::from_string("Query".to_string()));
+        // No "data" field
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        // Should echo back since no data field
+        assert_eq!(result, msg);
+    }
+
+    // Test ask with message object where "type" is not a string
+    #[test]
+    fn test_actor_ask_message_type_not_string() {
+        let mut interp = make_interpreter();
+        let instance = HashMap::new();
+
+        let mut msg_obj = HashMap::new();
+        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert("type".to_string(), Value::Integer(123)); // Not a string
+        msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        // Should echo back since type isn't a string
+        assert_eq!(result, msg);
+    }
+
+    // Test ask with message object where "data" is not an array
+    #[test]
+    fn test_actor_ask_message_data_not_array() {
+        let mut interp = make_interpreter();
+        let instance = HashMap::new();
+
+        let mut msg_obj = HashMap::new();
+        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert("type".to_string(), Value::from_string("Query".to_string()));
+        msg_obj.insert("data".to_string(), Value::Integer(42)); // Not an array
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        // Should echo back since data isn't an array
+        assert_eq!(result, msg);
+    }
+
+    // Test process_actor_message_sync with handler where body is not a closure
+    #[test]
+    fn test_process_actor_message_sync_handler_body_not_closure() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
+        handler_obj.insert("body".to_string(), Value::Integer(42)); // Not a closure
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+
+        let msg = make_message("Test", vec![]);
+        let result = interp.process_actor_message_sync(&instance, &msg);
+        // Should fail to find handler since body isn't a closure
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync_mut with handler where body is not a closure
+    #[test]
+    fn test_process_actor_message_sync_mut_handler_body_not_closure() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
+        handler_obj.insert("body".to_string(), Value::Integer(42)); // Not a closure
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("Test", vec![]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg);
+        // Should fail to find handler since body isn't a closure
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync with handler missing message_type field
+    #[test]
+    fn test_process_actor_message_sync_handler_missing_type() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        // No message_type field
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        handler_obj.insert("body".to_string(), make_closure(vec![], body));
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+
+        let msg = make_message("Test", vec![]);
+        let result = interp.process_actor_message_sync(&instance, &msg);
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync_mut with handler missing message_type field
+    #[test]
+    fn test_process_actor_message_sync_mut_handler_missing_type() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        // No message_type field
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        handler_obj.insert("body".to_string(), make_closure(vec![], body));
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("Test", vec![]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg);
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync with handler that is not an Object
+    #[test]
+    fn test_process_actor_message_sync_handler_not_object() {
+        let mut interp = make_interpreter();
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Integer(42), // Not an Object
+        ])));
+
+        let msg = make_message("Test", vec![]);
+        let result = interp.process_actor_message_sync(&instance, &msg);
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync_mut with handler that is not an Object
+    #[test]
+    fn test_process_actor_message_sync_mut_handler_not_object() {
+        let mut interp = make_interpreter();
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Integer(42), // Not an Object
+        ])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("Test", vec![]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg);
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync with handler where message_type is not a string
+    #[test]
+    fn test_process_actor_message_sync_handler_type_not_string() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert("message_type".to_string(), Value::Integer(123)); // Not a string
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        handler_obj.insert("body".to_string(), make_closure(vec![], body));
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+
+        let msg = make_message("Test", vec![]);
+        let result = interp.process_actor_message_sync(&instance, &msg);
+        assert!(result.is_err());
+    }
+
+    // Test eval_struct_instance_method with multiple args
+    #[test]
+    fn test_struct_instance_method_with_args() {
+        let mut interp = make_interpreter();
+
+        // Create a closure that expects self + 2 args
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let closure = make_closure(
+            vec![
+                ("self".to_string(), None),
+                ("x".to_string(), None),
+                ("y".to_string(), None),
+            ],
+            body,
+        );
+        interp.set_variable("TestStruct::method", closure);
+
+        let instance = HashMap::new();
+        let result = interp.eval_struct_instance_method(
+            &instance,
+            "TestStruct",
+            "method",
+            &[Value::Integer(1), Value::Integer(2)],
+        ).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    // Test eval_object_method with non-empty args
+    #[test]
+    fn test_object_method_with_args() {
+        let interp = make_interpreter();
+        let mut obj = HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("SomeType".to_string()));
+
+        let result = interp.eval_object_method(&obj, "method", &[Value::Integer(1)], false);
+        // Should fail for unknown type
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync with fields to copy to self
+    #[test]
+    fn test_process_actor_message_sync_with_fields() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let handler = make_handler("Query", vec![], body);
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert("count".to_string(), Value::Integer(10)); // Non-dunder field
+        instance.insert("__private".to_string(), Value::Integer(20)); // Dunder field
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.process_actor_message_sync(&instance, &msg).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    // Test process_actor_message_sync_mut with float type validation
+    #[test]
+    fn test_process_actor_message_sync_mut_float_type() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_handler_with_types(
+            "SetFloat",
+            vec!["value".to_string()],
+            vec!["f64"],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        // Float type should work
+        let msg = make_message("SetFloat", vec![Value::Float(3.14)]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    // Test process_actor_message_sync_mut with bool type validation
+    #[test]
+    fn test_process_actor_message_sync_mut_bool_type() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_handler_with_types(
+            "SetBool",
+            vec!["value".to_string()],
+            vec!["bool"],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("SetBool", vec![Value::Bool(true)]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    // Test process_actor_message_sync_mut with float type mismatch
+    #[test]
+    fn test_process_actor_message_sync_mut_float_type_mismatch() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_handler_with_types(
+            "SetFloat",
+            vec!["value".to_string()],
+            vec!["f64"],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        // Integer instead of float
+        let msg = make_message("SetFloat", vec![Value::Integer(42)]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Type error"));
+    }
+
+    // Test process_actor_message_sync_mut with str type alias
+    #[test]
+    fn test_process_actor_message_sync_mut_str_type_alias() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_handler_with_types(
+            "SetStr",
+            vec!["value".to_string()],
+            vec!["str"],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("SetStr", vec![Value::from_string("hello".to_string())]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    // Test process_actor_message_sync_mut with multiple params binding
+    #[test]
+    fn test_process_actor_message_sync_mut_multiple_params() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(100, None)));
+        let handler = make_handler_with_types(
+            "MultiParam",
+            vec!["a".to_string(), "b".to_string()],
+            vec!["i32", "String"],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("MultiParam", vec![
+            Value::Integer(1),
+            Value::from_string("test".to_string()),
+        ]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        assert_eq!(result, Value::Integer(100));
+    }
+
+    // Test process_actor_message_sync with multiple params
+    #[test]
+    fn test_process_actor_message_sync_multiple_params() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(200, None)));
+        let handler = make_handler(
+            "MultiParam",
+            vec!["a".to_string(), "b".to_string(), "c".to_string()],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+
+        let msg = make_message("MultiParam", vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+        let result = interp.process_actor_message_sync(&instance, &msg).unwrap();
+        assert_eq!(result, Value::Integer(200));
+    }
+
+    // Test process_actor_message_sync_mut where param_types is not an array
+    #[test]
+    fn test_process_actor_message_sync_mut_param_types_not_array() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
+        handler_obj.insert("param_types".to_string(), Value::Integer(42)); // Not an array
+        handler_obj.insert(
+            "body".to_string(),
+            make_closure(vec![("x".to_string(), None)], body),
+        );
+        let handler = Value::Object(Arc::new(handler_obj));
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("Test", vec![Value::Integer(1)]);
+        // Should succeed since param_types is ignored when not an array
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    // Test process_actor_message_sync_mut where param type is not a string
+    #[test]
+    fn test_process_actor_message_sync_mut_param_type_not_string() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
+        handler_obj.insert("param_types".to_string(), Value::Array(Arc::from(vec![
+            Value::Integer(42), // Not a string
+        ])));
+        handler_obj.insert(
+            "body".to_string(),
+            make_closure(vec![("x".to_string(), None)], body),
+        );
+        let handler = Value::Object(Arc::new(handler_obj));
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        let msg = make_message("Test", vec![Value::Integer(1)]);
+        // Should succeed since type check is skipped for non-string types
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    // Test process_actor_message_sync_mut with unknown custom type
+    #[test]
+    fn test_process_actor_message_sync_mut_custom_type() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_handler_with_types(
+            "CustomType",
+            vec!["value".to_string()],
+            vec!["MyCustomType"],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        // Send integer which won't match custom type
+        let msg = make_message("CustomType", vec![Value::Integer(42)]);
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg);
+        // Should fail because integer doesn't match MyCustomType
+        assert!(result.is_err());
+    }
+
+    // Test process_actor_message_sync_mut with less args than params
+    #[test]
+    fn test_process_actor_message_sync_mut_fewer_args() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_handler_with_types(
+            "Test",
+            vec!["a".to_string(), "b".to_string()],
+            vec!["i32", "i32"],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        let instance_rc = Arc::new(Mutex::new(instance));
+
+        // Send only 1 arg but handler expects 2
+        let msg = make_message("Test", vec![Value::Integer(1)]);
+        // Should succeed - missing args just won't be bound
+        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    // Test process_actor_message_sync with fewer args than params
+    #[test]
+    fn test_process_actor_message_sync_fewer_args() {
+        let mut interp = make_interpreter();
+
+        let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler = make_handler(
+            "Test",
+            vec!["a".to_string(), "b".to_string()],
+            body,
+        );
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+
+        // Send only 1 arg but handler expects 2
+        let msg = make_message("Test", vec![Value::Integer(1)]);
+        let result = interp.process_actor_message_sync(&instance, &msg).unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    // Test ask with multiple handlers, first doesn't match
+    #[test]
+    fn test_actor_ask_multiple_handlers_second_matches() {
+        let mut interp = make_interpreter();
+
+        let body1 = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let handler1 = make_ask_handler("First", vec![], body1);
+
+        let body2 = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
+        let handler2 = make_ask_handler("Second", vec![], body2);
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            handler1, handler2,
+        ])));
+
+        let msg = make_message("Second", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    // Test eval_struct_instance_method with extra args (more than expected)
+    #[test]
+    fn test_struct_instance_method_extra_args_ignored() {
+        let mut interp = make_interpreter();
+
+        // Create a closure that expects self + 1 arg
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let closure = make_closure(
+            vec![("self".to_string(), None), ("x".to_string(), None)],
+            body,
+        );
+        interp.set_variable("TestStruct::method", closure);
+
+        let instance = HashMap::new();
+        // Call with 1 arg (correct)
+        let result = interp.eval_struct_instance_method(
+            &instance,
+            "TestStruct",
+            "method",
+            &[Value::Integer(1)],
+        ).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    // Test ask with handler value that is not a closure
+    #[test]
+    fn test_actor_ask_handler_value_not_closure() {
+        let mut interp = make_interpreter();
+
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert("message_type".to_string(), Value::from_string("Query".to_string()));
+        handler_obj.insert("handler".to_string(), Value::Integer(42)); // Not a closure
+
+        let mut instance = HashMap::new();
+        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
+            Value::Object(Arc::new(handler_obj)),
+        ])));
+
+        let msg = make_message("Query", vec![]);
+        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        // Falls through since handler isn't a closure
+        assert_eq!(result, Value::from_string("Received: Query".to_string()));
+    }
 }

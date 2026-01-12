@@ -1115,6 +1115,646 @@ mod tests {
     }
 }
 #[cfg(test)]
+mod additional_tests {
+    use super::*;
+    use std::time::Duration;
+
+    /// Test actor ref send when channel is closed
+    #[test]
+    fn test_actor_ref_send_channel_closed() {
+        // Create a channel and immediately drop the receiver
+        let (sender, _) = mpsc::channel();
+        let actor_ref = ActorRef {
+            id: ActorId(1),
+            name: "closed_actor".to_string(),
+            sender,
+        };
+        // Drop the receiver implicitly (no receiver created above)
+        // The channel should be closed since we didn't keep the receiver
+
+        // A second send should work since sender is still valid
+        // But if we create with a dropped receiver explicitly:
+        let (sender2, receiver2) = mpsc::channel::<ActorMessage>();
+        drop(receiver2); // Explicitly drop receiver
+
+        let actor_ref2 = ActorRef {
+            id: ActorId(2),
+            name: "closed_actor2".to_string(),
+            sender: sender2,
+        };
+
+        let message = Message::User("test".to_string(), vec![]);
+        let result = actor_ref2.send(message);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("no longer running"));
+    }
+
+    /// Test actor ref ask when channel is closed
+    #[test]
+    fn test_actor_ref_ask_channel_closed() {
+        let (sender, receiver) = mpsc::channel::<ActorMessage>();
+        drop(receiver);
+
+        let actor_ref = ActorRef {
+            id: ActorId(3),
+            name: "closed_for_ask".to_string(),
+            sender,
+        };
+
+        let message = Message::User("ask_test".to_string(), vec![]);
+        let result = actor_ref.ask(message, Duration::from_millis(50));
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("no longer running"));
+    }
+
+    /// Test actor ref ask timeout
+    #[test]
+    fn test_actor_ref_ask_timeout() {
+        let (sender, _receiver) = mpsc::channel::<ActorMessage>();
+
+        let actor_ref = ActorRef {
+            id: ActorId(4),
+            name: "slow_actor".to_string(),
+            sender,
+        };
+
+        let message = Message::User("timeout_test".to_string(), vec![]);
+        // Use very short timeout - no one will respond
+        let result = actor_ref.ask(message, Duration::from_millis(1));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Timeout"));
+    }
+
+    /// Test DummyBehavior receive method
+    #[test]
+    fn test_dummy_behavior_receive() {
+        let mut dummy = DummyBehavior;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(100),
+            actor_name: "dummy_test".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let message = Message::User("test".to_string(), vec![]);
+        let result = dummy.receive(message, &mut ctx);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test default ActorBehavior trait implementations
+    #[test]
+    fn test_actor_behavior_defaults() {
+        let mut echo = EchoActor;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(101),
+            actor_name: "default_test".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        // Test pre_start default
+        assert!(echo.pre_start(&mut ctx).is_ok());
+
+        // Test post_stop default
+        assert!(echo.post_stop(&mut ctx).is_ok());
+
+        // Test pre_restart default
+        assert!(echo.pre_restart(&mut ctx, "test reason").is_ok());
+
+        // Test post_restart default
+        assert!(echo.post_restart(&mut ctx, "test reason").is_ok());
+
+        // Test supervisor_strategy default
+        let directive = echo.supervisor_strategy(ActorId(200), "child failure");
+        assert!(matches!(directive, SupervisorDirective::Restart));
+    }
+
+    /// Test ActorContext get_self when actor exists
+    #[test]
+    fn test_actor_context_get_self() {
+        let system = ActorSystem::new();
+        let actor_ref = {
+            let mut sys = system.lock().expect("lock should not fail");
+            sys.spawn("self_test".to_string(), EchoActor)
+                .expect("spawn should succeed")
+        };
+
+        let ctx = ActorContext {
+            actor_id: actor_ref.id,
+            actor_name: "self_test".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system: system.clone(),
+        };
+
+        let self_ref = ctx.get_self();
+        assert!(self_ref.is_ok());
+        assert_eq!(self_ref.unwrap().id, actor_ref.id);
+
+        // Cleanup
+        let mut sys = system.lock().expect("lock should not fail");
+        sys.shutdown();
+    }
+
+    /// Test ActorContext get_self when actor doesn't exist
+    #[test]
+    fn test_actor_context_get_self_not_found() {
+        let system = ActorSystem::new();
+
+        let ctx = ActorContext {
+            actor_id: ActorId(9999), // Non-existent actor
+            actor_name: "ghost".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = ctx.get_self();
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    /// Test ActorContext stop_child
+    #[test]
+    fn test_actor_context_stop_child() {
+        let system = ActorSystem::new();
+
+        // Create parent context with a child
+        let child_system = ActorSystem::new();
+        let child_ref = {
+            let mut sys = child_system.lock().expect("lock should not fail");
+            sys.spawn("child_actor".to_string(), EchoActor)
+                .expect("spawn should succeed")
+        };
+
+        let mut children = HashMap::new();
+        children.insert(child_ref.id, child_ref.clone());
+
+        let mut ctx = ActorContext {
+            actor_id: ActorId(50),
+            actor_name: "parent".to_string(),
+            supervisor: None,
+            children,
+            system,
+        };
+
+        // Stop the child - should succeed even if send fails
+        let result = ctx.stop_child(child_ref.id);
+        assert!(result.is_ok());
+
+        // Child should be removed from children map
+        assert!(!ctx.children.contains_key(&child_ref.id));
+
+        // Cleanup
+        let mut sys = child_system.lock().expect("lock should not fail");
+        sys.shutdown();
+    }
+
+    /// Test ActorContext stop_child for non-existent child
+    #[test]
+    fn test_actor_context_stop_child_not_found() {
+        let system = ActorSystem::new();
+
+        let mut ctx = ActorContext {
+            actor_id: ActorId(51),
+            actor_name: "parent2".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        // Stopping non-existent child should succeed (no-op)
+        let result = ctx.stop_child(ActorId(999));
+        assert!(result.is_ok());
+    }
+
+    /// Test Message variants serialization roundtrip
+    #[test]
+    fn test_message_serialization() {
+        use serde_json;
+
+        let messages = vec![
+            Message::Start,
+            Message::Stop,
+            Message::Restart,
+            Message::User("test".to_string(), vec![MessageValue::Integer(42)]),
+            Message::Error("error msg".to_string()),
+            Message::ChildFailed(ActorId(1), "failure".to_string()),
+            Message::ChildRestarted(ActorId(2)),
+        ];
+
+        for msg in messages {
+            let serialized = serde_json::to_string(&msg).expect("serialize should succeed");
+            let _deserialized: Message =
+                serde_json::from_str(&serialized).expect("deserialize should succeed");
+        }
+    }
+
+    /// Test MessageValue serialization roundtrip
+    #[test]
+    fn test_message_value_serialization() {
+        use serde_json;
+
+        let mut map = HashMap::new();
+        map.insert("key".to_string(), MessageValue::Integer(10));
+
+        let values = vec![
+            MessageValue::String("hello".to_string()),
+            MessageValue::Integer(123),
+            MessageValue::Float(3.14),
+            MessageValue::Bool(true),
+            MessageValue::List(vec![MessageValue::Integer(1), MessageValue::Integer(2)]),
+            MessageValue::Map(map),
+            MessageValue::ActorRef(ActorId(42)),
+        ];
+
+        for val in values {
+            let serialized = serde_json::to_string(&val).expect("serialize should succeed");
+            let _deserialized: MessageValue =
+                serde_json::from_str(&serialized).expect("deserialize should succeed");
+        }
+    }
+
+    /// Test ActorId serialization
+    #[test]
+    fn test_actor_id_serialization() {
+        use serde_json;
+
+        let id = ActorId(12345);
+        let serialized = serde_json::to_string(&id).expect("serialize should succeed");
+        let deserialized: ActorId =
+            serde_json::from_str(&serialized).expect("deserialize should succeed");
+        assert_eq!(id, deserialized);
+    }
+
+    /// Test ActorId hash implementation (for HashMap keys)
+    #[test]
+    fn test_actor_id_hash() {
+        use std::collections::HashSet;
+
+        let mut set = HashSet::new();
+        set.insert(ActorId(1));
+        set.insert(ActorId(2));
+        set.insert(ActorId(1)); // Duplicate
+
+        assert_eq!(set.len(), 2);
+        assert!(set.contains(&ActorId(1)));
+        assert!(set.contains(&ActorId(2)));
+    }
+
+    /// Test ActorId copy semantics
+    #[test]
+    fn test_actor_id_copy() {
+        let id1 = ActorId(42);
+        let id2 = id1; // Copy
+        assert_eq!(id1, id2);
+        assert_eq!(id1.0, 42);
+        assert_eq!(id2.0, 42);
+    }
+
+    /// Test SupervisorDirective debug output
+    #[test]
+    fn test_supervisor_directive_debug() {
+        let directives = vec![
+            SupervisorDirective::Restart,
+            SupervisorDirective::Stop,
+            SupervisorDirective::Escalate,
+            SupervisorDirective::Resume,
+        ];
+
+        for d in directives {
+            let debug_str = format!("{:?}", d);
+            assert!(!debug_str.is_empty());
+        }
+    }
+
+    /// Test stopping a non-existent actor in ActorSystem
+    #[test]
+    fn test_actor_system_stop_nonexistent() {
+        let system = ActorSystem::new();
+        let mut sys = system.lock().expect("lock should not fail");
+
+        let result = sys.stop_actor(ActorId(99999));
+        assert!(result.is_ok()); // Should succeed (no-op)
+    }
+
+    /// Test ActorRef debug output
+    #[test]
+    fn test_actor_ref_debug() {
+        let (sender, _) = mpsc::channel();
+        let actor_ref = ActorRef {
+            id: ActorId(123),
+            name: "debug_test".to_string(),
+            sender,
+        };
+        let debug_str = format!("{:?}", actor_ref);
+        assert!(debug_str.contains("ActorRef"));
+        assert!(debug_str.contains("123"));
+    }
+
+    /// Test ActorRef clone
+    #[test]
+    fn test_actor_ref_clone() {
+        let (sender, _) = mpsc::channel();
+        let actor_ref = ActorRef {
+            id: ActorId(456),
+            name: "clone_test".to_string(),
+            sender,
+        };
+
+        let cloned = actor_ref.clone();
+        assert_eq!(cloned.id, actor_ref.id);
+        assert_eq!(cloned.name, actor_ref.name);
+    }
+
+    /// Test EchoActor with Start message (should return None)
+    #[test]
+    fn test_echo_actor_start_message() {
+        let mut echo = EchoActor;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(200),
+            actor_name: "echo_start".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = echo.receive(Message::Start, &mut ctx);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test EchoActor with Stop message
+    #[test]
+    fn test_echo_actor_stop_message() {
+        let mut echo = EchoActor;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(201),
+            actor_name: "echo_stop".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = echo.receive(Message::Stop, &mut ctx);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test EchoActor with Restart message
+    #[test]
+    fn test_echo_actor_restart_message() {
+        let mut echo = EchoActor;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(202),
+            actor_name: "echo_restart".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = echo.receive(Message::Restart, &mut ctx);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test EchoActor with Error message
+    #[test]
+    fn test_echo_actor_error_message() {
+        let mut echo = EchoActor;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(203),
+            actor_name: "echo_error".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = echo.receive(Message::Error("test error".to_string()), &mut ctx);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test EchoActor with ChildFailed message
+    #[test]
+    fn test_echo_actor_child_failed_message() {
+        let mut echo = EchoActor;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(204),
+            actor_name: "echo_cf".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = echo.receive(
+            Message::ChildFailed(ActorId(999), "child failed".to_string()),
+            &mut ctx,
+        );
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test EchoActor with ChildRestarted message
+    #[test]
+    fn test_echo_actor_child_restarted_message() {
+        let mut echo = EchoActor;
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(205),
+            actor_name: "echo_cr".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = echo.receive(Message::ChildRestarted(ActorId(888)), &mut ctx);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test SupervisorActor with Start message (not ChildFailed)
+    #[test]
+    fn test_supervisor_actor_start_message() {
+        let mut supervisor = SupervisorActor::new(3);
+        let system = ActorSystem::new();
+        let mut ctx = ActorContext {
+            actor_id: ActorId(300),
+            actor_name: "sup_start".to_string(),
+            supervisor: None,
+            children: HashMap::new(),
+            system,
+        };
+
+        let result = supervisor.receive(Message::Start, &mut ctx);
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    /// Test Message::User with multiple value types
+    #[test]
+    fn test_message_user_multiple_values() {
+        let values = vec![
+            MessageValue::Integer(1),
+            MessageValue::Float(2.5),
+            MessageValue::String("test".to_string()),
+            MessageValue::Bool(true),
+            MessageValue::ActorRef(ActorId(10)),
+        ];
+
+        let message = Message::User("multi_value".to_string(), values.clone());
+        match message {
+            Message::User(msg_type, vals) => {
+                assert_eq!(msg_type, "multi_value");
+                assert_eq!(vals.len(), 5);
+            }
+            _ => panic!("Expected User message"),
+        }
+    }
+
+    /// Test MessageValue nested List
+    #[test]
+    fn test_message_value_nested_list() {
+        let inner_list = MessageValue::List(vec![
+            MessageValue::Integer(1),
+            MessageValue::Integer(2),
+        ]);
+        let outer_list = MessageValue::List(vec![inner_list, MessageValue::String("end".to_string())]);
+
+        match outer_list {
+            MessageValue::List(items) => {
+                assert_eq!(items.len(), 2);
+                match &items[0] {
+                    MessageValue::List(inner) => assert_eq!(inner.len(), 2),
+                    _ => panic!("Expected nested list"),
+                }
+            }
+            _ => panic!("Expected list"),
+        }
+    }
+
+    /// Test MessageValue nested Map
+    #[test]
+    fn test_message_value_nested_map() {
+        let mut inner_map = HashMap::new();
+        inner_map.insert("inner_key".to_string(), MessageValue::Integer(42));
+
+        let mut outer_map = HashMap::new();
+        outer_map.insert("nested".to_string(), MessageValue::Map(inner_map));
+        outer_map.insert("simple".to_string(), MessageValue::Bool(false));
+
+        let map_val = MessageValue::Map(outer_map);
+        match map_val {
+            MessageValue::Map(m) => {
+                assert_eq!(m.len(), 2);
+                assert!(m.contains_key("nested"));
+                assert!(m.contains_key("simple"));
+            }
+            _ => panic!("Expected map"),
+        }
+    }
+
+    /// Test ActorSystem spawn multiple actors
+    #[test]
+    fn test_actor_system_spawn_multiple() {
+        let system = ActorSystem::new();
+        let refs = {
+            let mut sys = system.lock().expect("lock should not fail");
+            let ref1 = sys
+                .spawn("actor_a".to_string(), EchoActor)
+                .expect("spawn should succeed");
+            let ref2 = sys
+                .spawn("actor_b".to_string(), EchoActor)
+                .expect("spawn should succeed");
+            let ref3 = sys
+                .spawn("actor_c".to_string(), EchoActor)
+                .expect("spawn should succeed");
+            (ref1, ref2, ref3)
+        };
+
+        assert_ne!(refs.0.id, refs.1.id);
+        assert_ne!(refs.1.id, refs.2.id);
+        assert_ne!(refs.0.id, refs.2.id);
+
+        // Cleanup
+        let mut sys = system.lock().expect("lock should not fail");
+        sys.shutdown();
+    }
+
+    /// Test actor shutdown removes all actors and names
+    #[test]
+    fn test_actor_system_shutdown_clears_all() {
+        let system = ActorSystem::new();
+        {
+            let mut sys = system.lock().expect("lock should not fail");
+            sys.spawn("shutdown_test_1".to_string(), EchoActor)
+                .expect("spawn should succeed");
+            sys.spawn("shutdown_test_2".to_string(), EchoActor)
+                .expect("spawn should succeed");
+            sys.shutdown();
+
+            assert!(sys.actors.is_empty());
+            assert!(sys.actor_names.is_empty());
+        }
+    }
+
+    /// Test supervisor with escalate strategy check
+    #[test]
+    fn test_supervisor_directive_escalate() {
+        let directive = SupervisorDirective::Escalate;
+        match directive {
+            SupervisorDirective::Escalate => {}
+            _ => panic!("Expected Escalate"),
+        }
+    }
+
+    /// Test supervisor with resume strategy check
+    #[test]
+    fn test_supervisor_directive_resume() {
+        let directive = SupervisorDirective::Resume;
+        match directive {
+            SupervisorDirective::Resume => {}
+            _ => panic!("Expected Resume"),
+        }
+    }
+
+    /// Test ActorSystem ID incrementing
+    #[test]
+    fn test_actor_system_id_increments() {
+        let mut sys = ActorSystem::default();
+        let initial_id = sys.next_id;
+
+        let _ref1 = sys
+            .spawn("inc_test_1".to_string(), EchoActor)
+            .expect("spawn should succeed");
+        assert!(sys.next_id > initial_id);
+
+        let _ref2 = sys
+            .spawn("inc_test_2".to_string(), EchoActor)
+            .expect("spawn should succeed");
+        assert!(sys.next_id > initial_id + 1);
+
+        sys.shutdown();
+    }
+}
+
+#[cfg(test)]
 mod property_tests_actor {
     use proptest::proptest;
 
