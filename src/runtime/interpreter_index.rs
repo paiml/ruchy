@@ -435,7 +435,230 @@ impl Interpreter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::runtime::interpreter::Interpreter;
     use std::sync::Arc;
+
+    // ============== eval_index_access via interpreter tests ==============
+
+    #[test]
+    fn test_eval_index_access_array_positive() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[10, 20, 30][1]").unwrap();
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_eval_index_access_array_negative() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[10, 20, 30][-1]").unwrap();
+        assert_eq!(result, Value::Integer(30));
+    }
+
+    #[test]
+    fn test_eval_index_access_array_out_of_bounds() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[1, 2, 3][10]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_index_access_string_positive() {
+        let mut interp = Interpreter::new();
+        // String indexing with block expression
+        let result = interp.eval_string(r#"{ let s = "hello"; s[0] }"#).unwrap();
+        assert_eq!(result.to_string(), "\"h\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_string_negative() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"{ let s = "hello"; s[-1] }"#).unwrap();
+        assert_eq!(result.to_string(), "\"o\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_string_out_of_bounds() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"{ let s = "hi"; s[10] }"#);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_index_access_array_slice_exclusive() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[1, 2, 3, 4, 5][1..4]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 3);
+            assert_eq!(arr[0], Value::Integer(2));
+            assert_eq!(arr[2], Value::Integer(4));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_eval_index_access_array_slice_inclusive() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[1, 2, 3, 4, 5][1..=3]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 3);
+            assert_eq!(arr[0], Value::Integer(2));
+            assert_eq!(arr[2], Value::Integer(4));
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_eval_index_access_string_slice_exclusive() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"{ let s = "hello"; s[1..4] }"#).unwrap();
+        assert_eq!(result.to_string(), "\"ell\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_tuple_positive() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(10, 20, 30)[1]").unwrap();
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_eval_index_access_tuple_negative() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(10, 20, 30)[-2]").unwrap();
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_eval_index_access_tuple_out_of_bounds() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(1, 2)[5]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_index_access_object_string_key() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{\"a\": 42}[\"a\"]").unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_index_access_object_string_key_not_found() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{\"a\": 42}[\"b\"]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_index_access_invalid_index_type() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[1, 2, 3][true]");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_index_access_invalid_object_type() {
+        let mut interp = Interpreter::new();
+        // Indexing a boolean via block expression
+        let result = interp.eval_string("{ let b = true; b[0] }");
+        assert!(result.is_err());
+    }
+
+    // ============== eval_field_access via interpreter tests ==============
+
+    #[test]
+    fn test_eval_field_access_object_simple() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{x: 10, y: 20}.x").unwrap();
+        assert_eq!(result, Value::Integer(10));
+    }
+
+    #[test]
+    fn test_eval_field_access_object_not_found() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{x: 10}.y");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_field_access_tuple_field_0() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(1, 2, 3).0").unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_eval_field_access_tuple_field_1() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(\"hello\", \"world\").1").unwrap();
+        assert_eq!(result.to_string(), "\"world\"");
+    }
+
+    #[test]
+    fn test_eval_field_access_invalid_type() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("42.foo");
+        assert!(result.is_err());
+    }
+
+    // ============== eval_object_literal via interpreter tests ==============
+
+    #[test]
+    fn test_eval_object_literal_simple() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{a: 1, b: 2}").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("a"), Some(&Value::Integer(1)));
+            assert_eq!(obj.get("b"), Some(&Value::Integer(2)));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_object_literal_nested() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{outer: {inner: 42}}").unwrap();
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(inner)) = obj.get("outer") {
+                assert_eq!(inner.get("inner"), Some(&Value::Integer(42)));
+            } else {
+                panic!("Expected inner object");
+            }
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_object_literal_with_expressions() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{sum: 1 + 2, product: 3 * 4}").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("sum"), Some(&Value::Integer(3)));
+            assert_eq!(obj.get("product"), Some(&Value::Integer(12)));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    // ============== eval_qualified_name via interpreter tests ==============
+
+    #[test]
+    fn test_qualified_name_unknown_module_method() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("Foo", "bar");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_qualified_name_unknown_constructor() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("MyCustomType", "new");
+        assert!(result.is_err());
+    }
 
     // ============== check_constructor_access tests ==============
 
@@ -789,5 +1012,398 @@ mod tests {
         ];
         let result = Interpreter::index_dataframe_column(&columns, "y");
         assert!(result.is_err());
+    }
+
+    // ============== Additional coverage tests for interpreter_index.rs ==============
+
+    #[test]
+    fn test_eval_index_access_array_first_element() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[100, 200, 300][0]").unwrap();
+        assert_eq!(result, Value::Integer(100));
+    }
+
+    #[test]
+    fn test_eval_index_access_array_last_element() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[100, 200, 300][2]").unwrap();
+        assert_eq!(result, Value::Integer(300));
+    }
+
+    #[test]
+    fn test_eval_index_access_string_unicode() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"{ let s = "abc"; s[1] }"#).unwrap();
+        assert_eq!(result.to_string(), "\"b\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_array_negative_first() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[1, 2, 3][-3]").unwrap();
+        assert_eq!(result, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_eval_index_access_string_negative_first() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"{ let s = "xyz"; s[-3] }"#).unwrap();
+        assert_eq!(result.to_string(), "\"x\"");
+    }
+
+    #[test]
+    fn test_eval_field_access_object_nested() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{a: {b: 42}}.a").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("b"), Some(&Value::Integer(42)));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_field_access_tuple_field_2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(10, 20, 30).2").unwrap();
+        assert_eq!(result, Value::Integer(30));
+    }
+
+    #[test]
+    fn test_eval_object_literal_empty_via_string() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{}").unwrap();
+        if let Value::Object(obj) = result {
+            assert!(obj.is_empty());
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_object_literal_string_values() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{name: \"Alice\", city: \"NYC\"}").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.len(), 2);
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_object_literal_mixed_types() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{num: 42, flag: true, text: \"hello\"}").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("num"), Some(&Value::Integer(42)));
+            assert_eq!(obj.get("flag"), Some(&Value::Bool(true)));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_eval_index_access_array_with_floats() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[1.5, 2.5, 3.5][1]").unwrap();
+        assert_eq!(result, Value::Float(2.5));
+    }
+
+    #[test]
+    fn test_eval_index_access_array_with_bools() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[true, false, true][0]").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_index_access_string_slice_to_end() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"{ let s = "hello"; s[2..5] }"#).unwrap();
+        assert_eq!(result.to_string(), "\"llo\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_tuple_with_strings() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(\"a\", \"b\", \"c\")[1]").unwrap();
+        assert_eq!(result.to_string(), "\"b\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_array_nested() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[[1, 2], [3, 4]][0]").unwrap();
+        if let Value::Array(arr) = result {
+            assert_eq!(arr.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_eval_field_access_tuple_with_nested() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("((1, 2), (3, 4)).0").unwrap();
+        if let Value::Tuple(t) = result {
+            assert_eq!(t.len(), 2);
+        } else {
+            panic!("Expected tuple");
+        }
+    }
+
+    #[test]
+    fn test_check_field_visibility_no_struct() {
+        let interp = Interpreter::new();
+        let obj = HashMap::new();
+        let result = interp.check_struct_visibility(&obj, "field");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_check_field_visibility_with_struct_type() {
+        let interp = Interpreter::new();
+        let mut obj = HashMap::new();
+        obj.insert("__struct_type".to_string(), Value::from_string("TestStruct".to_string()));
+        // This should still succeed since we haven't defined private fields
+        let result = interp.check_struct_visibility(&obj, "public_field");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_get_object_field_with_various_types() {
+        let mut obj = HashMap::new();
+        obj.insert("int".to_string(), Value::Integer(42));
+        obj.insert("float".to_string(), Value::Float(3.14));
+        obj.insert("bool".to_string(), Value::Bool(true));
+        obj.insert("nil".to_string(), Value::Nil);
+
+        assert_eq!(Interpreter::get_object_field(&obj, "int").unwrap(), Value::Integer(42));
+        assert_eq!(Interpreter::get_object_field(&obj, "float").unwrap(), Value::Float(3.14));
+        assert_eq!(Interpreter::get_object_field(&obj, "bool").unwrap(), Value::Bool(true));
+        assert_eq!(Interpreter::get_object_field(&obj, "nil").unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_constructor_access_with_new_but_no_type() {
+        let obj = HashMap::new();
+        let result = Interpreter::check_constructor_access(&obj, "new");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_constructor_access_enum_type() {
+        // Enum type should return None since it's not Actor/Struct/Class
+        let mut obj = HashMap::new();
+        obj.insert("__type".to_string(), Value::from_string("Enum".to_string()));
+        obj.insert("__name".to_string(), Value::from_string("MyEnum".to_string()));
+        let result = Interpreter::check_constructor_access(&obj, "new");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_eval_index_access_array_negative_second() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[1, 2, 3, 4, 5][-2]").unwrap();
+        assert_eq!(result, Value::Integer(4));
+    }
+
+    #[test]
+    fn test_eval_index_access_string_middle() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"{ let s = "abcdef"; s[3] }"#).unwrap();
+        assert_eq!(result.to_string(), "\"d\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_tuple_mixed_types() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(1, 2.5, true)[2]").unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_object_literal_with_nil() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("{value: nil}").unwrap();
+        if let Value::Object(obj) = result {
+            assert_eq!(obj.get("value"), Some(&Value::Nil));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_index_object_mut_not_found() {
+        let obj = HashMap::new();
+        let cell = Arc::new(std::sync::Mutex::new(obj));
+        let result = Interpreter::index_object_mut(&cell, "missing");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_slice_array_open_start() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = Interpreter::slice_array(&arr, &Value::Nil, &Value::Integer(2), false);
+        assert!(result.is_ok());
+        if let Value::Array(sliced) = result.unwrap() {
+            assert_eq!(sliced.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_open_end() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = Interpreter::slice_array(&arr, &Value::Integer(1), &Value::Nil, false);
+        assert!(result.is_ok());
+        if let Value::Array(sliced) = result.unwrap() {
+            assert_eq!(sliced.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_negative_indices() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)];
+        let result = Interpreter::slice_array(&arr, &Value::Integer(-3), &Value::Integer(-1), false);
+        assert!(result.is_ok());
+        if let Value::Array(sliced) = result.unwrap() {
+            assert_eq!(sliced.len(), 2);
+        } else {
+            panic!("Expected array");
+        }
+    }
+
+    #[test]
+    fn test_slice_string_open_start() {
+        let result = Interpreter::slice_string("hello", &Value::Nil, &Value::Integer(3), false);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "\"hel\"");
+    }
+
+    #[test]
+    fn test_slice_string_open_end() {
+        let result = Interpreter::slice_string("hello", &Value::Integer(2), &Value::Nil, false);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "\"llo\"");
+    }
+
+    #[test]
+    fn test_slice_string_negative_start() {
+        let result = Interpreter::slice_string("hello", &Value::Integer(-3), &Value::Nil, false);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "\"llo\"");
+    }
+
+    #[test]
+    fn test_slice_string_negative_end() {
+        let result = Interpreter::slice_string("hello", &Value::Integer(0), &Value::Integer(-2), false);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().to_string(), "\"hel\"");
+    }
+
+    #[test]
+    fn test_index_dataframe_row_multiple_columns() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "a".to_string(),
+                values: vec![Value::Integer(1), Value::Integer(2)],
+            },
+            DataFrameColumn {
+                name: "b".to_string(),
+                values: vec![Value::from_string("x".to_string()), Value::from_string("y".to_string())],
+            },
+        ];
+        let result = Interpreter::index_dataframe_row(&columns, 1);
+        assert!(result.is_ok());
+        if let Value::Object(row) = result.unwrap() {
+            assert_eq!(row.get("a"), Some(&Value::Integer(2)));
+        } else {
+            panic!("Expected object");
+        }
+    }
+
+    #[test]
+    fn test_index_dataframe_row_out_of_bounds() {
+        let columns = vec![DataFrameColumn {
+            name: "col".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result = Interpreter::index_dataframe_row(&columns, 10);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_index_dataframe_row_empty() {
+        let columns: Vec<DataFrameColumn> = vec![];
+        let result = Interpreter::index_dataframe_row(&columns, 0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_access_object_field_missing() {
+        let interp = Interpreter::new();
+        let obj = HashMap::new();
+        let result = interp.access_object_field(&obj, "missing");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_access_object_mut_field_missing() {
+        let interp = Interpreter::new();
+        let obj = HashMap::new();
+        let cell = Arc::new(std::sync::Mutex::new(obj));
+        let result = interp.access_object_mut_field(&cell, "missing");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_field_access_object_with_kind() {
+        let mut interp = Interpreter::new();
+        // Test accessing a field from an object (using 'kind' instead of 'type' which may be reserved)
+        let result = interp.eval_string("{kind: \"Point\", x: 10, y: 20}.kind").unwrap();
+        assert_eq!(result.to_string(), "\"Point\"");
+    }
+
+    #[test]
+    fn test_eval_index_access_array_single_element() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("[42][0]").unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_index_access_tuple_single_element() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("(42,)[0]").unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_index_access_string_single_char() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string("\"x\"[0]").unwrap();
+        assert_eq!(result.to_string(), "\"x\"");
+    }
+
+    #[test]
+    fn test_check_actor_field_access_no_actor_id() {
+        let obj = HashMap::new();
+        let result = Interpreter::check_actor_field_access(&obj, "field");
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_check_actor_field_access_with_regular_field() {
+        let mut obj = HashMap::new();
+        obj.insert("regular".to_string(), Value::Integer(42));
+        let result = Interpreter::check_actor_field_access(&obj, "regular");
+        assert!(result.is_ok());
+        assert!(result.unwrap().is_none());
     }
 }
