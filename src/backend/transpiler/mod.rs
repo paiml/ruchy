@@ -213,6 +213,12 @@ pub struct Transpiler {
     /// Maps variable names to their type strings (e.g., "Option<i32>", "Result<T, E>")
     /// Used to detect Option/Result types when processing method chains.
     pub variable_types: std::cell::RefCell<std::collections::HashMap<String, String>>,
+    /// BOOK-COMPAT-002: Track struct field types for proper string conversion
+    ///
+    /// Maps (struct_name, field_name) -> field_type for struct literal transpilation.
+    /// When a field type is "String" and the value is a string literal, we add .to_string().
+    pub struct_field_types:
+        std::cell::RefCell<std::collections::HashMap<(String, String), String>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -244,6 +250,7 @@ impl Clone for Transpiler {
                     .clone(),
             ),
             variable_types: std::cell::RefCell::new(self.variable_types.borrow().clone()),
+            struct_field_types: std::cell::RefCell::new(self.struct_field_types.borrow().clone()),
         }
     }
 }
@@ -270,6 +277,7 @@ impl Transpiler {
             global_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
             const_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
             variable_types: std::cell::RefCell::new(std::collections::HashMap::new()),
+            struct_field_types: std::cell::RefCell::new(std::collections::HashMap::new()),
         }
     }
     // EXTREME TDD Round 64: generate_value_printing_tokens moved to print_helpers.rs

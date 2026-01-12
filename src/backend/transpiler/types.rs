@@ -380,6 +380,22 @@ impl Transpiler {
         // Generate derive attributes using helper (PARSER-077 fix)
         let derive_attrs = self.generate_derive_attributes(&extended_derives);
 
+        // BOOK-COMPAT-002: Store struct field types for proper string literal conversion
+        // When transpiling struct literals, we need to know if a field is String type
+        // to add .to_string() for string literal values
+        {
+            use crate::frontend::ast::TypeKind;
+            let mut field_types = self.struct_field_types.borrow_mut();
+            for field in fields {
+                // Extract type name from TypeKind::Named
+                let type_name = match &field.ty.kind {
+                    TypeKind::Named(n) => n.clone(),
+                    _ => format!("{:?}", field.ty.kind), // Fallback for complex types
+                };
+                field_types.insert((name.to_string(), field.name.clone()), type_name);
+            }
+        }
+
         // Generate struct definition
         let struct_def = if effective_type_params.is_empty() {
             quote! {
@@ -402,13 +418,22 @@ impl Transpiler {
 
         // Generate Default impl if there are default values
         if has_defaults {
+            use crate::frontend::ast::{ExprKind, Literal};
             let default_field_tokens: Result<Vec<_>> = fields
                 .iter()
                 .map(|field| -> Result<TokenStream> {
                     let field_name = format_ident!("{}", field.name);
                     if let Some(ref default_expr) = field.default_value {
                         let default_value = self.transpile_expr(default_expr)?;
-                        Ok(quote! { #field_name: #default_value })
+                        // BOOK-COMPAT-004: Add .to_string() for String fields with string literal defaults
+                        let is_string_field = matches!(&field.ty.kind, TypeKind::Named(n) if n == "String");
+                        let is_string_literal =
+                            matches!(&default_expr.kind, ExprKind::Literal(Literal::String(_)));
+                        if is_string_field && is_string_literal {
+                            Ok(quote! { #field_name: #default_value.to_string() })
+                        } else {
+                            Ok(quote! { #field_name: #default_value })
+                        }
                     } else {
                         Ok(quote! { #field_name: Default::default() })
                     }

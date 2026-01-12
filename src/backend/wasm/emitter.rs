@@ -882,31 +882,52 @@ impl WasmEmitter {
     }
 
     /// Lower a function call to WASM instructions
-    /// Complexity: 7 (Toyota Way: <10 ✓)
+    /// Complexity: 8 (Toyota Way: <10 ✓)
     fn lower_call(&self, func: &Expr, args: &[Expr]) -> Result<Vec<Instruction<'static>>, String> {
         let mut instructions = vec![];
 
-        // Push arguments onto stack
-        for arg in args {
-            instructions.extend(self.lower_expression(arg)?);
-        }
-
-        // Determine function index
+        // Determine function index and handle built-in functions specially
         let func_index = if let ExprKind::Identifier(name) = &func.kind {
             if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") {
-                // Built-in functions: choose based on argument type
+                // Built-in print functions only take one argument in WASM
+                // Find the first non-string argument to print
                 // Function index 0: println_i32 - (i32) -> ()
                 // Function index 1: println_f32 - (f32) -> ()
-                if let Some(first_arg) = args.first() {
-                    let arg_type = self.infer_type(first_arg);
-                    match arg_type {
+                let mut selected_arg: Option<&Expr> = None;
+                let mut func_idx = 0u32;
+
+                for arg in args {
+                    // Skip string literals (format strings)
+                    if matches!(&arg.kind, ExprKind::Literal(Literal::String(_))) {
+                        continue;
+                    }
+                    // Skip string interpolations (format strings)
+                    if matches!(&arg.kind, ExprKind::StringInterpolation { .. }) {
+                        continue;
+                    }
+                    selected_arg = Some(arg);
+                    let arg_type = self.infer_type(arg);
+                    func_idx = match arg_type {
                         WasmType::F32 => 1, // Use println_f32
                         _ => 0,             // Use println_i32 (default)
-                    }
-                } else {
-                    0 // No args, use i32 version
+                    };
+                    break;
                 }
+
+                // Push only the selected argument
+                if let Some(arg) = selected_arg {
+                    instructions.extend(self.lower_expression(arg)?);
+                } else if let Some(first_arg) = args.first() {
+                    // No non-string arg found, use first arg (handles println("hello"))
+                    instructions.extend(self.lower_expression(first_arg)?);
+                }
+
+                func_idx
             } else {
+                // Regular function call - push all arguments
+                for arg in args {
+                    instructions.extend(self.lower_expression(arg)?);
+                }
                 // Look up user-defined function index (extract index from tuple)
                 self.functions
                     .borrow()
@@ -915,6 +936,10 @@ impl WasmEmitter {
                     .ok_or_else(|| format!("Unknown function: {name}"))?
             }
         } else {
+            // Non-identifier function (should not happen in normal code)
+            for arg in args {
+                instructions.extend(self.lower_expression(arg)?);
+            }
             return Err("Function calls must use identifiers".to_string());
         };
 
