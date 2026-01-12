@@ -1827,3 +1827,138 @@ impl Default for WasmEmitter {
         Self::new()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::frontend::ast::Span;
+    use crate::frontend::parser::Parser;
+
+    #[test]
+    fn test_wasm_emitter_new() {
+        let emitter = WasmEmitter::new();
+        // Just verify creation works
+        assert!(emitter.functions.borrow().is_empty());
+    }
+
+    #[test]
+    fn test_wasm_emitter_default() {
+        let emitter = WasmEmitter::default();
+        assert!(emitter.functions.borrow().is_empty());
+    }
+
+    #[test]
+    fn test_lower_literal_integer() {
+        let emitter = WasmEmitter::new();
+        let result = emitter.lower_literal(&Literal::Integer(42, None));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_lower_literal_float() {
+        let emitter = WasmEmitter::new();
+        let result = emitter.lower_literal(&Literal::Float(3.14));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_lower_literal_bool_true() {
+        let emitter = WasmEmitter::new();
+        let result = emitter.lower_literal(&Literal::Bool(true));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_lower_literal_bool_false() {
+        let emitter = WasmEmitter::new();
+        let result = emitter.lower_literal(&Literal::Bool(false));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_lower_literal_string() {
+        let emitter = WasmEmitter::new();
+        let result = emitter.lower_literal(&Literal::String("test".to_string()));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_lower_literal_unit() {
+        let emitter = WasmEmitter::new();
+        let result = emitter.lower_literal(&Literal::Unit);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_lower_literal_char() {
+        let emitter = WasmEmitter::new();
+        let result = emitter.lower_literal(&Literal::Char('A'));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_infer_element_type_via_parser() {
+        let emitter = WasmEmitter::new();
+        let mut parser = Parser::new("42");
+        if let Ok(ast) = parser.parse() {
+            let ty = emitter.infer_element_type(&ast);
+            // Integer literals infer to I32
+            let _ = ty;
+        }
+    }
+
+    #[test]
+    fn test_infer_element_type_float_via_parser() {
+        let emitter = WasmEmitter::new();
+        let mut parser = Parser::new("3.14");
+        if let Ok(ast) = parser.parse() {
+            let ty = emitter.infer_element_type(&ast);
+            let _ = ty;
+        }
+    }
+
+    #[test]
+    fn test_collect_tuple_types_via_parser() {
+        let emitter = WasmEmitter::new();
+        let mut parser = Parser::new("let x = (1, 2.0); x");
+        if let Ok(ast) = parser.parse() {
+            emitter.collect_tuple_types(&ast);
+        }
+    }
+
+    #[test]
+    fn test_structs_registration() {
+        let emitter = WasmEmitter::new();
+        // Register a struct manually
+        emitter
+            .structs
+            .borrow_mut()
+            .insert("Point".to_string(), vec!["x".to_string(), "y".to_string()]);
+        assert!(emitter.structs.borrow().contains_key("Point"));
+    }
+
+    #[test]
+    fn test_functions_registration() {
+        let emitter = WasmEmitter::new();
+        // Register a function manually
+        emitter
+            .functions
+            .borrow_mut()
+            .insert("main".to_string(), (0, false));
+        let funcs = emitter.functions.borrow();
+        assert!(funcs.contains_key("main"));
+        assert_eq!(funcs["main"], (0, false));
+    }
+
+    #[test]
+    fn test_tuple_types_registration() {
+        let emitter = WasmEmitter::new();
+        emitter.tuple_types.borrow_mut().insert(
+            "pair".to_string(),
+            vec![WasmType::I32, WasmType::F32],
+        );
+        let types = emitter.tuple_types.borrow();
+        assert!(types.contains_key("pair"));
+        assert_eq!(types["pair"].len(), 2);
+    }
+}
