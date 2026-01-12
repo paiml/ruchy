@@ -574,13 +574,16 @@ mod tests {
 
     #[test]
     fn test_struct_with_method() {
-        let result = parse("struct Counter { count: i32, fun inc(&mut self) { self.count = self.count + 1 } }");
+        let result = parse(
+            "struct Counter { count: i32, fun inc(&mut self) { self.count = self.count + 1 } }",
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_struct_with_pub_method() {
-        let result = parse("struct Counter { count: i32, pub fun get(&self) -> i32 { self.count } }");
+        let result =
+            parse("struct Counter { count: i32, pub fun get(&self) -> i32 { self.count } }");
         assert!(result.is_ok());
     }
 
@@ -592,7 +595,8 @@ mod tests {
 
     #[test]
     fn test_struct_with_multiple_methods() {
-        let result = parse("struct Counter { count: i32, fun inc(&mut self) { } fun dec(&mut self) { } }");
+        let result =
+            parse("struct Counter { count: i32, fun inc(&mut self) { } fun dec(&mut self) { } }");
         assert!(result.is_ok());
     }
 
@@ -632,7 +636,8 @@ mod tests {
 
     #[test]
     fn test_struct_with_line_comments() {
-        let result = parse("struct Point {\n  // x coordinate\n  x: i32,\n  // y coordinate\n  y: i32\n}");
+        let result =
+            parse("struct Point {\n  // x coordinate\n  x: i32,\n  // y coordinate\n  y: i32\n}");
         assert!(result.is_ok(), "Struct with line comments should parse");
     }
 

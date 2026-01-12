@@ -1714,3 +1714,35 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage type_inference.rs 66%→90%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage type_inference.rs 66%→90%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T11:18:06.514808123+00:00
+  updated: 2026-01-12T11:18:06.514808123+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage expression_analysis.rs 78%→90%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage expression_analysis.rs 78%→90%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T11:37:05.162845671+00:00
+  updated: 2026-01-12T11:37:05.162845671+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

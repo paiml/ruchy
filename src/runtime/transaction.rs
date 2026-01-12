@@ -638,9 +638,13 @@ mod tests {
     fn test_transactional_state_depth() {
         let mut state = TransactionalState::new(1024 * 1024);
         assert_eq!(state.depth(), 0);
-        let _tx1 = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let _tx1 = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         assert_eq!(state.depth(), 1);
-        let _tx2 = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let _tx2 = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         assert_eq!(state.depth(), 2);
     }
 
@@ -656,7 +660,9 @@ mod tests {
     fn test_transactional_state_bindings_mut() {
         let mut state = TransactionalState::new(1024 * 1024);
         state.insert_binding("x".to_string(), Value::Integer(1), false);
-        state.bindings_mut().insert("y".to_string(), Value::Integer(2));
+        state
+            .bindings_mut()
+            .insert("y".to_string(), Value::Integer(2));
         assert_eq!(state.bindings().get("y"), Some(&Value::Integer(2)));
     }
 
@@ -674,7 +680,9 @@ mod tests {
     fn test_transactional_state_clear() {
         let mut state = TransactionalState::new(1024 * 1024);
         state.insert_binding("x".to_string(), Value::Integer(1), false);
-        let _tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let _tx = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         state.clear();
         assert!(state.bindings().is_empty());
         assert_eq!(state.depth(), 0);
@@ -725,7 +733,9 @@ mod tests {
     #[test]
     fn test_commit_wrong_transaction_id() {
         let mut state = TransactionalState::new(1024 * 1024);
-        let _tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let _tx = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         let result = state.commit_transaction(TransactionId(999));
         assert!(result.is_err());
     }
@@ -740,7 +750,9 @@ mod tests {
     #[test]
     fn test_rollback_wrong_transaction_id() {
         let mut state = TransactionalState::new(1024 * 1024);
-        let _tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let _tx = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         let result = state.rollback_transaction(TransactionId(999));
         assert!(result.is_err());
     }
@@ -768,7 +780,9 @@ mod tests {
     #[test]
     fn test_check_transaction_limits_ok() {
         let mut state = TransactionalState::new(1024 * 1024);
-        let tx = state.begin_transaction(TransactionMetadata::default()).unwrap();
+        let tx = state
+            .begin_transaction(TransactionMetadata::default())
+            .unwrap();
         let result = state.check_transaction_limits(tx);
         assert!(result.is_ok());
     }

@@ -2410,9 +2410,7 @@ mod tests {
         // Change to temp directory
         // Note: On macOS, temp_dir may be /var/folders/... but canonicalizes to /private/var/folders/...
         let temp_dir = std::env::temp_dir();
-        let temp_dir_canonical = temp_dir
-            .canonicalize()
-            .unwrap_or_else(|_| temp_dir.clone());
+        let temp_dir_canonical = temp_dir.canonicalize().unwrap_or_else(|_| temp_dir.clone());
         let result = builtin_env_set_current_dir(&[Value::from_string(
             temp_dir.to_string_lossy().to_string(),
         )])

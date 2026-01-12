@@ -131,8 +131,7 @@ pub fn returns_boolean(body: &Expr) -> bool {
             else_branch,
             ..
         } => {
-            returns_boolean(then_branch)
-                || else_branch.as_ref().is_some_and(|e| returns_boolean(e))
+            returns_boolean(then_branch) || else_branch.as_ref().is_some_and(|e| returns_boolean(e))
         }
 
         // Unary not operator on boolean
@@ -427,9 +426,8 @@ where
     let mut var_to_param: HashMap<String, &Type> = HashMap::new();
 
     // Helper: check if identifier is a parameter
-    let is_param = |name: &str| -> Option<&Type> {
-        params.iter().find(|p| p.name() == name).map(|p| &p.ty)
-    };
+    let is_param =
+        |name: &str| -> Option<&Type> { params.iter().find(|p| p.name() == name).map(|p| &p.ty) };
 
     // Trace variable assignments in body
     trace_param_assignments(body, &mut var_to_param, params);
@@ -579,11 +577,7 @@ mod tests {
 
     #[test]
     fn test_returns_string_literal_if_both_branches() {
-        let expr = if_expr(
-            bool_lit(true),
-            string_lit("yes"),
-            Some(string_lit("no")),
-        );
+        let expr = if_expr(bool_lit(true), string_lit("yes"), Some(string_lit("no")));
         assert!(returns_string_literal(&expr));
     }
 
@@ -609,9 +603,7 @@ mod tests {
 
     #[test]
     fn test_returns_string_literal_block_with_var_tracking() {
-        let expr = block(vec![
-            let_expr("s", string_lit("hello"), ident("s"), false),
-        ]);
+        let expr = block(vec![let_expr("s", string_lit("hello"), ident("s"), false)]);
         assert!(returns_string_literal(&expr));
     }
 
@@ -898,14 +890,20 @@ mod tests {
     fn test_get_final_expression_block() {
         let expr = block(vec![int_lit(1), int_lit(42)]);
         let final_expr = get_final_expression(&expr).unwrap();
-        assert!(matches!(&final_expr.kind, ExprKind::Literal(Literal::Integer(42, None))));
+        assert!(matches!(
+            &final_expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
     }
 
     #[test]
     fn test_get_final_expression_let() {
         let expr = let_expr("x", int_lit(1), int_lit(42), false);
         let final_expr = get_final_expression(&expr).unwrap();
-        assert!(matches!(&final_expr.kind, ExprKind::Literal(Literal::Integer(42, None))));
+        assert!(matches!(
+            &final_expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
     }
 
     #[test]
@@ -913,7 +911,10 @@ mod tests {
         let inner = let_expr("y", int_lit(2), int_lit(42), false);
         let expr = let_expr("x", int_lit(1), inner, false);
         let final_expr = get_final_expression(&expr).unwrap();
-        assert!(matches!(&final_expr.kind, ExprKind::Literal(Literal::Integer(42, None))));
+        assert!(matches!(
+            &final_expr.kind,
+            ExprKind::Literal(Literal::Integer(42, None))
+        ));
     }
 
     #[test]

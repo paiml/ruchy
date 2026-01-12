@@ -499,7 +499,10 @@ mod tests {
     #[test]
     fn test_trailing_comma_multiple() {
         let result = parse("[1, 2, 3,]");
-        assert!(result.is_ok(), "Multiple element trailing comma should parse");
+        assert!(
+            result.is_ok(),
+            "Multiple element trailing comma should parse"
+        );
     }
 
     #[test]
@@ -539,7 +542,10 @@ mod tests {
     #[test]
     fn test_list_comprehension_method_call() {
         let result = parse("[s.len() for s in strings]");
-        assert!(result.is_ok(), "Method call list comprehension should parse");
+        assert!(
+            result.is_ok(),
+            "Method call list comprehension should parse"
+        );
     }
 
     // ============================================================

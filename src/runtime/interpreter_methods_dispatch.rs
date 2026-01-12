@@ -483,7 +483,9 @@ mod tests {
     fn test_dispatch_to_array_method() {
         let mut interp = make_interpreter();
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = interp.dispatch_method_call(&arr, "len", &[], false).unwrap();
+        let result = interp
+            .dispatch_method_call(&arr, "len", &[], false)
+            .unwrap();
         assert_eq!(result, Value::Integer(2));
     }
 
@@ -513,8 +515,14 @@ mod tests {
         let result = interp.eval_message_expr(&expr).unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Message".to_string())));
-            assert_eq!(obj.get("type"), Some(&Value::from_string("Increment".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Message".to_string()))
+            );
+            assert_eq!(
+                obj.get("type"),
+                Some(&Value::from_string("Increment".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -534,7 +542,9 @@ mod tests {
     #[test]
     fn test_eval_message_expr_literal() {
         let mut interp = make_interpreter();
-        let expr = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(100, None)));
+        let expr = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+            100, None,
+        )));
         let result = interp.eval_message_expr(&expr).unwrap();
         assert_eq!(result, Value::Integer(100));
     }
@@ -548,7 +558,10 @@ mod tests {
 
         let result = interp.dispatch_method_call(&obj, "test", &[], true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("missing __type marker"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("missing __type marker"));
     }
 
     // Test dispatch to object method - unknown type
@@ -556,12 +569,18 @@ mod tests {
     fn test_dispatch_to_object_unknown_type() {
         let mut interp = make_interpreter();
         let mut obj_map = HashMap::new();
-        obj_map.insert("__type".to_string(), Value::from_string("UnknownType".to_string()));
+        obj_map.insert(
+            "__type".to_string(),
+            Value::from_string("UnknownType".to_string()),
+        );
         let obj = Value::Object(Arc::new(obj_map));
 
         let result = interp.dispatch_method_call(&obj, "test", &[], true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown object type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown object type"));
     }
 
     // Test eval_generic_method
@@ -612,7 +631,9 @@ mod tests {
         interp.set_variable("arr", Value::Array(Arc::from(vec![Value::Integer(1)])));
 
         let receiver = make_expr(ExprKind::Identifier("arr".to_string()));
-        let arg = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)));
+        let arg = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+            2, None,
+        )));
         let result = interp.eval_method_call(&receiver, "push", &[arg]).unwrap();
 
         // push returns nil
@@ -632,7 +653,10 @@ mod tests {
     #[test]
     fn test_eval_method_call_pop_on_array() {
         let mut interp = make_interpreter();
-        interp.set_variable("arr", Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])));
+        interp.set_variable(
+            "arr",
+            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+        );
 
         let receiver = make_expr(ExprKind::Identifier("arr".to_string()));
         let result = interp.eval_method_call(&receiver, "pop", &[]).unwrap();
@@ -671,7 +695,10 @@ mod tests {
 
         // Create ObjectMut with an array field
         let mut obj = HashMap::new();
-        obj.insert("items".to_string(), Value::Array(Arc::from(vec![Value::Integer(1)])));
+        obj.insert(
+            "items".to_string(),
+            Value::Array(Arc::from(vec![Value::Integer(1)])),
+        );
         let obj_mut = Value::ObjectMut(Arc::new(Mutex::new(obj)));
         interp.set_variable("self", obj_mut);
 
@@ -681,7 +708,9 @@ mod tests {
             object,
             field: "items".to_string(),
         });
-        let arg = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)));
+        let arg = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+            2, None,
+        )));
         let result = interp.eval_method_call(&receiver, "push", &[arg]).unwrap();
 
         // push returns nil
@@ -691,15 +720,18 @@ mod tests {
     // Test Module method call
     #[test]
     fn test_eval_method_call_module() {
+        use crate::frontend::ast::Literal;
         use std::cell::RefCell;
         use std::rc::Rc;
-        use crate::frontend::ast::Literal;
 
         let mut interp = make_interpreter();
 
         // Create a Module object with a function
         let mut module = HashMap::new();
-        module.insert("__type".to_string(), Value::from_string("Module".to_string()));
+        module.insert(
+            "__type".to_string(),
+            Value::from_string("Module".to_string()),
+        );
 
         // Add a simple function that returns 42
         let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
@@ -714,7 +746,9 @@ mod tests {
 
         // Call math.get_answer()
         let receiver = make_expr(ExprKind::Identifier("math".to_string()));
-        let result = interp.eval_method_call(&receiver, "get_answer", &[]).unwrap();
+        let result = interp
+            .eval_method_call(&receiver, "get_answer", &[])
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -724,13 +758,19 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut module = HashMap::new();
-        module.insert("__type".to_string(), Value::from_string("Module".to_string()));
+        module.insert(
+            "__type".to_string(),
+            Value::from_string("Module".to_string()),
+        );
         interp.set_variable("math", Value::Object(Arc::new(module)));
 
         let receiver = make_expr(ExprKind::Identifier("math".to_string()));
         let result = interp.eval_method_call(&receiver, "nonexistent", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("no function named"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("no function named"));
     }
 
     // Test dispatch to actor with __actor marker
@@ -739,11 +779,16 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut actor = HashMap::new();
-        actor.insert("__actor".to_string(), Value::from_string("Counter".to_string()));
+        actor.insert(
+            "__actor".to_string(),
+            Value::from_string("Counter".to_string()),
+        );
         let obj = Value::Object(Arc::new(actor));
 
         // Stop method returns true for any actor
-        let result = interp.dispatch_method_call(&obj, "stop", &[], true).unwrap();
+        let result = interp
+            .dispatch_method_call(&obj, "stop", &[], true)
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -753,7 +798,10 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut class_obj = HashMap::new();
-        class_obj.insert("__class".to_string(), Value::from_string("MyClass".to_string()));
+        class_obj.insert(
+            "__class".to_string(),
+            Value::from_string("MyClass".to_string()),
+        );
         let obj = Value::Object(Arc::new(class_obj));
 
         // Should fail because no method registered
@@ -767,7 +815,10 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut struct_obj = HashMap::new();
-        struct_obj.insert("__struct".to_string(), Value::from_string("Point".to_string()));
+        struct_obj.insert(
+            "__struct".to_string(),
+            Value::from_string("Point".to_string()),
+        );
         let obj = Value::Object(Arc::new(struct_obj));
 
         // Should fail because no impl method registered
@@ -781,7 +832,10 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut struct_obj = HashMap::new();
-        struct_obj.insert("__struct_type".to_string(), Value::from_string("Point".to_string()));
+        struct_obj.insert(
+            "__struct_type".to_string(),
+            Value::from_string("Point".to_string()),
+        );
         let obj = Value::Object(Arc::new(struct_obj));
 
         // Should fail because no impl method registered
@@ -795,7 +849,10 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut builder = HashMap::new();
-        builder.insert("__type".to_string(), Value::from_string("DataFrameBuilder".to_string()));
+        builder.insert(
+            "__type".to_string(),
+            Value::from_string("DataFrameBuilder".to_string()),
+        );
         let obj = Value::Object(Arc::new(builder));
 
         // Unknown method on DataFrameBuilder should fail
@@ -811,11 +868,16 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut actor = HashMap::new();
-        actor.insert("__actor".to_string(), Value::from_string("Counter".to_string()));
+        actor.insert(
+            "__actor".to_string(),
+            Value::from_string("Counter".to_string()),
+        );
         let obj = Value::ObjectMut(Arc::new(Mutex::new(actor)));
 
         // Stop method returns true for any actor
-        let result = interp.dispatch_method_call(&obj, "stop", &[], true).unwrap();
+        let result = interp
+            .dispatch_method_call(&obj, "stop", &[], true)
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -827,7 +889,10 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut class_obj = HashMap::new();
-        class_obj.insert("__class".to_string(), Value::from_string("MyClass".to_string()));
+        class_obj.insert(
+            "__class".to_string(),
+            Value::from_string("MyClass".to_string()),
+        );
         let obj = Value::ObjectMut(Arc::new(Mutex::new(class_obj)));
 
         // Should fail because no method registered
@@ -843,7 +908,10 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut struct_obj = HashMap::new();
-        struct_obj.insert("__struct".to_string(), Value::from_string("Point".to_string()));
+        struct_obj.insert(
+            "__struct".to_string(),
+            Value::from_string("Point".to_string()),
+        );
         let obj = Value::ObjectMut(Arc::new(Mutex::new(struct_obj)));
 
         // Should fail because no impl method registered
@@ -876,12 +944,18 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut obj_map = HashMap::new();
-        obj_map.insert("__type".to_string(), Value::from_string("GenericType".to_string()));
+        obj_map.insert(
+            "__type".to_string(),
+            Value::from_string("GenericType".to_string()),
+        );
         let obj = Value::ObjectMut(Arc::new(Mutex::new(obj_map)));
 
         let result = interp.dispatch_method_call(&obj, "test", &[], true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown object type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown object type"));
     }
 
     // Test dispatch to Value::Struct
@@ -937,7 +1011,10 @@ mod tests {
 
         // Create actor instance
         let mut actor = HashMap::new();
-        actor.insert("__actor".to_string(), Value::from_string("Counter".to_string()));
+        actor.insert(
+            "__actor".to_string(),
+            Value::from_string("Counter".to_string()),
+        );
         interp.set_variable("counter", Value::Object(Arc::new(actor)));
 
         // Call counter.send(Increment) where Increment is undefined
@@ -957,7 +1034,10 @@ mod tests {
 
         // Create actor instance
         let mut actor = HashMap::new();
-        actor.insert("__actor".to_string(), Value::from_string("Echo".to_string()));
+        actor.insert(
+            "__actor".to_string(),
+            Value::from_string("Echo".to_string()),
+        );
         interp.set_variable("echo", Value::Object(Arc::new(actor)));
 
         // Define message variable
@@ -982,7 +1062,10 @@ mod tests {
 
         // Create mutable actor instance
         let mut actor = HashMap::new();
-        actor.insert("__actor".to_string(), Value::from_string("Counter".to_string()));
+        actor.insert(
+            "__actor".to_string(),
+            Value::from_string("Counter".to_string()),
+        );
         interp.set_variable("counter", Value::ObjectMut(Arc::new(Mutex::new(actor))));
 
         // Call counter.send(Increment)
@@ -1005,7 +1088,9 @@ mod tests {
 
         // Call obj.send(x) - should not use actor special handling
         let receiver = make_expr(ExprKind::Identifier("obj".to_string()));
-        let arg = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)));
+        let arg = make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+            1, None,
+        )));
 
         let result = interp.eval_method_call(&receiver, "send", &[arg]);
         // Will fail with missing type marker
@@ -1021,7 +1106,10 @@ mod tests {
 
         // Create ObjectMut with __type
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("SomeType".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("SomeType".to_string()),
+        );
         interp.set_variable("obj", Value::ObjectMut(Arc::new(Mutex::new(obj))));
 
         let receiver = make_expr(ExprKind::Identifier("obj".to_string()));
@@ -1032,9 +1120,9 @@ mod tests {
     // Test method call with Struct identifier (RUNTIME-ISSUE-148 fix)
     #[test]
     fn test_method_call_struct_identifier_with_impl() {
+        use crate::frontend::ast::Literal;
         use std::cell::RefCell;
         use std::rc::Rc;
-        use crate::frontend::ast::Literal;
 
         let mut interp = make_interpreter();
 

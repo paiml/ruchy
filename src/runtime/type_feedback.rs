@@ -299,10 +299,7 @@ impl TypeFeedback {
         let right_type = right.type_id();
         let result_type = result.type_id();
 
-        let feedback = self
-            .operation_sites
-            .entry(site_id)
-            .or_default();
+        let feedback = self.operation_sites.entry(site_id).or_default();
 
         // Record types if not already seen
         if !feedback.left_types.contains(&left_type) {
@@ -324,10 +321,7 @@ impl TypeFeedback {
 
     /// Record variable assignment type feedback
     pub fn record_variable_assignment(&mut self, var_name: &str, new_type: std::any::TypeId) {
-        let feedback = self
-            .variable_types
-            .entry(var_name.to_string())
-            .or_default();
+        let feedback = self.variable_types.entry(var_name.to_string()).or_default();
 
         // Record type transition if there was a previous type
         if let Some(prev_type) = feedback.dominant_type {
@@ -369,10 +363,7 @@ impl TypeFeedback {
         let arg_types: Vec<std::any::TypeId> = args.iter().map(Value::type_id).collect();
         let return_type = result.type_id();
 
-        let feedback = self
-            .call_sites
-            .entry(site_id)
-            .or_default();
+        let feedback = self.call_sites.entry(site_id).or_default();
 
         // Record argument pattern if not seen before
         if !feedback
@@ -1009,9 +1000,19 @@ mod tests {
         let mut feedback = TypeFeedback::new();
 
         // Site 0
-        feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        feedback.record_binary_op(
+            0,
+            &Value::Integer(1),
+            &Value::Integer(2),
+            &Value::Integer(3),
+        );
         // Site 1
-        feedback.record_binary_op(1, &Value::Float(1.0), &Value::Float(2.0), &Value::Float(3.0));
+        feedback.record_binary_op(
+            1,
+            &Value::Float(1.0),
+            &Value::Float(2.0),
+            &Value::Float(3.0),
+        );
 
         let stats = feedback.get_statistics();
         assert_eq!(stats.total_operation_sites, 2);
@@ -1022,8 +1023,18 @@ mod tests {
         let mut feedback = TypeFeedback::new();
 
         // Same site with different types
-        feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
-        feedback.record_binary_op(0, &Value::Float(1.0), &Value::Float(2.0), &Value::Float(3.0));
+        feedback.record_binary_op(
+            0,
+            &Value::Integer(1),
+            &Value::Integer(2),
+            &Value::Integer(3),
+        );
+        feedback.record_binary_op(
+            0,
+            &Value::Float(1.0),
+            &Value::Float(2.0),
+            &Value::Float(3.0),
+        );
 
         let stats = feedback.get_statistics();
         assert_eq!(stats.total_operation_sites, 1);
@@ -1091,14 +1102,19 @@ mod tests {
 
         // Only 5 samples (need >10 for binary op specialization)
         for _ in 0..5 {
-            feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+            feedback.record_binary_op(
+                0,
+                &Value::Integer(1),
+                &Value::Integer(2),
+                &Value::Integer(3),
+            );
         }
 
         let candidates = feedback.get_specialization_candidates();
         // Should not include binary op site (not enough samples)
-        let has_binary_op = candidates.iter().any(|c| {
-            matches!(c.kind, SpecializationKind::BinaryOperation { .. })
-        });
+        let has_binary_op = candidates
+            .iter()
+            .any(|c| matches!(c.kind, SpecializationKind::BinaryOperation { .. }));
         assert!(!has_binary_op);
     }
 
@@ -1107,7 +1123,12 @@ mod tests {
         let mut feedback = TypeFeedback::new();
 
         for i in 0..20 {
-            feedback.record_binary_op(i % 5, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+            feedback.record_binary_op(
+                i % 5,
+                &Value::Integer(1),
+                &Value::Integer(2),
+                &Value::Integer(3),
+            );
         }
 
         assert_eq!(feedback.total_samples(), 20);
@@ -1136,7 +1157,12 @@ mod tests {
 
         // Binary op with 15 samples
         for _ in 0..15 {
-            feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+            feedback.record_binary_op(
+                0,
+                &Value::Integer(1),
+                &Value::Integer(2),
+                &Value::Integer(3),
+            );
         }
 
         // Call site with 10 samples (benefit = 10 * 10 = 100)
@@ -1213,7 +1239,11 @@ mod tests {
         }
 
         // Insert 5th entry - should trigger eviction of least used
-        cache.insert(&Value::from_string("test".to_string()), "e".to_string(), Value::from_string("val".to_string()));
+        cache.insert(
+            &Value::from_string("test".to_string()),
+            "e".to_string(),
+            Value::from_string("val".to_string()),
+        );
 
         assert_eq!(*cache.state(), CacheState::Megamorphic);
         // Hot entry should still be there
@@ -1241,12 +1271,22 @@ mod tests {
 
         // 3 int+int operations
         for _ in 0..3 {
-            feedback.record_binary_op(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+            feedback.record_binary_op(
+                0,
+                &Value::Integer(1),
+                &Value::Integer(2),
+                &Value::Integer(3),
+            );
         }
 
         // 2 float+float operations
         for _ in 0..2 {
-            feedback.record_binary_op(0, &Value::Float(1.0), &Value::Float(2.0), &Value::Float(3.0));
+            feedback.record_binary_op(
+                0,
+                &Value::Float(1.0),
+                &Value::Float(2.0),
+                &Value::Float(3.0),
+            );
         }
 
         assert_eq!(feedback.total_samples(), 5);

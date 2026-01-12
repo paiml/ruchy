@@ -22,14 +22,12 @@ use crate::frontend::ast::Pattern;
 pub fn extract_pattern_bindings(pattern: &Pattern) -> Vec<String> {
     match pattern {
         Pattern::Identifier(name) => vec![name.clone()],
-        Pattern::Tuple(patterns) | Pattern::List(patterns) => patterns
-            .iter()
-            .flat_map(extract_pattern_bindings)
-            .collect(),
-        Pattern::TupleVariant { patterns, .. } => patterns
-            .iter()
-            .flat_map(extract_pattern_bindings)
-            .collect(),
+        Pattern::Tuple(patterns) | Pattern::List(patterns) => {
+            patterns.iter().flat_map(extract_pattern_bindings).collect()
+        }
+        Pattern::TupleVariant { patterns, .. } => {
+            patterns.iter().flat_map(extract_pattern_bindings).collect()
+        }
         Pattern::Struct { fields, .. } => fields
             .iter()
             .flat_map(|field| {
@@ -362,8 +360,11 @@ mod tests {
 
     #[test]
     fn test_qualified_name_pattern() {
-        let pattern =
-            Pattern::QualifiedName(vec!["std".to_string(), "option".to_string(), "None".to_string()]);
+        let pattern = Pattern::QualifiedName(vec![
+            "std".to_string(),
+            "option".to_string(),
+            "None".to_string(),
+        ]);
         assert!(extract_pattern_bindings(&pattern).is_empty());
     }
 

@@ -683,7 +683,10 @@ mod tests {
     #[test]
     fn test_count_nesting_nested() {
         let grader = Grader::new();
-        assert_eq!(grader.count_nesting("fn f() { if true { while x { } } }"), 3);
+        assert_eq!(
+            grader.count_nesting("fn f() { if true { while x { } } }"),
+            3
+        );
     }
 
     #[test]

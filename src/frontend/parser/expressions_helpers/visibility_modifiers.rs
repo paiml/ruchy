@@ -1239,7 +1239,10 @@ mod tests {
     fn test_pub_produces_function_exprkind() {
         let expr = parse("pub fn test() { }").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(&exprs[0].kind, ExprKind::Function { is_pub: true, .. }));
+            assert!(matches!(
+                &exprs[0].kind,
+                ExprKind::Function { is_pub: true, .. }
+            ));
         }
     }
 
@@ -1247,7 +1250,13 @@ mod tests {
     fn test_sealed_produces_class_exprkind() {
         let expr = parse("sealed class Test { }").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(&exprs[0].kind, ExprKind::Class { is_sealed: true, .. }));
+            assert!(matches!(
+                &exprs[0].kind,
+                ExprKind::Class {
+                    is_sealed: true,
+                    ..
+                }
+            ));
         }
     }
 
@@ -1255,7 +1264,13 @@ mod tests {
     fn test_abstract_produces_class_exprkind() {
         let expr = parse("abstract class Test { }").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(&exprs[0].kind, ExprKind::Class { is_abstract: true, .. }));
+            assert!(matches!(
+                &exprs[0].kind,
+                ExprKind::Class {
+                    is_abstract: true,
+                    ..
+                }
+            ));
         }
     }
 
@@ -1263,7 +1278,13 @@ mod tests {
     fn test_const_var_produces_let_exprkind() {
         let expr = parse("const X = 42").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(&exprs[0].kind, ExprKind::Let { is_mutable: false, .. }));
+            assert!(matches!(
+                &exprs[0].kind,
+                ExprKind::Let {
+                    is_mutable: false,
+                    ..
+                }
+            ));
         }
     }
 

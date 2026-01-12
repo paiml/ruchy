@@ -99,9 +99,7 @@ pub fn is_void_expression(expr: &Expr) -> bool {
             ..
         } => {
             is_void_expression(then_branch)
-                && else_branch
-                    .as_ref()
-                    .is_none_or(|e| is_void_expression(e))
+                && else_branch.as_ref().is_none_or(|e| is_void_expression(e))
         }
         // Match expression - all arms must be void
         ExprKind::Match { arms, .. } => arms.iter().all(|arm| is_void_expression(&arm.body)),
@@ -123,11 +121,9 @@ pub fn has_non_unit_expression(body: &Expr) -> bool {
 pub fn returns_closure(body: &Expr) -> bool {
     match &body.kind {
         ExprKind::Lambda { .. } => true,
-        ExprKind::Block(exprs) if !exprs.is_empty() => {
-            exprs
-                .last()
-                .is_some_and(|last_expr| matches!(last_expr.kind, ExprKind::Lambda { .. }))
-        }
+        ExprKind::Block(exprs) if !exprs.is_empty() => exprs
+            .last()
+            .is_some_and(|last_expr| matches!(last_expr.kind, ExprKind::Lambda { .. })),
         _ => false,
     }
 }
@@ -581,10 +577,12 @@ mod tests {
     #[test]
     fn test_non_void_literals() {
         assert!(!is_void_expression(&int_lit(42)));
-        assert!(!is_void_expression(&make_expr(ExprKind::Literal(Literal::Bool(true)))));
-        assert!(!is_void_expression(&make_expr(ExprKind::Literal(Literal::String(
-            "hello".to_string()
-        )))));
+        assert!(!is_void_expression(&make_expr(ExprKind::Literal(
+            Literal::Bool(true)
+        ))));
+        assert!(!is_void_expression(&make_expr(ExprKind::Literal(
+            Literal::String("hello".to_string())
+        ))));
     }
 
     #[test]
@@ -594,7 +592,10 @@ mod tests {
 
     #[test]
     fn test_non_void_function_call() {
-        assert!(!is_void_expression(&call("add", vec![int_lit(1), int_lit(2)])));
+        assert!(!is_void_expression(&call(
+            "add",
+            vec![int_lit(1), int_lit(2)]
+        )));
     }
 
     // ==================== has_non_unit_expression Tests ====================

@@ -194,7 +194,10 @@ mod tests {
         let files = vec![PathBuf::from("a.ruchy"), PathBuf::from("b.ruchy")];
         let result = check_watch_mode(&files);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("only supports checking a single file"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("only supports checking a single file"));
     }
 
     // ===== EXTREME TDD Round 152 - Check Handler Tests =====
@@ -224,7 +227,10 @@ mod tests {
     fn test_handle_check_command_empty_files() {
         let result = handle_check_command(&[], false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("No files specified"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("No files specified"));
     }
 
     #[test]

@@ -99,7 +99,8 @@ mod tests {
     // format_string_with_values tests
     #[test]
     fn test_format_simple_placeholder() {
-        let result = format_string_with_values("Hello {}", &[Value::from_string("World".to_string())]);
+        let result =
+            format_string_with_values("Hello {}", &[Value::from_string("World".to_string())]);
         assert_eq!(result, "Hello World");
     }
 
@@ -253,7 +254,9 @@ mod tests {
 
     #[test]
     fn test_debug_array() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice()));
+        let arr = Value::Array(Arc::from(
+            vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice(),
+        ));
         let result = format_value_debug(&arr);
         assert!(result.contains("Array"));
     }
@@ -318,14 +321,18 @@ mod tests {
 
     #[test]
     fn test_format_array_value() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice()));
+        let arr = Value::Array(Arc::from(
+            vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice(),
+        ));
         let result = format_string_with_values("{}", &[arr]);
         assert!(result.contains("[1, 2]"));
     }
 
     #[test]
     fn test_format_tuple_value() {
-        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Bool(true)].into_boxed_slice()));
+        let tuple = Value::Tuple(Arc::from(
+            vec![Value::Integer(1), Value::Bool(true)].into_boxed_slice(),
+        ));
         let result = format_string_with_values("{}", &[tuple]);
         assert!(result.contains("1"));
     }
@@ -364,7 +371,10 @@ mod tests {
 
     #[test]
     fn test_format_mixed_placeholders() {
-        let result = format_string_with_values("{} {:?} {}", &[Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let result = format_string_with_values(
+            "{} {:?} {}",
+            &[Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        );
         assert!(result.contains("1"));
         assert!(result.contains("3"));
     }
@@ -452,7 +462,8 @@ mod tests {
 
     #[test]
     fn test_format_string_with_newlines() {
-        let result = format_string_with_values("{}", &[Value::from_string("line1\nline2".to_string())]);
+        let result =
+            format_string_with_values("{}", &[Value::from_string("line1\nline2".to_string())]);
         assert!(result.contains('\n'));
     }
 
@@ -485,17 +496,17 @@ mod tests {
 
     #[test]
     fn test_format_with_unicode() {
-        let result = format_string_with_values("Hello {}", &[Value::from_string("世界".to_string())]);
+        let result =
+            format_string_with_values("Hello {}", &[Value::from_string("世界".to_string())]);
         assert_eq!(result, "Hello 世界");
     }
 
     #[test]
     fn test_format_multiple_debug_values() {
-        let result = format_string_with_values("{:?} {:?} {:?}", &[
-            Value::Integer(1),
-            Value::Float(2.0),
-            Value::Bool(true),
-        ]);
+        let result = format_string_with_values(
+            "{:?} {:?} {:?}",
+            &[Value::Integer(1), Value::Float(2.0), Value::Bool(true)],
+        );
         assert!(result.contains("Integer"));
         assert!(result.contains("Float"));
         assert!(result.contains("Bool"));

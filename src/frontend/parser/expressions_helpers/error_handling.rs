@@ -379,13 +379,19 @@ mod tests {
     #[test]
     fn test_catch_with_multiple_statements() {
         let result = parse("try { risky() } catch (e) { log(e); notify(); recover() }");
-        assert!(result.is_ok(), "Catch with multiple statements should parse");
+        assert!(
+            result.is_ok(),
+            "Catch with multiple statements should parse"
+        );
     }
 
     #[test]
     fn test_finally_with_multiple_statements() {
         let result = parse("try { op() } finally { close(); cleanup(); log() }");
-        assert!(result.is_ok(), "Finally with multiple statements should parse");
+        assert!(
+            result.is_ok(),
+            "Finally with multiple statements should parse"
+        );
     }
 
     // ============================================================
@@ -479,7 +485,8 @@ mod tests {
     // Test 38: Deeply nested try
     #[test]
     fn test_deeply_nested_try() {
-        let result = parse("try { try { try { x } catch (e3) { } } catch (e2) { } } catch (e1) { }");
+        let result =
+            parse("try { try { try { x } catch (e3) { } } catch (e2) { } } catch (e1) { }");
         assert!(result.is_ok(), "Deeply nested try should parse");
     }
 

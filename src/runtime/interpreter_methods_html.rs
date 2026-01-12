@@ -152,11 +152,9 @@ mod tests {
         let html = "<html><body><p>Hello</p><p>World</p></body></html>";
         let doc = HtmlDocument::parse(html);
 
-        let result = interp.eval_html_document_method(
-            &doc,
-            "select",
-            &[Value::from_string("p".to_string())],
-        ).unwrap();
+        let result = interp
+            .eval_html_document_method(&doc, "select", &[Value::from_string("p".to_string())])
+            .unwrap();
 
         if let Value::Array(elements) = result {
             assert_eq!(elements.len(), 2);
@@ -173,7 +171,10 @@ mod tests {
 
         let result = interp.eval_html_document_method(&doc, "select", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 1 argument"));
     }
 
     #[test]
@@ -193,11 +194,13 @@ mod tests {
         let html = "<html><body><div id='main'>Content</div></body></html>";
         let doc = HtmlDocument::parse(html);
 
-        let result = interp.eval_html_document_method(
-            &doc,
-            "query_selector",
-            &[Value::from_string("#main".to_string())],
-        ).unwrap();
+        let result = interp
+            .eval_html_document_method(
+                &doc,
+                "query_selector",
+                &[Value::from_string("#main".to_string())],
+            )
+            .unwrap();
 
         assert!(matches!(result, Value::HtmlElement(_)));
     }
@@ -208,11 +211,13 @@ mod tests {
         let html = "<html><body></body></html>";
         let doc = HtmlDocument::parse(html);
 
-        let result = interp.eval_html_document_method(
-            &doc,
-            "query_selector",
-            &[Value::from_string("#nonexistent".to_string())],
-        ).unwrap();
+        let result = interp
+            .eval_html_document_method(
+                &doc,
+                "query_selector",
+                &[Value::from_string("#nonexistent".to_string())],
+            )
+            .unwrap();
 
         assert_eq!(result, Value::Nil);
     }
@@ -243,11 +248,13 @@ mod tests {
         let html = "<html><body><span>A</span><span>B</span><span>C</span></body></html>";
         let doc = HtmlDocument::parse(html);
 
-        let result = interp.eval_html_document_method(
-            &doc,
-            "query_selector_all",
-            &[Value::from_string("span".to_string())],
-        ).unwrap();
+        let result = interp
+            .eval_html_document_method(
+                &doc,
+                "query_selector_all",
+                &[Value::from_string("span".to_string())],
+            )
+            .unwrap();
 
         if let Value::Array(elements) = result {
             assert_eq!(elements.len(), 3);
@@ -272,7 +279,8 @@ mod tests {
         let html = "<html><body></body></html>";
         let doc = HtmlDocument::parse(html);
 
-        let result = interp.eval_html_document_method(&doc, "query_selector_all", &[Value::Float(1.5)]);
+        let result =
+            interp.eval_html_document_method(&doc, "query_selector_all", &[Value::Float(1.5)]);
         assert!(result.is_err());
     }
 
@@ -318,13 +326,14 @@ mod tests {
         let doc = HtmlDocument::parse(html);
         let elem = doc.query_selector("a").unwrap().unwrap();
 
-        let result = interp.eval_html_element_method(
-            &elem,
-            "attr",
-            &[Value::from_string("href".to_string())],
-        ).unwrap();
+        let result = interp
+            .eval_html_element_method(&elem, "attr", &[Value::from_string("href".to_string())])
+            .unwrap();
 
-        assert_eq!(result, Value::from_string("https://example.com".to_string()));
+        assert_eq!(
+            result,
+            Value::from_string("https://example.com".to_string())
+        );
     }
 
     #[test]
@@ -334,11 +343,13 @@ mod tests {
         let doc = HtmlDocument::parse(html);
         let elem = doc.query_selector("p").unwrap().unwrap();
 
-        let result = interp.eval_html_element_method(
-            &elem,
-            "attr",
-            &[Value::from_string("nonexistent".to_string())],
-        ).unwrap();
+        let result = interp
+            .eval_html_element_method(
+                &elem,
+                "attr",
+                &[Value::from_string("nonexistent".to_string())],
+            )
+            .unwrap();
 
         assert_eq!(result, Value::Nil);
     }
@@ -352,7 +363,10 @@ mod tests {
 
         let result = interp.eval_html_element_method(&elem, "attr", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 1 argument"));
     }
 
     #[test]
@@ -364,7 +378,10 @@ mod tests {
 
         let result = interp.eval_html_element_method(&elem, "attr", &[Value::Integer(42)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("string attribute name"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("string attribute name"));
     }
 
     #[test]

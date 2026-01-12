@@ -366,7 +366,9 @@ mod tests {
     fn test_unify_nested_lists() {
         let mut unifier = Unifier::new();
         let var = TyVar(0);
-        let l1 = MonoType::List(Box::new(MonoType::List(Box::new(MonoType::Var(var.clone())))));
+        let l1 = MonoType::List(Box::new(MonoType::List(Box::new(MonoType::Var(
+            var.clone(),
+        )))));
         let l2 = MonoType::List(Box::new(MonoType::List(Box::new(MonoType::Int))));
         assert!(unifier.unify(&l1, &l2).is_ok());
         assert_eq!(unifier.solve(&var), MonoType::Int);
@@ -548,7 +550,9 @@ mod unify_tests_r164 {
     fn test_unify_var_with_int_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(10);
-        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Int)
+            .is_ok());
         assert_eq!(unifier.solve(&var), MonoType::Int);
     }
 
@@ -556,7 +560,9 @@ mod unify_tests_r164 {
     fn test_unify_var_with_float_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(11);
-        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Float).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Float)
+            .is_ok());
         assert_eq!(unifier.solve(&var), MonoType::Float);
     }
 
@@ -564,7 +570,9 @@ mod unify_tests_r164 {
     fn test_unify_var_with_string_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(12);
-        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::String).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::String)
+            .is_ok());
         assert_eq!(unifier.solve(&var), MonoType::String);
     }
 
@@ -572,7 +580,9 @@ mod unify_tests_r164 {
     fn test_unify_var_with_bool_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(13);
-        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Bool).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Bool)
+            .is_ok());
         assert_eq!(unifier.solve(&var), MonoType::Bool);
     }
 
@@ -581,7 +591,9 @@ mod unify_tests_r164 {
         let mut unifier = Unifier::new();
         let var = TyVar(14);
         // Order reversed - concrete then var
-        assert!(unifier.unify(&MonoType::Int, &MonoType::Var(var.clone())).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Int, &MonoType::Var(var.clone()))
+            .is_ok());
         assert_eq!(unifier.solve(&var), MonoType::Int);
     }
 
@@ -590,9 +602,13 @@ mod unify_tests_r164 {
         let mut unifier = Unifier::new();
         let var1 = TyVar(20);
         let var2 = TyVar(21);
-        assert!(unifier.unify(&MonoType::Var(var1.clone()), &MonoType::Var(var2.clone())).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var1.clone()), &MonoType::Var(var2.clone()))
+            .is_ok());
         // Now bind one to Int
-        assert!(unifier.unify(&MonoType::Var(var1.clone()), &MonoType::Int).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var1.clone()), &MonoType::Int)
+            .is_ok());
         // Both should resolve to Int
         assert_eq!(unifier.solve(&var1), MonoType::Int);
     }
@@ -606,10 +622,18 @@ mod unify_tests_r164 {
         let var4 = TyVar(33);
 
         // Create chain: var1 -> var2 -> var3 -> var4 -> String
-        assert!(unifier.unify(&MonoType::Var(var1.clone()), &MonoType::Var(var2.clone())).is_ok());
-        assert!(unifier.unify(&MonoType::Var(var2.clone()), &MonoType::Var(var3.clone())).is_ok());
-        assert!(unifier.unify(&MonoType::Var(var3.clone()), &MonoType::Var(var4.clone())).is_ok());
-        assert!(unifier.unify(&MonoType::Var(var4.clone()), &MonoType::String).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var1.clone()), &MonoType::Var(var2.clone()))
+            .is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var2.clone()), &MonoType::Var(var3.clone()))
+            .is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var3.clone()), &MonoType::Var(var4.clone()))
+            .is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var4.clone()), &MonoType::String)
+            .is_ok());
 
         // All should resolve to String
         assert_eq!(unifier.solve(&var1), MonoType::String);
@@ -643,7 +667,10 @@ mod unify_tests_r164 {
     fn test_unify_function_with_var_arg_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(40);
-        let fn1 = MonoType::Function(Box::new(MonoType::Var(var.clone())), Box::new(MonoType::Bool));
+        let fn1 = MonoType::Function(
+            Box::new(MonoType::Var(var.clone())),
+            Box::new(MonoType::Bool),
+        );
         let fn2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Bool));
         assert!(unifier.unify(&fn1, &fn2).is_ok());
         assert_eq!(unifier.solve(&var), MonoType::Int);
@@ -653,7 +680,10 @@ mod unify_tests_r164 {
     fn test_unify_function_with_var_ret_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(41);
-        let fn1 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::Var(var.clone())));
+        let fn1 = MonoType::Function(
+            Box::new(MonoType::Int),
+            Box::new(MonoType::Var(var.clone())),
+        );
         let fn2 = MonoType::Function(Box::new(MonoType::Int), Box::new(MonoType::String));
         assert!(unifier.unify(&fn1, &fn2).is_ok());
         assert_eq!(unifier.solve(&var), MonoType::String);
@@ -678,7 +708,9 @@ mod unify_tests_r164 {
     fn test_apply_to_bound_var_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(51);
-        unifier.unify(&MonoType::Var(var.clone()), &MonoType::Float).unwrap();
+        unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Float)
+            .unwrap();
         let result = unifier.apply(&MonoType::Var(var));
         assert_eq!(result, MonoType::Float);
     }
@@ -687,7 +719,9 @@ mod unify_tests_r164 {
     fn test_apply_to_function_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(52);
-        unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).unwrap();
+        unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Int)
+            .unwrap();
         let fn_type = MonoType::Function(Box::new(MonoType::Var(var)), Box::new(MonoType::Bool));
         let result = unifier.apply(&fn_type);
         if let MonoType::Function(arg, _ret) = result {
@@ -724,18 +758,26 @@ mod unify_tests_r164 {
     fn test_unify_same_var_twice_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(70);
-        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Int)
+            .is_ok());
         // Unifying again with same type should succeed
-        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Int)
+            .is_ok());
     }
 
     #[test]
     fn test_unify_var_with_different_types_fails_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(71);
-        assert!(unifier.unify(&MonoType::Var(var.clone()), &MonoType::Int).is_ok());
+        assert!(unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Int)
+            .is_ok());
         // Unifying with different type should fail
-        assert!(unifier.unify(&MonoType::Var(var), &MonoType::String).is_err());
+        assert!(unifier
+            .unify(&MonoType::Var(var), &MonoType::String)
+            .is_err());
     }
 
     #[test]
@@ -758,7 +800,9 @@ mod unify_tests_r164 {
     fn test_solve_bound_var_r164() {
         let mut unifier = Unifier::new();
         let var = TyVar(80);
-        unifier.unify(&MonoType::Var(var.clone()), &MonoType::Bool).unwrap();
+        unifier
+            .unify(&MonoType::Var(var.clone()), &MonoType::Bool)
+            .unwrap();
         assert_eq!(unifier.solve(&var), MonoType::Bool);
     }
 

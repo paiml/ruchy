@@ -342,7 +342,9 @@ mod tests {
         let mut state = create_state();
         let parts = parse_string_interpolation(&mut state, "Value: {x:02}");
         assert_eq!(parts.len(), 2);
-        assert!(matches!(&parts[1], StringPart::ExprWithFormat { format_spec, .. } if format_spec == ":02"));
+        assert!(
+            matches!(&parts[1], StringPart::ExprWithFormat { format_spec, .. } if format_spec == ":02")
+        );
     }
 
     #[test]

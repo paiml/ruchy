@@ -85,10 +85,7 @@ mod tests {
     fn test_jit_compiler_creation() {
         // JitCompiler::new() should not panic
         let compiler_result = JitCompiler::new();
-        assert!(
-            compiler_result.is_ok(),
-            "JitCompiler::new() should succeed"
-        );
+        assert!(compiler_result.is_ok(), "JitCompiler::new() should succeed");
     }
 
     #[test]

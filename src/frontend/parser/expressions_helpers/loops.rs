@@ -400,7 +400,10 @@ mod tests {
     fn test_for_loop_three_element_tuple() {
         let code = "for a, b, c in triples { print(a) }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "For loop with three element tuple should parse");
+        assert!(
+            result.is_ok(),
+            "For loop with three element tuple should parse"
+        );
     }
 
     #[test]
@@ -449,14 +452,20 @@ mod tests {
     fn test_while_loop_with_parenthesized_condition() {
         let code = "while (x > 0) { }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "While with parenthesized condition should parse");
+        assert!(
+            result.is_ok(),
+            "While with parenthesized condition should parse"
+        );
     }
 
     #[test]
     fn test_for_loop_with_underscore_var() {
         let code = "for _unused in 0..10 { }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "For loop with underscore prefix should parse");
+        assert!(
+            result.is_ok(),
+            "For loop with underscore prefix should parse"
+        );
     }
 
     // ===== Additional coverage tests (Round 102) =====

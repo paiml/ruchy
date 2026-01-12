@@ -1022,7 +1022,10 @@ mod tests {
     fn test_class_with_multiple_constructors() {
         let code = "class Point { new() { } new(x: f64) { self.x = x } }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Class with multiple constructors should parse");
+        assert!(
+            result.is_ok(),
+            "Class with multiple constructors should parse"
+        );
     }
 
     #[test]
@@ -1129,7 +1132,10 @@ mod tests {
     fn test_class_with_generic_inheritance() {
         let code = "class IntContainer : Container<i32> { }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Class with generic inheritance should parse");
+        assert!(
+            result.is_ok(),
+            "Class with generic inheritance should parse"
+        );
     }
 
     #[test]
@@ -1168,14 +1174,20 @@ mod tests {
     fn test_class_with_no_return_type() {
         let code = "class Logger { fun log(&self, msg: String) { } }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Class method without return type should parse");
+        assert!(
+            result.is_ok(),
+            "Class method without return type should parse"
+        );
     }
 
     #[test]
     fn test_class_with_multiple_type_params() {
         let code = "class Map<K, V> { }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Class with multiple type params should parse");
+        assert!(
+            result.is_ok(),
+            "Class with multiple type params should parse"
+        );
     }
 
     #[test]
@@ -1223,21 +1235,30 @@ mod tests {
     fn test_class_field_separator_comma() {
         let code = "class Point { x: f64, y: f64 }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Class with comma-separated fields should parse");
+        assert!(
+            result.is_ok(),
+            "Class with comma-separated fields should parse"
+        );
     }
 
     #[test]
     fn test_class_field_separator_semicolon() {
         let code = "class Point { x: f64; y: f64 }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Class with semicolon-separated fields should parse");
+        assert!(
+            result.is_ok(),
+            "Class with semicolon-separated fields should parse"
+        );
     }
 
     #[test]
     fn test_class_field_separator_newline() {
         let code = "class Point {\n    x: f64\n    y: f64\n}";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Class with newline-separated fields should parse");
+        assert!(
+            result.is_ok(),
+            "Class with newline-separated fields should parse"
+        );
     }
 
     #[test]

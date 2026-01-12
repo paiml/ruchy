@@ -2016,27 +2016,75 @@ mod mutation_tests {
     // COVERAGE: Additional helper function tests
     #[test]
     fn test_control_flow_token_to_key() {
-        assert_eq!(control_flow_token_to_key(&Token::If), Some("if".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::Else), Some("else".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::Match), Some("match".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::While), Some("while".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::For), Some("for".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::Loop), Some("loop".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::Break), Some("break".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::Continue), Some("continue".to_string()));
-        assert_eq!(control_flow_token_to_key(&Token::Return), Some("return".to_string()));
+        assert_eq!(
+            control_flow_token_to_key(&Token::If),
+            Some("if".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::Else),
+            Some("else".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::Match),
+            Some("match".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::While),
+            Some("while".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::For),
+            Some("for".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::Loop),
+            Some("loop".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::Break),
+            Some("break".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::Continue),
+            Some("continue".to_string())
+        );
+        assert_eq!(
+            control_flow_token_to_key(&Token::Return),
+            Some("return".to_string())
+        );
         assert_eq!(control_flow_token_to_key(&Token::Plus), None);
     }
 
     #[test]
     fn test_declaration_token_to_key_all() {
-        assert_eq!(declaration_token_to_key(&Token::Let), Some("let".to_string()));
-        assert_eq!(declaration_token_to_key(&Token::Var), Some("var".to_string()));
-        assert_eq!(declaration_token_to_key(&Token::Const), Some("const".to_string()));
-        assert_eq!(declaration_token_to_key(&Token::Static), Some("static".to_string()));
-        assert_eq!(declaration_token_to_key(&Token::Pub), Some("pub".to_string()));
-        assert_eq!(declaration_token_to_key(&Token::Mut), Some("mut".to_string()));
-        assert_eq!(declaration_token_to_key(&Token::Fun), Some("fun".to_string()));
+        assert_eq!(
+            declaration_token_to_key(&Token::Let),
+            Some("let".to_string())
+        );
+        assert_eq!(
+            declaration_token_to_key(&Token::Var),
+            Some("var".to_string())
+        );
+        assert_eq!(
+            declaration_token_to_key(&Token::Const),
+            Some("const".to_string())
+        );
+        assert_eq!(
+            declaration_token_to_key(&Token::Static),
+            Some("static".to_string())
+        );
+        assert_eq!(
+            declaration_token_to_key(&Token::Pub),
+            Some("pub".to_string())
+        );
+        assert_eq!(
+            declaration_token_to_key(&Token::Mut),
+            Some("mut".to_string())
+        );
+        assert_eq!(
+            declaration_token_to_key(&Token::Fun),
+            Some("fun".to_string())
+        );
         assert_eq!(declaration_token_to_key(&Token::Fn), Some("fn".to_string()));
         assert_eq!(declaration_token_to_key(&Token::Plus), None);
     }
@@ -2044,7 +2092,10 @@ mod mutation_tests {
     #[test]
     fn test_type_token_to_key() {
         assert_eq!(type_token_to_key(&Token::Type), Some("type".to_string()));
-        assert_eq!(type_token_to_key(&Token::Struct), Some("struct".to_string()));
+        assert_eq!(
+            type_token_to_key(&Token::Struct),
+            Some("struct".to_string())
+        );
         assert_eq!(type_token_to_key(&Token::Enum), Some("enum".to_string()));
         assert_eq!(type_token_to_key(&Token::Impl), Some("impl".to_string()));
         assert_eq!(type_token_to_key(&Token::Trait), Some("trait".to_string()));
@@ -2053,27 +2104,60 @@ mod mutation_tests {
 
     #[test]
     fn test_module_token_to_key() {
-        assert_eq!(module_token_to_key(&Token::Module), Some("module".to_string()));
-        assert_eq!(module_token_to_key(&Token::Import), Some("import".to_string()));
-        assert_eq!(module_token_to_key(&Token::Export), Some("export".to_string()));
+        assert_eq!(
+            module_token_to_key(&Token::Module),
+            Some("module".to_string())
+        );
+        assert_eq!(
+            module_token_to_key(&Token::Import),
+            Some("import".to_string())
+        );
+        assert_eq!(
+            module_token_to_key(&Token::Export),
+            Some("export".to_string())
+        );
         assert_eq!(module_token_to_key(&Token::Use), Some("use".to_string()));
         assert_eq!(module_token_to_key(&Token::As), Some("as".to_string()));
         assert_eq!(module_token_to_key(&Token::From), Some("from".to_string()));
         assert_eq!(module_token_to_key(&Token::Self_), Some("self".to_string()));
-        assert_eq!(module_token_to_key(&Token::Super), Some("super".to_string()));
-        assert_eq!(module_token_to_key(&Token::Crate), Some("crate".to_string()));
+        assert_eq!(
+            module_token_to_key(&Token::Super),
+            Some("super".to_string())
+        );
+        assert_eq!(
+            module_token_to_key(&Token::Crate),
+            Some("crate".to_string())
+        );
         assert_eq!(module_token_to_key(&Token::In), Some("in".to_string()));
-        assert_eq!(module_token_to_key(&Token::Where), Some("where".to_string()));
+        assert_eq!(
+            module_token_to_key(&Token::Where),
+            Some("where".to_string())
+        );
         assert_eq!(module_token_to_key(&Token::Plus), None);
     }
 
     #[test]
     fn test_async_error_token_to_key() {
-        assert_eq!(async_error_token_to_key(&Token::Async), Some("async".to_string()));
-        assert_eq!(async_error_token_to_key(&Token::Await), Some("await".to_string()));
-        assert_eq!(async_error_token_to_key(&Token::Try), Some("try".to_string()));
-        assert_eq!(async_error_token_to_key(&Token::Catch), Some("catch".to_string()));
-        assert_eq!(async_error_token_to_key(&Token::Throw), Some("throw".to_string()));
+        assert_eq!(
+            async_error_token_to_key(&Token::Async),
+            Some("async".to_string())
+        );
+        assert_eq!(
+            async_error_token_to_key(&Token::Await),
+            Some("await".to_string())
+        );
+        assert_eq!(
+            async_error_token_to_key(&Token::Try),
+            Some("try".to_string())
+        );
+        assert_eq!(
+            async_error_token_to_key(&Token::Catch),
+            Some("catch".to_string())
+        );
+        assert_eq!(
+            async_error_token_to_key(&Token::Throw),
+            Some("throw".to_string())
+        );
         assert_eq!(async_error_token_to_key(&Token::Plus), None);
     }
 

@@ -696,16 +696,16 @@ mod tests {
     #[test]
     fn test_parse_item_with_optional_alias_no_alias() {
         let mut state = create_state("");
-        let item = parse_item_with_optional_alias(&mut state, "foo".to_string())
-            .expect("should succeed");
+        let item =
+            parse_item_with_optional_alias(&mut state, "foo".to_string()).expect("should succeed");
         assert!(matches!(item, ImportItem::Named(n) if n == "foo"));
     }
 
     #[test]
     fn test_parse_item_with_optional_alias_with_alias() {
         let mut state = create_state("as bar");
-        let item = parse_item_with_optional_alias(&mut state, "foo".to_string())
-            .expect("should succeed");
+        let item =
+            parse_item_with_optional_alias(&mut state, "foo".to_string()).expect("should succeed");
         if let ImportItem::Aliased { name, alias } = item {
             assert_eq!(name, "foo");
             assert_eq!(alias, "bar");

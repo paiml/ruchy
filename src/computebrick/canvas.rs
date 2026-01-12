@@ -29,7 +29,11 @@ impl Color {
     /// Create from 8-bit RGB values (0-255).
     #[inline]
     pub fn from_rgb8(r: u8, g: u8, b: u8) -> Self {
-        Self::rgb(f32::from(r) / 255.0, f32::from(g) / 255.0, f32::from(b) / 255.0)
+        Self::rgb(
+            f32::from(r) / 255.0,
+            f32::from(g) / 255.0,
+            f32::from(b) / 255.0,
+        )
     }
 
     /// Convert to 8-bit RGB tuple.
@@ -93,7 +97,12 @@ pub struct Rect {
 impl Rect {
     #[inline]
     pub const fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     /// Create from position and size.
@@ -117,8 +126,7 @@ impl Rect {
     /// Check if point is inside rectangle.
     #[inline]
     pub fn contains(&self, p: Point) -> bool {
-        p.x >= self.x && p.x < self.x + self.width &&
-        p.y >= self.y && p.y < self.y + self.height
+        p.x >= self.x && p.x < self.x + self.width && p.y >= self.y && p.y < self.y + self.height
     }
 
     /// Intersect with another rectangle.
@@ -199,7 +207,10 @@ impl Default for Cell {
 
 impl Cell {
     pub fn new(ch: char) -> Self {
-        Self { ch, ..Default::default() }
+        Self {
+            ch,
+            ..Default::default()
+        }
     }
 
     pub fn with_fg(mut self, fg: Color) -> Self {
@@ -227,7 +238,11 @@ impl CellBuffer {
     /// Create new buffer with given dimensions.
     pub fn new(width: usize, height: usize) -> Self {
         let cells = vec![Cell::default(); width * height];
-        Self { width, height, cells }
+        Self {
+            width,
+            height,
+            cells,
+        }
     }
 
     /// Get buffer width.
@@ -689,9 +704,7 @@ mod tests {
     // Additional: Cell builder
     #[test]
     fn test_cell_builder() {
-        let cell = Cell::new('A')
-            .with_fg(Color::GREEN)
-            .with_bg(Color::BLUE);
+        let cell = Cell::new('A').with_fg(Color::GREEN).with_bg(Color::BLUE);
 
         assert_eq!(cell.ch, 'A');
         assert_eq!(cell.fg, Color::GREEN);

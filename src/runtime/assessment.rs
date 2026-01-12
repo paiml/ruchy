@@ -1086,7 +1086,11 @@ mod tests {
         TestResult {
             passed,
             points_earned: points,
-            feedback: if passed { "Test passed".to_string() } else { "Test failed".to_string() },
+            feedback: if passed {
+                "Test passed".to_string()
+            } else {
+                "Test failed".to_string()
+            },
             execution_time_ms: 10,
         }
     }
@@ -1357,7 +1361,9 @@ mod tests {
     fn test_bonus_check_variants() {
         let checks = vec![
             BonusCheck::ExtraFeature("Dark mode".to_string()),
-            BonusCheck::Optimization { improvement_percent: 50.0 },
+            BonusCheck::Optimization {
+                improvement_percent: 50.0,
+            },
             BonusCheck::CreativeSolution,
         ];
         assert_eq!(checks.len(), 3);

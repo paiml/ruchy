@@ -392,9 +392,11 @@ mod tests {
     #[test]
     fn test_distill_ensemble_empty_teachers() {
         let distiller = KnowledgeDistiller::new();
-        let samples = vec![
-            Sample::new("test", Some("E0308".into()), ErrorCategory::TypeMismatch),
-        ];
+        let samples = vec![Sample::new(
+            "test",
+            Some("E0308".into()),
+            ErrorCategory::TypeMismatch,
+        )];
 
         let teachers: Vec<&RuchyOracle> = vec![];
         let soft_labels = distiller.distill_ensemble(&teachers, &samples);
@@ -412,13 +414,11 @@ mod tests {
             confidence_threshold: 0.50, // Low threshold to get results
         });
 
-        let samples = vec![
-            Sample::new(
-                "mismatched types: expected i32, found String",
-                Some("E0308".into()),
-                ErrorCategory::TypeMismatch,
-            ),
-        ];
+        let samples = vec![Sample::new(
+            "mismatched types: expected i32, found String",
+            Some("E0308".into()),
+            ErrorCategory::TypeMismatch,
+        )];
 
         let teachers = vec![&oracle];
         let soft_labels = distiller.distill_ensemble(&teachers, &samples);

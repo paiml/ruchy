@@ -11,9 +11,9 @@
 
 use super::Transpiler;
 use crate::frontend::ast::Expr;
+use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use anyhow::Result;
 
 impl Transpiler {
     /// Transpiles module declarations

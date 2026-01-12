@@ -308,7 +308,10 @@ mod tests {
     fn test_async_function_with_type_params() {
         let code = "async fun fetch<T>() { await get() }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Async function with type params should parse");
+        assert!(
+            result.is_ok(),
+            "Async function with type params should parse"
+        );
     }
 
     #[test]
@@ -488,7 +491,10 @@ mod tests {
     #[test]
     fn test_async_block_multiple_lets() {
         let result = parse("async { let a = 1; let b = 2; a + b }");
-        assert!(result.is_ok(), "Async block with multiple lets should parse");
+        assert!(
+            result.is_ok(),
+            "Async block with multiple lets should parse"
+        );
     }
 
     #[test]
@@ -506,7 +512,10 @@ mod tests {
     #[test]
     fn test_async_block_multiple_awaits() {
         let result = parse("async { let a = await first(); let b = await second(); a + b }");
-        assert!(result.is_ok(), "Async block with multiple awaits should parse");
+        assert!(
+            result.is_ok(),
+            "Async block with multiple awaits should parse"
+        );
     }
 
     #[test]
@@ -586,7 +595,10 @@ mod tests {
     #[test]
     fn test_async_lambda_returns_async_block() {
         let result = parse("async |x| async { x }");
-        assert!(result.is_ok(), "Async lambda returning async block should parse");
+        assert!(
+            result.is_ok(),
+            "Async lambda returning async block should parse"
+        );
     }
 
     #[test]

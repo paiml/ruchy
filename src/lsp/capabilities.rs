@@ -104,14 +104,20 @@ mod tests {
     #[test]
     fn test_semantic_token_legend_has_token_types() {
         assert!(!SEMANTIC_TOKEN_LEGEND.token_types.is_empty());
-        assert!(SEMANTIC_TOKEN_LEGEND.token_types.contains(&SemanticTokenType::KEYWORD));
-        assert!(SEMANTIC_TOKEN_LEGEND.token_types.contains(&SemanticTokenType::FUNCTION));
+        assert!(SEMANTIC_TOKEN_LEGEND
+            .token_types
+            .contains(&SemanticTokenType::KEYWORD));
+        assert!(SEMANTIC_TOKEN_LEGEND
+            .token_types
+            .contains(&SemanticTokenType::FUNCTION));
     }
 
     #[test]
     fn test_semantic_token_legend_has_modifiers() {
         assert!(!SEMANTIC_TOKEN_LEGEND.token_modifiers.is_empty());
-        assert!(SEMANTIC_TOKEN_LEGEND.token_modifiers.contains(&SemanticTokenModifier::DECLARATION));
+        assert!(SEMANTIC_TOKEN_LEGEND
+            .token_modifiers
+            .contains(&SemanticTokenModifier::DECLARATION));
     }
 
     #[test]

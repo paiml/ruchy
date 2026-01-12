@@ -785,7 +785,11 @@ fn test_ast_transpile_list() {
 #[test]
 fn test_ast_transpile_tuple() {
     let transpiler = Transpiler::new();
-    let tuple_expr = expr(ExprKind::Tuple(vec![int(1), string("hello"), bool_lit(true)]));
+    let tuple_expr = expr(ExprKind::Tuple(vec![
+        int(1),
+        string("hello"),
+        bool_lit(true),
+    ]));
     let result = transpiler.transpile_expr(&tuple_expr);
     assert!(result.is_ok());
 }
@@ -1269,7 +1273,10 @@ fn test_transpiler_mutable_vars() {
 #[test]
 fn test_transpiler_string_vars() {
     let transpiler = Transpiler::new();
-    transpiler.string_vars.borrow_mut().insert("name".to_string());
+    transpiler
+        .string_vars
+        .borrow_mut()
+        .insert("name".to_string());
     assert!(transpiler.string_vars.borrow().contains("name"));
 }
 

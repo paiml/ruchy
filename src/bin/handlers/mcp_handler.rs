@@ -113,15 +113,7 @@ mod tests {
     #[test]
     fn test_mcp_command_accepts_parameters() {
         // Verify function signature
-        let _ = handle_mcp_command(
-            "test-server",
-            false,
-            3600,
-            0.8,
-            10,
-            false,
-            None,
-        );
+        let _ = handle_mcp_command("test-server", false, 3600, 0.8, 10, false, None);
     }
 
     #[test]
@@ -154,15 +146,7 @@ mod tests {
     fn test_mcp_command_various_timeouts() {
         let timeouts = [60, 300, 3600, 86400];
         for timeout in &timeouts {
-            let _ = handle_mcp_command(
-                "test",
-                false,
-                *timeout,
-                0.8,
-                10,
-                false,
-                None,
-            );
+            let _ = handle_mcp_command("test", false, *timeout, 0.8, 10, false, None);
         }
     }
 
@@ -170,15 +154,7 @@ mod tests {
     fn test_mcp_command_various_scores() {
         let scores = [0.0, 0.5, 0.8, 1.0];
         for score in &scores {
-            let _ = handle_mcp_command(
-                "test",
-                false,
-                3600,
-                *score,
-                10,
-                false,
-                None,
-            );
+            let _ = handle_mcp_command("test", false, 3600, *score, 10, false, None);
         }
     }
 
@@ -186,15 +162,7 @@ mod tests {
     fn test_mcp_command_various_complexity() {
         let complexities = [1, 5, 10, 20, 50];
         for complexity in &complexities {
-            let _ = handle_mcp_command(
-                "test",
-                false,
-                3600,
-                0.8,
-                *complexity,
-                false,
-                None,
-            );
+            let _ = handle_mcp_command("test", false, 3600, 0.8, *complexity, false, None);
         }
     }
 
@@ -226,14 +194,6 @@ mod tests {
 
     #[test]
     fn test_mcp_command_empty_name() {
-        let _ = handle_mcp_command(
-            "",
-            false,
-            3600,
-            0.8,
-            10,
-            false,
-            None,
-        );
+        let _ = handle_mcp_command("", false, 3600, 0.8, 10, false, None);
     }
 }

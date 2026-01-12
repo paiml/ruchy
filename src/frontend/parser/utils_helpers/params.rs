@@ -288,7 +288,10 @@ mod tests {
         assert!(result.is_ok());
         let params = result.unwrap();
         assert_eq!(params.len(), 1);
-        assert!(matches!(&params[0].ty.kind, TypeKind::Reference { is_mut: false, .. }));
+        assert!(matches!(
+            &params[0].ty.kind,
+            TypeKind::Reference { is_mut: false, .. }
+        ));
     }
 
     // Test 8: Parse &mut self param
@@ -299,7 +302,10 @@ mod tests {
         assert!(result.is_ok());
         let params = result.unwrap();
         assert_eq!(params.len(), 1);
-        assert!(matches!(&params[0].ty.kind, TypeKind::Reference { is_mut: true, .. }));
+        assert!(matches!(
+            &params[0].ty.kind,
+            TypeKind::Reference { is_mut: true, .. }
+        ));
     }
 
     // Test 9: Parse df param (DataFrame keyword)

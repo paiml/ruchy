@@ -4,9 +4,9 @@
 //! create and render widgets from Ruchy data.
 
 use super::canvas::{CellBuffer, Color, Rect};
-use super::widgets::{Brick, BrailleGraph, Gauge, Meter, ProgressBar, Table};
 use super::render::DiffRenderer;
-use super::{GraphMode, WidgetSpec, WidgetKind};
+use super::widgets::{BrailleGraph, Brick, Gauge, Meter, ProgressBar, Table};
+use super::{GraphMode, WidgetKind, WidgetSpec};
 use std::io::{self, Write};
 
 /// Plot data as a braille graph.
@@ -232,9 +232,7 @@ pub fn spec_to_widget(spec: &WidgetSpec) -> Box<dyn Brick> {
             }
             Box::new(m)
         }
-        WidgetKind::Table { headers, rows } => {
-            Box::new(Table::new(headers.clone(), rows.clone()))
-        }
+        WidgetKind::Table { headers, rows } => Box::new(Table::new(headers.clone(), rows.clone())),
         WidgetKind::Gauge { value, label } => {
             let mut g = Gauge::new(*value, 1.0).with_label(label);
             if let Some(color) = spec.style.color {
@@ -242,9 +240,11 @@ pub fn spec_to_widget(spec: &WidgetSpec) -> Box<dyn Brick> {
             }
             Box::new(g)
         }
-        WidgetKind::Progress { current, total, show_eta } => {
-            Box::new(ProgressBar::new(*current, *total).with_eta(*show_eta))
-        }
+        WidgetKind::Progress {
+            current,
+            total,
+            show_eta,
+        } => Box::new(ProgressBar::new(*current, *total).with_eta(*show_eta)),
         WidgetKind::Dashboard { children } => {
             let widgets: Vec<(String, Box<dyn Brick>)> = children
                 .iter()
@@ -252,9 +252,7 @@ pub fn spec_to_widget(spec: &WidgetSpec) -> Box<dyn Brick> {
                 .collect();
             Box::new(Dashboard::new(widgets))
         }
-        WidgetKind::Text { content } => {
-            Box::new(TextWidget::new(content.clone()))
-        }
+        WidgetKind::Text { content } => Box::new(TextWidget::new(content.clone())),
     }
 }
 
@@ -283,7 +281,11 @@ impl Brick for TextWidget {
     fn paint(&self, canvas: &mut dyn super::canvas::Canvas) {
         use super::canvas::{Point, TextStyle};
         let style = TextStyle::default().with_color(self.color);
-        canvas.draw_text(&self.content, Point::new(self.bounds.x, self.bounds.y), &style);
+        canvas.draw_text(
+            &self.content,
+            Point::new(self.bounds.x, self.bounds.y),
+            &style,
+        );
     }
 
     fn bounds(&self) -> Rect {
@@ -399,9 +401,10 @@ mod tests {
 
     #[test]
     fn test_dashboard_layout() {
-        let widgets: Vec<(String, Box<dyn Brick>)> = vec![
-            ("test".to_string(), Box::new(plot(vec![1.0], None, None, None))),
-        ];
+        let widgets: Vec<(String, Box<dyn Brick>)> = vec![(
+            "test".to_string(),
+            Box::new(plot(vec![1.0], None, None, None)),
+        )];
         let mut dash = dashboard(widgets);
         dash.layout(Rect::new(0.0, 0.0, 80.0, 24.0));
         assert_eq!(dash.bounds().width, 80.0);
@@ -418,8 +421,14 @@ mod tests {
     #[test]
     fn test_dashboard_children_positioned_i05() {
         let widgets: Vec<(String, Box<dyn Brick>)> = vec![
-            ("graph1".to_string(), Box::new(plot(vec![1.0, 2.0], None, None, None))),
-            ("graph2".to_string(), Box::new(plot(vec![3.0, 4.0], None, None, None))),
+            (
+                "graph1".to_string(),
+                Box::new(plot(vec![1.0, 2.0], None, None, None)),
+            ),
+            (
+                "graph2".to_string(),
+                Box::new(plot(vec![3.0, 4.0], None, None, None)),
+            ),
         ];
         let mut dash = dashboard(widgets);
         dash.layout(Rect::new(0.0, 0.0, 80.0, 24.0));
@@ -641,16 +650,17 @@ mod tests {
     fn test_spec_to_widget_dashboard() {
         let spec = WidgetSpec {
             kind: WidgetKind::Dashboard {
-                children: vec![
-                    ("graph".to_string(), WidgetSpec {
+                children: vec![(
+                    "graph".to_string(),
+                    WidgetSpec {
                         kind: WidgetKind::BrailleGraph {
                             data: vec![1.0, 2.0],
                             mode: GraphMode::Braille,
                         },
                         bounds: None,
                         style: super::super::WidgetStyle::default(),
-                    }),
-                ],
+                    },
+                )],
             },
             bounds: None,
             style: super::super::WidgetStyle::default(),

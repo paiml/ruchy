@@ -150,8 +150,8 @@ mod tests {
     fn test_watcher_check_changes_no_events() {
         let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
-        let mut watcher = FileWatcher::new(vec![watch_path], 100)
-            .expect("operation should succeed in test");
+        let mut watcher =
+            FileWatcher::new(vec![watch_path], 100).expect("operation should succeed in test");
         // No file changes made
         let changes = watcher.check_changes();
         assert!(changes.is_none(), "Should return None when no changes");
@@ -164,8 +164,8 @@ mod tests {
         let test_file = watch_path.join("existing.txt");
         fs::write(&test_file, "initial").expect("operation should succeed in test");
 
-        let mut watcher = FileWatcher::new(vec![watch_path], 100)
-            .expect("operation should succeed in test");
+        let mut watcher =
+            FileWatcher::new(vec![watch_path], 100).expect("operation should succeed in test");
 
         // Modify file
         thread::sleep(Duration::from_millis(100));
@@ -183,8 +183,8 @@ mod tests {
         let test_file = watch_path.join("to_delete.txt");
         fs::write(&test_file, "content").expect("operation should succeed in test");
 
-        let mut watcher = FileWatcher::new(vec![watch_path], 100)
-            .expect("operation should succeed in test");
+        let mut watcher =
+            FileWatcher::new(vec![watch_path], 100).expect("operation should succeed in test");
 
         // Delete file
         thread::sleep(Duration::from_millis(100));

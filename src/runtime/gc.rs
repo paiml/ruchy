@@ -153,10 +153,7 @@ mod tests {
     #[test]
     fn test_gc_track_tuple() {
         let mut gc = ConservativeGC::new();
-        let tuple = Value::Tuple(Arc::from(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-        ]));
+        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         gc.track(&tuple);
     }
 
@@ -228,12 +225,11 @@ mod tests {
     fn test_gc_track_closure() {
         let mut gc = ConservativeGC::new();
         let closure = Value::Closure {
-            params: vec![
-                ("x".to_string(), None),
-                ("y".to_string(), None),
-            ],
+            params: vec![("x".to_string(), None), ("y".to_string(), None)],
             body: Arc::from(crate::frontend::ast::Expr::new(
-                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(0, None)),
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    0, None,
+                )),
                 Default::default(),
             )),
             env: std::rc::Rc::new(std::cell::RefCell::new(std::collections::HashMap::new())),

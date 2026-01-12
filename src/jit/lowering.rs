@@ -180,7 +180,10 @@ mod tests {
         let entry_block = func_builder.create_block();
         func_builder.switch_to_block(entry_block);
         let result = lower_expr_to_value(&mut func_builder, &ast);
-        assert!(result.is_ok(), "Should lower nested arithmetic successfully");
+        assert!(
+            result.is_ok(),
+            "Should lower nested arithmetic successfully"
+        );
     }
 
     #[test]

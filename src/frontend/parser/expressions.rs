@@ -197,7 +197,7 @@ fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> R
         }
         Token::Lifetime(label_name) => {
             state.tokens.advance(); // consume the Lifetime token (LABELED-LOOP-FIX)
-            // Strip the leading quote from 'outer to get just "outer"
+                                    // Strip the leading quote from 'outer to get just "outer"
             let stripped_label = label_name
                 .strip_prefix('\'')
                 .unwrap_or(&label_name)
@@ -1048,7 +1048,10 @@ mod tests {
     fn test_parse_let_with_type() {
         let expr = parse("let x: i32 = 42").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            if let ExprKind::Let { type_annotation, .. } = &exprs[0].kind {
+            if let ExprKind::Let {
+                type_annotation, ..
+            } = &exprs[0].kind
+            {
                 assert!(type_annotation.is_some());
             } else {
                 panic!("Expected Let expression");
@@ -1159,10 +1162,7 @@ mod tests {
     fn test_parse_unit() {
         let expr = parse("()").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(
-                &exprs[0].kind,
-                ExprKind::Literal(Literal::Unit)
-            ));
+            assert!(matches!(&exprs[0].kind, ExprKind::Literal(Literal::Unit)));
         }
     }
 
@@ -1530,10 +1530,7 @@ mod tests {
     fn test_parse_ok_constructor() {
         let expr = parse("Ok(42)").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(
-                &exprs[0].kind,
-                ExprKind::Call { .. }
-            ));
+            assert!(matches!(&exprs[0].kind, ExprKind::Call { .. }));
         }
     }
 
@@ -1541,10 +1538,7 @@ mod tests {
     fn test_parse_err_constructor() {
         let expr = parse("Err(\"error\")").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(
-                &exprs[0].kind,
-                ExprKind::Call { .. }
-            ));
+            assert!(matches!(&exprs[0].kind, ExprKind::Call { .. }));
         }
     }
 
@@ -1554,10 +1548,7 @@ mod tests {
     fn test_parse_some_constructor() {
         let expr = parse("Some(42)").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
-            assert!(matches!(
-                &exprs[0].kind,
-                ExprKind::Call { .. }
-            ));
+            assert!(matches!(&exprs[0].kind, ExprKind::Call { .. }));
         }
     }
 

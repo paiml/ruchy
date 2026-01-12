@@ -653,12 +653,9 @@ mod extended_tests {
             Value::Integer(5),
         ]);
 
-        let result = eval_array_method_simple(
-            &arr,
-            "slice",
-            &[Value::Integer(1), Value::Integer(4)],
-        )
-        .expect("operation should succeed in test");
+        let result =
+            eval_array_method_simple(&arr, "slice", &[Value::Integer(1), Value::Integer(4)])
+                .expect("operation should succeed in test");
 
         match result {
             Value::Array(sliced) => {
@@ -677,24 +674,18 @@ mod extended_tests {
         let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
 
         // Start beyond end
-        let result = eval_array_method_simple(
-            &arr,
-            "slice",
-            &[Value::Integer(5), Value::Integer(10)],
-        )
-        .expect("operation should succeed in test");
+        let result =
+            eval_array_method_simple(&arr, "slice", &[Value::Integer(5), Value::Integer(10)])
+                .expect("operation should succeed in test");
         match result {
             Value::Array(sliced) => assert!(sliced.is_empty()),
             _ => panic!("Expected empty array"),
         }
 
         // Negative indices clamped to 0
-        let result = eval_array_method_simple(
-            &arr,
-            "slice",
-            &[Value::Integer(-1), Value::Integer(1)],
-        )
-        .expect("operation should succeed in test");
+        let result =
+            eval_array_method_simple(&arr, "slice", &[Value::Integer(-1), Value::Integer(1)])
+                .expect("operation should succeed in test");
         match result {
             Value::Array(sliced) => assert_eq!(sliced.len(), 1),
             _ => panic!("Expected array with one element"),
@@ -722,12 +713,9 @@ mod extended_tests {
             Value::from_string("c".to_string()),
         ]);
 
-        let result = eval_array_method_simple(
-            &arr,
-            "join",
-            &[Value::from_string(", ".to_string())],
-        )
-        .expect("operation should succeed in test");
+        let result =
+            eval_array_method_simple(&arr, "join", &[Value::from_string(", ".to_string())])
+                .expect("operation should succeed in test");
 
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "a, b, c"),
@@ -744,12 +732,8 @@ mod extended_tests {
             Value::Integer(3),
         ]);
 
-        let result = eval_array_method_simple(
-            &arr,
-            "join",
-            &[Value::from_string("-".to_string())],
-        )
-        .expect("operation should succeed in test");
+        let result = eval_array_method_simple(&arr, "join", &[Value::from_string("-".to_string())])
+            .expect("operation should succeed in test");
 
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "1-2-3"),
@@ -776,8 +760,8 @@ mod extended_tests {
             Value::Integer(2),
         ]);
 
-        let result =
-            eval_array_method_simple(&arr, "unique", &[]).expect("operation should succeed in test");
+        let result = eval_array_method_simple(&arr, "unique", &[])
+            .expect("operation should succeed in test");
 
         match result {
             Value::Array(unique) => {
@@ -1056,11 +1040,9 @@ mod round_133_tests {
     #[test]
     fn test_array_slice_same_indices() {
         let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
-        let result = eval_array_method_simple(
-            &arr,
-            "slice",
-            &[Value::Integer(1), Value::Integer(1)],
-        ).unwrap();
+        let result =
+            eval_array_method_simple(&arr, "slice", &[Value::Integer(1), Value::Integer(1)])
+                .unwrap();
         match result {
             Value::Array(sliced) => assert!(sliced.is_empty()),
             _ => panic!("Expected empty array"),
@@ -1070,11 +1052,8 @@ mod round_133_tests {
     #[test]
     fn test_array_join_empty() {
         let arr = Arc::from(vec![]);
-        let result = eval_array_method_simple(
-            &arr,
-            "join",
-            &[Value::from_string(",".to_string())],
-        ).unwrap();
+        let result =
+            eval_array_method_simple(&arr, "join", &[Value::from_string(",".to_string())]).unwrap();
         match result {
             Value::String(s) => assert!(s.is_empty()),
             _ => panic!("Expected empty string"),
@@ -1084,11 +1063,8 @@ mod round_133_tests {
     #[test]
     fn test_array_join_single() {
         let arr = Arc::from(vec![Value::from_string("only".to_string())]);
-        let result = eval_array_method_simple(
-            &arr,
-            "join",
-            &[Value::from_string(",".to_string())],
-        ).unwrap();
+        let result =
+            eval_array_method_simple(&arr, "join", &[Value::from_string(",".to_string())]).unwrap();
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "only"),
             _ => panic!("Expected string"),
@@ -1194,7 +1170,9 @@ mod round_133_tests {
 
     #[test]
     fn test_dispatch_tuple_to_string() {
-        let t = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)].as_slice()));
+        let t = Value::Tuple(Arc::from(
+            vec![Value::Integer(1), Value::Integer(2)].as_slice(),
+        ));
         let result = dispatch_method_call(&t, "to_string", &[], true).unwrap();
         match result {
             Value::String(s) => assert!(s.contains("1") && s.contains("2")),
@@ -1234,7 +1212,11 @@ mod round_133_tests {
 
     #[test]
     fn test_dispatch_array_len_method() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         let result = dispatch_method_call(&arr, "len", &[], true).unwrap();
         assert_eq!(result, Value::Integer(3));
     }

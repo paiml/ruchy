@@ -702,8 +702,18 @@ mod tests {
     #[test]
     fn test_cache_eviction_counter() {
         let mut cache = CompilationCache::new(1);
-        cache.insert("a".to_string(), "1".to_string(), Duration::from_millis(10), 100);
-        cache.insert("b".to_string(), "2".to_string(), Duration::from_millis(10), 100);
+        cache.insert(
+            "a".to_string(),
+            "1".to_string(),
+            Duration::from_millis(10),
+            100,
+        );
+        cache.insert(
+            "b".to_string(),
+            "2".to_string(),
+            Duration::from_millis(10),
+            100,
+        );
 
         let stats = cache.stats();
         assert_eq!(stats.evictions, 1);

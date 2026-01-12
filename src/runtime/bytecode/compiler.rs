@@ -2578,7 +2578,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&let_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&let_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         assert!(!chunk.local_names.is_empty(), "Should have local names");
@@ -2612,7 +2614,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&let_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&let_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have MOVE instruction for copying local variable
@@ -2620,7 +2624,10 @@ mod tests {
             .instructions
             .iter()
             .any(|i| i.opcode() == OpCode::Move.to_u8());
-        assert!(move_found, "Should have Move instruction for local variable access");
+        assert!(
+            move_found,
+            "Should have Move instruction for local variable access"
+        );
         assert!(result_reg < 10);
     }
 
@@ -2688,7 +2695,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&let_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&let_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have MOVE instructions for assignment
@@ -2697,7 +2706,10 @@ mod tests {
             .iter()
             .filter(|i| i.opcode() == OpCode::Move.to_u8())
             .count();
-        assert!(move_count >= 1, "Should have Move instruction(s) for assignment");
+        assert!(
+            move_count >= 1,
+            "Should have Move instruction(s) for assignment"
+        );
         assert!(result_reg < 10);
     }
 
@@ -2723,7 +2735,10 @@ mod tests {
         );
 
         let result = compiler.compile_expr(&assign_expr);
-        assert!(result.is_err(), "Assignment to undefined variable should fail");
+        assert!(
+            result.is_err(),
+            "Assignment to undefined variable should fail"
+        );
         assert!(result.unwrap_err().contains("Undefined variable"));
     }
 
@@ -2766,7 +2781,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&func_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&func_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Function should be stored in locals
@@ -2775,7 +2792,10 @@ mod tests {
             "Function should be in local names"
         );
         // Should have a Closure constant
-        let has_closure = chunk.constants.iter().any(|c| matches!(c, Value::Closure { .. }));
+        let has_closure = chunk
+            .constants
+            .iter()
+            .any(|c| matches!(c, Value::Closure { .. }));
         assert!(has_closure, "Should have Closure constant");
         assert!(result_reg < 10);
     }
@@ -2820,7 +2840,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&for_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&for_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have For opcode
@@ -2830,7 +2852,10 @@ mod tests {
             .any(|i| i.opcode() == OpCode::For.to_u8());
         assert!(for_found, "Should have For instruction");
         // Should have stored loop body
-        assert!(!chunk.loop_bodies.is_empty(), "Should have stored loop body");
+        assert!(
+            !chunk.loop_bodies.is_empty(),
+            "Should have stored loop body"
+        );
         assert!(result_reg < 10);
     }
 
@@ -2853,7 +2878,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&method_call).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&method_call)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have MethodCall opcode
@@ -2863,7 +2890,10 @@ mod tests {
             .any(|i| i.opcode() == OpCode::MethodCall.to_u8());
         assert!(method_call_found, "Should have MethodCall instruction");
         // Should have stored method call info
-        assert!(!chunk.method_calls.is_empty(), "Should have stored method call info");
+        assert!(
+            !chunk.method_calls.is_empty(),
+            "Should have stored method call info"
+        );
         assert!(result_reg < 10);
     }
 
@@ -2885,7 +2915,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&field_access).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&field_access)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have LoadField opcode
@@ -2919,7 +2951,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&index_access).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&index_access)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have LoadIndex opcode
@@ -2956,7 +2990,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&tuple_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&tuple_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Literal tuple should be in constant pool
@@ -2986,7 +3022,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&tuple_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&tuple_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have NewTuple instruction for non-literal elements
@@ -3027,11 +3065,16 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&obj_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&obj_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Literal object should be in constant pool
-        let has_object = chunk.constants.iter().any(|c| matches!(c, Value::Object(_)));
+        let has_object = chunk
+            .constants
+            .iter()
+            .any(|c| matches!(c, Value::Object(_)));
         assert!(has_object, "Should have Object constant");
         assert!(result_reg < 10);
     }
@@ -3065,7 +3108,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&obj_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&obj_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have NewObject instruction for non-literal elements
@@ -3141,7 +3186,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&match_full).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&match_full)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have Match opcode
@@ -3151,7 +3198,10 @@ mod tests {
             .any(|i| i.opcode() == OpCode::Match.to_u8());
         assert!(match_found, "Should have Match instruction");
         // Should have stored match expression
-        assert!(!chunk.match_exprs.is_empty(), "Should have stored match expression");
+        assert!(
+            !chunk.match_exprs.is_empty(),
+            "Should have stored match expression"
+        );
         assert!(result_reg < 10);
     }
 
@@ -3197,7 +3247,10 @@ mod tests {
             .any(|i| i.opcode() == OpCode::NewClosure.to_u8());
         assert!(new_closure_found, "Should have NewClosure instruction");
         // Should have stored closure info
-        assert!(!chunk.closures.is_empty(), "Should have stored closure info");
+        assert!(
+            !chunk.closures.is_empty(),
+            "Should have stored closure info"
+        );
         assert!(result_reg < 10);
     }
 
@@ -3212,7 +3265,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&list_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&list_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Empty list uses NewArray path (not constant pool optimization)
@@ -3220,7 +3275,10 @@ mod tests {
             .instructions
             .iter()
             .any(|i| i.opcode() == OpCode::NewArray.to_u8());
-        assert!(new_array_found, "Should have NewArray instruction for empty list");
+        assert!(
+            new_array_found,
+            "Should have NewArray instruction for empty list"
+        );
         assert!(result_reg < 10);
     }
 
@@ -3235,7 +3293,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&tuple_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&tuple_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Empty tuple uses NewTuple path
@@ -3243,7 +3303,10 @@ mod tests {
             .instructions
             .iter()
             .any(|i| i.opcode() == OpCode::NewTuple.to_u8());
-        assert!(new_tuple_found, "Should have NewTuple instruction for empty tuple");
+        assert!(
+            new_tuple_found,
+            "Should have NewTuple instruction for empty tuple"
+        );
         assert!(result_reg < 10);
     }
 
@@ -3258,7 +3321,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&obj_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&obj_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Empty object uses NewObject path
@@ -3266,7 +3331,10 @@ mod tests {
             .instructions
             .iter()
             .any(|i| i.opcode() == OpCode::NewObject.to_u8());
-        assert!(new_object_found, "Should have NewObject instruction for empty object");
+        assert!(
+            new_object_found,
+            "Should have NewObject instruction for empty object"
+        );
         assert!(result_reg < 10);
     }
 
@@ -3289,7 +3357,11 @@ mod tests {
         // Verify the jump offset was updated correctly
         let jump_instr = chunk.instructions[jump_idx];
         assert_eq!(jump_instr.opcode(), OpCode::Jump.to_u8());
-        assert_eq!(jump_instr.get_sbx(), 3, "Jump offset should be 3 (skip 3 instructions)");
+        assert_eq!(
+            jump_instr.get_sbx(),
+            3,
+            "Jump offset should be 3 (skip 3 instructions)"
+        );
     }
 
     // Test finalize method
@@ -3343,7 +3415,9 @@ mod tests {
             },
             crate::frontend::ast::Span::default(),
         );
-        let _ = compiler.compile_expr(&let_expr).expect("Compilation failed");
+        let _ = compiler
+            .compile_expr(&let_expr)
+            .expect("Compilation failed");
 
         // Register 0 should now be a local
         assert!(compiler.is_local_register(0));
@@ -3429,7 +3503,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&method_call).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&method_call)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have stored method call with args
@@ -3484,7 +3560,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&outer_if).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&outer_if)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Should have multiple JumpIfFalse instructions
@@ -3493,7 +3571,10 @@ mod tests {
             .iter()
             .filter(|i| i.opcode() == OpCode::JumpIfFalse.to_u8())
             .count();
-        assert!(jump_count >= 2, "Should have at least 2 JumpIfFalse instructions for nested if");
+        assert!(
+            jump_count >= 2,
+            "Should have at least 2 JumpIfFalse instructions for nested if"
+        );
         assert!(result_reg < 10);
     }
 
@@ -3579,7 +3660,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let _ = compiler.compile_expr(&let_expr).expect("Compilation failed");
+        let _ = compiler
+            .compile_expr(&let_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // locals_map should contain x
@@ -3706,7 +3789,9 @@ mod tests {
             crate::frontend::ast::Span::default(),
         );
 
-        let result_reg = compiler.compile_expr(&func_expr).expect("Compilation failed");
+        let result_reg = compiler
+            .compile_expr(&func_expr)
+            .expect("Compilation failed");
         let chunk = compiler.finalize();
 
         // Function should have closure with default parameters
@@ -3767,7 +3852,10 @@ mod tests {
         assert!(!chunk.closures.is_empty());
         let (params, _) = &chunk.closures[0];
         assert_eq!(params.len(), 2);
-        assert!(params[1].1.is_some(), "Second param should have default value");
+        assert!(
+            params[1].1.is_some(),
+            "Second param should have default value"
+        );
         assert!(result_reg < 10);
     }
 
@@ -3781,7 +3869,10 @@ mod tests {
 
         // String comparison returns false in values_equal (by reference, not value)
         // So strings are not deduplicated
-        assert_ne!(idx1, idx2, "Strings should not be deduplicated (by reference)");
+        assert_ne!(
+            idx1, idx2,
+            "Strings should not be deduplicated (by reference)"
+        );
         assert_eq!(chunk.constants.len(), 2);
     }
 }

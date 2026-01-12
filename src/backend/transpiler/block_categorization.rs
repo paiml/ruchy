@@ -109,7 +109,8 @@ impl Transpiler {
         }
 
         // TRANSPILER-SCOPE: Third pass - generate static mut declarations for globals and const declarations
-        let globals = self.generate_global_declarations(exprs, &global_var_names, &const_var_names)?;
+        let globals =
+            self.generate_global_declarations(exprs, &global_var_names, &const_var_names)?;
 
         Ok((
             functions,
@@ -315,7 +316,11 @@ impl Transpiler {
     }
 
     /// Categorize general statement expression (complexity: 3)
-    pub fn categorize_statement(&self, expr: &Expr, statements: &mut Vec<TokenStream>) -> Result<()> {
+    pub fn categorize_statement(
+        &self,
+        expr: &Expr,
+        statements: &mut Vec<TokenStream>,
+    ) -> Result<()> {
         let stmt = self.transpile_expr(expr)?;
         let stmt_str = stmt.to_string();
 
@@ -406,8 +411,7 @@ impl Transpiler {
     /// Complexity: 2 (within Toyota Way limits)
     fn is_statement_if(then_branch: &Expr, else_branch: Option<&Expr>) -> bool {
         // If both branches are statements, the whole if is a statement
-        Self::is_statement_expr(then_branch)
-            && else_branch.is_none_or(Self::is_statement_expr)
+        Self::is_statement_expr(then_branch) && else_branch.is_none_or(Self::is_statement_expr)
     }
 }
 
@@ -660,10 +664,7 @@ mod tests {
 
     #[test]
     fn test_is_statement_expr_block_with_statement() {
-        let block = block_expr(vec![
-            let_expr("x", int_expr(1), false),
-            int_expr(42),
-        ]);
+        let block = block_expr(vec![let_expr("x", int_expr(1), false), int_expr(42)]);
         assert!(Transpiler::is_statement_expr(&block));
     }
 
@@ -931,8 +932,13 @@ mod tests {
         let mut functions = Vec::new();
         let mut has_main = false;
         let mut main_expr = None;
-        let result =
-            transpiler.categorize_function(&func, "my_func", &mut functions, &mut has_main, &mut main_expr);
+        let result = transpiler.categorize_function(
+            &func,
+            "my_func",
+            &mut functions,
+            &mut has_main,
+            &mut main_expr,
+        );
         assert!(result.is_ok());
         assert_eq!(functions.len(), 1);
         assert!(!has_main);
@@ -946,8 +952,13 @@ mod tests {
         let mut functions = Vec::new();
         let mut has_main = false;
         let mut main_expr = None;
-        let result =
-            transpiler.categorize_function(&func, "main", &mut functions, &mut has_main, &mut main_expr);
+        let result = transpiler.categorize_function(
+            &func,
+            "main",
+            &mut functions,
+            &mut has_main,
+            &mut main_expr,
+        );
         assert!(result.is_ok());
         assert!(functions.is_empty()); // main is not added to functions
         assert!(has_main);

@@ -360,8 +360,12 @@ mod tests {
         let obj_tokens = quote! { map };
         let method_ident = format_ident!("contains_key");
         let arg_tokens = vec![quote! { "key" }];
-        let result =
-            transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "contains_key", &arg_tokens);
+        let result = transpiler.transpile_map_set_methods(
+            &obj_tokens,
+            &method_ident,
+            "contains_key",
+            &arg_tokens,
+        );
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("contains_key"));
@@ -373,7 +377,8 @@ mod tests {
         let obj_tokens = quote! { map };
         let method_ident = format_ident!("items");
         let arg_tokens: Vec<TokenStream> = vec![];
-        let result = transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "items", &arg_tokens);
+        let result =
+            transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "items", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("iter"));
@@ -386,7 +391,8 @@ mod tests {
         let obj_tokens = quote! { map };
         let method_ident = format_ident!("update");
         let arg_tokens = vec![quote! { other }];
-        let result = transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "update", &arg_tokens);
+        let result =
+            transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "update", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("extend"));
@@ -398,7 +404,8 @@ mod tests {
         let obj_tokens = quote! { map };
         let method_ident = format_ident!("keys");
         let arg_tokens: Vec<TokenStream> = vec![];
-        let result = transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "keys", &arg_tokens);
+        let result =
+            transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "keys", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("keys"));
@@ -410,7 +417,8 @@ mod tests {
         let obj_tokens = quote! { map };
         let method_ident = format_ident!("values");
         let arg_tokens: Vec<TokenStream> = vec![];
-        let result = transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "values", &arg_tokens);
+        let result =
+            transpiler.transpile_map_set_methods(&obj_tokens, &method_ident, "values", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("values"));
@@ -580,7 +588,8 @@ mod tests {
         let transpiler = Transpiler::new();
         let obj_tokens = quote! { vec };
         let arg_tokens = vec![quote! { 0 }, quote! { 2 }];
-        let result = transpiler.transpile_advanced_collection_methods(&obj_tokens, "slice", &arg_tokens);
+        let result =
+            transpiler.transpile_advanced_collection_methods(&obj_tokens, "slice", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("to_vec"));
@@ -591,7 +600,8 @@ mod tests {
         let transpiler = Transpiler::new();
         let obj_tokens = quote! { vec1 };
         let arg_tokens = vec![quote! { vec2 }];
-        let result = transpiler.transpile_advanced_collection_methods(&obj_tokens, "concat", &arg_tokens);
+        let result =
+            transpiler.transpile_advanced_collection_methods(&obj_tokens, "concat", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("concat"));
@@ -602,7 +612,8 @@ mod tests {
         let transpiler = Transpiler::new();
         let obj_tokens = quote! { nested };
         let arg_tokens: Vec<TokenStream> = vec![];
-        let result = transpiler.transpile_advanced_collection_methods(&obj_tokens, "flatten", &arg_tokens);
+        let result =
+            transpiler.transpile_advanced_collection_methods(&obj_tokens, "flatten", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("flatten"));
@@ -613,7 +624,8 @@ mod tests {
         let transpiler = Transpiler::new();
         let obj_tokens = quote! { vec };
         let arg_tokens: Vec<TokenStream> = vec![];
-        let result = transpiler.transpile_advanced_collection_methods(&obj_tokens, "unique", &arg_tokens);
+        let result =
+            transpiler.transpile_advanced_collection_methods(&obj_tokens, "unique", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("HashSet"));
@@ -624,7 +636,8 @@ mod tests {
         let transpiler = Transpiler::new();
         let obj_tokens = quote! { vec };
         let arg_tokens = vec![quote! { ", " }];
-        let result = transpiler.transpile_advanced_collection_methods(&obj_tokens, "join", &arg_tokens);
+        let result =
+            transpiler.transpile_advanced_collection_methods(&obj_tokens, "join", &arg_tokens);
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("join"));

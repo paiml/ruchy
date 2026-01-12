@@ -674,17 +674,32 @@ fn test_modulo() {
 #[test]
 fn test_wasm_type_to_valtype() {
     let emitter = WasmEmitter::new();
-    assert_eq!(emitter.wasm_type_to_valtype(WasmType::I32), wasm_encoder::ValType::I32);
-    assert_eq!(emitter.wasm_type_to_valtype(WasmType::I64), wasm_encoder::ValType::I64);
-    assert_eq!(emitter.wasm_type_to_valtype(WasmType::F32), wasm_encoder::ValType::F32);
-    assert_eq!(emitter.wasm_type_to_valtype(WasmType::F64), wasm_encoder::ValType::F64);
+    assert_eq!(
+        emitter.wasm_type_to_valtype(WasmType::I32),
+        wasm_encoder::ValType::I32
+    );
+    assert_eq!(
+        emitter.wasm_type_to_valtype(WasmType::I64),
+        wasm_encoder::ValType::I64
+    );
+    assert_eq!(
+        emitter.wasm_type_to_valtype(WasmType::F32),
+        wasm_encoder::ValType::F32
+    );
+    assert_eq!(
+        emitter.wasm_type_to_valtype(WasmType::F64),
+        wasm_encoder::ValType::F64
+    );
 }
 
 #[test]
 fn test_infer_element_type_literals() {
     let emitter = WasmEmitter::new();
 
-    let int_expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Default::default());
+    let int_expr = Expr::new(
+        ExprKind::Literal(Literal::Integer(42, None)),
+        Default::default(),
+    );
     assert_eq!(emitter.infer_element_type(&int_expr), WasmType::I32);
 
     let float_expr = Expr::new(ExprKind::Literal(Literal::Float(3.14)), Default::default());
@@ -759,7 +774,10 @@ fn test_infer_element_type_float() {
 #[test]
 fn test_infer_element_type_integer() {
     let emitter = WasmEmitter::new();
-    let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Default::default());
+    let expr = Expr::new(
+        ExprKind::Literal(Literal::Integer(42, None)),
+        Default::default(),
+    );
     let result = emitter.infer_element_type(&expr);
     assert_eq!(result, super::types::WasmType::I32);
 }
@@ -775,7 +793,10 @@ fn test_infer_element_type_bool() {
 #[test]
 fn test_infer_element_type_string() {
     let emitter = WasmEmitter::new();
-    let expr = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Default::default());
+    let expr = Expr::new(
+        ExprKind::Literal(Literal::String("hello".to_string())),
+        Default::default(),
+    );
     let result = emitter.infer_element_type(&expr);
     assert_eq!(result, super::types::WasmType::I32); // String address is i32
 }
@@ -784,11 +805,21 @@ fn test_infer_element_type_string() {
 fn test_infer_element_type_binary_comparison() {
     use crate::frontend::ast::BinaryOp;
     let emitter = WasmEmitter::new();
-    let left = Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Default::default()));
-    let right = Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Default::default()));
+    let left = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Integer(1, None)),
+        Default::default(),
+    ));
+    let right = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Integer(2, None)),
+        Default::default(),
+    ));
     let expr = Expr::new(
-        ExprKind::Binary { op: BinaryOp::Less, left, right },
-        Default::default()
+        ExprKind::Binary {
+            op: BinaryOp::Less,
+            left,
+            right,
+        },
+        Default::default(),
     );
     let result = emitter.infer_element_type(&expr);
     assert_eq!(result, super::types::WasmType::I32); // Comparison returns i32
@@ -798,11 +829,21 @@ fn test_infer_element_type_binary_comparison() {
 fn test_infer_element_type_binary_arithmetic() {
     use crate::frontend::ast::BinaryOp;
     let emitter = WasmEmitter::new();
-    let left = Box::new(Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Default::default()));
-    let right = Box::new(Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Default::default()));
+    let left = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Integer(1, None)),
+        Default::default(),
+    ));
+    let right = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Integer(2, None)),
+        Default::default(),
+    ));
     let expr = Expr::new(
-        ExprKind::Binary { op: BinaryOp::Add, left, right },
-        Default::default()
+        ExprKind::Binary {
+            op: BinaryOp::Add,
+            left,
+            right,
+        },
+        Default::default(),
     );
     let result = emitter.infer_element_type(&expr);
     assert_eq!(result, super::types::WasmType::F32); // Arithmetic could return float
@@ -1350,21 +1391,21 @@ fn test_emit_negative_integer_r124() {
 
 #[cfg(test)]
 mod property_tests_mod {
-use proptest::proptest;
+    use proptest::proptest;
 
-proptest! {
-    /// Property: Function never panics on any input
-    #[test]
-    fn test_new_never_panics(input: String) {
-        // Limit input size to avoid timeout
-        let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
-        // Function should not panic on any input
-        let _ = std::panic::catch_unwind(|| {
-            // Call function with various inputs
-            // This is a template - adjust based on actual function signature
-        });
+    proptest! {
+        /// Property: Function never panics on any input
+        #[test]
+        fn test_new_never_panics(input: String) {
+            // Limit input size to avoid timeout
+            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            // Function should not panic on any input
+            let _ = std::panic::catch_unwind(|| {
+                // Call function with various inputs
+                // This is a template - adjust based on actual function signature
+            });
+        }
     }
-}
 }
 
 // ============================================================================

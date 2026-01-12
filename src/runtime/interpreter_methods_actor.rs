@@ -558,10 +558,7 @@ mod tests {
         }
     }
 
-    fn make_closure(
-        params: Vec<(String, Option<Arc<Expr>>)>,
-        body: Expr,
-    ) -> Value {
+    fn make_closure(params: Vec<(String, Option<Arc<Expr>>)>, body: Expr) -> Value {
         Value::Closure {
             params,
             body: Arc::new(body),
@@ -578,15 +575,15 @@ mod tests {
         handler_obj.insert(
             "params".to_string(),
             Value::Array(Arc::from(
-                params.iter().map(|p| Value::from_string(p.clone())).collect::<Vec<_>>(),
+                params
+                    .iter()
+                    .map(|p| Value::from_string(p.clone()))
+                    .collect::<Vec<_>>(),
             )),
         );
         handler_obj.insert(
             "body".to_string(),
-            make_closure(
-                params.into_iter().map(|p| (p, None)).collect(),
-                body,
-            ),
+            make_closure(params.into_iter().map(|p| (p, None)).collect(), body),
         );
         Value::Object(Arc::new(handler_obj))
     }
@@ -605,28 +602,34 @@ mod tests {
         handler_obj.insert(
             "params".to_string(),
             Value::Array(Arc::from(
-                params.iter().map(|p| Value::from_string(p.clone())).collect::<Vec<_>>(),
+                params
+                    .iter()
+                    .map(|p| Value::from_string(p.clone()))
+                    .collect::<Vec<_>>(),
             )),
         );
         handler_obj.insert(
             "param_types".to_string(),
             Value::Array(Arc::from(
-                param_types.iter().map(|t| Value::from_string(t.to_string())).collect::<Vec<_>>(),
+                param_types
+                    .iter()
+                    .map(|t| Value::from_string(t.to_string()))
+                    .collect::<Vec<_>>(),
             )),
         );
         handler_obj.insert(
             "body".to_string(),
-            make_closure(
-                params.into_iter().map(|p| (p, None)).collect(),
-                body,
-            ),
+            make_closure(params.into_iter().map(|p| (p, None)).collect(), body),
         );
         Value::Object(Arc::new(handler_obj))
     }
 
     fn make_message(msg_type: &str, data: Vec<Value>) -> Value {
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         msg_obj.insert("type".to_string(), Value::from_string(msg_type.to_string()));
         msg_obj.insert("data".to_string(), Value::Array(Arc::from(data)));
         Value::Object(Arc::new(msg_obj))
@@ -639,14 +642,19 @@ mod tests {
         let instance = HashMap::new();
         let result = interp.eval_actor_instance_method(&instance, "TestActor", "send", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires a message"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a message"));
     }
 
     #[test]
     fn test_actor_instance_stop() {
         let mut interp = make_interpreter();
         let instance = HashMap::new();
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "stop", &[]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "stop", &[])
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -656,7 +664,10 @@ mod tests {
         let instance = HashMap::new();
         let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires a message"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a message"));
     }
 
     #[test]
@@ -664,7 +675,9 @@ mod tests {
         let mut interp = make_interpreter();
         let instance = HashMap::new();
         let msg = Value::Integer(42);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -675,12 +688,20 @@ mod tests {
 
         // Create a Message object
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
-        msg_obj.insert("type".to_string(), Value::from_string("TestMsg".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
+        msg_obj.insert(
+            "type".to_string(),
+            Value::from_string("TestMsg".to_string()),
+        );
         msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
         let msg = Value::Object(Arc::new(msg_obj));
 
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::from_string("Received: TestMsg".to_string()));
     }
 
@@ -690,7 +711,10 @@ mod tests {
         let instance = HashMap::new();
         let result = interp.eval_actor_instance_method(&instance, "TestActor", "unknown", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown actor method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown actor method"));
     }
 
     // Process actor message sync tests
@@ -700,8 +724,14 @@ mod tests {
         let instance = HashMap::new();
 
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
-        msg_obj.insert("type".to_string(), Value::from_string("NoHandler".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
+        msg_obj.insert(
+            "type".to_string(),
+            Value::from_string("NoHandler".to_string()),
+        );
         msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
         let msg = Value::Object(Arc::new(msg_obj));
 
@@ -718,8 +748,14 @@ mod tests {
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
-        msg_obj.insert("type".to_string(), Value::from_string("NoHandler".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
+        msg_obj.insert(
+            "type".to_string(),
+            Value::from_string("NoHandler".to_string()),
+        );
         msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
         let msg = Value::Object(Arc::new(msg_obj));
 
@@ -738,7 +774,10 @@ mod tests {
         let instance = HashMap::new();
         let result = interp.eval_struct_instance_method(&instance, "TestStruct", "method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a method closure"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a method closure"));
     }
 
     // Object method tests - missing type marker error
@@ -749,18 +788,27 @@ mod tests {
 
         let result = interp.eval_object_method(&obj, "test", &[], true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("missing __type marker"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("missing __type marker"));
     }
 
     #[test]
     fn test_object_method_unknown_type() {
         let interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("UnknownType".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("UnknownType".to_string()),
+        );
 
         let result = interp.eval_object_method(&obj, "test", &[], true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown object type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown object type"));
     }
 
     // Test send with async actor ID (branch coverage)
@@ -770,8 +818,14 @@ mod tests {
         let instance = HashMap::new();
 
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
-        msg_obj.insert("type".to_string(), Value::from_string("TestMsg".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
+        msg_obj.insert(
+            "type".to_string(),
+            Value::from_string("TestMsg".to_string()),
+        );
         msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
         let msg = Value::Object(Arc::new(msg_obj));
 
@@ -788,10 +842,15 @@ mod tests {
 
         // Create a message object with __type but not "Message"
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("NotMessage".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("NotMessage".to_string()),
+        );
         let msg = Value::Object(Arc::new(msg_obj));
 
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()])
+            .unwrap();
         // Should echo back the message
         assert_eq!(result, msg);
     }
@@ -806,7 +865,10 @@ mod tests {
         let instance = HashMap::new();
         let result = interp.eval_struct_instance_method(&instance, "Point", "display", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a method closure"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a method closure"));
     }
 
     // Test process_actor_message_sync with valid handler
@@ -819,7 +881,10 @@ mod tests {
         let handler = make_handler("TestMsg", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         let msg = make_message("TestMsg", vec![]);
         let result = interp.process_actor_message_sync(&instance, &msg).unwrap();
@@ -836,11 +901,16 @@ mod tests {
         let handler = make_handler("Ping", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("Ping", vec![]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::from_string("success".to_string()));
     }
 
@@ -851,20 +921,21 @@ mod tests {
 
         // Create handler that expects an integer parameter
         let body = make_expr(ExprKind::Literal(Literal::Integer(100, None)));
-        let handler = make_handler_with_types(
-            "SetValue",
-            vec!["value".to_string()],
-            vec!["i32"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("SetValue", vec!["value".to_string()], vec!["i32"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // Send message with correct type (integer)
         let msg = make_message("SetValue", vec![Value::Integer(42)]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(100));
     }
 
@@ -875,15 +946,14 @@ mod tests {
 
         // Create handler that expects an integer parameter
         let body = make_expr(ExprKind::Literal(Literal::Integer(100, None)));
-        let handler = make_handler_with_types(
-            "SetValue",
-            vec!["value".to_string()],
-            vec!["i32"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("SetValue", vec!["value".to_string()], vec!["i32"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // Send message with wrong type (string instead of integer)
@@ -901,10 +971,7 @@ mod tests {
         // Create a closure that expects 2 params (self + one arg)
         let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
         let closure = make_closure(
-            vec![
-                ("self".to_string(), None),
-                ("x".to_string(), None),
-            ],
+            vec![("self".to_string(), None), ("x".to_string(), None)],
             body,
         );
         interp.set_variable("TestStruct::method", closure);
@@ -923,15 +990,14 @@ mod tests {
 
         // Create a closure that expects only self (no args)
         let body = make_expr(ExprKind::Literal(Literal::Integer(99, None)));
-        let closure = make_closure(
-            vec![("self".to_string(), None)],
-            body,
-        );
+        let closure = make_closure(vec![("self".to_string(), None)], body);
         interp.set_variable("Point::get_value", closure);
 
         let instance = HashMap::new();
         // Call with 0 args (method expects none besides self)
-        let result = interp.eval_struct_instance_method(&instance, "Point", "get_value", &[]).unwrap();
+        let result = interp
+            .eval_struct_instance_method(&instance, "Point", "get_value", &[])
+            .unwrap();
         assert_eq!(result, Value::Integer(99));
     }
 
@@ -945,10 +1011,18 @@ mod tests {
         let handler = make_handler("Message", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         // Send a simple integer value (not a Message object)
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "send", &[Value::Integer(42)]);
+        let result = interp.eval_actor_instance_method(
+            &instance,
+            "TestActor",
+            "send",
+            &[Value::Integer(42)],
+        );
         // This should fail because "Message" handler doesn't match the simple value extraction
         assert!(result.is_err());
     }
@@ -964,7 +1038,10 @@ mod tests {
         let handler = make_handler("Add", vec!["x".to_string()], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         let msg = make_message("Add", vec![Value::Integer(50)]);
         let result = interp.process_actor_message_sync(&instance, &msg).unwrap();
@@ -1005,10 +1082,15 @@ mod tests {
         let handler = make_handler("Ping", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         let msg = make_message("Ping", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "send", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "send", &[msg])
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -1018,7 +1100,8 @@ mod tests {
         let mut interp = make_interpreter();
         // No method registered - should fall back to generic method handling
         let instance = HashMap::new();
-        let result = interp.eval_struct_instance_method(&instance, "Unknown", "unknown_method", &[]);
+        let result =
+            interp.eval_struct_instance_method(&instance, "Unknown", "unknown_method", &[]);
         // Should fail because generic method doesn't know about this
         assert!(result.is_err());
     }
@@ -1030,20 +1113,21 @@ mod tests {
 
         // Create handler that expects Any type parameter
         let body = make_expr(ExprKind::Literal(Literal::String("ok".to_string())));
-        let handler = make_handler_with_types(
-            "Accept",
-            vec!["value".to_string()],
-            vec!["Any"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("Accept", vec!["value".to_string()], vec!["Any"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // Any type should accept anything
         let msg = make_message("Accept", vec![Value::from_string("anything".to_string())]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::from_string("ok".to_string()));
     }
 
@@ -1053,20 +1137,21 @@ mod tests {
         let mut interp = make_interpreter();
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
-        let handler = make_handler_with_types(
-            "SetName",
-            vec!["name".to_string()],
-            vec!["String"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("SetName", vec!["name".to_string()], vec!["String"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // String type should work
         let msg = make_message("SetName", vec![Value::from_string("test".to_string())]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -1085,16 +1170,16 @@ mod tests {
         handler_obj.insert(
             "params".to_string(),
             Value::Array(Arc::from(
-                params.iter().map(|p| Value::from_string(p.clone())).collect::<Vec<_>>(),
+                params
+                    .iter()
+                    .map(|p| Value::from_string(p.clone()))
+                    .collect::<Vec<_>>(),
             )),
         );
         // Note: ask method looks for "handler" key, not "body"
         handler_obj.insert(
             "handler".to_string(),
-            make_closure(
-                params.into_iter().map(|p| (p, None)).collect(),
-                body,
-            ),
+            make_closure(params.into_iter().map(|p| (p, None)).collect(), body),
         );
         Value::Object(Arc::new(handler_obj))
     }
@@ -1109,10 +1194,15 @@ mod tests {
         let handler = make_ask_handler("Query", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         let msg = make_message("Query", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::Integer(999));
     }
 
@@ -1126,10 +1216,15 @@ mod tests {
         let handler = make_ask_handler("Greet", vec!["name".to_string()], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         let msg = make_message("Greet", vec![Value::from_string("Alice".to_string())]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::from_string("handled".to_string()));
     }
 
@@ -1143,12 +1238,20 @@ mod tests {
         let handler = make_ask_handler("OtherMsg", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         let msg = make_message("TestQuery", vec![Value::Integer(42)]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         // Should return "Received: TestQuery"
-        assert_eq!(result, Value::from_string("Received: TestQuery".to_string()));
+        assert_eq!(
+            result,
+            Value::from_string("Received: TestQuery".to_string())
+        );
     }
 
     // Test ask with handlers that is not an array
@@ -1160,7 +1263,9 @@ mod tests {
         instance.insert("__handlers".to_string(), Value::Integer(42)); // Not an array
 
         let msg = make_message("Query", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         // Falls through to "Received: Query" since handlers aren't iterable
         assert_eq!(result, Value::from_string("Received: Query".to_string()));
     }
@@ -1171,12 +1276,17 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Integer(123), // Not an Object
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![
+                Value::Integer(123), // Not an Object
+            ])),
+        );
 
         let msg = make_message("Query", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::from_string("Received: Query".to_string()));
     }
 
@@ -1190,12 +1300,15 @@ mod tests {
         handler_obj.insert("handler".to_string(), Value::Integer(1));
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
 
         let msg = make_message("Query", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::from_string("Received: Query".to_string()));
     }
 
@@ -1208,10 +1321,15 @@ mod tests {
         let handler = make_ask_handler("DifferentType", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         let msg = make_message("Query", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::from_string("Received: Query".to_string()));
     }
 
@@ -1221,16 +1339,22 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut handler_obj = HashMap::new();
-        handler_obj.insert("message_type".to_string(), Value::from_string("Query".to_string()));
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("Query".to_string()),
+        );
         // No "handler" key
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
 
         let msg = make_message("Query", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::from_string("Received: Query".to_string()));
     }
 
@@ -1241,12 +1365,17 @@ mod tests {
         let instance = HashMap::new();
 
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         // No "type" field
         msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
         let msg = Value::Object(Arc::new(msg_obj));
 
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()])
+            .unwrap();
         // Should echo back since no type field means it can't match handlers
         assert_eq!(result, msg);
     }
@@ -1258,12 +1387,17 @@ mod tests {
         let instance = HashMap::new();
 
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         msg_obj.insert("type".to_string(), Value::from_string("Query".to_string()));
         // No "data" field
         let msg = Value::Object(Arc::new(msg_obj));
 
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()])
+            .unwrap();
         // Should echo back since no data field
         assert_eq!(result, msg);
     }
@@ -1275,12 +1409,17 @@ mod tests {
         let instance = HashMap::new();
 
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         msg_obj.insert("type".to_string(), Value::Integer(123)); // Not a string
         msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
         let msg = Value::Object(Arc::new(msg_obj));
 
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()])
+            .unwrap();
         // Should echo back since type isn't a string
         assert_eq!(result, msg);
     }
@@ -1292,12 +1431,17 @@ mod tests {
         let instance = HashMap::new();
 
         let mut msg_obj = HashMap::new();
-        msg_obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         msg_obj.insert("type".to_string(), Value::from_string("Query".to_string()));
         msg_obj.insert("data".to_string(), Value::Integer(42)); // Not an array
         let msg = Value::Object(Arc::new(msg_obj));
 
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()])
+            .unwrap();
         // Should echo back since data isn't an array
         assert_eq!(result, msg);
     }
@@ -1308,13 +1452,17 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut handler_obj = HashMap::new();
-        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("Test".to_string()),
+        );
         handler_obj.insert("body".to_string(), Value::Integer(42)); // Not a closure
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
 
         let msg = make_message("Test", vec![]);
         let result = interp.process_actor_message_sync(&instance, &msg);
@@ -1328,13 +1476,17 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut handler_obj = HashMap::new();
-        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("Test".to_string()),
+        );
         handler_obj.insert("body".to_string(), Value::Integer(42)); // Not a closure
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("Test", vec![]);
@@ -1354,9 +1506,10 @@ mod tests {
         handler_obj.insert("body".to_string(), make_closure(vec![], body));
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
 
         let msg = make_message("Test", vec![]);
         let result = interp.process_actor_message_sync(&instance, &msg);
@@ -1374,9 +1527,10 @@ mod tests {
         handler_obj.insert("body".to_string(), make_closure(vec![], body));
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("Test", vec![]);
@@ -1390,9 +1544,12 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Integer(42), // Not an Object
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![
+                Value::Integer(42), // Not an Object
+            ])),
+        );
 
         let msg = make_message("Test", vec![]);
         let result = interp.process_actor_message_sync(&instance, &msg);
@@ -1405,9 +1562,12 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Integer(42), // Not an Object
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![
+                Value::Integer(42), // Not an Object
+            ])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("Test", vec![]);
@@ -1426,9 +1586,10 @@ mod tests {
         handler_obj.insert("body".to_string(), make_closure(vec![], body));
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
 
         let msg = make_message("Test", vec![]);
         let result = interp.process_actor_message_sync(&instance, &msg);
@@ -1453,12 +1614,14 @@ mod tests {
         interp.set_variable("TestStruct::method", closure);
 
         let instance = HashMap::new();
-        let result = interp.eval_struct_instance_method(
-            &instance,
-            "TestStruct",
-            "method",
-            &[Value::Integer(1), Value::Integer(2)],
-        ).unwrap();
+        let result = interp
+            .eval_struct_instance_method(
+                &instance,
+                "TestStruct",
+                "method",
+                &[Value::Integer(1), Value::Integer(2)],
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -1467,7 +1630,10 @@ mod tests {
     fn test_object_method_with_args() {
         let interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("SomeType".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("SomeType".to_string()),
+        );
 
         let result = interp.eval_object_method(&obj, "method", &[Value::Integer(1)], false);
         // Should fail for unknown type
@@ -1483,7 +1649,10 @@ mod tests {
         let handler = make_handler("Query", vec![], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         instance.insert("count".to_string(), Value::Integer(10)); // Non-dunder field
         instance.insert("__private".to_string(), Value::Integer(20)); // Dunder field
 
@@ -1498,20 +1667,21 @@ mod tests {
         let mut interp = make_interpreter();
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
-        let handler = make_handler_with_types(
-            "SetFloat",
-            vec!["value".to_string()],
-            vec!["f64"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("SetFloat", vec!["value".to_string()], vec!["f64"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // Float type should work
         let msg = make_message("SetFloat", vec![Value::Float(3.14)]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -1521,19 +1691,20 @@ mod tests {
         let mut interp = make_interpreter();
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
-        let handler = make_handler_with_types(
-            "SetBool",
-            vec!["value".to_string()],
-            vec!["bool"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("SetBool", vec!["value".to_string()], vec!["bool"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("SetBool", vec![Value::Bool(true)]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -1543,15 +1714,14 @@ mod tests {
         let mut interp = make_interpreter();
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
-        let handler = make_handler_with_types(
-            "SetFloat",
-            vec!["value".to_string()],
-            vec!["f64"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("SetFloat", vec!["value".to_string()], vec!["f64"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // Integer instead of float
@@ -1567,19 +1737,20 @@ mod tests {
         let mut interp = make_interpreter();
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
-        let handler = make_handler_with_types(
-            "SetStr",
-            vec!["value".to_string()],
-            vec!["str"],
-            body,
-        );
+        let handler =
+            make_handler_with_types("SetStr", vec!["value".to_string()], vec!["str"], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("SetStr", vec![Value::from_string("hello".to_string())]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -1597,14 +1768,19 @@ mod tests {
         );
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
-        let msg = make_message("MultiParam", vec![
-            Value::Integer(1),
-            Value::from_string("test".to_string()),
-        ]);
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let msg = make_message(
+            "MultiParam",
+            vec![Value::Integer(1), Value::from_string("test".to_string())],
+        );
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(100));
     }
 
@@ -1621,13 +1797,15 @@ mod tests {
         );
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
-        let msg = make_message("MultiParam", vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3),
-        ]);
+        let msg = make_message(
+            "MultiParam",
+            vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        );
         let result = interp.process_actor_message_sync(&instance, &msg).unwrap();
         assert_eq!(result, Value::Integer(200));
     }
@@ -1639,7 +1817,10 @@ mod tests {
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
         let mut handler_obj = HashMap::new();
-        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("Test".to_string()),
+        );
         handler_obj.insert("param_types".to_string(), Value::Integer(42)); // Not an array
         handler_obj.insert(
             "body".to_string(),
@@ -1648,12 +1829,17 @@ mod tests {
         let handler = Value::Object(Arc::new(handler_obj));
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("Test", vec![Value::Integer(1)]);
         // Should succeed since param_types is ignored when not an array
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -1664,10 +1850,16 @@ mod tests {
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
         let mut handler_obj = HashMap::new();
-        handler_obj.insert("message_type".to_string(), Value::from_string("Test".to_string()));
-        handler_obj.insert("param_types".to_string(), Value::Array(Arc::from(vec![
-            Value::Integer(42), // Not a string
-        ])));
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("Test".to_string()),
+        );
+        handler_obj.insert(
+            "param_types".to_string(),
+            Value::Array(Arc::from(vec![
+                Value::Integer(42), // Not a string
+            ])),
+        );
         handler_obj.insert(
             "body".to_string(),
             make_closure(vec![("x".to_string(), None)], body),
@@ -1675,12 +1867,17 @@ mod tests {
         let handler = Value::Object(Arc::new(handler_obj));
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         let msg = make_message("Test", vec![Value::Integer(1)]);
         // Should succeed since type check is skipped for non-string types
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -1698,7 +1895,10 @@ mod tests {
         );
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // Send integer which won't match custom type
@@ -1722,13 +1922,18 @@ mod tests {
         );
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
         let instance_rc = Arc::new(Mutex::new(instance));
 
         // Send only 1 arg but handler expects 2
         let msg = make_message("Test", vec![Value::Integer(1)]);
         // Should succeed - missing args just won't be bound
-        let result = interp.process_actor_message_sync_mut(&instance_rc, &msg).unwrap();
+        let result = interp
+            .process_actor_message_sync_mut(&instance_rc, &msg)
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -1738,14 +1943,13 @@ mod tests {
         let mut interp = make_interpreter();
 
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
-        let handler = make_handler(
-            "Test",
-            vec!["a".to_string(), "b".to_string()],
-            body,
-        );
+        let handler = make_handler("Test", vec!["a".to_string(), "b".to_string()], body);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![handler])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler])),
+        );
 
         // Send only 1 arg but handler expects 2
         let msg = make_message("Test", vec![Value::Integer(1)]);
@@ -1765,12 +1969,15 @@ mod tests {
         let handler2 = make_ask_handler("Second", vec![], body2);
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            handler1, handler2,
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler1, handler2])),
+        );
 
         let msg = make_message("Second", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         assert_eq!(result, Value::Integer(2));
     }
 
@@ -1789,12 +1996,9 @@ mod tests {
 
         let instance = HashMap::new();
         // Call with 1 arg (correct)
-        let result = interp.eval_struct_instance_method(
-            &instance,
-            "TestStruct",
-            "method",
-            &[Value::Integer(1)],
-        ).unwrap();
+        let result = interp
+            .eval_struct_instance_method(&instance, "TestStruct", "method", &[Value::Integer(1)])
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -1804,16 +2008,22 @@ mod tests {
         let mut interp = make_interpreter();
 
         let mut handler_obj = HashMap::new();
-        handler_obj.insert("message_type".to_string(), Value::from_string("Query".to_string()));
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("Query".to_string()),
+        );
         handler_obj.insert("handler".to_string(), Value::Integer(42)); // Not a closure
 
         let mut instance = HashMap::new();
-        instance.insert("__handlers".to_string(), Value::Array(Arc::from(vec![
-            Value::Object(Arc::new(handler_obj)),
-        ])));
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![Value::Object(Arc::new(handler_obj))])),
+        );
 
         let msg = make_message("Query", vec![]);
-        let result = interp.eval_actor_instance_method(&instance, "TestActor", "ask", &[msg]).unwrap();
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
         // Falls through since handler isn't a closure
         assert_eq!(result, Value::from_string("Received: Query".to_string()));
     }

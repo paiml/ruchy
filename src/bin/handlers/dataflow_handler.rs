@@ -315,7 +315,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_text() {
         let output = generate_dataflow_debug_text(
-            100, true, true, 5000, true, true, 0.5, 1000, "overview", false, &[],
+            100,
+            true,
+            true,
+            5000,
+            true,
+            true,
+            0.5,
+            1000,
+            "overview",
+            false,
+            &[],
         );
         assert!(output.contains("Dataflow Debugger"));
         assert!(output.contains("Mode: overview"));
@@ -324,7 +334,16 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_json() {
         let output = generate_dataflow_debug_json(
-            100, true, true, 5000, true, true, 0.5, 1000, "overview", &[],
+            100,
+            true,
+            true,
+            5000,
+            true,
+            true,
+            0.5,
+            1000,
+            "overview",
+            &[],
         )
         .unwrap();
         assert!(output.contains("\"mode\": \"overview\""));
@@ -335,7 +354,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_text_with_color() {
         let output = generate_dataflow_debug_text(
-            100, true, true, 5000, true, true, 0.5, 1000, "overview", true, &[],
+            100,
+            true,
+            true,
+            5000,
+            true,
+            true,
+            0.5,
+            1000,
+            "overview",
+            true,
+            &[],
         );
         assert!(output.contains("Dataflow Debugger"));
     }
@@ -343,7 +372,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_text_stages_mode() {
         let output = generate_dataflow_debug_text(
-            100, false, false, 5000, false, false, 0.5, 1000, "stages", false, &[],
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            "stages",
+            false,
+            &[],
         );
         assert!(output.contains("Mode: stages"));
     }
@@ -351,7 +390,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_text_data_mode() {
         let output = generate_dataflow_debug_text(
-            100, false, false, 5000, false, false, 0.5, 1000, "data", false, &[],
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            "data",
+            false,
+            &[],
         );
         assert!(output.contains("Mode: data"));
     }
@@ -359,7 +408,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_text_metrics_mode() {
         let output = generate_dataflow_debug_text(
-            100, false, false, 5000, false, false, 0.5, 1000, "metrics", false, &[],
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            "metrics",
+            false,
+            &[],
         );
         assert!(output.contains("Mode: metrics"));
     }
@@ -367,7 +426,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_text_history_mode() {
         let output = generate_dataflow_debug_text(
-            100, false, false, 5000, false, false, 0.5, 1000, "history", false, &[],
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            "history",
+            false,
+            &[],
         );
         assert!(output.contains("Mode: history"));
     }
@@ -376,7 +445,17 @@ mod tests {
     fn test_generate_dataflow_debug_text_with_breakpoints() {
         let breakpoints = vec!["stage1".to_string(), "stage2".to_string()];
         let output = generate_dataflow_debug_text(
-            100, false, false, 5000, false, false, 0.5, 1000, "overview", false, &breakpoints,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            "overview",
+            false,
+            &breakpoints,
         );
         assert!(output.contains("Breakpoints"));
     }
@@ -384,7 +463,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_text_all_features() {
         let output = generate_dataflow_debug_text(
-            100, true, true, 5000, true, true, 0.5, 1000, "overview", false, &[],
+            100,
+            true,
+            true,
+            5000,
+            true,
+            true,
+            0.5,
+            1000,
+            "overview",
+            false,
+            &[],
         );
         assert!(output.contains("Auto-Materialize"));
         assert!(output.contains("Performance Profiling"));
@@ -395,8 +484,18 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_json_stages_mode() {
         let output = generate_dataflow_debug_json(
-            50, false, false, 3000, false, false, 0.25, 500, "stages", &[],
-        ).unwrap();
+            50,
+            false,
+            false,
+            3000,
+            false,
+            false,
+            0.25,
+            500,
+            "stages",
+            &[],
+        )
+        .unwrap();
         assert!(output.contains("\"mode\": \"stages\""));
     }
 
@@ -404,8 +503,18 @@ mod tests {
     fn test_generate_dataflow_debug_json_with_breakpoints() {
         let breakpoints = vec!["bp1".to_string()];
         let output = generate_dataflow_debug_json(
-            100, false, false, 5000, false, false, 0.5, 1000, "overview", &breakpoints,
-        ).unwrap();
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            "overview",
+            &breakpoints,
+        )
+        .unwrap();
         assert!(output.contains("\"breakpoints\""));
         assert!(output.contains("bp1"));
     }
@@ -413,7 +522,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_interactive_basic() {
         let output = generate_dataflow_debug_interactive(
-            100, true, true, 5000, true, true, 0.5, 1000, "overview", false, &[],
+            100,
+            true,
+            true,
+            5000,
+            true,
+            true,
+            0.5,
+            1000,
+            "overview",
+            false,
+            &[],
         );
         assert!(output.contains("Dataflow Debugger"));
         assert!(output.contains("Interactive"));
@@ -422,7 +541,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_interactive_with_color() {
         let output = generate_dataflow_debug_interactive(
-            100, true, true, 5000, true, true, 0.5, 1000, "overview", true, &[],
+            100,
+            true,
+            true,
+            5000,
+            true,
+            true,
+            0.5,
+            1000,
+            "overview",
+            true,
+            &[],
         );
         assert!(output.contains("Dataflow Debugger"));
     }
@@ -431,7 +560,17 @@ mod tests {
     fn test_generate_dataflow_debug_interactive_with_breakpoints() {
         let breakpoints = vec!["step1".to_string(), "step2".to_string()];
         let output = generate_dataflow_debug_interactive(
-            100, false, false, 5000, false, false, 0.5, 1000, "stages", false, &breakpoints,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            "stages",
+            false,
+            &breakpoints,
         );
         assert!(output.contains("Breakpoints"));
     }
@@ -439,7 +578,17 @@ mod tests {
     #[test]
     fn test_generate_dataflow_debug_interactive_features() {
         let output = generate_dataflow_debug_interactive(
-            100, true, true, 5000, true, true, 0.5, 1000, "overview", false, &[],
+            100,
+            true,
+            true,
+            5000,
+            true,
+            true,
+            0.5,
+            1000,
+            "overview",
+            false,
+            &[],
         );
         assert!(output.contains("auto-materialize"));
         assert!(output.contains("profiling"));
@@ -450,8 +599,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_text_format() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
-            None, false, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            false,
+            "text",
+            None,
+            false,
+            &[],
+            "overview",
         );
         assert!(result.is_ok());
     }
@@ -459,8 +621,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_json_format() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "json",
-            None, false, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            false,
+            "json",
+            None,
+            false,
+            &[],
+            "overview",
         );
         assert!(result.is_ok());
     }
@@ -468,8 +643,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_interactive_format() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "interactive",
-            None, false, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            false,
+            "interactive",
+            None,
+            false,
+            &[],
+            "overview",
         );
         assert!(result.is_ok());
     }
@@ -477,8 +665,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_invalid_format() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "invalid",
-            None, false, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            false,
+            "invalid",
+            None,
+            false,
+            &[],
+            "overview",
         );
         assert!(result.is_err());
     }
@@ -486,8 +687,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_invalid_mode() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
-            None, false, &[], "invalid_mode",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            false,
+            "text",
+            None,
+            false,
+            &[],
+            "invalid_mode",
         );
         assert!(result.is_err());
     }
@@ -495,8 +709,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_invalid_sample_rate_high() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 1.5, 1000, false, "text",
-            None, false, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            1.5,
+            1000,
+            false,
+            "text",
+            None,
+            false,
+            &[],
+            "overview",
         );
         assert!(result.is_err());
     }
@@ -504,8 +731,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_invalid_sample_rate_negative() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, -0.1, 1000, false, "text",
-            None, false, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            -0.1,
+            1000,
+            false,
+            "text",
+            None,
+            false,
+            &[],
+            "overview",
         );
         assert!(result.is_err());
     }
@@ -514,8 +754,21 @@ mod tests {
     fn test_handle_dataflow_debug_with_export() {
         let temp = NamedTempFile::new().unwrap();
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
-            Some(temp.path()), false, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            false,
+            "text",
+            Some(temp.path()),
+            false,
+            &[],
+            "overview",
         );
         assert!(result.is_ok());
         let content = std::fs::read_to_string(temp.path()).unwrap();
@@ -525,8 +778,21 @@ mod tests {
     #[test]
     fn test_handle_dataflow_debug_verbose() {
         let result = handle_dataflow_debug_command(
-            None, 100, false, false, 5000, false, false, 0.5, 1000, false, "text",
-            None, true, &[], "overview",
+            None,
+            100,
+            false,
+            false,
+            5000,
+            false,
+            false,
+            0.5,
+            1000,
+            false,
+            "text",
+            None,
+            true,
+            &[],
+            "overview",
         );
         assert!(result.is_ok());
     }
@@ -535,8 +801,21 @@ mod tests {
     fn test_handle_dataflow_debug_with_all_options() {
         let breakpoints = vec!["bp1".to_string()];
         let result = handle_dataflow_debug_command(
-            None, 200, true, true, 10000, true, true, 1.0, 2000, true, "text",
-            None, true, &breakpoints, "stages",
+            None,
+            200,
+            true,
+            true,
+            10000,
+            true,
+            true,
+            1.0,
+            2000,
+            true,
+            "text",
+            None,
+            true,
+            &breakpoints,
+            "stages",
         );
         assert!(result.is_ok());
     }

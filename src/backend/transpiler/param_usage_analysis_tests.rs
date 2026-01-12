@@ -653,10 +653,7 @@ mod tests {
 
     #[test]
     fn test_is_param_used_as_function_argument_block() {
-        let block = make_block(vec![make_call(
-            make_ident("foo"),
-            vec![make_ident("x")],
-        )]);
+        let block = make_block(vec![make_call(make_ident("foo"), vec![make_ident("x")])]);
         assert!(is_param_used_as_function_argument("x", &block));
     }
 
@@ -802,7 +799,11 @@ mod tests {
 
     #[test]
     fn test_is_param_used_as_function_binary() {
-        let binary = make_binary(make_call(make_ident("x"), vec![]), BinaryOp::Add, make_int(1));
+        let binary = make_binary(
+            make_call(make_ident("x"), vec![]),
+            BinaryOp::Add,
+            make_int(1),
+        );
         assert!(is_param_used_as_function("x", &binary));
     }
 

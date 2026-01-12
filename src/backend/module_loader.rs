@@ -795,7 +795,14 @@ mod tests {
         loader.add_search_path("/custom");
         loader.add_search_path("/custom");
         // Duplicates are allowed
-        assert!(loader.search_paths.iter().filter(|p| p.to_string_lossy() == "/custom").count() >= 2);
+        assert!(
+            loader
+                .search_paths
+                .iter()
+                .filter(|p| p.to_string_lossy() == "/custom")
+                .count()
+                >= 2
+        );
     }
 
     #[test]

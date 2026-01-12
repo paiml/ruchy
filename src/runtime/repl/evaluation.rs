@@ -385,7 +385,9 @@ mod tests {
         let mut state = crate::runtime::repl::state::ReplState::new();
 
         // Define a variable
-        evaluator.evaluate_line("let my_var = 100", &mut state).unwrap();
+        evaluator
+            .evaluate_line("let my_var = 100", &mut state)
+            .unwrap();
 
         // Clear variables
         evaluator.clear_interpreter_variables();
@@ -424,7 +426,10 @@ mod tests {
             result => panic!("Expected Bool(true) for AND, got {result:?}"),
         }
 
-        match evaluator.evaluate_line("true || false", &mut state).unwrap() {
+        match evaluator
+            .evaluate_line("true || false", &mut state)
+            .unwrap()
+        {
             EvalResult::Value(Value::Bool(true)) => {}
             result => panic!("Expected Bool(true) for OR, got {result:?}"),
         }
@@ -440,12 +445,18 @@ mod tests {
         let mut evaluator = Evaluator::new();
         let mut state = crate::runtime::repl::state::ReplState::new();
 
-        match evaluator.evaluate_line("if true { 1 } else { 2 }", &mut state).unwrap() {
+        match evaluator
+            .evaluate_line("if true { 1 } else { 2 }", &mut state)
+            .unwrap()
+        {
             EvalResult::Value(Value::Integer(1)) => {}
             result => panic!("Expected Integer(1), got {result:?}"),
         }
 
-        match evaluator.evaluate_line("if false { 1 } else { 2 }", &mut state).unwrap() {
+        match evaluator
+            .evaluate_line("if false { 1 } else { 2 }", &mut state)
+            .unwrap()
+        {
             EvalResult::Value(Value::Integer(2)) => {}
             result => panic!("Expected Integer(2), got {result:?}"),
         }
@@ -457,7 +468,9 @@ mod tests {
         let mut state = crate::runtime::repl::state::ReplState::new();
 
         // Define a variable via evaluator
-        evaluator.evaluate_line("let sync_var = 999", &mut state).unwrap();
+        evaluator
+            .evaluate_line("let sync_var = 999", &mut state)
+            .unwrap();
 
         // State should have the binding now
         assert!(state.get_bindings().contains_key("sync_var"));
@@ -468,7 +481,10 @@ mod tests {
         let mut evaluator = Evaluator::new();
         let mut state = crate::runtime::repl::state::ReplState::new();
 
-        match evaluator.evaluate_line("\"hello\" + \" \" + \"world\"", &mut state).unwrap() {
+        match evaluator
+            .evaluate_line("\"hello\" + \" \" + \"world\"", &mut state)
+            .unwrap()
+        {
             EvalResult::Value(Value::String(s)) => {
                 assert_eq!(&*s, "hello world");
             }

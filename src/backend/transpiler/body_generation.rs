@@ -183,10 +183,7 @@ mod tests {
     #[test]
     fn test_body_multi_statement_block() {
         let transpiler = make_transpiler();
-        let body = make_expr(ExprKind::Block(vec![
-            ident_expr("a"),
-            int_expr(42),
-        ]));
+        let body = make_expr(ExprKind::Block(vec![ident_expr("a"), int_expr(42)]));
         let result = transpiler.generate_body_tokens_impl(&body, false).unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("a"));
@@ -212,10 +209,7 @@ mod tests {
     #[test]
     fn test_body_set_multiple() {
         let transpiler = make_transpiler();
-        let body = make_expr(ExprKind::Set(vec![
-            ident_expr("x"),
-            int_expr(2),
-        ]));
+        let body = make_expr(ExprKind::Set(vec![ident_expr("x"), int_expr(2)]));
         let result = transpiler.generate_body_tokens_impl(&body, false).unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("x"));

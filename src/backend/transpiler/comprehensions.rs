@@ -844,7 +844,8 @@ mod tests {
             int_expr(2),
         );
 
-        let result = transpiler.transpile_dict_comprehension(&key, &value, "x", &iter, Some(&filter));
+        let result =
+            transpiler.transpile_dict_comprehension(&key, &value, "x", &iter, Some(&filter));
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("filter"));
@@ -888,8 +889,12 @@ mod tests {
             int_expr(5),
         );
 
-        let result =
-            Transpiler::build_first_clause(&iter_tokens, &var_pattern, Some(&condition), &transpiler);
+        let result = Transpiler::build_first_clause(
+            &iter_tokens,
+            &var_pattern,
+            Some(&condition),
+            &transpiler,
+        );
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("filter"));

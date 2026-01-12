@@ -821,15 +821,20 @@ http = "0.2.0""#;
         let content = "version = \"1.0.0\"";
         let result = Manifest::from_str(content);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Missing required field: name"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Missing required field: name"));
     }
 
     #[test]
     fn test_manifest_various_names() {
         let names = ["my-package", "app", "lib", "my-app"];
         for name in names {
-            let content = format!(r#"name = "{name}"
-version = "0.1.0""#);
+            let content = format!(
+                r#"name = "{name}"
+version = "0.1.0""#
+            );
             let result = Manifest::from_str(&content);
             assert!(result.is_ok(), "Failed for name: {name}");
             assert_eq!(result.unwrap().name(), name);
@@ -926,7 +931,10 @@ version = "0.1.0""#;
         let registry = Registry::default();
         let result = registry.get_package_info("nonexistent", None);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Package not found"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Package not found"));
     }
 
     #[test]

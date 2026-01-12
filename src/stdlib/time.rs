@@ -353,7 +353,8 @@ mod tests {
     fn test_elapsed_millis_future() {
         // Start time in the "future" (larger than current time)
         let current = now().expect("operation should succeed in test");
-        let elapsed = elapsed_millis(current + 1_000_000).expect("operation should succeed in test");
+        let elapsed =
+            elapsed_millis(current + 1_000_000).expect("operation should succeed in test");
         // Should saturate to 0
         assert_eq!(elapsed, 0);
     }

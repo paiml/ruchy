@@ -8,7 +8,10 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::frontend::ast::{BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, Param, Pattern, Span, Type, TypeKind, UnaryOp};
+    use crate::frontend::ast::{
+        BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, Param, Pattern,
+        Span, Type, TypeKind, UnaryOp,
+    };
     use crate::runtime::interpreter::Interpreter;
     use crate::runtime::Value;
 
@@ -280,7 +283,10 @@ mod tests {
     /// Helper to create a break expression
     fn make_break() -> Expr {
         Expr {
-            kind: ExprKind::Break { label: None, value: None },
+            kind: ExprKind::Break {
+                label: None,
+                value: None,
+            },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -316,21 +322,30 @@ mod tests {
     fn test_eval_integer_literal() {
         let mut interp = Interpreter::new();
         let expr = make_int(42);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(42));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(42)
+        );
     }
 
     #[test]
     fn test_eval_negative_integer() {
         let mut interp = Interpreter::new();
         let expr = make_int(-100);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(-100));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(-100)
+        );
     }
 
     #[test]
     fn test_eval_large_integer() {
         let mut interp = Interpreter::new();
         let expr = make_int(i64::MAX);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(i64::MAX));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(i64::MAX)
+        );
     }
 
     #[test]
@@ -347,14 +362,20 @@ mod tests {
     fn test_eval_bool_true() {
         let mut interp = Interpreter::new();
         let expr = make_bool(true);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_bool_false() {
         let mut interp = Interpreter::new();
         let expr = make_bool(false);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(false));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(false)
+        );
     }
 
     #[test]
@@ -383,35 +404,50 @@ mod tests {
     fn test_eval_addition() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(10), AstBinaryOp::Add, make_int(5));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(15));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(15)
+        );
     }
 
     #[test]
     fn test_eval_subtraction() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(10), AstBinaryOp::Subtract, make_int(3));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(7));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(7)
+        );
     }
 
     #[test]
     fn test_eval_multiplication() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(4), AstBinaryOp::Multiply, make_int(7));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(28));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(28)
+        );
     }
 
     #[test]
     fn test_eval_division() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(20), AstBinaryOp::Divide, make_int(4));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(5));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(5)
+        );
     }
 
     #[test]
     fn test_eval_modulo() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(17), AstBinaryOp::Modulo, make_int(5));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(2));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(2)
+        );
     }
 
     #[test]
@@ -440,56 +476,80 @@ mod tests {
     fn test_eval_equal_true() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(5), AstBinaryOp::Equal, make_int(5));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_equal_false() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(5), AstBinaryOp::Equal, make_int(3));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(false));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_eval_not_equal() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(5), AstBinaryOp::NotEqual, make_int(3));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_less_than() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(3), AstBinaryOp::Less, make_int(5));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_less_than_false() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(5), AstBinaryOp::Less, make_int(3));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(false));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_eval_greater_than() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(7), AstBinaryOp::Greater, make_int(2));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_less_equal() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(5), AstBinaryOp::LessEqual, make_int(5));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_greater_equal() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(5), AstBinaryOp::GreaterEqual, make_int(5));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     // ============== Logical Operator Tests ==============
@@ -498,49 +558,70 @@ mod tests {
     fn test_eval_and_true() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_bool(true), AstBinaryOp::And, make_bool(true));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_and_false() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_bool(true), AstBinaryOp::And, make_bool(false));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(false));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_eval_or_true() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_bool(false), AstBinaryOp::Or, make_bool(true));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_or_false() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_bool(false), AstBinaryOp::Or, make_bool(false));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(false));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_eval_not_true() {
         let mut interp = Interpreter::new();
         let expr = make_unary(UnaryOp::Not, make_bool(true));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(false));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(false)
+        );
     }
 
     #[test]
     fn test_eval_not_false() {
         let mut interp = Interpreter::new();
         let expr = make_unary(UnaryOp::Not, make_bool(false));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_negate_int() {
         let mut interp = Interpreter::new();
         let expr = make_unary(UnaryOp::Negate, make_int(42));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(-42));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(-42)
+        );
     }
 
     #[test]
@@ -558,7 +639,11 @@ mod tests {
     #[test]
     fn test_eval_string_concatenation() {
         let mut interp = Interpreter::new();
-        let expr = make_binary(make_string("Hello"), AstBinaryOp::Add, make_string(" World"));
+        let expr = make_binary(
+            make_string("Hello"),
+            AstBinaryOp::Add,
+            make_string(" World"),
+        );
         match interp.eval_expr(&expr).expect("should succeed") {
             Value::String(s) => assert_eq!(s.as_ref(), "Hello World"),
             _ => panic!("Expected string"),
@@ -578,15 +663,29 @@ mod tests {
     #[test]
     fn test_eval_string_equality() {
         let mut interp = Interpreter::new();
-        let expr = make_binary(make_string("hello"), AstBinaryOp::Equal, make_string("hello"));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        let expr = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Equal,
+            make_string("hello"),
+        );
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_eval_string_inequality() {
         let mut interp = Interpreter::new();
-        let expr = make_binary(make_string("hello"), AstBinaryOp::NotEqual, make_string("world"));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        let expr = make_binary(
+            make_string("hello"),
+            AstBinaryOp::NotEqual,
+            make_string("world"),
+        );
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     // ============== Variable Tests via Let ==============
@@ -595,7 +694,10 @@ mod tests {
     fn test_let_binding() {
         let mut interp = Interpreter::new();
         let expr = make_let("x", make_int(42), make_ident("x"));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(42));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(42)
+        );
     }
 
     #[test]
@@ -604,18 +706,27 @@ mod tests {
         let expr = make_let(
             "x",
             make_int(10),
-            make_binary(make_ident("x"), AstBinaryOp::Multiply, make_int(2))
+            make_binary(make_ident("x"), AstBinaryOp::Multiply, make_int(2)),
         );
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(20));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(20)
+        );
     }
 
     #[test]
     fn test_nested_let() {
         let mut interp = Interpreter::new();
-        let inner_let = make_let("y", make_int(20),
-            make_binary(make_ident("x"), AstBinaryOp::Add, make_ident("y")));
+        let inner_let = make_let(
+            "y",
+            make_int(20),
+            make_binary(make_ident("x"), AstBinaryOp::Add, make_ident("y")),
+        );
         let expr = make_let("x", make_int(10), inner_let);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(30));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(30)
+        );
     }
 
     #[test]
@@ -623,7 +734,10 @@ mod tests {
         let mut interp = Interpreter::new();
         let inner_let = make_let("x", make_int(20), make_ident("x"));
         let expr = make_let("x", make_int(10), inner_let);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(20));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(20)
+        );
     }
 
     #[test]
@@ -682,7 +796,10 @@ mod tests {
         let mut interp = Interpreter::new();
         let arr = make_list(vec![make_int(10), make_int(20), make_int(30)]);
         let expr = make_let("arr", arr, make_index(make_ident("arr"), make_int(1)));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(20));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(20)
+        );
     }
 
     #[test]
@@ -690,7 +807,10 @@ mod tests {
         let mut interp = Interpreter::new();
         let arr = make_list(vec![make_int(10), make_int(20), make_int(30)]);
         let expr = make_let("arr", arr, make_index(make_ident("arr"), make_int(-1)));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(30));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(30)
+        );
     }
 
     // ============== Tuple Tests ==============
@@ -713,7 +833,10 @@ mod tests {
         let mut interp = Interpreter::new();
         let t = make_tuple(vec![make_int(10), make_int(20)]);
         let expr = make_let("t", t, make_index(make_ident("t"), make_int(0)));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(10));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(10)
+        );
     }
 
     // ============== If Expression Tests ==============
@@ -722,14 +845,20 @@ mod tests {
     fn test_if_true_branch() {
         let mut interp = Interpreter::new();
         let expr = make_if(make_bool(true), make_int(10), Some(make_int(20)));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(10));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(10)
+        );
     }
 
     #[test]
     fn test_if_false_branch() {
         let mut interp = Interpreter::new();
         let expr = make_if(make_bool(false), make_int(10), Some(make_int(20)));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(20));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(20)
+        );
     }
 
     #[test]
@@ -744,7 +873,10 @@ mod tests {
         let mut interp = Interpreter::new();
         let inner_if = make_if(make_bool(true), make_int(1), Some(make_int(2)));
         let expr = make_if(make_bool(true), inner_if, Some(make_int(3)));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(1));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(1)
+        );
     }
 
     #[test]
@@ -771,7 +903,10 @@ mod tests {
     fn test_block_returns_last() {
         let mut interp = Interpreter::new();
         let expr = make_block(vec![make_int(1), make_int(2), make_int(3)]);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(3));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(3)
+        );
     }
 
     // ============== Range Tests ==============
@@ -781,7 +916,11 @@ mod tests {
         let mut interp = Interpreter::new();
         let expr = make_range(make_int(0), make_int(5), false);
         match interp.eval_expr(&expr).expect("should succeed") {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(0));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(!inclusive);
@@ -849,7 +988,10 @@ mod tests {
         let left = make_binary(make_int(2), AstBinaryOp::Add, make_int(3));
         let right = make_binary(make_int(4), AstBinaryOp::Subtract, make_int(1));
         let expr = make_binary(left, AstBinaryOp::Multiply, right);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(15));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(15)
+        );
     }
 
     #[test]
@@ -858,7 +1000,10 @@ mod tests {
         // true && (5 > 3) = true
         let cmp = make_binary(make_int(5), AstBinaryOp::Greater, make_int(3));
         let expr = make_binary(make_bool(true), AstBinaryOp::And, cmp);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
@@ -868,7 +1013,10 @@ mod tests {
         let sum = make_binary(make_int(10), AstBinaryOp::Add, make_int(5));
         let condition = make_binary(sum, AstBinaryOp::Greater, make_int(10));
         let expr = make_if(condition, make_int(1), Some(make_int(0)));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(1));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(1)
+        );
     }
 
     #[test]
@@ -879,7 +1027,10 @@ mod tests {
         let then_branch = make_binary(make_ident("x"), AstBinaryOp::Multiply, make_int(2));
         let if_expr = make_if(condition, then_branch, Some(make_ident("x")));
         let expr = make_let("x", make_int(10), if_expr);
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(20));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(20)
+        );
     }
 
     // ============== Additional Coverage Tests ==============
@@ -888,42 +1039,60 @@ mod tests {
     fn test_power_operator() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(2), AstBinaryOp::Power, make_int(3));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(8));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(8)
+        );
     }
 
     #[test]
     fn test_bitwise_and() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(0b1100), AstBinaryOp::BitwiseAnd, make_int(0b1010));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(0b1000));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(0b1000)
+        );
     }
 
     #[test]
     fn test_bitwise_or_cov5() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(0b1100), AstBinaryOp::BitwiseOr, make_int(0b1010));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(0b1110));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(0b1110)
+        );
     }
 
     #[test]
     fn test_bitwise_xor_cov5() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(0b1100), AstBinaryOp::BitwiseXor, make_int(0b1010));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(0b0110));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(0b0110)
+        );
     }
 
     #[test]
     fn test_left_shift() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(1), AstBinaryOp::LeftShift, make_int(4));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(16));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(16)
+        );
     }
 
     #[test]
     fn test_right_shift() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_int(16), AstBinaryOp::RightShift, make_int(2));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Integer(4));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Integer(4)
+        );
     }
 
     #[test]
@@ -933,7 +1102,10 @@ mod tests {
         let e1 = make_binary(make_int(1), AstBinaryOp::Add, make_int(2));
         let e2 = make_binary(e1, AstBinaryOp::Add, make_int(3));
         let e3 = make_binary(e2, AstBinaryOp::Add, make_int(4));
-        assert_eq!(interp.eval_expr(&e3).expect("should succeed"), Value::Integer(10));
+        assert_eq!(
+            interp.eval_expr(&e3).expect("should succeed"),
+            Value::Integer(10)
+        );
     }
 
     #[test]
@@ -945,13 +1117,21 @@ mod tests {
         let let_c = make_let("c", make_int(3), sum_abc);
         let let_b = make_let("b", make_int(2), let_c);
         let let_a = make_let("a", make_int(1), let_b);
-        assert_eq!(interp.eval_expr(&let_a).expect("should succeed"), Value::Integer(6));
+        assert_eq!(
+            interp.eval_expr(&let_a).expect("should succeed"),
+            Value::Integer(6)
+        );
     }
 
     #[test]
     fn test_mixed_types_in_array() {
         let mut interp = Interpreter::new();
-        let expr = make_list(vec![make_int(1), make_float(2.5), make_bool(true), make_string("hi")]);
+        let expr = make_list(vec![
+            make_int(1),
+            make_float(2.5),
+            make_bool(true),
+            make_string("hi"),
+        ]);
         match interp.eval_expr(&expr).expect("should succeed") {
             Value::Array(a) => assert_eq!(a.len(), 4),
             _ => panic!("Expected array"),
@@ -985,14 +1165,24 @@ mod tests {
     fn test_float_comparison() {
         let mut interp = Interpreter::new();
         let expr = make_binary(make_float(1.5), AstBinaryOp::Less, make_float(2.5));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
     fn test_string_comparison_lt() {
         let mut interp = Interpreter::new();
-        let expr = make_binary(make_string("apple"), AstBinaryOp::Less, make_string("banana"));
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        let expr = make_binary(
+            make_string("apple"),
+            AstBinaryOp::Less,
+            make_string("banana"),
+        );
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
@@ -1001,7 +1191,10 @@ mod tests {
         // false && (error) should not evaluate the right side
         let expr = make_binary(make_bool(false), AstBinaryOp::And, make_ident("undefined"));
         // This should succeed without error due to short-circuit
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(false));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(false)
+        );
     }
 
     #[test]
@@ -1010,7 +1203,10 @@ mod tests {
         // true || (error) should not evaluate the right side
         let expr = make_binary(make_bool(true), AstBinaryOp::Or, make_ident("undefined"));
         // This should succeed without error due to short-circuit
-        assert_eq!(interp.eval_expr(&expr).expect("should succeed"), Value::Bool(true));
+        assert_eq!(
+            interp.eval_expr(&expr).expect("should succeed"),
+            Value::Bool(true)
+        );
     }
 
     #[test]
@@ -1026,15 +1222,24 @@ mod tests {
 
         // First operation
         let e1 = make_int(10);
-        assert_eq!(interp.eval_expr(&e1).expect("should succeed"), Value::Integer(10));
+        assert_eq!(
+            interp.eval_expr(&e1).expect("should succeed"),
+            Value::Integer(10)
+        );
 
         // Second operation
         let e2 = make_binary(make_int(20), AstBinaryOp::Add, make_int(30));
-        assert_eq!(interp.eval_expr(&e2).expect("should succeed"), Value::Integer(50));
+        assert_eq!(
+            interp.eval_expr(&e2).expect("should succeed"),
+            Value::Integer(50)
+        );
 
         // Third operation with let
         let e3 = make_let("x", make_int(5), make_ident("x"));
-        assert_eq!(interp.eval_expr(&e3).expect("should succeed"), Value::Integer(5));
+        assert_eq!(
+            interp.eval_expr(&e3).expect("should succeed"),
+            Value::Integer(5)
+        );
     }
 
     // ============== EXTREME TDD Round 87: Coverage Expansion ==============
@@ -1193,7 +1398,9 @@ mod tests {
     #[test]
     fn test_push_pop() {
         let mut interp = Interpreter::new();
-        interp.push(Value::Integer(42)).expect("push should succeed");
+        interp
+            .push(Value::Integer(42))
+            .expect("push should succeed");
         let value = interp.pop().expect("pop should succeed");
         assert_eq!(value, Value::Integer(42));
     }
@@ -1255,7 +1462,9 @@ mod tests {
         let mut interp = Interpreter::new();
         interp.push(Value::Integer(10)).unwrap();
         interp.push(Value::Integer(20)).unwrap();
-        interp.binary_op(crate::runtime::interpreter::BinaryOp::Add).unwrap();
+        interp
+            .binary_op(crate::runtime::interpreter::BinaryOp::Add)
+            .unwrap();
         let result = interp.pop().unwrap();
         assert_eq!(result, Value::Integer(30));
     }
@@ -1265,7 +1474,9 @@ mod tests {
         let mut interp = Interpreter::new();
         interp.push(Value::Integer(30)).unwrap();
         interp.push(Value::Integer(10)).unwrap();
-        interp.binary_op(crate::runtime::interpreter::BinaryOp::Sub).unwrap();
+        interp
+            .binary_op(crate::runtime::interpreter::BinaryOp::Sub)
+            .unwrap();
         let result = interp.pop().unwrap();
         assert_eq!(result, Value::Integer(20));
     }
@@ -1275,7 +1486,9 @@ mod tests {
         let mut interp = Interpreter::new();
         interp.push(Value::Integer(5)).unwrap();
         interp.push(Value::Integer(6)).unwrap();
-        interp.binary_op(crate::runtime::interpreter::BinaryOp::Mul).unwrap();
+        interp
+            .binary_op(crate::runtime::interpreter::BinaryOp::Mul)
+            .unwrap();
         let result = interp.pop().unwrap();
         assert_eq!(result, Value::Integer(30));
     }
@@ -1285,7 +1498,9 @@ mod tests {
         let mut interp = Interpreter::new();
         interp.push(Value::Integer(20)).unwrap();
         interp.push(Value::Integer(4)).unwrap();
-        interp.binary_op(crate::runtime::interpreter::BinaryOp::Div).unwrap();
+        interp
+            .binary_op(crate::runtime::interpreter::BinaryOp::Div)
+            .unwrap();
         let result = interp.pop().unwrap();
         assert_eq!(result, Value::Integer(5));
     }
@@ -1457,7 +1672,10 @@ mod tests {
             make_int(0),
             make_while(
                 make_binary(make_ident("x"), AstBinaryOp::Less, make_int(3)),
-                make_assign("x", make_binary(make_ident("x"), AstBinaryOp::Add, make_int(1))),
+                make_assign(
+                    "x",
+                    make_binary(make_ident("x"), AstBinaryOp::Add, make_int(1)),
+                ),
             ),
         );
         let block = make_block(vec![init, make_ident("x")]);
@@ -1666,7 +1884,11 @@ mod tests {
         let range = make_range(make_int(0), make_int(5), false);
         let result = interp.eval_expr(&range).expect("should succeed");
         match result {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(0));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(!inclusive);
@@ -1693,7 +1915,10 @@ mod tests {
                 make_break(),
                 None,
             ),
-            make_assign("i", make_binary(make_ident("i"), AstBinaryOp::Add, make_int(1))),
+            make_assign(
+                "i",
+                make_binary(make_ident("i"), AstBinaryOp::Add, make_int(1)),
+            ),
         ]);
         let init = make_let_mut("i", make_int(0), make_while(make_bool(true), loop_body));
         let result = interp.eval_expr(&init);
@@ -1731,11 +1956,7 @@ mod tests {
             vec!["x".to_string()],
             make_binary(make_ident("x"), AstBinaryOp::Add, make_int(1)),
         );
-        let let_f = make_let(
-            "f",
-            lambda,
-            make_call(make_ident("f"), vec![make_int(5)]),
-        );
+        let let_f = make_let("f", lambda, make_call(make_ident("f"), vec![make_int(5)]));
         let result = interp.eval_expr(&let_f).expect("should succeed");
         assert_eq!(result, Value::Integer(6));
     }
@@ -1789,7 +2010,11 @@ mod tests {
     #[test]
     fn test_string_equality() {
         let mut interp = Interpreter::new();
-        let expr = make_binary(make_string("hello"), AstBinaryOp::Equal, make_string("hello"));
+        let expr = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Equal,
+            make_string("hello"),
+        );
         let result = interp.eval_expr(&expr).expect("should succeed");
         assert_eq!(result, Value::Bool(true));
     }
@@ -1797,7 +2022,11 @@ mod tests {
     #[test]
     fn test_string_inequality() {
         let mut interp = Interpreter::new();
-        let expr = make_binary(make_string("hello"), AstBinaryOp::NotEqual, make_string("world"));
+        let expr = make_binary(
+            make_string("hello"),
+            AstBinaryOp::NotEqual,
+            make_string("world"),
+        );
         let result = interp.eval_expr(&expr).expect("should succeed");
         assert_eq!(result, Value::Bool(true));
     }
@@ -1838,7 +2067,11 @@ mod tests {
     fn test_for_with_range() {
         let mut interp = Interpreter::new();
         // for i in 0..3 { i }
-        let for_expr = make_for("i", make_range(make_int(0), make_int(3), false), make_ident("i"));
+        let for_expr = make_for(
+            "i",
+            make_range(make_int(0), make_int(3), false),
+            make_ident("i"),
+        );
         let result = interp.eval_expr(&for_expr);
         assert!(result.is_ok());
     }
@@ -2001,7 +2234,10 @@ mod tests {
             make_int(0),
             make_while(
                 condition,
-                make_assign("x", make_binary(make_ident("x"), AstBinaryOp::Add, make_int(1))),
+                make_assign(
+                    "x",
+                    make_binary(make_ident("x"), AstBinaryOp::Add, make_int(1)),
+                ),
             ),
         );
         let result = interp.eval_expr(&init);
@@ -2106,7 +2342,9 @@ mod tests {
     /// Helper to create return expression
     fn make_return(value: Option<Expr>) -> Expr {
         Expr {
-            kind: ExprKind::Return { value: value.map(Box::new) },
+            kind: ExprKind::Return {
+                value: value.map(Box::new),
+            },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -2418,11 +2656,7 @@ mod tests {
     fn test_eval_block_multi_stmt() {
         let mut interp = Interpreter::new();
         let block = Expr {
-            kind: ExprKind::Block(vec![
-                make_int(1),
-                make_int(2),
-                make_int(3),
-            ]),
+            kind: ExprKind::Block(vec![make_int(1), make_int(2), make_int(3)]),
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -2799,7 +3033,11 @@ mod tests {
         };
         let result = interp.eval_expr(&none_expr).expect("should evaluate");
         match result {
-            Value::EnumVariant { enum_name, variant_name, data } => {
+            Value::EnumVariant {
+                enum_name,
+                variant_name,
+                data,
+            } => {
                 assert_eq!(enum_name, "Option");
                 assert_eq!(variant_name, "None");
                 assert!(data.is_none());
@@ -2812,7 +3050,9 @@ mod tests {
     fn test_eval_some_with_integer() {
         let mut interp = Interpreter::new();
         let some_expr = Expr {
-            kind: ExprKind::Some { value: Box::new(make_int(42)) },
+            kind: ExprKind::Some {
+                value: Box::new(make_int(42)),
+            },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -2820,7 +3060,11 @@ mod tests {
         };
         let result = interp.eval_expr(&some_expr).expect("should evaluate");
         match result {
-            Value::EnumVariant { enum_name, variant_name, data } => {
+            Value::EnumVariant {
+                enum_name,
+                variant_name,
+                data,
+            } => {
                 assert_eq!(enum_name, "Option");
                 assert_eq!(variant_name, "Some");
                 assert!(data.is_some());
@@ -2836,7 +3080,9 @@ mod tests {
     fn test_eval_some_with_string() {
         let mut interp = Interpreter::new();
         let some_expr = Expr {
-            kind: ExprKind::Some { value: Box::new(make_string("hello")) },
+            kind: ExprKind::Some {
+                value: Box::new(make_string("hello")),
+            },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
@@ -2844,7 +3090,9 @@ mod tests {
         };
         let result = interp.eval_expr(&some_expr).expect("should evaluate");
         match result {
-            Value::EnumVariant { variant_name, data, .. } => {
+            Value::EnumVariant {
+                variant_name, data, ..
+            } => {
                 assert_eq!(variant_name, "Some");
                 let values = data.unwrap();
                 assert_eq!(values[0], Value::String("hello".into()));
@@ -3186,7 +3434,11 @@ mod tests {
     #[test]
     fn test_string_concat_addition() {
         let mut interp = Interpreter::new();
-        let concat = make_binary(make_string("Hello, "), AstBinaryOp::Add, make_string("World!"));
+        let concat = make_binary(
+            make_string("Hello, "),
+            AstBinaryOp::Add,
+            make_string("World!"),
+        );
         let result = interp.eval_expr(&concat).expect("should evaluate");
         assert_eq!(result, Value::String("Hello, World!".into()));
     }
@@ -3448,7 +3700,11 @@ mod tests {
     #[test]
     fn test_string_equal_r125() {
         let mut interp = Interpreter::new();
-        let eq = make_binary(make_string("hello"), AstBinaryOp::Equal, make_string("hello"));
+        let eq = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Equal,
+            make_string("hello"),
+        );
         let result = interp.eval_expr(&eq).expect("should evaluate");
         assert_eq!(result, Value::Bool(true));
     }
@@ -3456,7 +3712,11 @@ mod tests {
     #[test]
     fn test_string_not_equal_r125() {
         let mut interp = Interpreter::new();
-        let ne = make_binary(make_string("hello"), AstBinaryOp::NotEqual, make_string("world"));
+        let ne = make_binary(
+            make_string("hello"),
+            AstBinaryOp::NotEqual,
+            make_string("world"),
+        );
         let result = interp.eval_expr(&ne).expect("should evaluate");
         assert_eq!(result, Value::Bool(true));
     }
@@ -3785,7 +4045,11 @@ mod tests {
     #[test]
     fn test_string_equal_true_r127() {
         let mut interp = Interpreter::new();
-        let eq = make_binary(make_string("hello"), AstBinaryOp::Equal, make_string("hello"));
+        let eq = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Equal,
+            make_string("hello"),
+        );
         let result = interp.eval_expr(&eq).expect("should evaluate");
         assert_eq!(result, Value::Bool(true));
     }
@@ -3793,7 +4057,11 @@ mod tests {
     #[test]
     fn test_string_equal_false_r127() {
         let mut interp = Interpreter::new();
-        let eq = make_binary(make_string("hello"), AstBinaryOp::Equal, make_string("world"));
+        let eq = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Equal,
+            make_string("world"),
+        );
         let result = interp.eval_expr(&eq).expect("should evaluate");
         assert_eq!(result, Value::Bool(false));
     }
@@ -3801,7 +4069,11 @@ mod tests {
     #[test]
     fn test_string_not_equal_r127() {
         let mut interp = Interpreter::new();
-        let ne = make_binary(make_string("hello"), AstBinaryOp::NotEqual, make_string("world"));
+        let ne = make_binary(
+            make_string("hello"),
+            AstBinaryOp::NotEqual,
+            make_string("world"),
+        );
         let result = interp.eval_expr(&ne).expect("should evaluate");
         assert_eq!(result, Value::Bool(true));
     }
@@ -4127,7 +4399,11 @@ mod tests {
     #[test]
     fn test_string_concat_r129() {
         let mut interp = Interpreter::new();
-        let concat = make_binary(make_string("hello"), AstBinaryOp::Add, make_string(" world"));
+        let concat = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Add,
+            make_string(" world"),
+        );
         let result = interp.eval_expr(&concat).expect("should evaluate");
         assert_eq!(result, Value::String("hello world".into()));
     }
@@ -4749,12 +5025,7 @@ mod tests {
     #[test]
     fn test_block_with_multiple_expressions_r157() {
         let mut interp = Interpreter::new();
-        let block = make_block(vec![
-            make_int(1),
-            make_int(2),
-            make_int(3),
-            make_int(42),
-        ]);
+        let block = make_block(vec![make_int(1), make_int(2), make_int(3), make_int(42)]);
         let result = interp.eval_expr(&block).expect("should evaluate");
         assert_eq!(result, Value::Integer(42));
     }
@@ -4770,11 +5041,7 @@ mod tests {
     #[test]
     fn test_list_of_floats_r157() {
         let mut interp = Interpreter::new();
-        let list = make_list(vec![
-            make_float(1.1),
-            make_float(2.2),
-            make_float(3.3),
-        ]);
+        let list = make_list(vec![make_float(1.1), make_float(2.2), make_float(3.3)]);
         let result = interp.eval_expr(&list).expect("should evaluate");
         match result {
             Value::Array(arr) => {
@@ -4788,11 +5055,7 @@ mod tests {
     #[test]
     fn test_list_of_bools_r157() {
         let mut interp = Interpreter::new();
-        let list = make_list(vec![
-            make_bool(true),
-            make_bool(false),
-            make_bool(true),
-        ]);
+        let list = make_list(vec![make_bool(true), make_bool(false), make_bool(true)]);
         let result = interp.eval_expr(&list).expect("should evaluate");
         match result {
             Value::Array(arr) => {
@@ -4805,11 +5068,7 @@ mod tests {
     #[test]
     fn test_tuple_of_three_r157() {
         let mut interp = Interpreter::new();
-        let tuple = make_tuple(vec![
-            make_int(1),
-            make_float(2.5),
-            make_string("three"),
-        ]);
+        let tuple = make_tuple(vec![make_int(1), make_float(2.5), make_string("three")]);
         let result = interp.eval_expr(&tuple).expect("should evaluate");
         match result {
             Value::Tuple(t) => {
@@ -4840,8 +5099,16 @@ mod tests {
         let mut interp = Interpreter::new();
         // let x = 1; let y = x + 1; let z = y + 1; z
         let z = make_ident("z");
-        let let_z = make_let("z", make_binary(make_ident("y"), AstBinaryOp::Add, make_int(1)), z);
-        let let_y = make_let("y", make_binary(make_ident("x"), AstBinaryOp::Add, make_int(1)), let_z);
+        let let_z = make_let(
+            "z",
+            make_binary(make_ident("y"), AstBinaryOp::Add, make_int(1)),
+            z,
+        );
+        let let_y = make_let(
+            "y",
+            make_binary(make_ident("x"), AstBinaryOp::Add, make_int(1)),
+            let_z,
+        );
         let let_x = make_let("x", make_int(1), let_y);
         let result = interp.eval_expr(&let_x).expect("should evaluate");
         assert_eq!(result, Value::Integer(3));
@@ -4853,7 +5120,11 @@ mod tests {
         let range = make_range(make_int(0), make_int(5), false);
         let result = interp.eval_expr(&range).expect("should evaluate");
         match result {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(0));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(!inclusive);
@@ -4868,7 +5139,11 @@ mod tests {
         let range = make_range(make_int(1), make_int(10), true);
         let result = interp.eval_expr(&range).expect("should evaluate");
         match result {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(1));
                 assert_eq!(*end, Value::Integer(10));
                 assert!(inclusive);
@@ -4937,7 +5212,11 @@ mod tests {
     #[test]
     fn test_string_comparison_equal_r157() {
         let mut interp = Interpreter::new();
-        let eq = make_binary(make_string("hello"), AstBinaryOp::Equal, make_string("hello"));
+        let eq = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Equal,
+            make_string("hello"),
+        );
         let result = interp.eval_expr(&eq).expect("should evaluate");
         assert_eq!(result, Value::Bool(true));
     }
@@ -4945,7 +5224,11 @@ mod tests {
     #[test]
     fn test_string_comparison_not_equal_r157() {
         let mut interp = Interpreter::new();
-        let ne = make_binary(make_string("hello"), AstBinaryOp::NotEqual, make_string("world"));
+        let ne = make_binary(
+            make_string("hello"),
+            AstBinaryOp::NotEqual,
+            make_string("world"),
+        );
         let result = interp.eval_expr(&ne).expect("should evaluate");
         assert_eq!(result, Value::Bool(true));
     }
@@ -5020,7 +5303,11 @@ mod tests {
         let body = make_compound_assign("x", AstBinaryOp::Add, make_int(1));
         let condition = make_binary(make_ident("x"), AstBinaryOp::Less, make_int(3));
         let while_loop = make_while(condition, body);
-        let inner = make_let_mut("x", make_int(0), make_block(vec![while_loop, make_ident("x")]));
+        let inner = make_let_mut(
+            "x",
+            make_int(0),
+            make_block(vec![while_loop, make_ident("x")]),
+        );
         let result = interp.eval_expr(&inner).expect("should evaluate");
         assert_eq!(result, Value::Integer(3));
     }
@@ -5061,7 +5348,12 @@ mod tests {
     #[test]
     fn test_tuple_with_mixed_types_coverage() {
         let mut interp = Interpreter::new();
-        let tuple = make_tuple(vec![make_int(1), make_float(2.5), make_bool(true), make_string("test")]);
+        let tuple = make_tuple(vec![
+            make_int(1),
+            make_float(2.5),
+            make_bool(true),
+            make_string("test"),
+        ]);
         let result = interp.eval_expr(&tuple).expect("should evaluate");
         match result {
             Value::Tuple(t) => assert_eq!(t.len(), 4),
@@ -5073,7 +5365,13 @@ mod tests {
     fn test_index_at_boundaries_coverage() {
         let mut interp = Interpreter::new();
         // [10, 20, 30, 40, 50][4]
-        let list = make_list(vec![make_int(10), make_int(20), make_int(30), make_int(40), make_int(50)]);
+        let list = make_list(vec![
+            make_int(10),
+            make_int(20),
+            make_int(30),
+            make_int(40),
+            make_int(50),
+        ]);
         let indexed = make_index(list, make_int(4));
         let result = interp.eval_expr(&indexed).expect("should evaluate");
         assert_eq!(result, Value::Integer(50));
@@ -5084,8 +5382,16 @@ mod tests {
         let mut interp = Interpreter::new();
         // let a = 1; let b = a + 1; let c = b + 1; c
         let c_expr = make_ident("c");
-        let let_c = make_let("c", make_binary(make_ident("b"), AstBinaryOp::Add, make_int(1)), c_expr);
-        let let_b = make_let("b", make_binary(make_ident("a"), AstBinaryOp::Add, make_int(1)), let_c);
+        let let_c = make_let(
+            "c",
+            make_binary(make_ident("b"), AstBinaryOp::Add, make_int(1)),
+            c_expr,
+        );
+        let let_b = make_let(
+            "b",
+            make_binary(make_ident("a"), AstBinaryOp::Add, make_int(1)),
+            let_c,
+        );
         let let_a = make_let("a", make_int(1), let_b);
         let result = interp.eval_expr(&let_a).expect("should evaluate");
         assert_eq!(result, Value::Integer(3));
@@ -5278,7 +5584,11 @@ mod tests {
     fn test_return_in_block_coverage() {
         let mut interp = Interpreter::new();
         // { 1; return 42; 3 }
-        let block = make_block(vec![make_int(1), make_return(Some(make_int(42))), make_int(3)]);
+        let block = make_block(vec![
+            make_int(1),
+            make_return(Some(make_int(42))),
+            make_int(3),
+        ]);
         let result = interp.eval_expr(&block);
         // Return should propagate
         assert!(result.is_err() || matches!(result, Ok(Value::Integer(42))));
@@ -5343,11 +5653,19 @@ mod tests {
         let mut interp = Interpreter::new();
 
         // Equal strings
-        let eq = make_binary(make_string("hello"), AstBinaryOp::Equal, make_string("hello"));
+        let eq = make_binary(
+            make_string("hello"),
+            AstBinaryOp::Equal,
+            make_string("hello"),
+        );
         assert_eq!(interp.eval_expr(&eq).unwrap(), Value::Bool(true));
 
         // NotEqual strings
-        let ne = make_binary(make_string("hello"), AstBinaryOp::NotEqual, make_string("world"));
+        let ne = make_binary(
+            make_string("hello"),
+            AstBinaryOp::NotEqual,
+            make_string("world"),
+        );
         assert_eq!(interp.eval_expr(&ne).unwrap(), Value::Bool(true));
     }
 
@@ -5368,7 +5686,11 @@ mod tests {
         // Exclusive range
         let exclusive = make_range(make_int(1), make_int(5), false);
         match interp.eval_expr(&exclusive).unwrap() {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(1));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(!inclusive);
@@ -5379,7 +5701,11 @@ mod tests {
         // Inclusive range
         let inclusive = make_range(make_int(1), make_int(5), true);
         match interp.eval_expr(&inclusive).unwrap() {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(1));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(inclusive);
@@ -5404,26 +5730,50 @@ mod tests {
         let mut interp = Interpreter::new();
 
         // +=
-        let add_assign = make_let_mut("x", make_int(10),
-            make_block(vec![make_compound_assign("x", AstBinaryOp::Add, make_int(5)), make_ident("x")]));
+        let add_assign = make_let_mut(
+            "x",
+            make_int(10),
+            make_block(vec![
+                make_compound_assign("x", AstBinaryOp::Add, make_int(5)),
+                make_ident("x"),
+            ]),
+        );
         assert_eq!(interp.eval_expr(&add_assign).unwrap(), Value::Integer(15));
 
         // -=
         let mut interp2 = Interpreter::new();
-        let sub_assign = make_let_mut("x", make_int(10),
-            make_block(vec![make_compound_assign("x", AstBinaryOp::Subtract, make_int(3)), make_ident("x")]));
+        let sub_assign = make_let_mut(
+            "x",
+            make_int(10),
+            make_block(vec![
+                make_compound_assign("x", AstBinaryOp::Subtract, make_int(3)),
+                make_ident("x"),
+            ]),
+        );
         assert_eq!(interp2.eval_expr(&sub_assign).unwrap(), Value::Integer(7));
 
         // *=
         let mut interp3 = Interpreter::new();
-        let mul_assign = make_let_mut("x", make_int(5),
-            make_block(vec![make_compound_assign("x", AstBinaryOp::Multiply, make_int(4)), make_ident("x")]));
+        let mul_assign = make_let_mut(
+            "x",
+            make_int(5),
+            make_block(vec![
+                make_compound_assign("x", AstBinaryOp::Multiply, make_int(4)),
+                make_ident("x"),
+            ]),
+        );
         assert_eq!(interp3.eval_expr(&mul_assign).unwrap(), Value::Integer(20));
 
         // /=
         let mut interp4 = Interpreter::new();
-        let div_assign = make_let_mut("x", make_int(20),
-            make_block(vec![make_compound_assign("x", AstBinaryOp::Divide, make_int(4)), make_ident("x")]));
+        let div_assign = make_let_mut(
+            "x",
+            make_int(20),
+            make_block(vec![
+                make_compound_assign("x", AstBinaryOp::Divide, make_int(4)),
+                make_ident("x"),
+            ]),
+        );
         assert_eq!(interp4.eval_expr(&div_assign).unwrap(), Value::Integer(5));
     }
 
@@ -5605,8 +5955,14 @@ mod tests {
         let obj = Expr {
             kind: ExprKind::ObjectLiteral {
                 fields: vec![
-                    ObjectField::KeyValue { key: "x".to_string(), value: make_int(10) },
-                    ObjectField::KeyValue { key: "y".to_string(), value: make_int(20) },
+                    ObjectField::KeyValue {
+                        key: "x".to_string(),
+                        value: make_int(10),
+                    },
+                    ObjectField::KeyValue {
+                        key: "y".to_string(),
+                        value: make_int(20),
+                    },
                 ],
             },
             span: Span::default(),
@@ -5769,10 +6125,7 @@ mod tests {
         let format_macro = Expr {
             kind: ExprKind::MacroInvocation {
                 name: "format".to_string(),
-                args: vec![
-                    make_string("Hello, {}!"),
-                    make_string("World"),
-                ],
+                args: vec![make_string("Hello, {}!"), make_string("World")],
             },
             span: Span::default(),
             attributes: vec![],
@@ -5889,10 +6242,7 @@ mod tests {
         let println = Expr {
             kind: ExprKind::MacroInvocation {
                 name: "println".to_string(),
-                args: vec![
-                    make_string("value: {}"),
-                    make_int(42),
-                ],
+                args: vec![make_string("value: {}"), make_int(42)],
             },
             span: Span::default(),
             attributes: vec![],
@@ -6378,10 +6728,7 @@ mod tests {
         let mut interp = Interpreter::new();
         // Create a closure that expects 2 args
         let closure = Value::Closure {
-            params: vec![
-                ("a".to_string(), None),
-                ("b".to_string(), None),
-            ],
+            params: vec![("a".to_string(), None), ("b".to_string(), None)],
             body: std::sync::Arc::new(make_int(1)),
             env: interp.current_env().clone(),
         };
@@ -6438,13 +6785,22 @@ mod tests {
                 clauses: vec![ComprehensionClause {
                     variable: "x".to_string(),
                     iterable: Box::new(Expr {
-                        kind: ExprKind::List(vec![make_int(1), make_int(2), make_int(3), make_int(4)]),
+                        kind: ExprKind::List(vec![
+                            make_int(1),
+                            make_int(2),
+                            make_int(3),
+                            make_int(4),
+                        ]),
                         span: Span::default(),
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
                     }),
-                    condition: Some(Box::new(make_binary(make_ident("x"), AstBinaryOp::Greater, make_int(2)))),
+                    condition: Some(Box::new(make_binary(
+                        make_ident("x"),
+                        AstBinaryOp::Greater,
+                        make_int(2),
+                    ))),
                 }],
             },
             span: Span::default(),
@@ -6498,7 +6854,11 @@ mod tests {
         // Define a function: fn double(x) { x * 2 }
         let double_fn = Value::Closure {
             params: vec![("x".to_string(), None)],
-            body: std::sync::Arc::new(make_binary(make_ident("x"), AstBinaryOp::Multiply, make_int(2))),
+            body: std::sync::Arc::new(make_binary(
+                make_ident("x"),
+                AstBinaryOp::Multiply,
+                make_int(2),
+            )),
             env: interp.current_env().clone(),
         };
         interp.set_variable("double", double_fn);
@@ -6851,11 +7211,10 @@ mod tests {
     #[test]
     fn test_pipeline_with_method_call() {
         let mut interp = Interpreter::new();
-        interp.set_variable("arr", Value::Array(vec![
-            Value::Integer(3),
-            Value::Integer(1),
-            Value::Integer(2),
-        ].into()));
+        interp.set_variable(
+            "arr",
+            Value::Array(vec![Value::Integer(3), Value::Integer(1), Value::Integer(2)].into()),
+        );
 
         // arr |> len should call arr.len()
         let pipeline = Expr {
@@ -7199,8 +7558,15 @@ mod tests {
     #[test]
     fn test_lookup_option_none() {
         let interp = Interpreter::new();
-        let result = interp.lookup_variable("Option::None").expect("should lookup");
-        if let Value::EnumVariant { enum_name, variant_name, .. } = result {
+        let result = interp
+            .lookup_variable("Option::None")
+            .expect("should lookup");
+        if let Value::EnumVariant {
+            enum_name,
+            variant_name,
+            ..
+        } = result
+        {
             assert_eq!(enum_name, "Option");
             assert_eq!(variant_name, "None");
         } else {
@@ -7578,10 +7944,19 @@ mod tests {
     fn test_try_operator_object_ok() {
         let mut interp = Interpreter::new();
         let mut obj_map = std::collections::HashMap::new();
-        obj_map.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        obj_map.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         obj_map.insert("type".to_string(), Value::from_string("Ok".to_string()));
-        obj_map.insert("data".to_string(), Value::Array(std::sync::Arc::from(vec![Value::Integer(42)])));
-        interp.env_set("result".to_string(), Value::Object(std::sync::Arc::new(obj_map)));
+        obj_map.insert(
+            "data".to_string(),
+            Value::Array(std::sync::Arc::from(vec![Value::Integer(42)])),
+        );
+        interp.env_set(
+            "result".to_string(),
+            Value::Object(std::sync::Arc::new(obj_map)),
+        );
         let try_expr = Expr {
             kind: ExprKind::Try {
                 expr: Box::new(make_ident("result")),
@@ -7599,10 +7974,21 @@ mod tests {
     fn test_try_operator_object_err() {
         let mut interp = Interpreter::new();
         let mut obj_map = std::collections::HashMap::new();
-        obj_map.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        obj_map.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         obj_map.insert("type".to_string(), Value::from_string("Err".to_string()));
-        obj_map.insert("data".to_string(), Value::Array(std::sync::Arc::from(vec![Value::from_string("error".to_string())])));
-        interp.env_set("result".to_string(), Value::Object(std::sync::Arc::new(obj_map)));
+        obj_map.insert(
+            "data".to_string(),
+            Value::Array(std::sync::Arc::from(vec![Value::from_string(
+                "error".to_string(),
+            )])),
+        );
+        interp.env_set(
+            "result".to_string(),
+            Value::Object(std::sync::Arc::new(obj_map)),
+        );
         let try_expr = Expr {
             kind: ExprKind::Try {
                 expr: Box::new(make_ident("result")),
@@ -7620,8 +8006,14 @@ mod tests {
     fn test_try_operator_object_missing_type() {
         let mut interp = Interpreter::new();
         let mut obj_map = std::collections::HashMap::new();
-        obj_map.insert("__type".to_string(), Value::from_string("Message".to_string()));
-        interp.env_set("result".to_string(), Value::Object(std::sync::Arc::new(obj_map)));
+        obj_map.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
+        interp.env_set(
+            "result".to_string(),
+            Value::Object(std::sync::Arc::new(obj_map)),
+        );
         let try_expr = Expr {
             kind: ExprKind::Try {
                 expr: Box::new(make_ident("result")),
@@ -7672,8 +8064,15 @@ mod tests {
     #[test]
     fn test_lookup_option_none_variant() {
         let interp = Interpreter::new();
-        let result = interp.lookup_variable("Option::None").expect("should lookup");
-        if let Value::EnumVariant { enum_name, variant_name, data } = result {
+        let result = interp
+            .lookup_variable("Option::None")
+            .expect("should lookup");
+        if let Value::EnumVariant {
+            enum_name,
+            variant_name,
+            data,
+        } = result
+        {
             assert_eq!(enum_name, "Option");
             assert_eq!(variant_name, "None");
             assert!(data.is_none());
@@ -7695,7 +8094,9 @@ mod tests {
     fn test_env_set_mut_create_new() {
         let mut interp = Interpreter::new();
         interp.env_set_mut("new_var".to_string(), Value::Integer(100));
-        let result = interp.lookup_variable("new_var").expect("should find variable");
+        let result = interp
+            .lookup_variable("new_var")
+            .expect("should find variable");
         assert_eq!(result, Value::Integer(100));
     }
 
@@ -7962,24 +8363,39 @@ mod tests {
     #[test]
     fn test_get_field_cached_array_len() {
         let mut interp = Interpreter::new();
-        let arr = Value::Array(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = interp.get_field_cached(&arr, "len").expect("should get len");
+        let arr = Value::Array(std::sync::Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
+        let result = interp
+            .get_field_cached(&arr, "len")
+            .expect("should get len");
         assert_eq!(result, Value::Integer(2));
     }
 
     #[test]
     fn test_get_field_cached_array_first() {
         let mut interp = Interpreter::new();
-        let arr = Value::Array(std::sync::Arc::from(vec![Value::Integer(10), Value::Integer(20)]));
-        let result = interp.get_field_cached(&arr, "first").expect("should get first");
+        let arr = Value::Array(std::sync::Arc::from(vec![
+            Value::Integer(10),
+            Value::Integer(20),
+        ]));
+        let result = interp
+            .get_field_cached(&arr, "first")
+            .expect("should get first");
         assert_eq!(result, Value::Integer(10));
     }
 
     #[test]
     fn test_get_field_cached_array_last() {
         let mut interp = Interpreter::new();
-        let arr = Value::Array(std::sync::Arc::from(vec![Value::Integer(10), Value::Integer(20)]));
-        let result = interp.get_field_cached(&arr, "last").expect("should get last");
+        let arr = Value::Array(std::sync::Arc::from(vec![
+            Value::Integer(10),
+            Value::Integer(20),
+        ]));
+        let result = interp
+            .get_field_cached(&arr, "last")
+            .expect("should get last");
         assert_eq!(result, Value::Integer(20));
     }
 
@@ -7987,7 +8403,9 @@ mod tests {
     fn test_get_field_cached_array_is_empty() {
         let mut interp = Interpreter::new();
         let arr = Value::Array(std::sync::Arc::from(vec![]));
-        let result = interp.get_field_cached(&arr, "is_empty").expect("should get is_empty");
+        let result = interp
+            .get_field_cached(&arr, "is_empty")
+            .expect("should get is_empty");
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -7995,7 +8413,9 @@ mod tests {
     fn test_get_field_cached_type() {
         let mut interp = Interpreter::new();
         let val = Value::Integer(42);
-        let result = interp.get_field_cached(&val, "type").expect("should get type");
+        let result = interp
+            .get_field_cached(&val, "type")
+            .expect("should get type");
         if let Value::String(s) = result {
             assert!(s.contains("int"));
         } else {
@@ -8010,7 +8430,9 @@ mod tests {
         // First access - cache miss
         let _ = interp.get_field_cached(&s, "len");
         // Second access - should hit cache
-        let result = interp.get_field_cached(&s, "len").expect("should get len from cache");
+        let result = interp
+            .get_field_cached(&s, "len")
+            .expect("should get len from cache");
         assert_eq!(result, Value::Integer(4));
     }
 
@@ -8033,30 +8455,38 @@ mod tests {
             Pattern::Identifier("a".to_string()),
             Pattern::Identifier("b".to_string()),
         ];
-        let tuple_val = Value::Tuple(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = interp.match_tuple_pattern(&patterns, &tuple_val).expect("should match");
+        let tuple_val = Value::Tuple(std::sync::Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
+        let result = interp
+            .match_tuple_pattern(&patterns, &tuple_val)
+            .expect("should match");
         assert!(result);
     }
 
     #[test]
     fn test_match_tuple_pattern_mismatch() {
         let interp = Interpreter::new();
-        let patterns = vec![
-            Pattern::Identifier("a".to_string()),
-        ];
-        let tuple_val = Value::Tuple(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = interp.match_tuple_pattern(&patterns, &tuple_val).expect("should not match");
+        let patterns = vec![Pattern::Identifier("a".to_string())];
+        let tuple_val = Value::Tuple(std::sync::Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
+        let result = interp
+            .match_tuple_pattern(&patterns, &tuple_val)
+            .expect("should not match");
         assert!(!result); // Lengths don't match
     }
 
     #[test]
     fn test_match_list_pattern() {
         let interp = Interpreter::new();
-        let patterns = vec![
-            Pattern::Identifier("x".to_string()),
-        ];
+        let patterns = vec![Pattern::Identifier("x".to_string())];
         let arr_val = Value::Array(std::sync::Arc::from(vec![Value::Integer(10)]));
-        let result = interp.match_list_pattern(&patterns, &arr_val).expect("should match");
+        let result = interp
+            .match_list_pattern(&patterns, &arr_val)
+            .expect("should match");
         assert!(result);
     }
 
@@ -8068,7 +8498,9 @@ mod tests {
             Pattern::Literal(Literal::Integer(2, None)),
         ];
         let val = Value::Integer(2);
-        let result = interp.match_or_pattern(&patterns, &val).expect("should match");
+        let result = interp
+            .match_or_pattern(&patterns, &val)
+            .expect("should match");
         assert!(result);
     }
 
@@ -8091,14 +8523,18 @@ mod tests {
     #[test]
     fn test_apply_binary_op_add() {
         let interp = Interpreter::new();
-        let result = interp.apply_binary_op(&Value::Integer(10), AstBinaryOp::Add, &Value::Integer(32)).expect("should add");
+        let result = interp
+            .apply_binary_op(&Value::Integer(10), AstBinaryOp::Add, &Value::Integer(32))
+            .expect("should add");
         assert_eq!(result, Value::Integer(42));
     }
 
     #[test]
     fn test_apply_binary_op_compare() {
         let interp = Interpreter::new();
-        let result = interp.apply_binary_op(&Value::Integer(10), AstBinaryOp::Less, &Value::Integer(20)).expect("should compare");
+        let result = interp
+            .apply_binary_op(&Value::Integer(10), AstBinaryOp::Less, &Value::Integer(20))
+            .expect("should compare");
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -8118,7 +8554,9 @@ mod tests {
     fn test_compute_field_access_string_to_upper() {
         let interp = Interpreter::new();
         let s = Value::from_string("hello".to_string());
-        let result = interp.compute_field_access(&s, "to_upper").expect("should work");
+        let result = interp
+            .compute_field_access(&s, "to_upper")
+            .expect("should work");
         assert_eq!(result, Value::from_string("HELLO".to_string()));
     }
 
@@ -8126,7 +8564,9 @@ mod tests {
     fn test_compute_field_access_string_to_lower() {
         let interp = Interpreter::new();
         let s = Value::from_string("HELLO".to_string());
-        let result = interp.compute_field_access(&s, "to_lower").expect("should work");
+        let result = interp
+            .compute_field_access(&s, "to_lower")
+            .expect("should work");
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
 
@@ -8134,7 +8574,9 @@ mod tests {
     fn test_compute_field_access_string_trim() {
         let interp = Interpreter::new();
         let s = Value::from_string("  hello  ".to_string());
-        let result = interp.compute_field_access(&s, "trim").expect("should work");
+        let result = interp
+            .compute_field_access(&s, "trim")
+            .expect("should work");
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
 
@@ -8168,11 +8610,14 @@ mod tests {
     fn test_try_operator_enum_ok() {
         let mut interp = Interpreter::new();
         // Create a Result::Ok enum variant
-        interp.env_set("result".to_string(), Value::EnumVariant {
-            enum_name: "Result".to_string(),
-            variant_name: "Ok".to_string(),
-            data: Some(vec![Value::Integer(42)]),
-        });
+        interp.env_set(
+            "result".to_string(),
+            Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Ok".to_string(),
+                data: Some(vec![Value::Integer(42)]),
+            },
+        );
         let try_expr = Expr {
             kind: ExprKind::Try {
                 expr: Box::new(make_ident("result")),
@@ -8190,11 +8635,14 @@ mod tests {
     fn test_try_operator_enum_err() {
         let mut interp = Interpreter::new();
         // Create a Result::Err enum variant
-        interp.env_set("result".to_string(), Value::EnumVariant {
-            enum_name: "Result".to_string(),
-            variant_name: "Err".to_string(),
-            data: Some(vec![Value::from_string("error".to_string())]),
-        });
+        interp.env_set(
+            "result".to_string(),
+            Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Err".to_string(),
+                data: Some(vec![Value::from_string("error".to_string())]),
+            },
+        );
         let try_expr = Expr {
             kind: ExprKind::Try {
                 expr: Box::new(make_ident("result")),
@@ -8211,11 +8659,14 @@ mod tests {
     #[test]
     fn test_try_operator_enum_ok_no_data() {
         let mut interp = Interpreter::new();
-        interp.env_set("result".to_string(), Value::EnumVariant {
-            enum_name: "Result".to_string(),
-            variant_name: "Ok".to_string(),
-            data: None, // No data
-        });
+        interp.env_set(
+            "result".to_string(),
+            Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Ok".to_string(),
+                data: None, // No data
+            },
+        );
         let try_expr = Expr {
             kind: ExprKind::Try {
                 expr: Box::new(make_ident("result")),
@@ -8232,11 +8683,14 @@ mod tests {
     #[test]
     fn test_try_operator_enum_unknown_variant() {
         let mut interp = Interpreter::new();
-        interp.env_set("result".to_string(), Value::EnumVariant {
-            enum_name: "Result".to_string(),
-            variant_name: "Unknown".to_string(), // Invalid variant
-            data: None,
-        });
+        interp.env_set(
+            "result".to_string(),
+            Value::EnumVariant {
+                enum_name: "Result".to_string(),
+                variant_name: "Unknown".to_string(), // Invalid variant
+                data: None,
+            },
+        );
         let try_expr = Expr {
             kind: ExprKind::Try {
                 expr: Box::new(make_ident("result")),
@@ -8417,7 +8871,6 @@ mod tests {
     }
 }
 
-
 /// Coverage tests for extracted interpreter modules
 /// Only includes tests that work with eval_string
 #[cfg(test)]
@@ -8469,7 +8922,9 @@ mod coverage_tests {
     #[test]
     fn test_string_method_contains() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#""hello world".contains("world")"#).unwrap();
+        let result = interp
+            .eval_string(r#""hello world".contains("world")"#)
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -8602,7 +9057,9 @@ mod coverage_tests {
     #[test]
     fn test_list_comprehension_with_condition_cov5() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[x for x in 1..=10 if x % 2 == 0]"#).unwrap();
+        let result = interp
+            .eval_string(r#"[x for x in 1..=10 if x % 2 == 0]"#)
+            .unwrap();
         match result {
             Value::Array(arr) => assert_eq!(arr.len(), 5),
             _ => panic!("Expected array"),
@@ -8680,7 +9137,9 @@ mod coverage_tests {
     fn test_object_has_key() {
         let mut interp = Interpreter::new();
         // Test object field access instead of 'in' operator for objects
-        interp.eval_string(r#"let obj = {"key": 42, "other": 10}"#).unwrap();
+        interp
+            .eval_string(r#"let obj = {"key": 42, "other": 10}"#)
+            .unwrap();
         let result = interp.eval_string(r#"obj.key"#).unwrap();
         assert_eq!(result, Value::Integer(42));
     }
@@ -8781,7 +9240,11 @@ mod coverage_tests {
         // Verify it's an EnumVariant
         let result = interp.eval_string(r#"x"#).unwrap();
         match result {
-            Value::EnumVariant { enum_name, variant_name, .. } => {
+            Value::EnumVariant {
+                enum_name,
+                variant_name,
+                ..
+            } => {
                 assert_eq!(enum_name, "Option");
                 assert_eq!(variant_name, "None");
             }
@@ -8825,14 +9288,18 @@ mod coverage_tests {
     fn test_loop_with_break_no_value() {
         let mut interp = Interpreter::new();
         // Use block for sequencing
-        let result = interp.eval_string(r#"{ let mut i = 0; loop { i = i + 1; if i > 3 { break } }; i }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut i = 0; loop { i = i + 1; if i > 3 { break } }; i }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(4));
     }
 
     #[test]
     fn test_while_loop_with_condition() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut x = 0; while x < 5 { x = x + 1 }; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 0; while x < 5 { x = x + 1 }; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
@@ -8849,14 +9316,18 @@ mod coverage_tests {
     #[test]
     fn test_match_literal_integer() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"match 2 { 1 => "one", 2 => "two", _ => "other" }"#).unwrap();
+        let result = interp
+            .eval_string(r#"match 2 { 1 => "one", 2 => "two", _ => "other" }"#)
+            .unwrap();
         assert_eq!(result, Value::from_string("two".to_string()));
     }
 
     #[test]
     fn test_match_wildcard_cov5() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"match 99 { 1 => "one", _ => "default" }"#).unwrap();
+        let result = interp
+            .eval_string(r#"match 99 { 1 => "one", _ => "default" }"#)
+            .unwrap();
         assert_eq!(result, Value::from_string("default".to_string()));
     }
 
@@ -8872,7 +9343,9 @@ mod coverage_tests {
     #[test]
     fn test_function_with_default_param() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn greet(name = "World") { name }"#).unwrap();
+        interp
+            .eval_string(r#"fn greet(name = "World") { name }"#)
+            .unwrap();
         let result = interp.eval_string(r#"greet()"#).unwrap();
         assert_eq!(result, Value::from_string("World".to_string()));
     }
@@ -8880,7 +9353,9 @@ mod coverage_tests {
     #[test]
     fn test_function_with_default_param_overridden() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn greet(name = "World") { name }"#).unwrap();
+        interp
+            .eval_string(r#"fn greet(name = "World") { name }"#)
+            .unwrap();
         let result = interp.eval_string(r#"greet("Alice")"#).unwrap();
         assert_eq!(result, Value::from_string("Alice".to_string()));
     }
@@ -8953,14 +9428,18 @@ mod coverage_tests {
     #[test]
     fn test_try_catch_with_error() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"try { throw "error" } catch (e) { 99 }"#).unwrap();
+        let result = interp
+            .eval_string(r#"try { throw "error" } catch (e) { 99 }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(99));
     }
 
     #[test]
     fn test_throw_expression() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"try { throw "test error" } catch (e) { e }"#).unwrap();
+        let result = interp
+            .eval_string(r#"try { throw "test error" } catch (e) { e }"#)
+            .unwrap();
         // The caught error should be the thrown value
         match result {
             Value::Object(obj) => {
@@ -8979,7 +9458,9 @@ mod coverage_tests {
     #[test]
     fn test_array_map() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[1, 2, 3].map(fn(x) { x * 2 })"#).unwrap();
+        let result = interp
+            .eval_string(r#"[1, 2, 3].map(fn(x) { x * 2 })"#)
+            .unwrap();
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr[0], Value::Integer(2));
@@ -8993,7 +9474,9 @@ mod coverage_tests {
     #[test]
     fn test_array_filter() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[1, 2, 3, 4].filter(fn(x) { x > 2 })"#).unwrap();
+        let result = interp
+            .eval_string(r#"[1, 2, 3, 4].filter(fn(x) { x > 2 })"#)
+            .unwrap();
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 2);
@@ -9006,35 +9489,45 @@ mod coverage_tests {
     fn test_array_reduce() {
         let mut interp = Interpreter::new();
         // reduce(initial_value, fn(acc, x) { ... })
-        let result = interp.eval_string(r#"[1, 2, 3, 4].reduce(0, fn(acc, x) { acc + x })"#).unwrap();
+        let result = interp
+            .eval_string(r#"[1, 2, 3, 4].reduce(0, fn(acc, x) { acc + x })"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(10));
     }
 
     #[test]
     fn test_array_find() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[1, 2, 3, 4].find(fn(x) { x > 2 })"#).unwrap();
+        let result = interp
+            .eval_string(r#"[1, 2, 3, 4].find(fn(x) { x > 2 })"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(3));
     }
 
     #[test]
     fn test_array_find_not_found() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[1, 2, 3].find(fn(x) { x > 10 })"#).unwrap();
+        let result = interp
+            .eval_string(r#"[1, 2, 3].find(fn(x) { x > 10 })"#)
+            .unwrap();
         assert_eq!(result, Value::Nil);
     }
 
     #[test]
     fn test_array_any() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[1, 2, 3].any(fn(x) { x > 2 })"#).unwrap();
+        let result = interp
+            .eval_string(r#"[1, 2, 3].any(fn(x) { x > 2 })"#)
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
     #[test]
     fn test_array_all() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[2, 4, 6].all(fn(x) { x % 2 == 0 })"#).unwrap();
+        let result = interp
+            .eval_string(r#"[2, 4, 6].all(fn(x) { x % 2 == 0 })"#)
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -9076,7 +9569,11 @@ mod coverage_tests {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 4); // 1, 2, 3, 4
             }
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(1));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(!inclusive);
@@ -9094,7 +9591,11 @@ mod coverage_tests {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 5); // 1, 2, 3, 4, 5
             }
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(1));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(inclusive);
@@ -9124,28 +9625,36 @@ mod coverage_tests {
     fn test_compound_assign_add() {
         let mut interp = Interpreter::new();
         // Use block to properly sequence statements
-        let result = interp.eval_string(r#"{ let mut x = 10; x += 5; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 10; x += 5; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(15));
     }
 
     #[test]
     fn test_compound_assign_sub() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut x = 10; x -= 3; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 10; x -= 3; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(7));
     }
 
     #[test]
     fn test_compound_assign_mul() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut x = 10; x *= 2; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 10; x *= 2; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(20));
     }
 
     #[test]
     fn test_compound_assign_div() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut x = 10; x /= 2; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 10; x /= 2; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
@@ -9161,7 +9670,9 @@ mod coverage_tests {
     #[test]
     fn test_struct_instantiation() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"struct Point { x: i64, y: i64 }"#).unwrap();
+        interp
+            .eval_string(r#"struct Point { x: i64, y: i64 }"#)
+            .unwrap();
         let result = interp.eval_string(r#"Point { x: 10, y: 20 }"#).unwrap();
         // Struct instantiation can return various types depending on mutability
         assert!(!matches!(result, Value::Nil));
@@ -9179,10 +9690,16 @@ mod coverage_tests {
     #[test]
     fn test_enum_variant_access() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"enum Color { Red, Green, Blue }"#).unwrap();
+        interp
+            .eval_string(r#"enum Color { Red, Green, Blue }"#)
+            .unwrap();
         let result = interp.eval_string(r#"Color.Red"#).unwrap();
         match result {
-            Value::EnumVariant { enum_name, variant_name, .. } => {
+            Value::EnumVariant {
+                enum_name,
+                variant_name,
+                ..
+            } => {
                 assert_eq!(enum_name, "Color");
                 assert_eq!(variant_name, "Red");
             }
@@ -9205,14 +9722,18 @@ mod coverage_tests {
     fn test_block_scope_shadowing() {
         let mut interp = Interpreter::new();
         // Use block for proper sequencing
-        let result = interp.eval_string(r#"{ let x = 10; { let x = 20 }; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let x = 10; { let x = 20 }; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(10));
     }
 
     #[test]
     fn test_function_scope() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn get_value() { let local = 42; local }"#).unwrap();
+        interp
+            .eval_string(r#"fn get_value() { let local = 42; local }"#)
+            .unwrap();
         let result = interp.eval_string(r#"get_value()"#).unwrap();
         assert_eq!(result, Value::Integer(42));
     }
@@ -9222,7 +9743,9 @@ mod coverage_tests {
     #[test]
     fn test_early_return() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn early() { return 42; 0 }"#).unwrap();
+        interp
+            .eval_string(r#"fn early() { return 42; 0 }"#)
+            .unwrap();
         let result = interp.eval_string(r#"early()"#).unwrap();
         assert_eq!(result, Value::Integer(42));
     }
@@ -9241,7 +9764,9 @@ mod coverage_tests {
     fn test_env_set_mut_existing() {
         let mut interp = Interpreter::new();
         // Create outer variable, then mutate in inner scope - use block
-        let result = interp.eval_string(r#"{ let mut x = 10; { x = 20 }; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 10; { x = 20 }; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(20));
     }
 
@@ -9384,7 +9909,9 @@ mod coverage_tests {
     fn test_closure_captures_variable_cov5() {
         let mut interp = Interpreter::new();
         interp.eval_string(r#"let multiplier = 10"#).unwrap();
-        interp.eval_string(r#"let mult = fn(x) { x * multiplier }"#).unwrap();
+        interp
+            .eval_string(r#"let mult = fn(x) { x * multiplier }"#)
+            .unwrap();
         let result = interp.eval_string(r#"mult(4)"#).unwrap();
         assert_eq!(result, Value::Integer(40));
     }
@@ -9446,7 +9973,9 @@ mod coverage_tests {
     #[test]
     fn test_for_loop_with_range() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut sum = 0; for i in 1..=5 { sum = sum + i }; sum }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut sum = 0; for i in 1..=5 { sum = sum + i }; sum }"#)
+            .unwrap();
         // 1 + 2 + 3 + 4 + 5 = 15
         assert_eq!(result, Value::Integer(15));
     }
@@ -9547,7 +10076,8 @@ mod coverage_tests {
     #[test]
     fn test_class_definition() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"class Counter { count: i64, fn new() { Counter { count: 0 } } }"#);
+        let result = interp
+            .eval_string(r#"class Counter { count: i64, fn new() { Counter { count: 0 } } }"#);
         // Definition should succeed (or fail gracefully)
         assert!(result.is_ok() || result.is_err());
     }
@@ -9614,7 +10144,7 @@ mod coverage_tests {
         // Verify it returns some string
         match result {
             Ok(Value::String(s)) => assert!(!s.is_empty()),
-            Ok(_) => {} // Other result is acceptable
+            Ok(_) => {}  // Other result is acceptable
             Err(_) => {} // Error is acceptable
         }
     }
@@ -9626,7 +10156,7 @@ mod coverage_tests {
         // Verify it returns some string
         match result {
             Ok(Value::String(s)) => assert!(!s.is_empty()),
-            Ok(_) => {} // Other result is acceptable
+            Ok(_) => {}  // Other result is acceptable
             Err(_) => {} // Error is acceptable
         }
     }
@@ -9676,7 +10206,9 @@ mod coverage_tests {
     #[test]
     fn test_recursive_factorial() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn fact(n) { if n <= 1 { 1 } else { n * fact(n - 1) } }"#).unwrap();
+        interp
+            .eval_string(r#"fn fact(n) { if n <= 1 { 1 } else { n * fact(n - 1) } }"#)
+            .unwrap();
         let result = interp.eval_string(r#"fact(5)"#).unwrap();
         assert_eq!(result, Value::Integer(120));
     }
@@ -9697,7 +10229,9 @@ mod coverage_tests {
     #[test]
     fn test_nested_blocks() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let a = 1; { let b = 2; { let c = 3; a + b + c } } }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let a = 1; { let b = 2; { let c = 3; a + b + c } } }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(6));
     }
 
@@ -9723,7 +10257,9 @@ mod coverage_tests {
     #[test]
     fn test_chained_method_calls() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#""  hello  ".trim().to_upper()"#).unwrap();
+        let result = interp
+            .eval_string(r#""  hello  ".trim().to_upper()"#)
+            .unwrap();
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "HELLO"),
             _ => panic!("Expected String"),
@@ -9778,7 +10314,9 @@ mod coverage_tests {
     #[test]
     fn test_format_macro() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"format!("Hello {}!", "World")"#).unwrap();
+        let result = interp
+            .eval_string(r#"format!("Hello {}!", "World")"#)
+            .unwrap();
         // Result contains both the format and the argument
         match result {
             Value::String(s) => assert!(s.contains("Hello") && s.contains("World")),
@@ -9789,7 +10327,9 @@ mod coverage_tests {
     #[test]
     fn test_format_macro_multiple_args() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"format!("{} + {} = {}", 1, 2, 3)"#).unwrap();
+        let result = interp
+            .eval_string(r#"format!("{} + {} = {}", 1, 2, 3)"#)
+            .unwrap();
         // Result contains the numbers
         match result {
             Value::String(s) => assert!(s.contains("1") && s.contains("2") && s.contains("3")),
@@ -9819,10 +10359,15 @@ mod coverage_tests {
     #[test]
     fn test_object_literal() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{"name": "Alice", "age": 30}"#).unwrap();
+        let result = interp
+            .eval_string(r#"{"name": "Alice", "age": 30}"#)
+            .unwrap();
         match result {
             Value::Object(obj) => {
-                assert_eq!(obj.get("name"), Some(&Value::from_string("Alice".to_string())));
+                assert_eq!(
+                    obj.get("name"),
+                    Some(&Value::from_string("Alice".to_string()))
+                );
                 assert_eq!(obj.get("age"), Some(&Value::Integer(30)));
             }
             _ => panic!("Expected Object"),
@@ -9834,7 +10379,9 @@ mod coverage_tests {
     #[test]
     fn test_tuple_destructuring() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let (a, b) = (1, 2); a + b }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let (a, b) = (1, 2); a + b }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(3));
     }
 
@@ -9867,13 +10414,15 @@ mod coverage_tests {
     fn test_class_with_method_cov() {
         let mut interp = Interpreter::new();
         // Test class definition evaluates successfully
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             class Counter {
                 fn new() {
                     self.count = 0
                 }
             }
-        "#);
+        "#,
+        );
         // Class definition should succeed
         assert!(result.is_ok());
     }
@@ -9882,13 +10431,15 @@ mod coverage_tests {
     fn test_class_field_access_cov() {
         let mut interp = Interpreter::new();
         // Test class definition
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             class Point {
                 fn new(x, y) {
                     self.x = x
                 }
             }
-        "#);
+        "#,
+        );
         assert!(result.is_ok());
     }
 
@@ -9922,7 +10473,11 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"Option::None"#).unwrap();
         match result {
-            Value::EnumVariant { enum_name, variant_name, .. } => {
+            Value::EnumVariant {
+                enum_name,
+                variant_name,
+                ..
+            } => {
                 assert_eq!(enum_name, "Option");
                 assert_eq!(variant_name, "None");
             }
@@ -9936,11 +10491,15 @@ mod coverage_tests {
         let result = interp.eval_string(r#"Option::Some(42)"#);
         // Option::Some may or may not be supported
         match result {
-            Ok(Value::EnumVariant { enum_name, variant_name, .. }) => {
+            Ok(Value::EnumVariant {
+                enum_name,
+                variant_name,
+                ..
+            }) => {
                 assert_eq!(enum_name, "Option");
                 assert_eq!(variant_name, "Some");
             }
-            Ok(_) => {} // Some other result is also ok
+            Ok(_) => {}  // Some other result is also ok
             Err(_) => {} // Error is also ok
         }
     }
@@ -9950,39 +10509,51 @@ mod coverage_tests {
     #[test]
     fn test_match_integer() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             match 2 {
                 1 => "one",
                 2 => "two",
                 _ => "other"
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::from_string("two".to_string()));
     }
 
     #[test]
     fn test_match_default() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             match 99 {
                 1 => "one",
                 2 => "two",
                 _ => "other"
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::from_string("other".to_string()));
     }
 
     #[test]
     fn test_match_string() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             match "hello" {
                 "hi" => 1,
                 "hello" => 2,
                 _ => 0
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(2));
     }
 
@@ -9993,7 +10564,11 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"1..5"#).unwrap();
         match result {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(1));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(!inclusive);
@@ -10007,7 +10582,11 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"1..=5"#).unwrap();
         match result {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Integer(1));
                 assert_eq!(*end, Value::Integer(5));
                 assert!(inclusive);
@@ -10057,7 +10636,9 @@ mod coverage_tests {
     #[test]
     fn test_array_slice() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[1, 2, 3, 4, 5].slice(1, 3)"#).unwrap();
+        let result = interp
+            .eval_string(r#"[1, 2, 3, 4, 5].slice(1, 3)"#)
+            .unwrap();
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 2);
@@ -10075,7 +10656,7 @@ mod coverage_tests {
         // flat_map may or may not be implemented
         match result {
             Ok(Value::Array(arr)) => assert_eq!(arr.len(), 6),
-            Ok(_) => {} // Other result types are ok
+            Ok(_) => {}  // Other result types are ok
             Err(_) => {} // Error is also ok if method not implemented
         }
     }
@@ -10145,7 +10726,9 @@ mod coverage_tests {
     #[test]
     fn test_for_loop_range() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let sum = 0
                 for i in 1..=5 {
@@ -10153,14 +10736,18 @@ mod coverage_tests {
                 }
                 sum
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(15));
     }
 
     #[test]
     fn test_for_loop_array() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let sum = 0
                 for x in [1, 2, 3] {
@@ -10168,7 +10755,9 @@ mod coverage_tests {
                 }
                 sum
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(6));
     }
 
@@ -10177,7 +10766,9 @@ mod coverage_tests {
     #[test]
     fn test_while_loop_counter() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let count = 0
                 while count < 5 {
@@ -10185,7 +10776,9 @@ mod coverage_tests {
                 }
                 count
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
@@ -10194,7 +10787,9 @@ mod coverage_tests {
     #[test]
     fn test_loop_break_value() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let i = 0
                 loop {
@@ -10203,14 +10798,18 @@ mod coverage_tests {
                 }
                 i
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
     #[test]
     fn test_for_continue() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let sum = 0
                 for i in 1..=5 {
@@ -10219,7 +10818,9 @@ mod coverage_tests {
                 }
                 sum
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(12)); // 1 + 2 + 4 + 5 = 12
     }
 
@@ -10228,25 +10829,33 @@ mod coverage_tests {
     #[test]
     fn test_closure_capture() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let x = 10
                 let adder = |n| n + x
                 adder(5)
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(15));
     }
 
     #[test]
     fn test_closure_multi_param() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let mult = |a, b| a * b
                 mult(3, 4)
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(12));
     }
 
@@ -10340,20 +10949,26 @@ mod coverage_tests {
     #[test]
     fn test_nested_if_else() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             if true {
                 if false { 1 } else { 2 }
             } else {
                 3
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(2));
     }
 
     #[test]
     fn test_nested_blocks_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let a = 1
                 {
@@ -10361,7 +10976,9 @@ mod coverage_tests {
                     a + b
                 }
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(3));
     }
 
@@ -10370,13 +10987,17 @@ mod coverage_tests {
     #[test]
     fn test_array_index_assignment() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let arr = [1, 2, 3]
                 arr[1] = 99
                 arr[1]
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(99));
     }
 
@@ -10385,12 +11006,16 @@ mod coverage_tests {
     #[test]
     fn test_object_field_assignment() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let obj = {"x": 1, "y": 2}
                 obj["x"]
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -10431,12 +11056,16 @@ mod coverage_tests {
     #[test]
     fn test_early_return_cov() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"
+        interp
+            .eval_string(
+                r#"
             fn test_return(x) {
                 if x > 0 { return x }
                 -1
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         let result = interp.eval_string(r#"test_return(5)"#).unwrap();
         assert_eq!(result, Value::Integer(5));
     }
@@ -10444,11 +11073,15 @@ mod coverage_tests {
     #[test]
     fn test_return_nil_cov() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"
+        interp
+            .eval_string(
+                r#"
             fn test_return_nil() {
                 return nil
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         let result = interp.eval_string(r#"test_return_nil()"#).unwrap();
         assert_eq!(result, Value::Nil);
     }
@@ -10462,7 +11095,7 @@ mod coverage_tests {
         // Should error with undefined function
         match result {
             Err(_) => {} // Expected
-            Ok(_) => {} // Some interpreters might return Nil
+            Ok(_) => {}  // Some interpreters might return Nil
         }
     }
 
@@ -10490,7 +11123,9 @@ mod coverage_tests {
     #[test]
     fn test_default_param_used() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn greet(name = "World") { name }"#).unwrap();
+        interp
+            .eval_string(r#"fn greet(name = "World") { name }"#)
+            .unwrap();
         let result = interp.eval_string(r#"greet()"#).unwrap();
         assert_eq!(result, Value::from_string("World".to_string()));
     }
@@ -10498,7 +11133,9 @@ mod coverage_tests {
     #[test]
     fn test_default_param_overridden() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn greet(name = "World") { name }"#).unwrap();
+        interp
+            .eval_string(r#"fn greet(name = "World") { name }"#)
+            .unwrap();
         let result = interp.eval_string(r#"greet("Alice")"#).unwrap();
         assert_eq!(result, Value::from_string("Alice".to_string()));
     }
@@ -10698,7 +11335,9 @@ mod coverage_tests {
     #[test]
     fn test_lambda_with_body() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let f = |x| { let y = x * 2; y + 1 }; f(5) }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let f = |x| { let y = x * 2; y + 1 }; f(5) }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(11));
     }
 
@@ -10730,7 +11369,9 @@ mod coverage_tests {
     #[test]
     fn test_if_else_chain() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"if false { 1 } else if false { 2 } else { 3 }"#).unwrap();
+        let result = interp
+            .eval_string(r#"if false { 1 } else if false { 2 } else { 3 }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(3));
     }
 
@@ -10739,7 +11380,9 @@ mod coverage_tests {
     #[test]
     fn test_function_multiple_params() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"fn add3(a, b, c) { a + b + c }"#).unwrap();
+        interp
+            .eval_string(r#"fn add3(a, b, c) { a + b + c }"#)
+            .unwrap();
         let result = interp.eval_string(r#"add3(1, 2, 3)"#).unwrap();
         assert_eq!(result, Value::Integer(6));
     }
@@ -10854,7 +11497,9 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"type_of(42)"#);
         match result {
-            Ok(Value::String(s)) => assert!(s.contains("int") || s.contains("Integer") || s.contains("i64")),
+            Ok(Value::String(s)) => {
+                assert!(s.contains("int") || s.contains("Integer") || s.contains("i64"))
+            }
             Ok(_) => {}
             Err(_) => {}
         }
@@ -10876,7 +11521,9 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"type_of([1, 2, 3])"#);
         match result {
-            Ok(Value::String(s)) => assert!(s.contains("Array") || s.contains("arr") || s.contains("list")),
+            Ok(Value::String(s)) => {
+                assert!(s.contains("Array") || s.contains("arr") || s.contains("list"))
+            }
             Ok(_) => {}
             Err(_) => {}
         }
@@ -11076,7 +11723,8 @@ mod coverage_tests {
     #[test]
     fn test_while_let_some() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             {
                 let mut opt = Option::Some(3)
                 let sum = 0
@@ -11086,7 +11734,8 @@ mod coverage_tests {
                 }
                 sum
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert!(n > 0),
             Ok(_) => {}
@@ -11099,14 +11748,16 @@ mod coverage_tests {
     #[test]
     fn test_actor_definition() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             actor Counter {
                 state count = 0
                 fn increment() {
                     self.count = self.count + 1
                 }
             }
-        "#);
+        "#,
+        );
         // Actor may or may not be supported
         match result {
             Ok(_) => {}
@@ -11117,11 +11768,15 @@ mod coverage_tests {
     #[test]
     fn test_actor_new() {
         let mut interp = Interpreter::new();
-        interp.eval_string(r#"
+        interp
+            .eval_string(
+                r#"
             actor Counter {
                 state count = 0
             }
-        "#).ok();
+        "#,
+            )
+            .ok();
         let result = interp.eval_string(r#"Counter::new()"#);
         // May or may not work depending on actor implementation
         match result {
@@ -11211,7 +11866,9 @@ mod coverage_tests {
     #[test]
     fn test_list_comprehension_with_filter() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"[x for x in 1..=10 if x % 2 == 0]"#).unwrap();
+        let result = interp
+            .eval_string(r#"[x for x in 1..=10 if x % 2 == 0]"#)
+            .unwrap();
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr.len(), 5); // 2, 4, 6, 8, 10
@@ -11236,7 +11893,12 @@ mod coverage_tests {
     #[test]
     fn test_type_feedback_binary_op() {
         let mut interp = Interpreter::new();
-        interp.record_binary_op_feedback(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        interp.record_binary_op_feedback(
+            0,
+            &Value::Integer(1),
+            &Value::Integer(2),
+            &Value::Integer(3),
+        );
         // Just exercise the method
     }
 
@@ -11278,13 +11940,15 @@ mod coverage_tests {
     #[test]
     fn test_match_with_guard_cov5() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             match 5 {
                 x if x > 10 => "big",
                 x if x > 0 => "positive",
                 _ => "other"
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::String(s)) => assert!(s.as_ref() == "positive" || !s.is_empty()),
             Ok(_) => {}
@@ -11310,7 +11974,9 @@ mod coverage_tests {
     #[test]
     fn test_scope_shadowing() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let x = 1
                 {
@@ -11318,21 +11984,27 @@ mod coverage_tests {
                     x
                 }
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(2));
     }
 
     #[test]
     fn test_scope_outer_visible() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp
+            .eval_string(
+                r#"
             {
                 let x = 1
                 {
                     x + 1
                 }
             }
-        "#).unwrap();
+        "#,
+            )
+            .unwrap();
         assert_eq!(result, Value::Integer(2));
     }
 
@@ -11365,13 +12037,15 @@ mod coverage_tests {
     #[test]
     fn test_try_operator_ok() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             {
                 fn returns_ok() { Result::Ok(42) }
                 fn test() { returns_ok()? }
                 test()
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 42),
             Ok(_) => {}
@@ -11382,13 +12056,15 @@ mod coverage_tests {
     #[test]
     fn test_try_operator_err() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             {
                 fn returns_err() { Result::Err("error") }
                 fn test() { returns_err()? }
                 test()
             }
-        "#);
+        "#,
+        );
         // Should propagate error
         match result {
             Ok(Value::EnumVariant { variant_name, .. }) => assert_eq!(variant_name, "Err"),
@@ -11465,13 +12141,15 @@ mod coverage_tests {
     #[test]
     fn test_if_let_some() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             if let Option::Some(x) = Option::Some(42) {
                 x * 2
             } else {
                 0
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 84),
             Ok(_) => {}
@@ -11482,13 +12160,15 @@ mod coverage_tests {
     #[test]
     fn test_if_let_none() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             if let Option::Some(x) = Option::None {
                 x * 2
             } else {
                 0
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 0),
             Ok(_) => {}
@@ -11499,11 +12179,13 @@ mod coverage_tests {
     #[test]
     fn test_if_let_no_else_cov5() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             if let Option::Some(x) = Option::None {
                 x * 2
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Nil) => {}
             Ok(_) => {}
@@ -11516,11 +12198,13 @@ mod coverage_tests {
     #[test]
     fn test_module_expr() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             mod math {
                 fn add(a, b) { a + b }
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(_) => {}
             Err(_) => {}
@@ -11532,11 +12216,13 @@ mod coverage_tests {
     #[test]
     fn test_pattern_tuple() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             match (1, 2) {
                 (a, b) => a + b
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 3),
             Ok(_) => {}
@@ -11547,12 +12233,14 @@ mod coverage_tests {
     #[test]
     fn test_pattern_array() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             match [1, 2, 3] {
                 [a, b, c] => a + b + c,
                 _ => 0
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert!(n == 6 || n == 0),
             Ok(_) => {}
@@ -11563,12 +12251,14 @@ mod coverage_tests {
     #[test]
     fn test_pattern_literal() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             match 42 {
                 42 => "matched",
                 _ => "not matched"
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::String(s)) => assert_eq!(s.as_ref(), "matched"),
             Ok(_) => {}
@@ -11581,7 +12271,8 @@ mod coverage_tests {
     #[test]
     fn test_labeled_break() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             {
                 let result = 0
                 'outer: for i in 1..=3 {
@@ -11592,7 +12283,8 @@ mod coverage_tests {
                 }
                 result
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert!(n >= 0),
             Ok(_) => {}
@@ -11603,7 +12295,8 @@ mod coverage_tests {
     #[test]
     fn test_labeled_continue() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             {
                 let result = 0
                 'outer: for i in 1..=3 {
@@ -11614,7 +12307,8 @@ mod coverage_tests {
                 }
                 result
             }
-        "#);
+        "#,
+        );
         match result {
             Ok(Value::Integer(n)) => assert!(n >= 0),
             Ok(_) => {}
@@ -11643,21 +12337,27 @@ mod coverage_tests {
     #[test]
     fn test_compound_sub() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut x = 10; x -= 3; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 10; x -= 3; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(7));
     }
 
     #[test]
     fn test_compound_mul() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut x = 5; x *= 3; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 5; x *= 3; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(15));
     }
 
     #[test]
     fn test_compound_div() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let mut x = 20; x /= 4; x }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let mut x = 20; x /= 4; x }"#)
+            .unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
@@ -11861,7 +12561,8 @@ mod coverage_tests {
     #[test]
     fn test_loop_with_break() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string("{ let mut x = 0; loop { x = x + 1; if x >= 3 { break x } } }");
+        let result =
+            interp.eval_string("{ let mut x = 0; loop { x = x + 1; if x >= 3 { break x } } }");
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 3),
             _ => {}
@@ -12129,11 +12830,9 @@ mod coverage_tests {
     fn test_contains_array() {
         let interp = Interpreter::new();
         let element = Value::Integer(2);
-        let collection = Value::Array(Arc::from(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3),
-        ].as_slice()));
+        let collection = Value::Array(Arc::from(
+            vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)].as_slice(),
+        ));
         let result = interp.eval_contains(&element, &collection);
         assert!(result.is_ok() && result.unwrap());
     }
@@ -12274,10 +12973,10 @@ mod coverage_tests {
 
     #[test]
     fn test_format_string_with_values() {
-        let result = Interpreter::format_string_with_values("x={}, y={}", &[
-            Value::Integer(10),
-            Value::Integer(20),
-        ]);
+        let result = Interpreter::format_string_with_values(
+            "x={}, y={}",
+            &[Value::Integer(10), Value::Integer(20)],
+        );
         assert!(result.contains("10") && result.contains("20"));
     }
 
@@ -12296,7 +12995,8 @@ mod coverage_tests {
     fn test_while_let_none() {
         let mut interp = Interpreter::new();
         // Should execute 0 times when condition doesn't match
-        let _result = interp.eval_string("{ let mut sum = 0; while let Some(x) = None { sum = sum + x }; sum }");
+        let _result = interp
+            .eval_string("{ let mut sum = 0; while let Some(x) = None { sum = sum + x }; sum }");
     }
 
     // ============== Match with Guards ==============
@@ -12316,22 +13016,26 @@ mod coverage_tests {
     #[test]
     fn test_actor_definition_cov() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             actor Counter {
                 state count: i32 = 0
                 on Increment { state.count = state.count + 1 }
             }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_actor_constructor_lookup() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             actor SimpleActor {
                 state value: i32 = 0
             }
-        "#);
+        "#,
+        );
         // Try to lookup actor constructor
         let _result = interp.eval_string("SimpleActor::new");
     }
@@ -12341,20 +13045,23 @@ mod coverage_tests {
     #[test]
     fn test_class_static_method_lookup() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             class Calculator {
                 static fn add(a: i32, b: i32) -> i32 {
                     a + b
                 }
             }
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("Calculator::add(1, 2)");
     }
 
     #[test]
     fn test_class_constructor_lookup() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             class Point {
                 x: i32
                 y: i32
@@ -12363,7 +13070,8 @@ mod coverage_tests {
                     self.y = y
                 }
             }
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("Point::new(10, 20)");
     }
 
@@ -12629,7 +13337,9 @@ mod coverage_tests {
     #[test]
     fn test_for_loop_with_tuple_pattern() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string("{ let mut sum = 0; for (a, b) in [(1, 2), (3, 4)] { sum = sum + a + b }; sum }");
+        let _result = interp.eval_string(
+            "{ let mut sum = 0; for (a, b) in [(1, 2), (3, 4)] { sum = sum + a + b }; sum }",
+        );
     }
 
     // ============== Recursion ==============
@@ -12637,7 +13347,8 @@ mod coverage_tests {
     #[test]
     fn test_recursive_function() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string("fn factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
+        let _ =
+            interp.eval_string("fn factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
         let result = interp.eval_string("factorial(5)");
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 120),
@@ -12866,12 +13577,14 @@ mod coverage_tests {
     fn test_impl_block() {
         let mut interp = Interpreter::new();
         let _ = interp.eval_string("struct Counter { value: i32 }");
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             impl Counter {
                 fn new() -> Counter { Counter { value: 0 } }
                 fn increment(self) { self.value = self.value + 1 }
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Macro Tests ==============
@@ -12937,23 +13650,27 @@ mod coverage_tests {
     #[test]
     fn test_actor_spawn() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             actor Counter {
                 state count: i32 = 0
                 on Increment { state.count = state.count + 1 }
             }
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("spawn Counter");
     }
 
     #[test]
     fn test_actor_spawn_with_args() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             actor CounterWithInit {
                 state count: i32 = 0
             }
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("spawn CounterWithInit()");
     }
 
@@ -12983,21 +13700,25 @@ mod coverage_tests {
     #[test]
     fn test_class_with_traits() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             class Printable {
                 fn to_string(self) -> String { "printable" }
             }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_class_with_constants() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             class Math {
                 const PI: f64 = 3.14159
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== More Control Flow ==============
@@ -13005,13 +13726,15 @@ mod coverage_tests {
     #[test]
     fn test_labeled_continue_cov() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             'outer: for i in 0..3 {
                 for j in 0..3 {
                     if j == 1 { continue 'outer }
                 }
             }
-        "#);
+        "#,
+        );
     }
 
     #[test]
@@ -13188,20 +13911,24 @@ mod coverage_tests {
     fn test_try_ok_variant() {
         let mut interp = Interpreter::new();
         // Create a Result::Ok and use try operator
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             enum Result { Ok(T), Err(E) }
             let result = Result::Ok(42)
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("result?");
     }
 
     #[test]
     fn test_try_err_variant() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             enum Result { Ok(T), Err(E) }
             let result = Result::Err("error")
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("result?");
     }
 
@@ -13254,39 +13981,45 @@ mod coverage_tests {
     #[test]
     fn test_while_let_some_cov2() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let mut items = [Some(1), Some(2), None]
             let mut i = 0
             while let Some(x) = items[i] {
                 i = i + 1
                 if i >= 3 { break }
             }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_while_let_break() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let mut x = Some(0)
             while let Some(n) = x {
                 if n > 5 { break }
                 x = Some(n + 1)
             }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_while_let_continue() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let mut items = [1, 2, 3]
             let mut i = 0
             while let Some(x) = if i < 3 { Some(items[i]) } else { None } {
                 i = i + 1
                 continue
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Import Statements ==============
@@ -13322,12 +14055,14 @@ mod coverage_tests {
     #[test]
     fn test_actor_send_operator() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             actor Counter {
                 state count: i32 = 0
                 on Increment { state.count = state.count + 1 }
             }
-        "#);
+        "#,
+        );
         let _ = interp.eval_string("let c = spawn Counter");
         let _result = interp.eval_string("c ! Increment");
     }
@@ -13335,12 +14070,14 @@ mod coverage_tests {
     #[test]
     fn test_actor_query_operator() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             actor Counter {
                 state count: i32 = 0
                 on GetCount { state.count }
             }
-        "#);
+        "#,
+        );
         let _ = interp.eval_string("let c = spawn Counter");
         let _result = interp.eval_string("c ? GetCount");
     }
@@ -13480,11 +14217,13 @@ mod coverage_tests {
     #[test]
     fn test_module_expr_cov2() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             module math {
                 fn add(a, b) { a + b }
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Lazy and Async ==============
@@ -13506,28 +14245,34 @@ mod coverage_tests {
     #[test]
     fn test_if_let_match_cov5() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = Some(42)
             if let Some(n) = x { n } else { 0 }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_if_let_no_match_cov5() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = None
             if let Some(n) = x { n } else { 0 }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_if_let_no_else_cov2() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = None
             if let Some(n) = x { n }
-        "#);
+        "#,
+        );
     }
 
     // ============== List Comprehension with Condition ==============
@@ -13567,11 +14312,13 @@ mod coverage_tests {
     #[test]
     fn test_qualified_class_static() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             class Math {
                 static fn pi() { 3.14159 }
             }
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("Math::pi()");
     }
 
@@ -13611,13 +14358,15 @@ mod coverage_tests {
     fn test_env_set_mut() {
         let mut interp = Interpreter::new();
         // Test mutable variable update in nested scope
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let mut x = 10
             {
                 x = 20
             }
             x
-        "#);
+        "#,
+        );
     }
 
     #[test]
@@ -13693,13 +14442,15 @@ mod coverage_tests {
     #[test]
     fn test_range_in_for() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let mut sum = 0
             for i in 1..5 {
                 sum = sum + i
             }
             sum
-        "#);
+        "#,
+        );
     }
 
     // ============== Block Return Value ==============
@@ -13719,13 +14470,15 @@ mod coverage_tests {
     #[test]
     fn test_match_with_guard_cov2() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = 5
             match x {
                 n if n > 3 => "big",
                 _ => "small"
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Option None Lookup ==============
@@ -13755,12 +14508,14 @@ mod coverage_tests {
     #[test]
     fn test_struct_with_method_cov2() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             struct Counter {
                 count: i32
                 fn increment(self) { self.count + 1 }
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Class Constructor ==============
@@ -13768,14 +14523,16 @@ mod coverage_tests {
     #[test]
     fn test_class_constructor_cov2() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             class Point {
                 fn new(x, y) {
                     self.x = x
                     self.y = y
                 }
             }
-        "#);
+        "#,
+        );
         let _result = interp.eval_string("Point::new(1, 2)");
     }
 
@@ -13832,7 +14589,8 @@ mod coverage_tests {
     fn test_unknown_builtin_cov2() {
         let mut interp = Interpreter::new();
         // Trying to call unknown builtin should error
-        let result = interp.call_function(Value::from_string("__builtin_unknown__".to_string()), &[]);
+        let result =
+            interp.call_function(Value::from_string("__builtin_unknown__".to_string()), &[]);
         assert!(result.is_err());
     }
 
@@ -13870,14 +14628,16 @@ mod coverage_tests {
     #[test]
     fn test_actor_with_multiple_handlers_cov2() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             actor Counter {
                 state value: i32 = 0
                 on Inc { state.value = state.value + 1 }
                 on Dec { state.value = state.value - 1 }
                 on Get { state.value }
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Set Expression ==============
@@ -13937,10 +14697,12 @@ mod coverage_tests {
     #[test]
     fn test_let_pattern_cov2() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let (a, b) = (1, 2)
             a + b
-        "#);
+        "#,
+        );
     }
 
     // ============== Stack Operations ==============
@@ -13977,37 +14739,43 @@ mod coverage_tests {
     #[test]
     fn test_pattern_match_literal_string_cov3() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = "hello"
             match x {
                 "hello" => "matched",
                 _ => "not matched"
             }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_pattern_match_literal_float_cov3() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = 3.14
             match x {
                 3.14 => "matched",
                 _ => "not matched"
             }
-        "#);
+        "#,
+        );
     }
 
     #[test]
     fn test_pattern_match_nested_tuple_cov3() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = ((1, 2), (3, 4))
             match x {
                 ((a, b), (c, d)) => a + b + c + d,
                 _ => 0
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Global Bindings ==============
@@ -14115,7 +14883,8 @@ mod coverage_tests {
         let interp = Interpreter::new();
         let left = Value::Integer(10);
         let right = Value::Integer(5);
-        let result = interp.apply_binary_op(&left, crate::frontend::ast::BinaryOp::Subtract, &right);
+        let result =
+            interp.apply_binary_op(&left, crate::frontend::ast::BinaryOp::Subtract, &right);
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 5),
             _ => {}
@@ -14183,13 +14952,15 @@ mod coverage_tests {
     #[test]
     fn test_match_list_pattern() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3]
             match arr {
                 [a, b, c] => a + b + c,
                 _ => 0
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Tuple Pattern Match ==============
@@ -14197,13 +14968,15 @@ mod coverage_tests {
     #[test]
     fn test_match_tuple_pattern() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let tup = (1, 2, 3)
             match tup {
                 (a, b, c) => a + b + c,
                 _ => 0
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== For Loop Variants ==============
@@ -14211,13 +14984,15 @@ mod coverage_tests {
     #[test]
     fn test_for_loop_with_index() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let mut sum = 0
             for (i, x) in [1, 2, 3].enumerate() {
                 sum = sum + i + x
             }
             sum
-        "#);
+        "#,
+        );
     }
 
     // ============== While Loop Variants ==============
@@ -14225,13 +15000,15 @@ mod coverage_tests {
     #[test]
     fn test_while_loop_false() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let mut x = 0
             while false {
                 x = x + 1
             }
             x
-        "#);
+        "#,
+        );
     }
 
     // ============== Match with Multiple Guards ==============
@@ -14239,14 +15016,16 @@ mod coverage_tests {
     #[test]
     fn test_match_multiple_guards() {
         let mut interp = Interpreter::new();
-        let _result = interp.eval_string(r#"
+        let _result = interp.eval_string(
+            r#"
             let x = 10
             match x {
                 n if n < 5 => "small",
                 n if n < 15 => "medium",
                 _ => "large"
             }
-        "#);
+        "#,
+        );
     }
 
     // ============== Nested Function Calls ==============
@@ -14268,12 +15047,14 @@ mod coverage_tests {
     #[test]
     fn test_recursive_factorial_cov3() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"
+        let _ = interp.eval_string(
+            r#"
             fn factorial(n) {
                 if n <= 1 { 1 }
                 else { n * factorial(n - 1) }
             }
-        "#);
+        "#,
+        );
         let result = interp.eval_string("factorial(5)");
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 120),
@@ -14742,8 +15523,9 @@ mod coverage_tests {
     #[test]
     fn test_pattern_matches_literal() {
         let mut interp = Interpreter::new();
-        let pattern =
-            crate::frontend::ast::Pattern::Literal(crate::frontend::ast::Literal::Integer(42, None));
+        let pattern = crate::frontend::ast::Pattern::Literal(
+            crate::frontend::ast::Literal::Integer(42, None),
+        );
         let result = interp.pattern_matches(&pattern, &Value::Integer(42));
         assert!(result.is_ok());
         assert!(result.unwrap());
@@ -14752,8 +15534,9 @@ mod coverage_tests {
     #[test]
     fn test_pattern_matches_literal_no_match() {
         let mut interp = Interpreter::new();
-        let pattern =
-            crate::frontend::ast::Pattern::Literal(crate::frontend::ast::Literal::Integer(42, None));
+        let pattern = crate::frontend::ast::Pattern::Literal(
+            crate::frontend::ast::Literal::Integer(42, None),
+        );
         let result = interp.pattern_matches(&pattern, &Value::Integer(43));
         assert!(result.is_ok());
         assert!(!result.unwrap());
@@ -15149,13 +15932,15 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let _ = interp.eval_string("let mut counter = 0");
         let _ = interp.eval_string("let mut opt = Some(3)");
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             while let Some(x) = opt {
                 counter = counter + x
                 if x > 1 { opt = Some(x - 1) } else { opt = None }
             }
             counter
-        "#);
+        "#,
+        );
         // 3 + 2 + 1 = 6
         let _ = result;
     }
@@ -15535,7 +16320,8 @@ mod coverage_tests {
     fn test_for_loop_with_break() {
         let mut interp = Interpreter::new();
         let _ = interp.eval_string("let mut sum = 0");
-        let _ = interp.eval_string("for x in [1, 2, 3, 4, 5] { if x > 3 { break }; sum = sum + x }");
+        let _ =
+            interp.eval_string("for x in [1, 2, 3, 4, 5] { if x > 3 { break }; sum = sum + x }");
         let result = interp.eval_string("sum");
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 6), // 1+2+3
@@ -15547,7 +16333,8 @@ mod coverage_tests {
     fn test_for_loop_with_continue() {
         let mut interp = Interpreter::new();
         let _ = interp.eval_string("let mut sum = 0");
-        let _ = interp.eval_string("for x in [1, 2, 3, 4, 5] { if x == 3 { continue }; sum = sum + x }");
+        let _ = interp
+            .eval_string("for x in [1, 2, 3, 4, 5] { if x == 3 { continue }; sum = sum + x }");
         let result = interp.eval_string("sum");
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 12), // 1+2+4+5
@@ -15574,7 +16361,8 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let _ = interp.eval_string("let mut x = 0");
         let _ = interp.eval_string("let mut sum = 0");
-        let _ = interp.eval_string("while x < 5 { x = x + 1; if x == 3 { continue }; sum = sum + x }");
+        let _ =
+            interp.eval_string("while x < 5 { x = x + 1; if x == 3 { continue }; sum = sum + x }");
         let result = interp.eval_string("sum");
         match result {
             Ok(Value::Integer(n)) => assert_eq!(n, 12), // 1+2+4+5
@@ -15746,7 +16534,8 @@ mod coverage_tests {
     #[test]
     fn test_dataframe_filter_basic() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"let df = df { age: [25, 30, 35], name: ["Alice", "Bob", "Carol"] }"#);
+        let _ = interp
+            .eval_string(r#"let df = df { age: [25, 30, 35], name: ["Alice", "Bob", "Carol"] }"#);
         let result = interp.eval_string(r#"df.filter(|row| row.age > 28)"#);
         let _ = result;
     }
@@ -15810,8 +16599,7 @@ mod coverage_tests {
     #[test]
     fn test_compare_values_floats() {
         let interp = Interpreter::new();
-        let result =
-            interp.compare_values(&Value::Float(10.5), &Value::Float(5.5), |a, b| a > b);
+        let result = interp.compare_values(&Value::Float(10.5), &Value::Float(5.5), |a, b| a > b);
         match result {
             Ok(Value::Bool(b)) => assert!(b),
             _ => {}
@@ -15821,8 +16609,7 @@ mod coverage_tests {
     #[test]
     fn test_compare_values_mixed_int_float() {
         let interp = Interpreter::new();
-        let result =
-            interp.compare_values(&Value::Integer(10), &Value::Float(5.5), |a, b| a > b);
+        let result = interp.compare_values(&Value::Integer(10), &Value::Float(5.5), |a, b| a > b);
         match result {
             Ok(Value::Bool(b)) => assert!(b),
             _ => {}
@@ -15832,8 +16619,7 @@ mod coverage_tests {
     #[test]
     fn test_compare_values_mixed_float_int() {
         let interp = Interpreter::new();
-        let result =
-            interp.compare_values(&Value::Float(10.5), &Value::Integer(5), |a, b| a > b);
+        let result = interp.compare_values(&Value::Float(10.5), &Value::Integer(5), |a, b| a > b);
         match result {
             Ok(Value::Bool(b)) => assert!(b),
             _ => {}
@@ -15960,8 +16746,8 @@ mod coverage_tests {
     #[test]
     fn test_dataframe_from_json() {
         let mut interp = Interpreter::new();
-        let result = interp
-            .eval_string(r#"DataFrame::from_json("[{\"name\": \"Alice\", \"age\": 30}]")"#);
+        let result =
+            interp.eval_string(r#"DataFrame::from_json("[{\"name\": \"Alice\", \"age\": 30}]")"#);
         let _ = result;
     }
 
@@ -16044,7 +16830,8 @@ mod coverage_tests {
     #[test]
     fn test_dataframe_filter_with_column_value() {
         let mut interp = Interpreter::new();
-        let _ = interp.eval_string(r#"let df = df { name: ["Alice", "Bob", "Carol"], age: [25, 30, 35] }"#);
+        let _ = interp
+            .eval_string(r#"let df = df { name: ["Alice", "Bob", "Carol"], age: [25, 30, 35] }"#);
         let result = interp.eval_string(r#"df.filter(|row| row.age > 27)"#);
         let _ = result;
     }
@@ -16092,9 +16879,8 @@ mod coverage_tests {
     #[test]
     fn test_dataframe_builder_column() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(
-            r#"DataFrame().column("x", [1, 2, 3]).column("y", [4, 5, 6]).build()"#,
-        );
+        let result = interp
+            .eval_string(r#"DataFrame().column("x", [1, 2, 3]).column("y", [4, 5, 6]).build()"#);
         let _ = result;
     }
 
@@ -17193,7 +17979,8 @@ mod coverage_tests {
     #[test]
     fn test_json_get() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"json_get("{\"nested\": {\"value\": 42}}", "nested.value")"#);
+        let result =
+            interp.eval_string(r#"json_get("{\"nested\": {\"value\": 42}}", "nested.value")"#);
         let _ = result;
     }
 
@@ -18235,7 +19022,7 @@ mod coverage_tests {
         "#,
         );
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18251,7 +19038,7 @@ mod coverage_tests {
         "#,
         );
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18541,8 +19328,7 @@ mod coverage_tests {
     #[test]
     fn test_json_merge_builtin_cov() {
         let mut interp = Interpreter::new();
-        let result =
-            interp.eval_string(r#"json::merge("{\"a\": 1}", "{\"b\": 2}")"#);
+        let result = interp.eval_string(r#"json::merge("{\"a\": 1}", "{\"b\": 2}")"#);
         let _ = result;
     }
 
@@ -18615,7 +19401,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"abs(-42)"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18646,7 +19432,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"floor(3.7)"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18656,7 +19442,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"ceil(3.2)"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18666,7 +19452,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"round(3.5)"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18729,7 +19515,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"len("hello")"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18739,7 +19525,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"len([1, 2, 3, 4, 5])"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -18929,8 +19715,7 @@ mod coverage_tests {
     #[test]
     fn test_dataframe_from_json_cov() {
         let mut interp = Interpreter::new();
-        let result =
-            interp.eval_string(r#"DataFrame::from_json("[{\"a\": 1}, {\"a\": 2}]")"#);
+        let result = interp.eval_string(r#"DataFrame::from_json("[{\"a\": 1}, {\"a\": 2}]")"#);
         let _ = result;
     }
 
@@ -19344,7 +20129,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"int(3.7)"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -19474,7 +20259,7 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"[[1, 2], [3, 4]][0][1]"#);
         match result {
-            Ok(Value::Integer(_n)) => {},
+            Ok(Value::Integer(_n)) => {}
             _ => {}
         }
     }
@@ -20377,57 +21162,68 @@ mod coverage_tests {
     #[test]
     fn test_type_inference_numeric_param() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun double(x) { x * 2 }
             double(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_inference_string_param() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun greet(name) { "Hello " + name }
             greet("World")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_inference_bool_param() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun check(flag) { if flag { 1 } else { 0 } }
             check(true)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_inference_array_param() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun first(arr) { arr[0] }
             first([1, 2, 3])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_inference_function_param() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun apply(f, x) { f(x) }
             apply(|x| x * 2, 5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_control_flow_break_in_nested_loop() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result = 0
             for i in range(0, 5) {
                 for j in range(0, 5) {
@@ -20436,28 +21232,32 @@ mod coverage_tests {
                 }
             }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_control_flow_continue_pattern() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let sum = 0
             for i in range(0, 10) {
                 if i % 2 == 0 { continue }
                 sum = sum + i
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_control_flow_early_return() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun find_first_even(arr) {
                 for x in arr {
                     if x % 2 == 0 { return x }
@@ -20465,27 +21265,31 @@ mod coverage_tests {
                 return -1
             }
             find_first_even([1, 3, 5, 4, 7])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_control_flow_throw_catch() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun safe_div(a, b) {
                 if b == 0 { throw "division by zero" }
                 a / b
             }
             try { safe_div(10, 0) } catch e { -1 }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_expression_match_complex() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             match x {
                 1 => "one",
@@ -20493,28 +21297,32 @@ mod coverage_tests {
                 4..=6 => "four to six",
                 _ => "other"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_expression_if_let() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let maybe = Some(42)
             if let Some(x) = maybe {
                 x * 2
             } else {
                 0
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_expression_while_let() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3]
             let idx = 0
             let sum = 0
@@ -20523,38 +21331,44 @@ mod coverage_tests {
                 idx = idx + 1
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_parser_comments_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             // Line comment
             let x = 1  // trailing comment
             /* Block comment */
             let y = 2
             x + y
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_parser_doc_comments_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             /// This is a doc comment
             fun documented() { 42 }
             documented()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_complex_nested_expression() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result = if true {
                 match 1 {
                     1 => if false { 0 } else { 1 },
@@ -20564,38 +21378,44 @@ mod coverage_tests {
                 3
             }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_closure_capture_env_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let multiplier = 10
             let scale = |x| x * multiplier
             scale(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_recursive_function_call_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun factorial(n) {
                 if n <= 1 { 1 }
                 else { n * factorial(n - 1) }
             }
             factorial(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_mutual_recursion_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun is_even(n) {
                 if n == 0 { true }
                 else { is_odd(n - 1) }
@@ -20605,554 +21425,664 @@ mod coverage_tests {
                 else { is_even(n - 1) }
             }
             is_even(4)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_methods_chain_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "  Hello World  ".trim().to_upper().len()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_method_chain_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [1, 2, 3, 4, 5]
                 .filter(|x| x % 2 == 0)
                 .map(|x| x * 2)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_map_operations_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {"a": 1, "b": 2, "c": 3}
             m.keys()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_map_values_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {"x": 10, "y": 20}
             m.values()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_map_entries_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {"key": "value"}
             m.entries()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_option_some_unwrap_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let opt = Some(42)
             opt.unwrap()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_option_none_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let opt = None
             opt.is_none()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_result_ok_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let res = Ok(42)
             res.is_ok()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_result_err_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let res = Err("error")
             res.is_err()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_pipeline_operator_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             5 |> (|x| x * 2) |> (|x| x + 1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_spread_operator_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = [1, 2]
             let b = [3, 4]
             [...a, ...b]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_destructure_tuple_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let (x, y, z) = (1, 2, 3)
             x + y + z
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_destructure_array_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let [a, b, c] = [10, 20, 30]
             a + b + c
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_destructure_struct_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Point { x: i64, y: i64 }
             let p = Point { x: 1, y: 2 }
             let Point { x, y } = p
             x + y
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_range_inclusive_sum_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let sum = 0
             for i in range(1, 4) {
                 sum = sum + i
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_bitwise_shift_ops_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 8 >> 2
             let b = 2 << 3
             a + b
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_comparison_chain_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             x > 3 && x < 10
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_complex_boolean_expr_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = true
             let b = false
             let c = true
             (a || b) && (c || !b) && !(a && b && c)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_escape_sequences_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = "line1\nline2\ttab"
             s.len()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_raw_string_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = r"no\nescape"
             s
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_interpolation_nested_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             let y = 10
             "{x} + {y} = {x + y}"
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_multiline_string_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = "line 1
 line 2
 line 3"
             s.lines()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_float_operations_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 3.14
             let b = 2.71
             a * b + a / b - a
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_float_comparison_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 1.0 / 3.0
             x > 0.33 && x < 0.34
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_negative_numbers_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = -5
             let b = -3.14
             a + b
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_unary_not_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = true
             !a
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_conditional_assignment_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = if true { 1 } else { 0 }
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_block_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result = {
                 let a = 1
                 let b = 2
                 a + b
             }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_empty_array_methods_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = []
             arr.is_empty()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_push_pop_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3]
             arr.push(4)
             arr.pop()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_reverse_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [1, 2, 3].reverse()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_sort_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [3, 1, 2].sort()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_zip_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [1, 2].zip([3, 4])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_enumerate_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             ["a", "b", "c"].enumerate()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_split_csv_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "a,b,c".split(",")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_replace_word_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "hello world".replace("world", "universe")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_starts_ends_with_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = "hello"
             s.starts_with("he") && s.ends_with("lo")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_repeat_times_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "ab".repeat(3)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_pad_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "5".pad_start(3, "0")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_find_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "hello".find("ll")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_math_pow_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             pow(2.0, 10.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_math_sqrt_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             sqrt(16.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_math_exp_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             exp(1.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_math_log_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             log(10.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_math_log10_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             log10(100.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_of_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             type_of(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_of_string_literal_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             type_of("hello")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_of_array_literal_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             type_of([1, 2, 3])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_of_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             type_of(|x| x)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_assert_eq_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             assert_eq(1, 1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_assert_ne_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             assert_ne(1, 2)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_dbg_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             dbg(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_env_get_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             env_get("PATH")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_struct_default_values_init_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Config {
                 debug: bool = false,
                 level: i64 = 1
             }
             let c = Config {}
             c.debug
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_struct_method_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Counter { count: i64 }
             impl Counter {
                 fun new() { Counter { count: 0 } }
@@ -21161,28 +22091,32 @@ line 3"
             let c = Counter::new()
             c.increment()
             c.count
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_enum_with_fields_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             enum Message {
                 Text(String),
                 Number(i64)
             }
             let m = Message::Text("hello")
             m
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_match_enum_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             enum Color { Red, Green, Blue }
             let c = Color::Red
             match c {
@@ -21190,233 +22124,276 @@ line 3"
                 Color::Green => "green",
                 Color::Blue => "blue"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_for_in_map_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {"a": 1, "b": 2}
             let sum = 0
             for (k, v) in m {
                 sum = sum + v
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_while_with_assignment_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let i = 0
             while (i = i + 1) < 5 {
                 i
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_loop_with_counter_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let i = 0
             loop {
                 i = i + 1
                 if i >= 3 { break }
             }
             i
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_lambda_with_multiple_params_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let add = |a, b, c| a + b + c
             add(1, 2, 3)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_lambda_no_params_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let get_val = || 42
             get_val()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_nested_function_calls_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun a(x) { x + 1 }
             fun b(x) { a(x) * 2 }
             fun c(x) { b(x) - 1 }
             c(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_default_function_params_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun greet(name = "World") { "Hello " + name }
             greet()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_variadic_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun sum(...nums) {
                 let total = 0
                 for n in nums { total = total + n }
                 total
             }
             sum(1, 2, 3, 4, 5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_expression_in_condition_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3]
             if arr.len() > 2 { "long" } else { "short" }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_chained_comparisons_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             1 < x && x < 10
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_complex_arithmetic_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             (1 + 2) * (3 - 4) / (5 + 1) % 3
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_assignment_operators_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 10
             x += 5
             x -= 3
             x *= 2
             x /= 4
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_deeply_nested_arrays_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
             arr[0][1][0]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_map_nested_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {"outer": {"inner": 42}}
             m["outer"]["inner"]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_mixed_collection_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let data = [{"name": "Alice", "age": 30}, {"name": "Bob", "age": 25}]
             data[0]["name"]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_iterator_fold_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [1, 2, 3, 4].fold(0, |acc, x| acc + x)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_iterator_scan_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [1, 2, 3].scan(0, |acc, x| acc + x)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_iterator_partition_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [1, 2, 3, 4, 5].partition(|x| x % 2 == 0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_iterator_group_by_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             [1, 2, 3, 4, 5, 6].group_by(|x| x % 3)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_try_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun may_fail() { throw "error" }
             try { may_fail() } catch e { "caught" }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_try_finally_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let cleanup = false
             try { 1 } finally { cleanup = true }
             cleanup
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -21427,188 +22404,219 @@ line 3"
     #[test]
     fn test_set_literal_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = {1, 2, 3, 2, 1}
             s.len()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_set_operations_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = {1, 2, 3}
             let b = {2, 3, 4}
             a.contains(2)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_tuple_patterns_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let t = (1, "hello", true)
             match t {
                 (x, s, b) => x
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_patterns_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4]
             match arr {
                 [first, ..rest] => first,
                 _ => 0
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_struct_patterns_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Point { x: i64, y: i64 }
             let p = Point { x: 10, y: 20 }
             match p {
                 Point { x: 10, y } => y,
                 _ => 0
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_guard_patterns_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             match x {
                 n if n > 10 => "big",
                 n if n > 0 => "positive",
                 _ => "other"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_or_patterns_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 2
             match x {
                 1 | 2 | 3 => "small",
                 _ => "other"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_range_patterns_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             match x {
                 0..=5 => "low",
                 6..=10 => "mid",
                 _ => "high"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_async_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             async fun fetch_data() {
                 42
             }
             fetch_data()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_await_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             async fun get_value() { 100 }
             async fun main() {
                 let v = await get_value()
                 v
             }
             main()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_use_statement_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             use std::collections::HashMap
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_type_alias_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             type IntList = [i64]
             let x: IntList = [1, 2, 3]
             x.len()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_const_declaration_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             const PI = 3.14159
             const MAX = 100
             PI + MAX
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_static_declaration_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             static COUNTER = 0
             COUNTER
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_trait_definition_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             trait Printable {
                 fun print(self)
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_impl_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Point { x: i64, y: i64 }
             trait Display {
                 fun display(self) -> String
@@ -21620,205 +22628,243 @@ line 3"
             }
             let p = Point { x: 1, y: 2 }
             p.display()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_generic_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun identity<T>(x: T) -> T { x }
             identity(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_generic_struct_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Box<T> { value: T }
             let b = Box { value: 42 }
             b.value
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_where_clause_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun process<T>(x: T) -> T where T: Clone { x }
             process(1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_lifetime_annotation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun longest<'a>(x: &'a str, y: &'a str) -> &'a str {
                 if x.len() > y.len() { x } else { y }
             }
             longest("hello", "world")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_slice_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr[1..3]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_slice_from_start_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr[..3]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_slice_to_end_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr[2..]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_reference_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 42
             let r = &x
             *r
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_mutable_reference_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 42
             let r = &mut x
             *r = 100
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_box_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let b = Box::new(42)
             *b
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_rc_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let r = Rc::new(42)
             Rc::strong_count(&r)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_arc_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = Arc::new(42)
             Arc::strong_count(&a)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_cell_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let c = Cell::new(42)
             c.get()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_refcell_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let r = RefCell::new(42)
             *r.borrow()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_mutex_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = Mutex::new(42)
             *m.lock()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_rwlock_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let rw = RwLock::new(42)
             *rw.read()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_channel_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let (tx, rx) = channel()
             tx.send(42)
             rx.recv()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_labeled_loop_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             'outer: loop {
                 'inner: loop {
                     break 'outer
                 }
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_labeled_while_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let i = 0
             'outer: while i < 10 {
                 let j = 0
@@ -21829,14 +22875,16 @@ line 3"
                 i = i + 1
             }
             i
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_labeled_for_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let sum = 0
             'outer: for i in range(0, 10) {
                 for j in range(0, 10) {
@@ -21845,292 +22893,346 @@ line 3"
                 }
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_ternary_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             let y = if x > 0 { "positive" } else { "non-positive" }
             y
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_elvis_operator_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = None
             x ?? 42
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_safe_navigation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let obj = Some({"name": "Alice"})
             obj?.name
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_not_operator_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = false
             !x && !false
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_bitwise_not_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             ~0xFF
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_xor_operator_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             0b1010 ^ 0b1100
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_compound_xor_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 0b1010
             x ^= 0b1100
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_compound_shift_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 4
             x <<= 2
             x >>= 1
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_compound_and_or_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 0xFF
             x &= 0x0F
             x |= 0xF0
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_compound_mod_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 17
             x %= 5
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_import_multiple_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             use {std::io, std::fs}
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_import_alias_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             use std::collections::HashMap as Map
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_import_glob_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             use std::io::*
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_module_definition_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             mod utils {
                 fun helper() { 42 }
             }
             utils::helper()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_pub_modifier_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             mod inner {
                 pub fun visible() { 1 }
                 fun private() { 2 }
             }
             inner::visible()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_extern_block_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             extern "C" {
                 fun printf(format: *const i8) -> i32
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_attribute_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             #[derive(Debug)]
             struct Point { x: i64, y: i64 }
             Point { x: 1, y: 2 }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_inner_attribute_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             #![allow(unused)]
             let x = 42
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_macro_invocation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             vec![1, 2, 3]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_format_macro_string_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             format!("Hello, {}!", "World")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_println_macro_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             println!("Test: {}", 42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_panic_macro_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun may_panic() {
                 panic!("Something went wrong")
             }
             try { may_panic() } catch e { "caught" }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_assert_macro_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             assert!(true)
             assert!(1 == 1, "Numbers should be equal")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_debug_assert_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             debug_assert!(true)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_unreachable_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun check(x: i64) -> String {
                 if x > 0 { "positive" }
                 else if x < 0 { "negative" }
                 else { "zero" }
             }
             check(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_todo_macro_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun unimplemented() {
                 todo!("Implement later")
             }
             try { unimplemented() } catch e { "caught" }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_method_receiver_self_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Counter { value: i64 }
             impl Counter {
                 fun get(self) -> i64 { self.value }
@@ -22138,28 +23240,32 @@ line 3"
             }
             let c = Counter { value: 0 }
             c.get()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_associated_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Point { x: i64, y: i64 }
             impl Point {
                 fun origin() -> Point { Point { x: 0, y: 0 } }
                 fun new(x: i64, y: i64) -> Point { Point { x, y } }
             }
             Point::origin()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_method_chaining_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Builder { value: String }
             impl Builder {
                 fun new() -> Builder { Builder { value: "" } }
@@ -22169,14 +23275,16 @@ line 3"
                 fun build(self) -> String { self.value }
             }
             Builder::new().add("hello").add(" ").add("world").build()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_operator_overload_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Vec2 { x: f64, y: f64 }
             impl Add for Vec2 {
                 fun add(self, other: Vec2) -> Vec2 {
@@ -22186,28 +23294,32 @@ line 3"
             let a = Vec2 { x: 1.0, y: 2.0 }
             let b = Vec2 { x: 3.0, y: 4.0 }
             a + b
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_index_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct MyArray { data: [i64] }
             impl Index for MyArray {
                 fun index(self, i: usize) -> i64 { self.data[i] }
             }
             let arr = MyArray { data: [1, 2, 3] }
             arr[1]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_iterator_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Counter { count: i64 }
             impl Iterator for Counter {
                 fun next(self) -> Option<i64> {
@@ -22221,154 +23333,178 @@ line 3"
             }
             let c = Counter { count: 0 }
             c.collect()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_from_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Wrapper { value: i64 }
             impl From<i64> for Wrapper {
                 fun from(v: i64) -> Wrapper { Wrapper { value: v } }
             }
             Wrapper::from(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_into_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Num { v: i64 }
             impl Into<i64> for Num {
                 fun into(self) -> i64 { self.v }
             }
             let n = Num { v: 42 }
             n.into()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_clone_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Data { value: i64 }
             impl Clone for Data {
                 fun clone(self) -> Data { Data { value: self.value } }
             }
             let d = Data { value: 42 }
             d.clone()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_default_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Config { level: i64, debug: bool }
             impl Default for Config {
                 fun default() -> Config { Config { level: 1, debug: false } }
             }
             Config::default()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_drop_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Resource { id: i64 }
             impl Drop for Resource {
                 fun drop(self) { println!("Dropping {}", self.id) }
             }
             let r = Resource { id: 1 }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_deref_trait_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct SmartPtr<T> { value: T }
             impl Deref for SmartPtr<i64> {
                 fun deref(self) -> i64 { self.value }
             }
             let p = SmartPtr { value: 42 }
             *p
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_closure_once_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun run_once<F: FnOnce() -> i64>(f: F) -> i64 { f() }
             run_once(|| 42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_closure_mut_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun run_mut<F: FnMut() -> i64>(f: &mut F) -> i64 { f() }
             let count = 0
             let f = || { count += 1; count }
             run_mut(&mut f)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_closure_fn_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun run<F: Fn() -> i64>(f: &F) -> i64 { f() }
             let f = || 42
             run(&f)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_higher_order_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun apply_twice<F: Fn(i64) -> i64>(f: F, x: i64) -> i64 {
                 f(f(x))
             }
             apply_twice(|x| x * 2, 3)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_currying_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun add(a: i64) -> (i64) -> i64 {
                 |b| a + b
             }
             let add5 = add(5)
             add5(10)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_compose_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun compose<F, G>(f: F, g: G) -> (i64) -> i64
                 where F: Fn(i64) -> i64, G: Fn(i64) -> i64
             {
@@ -22376,25 +23512,29 @@ line 3"
             }
             let double_then_add1 = compose(|x| x + 1, |x| x * 2)
             double_then_add1(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_partial_application_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun multiply(a: i64, b: i64) -> i64 { a * b }
             let double = |x| multiply(2, x)
             double(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_memoize_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let cache = {}
             fun fib(n: i64) -> i64 {
                 if cache.contains_key(n) { return cache[n] }
@@ -22403,14 +23543,16 @@ line 3"
                 result
             }
             fib(10)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_lazy_evaluation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Lazy<T> { value: Option<T>, compute: () -> T }
             impl Lazy<i64> {
                 fun get(self) -> i64 {
@@ -22422,14 +23564,16 @@ line 3"
             }
             let lazy = Lazy { value: None, compute: || 42 }
             lazy.get()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_either_type_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             enum Either<L, R> {
                 Left(L),
                 Right(R)
@@ -22439,14 +23583,16 @@ line 3"
                 Either::Left(n) => n,
                 Either::Right(s) => 0
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_state_monad_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct State<S, A> { run: (S) -> (A, S) }
             fun get<S>() -> State<S, S> {
                 State { run: |s| (s, s) }
@@ -22455,14 +23601,16 @@ line 3"
                 State { run: |_| ((), s) }
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_io_monad_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct IO<A> { action: () -> A }
             impl IO<i64> {
                 fun run(self) -> i64 { (self.action)() }
@@ -22472,7 +23620,8 @@ line 3"
             }
             let io = IO { action: || 42 }
             io.run()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22536,11 +23685,13 @@ line 3"
     #[test]
     fn test_block_with_comments_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{
+        let result = interp.eval_string(
+            r#"{
             // This is a comment
             let x = 5
             x + 1
-        }"#);
+        }"#,
+        );
         let _ = result;
     }
 
@@ -22554,11 +23705,13 @@ line 3"
     #[test]
     fn test_object_literal_shorthand_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let name = "test"
             let value = 42
             { name, value }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22572,69 +23725,83 @@ line 3"
     #[test]
     fn test_tuple_destructuring_let_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let (a, b, c) = (1, 2, 3)
             a + b + c
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_slice_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr[1..3]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_slice_from_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr[2..]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_array_slice_to_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr[..3]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_nested_array_index_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [[1, 2], [3, 4], [5, 6]]
             arr[1][0]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_dataframe_from_map_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             DataFrame::from_map({"a": [1, 2, 3], "b": [4, 5, 6]})
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_dataframe_column_access_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let df = DataFrame::from_map({"a": [1, 2, 3]})
             df["a"]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22642,33 +23809,38 @@ line 3"
     #[test]
     fn test_bitwise_operations_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 5
             let b = 3
             let and_result = a & b
             let or_result = a | b
             let xor_result = a ^ b
             and_result + or_result + xor_result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_shift_operations_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 8
             let left = a << 2
             let right = a >> 2
             left + right
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_complex_match_pattern_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let value = [1, 2, 3]
             match value {
                 [] => "empty",
@@ -22677,14 +23849,16 @@ line 3"
                 [x, y, z] => "triple",
                 _ => "many"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_match_guard_condition_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 10
             match x {
                 n if n < 0 => "negative",
@@ -22692,27 +23866,31 @@ line 3"
                 n if n > 0 => "positive",
                 _ => "unknown"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_range_inclusive_loop_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let sum = 0
             for i in 1..=5 {
                 sum = sum + i
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_labeled_break_outer_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result = 0
             @outer: for i in 1..5 {
                 for j in 1..5 {
@@ -22723,14 +23901,16 @@ line 3"
                 }
             }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_labeled_continue_outer_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result = 0
             @outer: for i in 1..4 {
                 for j in 1..4 {
@@ -22741,97 +23921,114 @@ line 3"
                 }
             }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_try_catch_with_type_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             try {
                 let x = 1 / 0
                 x
             } catch e {
                 0
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_assert_with_message_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             assert(true, "This should not fail")
             42
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_pipeline_operator_chain_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun double(x) { x * 2 }
             fun add_one(x) { x + 1 }
             5 |> double |> add_one
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_compose_operator_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun double(x) { x * 2 }
             fun add_one(x) { x + 1 }
             let composed = double >> add_one
             composed(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_null_coalescing_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let maybe_value: Option<i64> = None
             maybe_value ?? 42
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_optional_chaining_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Person { name: String }
             let person: Option<Person> = Some(Person { name: "Alice" })
             person?.name
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_spread_operator_array_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr1 = [1, 2, 3]
             let arr2 = [...arr1, 4, 5]
             arr2
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_spread_operator_object_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let obj1 = { a: 1, b: 2 }
             let obj2 = { ...obj1, c: 3 }
             obj2
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22839,27 +24036,31 @@ line 3"
     #[test]
     fn test_module_definition_math_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             mod math {
                 fun add(a, b) { a + b }
                 fun multiply(a, b) { a * b }
             }
             math::add(2, 3)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_module_nested_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             mod outer {
                 mod inner {
                     fun value() { 42 }
                 }
             }
             outer::inner::value()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22867,30 +24068,36 @@ line 3"
     #[test]
     fn test_result_ok_unwrap_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result: Result<i64, String> = Ok(42)
             result.unwrap()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_result_map_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result: Result<i64, String> = Ok(21)
             result.map(|x| x * 2)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_option_and_then_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let opt: Option<i64> = Some(5)
             opt.and_then(|x| if x > 0 { Some(x * 2) } else { None })
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22898,7 +24105,8 @@ line 3"
     #[test]
     fn test_actor_definition_counter_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             actor Counter {
                 state count: i64 = 0
 
@@ -22911,7 +24119,8 @@ line 3"
                 }
             }
             42
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22919,33 +24128,39 @@ line 3"
     #[test]
     fn test_generic_function_identity_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun identity<T>(x: T) -> T { x }
             identity(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_generic_struct_pair_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Pair<A, B> { first: A, second: B }
             let p = Pair { first: 1, second: "hello" }
             p.first
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_where_clause_clone_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun process<T>(x: T) -> T where T: Clone {
                 x
             }
             process(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22953,20 +24168,24 @@ line 3"
     #[test]
     fn test_string_interpolation_basic_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let name = "World"
             f"Hello, {name}!"
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_string_interpolation_expression_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 5
             f"Result: {x * 2}"
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -22981,19 +24200,22 @@ line 3"
     #[test]
     fn test_async_function_def_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             async fun fetch_data() {
                 42
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_await_expression_async_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             async fun get_value() {
                 42
             }
@@ -23001,7 +24223,8 @@ line 3"
                 await get_value()
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23009,7 +24232,8 @@ line 3"
     #[test]
     fn test_actor_with_state_field_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             actor Bank {
                 state balance: i64 = 1000
 
@@ -23027,14 +24251,16 @@ line 3"
                 }
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_actor_multiple_state_fields_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             actor Player {
                 state name: String = "Unknown"
                 state health: i64 = 100
@@ -23045,7 +24271,8 @@ line 3"
                 }
             }
             1
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23053,32 +24280,38 @@ line 3"
     #[test]
     fn test_division_by_zero_handling_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 10
             let y = 0
             let z = if y != 0 { x / y } else { 0 }
             z
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_option_unwrap_or_default_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let opt: Option<i64> = None
             opt.unwrap_or(99)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_result_unwrap_or_else_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let res: Result<i64, String> = Err("error")
             res.unwrap_or_else(|_| 0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23086,7 +24319,8 @@ line 3"
     #[test]
     fn test_match_tuple_pattern_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let pair = (1, 2)
             match pair {
                 (0, 0) => "origin",
@@ -23094,35 +24328,40 @@ line 3"
                 (0, y) => "y-axis",
                 (x, y) => "somewhere"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_match_or_pattern_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 3
             match x {
                 1 | 2 | 3 => "small",
                 4 | 5 | 6 => "medium",
                 _ => "large"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_match_range_pattern_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 50
             match x {
                 0..=25 => "low",
                 26..=75 => "medium",
                 _ => "high"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23130,38 +24369,44 @@ line 3"
     #[test]
     fn test_closure_with_multiple_captures_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 1
             let b = 2
             let c = 3
             let f = || a + b + c
             f()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_closure_as_argument_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun apply(f: (i64) -> i64, x: i64) -> i64 {
                 f(x)
             }
             apply(|x| x * 2, 21)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_closure_returning_closure_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun make_adder(n: i64) -> (i64) -> i64 {
                 |x| x + n
             }
             let add5 = make_adder(5)
             add5(10)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23169,31 +24414,37 @@ line 3"
     #[test]
     fn test_map_filter_chain_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr.map(|x| x * 2).filter(|x| x > 5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_fold_operation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr.fold(0, |acc, x| acc + x)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_zip_operation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = [1, 2, 3]
             let b = [4, 5, 6]
             a.zip(b)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23201,23 +24452,27 @@ line 3"
     #[test]
     fn test_explicit_type_annotation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x: i64 = 42
             let y: f64 = 3.14
             let z: String = "hello"
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_generic_type_annotation_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr: Vec<i64> = [1, 2, 3]
             let map: HashMap<String, i64> = {"a": 1, "b": 2}
             arr.len()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23225,7 +24480,8 @@ line 3"
     #[test]
     fn test_nested_loops_with_break_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let result = 0
             for i in 0..10 {
                 for j in 0..10 {
@@ -23238,34 +24494,39 @@ line 3"
                 }
             }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_loop_with_return_value_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = loop {
                 let value = 42
                 break value
             }
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_while_let_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let mut stack: Vec<i64> = [1, 2, 3]
             let mut sum = 0
             while let Some(x) = stack.pop() {
                 sum = sum + x
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23273,7 +24534,8 @@ line 3"
     #[test]
     fn test_struct_with_methods_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Rectangle {
                 width: f64,
                 height: f64
@@ -23288,14 +24550,16 @@ line 3"
             }
             let rect = Rectangle { width: 10.0, height: 5.0 }
             rect.area()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_struct_static_method_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Point { x: f64, y: f64 }
             impl Point {
                 fun origin() -> Point {
@@ -23307,7 +24571,8 @@ line 3"
             }
             let p = Point::new(3.0, 4.0)
             p.x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23315,7 +24580,8 @@ line 3"
     #[test]
     fn test_enum_with_data_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             enum Message {
                 Quit,
                 Move { x: i64, y: i64 },
@@ -23329,20 +24595,23 @@ line 3"
                 Message::Write(s) => s.len(),
                 Message::ChangeColor(r, g, b) => r + g + b
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_enum_option_methods_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let some_val: Option<i64> = Some(42)
             let none_val: Option<i64> = None
             let is_some = some_val.is_some()
             let is_none = none_val.is_none()
             is_some && is_none
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23350,7 +24619,8 @@ line 3"
     #[test]
     fn test_trait_definition_and_impl_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             trait Display {
                 fun display(self) -> String
             }
@@ -23362,14 +24632,16 @@ line 3"
             }
             let p = Person { name: "Alice", age: 30 }
             p.display()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
     #[test]
     fn test_multiple_trait_impl_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             trait Add<T> {
                 fun add(self, other: T) -> T
             }
@@ -23385,7 +24657,8 @@ line 3"
             let a = Number { value: 5 }
             let b = Number { value: 3 }
             a.add(b).value
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23393,10 +24666,12 @@ line 3"
     #[test]
     fn test_json_stringify_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let data = {"name": "test", "value": 42}
             json_stringify(data)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23404,10 +24679,12 @@ line 3"
     #[test]
     fn test_json_pretty_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let data = {"key": "value"}
             json_pretty(data)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23415,9 +24692,11 @@ line 3"
     #[test]
     fn test_json_type_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             json_type("{}")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23425,11 +24704,13 @@ line 3"
     #[test]
     fn test_json_merge_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = {"x": 1}
             let b = {"y": 2}
             json_merge(a, b)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23437,10 +24718,12 @@ line 3"
     #[test]
     fn test_json_get_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let data = {"nested": {"value": 100}}
             json_get(data, "nested.value")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23448,10 +24731,12 @@ line 3"
     #[test]
     fn test_json_set_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let data = {"key": 1}
             json_set(data, "key", 2)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23459,9 +24744,11 @@ line 3"
     #[test]
     fn test_path_is_absolute_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_is_absolute("/home/user")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23469,9 +24756,11 @@ line 3"
     #[test]
     fn test_path_is_relative_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_is_relative("./relative/path")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23479,9 +24768,11 @@ line 3"
     #[test]
     fn test_path_with_extension_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_with_extension("file.txt", "md")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23489,9 +24780,11 @@ line 3"
     #[test]
     fn test_path_with_file_name_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_with_file_name("/path/to/old.txt", "new.txt")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23499,9 +24792,11 @@ line 3"
     #[test]
     fn test_path_components_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_components("/home/user/file.txt")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23509,9 +24804,11 @@ line 3"
     #[test]
     fn test_path_normalize_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_normalize("/home/../home/user/./file.txt")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23519,9 +24816,11 @@ line 3"
     #[test]
     fn test_string_from_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             String::from("hello")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23529,9 +24828,11 @@ line 3"
     #[test]
     fn test_int_conversion_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             int(3.14)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23539,9 +24840,11 @@ line 3"
     #[test]
     fn test_float_conversion_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             float(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23549,9 +24852,11 @@ line 3"
     #[test]
     fn test_bool_conversion_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             bool(1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23559,9 +24864,11 @@ line 3"
     #[test]
     fn test_parse_int_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             parse_int("42")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23569,9 +24876,11 @@ line 3"
     #[test]
     fn test_parse_float_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             parse_float("3.14")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23579,9 +24888,11 @@ line 3"
     #[test]
     fn test_str_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             str(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23589,9 +24900,11 @@ line 3"
     #[test]
     fn test_to_string_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             to_string(100)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23599,9 +24912,11 @@ line 3"
     #[test]
     fn test_assert_eq_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             assert_eq(1, 1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23609,9 +24924,11 @@ line 3"
     #[test]
     fn test_is_nil_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             is_nil(nil)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23619,9 +24936,11 @@ line 3"
     #[test]
     fn test_timestamp_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             timestamp()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23629,9 +24948,11 @@ line 3"
     #[test]
     fn test_chrono_utc_now_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             chrono_utc_now()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23639,9 +24960,11 @@ line 3"
     #[test]
     fn test_asin_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             asin(0.5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23649,9 +24972,11 @@ line 3"
     #[test]
     fn test_acos_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             acos(0.5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23659,9 +24984,11 @@ line 3"
     #[test]
     fn test_atan_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             atan(1.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23669,9 +24996,11 @@ line 3"
     #[test]
     fn test_atan2_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             atan2(1.0, 1.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23679,9 +25008,11 @@ line 3"
     #[test]
     fn test_sinh_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             sinh(1.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23689,9 +25020,11 @@ line 3"
     #[test]
     fn test_cosh_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             cosh(1.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23699,9 +25032,11 @@ line 3"
     #[test]
     fn test_tanh_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             tanh(0.5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23709,9 +25044,11 @@ line 3"
     #[test]
     fn test_log2_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             log2(8.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23719,9 +25056,11 @@ line 3"
     #[test]
     fn test_ln_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             ln(2.718281828)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23729,9 +25068,11 @@ line 3"
     #[test]
     fn test_trunc_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             trunc(3.9)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23739,9 +25080,11 @@ line 3"
     #[test]
     fn test_fract_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fract(3.14)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23749,9 +25092,11 @@ line 3"
     #[test]
     fn test_signum_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             signum(-42.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23759,9 +25104,11 @@ line 3"
     #[test]
     fn test_clamp_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             clamp(5.0, 0.0, 10.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23769,9 +25116,11 @@ line 3"
     #[test]
     fn test_hypot_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             hypot(3.0, 4.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23779,9 +25128,11 @@ line 3"
     #[test]
     fn test_cbrt_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             cbrt(27.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23789,9 +25140,11 @@ line 3"
     #[test]
     fn test_sleep_short_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             sleep(1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23799,14 +25152,16 @@ line 3"
     #[test]
     fn test_enumerate_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let items = ["a", "b", "c"]
             let result = []
             for i, item in enumerate(items) {
                 result = result + [[i, item]]
             }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23814,11 +25169,13 @@ line 3"
     #[test]
     fn test_zip_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = [1, 2, 3]
             let b = ["a", "b", "c"]
             zip(a, b)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23826,10 +25183,12 @@ line 3"
     #[test]
     fn test_sort_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [3, 1, 4, 1, 5]
             sort(arr)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23837,10 +25196,12 @@ line 3"
     #[test]
     fn test_pop_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3]
             pop(arr)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23848,10 +25209,12 @@ line 3"
     #[test]
     fn test_push_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2]
             push(arr, 3)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23859,9 +25222,11 @@ line 3"
     #[test]
     fn test_type_of_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             type_of(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23869,9 +25234,11 @@ line 3"
     #[test]
     fn test_type_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             type([1, 2, 3])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23879,9 +25246,11 @@ line 3"
     #[test]
     fn test_range_with_step_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             range(0, 10, 2)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23889,9 +25258,11 @@ line 3"
     #[test]
     fn test_range_reverse_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             range(10, 0, -1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23899,9 +25270,11 @@ line 3"
     #[test]
     fn test_compute_hash_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             compute_hash("test string")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23909,9 +25282,11 @@ line 3"
     #[test]
     fn test_fs_metadata_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fs_metadata(".")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23919,9 +25294,11 @@ line 3"
     #[test]
     fn test_fs_read_dir_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fs_read_dir(".")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23929,9 +25306,11 @@ line 3"
     #[test]
     fn test_fs_is_file_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fs_is_file("Cargo.toml")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23939,9 +25318,11 @@ line 3"
     #[test]
     fn test_fs_canonicalize_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fs_canonicalize(".")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23949,9 +25330,11 @@ line 3"
     #[test]
     fn test_path_canonicalize_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_canonicalize(".")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23959,9 +25342,11 @@ line 3"
     #[test]
     fn test_glob_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             glob("*.toml")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23969,9 +25354,11 @@ line 3"
     #[test]
     fn test_search_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             search(".", "*.rs")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23979,9 +25366,11 @@ line 3"
     #[test]
     fn test_json_validate_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             json_validate("{\"key\": \"value\"}")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -23989,10 +25378,12 @@ line 3"
     #[test]
     fn test_env_vars_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let vars = env_vars()
             len(vars) > 0
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24000,9 +25391,11 @@ line 3"
     #[test]
     fn test_env_temp_dir_fn_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             env_temp_dir()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24010,9 +25403,11 @@ line 3"
     #[test]
     fn test_dbg_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             dbg(42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24020,9 +25415,11 @@ line 3"
     #[test]
     fn test_print_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             print("test")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24030,9 +25427,11 @@ line 3"
     #[test]
     fn test_println_format_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             println("value: {}", 42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24040,9 +25439,11 @@ line 3"
     #[test]
     fn test_path_join_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_join("/home", "user")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24050,9 +25451,11 @@ line 3"
     #[test]
     fn test_path_join_many_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_join_many(["/", "home", "user", "file.txt"])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24060,9 +25463,11 @@ line 3"
     #[test]
     fn test_path_parent_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_parent("/home/user/file.txt")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24070,9 +25475,11 @@ line 3"
     #[test]
     fn test_path_file_name_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_file_name("/home/user/file.txt")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24080,9 +25487,11 @@ line 3"
     #[test]
     fn test_path_file_stem_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_file_stem("/home/user/file.txt")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24090,9 +25499,11 @@ line 3"
     #[test]
     fn test_path_extension_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_extension("/home/user/file.txt")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24100,9 +25511,11 @@ line 3"
     #[test]
     fn test_string_new_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             String::new()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24110,9 +25523,11 @@ line 3"
     #[test]
     fn test_string_from_utf8_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             String::from_utf8([72, 101, 108, 108, 111])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24120,10 +25535,12 @@ line 3"
     #[test]
     fn test_file_open_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let f = file_open("Cargo.toml", "r")
             f
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24131,10 +25548,12 @@ line 3"
     #[test]
     fn test_open_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let f = open("Cargo.toml")
             f
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24142,10 +25561,12 @@ line 3"
     #[test]
     fn test_env_args_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let args = env_args()
             len(args) >= 0
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24153,9 +25574,11 @@ line 3"
     #[test]
     fn test_env_var_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             env_var("PATH")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24163,9 +25586,11 @@ line 3"
     #[test]
     fn test_env_current_dir_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             env_current_dir()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24173,7 +25598,8 @@ line 3"
     #[test]
     fn test_append_file_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let tmp = env_temp_dir()
             let path = path_join(tmp, "test_append.txt")
             fs_write(path, "line1\n")
@@ -24181,7 +25607,8 @@ line 3"
             let content = fs_read(path)
             fs_remove_file(path)
             content
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24189,9 +25616,11 @@ line 3"
     #[test]
     fn test_fs_exists_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fs_exists("Cargo.toml")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24199,14 +25628,16 @@ line 3"
     #[test]
     fn test_fs_create_dir_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let tmp = env_temp_dir()
             let path = path_join(tmp, "test_dir_v2")
             fs_create_dir(path)
             let exists = fs_exists(path)
             fs_remove_dir(path)
             exists
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24214,9 +25645,11 @@ line 3"
     #[test]
     fn test_read_file_unwrapped_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             read_file("Cargo.toml")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24224,9 +25657,11 @@ line 3"
     #[test]
     fn test_dataframe_new_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             DataFrame::new()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24234,9 +25669,11 @@ line 3"
     #[test]
     fn test_dataframe_from_csv_string_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             DataFrame::from_csv_string("a,b\n1,2\n3,4")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24244,14 +25681,16 @@ line 3"
     #[test]
     fn test_json_read_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let tmp = env_temp_dir()
             let path = path_join(tmp, "test_json.json")
             json_write(path, {"key": "value"})
             let data = json_read(path)
             fs_remove_file(path)
             data
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24259,9 +25698,11 @@ line 3"
     #[test]
     fn test_assert_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             assert(true)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24269,10 +25710,12 @@ line 3"
     #[test]
     fn test_random_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let r = random()
             r >= 0.0 && r < 1.0
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24280,9 +25723,11 @@ line 3"
     #[test]
     fn test_floor_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             floor(3.7)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24290,9 +25735,11 @@ line 3"
     #[test]
     fn test_ceil_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             ceil(3.2)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24300,9 +25747,11 @@ line 3"
     #[test]
     fn test_round_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             round(3.5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24310,9 +25759,11 @@ line 3"
     #[test]
     fn test_abs_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             abs(-42)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24320,9 +25771,11 @@ line 3"
     #[test]
     fn test_min_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             min(3, 5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24330,9 +25783,11 @@ line 3"
     #[test]
     fn test_max_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             max(3, 5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24340,9 +25795,11 @@ line 3"
     #[test]
     fn test_sqrt_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             sqrt(16.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24350,9 +25807,11 @@ line 3"
     #[test]
     fn test_pow_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             pow(2.0, 3.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24360,9 +25819,11 @@ line 3"
     #[test]
     fn test_sin_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             sin(0.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24370,9 +25831,11 @@ line 3"
     #[test]
     fn test_cos_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             cos(0.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24380,9 +25843,11 @@ line 3"
     #[test]
     fn test_tan_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             tan(0.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24390,9 +25855,11 @@ line 3"
     #[test]
     fn test_log_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             log(100.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24400,9 +25867,11 @@ line 3"
     #[test]
     fn test_log10_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             log10(100.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24410,9 +25879,11 @@ line 3"
     #[test]
     fn test_exp_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             exp(1.0)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24420,9 +25891,11 @@ line 3"
     #[test]
     fn test_len_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             len([1, 2, 3, 4, 5])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24430,9 +25903,11 @@ line 3"
     #[test]
     fn test_range_one_arg_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             range(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24440,9 +25915,11 @@ line 3"
     #[test]
     fn test_range_two_args_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             range(1, 5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24450,9 +25927,11 @@ line 3"
     #[test]
     fn test_reverse_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             reverse([1, 2, 3])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24460,9 +25939,11 @@ line 3"
     #[test]
     fn test_reverse_string_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             reverse("hello")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24470,9 +25951,11 @@ line 3"
     #[test]
     fn test_json_parse_array_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             json_parse("[1, 2, 3]")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24480,9 +25963,11 @@ line 3"
     #[test]
     fn test_json_parse_object_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             json_parse("{\"a\": 1, \"b\": 2}")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24490,13 +25975,15 @@ line 3"
     #[test]
     fn test_json_write_v2() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let tmp = env_temp_dir()
             let path = path_join(tmp, "test_write.json")
             json_write(path, {"test": true})
             fs_remove_file(path)
             true
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24504,10 +25991,12 @@ line 3"
     #[test]
     fn test_tuple_creation_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let t = (1, "hello", 3.14)
             t
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24515,10 +26004,12 @@ line 3"
     #[test]
     fn test_tuple_destructuring_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let (a, b, c) = (1, 2, 3)
             a + b + c
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24526,10 +26017,12 @@ line 3"
     #[test]
     fn test_nested_tuple_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let t = ((1, 2), (3, 4))
             t
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24537,10 +26030,12 @@ line 3"
     #[test]
     fn test_lambda_multi_param_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let add = |a, b, c| a + b + c
             add(1, 2, 3)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24548,11 +26043,13 @@ line 3"
     #[test]
     fn test_lambda_closure_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 10
             let add_x = |y| x + y
             add_x(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24560,9 +26057,11 @@ line 3"
     #[test]
     fn test_chained_methods_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "  hello world  ".trim().to_uppercase()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24570,9 +26069,11 @@ line 3"
     #[test]
     fn test_complex_binary_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             (1 + 2) * (3 - 4) / 5 + 6 % 7
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24580,9 +26081,11 @@ line 3"
     #[test]
     fn test_comparison_chain_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             1 < 2 && 2 < 3 && 3 < 4
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24590,10 +26093,12 @@ line 3"
     #[test]
     fn test_array_slice_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             arr[1..3]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24601,9 +26106,11 @@ line 3"
     #[test]
     fn test_string_index_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             "hello"[0]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24611,10 +26118,12 @@ line 3"
     #[test]
     fn test_map_literal_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {"a": 1, "b": 2, "c": 3}
             m["a"]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24622,10 +26131,12 @@ line 3"
     #[test]
     fn test_set_literal_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = {1, 2, 3}
             s
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24633,14 +26144,16 @@ line 3"
     #[test]
     fn test_match_expression_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 2
             match x {
                 1 => "one",
                 2 => "two",
                 _ => "other"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24648,14 +26161,16 @@ line 3"
     #[test]
     fn test_match_with_guard_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 10
             match x {
                 n if n > 5 => "big",
                 n if n <= 5 => "small",
                 _ => "unknown"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24663,7 +26178,8 @@ line 3"
     #[test]
     fn test_if_else_chain_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 2
             if x == 1 {
                 "one"
@@ -24674,7 +26190,8 @@ line 3"
             } else {
                 "other"
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24682,7 +26199,8 @@ line 3"
     #[test]
     fn test_while_break_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let mut i = 0
             while true {
                 i = i + 1
@@ -24691,7 +26209,8 @@ line 3"
                 }
             }
             i
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24699,7 +26218,8 @@ line 3"
     #[test]
     fn test_while_continue_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let mut sum = 0
             let mut i = 0
             while i < 10 {
@@ -24710,7 +26230,8 @@ line 3"
                 sum = sum + i
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24718,13 +26239,15 @@ line 3"
     #[test]
     fn test_for_range_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let mut sum = 0
             for i in 0..10 {
                 sum = sum + i
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24732,7 +26255,8 @@ line 3"
     #[test]
     fn test_nested_loop_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let mut sum = 0
             for i in 0..3 {
                 for j in 0..3 {
@@ -24740,7 +26264,8 @@ line 3"
                 }
             }
             sum
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24748,12 +26273,14 @@ line 3"
     #[test]
     fn test_function_default_params_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun greet(name: String = "World") -> String {
                 f"Hello, {name}!"
             }
             greet()
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24761,7 +26288,8 @@ line 3"
     #[test]
     fn test_function_early_return_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun check(x: i64) -> String {
                 if x < 0 {
                     return "negative"
@@ -24772,7 +26300,8 @@ line 3"
                 "positive"
             }
             check(-5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24780,7 +26309,8 @@ line 3"
     #[test]
     fn test_struct_with_methods_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             struct Counter {
                 value: i64
             }
@@ -24794,7 +26324,8 @@ line 3"
             }
             let c = Counter::new()
             c.increment().value
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24802,7 +26333,8 @@ line 3"
     #[test]
     fn test_enum_variants_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             enum Color {
                 Red,
                 Green,
@@ -24810,7 +26342,8 @@ line 3"
             }
             let c = Color::Red
             c
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24818,11 +26351,13 @@ line 3"
     #[test]
     fn test_string_interpolation_complex_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 10
             let y = 20
             f"x = {x}, y = {y}, sum = {x + y}"
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24830,11 +26365,13 @@ line 3"
     #[test]
     fn test_array_methods_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5]
             let doubled = arr.map(|x| x * 2)
             doubled
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24842,11 +26379,13 @@ line 3"
     #[test]
     fn test_filter_reduce_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3, 4, 5, 6]
             let evens = arr.filter(|x| x % 2 == 0)
             evens
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24854,13 +26393,15 @@ line 3"
     #[test]
     fn test_string_methods_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = "hello world"
             let upper = s.to_uppercase()
             let replaced = s.replace("world", "rust")
             let split = s.split(" ")
             split
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24868,13 +26409,15 @@ line 3"
     #[test]
     fn test_option_handling_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let opt = Some(42)
             match opt {
                 Some(x) => x,
                 None => 0
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24882,7 +26425,8 @@ line 3"
     #[test]
     fn test_try_expression_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun might_fail() -> Result<i64, String> {
                 Ok(42)
             }
@@ -24890,7 +26434,8 @@ line 3"
                 Ok(x) => x,
                 Err(e) => 0
             }
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24898,14 +26443,16 @@ line 3"
     #[test]
     fn test_bitwise_ops_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 0b1010
             let b = 0b1100
             let and = a & b
             let or = a | b
             let xor = a ^ b
             and
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24913,12 +26460,14 @@ line 3"
     #[test]
     fn test_unary_ops_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = -5
             let y = !true
             let z = -(-10)
             z
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24926,13 +26475,15 @@ line 3"
     #[test]
     fn test_type_annotations_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x: i64 = 42
             let y: f64 = 3.14
             let z: String = "hello"
             let b: bool = true
             b
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24940,13 +26491,15 @@ line 3"
     #[test]
     fn test_complex_literals_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let hex = 0xFF
             let oct = 0o77
             let bin = 0b1111
             let sci = 1.5e10
             hex
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24954,10 +26507,12 @@ line 3"
     #[test]
     fn test_escape_sequences_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = "line1\nline2\ttabbed\"quoted\\"
             s
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24965,11 +26520,13 @@ line 3"
     #[test]
     fn test_unicode_strings_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let emoji = "Hello 🌍 World 🚀"
             let cjk = "你好世界"
             len(emoji)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24977,7 +26534,8 @@ line 3"
     #[test]
     fn test_recursive_function_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun factorial(n: i64) -> i64 {
                 if n <= 1 {
                     1
@@ -24986,7 +26544,8 @@ line 3"
                 }
             }
             factorial(5)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -24994,13 +26553,15 @@ line 3"
     #[test]
     fn test_higher_order_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             fun apply(f, x) {
                 f(x)
             }
             let double = |x| x * 2
             apply(double, 21)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25008,10 +26569,12 @@ line 3"
     #[test]
     fn test_list_comprehension_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let squares = [x * x for x in range(1, 6)]
             squares
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25019,10 +26582,12 @@ line 3"
     #[test]
     fn test_dict_comprehension_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let d = {str(x): x * x for x in range(1, 4)}
             d
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25030,10 +26595,12 @@ line 3"
     #[test]
     fn test_set_comprehension_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = {x * 2 for x in range(1, 5)}
             s
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25041,11 +26608,13 @@ line 3"
     #[test]
     fn test_conditional_expr_v3() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let x = 10
             let result = if x > 5 { "big" } else { "small" }
             result
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25053,9 +26622,11 @@ line 3"
     #[test]
     fn test_len_string_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             len("hello world")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25063,9 +26634,11 @@ line 3"
     #[test]
     fn test_len_map_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             len({"a": 1, "b": 2})
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25073,9 +26646,11 @@ line 3"
     #[test]
     fn test_len_set_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             len({1, 2, 3, 4})
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25083,7 +26658,8 @@ line 3"
     #[test]
     fn test_type_of_various_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let t1 = type_of(42)
             let t2 = type_of(3.14)
             let t3 = type_of("hello")
@@ -25091,7 +26667,8 @@ line 3"
             let t5 = type_of([1, 2, 3])
             let t6 = type_of({"a": 1})
             [t1, t2, t3, t4, t5, t6]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25099,12 +26676,14 @@ line 3"
     #[test]
     fn test_abs_integer_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = abs(-100)
             let b = abs(100)
             let c = abs(0)
             [a, b, c]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25112,12 +26691,14 @@ line 3"
     #[test]
     fn test_abs_float_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = abs(-3.14)
             let b = abs(3.14)
             let c = abs(0.0)
             [a, b, c]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25125,10 +26706,12 @@ line 3"
     #[test]
     fn test_min_array_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [5, 2, 8, 1, 9]
             min(arr)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25136,10 +26719,12 @@ line 3"
     #[test]
     fn test_max_array_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [5, 2, 8, 1, 9]
             max(arr)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25147,10 +26732,12 @@ line 3"
     #[test]
     fn test_sort_floats_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [3.14, 1.41, 2.71]
             sort(arr)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25158,10 +26745,12 @@ line 3"
     #[test]
     fn test_sort_strings_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = ["banana", "apple", "cherry"]
             sort(arr)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25169,9 +26758,11 @@ line 3"
     #[test]
     fn test_reverse_empty_array_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             reverse([])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25179,10 +26770,12 @@ line 3"
     #[test]
     fn test_pop_empty_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = []
             pop(arr)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25190,9 +26783,11 @@ line 3"
     #[test]
     fn test_parse_int_negative_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             parse_int("-42")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25200,9 +26795,11 @@ line 3"
     #[test]
     fn test_parse_float_scientific_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             parse_float("1.5e-10")
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25210,7 +26807,8 @@ line 3"
     #[test]
     fn test_fs_copy_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let tmp = env_temp_dir()
             let src = path_join(tmp, "test_src.txt")
             let dst = path_join(tmp, "test_dst.txt")
@@ -25220,7 +26818,8 @@ line 3"
             fs_remove_file(src)
             fs_remove_file(dst)
             content
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25228,7 +26827,8 @@ line 3"
     #[test]
     fn test_fs_rename_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let tmp = env_temp_dir()
             let old = path_join(tmp, "test_old.txt")
             let new = path_join(tmp, "test_new.txt")
@@ -25237,7 +26837,8 @@ line 3"
             let content = fs_read(new)
             fs_remove_file(new)
             content
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25245,12 +26846,14 @@ line 3"
     #[test]
     fn test_env_set_remove_var_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             env_set_var("RUCHY_TEST_VAR_V4", "test_value")
             let val = env_var("RUCHY_TEST_VAR_V4")
             env_remove_var("RUCHY_TEST_VAR_V4")
             val
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25258,13 +26861,15 @@ line 3"
     #[test]
     fn test_math_edge_cases_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = floor(0.0)
             let b = ceil(0.0)
             let c = round(0.5)
             let d = sqrt(0.0)
             [a, b, c, d]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25272,12 +26877,14 @@ line 3"
     #[test]
     fn test_pow_edge_cases_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = pow(2.0, 0.0)
             let b = pow(0.0, 2.0)
             let c = pow(1.0, 100.0)
             [a, b, c]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25285,13 +26892,15 @@ line 3"
     #[test]
     fn test_empty_string_methods_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = ""
             let a = s.len()
             let b = s.is_empty()
             let c = s.trim()
             [a, b, c]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25299,7 +26908,8 @@ line 3"
     #[test]
     fn test_single_element_array_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [42]
             let a = len(arr)
             let b = min(arr)
@@ -25307,7 +26917,8 @@ line 3"
             let d = sort(arr)
             let e = reverse(arr)
             [a, b, c]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25315,13 +26926,15 @@ line 3"
     #[test]
     fn test_is_nil_various_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = is_nil(nil)
             let b = is_nil(0)
             let c = is_nil("")
             let d = is_nil([])
             [a, b, c, d]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25329,13 +26942,15 @@ line 3"
     #[test]
     fn test_dbg_complex_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let arr = [1, 2, 3]
             let map = {"key": "value"}
             dbg(arr)
             dbg(map)
             true
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25343,10 +26958,12 @@ line 3"
     #[test]
     fn test_print_format_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             print("value: {}", 42)
             true
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25354,13 +26971,15 @@ line 3"
     #[test]
     fn test_to_string_various_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = to_string(42)
             let b = to_string(3.14)
             let c = to_string(true)
             let d = to_string([1, 2, 3])
             [a, b, c, d]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25368,9 +26987,11 @@ line 3"
     #[test]
     fn test_build_path_components_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             path_join_many(["home", "user", "documents", "file.txt"])
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25378,10 +26999,12 @@ line 3"
     #[test]
     fn test_output_capture_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             println("captured output")
             true
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25389,9 +27012,11 @@ line 3"
     #[test]
     fn test_nested_builtin_calls_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             len(reverse(sort([3, 1, 4, 1, 5])))
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25399,10 +27024,12 @@ line 3"
     #[test]
     fn test_complex_map_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {"a": {"b": {"c": 42}}}
             m["a"]["b"]["c"]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25410,11 +27037,13 @@ line 3"
     #[test]
     fn test_array_concat_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = [1, 2, 3]
             let b = [4, 5, 6]
             a + b
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25422,12 +27051,14 @@ line 3"
     #[test]
     fn test_string_concat_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = "hello"
             let b = " "
             let c = "world"
             a + b + c
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25435,9 +27066,11 @@ line 3"
     #[test]
     fn test_range_floats_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             range(0, 5, 1)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25445,10 +27078,12 @@ line 3"
     #[test]
     fn test_empty_map_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let m = {}
             len(m)
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25456,10 +27091,12 @@ line 3"
     #[test]
     fn test_empty_set_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let s = Set::new()
             s
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25467,7 +27104,8 @@ line 3"
     #[test]
     fn test_comparison_all_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 1 < 2
             let b = 2 > 1
             let c = 1 <= 1
@@ -25475,7 +27113,8 @@ line 3"
             let e = 1 == 1
             let f = 1 != 2
             [a, b, c, d, e, f]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25483,14 +27122,16 @@ line 3"
     #[test]
     fn test_logical_all_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = true && true
             let b = true || false
             let c = !false
             let d = true && false
             let e = false || false
             [a, b, c, d, e]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25498,14 +27139,16 @@ line 3"
     #[test]
     fn test_arithmetic_all_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 10 + 5
             let b = 10 - 5
             let c = 10 * 5
             let d = 10 / 5
             let e = 10 % 3
             [a, b, c, d, e]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25513,13 +27156,15 @@ line 3"
     #[test]
     fn test_float_arithmetic_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 10.5 + 5.5
             let b = 10.5 - 5.5
             let c = 10.5 * 2.0
             let d = 10.5 / 2.0
             [a, b, c, d]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25527,12 +27172,14 @@ line 3"
     #[test]
     fn test_mixed_arithmetic_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let a = 10 + 5.5
             let b = 10.5 + 5
             let c = 10 * 2.5
             [a, b, c]
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25540,14 +27187,16 @@ line 3"
     #[test]
     fn test_compound_assignment_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let mut x = 10
             x += 5
             x -= 3
             x *= 2
             x /= 4
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 
@@ -25555,12 +27204,14 @@ line 3"
     #[test]
     fn test_increment_decrement_v4() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"
+        let result = interp.eval_string(
+            r#"
             let mut x = 10
             x += 1
             x -= 1
             x
-        "#);
+        "#,
+        );
         let _ = result;
     }
 }

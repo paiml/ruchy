@@ -16,10 +16,10 @@
 //! plot(data, title="Squares")
 //! ```
 
-pub mod canvas;
-pub mod widgets;
-pub mod render;
 pub mod api;
+pub mod canvas;
+pub mod render;
+pub mod widgets;
 
 #[cfg(target_arch = "wasm32")]
 pub mod wasm_entry;
@@ -27,10 +27,10 @@ pub mod wasm_entry;
 use std::sync::Arc;
 
 // Re-exports for convenience
-pub use canvas::{Canvas, CellBuffer, Color, Rect, Point, TextStyle};
-pub use widgets::{Brick, BrailleGraph, Meter, Table, Gauge, ProgressBar};
-pub use render::{RenderBackend, DiffRenderer};
-pub use api::{plot, table, meter, gauge, dashboard};
+pub use api::{dashboard, gauge, meter, plot, table};
+pub use canvas::{Canvas, CellBuffer, Color, Point, Rect, TextStyle};
+pub use render::{DiffRenderer, RenderBackend};
+pub use widgets::{BrailleGraph, Brick, Gauge, Meter, ProgressBar, Table};
 
 /// Event result from widget input handling.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -128,13 +128,34 @@ pub struct WidgetSpec {
 /// Widget types.
 #[derive(Debug, Clone)]
 pub enum WidgetKind {
-    BrailleGraph { data: Vec<f64>, mode: GraphMode },
-    Meter { value: f64, max: f64, label: String },
-    Table { headers: Vec<String>, rows: Vec<Vec<String>> },
-    Gauge { value: f64, label: String },
-    Progress { current: u64, total: u64, show_eta: bool },
-    Dashboard { children: Vec<(String, WidgetSpec)> },
-    Text { content: String },
+    BrailleGraph {
+        data: Vec<f64>,
+        mode: GraphMode,
+    },
+    Meter {
+        value: f64,
+        max: f64,
+        label: String,
+    },
+    Table {
+        headers: Vec<String>,
+        rows: Vec<Vec<String>>,
+    },
+    Gauge {
+        value: f64,
+        label: String,
+    },
+    Progress {
+        current: u64,
+        total: u64,
+        show_eta: bool,
+    },
+    Dashboard {
+        children: Vec<(String, WidgetSpec)>,
+    },
+    Text {
+        content: String,
+    },
 }
 
 /// Graph rendering modes.
@@ -252,22 +273,22 @@ pub mod palettes {
 
     /// CPU usage gradient (green → yellow → red).
     pub const CPU: [(f64, Color); 3] = [
-        (0.0, Color::new(0.3, 0.9, 0.5, 1.0)),   // Green
-        (0.7, Color::new(1.0, 0.9, 0.3, 1.0)),   // Yellow
-        (1.0, Color::new(1.0, 0.3, 0.3, 1.0)),   // Red
+        (0.0, Color::new(0.3, 0.9, 0.5, 1.0)), // Green
+        (0.7, Color::new(1.0, 0.9, 0.3, 1.0)), // Yellow
+        (1.0, Color::new(1.0, 0.3, 0.3, 1.0)), // Red
     ];
 
     /// Temperature gradient (blue → white → red).
     pub const TEMP: [(f64, Color); 3] = [
-        (0.0, Color::new(0.3, 0.5, 1.0, 1.0)),   // Blue
-        (0.5, Color::new(1.0, 1.0, 1.0, 1.0)),   // White
-        (1.0, Color::new(1.0, 0.3, 0.3, 1.0)),   // Red
+        (0.0, Color::new(0.3, 0.5, 1.0, 1.0)), // Blue
+        (0.5, Color::new(1.0, 1.0, 1.0, 1.0)), // White
+        (1.0, Color::new(1.0, 0.3, 0.3, 1.0)), // Red
     ];
 
     /// Memory gradient (purple → yellow).
     pub const MEMORY: [(f64, Color); 2] = [
-        (0.0, Color::new(0.6, 0.3, 0.9, 1.0)),   // Purple
-        (1.0, Color::new(1.0, 0.9, 0.3, 1.0)),   // Yellow
+        (0.0, Color::new(0.6, 0.3, 0.9, 1.0)), // Purple
+        (1.0, Color::new(1.0, 0.9, 0.3, 1.0)), // Yellow
     ];
 }
 

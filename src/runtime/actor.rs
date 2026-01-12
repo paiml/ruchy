@@ -1631,11 +1631,10 @@ mod additional_tests {
     /// Test MessageValue nested List
     #[test]
     fn test_message_value_nested_list() {
-        let inner_list = MessageValue::List(vec![
-            MessageValue::Integer(1),
-            MessageValue::Integer(2),
-        ]);
-        let outer_list = MessageValue::List(vec![inner_list, MessageValue::String("end".to_string())]);
+        let inner_list =
+            MessageValue::List(vec![MessageValue::Integer(1), MessageValue::Integer(2)]);
+        let outer_list =
+            MessageValue::List(vec![inner_list, MessageValue::String("end".to_string())]);
 
         match outer_list {
             MessageValue::List(items) => {

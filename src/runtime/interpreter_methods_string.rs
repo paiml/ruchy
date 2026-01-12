@@ -81,7 +81,11 @@ mod tests {
         let mut interp = make_interpreter();
         let s: Arc<str> = Arc::from("hello world");
         let result = interp
-            .eval_string_method(&s, "starts_with", &[Value::from_string("hello".to_string())])
+            .eval_string_method(
+                &s,
+                "starts_with",
+                &[Value::from_string("hello".to_string())],
+            )
             .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
@@ -189,7 +193,11 @@ mod tests {
     #[test]
     fn test_array_method_len() {
         let mut interp = make_interpreter();
-        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = interp.eval_array_method(&arr, "len", &[]).unwrap();
         assert_eq!(result, Value::Integer(3));
     }
@@ -225,7 +233,11 @@ mod tests {
     #[test]
     fn test_array_method_contains() {
         let mut interp = make_interpreter();
-        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = interp
             .eval_array_method(&arr, "contains", &[Value::Integer(2)])
             .unwrap();
@@ -254,7 +266,11 @@ mod tests {
     #[test]
     fn test_array_method_reverse() {
         let mut interp = make_interpreter();
-        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = interp.eval_array_method(&arr, "reverse", &[]).unwrap();
         if let Value::Array(rev) = result {
             assert_eq!(rev[0], Value::Integer(3));
@@ -268,7 +284,11 @@ mod tests {
     #[test]
     fn test_array_method_sum() {
         let mut interp = make_interpreter();
-        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = interp.eval_array_method(&arr, "sum", &[]).unwrap();
         assert_eq!(result, Value::Integer(6));
     }
@@ -276,7 +296,11 @@ mod tests {
     #[test]
     fn test_array_method_max() {
         let mut interp = make_interpreter();
-        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(5), Value::Integer(3)]);
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(5),
+            Value::Integer(3),
+        ]);
         let result = interp.eval_array_method(&arr, "max", &[]).unwrap();
         assert_eq!(result, Value::Integer(5));
     }
@@ -284,7 +308,11 @@ mod tests {
     #[test]
     fn test_array_method_min() {
         let mut interp = make_interpreter();
-        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(5), Value::Integer(3)]);
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(5),
+            Value::Integer(3),
+        ]);
         let result = interp.eval_array_method(&arr, "min", &[]).unwrap();
         assert_eq!(result, Value::Integer(1));
     }

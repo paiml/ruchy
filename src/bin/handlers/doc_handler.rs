@@ -137,9 +137,9 @@ fn extract_docs_recursive(expr: &Expr, docs: &mut Vec<DocItem>, include_private:
                 .leading_comments
                 .iter()
                 .map(|c| match &c.kind {
-                    CommentKind::Line(text)
-                    | CommentKind::Block(text)
-                    | CommentKind::Doc(text) => text.clone(),
+                    CommentKind::Line(text) | CommentKind::Block(text) | CommentKind::Doc(text) => {
+                        text.clone()
+                    }
                 })
                 .collect::<Vec<_>>()
                 .join("\n");

@@ -314,7 +314,10 @@ mod tests {
 
         // 255 in hex is "ff"
         let result_str = result.to_string();
-        assert!(result_str.contains("ff"), "Expected hex format, got {result_str}");
+        assert!(
+            result_str.contains("ff"),
+            "Expected hex format, got {result_str}"
+        );
     }
 }
 
@@ -381,11 +384,17 @@ mod round_132_tests {
     use std::sync::Arc;
 
     fn make_literal_expr(n: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::default(),
+        )
     }
 
     fn make_string_expr(s: &str) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::String(s.to_string())), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::String(s.to_string())),
+            Span::default(),
+        )
     }
 
     // --- format_value_with_spec edge cases ---
@@ -410,7 +419,10 @@ mod round_132_tests {
     #[test]
     fn test_format_i_same_as_d() {
         let val = Value::Integer(123);
-        assert_eq!(format_value_with_spec(&val, "i"), format_value_with_spec(&val, "d"));
+        assert_eq!(
+            format_value_with_spec(&val, "i"),
+            format_value_with_spec(&val, "d")
+        );
     }
 
     #[test]
@@ -657,7 +669,8 @@ mod round_132_tests {
         let result = eval_string_interpolation(&parts, |expr| match &expr.kind {
             ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
             _ => Ok(Value::Nil),
-        }).unwrap();
+        })
+        .unwrap();
         let s = result.to_string();
         assert!(s.contains("1"));
         assert!(s.contains("2"));
@@ -682,7 +695,8 @@ mod round_132_tests {
         let result = eval_string_interpolation(&parts, |expr| match &expr.kind {
             ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
             _ => Ok(Value::Nil),
-        }).unwrap();
+        })
+        .unwrap();
         assert!(result.to_string().contains("42"));
     }
 
@@ -695,7 +709,8 @@ mod round_132_tests {
         let result = eval_string_interpolation(&parts, |expr| match &expr.kind {
             ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
             _ => Ok(Value::Nil),
-        }).unwrap();
+        })
+        .unwrap();
         assert!(result.to_string().contains("ff"));
     }
 
@@ -716,7 +731,8 @@ mod round_132_tests {
         let result = eval_string_interpolation(&parts, |expr| match &expr.kind {
             ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
             _ => Ok(Value::Nil),
-        }).unwrap();
+        })
+        .unwrap();
         let s = result.to_string();
         assert!(s.contains("10")); // hex 16
         assert!(s.contains("10000")); // binary 16
@@ -731,7 +747,8 @@ mod round_132_tests {
         let result = eval_string_interpolation(&parts, |expr| match &expr.kind {
             ExprKind::Literal(Literal::String(s)) => Ok(Value::from_string(s.clone())),
             _ => Ok(Value::Nil),
-        }).unwrap();
+        })
+        .unwrap();
         assert!(result.to_string().contains("日本語"));
     }
 
@@ -739,8 +756,12 @@ mod round_132_tests {
     fn test_interpolation_array_value() {
         let parts = vec![StringPart::Expr(Box::new(make_literal_expr(0)))];
         let result = eval_string_interpolation(&parts, |_| {
-            Ok(Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])))
-        }).unwrap();
+            Ok(Value::Array(Arc::from(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+            ])))
+        })
+        .unwrap();
         assert!(result.to_string().contains("[1, 2]"));
     }
 
@@ -748,8 +769,12 @@ mod round_132_tests {
     fn test_interpolation_tuple_value() {
         let parts = vec![StringPart::Expr(Box::new(make_literal_expr(0)))];
         let result = eval_string_interpolation(&parts, |_| {
-            Ok(Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)])))
-        }).unwrap();
+            Ok(Value::Tuple(Arc::from(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+            ])))
+        })
+        .unwrap();
         assert!(result.to_string().contains("(1, 2)"));
     }
 
@@ -788,7 +813,10 @@ mod round_137_tests {
     use std::sync::Arc;
 
     fn make_literal_expr(n: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::default(),
+        )
     }
 
     // --- format_value_with_spec additional tests ---
@@ -866,7 +894,10 @@ mod round_137_tests {
     #[test]
     fn test_interpolation_object_with_nested_array() {
         let mut map: HashMap<String, Value> = HashMap::new();
-        map.insert("arr".to_string(), Value::Array(Arc::from(vec![Value::Integer(1)])));
+        map.insert(
+            "arr".to_string(),
+            Value::Array(Arc::from(vec![Value::Integer(1)])),
+        );
         let obj = Value::Object(Arc::new(map));
         let result = format_value_for_interpolation(&obj);
         assert!(result.contains("arr"));

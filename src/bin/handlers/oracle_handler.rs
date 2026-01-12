@@ -244,12 +244,7 @@ mod tests {
 
     #[test]
     fn test_handle_oracle_syntax_error() {
-        let result = handle_oracle_command(
-            "error: expected `;`, found `}`",
-            None,
-            "text",
-            false,
-        );
+        let result = handle_oracle_command("error: expected `;`, found `}`", None, "text", false);
         let _ = result;
     }
 }

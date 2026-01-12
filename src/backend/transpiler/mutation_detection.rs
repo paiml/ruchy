@@ -112,8 +112,7 @@ pub fn is_variable_mutated(name: &str, expr: &Expr) -> bool {
             is_variable_mutated(name, func) || args.iter().any(|a| is_variable_mutated(name, a))
         }
         ExprKind::MethodCall { receiver, args, .. } => {
-            is_variable_mutated(name, receiver)
-                || args.iter().any(|a| is_variable_mutated(name, a))
+            is_variable_mutated(name, receiver) || args.iter().any(|a| is_variable_mutated(name, a))
         }
         // Other expressions don't contain mutations
         _ => false,
@@ -693,7 +692,10 @@ mod tests {
 
     #[test]
     fn test_binary_nested_mutation() {
-        let nested = binary(binary(int_lit(1), assign(ident("x"), int_lit(2))), int_lit(3));
+        let nested = binary(
+            binary(int_lit(1), assign(ident("x"), int_lit(2))),
+            int_lit(3),
+        );
         assert!(is_variable_mutated("x", &nested));
     }
 
@@ -727,15 +729,21 @@ mod tests {
         let for_expr = for_expr(
             "i",
             ident("items"),
-            block(vec![if_expr(bool_lit(true), assign(ident("x"), int_lit(1)), None)]),
+            block(vec![if_expr(
+                bool_lit(true),
+                assign(ident("x"), int_lit(1)),
+                None,
+            )]),
         );
         assert!(is_variable_mutated("x", &for_expr));
     }
 
     #[test]
     fn test_while_nested_block_mutation() {
-        let while_expr_nested =
-            while_expr(bool_lit(true), block(vec![block(vec![assign(ident("x"), int_lit(1))])]));
+        let while_expr_nested = while_expr(
+            bool_lit(true),
+            block(vec![block(vec![assign(ident("x"), int_lit(1))])]),
+        );
         assert!(is_variable_mutated("x", &while_expr_nested));
     }
 

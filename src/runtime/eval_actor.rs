@@ -127,7 +127,10 @@ mod tests {
     #[test]
     fn test_extract_message_type_and_data_invalid_no_type() {
         let mut obj = HashMap::new();
-        obj.insert("data".to_string(), Value::Array(Arc::from(vec![].into_boxed_slice())));
+        obj.insert(
+            "data".to_string(),
+            Value::Array(Arc::from(vec![].into_boxed_slice())),
+        );
         let msg = Value::Object(Arc::new(obj));
         let result = extract_message_type_and_data(&msg);
         assert!(result.is_err());
@@ -136,7 +139,10 @@ mod tests {
     #[test]
     fn test_extract_message_type_and_data_wrong_type() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("NotMessage".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("NotMessage".to_string()),
+        );
         let msg = Value::Object(Arc::new(obj));
         let result = extract_message_type_and_data(&msg);
         assert!(result.is_err());
@@ -145,7 +151,10 @@ mod tests {
     #[test]
     fn test_extract_message_missing_type_field() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         // No "type" field
         let msg = Value::Object(Arc::new(obj));
         let (msg_type, _) = extract_message_type_and_data(&msg).unwrap();
@@ -155,7 +164,10 @@ mod tests {
     #[test]
     fn test_extract_message_type_not_string() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         obj.insert("type".to_string(), Value::Integer(123)); // Not a string
         let msg = Value::Object(Arc::new(obj));
         let (msg_type, _) = extract_message_type_and_data(&msg).unwrap();
@@ -165,7 +177,10 @@ mod tests {
     #[test]
     fn test_extract_message_data_not_array() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Message".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Message".to_string()),
+        );
         obj.insert("type".to_string(), Value::from_string("Test".to_string()));
         obj.insert("data".to_string(), Value::Integer(42)); // Not an array
         let msg = Value::Object(Arc::new(obj));
@@ -246,7 +261,10 @@ mod tests {
     #[test]
     fn test_is_actor_definition_true() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Actor".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
         let def = Value::Object(Arc::new(obj));
         assert!(is_actor_definition(&def));
     }
@@ -319,7 +337,10 @@ mod tests {
         let msg = Value::Nil;
         let result = extract_message_type_and_data(&msg);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid message format"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid message format"));
     }
 
     #[test]
@@ -380,7 +401,10 @@ mod tests {
     fn test_create_message_object_unicode_type() {
         let msg = create_message_object("日本語", vec![]);
         if let Value::Object(obj) = msg {
-            assert_eq!(obj.get("type"), Some(&Value::from_string("日本語".to_string())));
+            assert_eq!(
+                obj.get("type"),
+                Some(&Value::from_string("日本語".to_string()))
+            );
         }
     }
 
@@ -388,7 +412,10 @@ mod tests {
     fn test_create_message_object_special_chars() {
         let msg = create_message_object("Type-With_Special.Chars!", vec![]);
         if let Value::Object(obj) = msg {
-            assert_eq!(obj.get("type"), Some(&Value::from_string("Type-With_Special.Chars!".to_string())));
+            assert_eq!(
+                obj.get("type"),
+                Some(&Value::from_string("Type-With_Special.Chars!".to_string()))
+            );
         }
     }
 
@@ -418,7 +445,10 @@ mod tests {
     #[test]
     fn test_is_actor_instance_with_immutable_object() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ActorInstance".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ActorInstance".to_string()),
+        );
         let val = Value::Object(Arc::new(obj)); // Immutable object, not ObjectMut
         assert!(!is_actor_instance(&val));
     }
@@ -451,7 +481,10 @@ mod tests {
     #[test]
     fn test_is_actor_definition_with_mutable_object() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Actor".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
         let val = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj))); // Mutable, not immutable
         assert!(!is_actor_definition(&val));
     }
@@ -484,7 +517,10 @@ mod tests {
     #[test]
     fn test_is_actor_definition_no_type() {
         let mut obj = HashMap::new();
-        obj.insert("name".to_string(), Value::from_string("MyActor".to_string()));
+        obj.insert(
+            "name".to_string(),
+            Value::from_string("MyActor".to_string()),
+        );
         let val = Value::Object(Arc::new(obj));
         assert!(!is_actor_definition(&val));
     }
@@ -493,7 +529,10 @@ mod tests {
     #[test]
     fn test_get_actor_name_with_immutable_object() {
         let mut obj = HashMap::new();
-        obj.insert("__actor_name".to_string(), Value::from_string("Test".to_string()));
+        obj.insert(
+            "__actor_name".to_string(),
+            Value::from_string("Test".to_string()),
+        );
         let val = Value::Object(Arc::new(obj)); // Immutable, not ObjectMut
         assert_eq!(get_actor_name(&val), None);
     }
@@ -524,7 +563,10 @@ mod tests {
     #[test]
     fn test_get_actor_name_unicode() {
         let mut obj = HashMap::new();
-        obj.insert("__actor_name".to_string(), Value::from_string("アクター".to_string()));
+        obj.insert(
+            "__actor_name".to_string(),
+            Value::from_string("アクター".to_string()),
+        );
         let actor = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj)));
         assert_eq!(get_actor_name(&actor), Some("アクター".to_string()));
     }
@@ -532,7 +574,10 @@ mod tests {
     #[test]
     fn test_get_actor_name_empty_string() {
         let mut obj = HashMap::new();
-        obj.insert("__actor_name".to_string(), Value::from_string(String::new()));
+        obj.insert(
+            "__actor_name".to_string(),
+            Value::from_string(String::new()),
+        );
         let actor = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj)));
         assert_eq!(get_actor_name(&actor), Some(String::new()));
     }
@@ -563,7 +608,10 @@ mod round_135_tests {
     fn test_create_message_object_unicode_name() {
         let msg = create_message_object("メッセージ", vec![Value::Integer(42)]);
         if let Value::Object(obj) = msg {
-            assert_eq!(obj.get("type"), Some(&Value::from_string("メッセージ".to_string())));
+            assert_eq!(
+                obj.get("type"),
+                Some(&Value::from_string("メッセージ".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -620,7 +668,10 @@ mod round_135_tests {
     #[test]
     fn test_is_actor_instance_wrong_type_string() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("NotAnActor".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("NotAnActor".to_string()),
+        );
         let val = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj)));
         assert!(!is_actor_instance(&val));
     }
@@ -628,7 +679,10 @@ mod round_135_tests {
     #[test]
     fn test_is_actor_instance_valid() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ActorInstance".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ActorInstance".to_string()),
+        );
         let val = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj)));
         assert!(is_actor_instance(&val));
     }
@@ -647,7 +701,10 @@ mod round_135_tests {
     #[test]
     fn test_is_actor_definition_wrong_type_string() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("NotAnActor".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("NotAnActor".to_string()),
+        );
         let val = Value::Object(Arc::new(obj));
         assert!(!is_actor_definition(&val));
     }
@@ -655,7 +712,10 @@ mod round_135_tests {
     #[test]
     fn test_is_actor_definition_valid() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Actor".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
         let val = Value::Object(Arc::new(obj));
         assert!(is_actor_definition(&val));
     }
@@ -675,7 +735,10 @@ mod round_135_tests {
     #[test]
     fn test_get_actor_name_special_chars() {
         let mut obj = HashMap::new();
-        obj.insert("__actor_name".to_string(), Value::from_string("My-Actor_123".to_string()));
+        obj.insert(
+            "__actor_name".to_string(),
+            Value::from_string("My-Actor_123".to_string()),
+        );
         let actor = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj)));
         assert_eq!(get_actor_name(&actor), Some("My-Actor_123".to_string()));
     }
@@ -684,7 +747,10 @@ mod round_135_tests {
     fn test_get_actor_name_very_long() {
         let long_name = "a".repeat(1000);
         let mut obj = HashMap::new();
-        obj.insert("__actor_name".to_string(), Value::from_string(long_name.clone()));
+        obj.insert(
+            "__actor_name".to_string(),
+            Value::from_string(long_name.clone()),
+        );
         let actor = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj)));
         assert_eq!(get_actor_name(&actor), Some(long_name));
     }
@@ -704,7 +770,10 @@ mod round_135_tests {
 
     #[test]
     fn test_create_message_object_with_multiple_data() {
-        let msg = create_message_object("data_msg", vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let msg = create_message_object(
+            "data_msg",
+            vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        );
         match msg {
             Value::Object(obj) => {
                 assert!(obj.contains_key("type"));

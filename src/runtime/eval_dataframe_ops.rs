@@ -2104,7 +2104,10 @@ mod tests {
         }];
         let result = eval_dataframe_method(&columns, "rows", &[]);
         assert!(result.is_ok());
-        assert_eq!(result.expect("operation should succeed in test"), Value::Integer(3));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(3)
+        );
     }
 
     // Test 49: DataFrame rows method empty
@@ -2113,7 +2116,10 @@ mod tests {
         let columns: Vec<DataFrameColumn> = vec![];
         let result = eval_dataframe_method(&columns, "rows", &[]);
         assert!(result.is_ok());
-        assert_eq!(result.expect("operation should succeed in test"), Value::Integer(0));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(0)
+        );
     }
 
     // Test 50: DataFrame columns method
@@ -2131,7 +2137,10 @@ mod tests {
         ];
         let result = eval_dataframe_method(&columns, "columns", &[]);
         assert!(result.is_ok());
-        assert_eq!(result.expect("operation should succeed in test"), Value::Integer(2));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(2)
+        );
     }
 
     // Test 51: DataFrame column_names method
@@ -2282,7 +2291,10 @@ mod tests {
         let args = vec![Value::from_string("values".to_string()), Value::Integer(1)];
         let result = eval_dataframe_method(&columns, "get", &args);
         assert!(result.is_ok());
-        assert_eq!(result.expect("operation should succeed in test"), Value::Integer(20));
+        assert_eq!(
+            result.expect("operation should succeed in test"),
+            Value::Integer(20)
+        );
     }
 
     // Test 61: DataFrame to_csv method

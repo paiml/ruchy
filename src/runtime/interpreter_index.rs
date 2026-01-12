@@ -109,7 +109,10 @@ impl Interpreter {
         crate::runtime::eval_index::index_tuple(tuple, idx)
     }
 
-    pub(crate) fn index_object(fields: &HashMap<String, Value>, key: &str) -> Result<Value, InterpreterError> {
+    pub(crate) fn index_object(
+        fields: &HashMap<String, Value>,
+        key: &str,
+    ) -> Result<Value, InterpreterError> {
         crate::runtime::eval_index::index_object(fields, key)
     }
 
@@ -160,7 +163,11 @@ impl Interpreter {
         Ok(())
     }
 
-    pub(crate) fn eval_field_access(&mut self, object: &Expr, field: &str) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_field_access(
+        &mut self,
+        object: &Expr,
+        field: &str,
+    ) -> Result<Value, InterpreterError> {
         let object_value = self.eval_expr(object)?;
 
         match object_value {
@@ -273,7 +280,10 @@ impl Interpreter {
     }
 
     /// Check for constructor access (.new on type definitions) (complexity: 4)
-    pub(crate) fn check_constructor_access(object_map: &HashMap<String, Value>, field: &str) -> Option<Value> {
+    pub(crate) fn check_constructor_access(
+        object_map: &HashMap<String, Value>,
+        field: &str,
+    ) -> Option<Value> {
         if field != "new" {
             return None;
         }
@@ -352,7 +362,11 @@ impl Interpreter {
         Ok(Value::Object(Arc::new(object)))
     }
 
-    pub(crate) fn eval_qualified_name(&self, module: &str, name: &str) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_qualified_name(
+        &self,
+        module: &str,
+        name: &str,
+    ) -> Result<Value, InterpreterError> {
         if module == "HashMap" && name == "new" {
             Ok(Value::from_string("__builtin_hashmap__".to_string()))
         } else if module == "String" && (name == "new" || name == "from" || name == "from_utf8") {
@@ -512,7 +526,9 @@ mod tests {
     #[test]
     fn test_eval_index_access_string_slice_exclusive() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let s = "hello"; s[1..4] }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let s = "hello"; s[1..4] }"#)
+            .unwrap();
         assert_eq!(result.to_string(), "\"ell\"");
     }
 
@@ -672,8 +688,14 @@ mod tests {
     #[test]
     fn test_constructor_access_actor() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Actor".to_string()));
-        obj.insert("__name".to_string(), Value::from_string("MyActor".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
+        obj.insert(
+            "__name".to_string(),
+            Value::from_string("MyActor".to_string()),
+        );
         let result = Interpreter::check_constructor_access(&obj, "new");
         assert!(result.is_some());
         if let Some(Value::String(s)) = result {
@@ -684,8 +706,14 @@ mod tests {
     #[test]
     fn test_constructor_access_struct() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Struct".to_string()));
-        obj.insert("__name".to_string(), Value::from_string("MyStruct".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+        obj.insert(
+            "__name".to_string(),
+            Value::from_string("MyStruct".to_string()),
+        );
         let result = Interpreter::check_constructor_access(&obj, "new");
         assert!(result.is_some());
         if let Some(Value::String(s)) = result {
@@ -696,8 +724,14 @@ mod tests {
     #[test]
     fn test_constructor_access_class() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Class".to_string()));
-        obj.insert("__name".to_string(), Value::from_string("MyClass".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        obj.insert(
+            "__name".to_string(),
+            Value::from_string("MyClass".to_string()),
+        );
         let result = Interpreter::check_constructor_access(&obj, "new");
         assert!(result.is_some());
         if let Some(Value::String(s)) = result {
@@ -708,7 +742,10 @@ mod tests {
     #[test]
     fn test_constructor_access_unknown_type() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Unknown".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Unknown".to_string()),
+        );
         obj.insert("__name".to_string(), Value::from_string("Name".to_string()));
         let result = Interpreter::check_constructor_access(&obj, "new");
         assert!(result.is_none());
@@ -717,7 +754,10 @@ mod tests {
     #[test]
     fn test_constructor_access_missing_name() {
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Struct".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
         // Missing __name
         let result = Interpreter::check_constructor_access(&obj, "new");
         assert!(result.is_none());
@@ -749,7 +789,10 @@ mod tests {
         let obj = HashMap::new();
         let result = Interpreter::get_object_field(&obj, "missing");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("no field named 'missing'"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("no field named 'missing'"));
     }
 
     // ============== check_struct_visibility tests ==============
@@ -827,8 +870,14 @@ mod tests {
     fn test_access_object_field_constructor() {
         let interp = Interpreter::new();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Struct".to_string()));
-        obj.insert("__name".to_string(), Value::from_string("Point".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+        obj.insert(
+            "__name".to_string(),
+            Value::from_string("Point".to_string()),
+        );
         let result = interp.access_object_field(&obj, "new");
         assert!(result.is_ok());
     }
@@ -952,7 +1001,12 @@ mod tests {
 
     #[test]
     fn test_slice_array() {
-        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)];
+        let arr = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ];
         let start = Value::Integer(1);
         let end = Value::Integer(3);
         let result = Interpreter::slice_array(&arr, &start, &end, false);
@@ -965,7 +1019,12 @@ mod tests {
 
     #[test]
     fn test_slice_array_inclusive() {
-        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)];
+        let arr = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ];
         let start = Value::Integer(1);
         let end = Value::Integer(3);
         let result = Interpreter::slice_array(&arr, &start, &end, true);
@@ -980,36 +1039,30 @@ mod tests {
 
     #[test]
     fn test_index_dataframe_row() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "x".to_string(),
-                values: vec![Value::Integer(1), Value::Integer(2)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
         let result = Interpreter::index_dataframe_row(&columns, 0);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_index_dataframe_column() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "x".to_string(),
-                values: vec![Value::Integer(1), Value::Integer(2)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
         let result = Interpreter::index_dataframe_column(&columns, "x");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_index_dataframe_column_not_found() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "x".to_string(),
-                values: vec![Value::Integer(1)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
         let result = Interpreter::index_dataframe_column(&columns, "y");
         assert!(result.is_err());
     }
@@ -1083,7 +1136,9 @@ mod tests {
     #[test]
     fn test_eval_object_literal_string_values() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string("{name: \"Alice\", city: \"NYC\"}").unwrap();
+        let result = interp
+            .eval_string("{name: \"Alice\", city: \"NYC\"}")
+            .unwrap();
         if let Value::Object(obj) = result {
             assert_eq!(obj.len(), 2);
         } else {
@@ -1094,7 +1149,9 @@ mod tests {
     #[test]
     fn test_eval_object_literal_mixed_types() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string("{num: 42, flag: true, text: \"hello\"}").unwrap();
+        let result = interp
+            .eval_string("{num: 42, flag: true, text: \"hello\"}")
+            .unwrap();
         if let Value::Object(obj) = result {
             assert_eq!(obj.get("num"), Some(&Value::Integer(42)));
             assert_eq!(obj.get("flag"), Some(&Value::Bool(true)));
@@ -1120,7 +1177,9 @@ mod tests {
     #[test]
     fn test_eval_index_access_string_slice_to_end() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"{ let s = "hello"; s[2..5] }"#).unwrap();
+        let result = interp
+            .eval_string(r#"{ let s = "hello"; s[2..5] }"#)
+            .unwrap();
         assert_eq!(result.to_string(), "\"llo\"");
     }
 
@@ -1165,7 +1224,10 @@ mod tests {
     fn test_check_field_visibility_with_struct_type() {
         let interp = Interpreter::new();
         let mut obj = HashMap::new();
-        obj.insert("__struct_type".to_string(), Value::from_string("TestStruct".to_string()));
+        obj.insert(
+            "__struct_type".to_string(),
+            Value::from_string("TestStruct".to_string()),
+        );
         // This should still succeed since we haven't defined private fields
         let result = interp.check_struct_visibility(&obj, "public_field");
         assert!(result.is_ok());
@@ -1179,10 +1241,22 @@ mod tests {
         obj.insert("bool".to_string(), Value::Bool(true));
         obj.insert("nil".to_string(), Value::Nil);
 
-        assert_eq!(Interpreter::get_object_field(&obj, "int").unwrap(), Value::Integer(42));
-        assert_eq!(Interpreter::get_object_field(&obj, "float").unwrap(), Value::Float(3.14));
-        assert_eq!(Interpreter::get_object_field(&obj, "bool").unwrap(), Value::Bool(true));
-        assert_eq!(Interpreter::get_object_field(&obj, "nil").unwrap(), Value::Nil);
+        assert_eq!(
+            Interpreter::get_object_field(&obj, "int").unwrap(),
+            Value::Integer(42)
+        );
+        assert_eq!(
+            Interpreter::get_object_field(&obj, "float").unwrap(),
+            Value::Float(3.14)
+        );
+        assert_eq!(
+            Interpreter::get_object_field(&obj, "bool").unwrap(),
+            Value::Bool(true)
+        );
+        assert_eq!(
+            Interpreter::get_object_field(&obj, "nil").unwrap(),
+            Value::Nil
+        );
     }
 
     #[test]
@@ -1197,7 +1271,10 @@ mod tests {
         // Enum type should return None since it's not Actor/Struct/Class
         let mut obj = HashMap::new();
         obj.insert("__type".to_string(), Value::from_string("Enum".to_string()));
-        obj.insert("__name".to_string(), Value::from_string("MyEnum".to_string()));
+        obj.insert(
+            "__name".to_string(),
+            Value::from_string("MyEnum".to_string()),
+        );
         let result = Interpreter::check_constructor_access(&obj, "new");
         assert!(result.is_none());
     }
@@ -1268,8 +1345,14 @@ mod tests {
 
     #[test]
     fn test_slice_array_negative_indices() {
-        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)];
-        let result = Interpreter::slice_array(&arr, &Value::Integer(-3), &Value::Integer(-1), false);
+        let arr = vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ];
+        let result =
+            Interpreter::slice_array(&arr, &Value::Integer(-3), &Value::Integer(-1), false);
         assert!(result.is_ok());
         if let Value::Array(sliced) = result.unwrap() {
             assert_eq!(sliced.len(), 2);
@@ -1301,7 +1384,8 @@ mod tests {
 
     #[test]
     fn test_slice_string_negative_end() {
-        let result = Interpreter::slice_string("hello", &Value::Integer(0), &Value::Integer(-2), false);
+        let result =
+            Interpreter::slice_string("hello", &Value::Integer(0), &Value::Integer(-2), false);
         assert!(result.is_ok());
         assert_eq!(result.unwrap().to_string(), "\"hel\"");
     }
@@ -1315,7 +1399,10 @@ mod tests {
             },
             DataFrameColumn {
                 name: "b".to_string(),
-                values: vec![Value::from_string("x".to_string()), Value::from_string("y".to_string())],
+                values: vec![
+                    Value::from_string("x".to_string()),
+                    Value::from_string("y".to_string()),
+                ],
             },
         ];
         let result = Interpreter::index_dataframe_row(&columns, 1);
@@ -1365,7 +1452,9 @@ mod tests {
     fn test_eval_field_access_object_with_kind() {
         let mut interp = Interpreter::new();
         // Test accessing a field from an object (using 'kind' instead of 'type' which may be reserved)
-        let result = interp.eval_string("{kind: \"Point\", x: 10, y: 20}.kind").unwrap();
+        let result = interp
+            .eval_string("{kind: \"Point\", x: 10, y: 20}.kind")
+            .unwrap();
         assert_eq!(result.to_string(), "\"Point\"");
     }
 

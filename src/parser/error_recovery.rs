@@ -912,7 +912,10 @@ mod tests {
     #[test]
     fn test_expr_with_error_from_expr() {
         use crate::frontend::ast::Span;
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        );
         let with_error: ExprWithError = expr.into();
         assert!(matches!(with_error, ExprWithError::Valid(_)));
     }

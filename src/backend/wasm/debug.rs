@@ -57,11 +57,7 @@ mod debug_tests {
         assert_eq!(&bytes[0..4], b"\0asm", "Should have WASM magic number");
 
         // WASM version 1
-        assert_eq!(
-            &bytes[4..8],
-            &[1, 0, 0, 0],
-            "Should have WASM version 1"
-        );
+        assert_eq!(&bytes[4..8], &[1, 0, 0, 0], "Should have WASM version 1");
     }
 
     // === EXTREME TDD Round 124 tests ===
@@ -107,10 +103,7 @@ mod debug_tests {
     fn test_emit_float_zero() {
         use crate::frontend::ast::Literal;
         let emitter = WasmEmitter::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Float(0.0)),
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Float(0.0)), Default::default());
         let bytes = emitter.emit(&expr).expect("Should emit");
         assert!(!bytes.is_empty());
     }
@@ -131,10 +124,7 @@ mod debug_tests {
     fn test_emit_bool_true() {
         use crate::frontend::ast::Literal;
         let emitter = WasmEmitter::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
         let bytes = emitter.emit(&expr).expect("Should emit");
         assert!(!bytes.is_empty());
     }
@@ -143,10 +133,7 @@ mod debug_tests {
     fn test_emit_bool_false() {
         use crate::frontend::ast::Literal;
         let emitter = WasmEmitter::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Bool(false)),
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Bool(false)), Default::default());
         let bytes = emitter.emit(&expr).expect("Should emit");
         assert!(!bytes.is_empty());
     }
@@ -155,10 +142,7 @@ mod debug_tests {
     fn test_emit_unit_literal() {
         use crate::frontend::ast::Literal;
         let emitter = WasmEmitter::new();
-        let expr = Expr::new(
-            ExprKind::Literal(Literal::Unit),
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Literal(Literal::Unit), Default::default());
         let bytes = emitter.emit(&expr).expect("Should emit");
         assert!(!bytes.is_empty());
     }
@@ -200,7 +184,10 @@ mod debug_tests {
             ExprKind::Literal(Literal::Integer(3, None)),
             Default::default(),
         );
-        let expr = Expr::new(ExprKind::Block(vec![item1, item2, item3]), Default::default());
+        let expr = Expr::new(
+            ExprKind::Block(vec![item1, item2, item3]),
+            Default::default(),
+        );
         let bytes = emitter.emit(&expr).expect("Should emit");
         assert!(!bytes.is_empty());
     }

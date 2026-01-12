@@ -1076,7 +1076,9 @@ mod tests {
     #[test]
     fn test_project_overrides_r162() {
         let mut config = QualityGateConfig::default();
-        config.project_overrides.insert("performance".to_string(), 0.3);
+        config
+            .project_overrides
+            .insert("performance".to_string(), 0.3);
 
         // Project overrides should be stored
         assert_eq!(config.project_overrides.get("performance"), Some(&0.3));
@@ -1181,7 +1183,10 @@ mod tests {
             serde_json::from_str(&serialized).expect("deserialize should succeed");
 
         assert_eq!(rules.min_file_size_bytes, deserialized.min_file_size_bytes);
-        assert_eq!(rules.require_deep_analysis.len(), deserialized.require_deep_analysis.len());
+        assert_eq!(
+            rules.require_deep_analysis.len(),
+            deserialized.require_deep_analysis.len()
+        );
     }
 
     // Test 37: CiIntegration serialization

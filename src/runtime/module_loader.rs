@@ -463,8 +463,7 @@ mod tests {
 
     #[test]
     fn test_module_error_is_error_trait() {
-        let err: Box<dyn std::error::Error> =
-            Box::new(ModuleError::IoError("test".to_string()));
+        let err: Box<dyn std::error::Error> = Box::new(ModuleError::IoError("test".to_string()));
         assert!(!err.to_string().is_empty());
     }
 
@@ -537,20 +536,21 @@ mod tests {
     fn test_loaded_module_ast() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun test() { 42 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun test() { 42 }").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let ast = module.ast();
-        assert!(matches!(ast.kind, ExprKind::Block(_) | ExprKind::Function { .. }));
+        assert!(matches!(
+            ast.kind,
+            ExprKind::Block(_) | ExprKind::Function { .. }
+        ));
     }
 
     #[test]
     fn test_loaded_module_clone() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun test() { 1 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let cloned = module.clone();
@@ -603,8 +603,7 @@ mod tests {
     fn test_const_symbol_extraction() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "let PI = 3.14159")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "let PI = 3.14159").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let consts = extract_consts(&module);
@@ -616,8 +615,7 @@ mod tests {
     fn test_const_symbol_clone() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "let VALUE = 42")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "let VALUE = 42").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let consts = extract_consts(&module);
@@ -658,8 +656,7 @@ mod tests {
         let cache = ModuleCache::default();
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun test() { 1 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
         let result = cache.load(&module_path);
         assert!(result.is_ok());
@@ -677,8 +674,7 @@ mod tests {
     fn test_load_module_compat_success() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun test() { 1 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
         let result = load_module(&module_path);
         assert!(result.is_ok());
@@ -709,8 +705,7 @@ mod tests {
     fn test_extract_symbols_single_function() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("single.ruchy");
-        fs::write(&module_path, "fun single() { 1 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun single() { 1 }").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         assert_eq!(module.symbols().len(), 1);
@@ -726,8 +721,7 @@ mod tests {
         let c_dir = b_dir.join("c");
         fs::create_dir_all(&c_dir).expect("operation should succeed in test");
         let module_path = c_dir.join("d.ruchy");
-        fs::write(&module_path, "fun deep() { 42 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun deep() { 42 }").expect("operation should succeed in test");
 
         let resolved = resolve_module_path("a::b::c::d", temp_dir.path())
             .expect("operation should succeed in test");
@@ -741,8 +735,7 @@ mod tests {
         let b_dir = a_dir.join("b");
         fs::create_dir_all(&b_dir).expect("operation should succeed in test");
         let module_path = b_dir.join("c.ruchy");
-        fs::write(&module_path, "fun deep() { 42 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun deep() { 42 }").expect("operation should succeed in test");
 
         let resolved = resolve_module_path_dot_notation("a.b.c", temp_dir.path())
             .expect("operation should succeed in test");
@@ -780,8 +773,7 @@ mod tests {
     fn test_symbol_function_variant() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun test() { 1 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let symbol = module.get_symbol("test").expect("should have symbol");
@@ -812,8 +804,7 @@ mod tests {
     fn test_symbol_const_variant() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "let VALUE = 42")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "let VALUE = 42").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let symbol = module.get_symbol("VALUE").expect("should have symbol");
@@ -829,8 +820,7 @@ mod tests {
     fn test_symbol_debug() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun test() { 1 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let symbol = module.get_symbol("test").expect("should have symbol");
@@ -842,8 +832,7 @@ mod tests {
     fn test_symbol_clone() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("test.ruchy");
-        fs::write(&module_path, "fun test() { 1 }")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "fun test() { 1 }").expect("operation should succeed in test");
 
         let module = load_module_from_file(&module_path).expect("operation should succeed in test");
         let symbol = module.get_symbol("test").expect("should have symbol");
@@ -856,8 +845,7 @@ mod tests {
     fn test_empty_module() {
         let temp_dir = TempDir::new().expect("operation should succeed in test");
         let module_path = temp_dir.path().join("empty.ruchy");
-        fs::write(&module_path, "")
-            .expect("operation should succeed in test");
+        fs::write(&module_path, "").expect("operation should succeed in test");
 
         // An empty file should either fail to parse or have no symbols
         let result = load_module_from_file(&module_path);

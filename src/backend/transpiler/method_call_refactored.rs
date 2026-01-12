@@ -93,7 +93,9 @@ impl Transpiler {
             // TRANSPILER-ITERATOR-001 FIX: Wrap closure to handle reference from filter
             "filter" => {
                 let user_closure = &args[0];
-                Ok(quote! { #obj.into_iter().filter(|__x| { let __f = #user_closure; __f(*__x) }).collect::<Vec<_>>() })
+                Ok(
+                    quote! { #obj.into_iter().filter(|__x| { let __f = #user_closure; __f(*__x) }).collect::<Vec<_>>() },
+                )
             }
             "reduce" => Ok(quote! { #obj.into_iter().reduce(#(#args),*) }),
             "fold" => {

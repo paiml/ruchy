@@ -141,17 +141,7 @@ mod tests {
 
     #[test]
     fn test_handle_test_command_no_path() {
-        let result = handle_test_command(
-            None,
-            false,
-            false,
-            None,
-            false,
-            "text",
-            1,
-            0.0,
-            "text",
-        );
+        let result = handle_test_command(None, false, false, None, false, "text", 1, 0.0, "text");
         let _ = result;
     }
 
@@ -192,15 +182,8 @@ mod tests {
     #[test]
     fn test_handle_test_command_verbose() {
         let result = handle_test_command(
-            None,
-            false,
-            true, // verbose
-            None,
-            false,
-            "text",
-            1,
-            0.0,
-            "text",
+            None, false, true, // verbose
+            None, false, "text", 1, 0.0, "text",
         );
         let _ = result;
     }
@@ -224,47 +207,23 @@ mod tests {
     #[test]
     fn test_handle_test_command_with_coverage() {
         let result = handle_test_command(
-            None,
-            false,
-            false,
-            None,
-            true, // coverage
-            "lcov",
-            1,
-            80.0,
-            "text",
+            None, false, false, None, true, // coverage
+            "lcov", 1, 80.0, "text",
         );
         let _ = result;
     }
 
     #[test]
     fn test_handle_test_command_json_format() {
-        let result = handle_test_command(
-            None,
-            false,
-            false,
-            None,
-            false,
-            "text",
-            1,
-            0.0,
-            "json",
-        );
+        let result = handle_test_command(None, false, false, None, false, "text", 1, 0.0, "json");
         let _ = result;
     }
 
     #[test]
     fn test_handle_test_command_parallel() {
         let result = handle_test_command(
-            None,
-            false,
-            false,
-            None,
-            false,
-            "text",
-            4, // parallel
-            0.0,
-            "text",
+            None, false, false, None, false, "text", 4, // parallel
+            0.0, "text",
         );
         let _ = result;
     }
@@ -272,14 +231,7 @@ mod tests {
     #[test]
     fn test_handle_test_command_threshold() {
         let result = handle_test_command(
-            None,
-            false,
-            false,
-            None,
-            true,
-            "html",
-            1,
-            90.0, // threshold
+            None, false, false, None, true, "html", 1, 90.0, // threshold
             "text",
         );
         let _ = result;
@@ -288,49 +240,29 @@ mod tests {
     #[test]
     fn test_handle_watch_and_test_basic() {
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_watch_and_test(
-            temp_dir.path(),
-            false,
-            None,
-        );
+        let result = handle_watch_and_test(temp_dir.path(), false, None);
         let _ = result;
     }
 
     #[test]
     fn test_handle_watch_and_test_verbose() {
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_watch_and_test(
-            temp_dir.path(),
-            true,
-            None,
-        );
+        let result = handle_watch_and_test(temp_dir.path(), true, None);
         let _ = result;
     }
 
     #[test]
     fn test_handle_watch_and_test_with_filter() {
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_watch_and_test(
-            temp_dir.path(),
-            false,
-            Some("test_*"),
-        );
+        let result = handle_watch_and_test(temp_dir.path(), false, Some("test_*"));
         let _ = result;
     }
 
     #[test]
     fn test_handle_run_enhanced_tests_basic() {
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_run_enhanced_tests(
-            temp_dir.path(),
-            false,
-            None,
-            false,
-            "text",
-            1,
-            0.0,
-            "text",
-        );
+        let result =
+            handle_run_enhanced_tests(temp_dir.path(), false, None, false, "text", 1, 0.0, "text");
         let _ = result;
     }
 
@@ -352,10 +284,7 @@ mod tests {
 
     #[test]
     fn test_run_ruchy_test_file_nonexistent() {
-        let result = run_ruchy_test_file(
-            Path::new("/nonexistent/test.ruchy"),
-            false,
-        );
+        let result = run_ruchy_test_file(Path::new("/nonexistent/test.ruchy"), false);
         let _ = result;
     }
 

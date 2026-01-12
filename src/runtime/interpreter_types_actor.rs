@@ -283,7 +283,11 @@ mod tests {
         }
     }
 
-    fn make_struct_field_with_default(name: &str, ty: Type, default: crate::frontend::ast::Expr) -> StructField {
+    fn make_struct_field_with_default(
+        name: &str,
+        ty: Type,
+        default: crate::frontend::ast::Expr,
+    ) -> StructField {
         StructField {
             name: name.to_string(),
             ty,
@@ -335,7 +339,11 @@ mod tests {
         }
     }
 
-    fn make_handler(message_type: &str, params: Vec<Param>, body: crate::frontend::ast::Expr) -> ActorHandler {
+    fn make_handler(
+        message_type: &str,
+        params: Vec<Param>,
+        body: crate::frontend::ast::Expr,
+    ) -> ActorHandler {
         ActorHandler {
             message_type: message_type.to_string(),
             params,
@@ -351,8 +359,14 @@ mod tests {
         let result = interp.eval_actor_definition("TestActor", &[], &[]).unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Actor".to_string())));
-            assert_eq!(obj.get("__name"), Some(&Value::from_string("TestActor".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Actor".to_string()))
+            );
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("TestActor".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -366,10 +380,15 @@ mod tests {
             make_struct_field("name", make_type("String")),
         ];
 
-        let result = interp.eval_actor_definition("Counter", &fields, &[]).unwrap();
+        let result = interp
+            .eval_actor_definition("Counter", &fields, &[])
+            .unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__name"), Some(&Value::from_string("Counter".to_string())));
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("Counter".to_string()))
+            );
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
                 assert!(fields_obj.contains_key("count"));
                 assert!(fields_obj.contains_key("name"));
@@ -385,16 +404,19 @@ mod tests {
     fn test_eval_actor_definition_with_non_named_field_type() {
         // Covers line 38: the "Any" fallback for non-Named types
         let mut interp = make_interpreter();
-        let fields = vec![
-            make_struct_field("items", make_any_type()),
-        ];
+        let fields = vec![make_struct_field("items", make_any_type())];
 
-        let result = interp.eval_actor_definition("ItemActor", &fields, &[]).unwrap();
+        let result = interp
+            .eval_actor_definition("ItemActor", &fields, &[])
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
                 if let Some(Value::Object(field_meta)) = fields_obj.get("items") {
-                    assert_eq!(field_meta.get("type"), Some(&Value::from_string("Any".to_string())));
+                    assert_eq!(
+                        field_meta.get("type"),
+                        Some(&Value::from_string("Any".to_string()))
+                    );
                 } else {
                     panic!("Expected field metadata object");
                 }
@@ -411,11 +433,15 @@ mod tests {
         // Covers lines 49-50: successful default value evaluation
         let mut interp = make_interpreter();
         let default_expr = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let fields = vec![
-            make_struct_field_with_default("count", make_type("i32"), default_expr),
-        ];
+        let fields = vec![make_struct_field_with_default(
+            "count",
+            make_type("i32"),
+            default_expr,
+        )];
 
-        let result = interp.eval_actor_definition("DefaultActor", &fields, &[]).unwrap();
+        let result = interp
+            .eval_actor_definition("DefaultActor", &fields, &[])
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
@@ -438,11 +464,15 @@ mod tests {
         let mut interp = make_interpreter();
         // Use an undefined identifier which will fail to evaluate
         let default_expr = make_expr(ExprKind::Identifier("undefined_var".to_string()));
-        let fields = vec![
-            make_struct_field_with_default("value", make_type("i32"), default_expr),
-        ];
+        let fields = vec![make_struct_field_with_default(
+            "value",
+            make_type("i32"),
+            default_expr,
+        )];
 
-        let result = interp.eval_actor_definition("FailDefaultActor", &fields, &[]).unwrap();
+        let result = interp
+            .eval_actor_definition("FailDefaultActor", &fields, &[])
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
@@ -464,11 +494,11 @@ mod tests {
     fn test_eval_actor_definition_with_mutable_field() {
         // Covers line 44: is_mut field
         let mut interp = make_interpreter();
-        let fields = vec![
-            make_struct_field_mutable("data", make_type("String")),
-        ];
+        let fields = vec![make_struct_field_mutable("data", make_type("String"))];
 
-        let result = interp.eval_actor_definition("MutActor", &fields, &[]).unwrap();
+        let result = interp
+            .eval_actor_definition("MutActor", &fields, &[])
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
@@ -490,11 +520,11 @@ mod tests {
         // Covers lines 71-144: handler creation
         let mut interp = make_interpreter();
         let body = make_expr(ExprKind::Literal(Literal::Integer(100, None)));
-        let handlers = vec![
-            make_handler("Increment", vec![], body),
-        ];
+        let handlers = vec![make_handler("Increment", vec![], body)];
 
-        let result = interp.eval_actor_definition("HandlerActor", &[], &handlers).unwrap();
+        let result = interp
+            .eval_actor_definition("HandlerActor", &[], &handlers)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Array(handlers_arr)) = obj.get("__handlers") {
@@ -524,11 +554,11 @@ mod tests {
             make_param("x", make_type("i32")),
             make_param("y", make_type("String")),
         ];
-        let handlers = vec![
-            make_handler("SetValues", params, body),
-        ];
+        let handlers = vec![make_handler("SetValues", params, body)];
 
-        let result = interp.eval_actor_definition("ParamActor", &[], &handlers).unwrap();
+        let result = interp
+            .eval_actor_definition("ParamActor", &[], &handlers)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Array(handlers_arr)) = obj.get("__handlers") {
@@ -558,14 +588,16 @@ mod tests {
         let mut interp = make_interpreter();
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
         let default_val = make_expr(ExprKind::Literal(Literal::Integer(10, None)));
-        let params = vec![
-            make_param_with_default("amount", make_type("i32"), default_val),
-        ];
-        let handlers = vec![
-            make_handler("Add", params, body),
-        ];
+        let params = vec![make_param_with_default(
+            "amount",
+            make_type("i32"),
+            default_val,
+        )];
+        let handlers = vec![make_handler("Add", params, body)];
 
-        let result = interp.eval_actor_definition("DefaultParamActor", &[], &handlers).unwrap();
+        let result = interp
+            .eval_actor_definition("DefaultParamActor", &[], &handlers)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Array(handlers_arr)) = obj.get("__handlers") {
@@ -589,14 +621,12 @@ mod tests {
         // Covers line 115: "Any" fallback for non-Named param types
         let mut interp = make_interpreter();
         let body = make_expr(ExprKind::Literal(Literal::Bool(false)));
-        let params = vec![
-            make_param("items", make_any_type()),
-        ];
-        let handlers = vec![
-            make_handler("Process", params, body),
-        ];
+        let params = vec![make_param("items", make_any_type())];
+        let handlers = vec![make_handler("Process", params, body)];
 
-        let result = interp.eval_actor_definition("AnyParamActor", &[], &handlers).unwrap();
+        let result = interp
+            .eval_actor_definition("AnyParamActor", &[], &handlers)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Array(handlers_arr)) = obj.get("__handlers") {
@@ -621,12 +651,17 @@ mod tests {
     fn test_eval_actor_definition_registers_in_env() {
         // Covers line 148: actor registration in environment
         let mut interp = make_interpreter();
-        interp.eval_actor_definition("RegisteredActor", &[], &[]).unwrap();
+        interp
+            .eval_actor_definition("RegisteredActor", &[], &[])
+            .unwrap();
 
         // Verify the actor is registered
         let looked_up = interp.lookup_variable("RegisteredActor").unwrap();
         if let Value::Object(obj) = looked_up {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Actor".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Actor".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -642,7 +677,9 @@ mod tests {
             make_handler("Second", vec![], body2),
         ];
 
-        let result = interp.eval_actor_definition("MultiHandlerActor", &[], &handlers).unwrap();
+        let result = interp
+            .eval_actor_definition("MultiHandlerActor", &[], &handlers)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Array(handlers_arr)) = obj.get("__handlers") {
@@ -665,14 +702,20 @@ mod tests {
 
         let result = interp.instantiate_actor_with_args("NotAnActor", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not an actor definition"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not an actor definition"));
     }
 
     #[test]
     fn test_instantiate_actor_wrong_type() {
         let mut interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Struct".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
         interp.set_variable("WrongType", Value::Object(Arc::new(obj)));
 
         let result = interp.instantiate_actor_with_args("WrongType", &[]);
@@ -685,17 +728,22 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Create actor definition with fields
-        let fields = vec![
-            make_struct_field("x", make_type("i32")),
-        ];
-        interp.eval_actor_definition("TestActor", &fields, &[]).unwrap();
+        let fields = vec![make_struct_field("x", make_type("i32"))];
+        interp
+            .eval_actor_definition("TestActor", &fields, &[])
+            .unwrap();
 
         // Instantiate with positional args
-        let result = interp.instantiate_actor_with_args("TestActor", &[Value::Integer(42)]).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("TestActor", &[Value::Integer(42)])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
-            assert_eq!(obj.get("__actor"), Some(&Value::from_string("TestActor".to_string())));
+            assert_eq!(
+                obj.get("__actor"),
+                Some(&Value::from_string("TestActor".to_string()))
+            );
         } else {
             panic!("Expected ObjectMut");
         }
@@ -706,17 +754,19 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Create actor definition with fields
-        let fields = vec![
-            make_struct_field("count", make_type("i32")),
-        ];
-        interp.eval_actor_definition("Counter", &fields, &[]).unwrap();
+        let fields = vec![make_struct_field("count", make_type("i32"))];
+        interp
+            .eval_actor_definition("Counter", &fields, &[])
+            .unwrap();
 
         // Create named arguments object
         let mut named = HashMap::new();
         named.insert("count".to_string(), Value::Integer(100));
         let args = vec![Value::Object(Arc::new(named))];
 
-        let result = interp.instantiate_actor_with_args("Counter", &args).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("Counter", &args)
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -741,7 +791,9 @@ mod tests {
             make_struct_field("a", make_type("i32")),
             make_struct_field("b", make_type("i32")),
         ];
-        interp.eval_actor_definition("TwoFieldActor", &fields, &[]).unwrap();
+        interp
+            .eval_actor_definition("TwoFieldActor", &fields, &[])
+            .unwrap();
 
         // Named args object only has one field
         let mut named = HashMap::new();
@@ -749,7 +801,9 @@ mod tests {
         // "b" is NOT provided
         let args = vec![Value::Object(Arc::new(named))];
 
-        let result = interp.instantiate_actor_with_args("TwoFieldActor", &args).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("TwoFieldActor", &args)
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -770,11 +824,15 @@ mod tests {
             make_struct_field("first", make_type("i32")),
             make_struct_field_with_default("second", make_type("i32"), default_expr),
         ];
-        interp.eval_actor_definition("DefaultFieldActor", &fields, &[]).unwrap();
+        interp
+            .eval_actor_definition("DefaultFieldActor", &fields, &[])
+            .unwrap();
 
         // Only provide first argument
         let args = vec![Value::Integer(1)];
-        let result = interp.instantiate_actor_with_args("DefaultFieldActor", &args).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("DefaultFieldActor", &args)
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -789,13 +847,15 @@ mod tests {
     fn test_instantiate_actor_positional_args_field_no_default() {
         // Covers lines 216-218: field with metadata but no default
         let mut interp = make_interpreter();
-        let fields = vec![
-            make_struct_field("only_field", make_type("i32")),
-        ];
-        interp.eval_actor_definition("NoDefaultActor", &fields, &[]).unwrap();
+        let fields = vec![make_struct_field("only_field", make_type("i32"))];
+        interp
+            .eval_actor_definition("NoDefaultActor", &fields, &[])
+            .unwrap();
 
         // Provide no arguments - field has no default, should use Nil
-        let result = interp.instantiate_actor_with_args("NoDefaultActor", &[]).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("NoDefaultActor", &[])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -814,8 +874,14 @@ mod tests {
 
         // Manually create actor definition with simple field (not Object metadata)
         let mut actor_type = HashMap::new();
-        actor_type.insert("__type".to_string(), Value::from_string("Actor".to_string()));
-        actor_type.insert("__name".to_string(), Value::from_string("SimpleFieldActor".to_string()));
+        actor_type.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
+        actor_type.insert(
+            "__name".to_string(),
+            Value::from_string("SimpleFieldActor".to_string()),
+        );
 
         let mut fields = HashMap::new();
         // Insert a field with a simple Value, not Object metadata
@@ -827,7 +893,9 @@ mod tests {
         interp.set_variable("SimpleFieldActor", Value::Object(Arc::new(actor_type)));
 
         // Instantiate with no args - the simple field should get Nil
-        let result = interp.instantiate_actor_with_args("SimpleFieldActor", &[]).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("SimpleFieldActor", &[])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -842,12 +910,14 @@ mod tests {
         // Covers lines 229-231: handlers are stored in instance
         let mut interp = make_interpreter();
         let body = make_expr(ExprKind::Literal(Literal::Bool(true)));
-        let handlers = vec![
-            make_handler("Ping", vec![], body),
-        ];
-        interp.eval_actor_definition("HandlerStoredActor", &[], &handlers).unwrap();
+        let handlers = vec![make_handler("Ping", vec![], body)];
+        interp
+            .eval_actor_definition("HandlerStoredActor", &[], &handlers)
+            .unwrap();
 
-        let result = interp.instantiate_actor_with_args("HandlerStoredActor", &[]).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("HandlerStoredActor", &[])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -870,7 +940,9 @@ mod tests {
         interp.set_variable("NoTypeActor", Value::Object(Arc::new(obj)));
 
         // Should still work - won't fail the __type check but will succeed without error
-        let result = interp.instantiate_actor_with_args("NoTypeActor", &[]).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("NoTypeActor", &[])
+            .unwrap();
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
             assert!(obj.contains_key("__actor"));
@@ -886,12 +958,16 @@ mod tests {
             make_struct_field("a", make_type("i32")),
             make_struct_field("b", make_type("String")),
         ];
-        interp.eval_actor_definition("MultiArgActor", &fields, &[]).unwrap();
+        interp
+            .eval_actor_definition("MultiArgActor", &fields, &[])
+            .unwrap();
 
-        let result = interp.instantiate_actor_with_args(
-            "MultiArgActor",
-            &[Value::Integer(10), Value::from_string("hello".to_string())]
-        ).unwrap();
+        let result = interp
+            .instantiate_actor_with_args(
+                "MultiArgActor",
+                &[Value::Integer(10), Value::from_string("hello".to_string())],
+            )
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -905,13 +981,15 @@ mod tests {
     fn test_instantiate_actor_with_non_object_single_arg() {
         // Covers lines 187-189: single arg that is not an Object (not named args)
         let mut interp = make_interpreter();
-        let fields = vec![
-            make_struct_field("value", make_type("i32")),
-        ];
-        interp.eval_actor_definition("SingleArgActor", &fields, &[]).unwrap();
+        let fields = vec![make_struct_field("value", make_type("i32"))];
+        interp
+            .eval_actor_definition("SingleArgActor", &fields, &[])
+            .unwrap();
 
         // Single arg that is NOT an Object
-        let result = interp.instantiate_actor_with_args("SingleArgActor", &[Value::Integer(55)]).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("SingleArgActor", &[Value::Integer(55)])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -925,13 +1003,20 @@ mod tests {
     fn test_instantiate_actor_no_fields() {
         // Actor with no fields at all
         let mut interp = make_interpreter();
-        interp.eval_actor_definition("NoFieldsActor", &[], &[]).unwrap();
+        interp
+            .eval_actor_definition("NoFieldsActor", &[], &[])
+            .unwrap();
 
-        let result = interp.instantiate_actor_with_args("NoFieldsActor", &[]).unwrap();
+        let result = interp
+            .instantiate_actor_with_args("NoFieldsActor", &[])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
-            assert_eq!(obj.get("__actor"), Some(&Value::from_string("NoFieldsActor".to_string())));
+            assert_eq!(
+                obj.get("__actor"),
+                Some(&Value::from_string("NoFieldsActor".to_string()))
+            );
         } else {
             panic!("Expected ObjectMut");
         }
@@ -940,12 +1025,18 @@ mod tests {
     #[test]
     fn test_eval_actor_definition_with_string_default() {
         let mut interp = make_interpreter();
-        let default_expr = make_expr(ExprKind::Literal(Literal::String("default_value".to_string())));
-        let fields = vec![
-            make_struct_field_with_default("name", make_type("String"), default_expr),
-        ];
+        let default_expr = make_expr(ExprKind::Literal(Literal::String(
+            "default_value".to_string(),
+        )));
+        let fields = vec![make_struct_field_with_default(
+            "name",
+            make_type("String"),
+            default_expr,
+        )];
 
-        let result = interp.eval_actor_definition("StringDefaultActor", &fields, &[]).unwrap();
+        let result = interp
+            .eval_actor_definition("StringDefaultActor", &fields, &[])
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
@@ -969,11 +1060,15 @@ mod tests {
     fn test_eval_actor_definition_with_bool_default() {
         let mut interp = make_interpreter();
         let default_expr = make_expr(ExprKind::Literal(Literal::Bool(true)));
-        let fields = vec![
-            make_struct_field_with_default("active", make_type("bool"), default_expr),
-        ];
+        let fields = vec![make_struct_field_with_default(
+            "active",
+            make_type("bool"),
+            default_expr,
+        )];
 
-        let result = interp.eval_actor_definition("BoolDefaultActor", &fields, &[]).unwrap();
+        let result = interp
+            .eval_actor_definition("BoolDefaultActor", &fields, &[])
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
@@ -999,11 +1094,11 @@ mod tests {
             make_param("message", make_type("String")),
             make_param("flag", make_type("bool")),
         ];
-        let handlers = vec![
-            make_handler("Process", params, body),
-        ];
+        let handlers = vec![make_handler("Process", params, body)];
 
-        let result = interp.eval_actor_definition("TypedParamActor", &[], &handlers).unwrap();
+        let result = interp
+            .eval_actor_definition("TypedParamActor", &[], &handlers)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Array(handlers_arr)) = obj.get("__handlers") {

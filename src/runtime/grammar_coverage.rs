@@ -511,7 +511,12 @@ mod tests {
             Span { start: 0, end: 1 },
         );
 
-        matrix.record("prod1", "input1", Ok(expr.clone()), Duration::from_millis(1));
+        matrix.record(
+            "prod1",
+            "input1",
+            Ok(expr.clone()),
+            Duration::from_millis(1),
+        );
         matrix.record("prod2", "input2", Ok(expr), Duration::from_millis(1));
 
         assert!(matrix.is_complete(2));
@@ -549,7 +554,12 @@ mod tests {
             Span { start: 0, end: 1 },
         );
 
-        matrix.record("prod1", "input1", Ok(expr.clone()), Duration::from_millis(1));
+        matrix.record(
+            "prod1",
+            "input1",
+            Ok(expr.clone()),
+            Duration::from_millis(1),
+        );
         matrix.record("prod2", "input2", Ok(expr), Duration::from_millis(1));
 
         assert!((matrix.get_coverage_percentage() - 100.0).abs() < 0.01);
@@ -685,7 +695,12 @@ mod tests {
             Span { start: 0, end: 15 },
         );
 
-        matrix.record("let", "let x = 42 in x", Ok(let_expr), Duration::from_millis(1));
+        matrix.record(
+            "let",
+            "let x = 42 in x",
+            Ok(let_expr),
+            Duration::from_millis(1),
+        );
 
         assert!(matrix.ast_variants.contains("Let"));
     }

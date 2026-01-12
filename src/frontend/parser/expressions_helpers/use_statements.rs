@@ -520,7 +520,10 @@ mod tests {
     fn test_use_leading_underscore_module() {
         let code = "use _private::item";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Module with leading underscore should parse");
+        assert!(
+            result.is_ok(),
+            "Module with leading underscore should parse"
+        );
     }
 
     #[test]

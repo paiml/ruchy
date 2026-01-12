@@ -471,7 +471,10 @@ mod tests {
     fn test_convert_token_to_sql_fallback() {
         // Test the fallback case for unhandled tokens
         let result = convert_token_to_sql(&Token::Colon);
-        assert!(!result.is_empty(), "Fallback should produce non-empty string");
+        assert!(
+            !result.is_empty(),
+            "Fallback should produce non-empty string"
+        );
     }
 
     // Test 20: convert_token_to_sql with special float
@@ -503,7 +506,10 @@ mod tests {
         let mut parser = Parser::new("df!{column}");
         let result = parser.parse();
         // Should be parsed but maybe as different expression
-        assert!(result.is_ok() || result.is_err(), "Should handle df! with braces");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Should handle df! with braces"
+        );
     }
 
     // Test 24: sql macro with function calls
@@ -520,7 +526,10 @@ mod tests {
         let mut parser = Parser::new("vec![1, 2, 3,]");
         let result = parser.parse();
         // Trailing comma behavior - may or may not be supported
-        assert!(result.is_ok() || result.is_err(), "Should handle trailing comma");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Should handle trailing comma"
+        );
     }
 
     // Test 26: macro with string literal argument
@@ -535,6 +544,9 @@ mod tests {
     #[test]
     fn test_convert_token_to_sql_empty_string() {
         let result = convert_token_to_sql(&Token::String("".to_string()));
-        assert_eq!(result, "''", "Empty string should produce single-quoted empty");
+        assert_eq!(
+            result, "''",
+            "Empty string should produce single-quoted empty"
+        );
     }
 }

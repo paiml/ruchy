@@ -694,7 +694,11 @@ mod tests {
         let result = eval_expr_kind(
             &ExprKind::Identifier("unknown".to_string()),
             |_| Ok(Value::Nil),
-            |_| Err(InterpreterError::RuntimeError("Variable not found".to_string())),
+            |_| {
+                Err(InterpreterError::RuntimeError(
+                    "Variable not found".to_string(),
+                ))
+            },
             |_, _, _| Ok(Value::Nil),
             |_, _| Ok(Value::Nil),
         );
@@ -761,7 +765,10 @@ mod tests {
             |_, _| Ok(Value::Nil),
         );
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("interpreter context"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("interpreter context"));
     }
 
     // --- eval_let_expr tests ---
@@ -1083,7 +1090,9 @@ mod tests {
         let then_branch = make_literal_expr(Literal::Integer(1, None));
 
         let result = eval_if_expr(&condition, &then_branch, None, |_| {
-            Err(InterpreterError::RuntimeError("condition error".to_string()))
+            Err(InterpreterError::RuntimeError(
+                "condition error".to_string(),
+            ))
         });
 
         assert!(result.is_err());
@@ -1170,7 +1179,10 @@ mod tests {
 
     #[test]
     fn test_is_control_flow_break() {
-        let break_expr = ExprKind::Break { label: None, value: None };
+        let break_expr = ExprKind::Break {
+            label: None,
+            value: None,
+        };
         assert!(is_control_flow_expr(&break_expr));
     }
 
@@ -1348,7 +1360,10 @@ mod tests {
 
     #[test]
     fn test_is_control_flow_break_r159() {
-        let expr_kind = ExprKind::Break { label: None, value: None };
+        let expr_kind = ExprKind::Break {
+            label: None,
+            value: None,
+        };
         assert!(is_control_flow_expr(&expr_kind));
     }
 
@@ -1424,16 +1439,12 @@ mod tests {
         let condition = make_literal_expr(Literal::Bool(false));
         let then_branch = make_literal_expr(Literal::Integer(1, None));
 
-        let result = eval_if_expr(
-            &condition,
-            &then_branch,
-            None,
-            |expr| match &expr.kind {
-                ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
-                ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
-                _ => Ok(Value::Nil),
-            },
-        ).unwrap();
+        let result = eval_if_expr(&condition, &then_branch, None, |expr| match &expr.kind {
+            ExprKind::Literal(Literal::Bool(b)) => Ok(Value::Bool(*b)),
+            ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
+            _ => Ok(Value::Nil),
+        })
+        .unwrap();
 
         assert_eq!(result, Value::Nil);
     }
@@ -1468,7 +1479,8 @@ mod tests {
         let result = eval_list_expr(&elements, |expr| match &expr.kind {
             ExprKind::Literal(Literal::Integer(i, None)) => Ok(Value::Integer(*i)),
             _ => Ok(Value::Nil),
-        }).unwrap();
+        })
+        .unwrap();
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 3);
         } else {
@@ -1492,7 +1504,8 @@ mod tests {
                 _ => Ok(Value::Nil),
             },
             |name, val| bound_var = Some((name, val)),
-        ).unwrap();
+        )
+        .unwrap();
 
         // With Unit body, let returns the value
         assert_eq!(result, Value::Integer(42));
@@ -1513,7 +1526,8 @@ mod tests {
                 _ => Ok(Value::Nil),
             },
             |_, _| {},
-        ).unwrap();
+        )
+        .unwrap();
 
         // With non-Unit body, let returns the body result
         assert_eq!(result, Value::Integer(20));

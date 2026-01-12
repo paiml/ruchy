@@ -236,7 +236,10 @@ mod tests {
         let file = Path::new("any.ruchy");
         let output = generate_bench_csv_output(file, 1, 1, &[], 0.0, 0.0, 0.0, 0.0);
         let lines: Vec<&str> = output.lines().collect();
-        assert_eq!(lines[0], "file,warmup,iterations,min_ms,max_ms,mean_ms,stddev_ms");
+        assert_eq!(
+            lines[0],
+            "file,warmup,iterations,min_ms,max_ms,mean_ms,stddev_ms"
+        );
     }
 
     // ===== EXTREME TDD Round 149 - Bench Handler Tests =====
@@ -251,7 +254,8 @@ mod tests {
     #[test]
     fn test_generate_text_output_large_values() {
         let file = Path::new("test.ruchy");
-        let output = generate_bench_text_output(file, 1000000, 100000, &[], 0.001, 10000.0, 500.0, 100.0);
+        let output =
+            generate_bench_text_output(file, 1000000, 100000, &[], 0.001, 10000.0, 500.0, 100.0);
         assert!(output.contains("Benchmark Results"));
     }
 
@@ -294,14 +298,7 @@ mod tests {
     fn test_handle_bench_command_basic() {
         let temp = NamedTempFile::new().unwrap();
         std::fs::write(temp.path(), "42").unwrap();
-        let result = handle_bench_command(
-            temp.path(),
-            1,
-            0,
-            "text",
-            None,
-            false,
-        );
+        let result = handle_bench_command(temp.path(), 1, 0, "text", None, false);
         assert!(result.is_ok());
     }
 
@@ -324,14 +321,7 @@ mod tests {
     fn test_handle_bench_command_json_format() {
         let temp = NamedTempFile::new().unwrap();
         std::fs::write(temp.path(), "42").unwrap();
-        let result = handle_bench_command(
-            temp.path(),
-            1,
-            0,
-            "json",
-            None,
-            false,
-        );
+        let result = handle_bench_command(temp.path(), 1, 0, "json", None, false);
         assert!(result.is_ok());
     }
 
@@ -339,14 +329,7 @@ mod tests {
     fn test_handle_bench_command_csv_format() {
         let temp = NamedTempFile::new().unwrap();
         std::fs::write(temp.path(), "42").unwrap();
-        let result = handle_bench_command(
-            temp.path(),
-            1,
-            0,
-            "csv",
-            None,
-            false,
-        );
+        let result = handle_bench_command(temp.path(), 1, 0, "csv", None, false);
         assert!(result.is_ok());
     }
 
@@ -356,14 +339,7 @@ mod tests {
         std::fs::write(temp.path(), "42").unwrap();
         let temp_dir = TempDir::new().unwrap();
         let output_path = temp_dir.path().join("output.txt");
-        let result = handle_bench_command(
-            temp.path(),
-            1,
-            0,
-            "text",
-            Some(&output_path),
-            false,
-        );
+        let result = handle_bench_command(temp.path(), 1, 0, "text", Some(&output_path), false);
         assert!(result.is_ok());
         assert!(output_path.exists());
     }

@@ -2009,10 +2009,7 @@ mod tests {
             Default::default(),
         );
         // Outer block at top level, inner block goes through format_expr with tabs
-        let outer_block = Expr::new(
-            ExprKind::Block(vec![inner_block]),
-            Default::default(),
-        );
+        let outer_block = Expr::new(ExprKind::Block(vec![inner_block]), Default::default());
         let result = formatter.format(&outer_block).expect("should format");
         // The inner block's content should be indented with tabs
         assert!(result.contains('\t'));
@@ -2309,7 +2306,9 @@ mod tests {
         let formatter = Formatter::new();
         let value = create_simple_literal(42);
         let expr = Expr::new(
-            ExprKind::Return { value: Some(Box::new(value)) },
+            ExprKind::Return {
+                value: Some(Box::new(value)),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2320,7 +2319,10 @@ mod tests {
     fn test_format_break() {
         let formatter = Formatter::new();
         let expr = Expr::new(
-            ExprKind::Break { label: None, value: None },
+            ExprKind::Break {
+                label: None,
+                value: None,
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2330,10 +2332,7 @@ mod tests {
     #[test]
     fn test_format_continue() {
         let formatter = Formatter::new();
-        let expr = Expr::new(
-            ExprKind::Continue { label: None },
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Continue { label: None }, Default::default());
         let result = formatter.format(&expr).expect("should format");
         assert!(result.contains("continue"));
     }
@@ -2510,7 +2509,10 @@ mod formatter_tests_r164 {
     fn test_format_while_loop_r164() {
         let formatter = Formatter::new();
         let condition = create_bool_literal(true);
-        let body = Expr::new(ExprKind::Block(vec![create_simple_literal(1)]), Default::default());
+        let body = Expr::new(
+            ExprKind::Block(vec![create_simple_literal(1)]),
+            Default::default(),
+        );
         let expr = Expr::new(
             ExprKind::While {
                 condition: Box::new(condition),
@@ -2528,7 +2530,10 @@ mod formatter_tests_r164 {
     fn test_format_for_loop_r164() {
         let formatter = Formatter::new();
         let iter = create_identifier("items");
-        let body = Expr::new(ExprKind::Block(vec![create_simple_literal(1)]), Default::default());
+        let body = Expr::new(
+            ExprKind::Block(vec![create_simple_literal(1)]),
+            Default::default(),
+        );
         let expr = Expr::new(
             ExprKind::For {
                 var: "x".to_string(),
@@ -2569,7 +2574,10 @@ mod formatter_tests_r164 {
         let body = create_simple_literal(42);
         let param = Param {
             pattern: Pattern::Identifier("x".to_string()),
-            ty: Type { kind: TypeKind::Named("Any".to_string()), span: Default::default() },
+            ty: Type {
+                kind: TypeKind::Named("Any".to_string()),
+                span: Default::default(),
+            },
             span: Default::default(),
             is_mutable: false,
             default_value: None,
@@ -2647,10 +2655,7 @@ mod formatter_tests_r164 {
     #[test]
     fn test_format_return_no_value_r164() {
         let formatter = Formatter::new();
-        let expr = Expr::new(
-            ExprKind::Return { value: None },
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Return { value: None }, Default::default());
         let result = formatter.format(&expr).expect("should format");
         assert_eq!(result, "return");
     }
@@ -2661,7 +2666,10 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let value = create_simple_literal(42);
         let expr = Expr::new(
-            ExprKind::Break { label: None, value: Some(Box::new(value)) },
+            ExprKind::Break {
+                label: None,
+                value: Some(Box::new(value)),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2673,7 +2681,11 @@ mod formatter_tests_r164 {
     #[test]
     fn test_format_list_literal_r164() {
         let formatter = Formatter::new();
-        let items = vec![create_simple_literal(1), create_simple_literal(2), create_simple_literal(3)];
+        let items = vec![
+            create_simple_literal(1),
+            create_simple_literal(2),
+            create_simple_literal(3),
+        ];
         let expr = Expr::new(ExprKind::List(items), Default::default());
         let result = formatter.format(&expr).expect("should format");
         assert!(result.contains("["));
@@ -2740,7 +2752,9 @@ mod formatter_tests_r164 {
             Default::default(),
         );
         let expr = Expr::new(
-            ExprKind::Throw { expr: Box::new(error) },
+            ExprKind::Throw {
+                expr: Box::new(error),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2753,7 +2767,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let inner = create_identifier("future");
         let expr = Expr::new(
-            ExprKind::Await { expr: Box::new(inner) },
+            ExprKind::Await {
+                expr: Box::new(inner),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2767,7 +2783,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let body = create_simple_literal(42);
         let expr = Expr::new(
-            ExprKind::AsyncBlock { body: Box::new(body) },
+            ExprKind::AsyncBlock {
+                body: Box::new(body),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2780,7 +2798,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let value = create_simple_literal(42);
         let expr = Expr::new(
-            ExprKind::Ok { value: Box::new(value) },
+            ExprKind::Ok {
+                value: Box::new(value),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2797,7 +2817,9 @@ mod formatter_tests_r164 {
             Default::default(),
         );
         let expr = Expr::new(
-            ExprKind::Err { error: Box::new(error) },
+            ExprKind::Err {
+                error: Box::new(error),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2810,7 +2832,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let value = create_simple_literal(42);
         let expr = Expr::new(
-            ExprKind::Some { value: Box::new(value) },
+            ExprKind::Some {
+                value: Box::new(value),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2832,7 +2856,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let inner = create_identifier("result");
         let expr = Expr::new(
-            ExprKind::Try { expr: Box::new(inner) },
+            ExprKind::Try {
+                expr: Box::new(inner),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2845,7 +2871,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let actor = create_identifier("my_actor");
         let expr = Expr::new(
-            ExprKind::Spawn { actor: Box::new(actor) },
+            ExprKind::Spawn {
+                actor: Box::new(actor),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2927,7 +2955,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let inner = create_identifier("arr");
         let expr = Expr::new(
-            ExprKind::Spread { expr: Box::new(inner) },
+            ExprKind::Spread {
+                expr: Box::new(inner),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2940,7 +2970,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let target = create_identifier("x");
         let expr = Expr::new(
-            ExprKind::PreIncrement { target: Box::new(target) },
+            ExprKind::PreIncrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2953,7 +2985,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let target = create_identifier("x");
         let expr = Expr::new(
-            ExprKind::PostIncrement { target: Box::new(target) },
+            ExprKind::PostIncrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2966,7 +3000,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let target = create_identifier("x");
         let expr = Expr::new(
-            ExprKind::PreDecrement { target: Box::new(target) },
+            ExprKind::PreDecrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2979,7 +3015,9 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let target = create_identifier("x");
         let expr = Expr::new(
-            ExprKind::PostDecrement { target: Box::new(target) },
+            ExprKind::PostDecrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -3006,7 +3044,9 @@ mod formatter_tests_r164 {
     fn test_format_module_declaration_r164() {
         let formatter = Formatter::new();
         let expr = Expr::new(
-            ExprKind::ModuleDeclaration { name: "utils".to_string() },
+            ExprKind::ModuleDeclaration {
+                name: "utils".to_string(),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -3053,7 +3093,10 @@ mod formatter_tests_r164 {
         let formatter = Formatter::new();
         let body = create_simple_literal(1);
         let expr = Expr::new(
-            ExprKind::Loop { body: Box::new(body), label: None },
+            ExprKind::Loop {
+                body: Box::new(body),
+                label: None,
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");

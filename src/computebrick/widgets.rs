@@ -3,7 +3,7 @@
 //! All widgets implement the `Brick` trait for unified rendering.
 
 use super::canvas::{Canvas, Color, Point, Rect, TextStyle};
-use super::{EventResult, Event, GraphMode, Gradient};
+use super::{Event, EventResult, Gradient, GraphMode};
 
 /// Core widget trait - all widgets implement this.
 ///
@@ -134,16 +134,32 @@ impl BrailleGraph {
         let mut pattern: u8 = 0;
 
         // Fill dots from bottom up for left column
-        if left_dots >= 1 { pattern |= 0x40; } // dot 7
-        if left_dots >= 2 { pattern |= 0x04; } // dot 3
-        if left_dots >= 3 { pattern |= 0x02; } // dot 2
-        if left_dots >= 4 { pattern |= 0x01; } // dot 1
+        if left_dots >= 1 {
+            pattern |= 0x40;
+        } // dot 7
+        if left_dots >= 2 {
+            pattern |= 0x04;
+        } // dot 3
+        if left_dots >= 3 {
+            pattern |= 0x02;
+        } // dot 2
+        if left_dots >= 4 {
+            pattern |= 0x01;
+        } // dot 1
 
         // Fill dots from bottom up for right column
-        if right_dots >= 1 { pattern |= 0x80; } // dot 8
-        if right_dots >= 2 { pattern |= 0x20; } // dot 6
-        if right_dots >= 3 { pattern |= 0x10; } // dot 5
-        if right_dots >= 4 { pattern |= 0x08; } // dot 4
+        if right_dots >= 1 {
+            pattern |= 0x80;
+        } // dot 8
+        if right_dots >= 2 {
+            pattern |= 0x20;
+        } // dot 6
+        if right_dots >= 3 {
+            pattern |= 0x10;
+        } // dot 5
+        if right_dots >= 4 {
+            pattern |= 0x08;
+        } // dot 4
 
         char::from_u32(0x2800 + u32::from(pattern)).unwrap_or(' ')
     }
@@ -218,23 +234,43 @@ impl Brick for BrailleGraph {
                 }
             }
             GraphMode::Block => {
-                let step = if self.data.len() > width { self.data.len() / width } else { 1 };
+                let step = if self.data.len() > width {
+                    self.data.len() / width
+                } else {
+                    1
+                };
 
                 for col in 0..width.min(self.data.len()) {
                     let idx = col * step;
                     let val = self.data.get(idx).copied().unwrap_or(0.0);
                     let ch = self.block_char(val);
-                    canvas.set_char(start_x + col, data_start_y + data_height - 1, ch, self.color, Color::TRANSPARENT);
+                    canvas.set_char(
+                        start_x + col,
+                        data_start_y + data_height - 1,
+                        ch,
+                        self.color,
+                        Color::TRANSPARENT,
+                    );
                 }
             }
             GraphMode::Tty => {
-                let step = if self.data.len() > width { self.data.len() / width } else { 1 };
+                let step = if self.data.len() > width {
+                    self.data.len() / width
+                } else {
+                    1
+                };
 
                 for col in 0..width.min(self.data.len()) {
                     let idx = col * step;
                     let val = self.data.get(idx).copied().unwrap_or(0.0);
                     let ch = self.tty_char(val);
-                    canvas.set_char(start_x + col, data_start_y + data_height - 1, ch, self.color, Color::TRANSPARENT);
+                    canvas.set_char(
+                        start_x + col,
+                        data_start_y + data_height - 1,
+                        ch,
+                        self.color,
+                        Color::TRANSPARENT,
+                    );
                 }
             }
         }
@@ -315,7 +351,11 @@ impl Brick for Meter {
         let y = self.bounds.y as usize;
 
         // Calculate label width
-        let label_width = if self.label.is_empty() { 0 } else { self.label.len() + 1 };
+        let label_width = if self.label.is_empty() {
+            0
+        } else {
+            self.label.len() + 1
+        };
         let pct_width = if self.show_percentage { 5 } else { 0 }; // " 100%"
         let bar_width = width.saturating_sub(label_width + pct_width);
 
@@ -353,7 +393,11 @@ impl Brick for Meter {
         if self.show_percentage {
             let pct = format!("{:3.0}%", self.ratio() * 100.0);
             let style = TextStyle::default().with_color(Color::WHITE);
-            canvas.draw_text(&pct, Point::new((bar_x + bar_width) as f32, y as f32), &style);
+            canvas.draw_text(
+                &pct,
+                Point::new((bar_x + bar_width) as f32, y as f32),
+                &style,
+            );
         }
     }
 
@@ -394,7 +438,11 @@ impl Gauge {
     }
 
     pub fn ratio(&self) -> f64 {
-        if self.max <= 0.0 { 0.0 } else { (self.value / self.max).clamp(0.0, 1.0) }
+        if self.max <= 0.0 {
+            0.0
+        } else {
+            (self.value / self.max).clamp(0.0, 1.0)
+        }
     }
 }
 
@@ -469,7 +517,11 @@ impl ProgressBar {
     }
 
     pub fn ratio(&self) -> f64 {
-        if self.total == 0 { 0.0 } else { self.current as f64 / self.total as f64 }
+        if self.total == 0 {
+            0.0
+        } else {
+            self.current as f64 / self.total as f64
+        }
     }
 }
 
@@ -740,36 +792,31 @@ mod tests {
     fn test_graph_modes() {
         use super::GraphMode;
 
-        let graph = BrailleGraph::new(vec![1.0, 2.0, 3.0])
-            .with_mode(GraphMode::Block);
+        let graph = BrailleGraph::new(vec![1.0, 2.0, 3.0]).with_mode(GraphMode::Block);
         assert_eq!(graph.mode, GraphMode::Block);
 
-        let graph2 = BrailleGraph::new(vec![1.0, 2.0, 3.0])
-            .with_mode(GraphMode::Tty);
+        let graph2 = BrailleGraph::new(vec![1.0, 2.0, 3.0]).with_mode(GraphMode::Tty);
         assert_eq!(graph2.mode, GraphMode::Tty);
     }
 
     // Additional: Meter with gradient
     #[test]
     fn test_meter_gradient() {
-        let meter = Meter::new(50.0, 100.0)
-            .with_gradient(Color::GREEN, Color::RED);
+        let meter = Meter::new(50.0, 100.0).with_gradient(Color::GREEN, Color::RED);
         assert!(meter.gradient.is_some());
     }
 
     // Additional: Gauge with label
     #[test]
     fn test_gauge_label() {
-        let gauge = Gauge::new(0.5, 1.0)
-            .with_label("Progress");
+        let gauge = Gauge::new(0.5, 1.0).with_label("Progress");
         assert_eq!(gauge.label, "Progress");
     }
 
     // Additional: ProgressBar with ETA
     #[test]
     fn test_progress_eta() {
-        let bar = ProgressBar::new(50, 100)
-            .with_eta(true);
+        let bar = ProgressBar::new(50, 100).with_eta(true);
         assert!(bar.show_eta);
     }
 
@@ -793,8 +840,7 @@ mod tests {
     // Additional: Meter with_label
     #[test]
     fn test_meter_with_label() {
-        let meter = Meter::new(50.0, 100.0)
-            .with_label("CPU");
+        let meter = Meter::new(50.0, 100.0).with_label("CPU");
         assert_eq!(meter.label, "CPU");
     }
 
@@ -808,13 +854,13 @@ mod tests {
 
         // Test block characters - these use normalized values
         // BLOCKS: [' ', '▁', '▂', '▃', '▄', '▅', '▆', '▇', '█']
-        let low = graph.block_char(0.0);   // normalized = 0.0 -> idx 0 -> ' '
-        let mid = graph.block_char(0.5);   // normalized = 0.5 -> idx 4 -> '▄'
-        let high = graph.block_char(1.0);  // normalized = 1.0 -> idx 8 -> '█'
+        let low = graph.block_char(0.0); // normalized = 0.0 -> idx 0 -> ' '
+        let mid = graph.block_char(0.5); // normalized = 0.5 -> idx 4 -> '▄'
+        let high = graph.block_char(1.0); // normalized = 1.0 -> idx 8 -> '█'
 
-        assert_eq!(low, ' ');   // Lowest is blank
-        assert_eq!(mid, '▄');   // Middle is half-block
-        assert_eq!(high, '█');  // Highest is full block
+        assert_eq!(low, ' '); // Lowest is blank
+        assert_eq!(mid, '▄'); // Middle is half-block
+        assert_eq!(high, '█'); // Highest is full block
     }
 
     // Additional: TTY char mapping
@@ -827,12 +873,12 @@ mod tests {
 
         // Test TTY characters - these use normalized values
         // TTY: [' ', '.', 'o', 'O', '#']
-        let low = graph.tty_char(0.0);   // normalized = 0.0 -> idx 0 -> ' '
-        let mid = graph.tty_char(0.5);   // normalized = 0.5 -> idx 2 -> 'o'
-        let high = graph.tty_char(1.0);  // normalized = 1.0 -> idx 4 -> '#'
+        let low = graph.tty_char(0.0); // normalized = 0.0 -> idx 0 -> ' '
+        let mid = graph.tty_char(0.5); // normalized = 0.5 -> idx 2 -> 'o'
+        let high = graph.tty_char(1.0); // normalized = 1.0 -> idx 4 -> '#'
 
-        assert_eq!(low, ' ');   // Lowest is blank
-        assert_eq!(mid, 'o');   // Middle
-        assert_eq!(high, '#');  // Highest
+        assert_eq!(low, ' '); // Lowest is blank
+        assert_eq!(mid, 'o'); // Middle
+        assert_eq!(high, '#'); // Highest
     }
 }

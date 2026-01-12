@@ -125,7 +125,9 @@ impl Transpiler {
                 Self::expr_references_any_impl(left, names)
                     || Self::expr_references_any_impl(right, names)
             }
-            ExprKind::Block(exprs) => exprs.iter().any(|e| Self::expr_references_any_impl(e, names)),
+            ExprKind::Block(exprs) => exprs
+                .iter()
+                .any(|e| Self::expr_references_any_impl(e, names)),
             ExprKind::If {
                 condition,
                 then_branch,
@@ -139,18 +141,22 @@ impl Transpiler {
             }
             ExprKind::Call { func, args } => {
                 Self::expr_references_any_impl(func, names)
-                    || args.iter().any(|a| Self::expr_references_any_impl(a, names))
+                    || args
+                        .iter()
+                        .any(|a| Self::expr_references_any_impl(a, names))
             }
             ExprKind::MethodCall { receiver, args, .. } => {
                 Self::expr_references_any_impl(receiver, names)
-                    || args.iter().any(|a| Self::expr_references_any_impl(a, names))
+                    || args
+                        .iter()
+                        .any(|a| Self::expr_references_any_impl(a, names))
             }
-            ExprKind::List(elements) | ExprKind::Tuple(elements) => {
-                elements.iter().any(|e| Self::expr_references_any_impl(e, names))
-            }
-            ExprKind::Set(elements) => {
-                elements.iter().any(|e| Self::expr_references_any_impl(e, names))
-            }
+            ExprKind::List(elements) | ExprKind::Tuple(elements) => elements
+                .iter()
+                .any(|e| Self::expr_references_any_impl(e, names)),
+            ExprKind::Set(elements) => elements
+                .iter()
+                .any(|e| Self::expr_references_any_impl(e, names)),
             _ => false,
         }
     }
@@ -294,7 +300,11 @@ impl Transpiler {
         final_return_type: &TokenStream,
         body_tokens: &TokenStream,
     ) -> Result<TokenStream> {
-        let async_keyword = if is_async { quote! { async } } else { quote! {} };
+        let async_keyword = if is_async {
+            quote! { async }
+        } else {
+            quote! {}
+        };
         let type_params = if type_param_tokens.is_empty() {
             quote! {}
         } else {

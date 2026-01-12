@@ -2839,21 +2839,15 @@ mod tests {
     // Test 91: TypeConstraint MethodCall variant
     #[test]
     fn test_type_constraint_method_call_r162() {
-        let constraint = TypeConstraint::MethodCall(
-            MonoType::String,
-            "len".to_string(),
-            vec![],
-        );
+        let constraint = TypeConstraint::MethodCall(MonoType::String, "len".to_string(), vec![]);
         assert!(format!("{:?}", constraint).contains("MethodCall"));
     }
 
     // Test 92: TypeConstraint Iterable variant
     #[test]
     fn test_type_constraint_iterable_r162() {
-        let constraint = TypeConstraint::Iterable(
-            MonoType::List(Box::new(MonoType::Int)),
-            MonoType::Int,
-        );
+        let constraint =
+            TypeConstraint::Iterable(MonoType::List(Box::new(MonoType::Int)), MonoType::Int);
         assert!(format!("{:?}", constraint).contains("Iterable"));
     }
 
@@ -3079,20 +3073,35 @@ mod tests {
     fn test_monotype_complex_display() {
         // List: [i32]
         let list_type = MonoType::List(Box::new(MonoType::Int));
-        assert!(format!("{}", list_type).contains("i32"), "List should contain i32");
+        assert!(
+            format!("{}", list_type).contains("i32"),
+            "List should contain i32"
+        );
 
         // Tuple: (i32, String)
         let tuple_type = MonoType::Tuple(vec![MonoType::Int, MonoType::String]);
-        assert!(format!("{}", tuple_type).contains("i32"), "Tuple should contain i32");
-        assert!(format!("{}", tuple_type).contains("String"), "Tuple should contain String");
+        assert!(
+            format!("{}", tuple_type).contains("i32"),
+            "Tuple should contain i32"
+        );
+        assert!(
+            format!("{}", tuple_type).contains("String"),
+            "Tuple should contain String"
+        );
 
         // Optional: i32?
         let opt_type = MonoType::Optional(Box::new(MonoType::Int));
-        assert!(format!("{}", opt_type).contains("i32"), "Optional should contain i32");
+        assert!(
+            format!("{}", opt_type).contains("i32"),
+            "Optional should contain i32"
+        );
 
         // Result: Result<i32, String>
         let result_type = MonoType::Result(Box::new(MonoType::Int), Box::new(MonoType::String));
-        assert!(format!("{}", result_type).contains("i32"), "Result should contain i32");
+        assert!(
+            format!("{}", result_type).contains("i32"),
+            "Result should contain i32"
+        );
     }
 
     #[test]

@@ -447,12 +447,18 @@ mod tests {
 
     #[test]
     fn test_extract_function_from_path_read_file() {
-        assert_eq!(extract_function_from_path("std::fs::read_file"), Some("read_file"));
+        assert_eq!(
+            extract_function_from_path("std::fs::read_file"),
+            Some("read_file")
+        );
     }
 
     #[test]
     fn test_extract_function_from_path_write_file() {
-        assert_eq!(extract_function_from_path("std::fs::write_file"), Some("write_file"));
+        assert_eq!(
+            extract_function_from_path("std::fs::write_file"),
+            Some("write_file")
+        );
     }
 
     #[test]

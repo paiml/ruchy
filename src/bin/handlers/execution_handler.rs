@@ -202,7 +202,9 @@ mod tests {
 
     #[test]
     fn test_needs_module_resolution_simple_literal() {
-        let expr = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(42, None)));
+        let expr = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(
+            42, None,
+        )));
         assert!(!needs_module_resolution(&expr));
     }
 
@@ -227,8 +229,12 @@ mod tests {
 
     #[test]
     fn test_needs_module_resolution_let_binding() {
-        let val = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(1, None)));
-        let body = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(2, None)));
+        let val = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(
+            1, None,
+        )));
+        let body = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(
+            2, None,
+        )));
         let expr = make_expr(ExprKind::Let {
             name: "x".to_string(),
             is_mutable: false,
@@ -242,7 +248,9 @@ mod tests {
 
     #[test]
     fn test_needs_module_resolution_let_with_import_body() {
-        let val = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(1, None)));
+        let val = make_expr(ExprKind::Literal(ruchy::frontend::ast::Literal::Integer(
+            1, None,
+        )));
         let body = make_expr(ExprKind::Import {
             module: "test".to_string(),
             items: None,

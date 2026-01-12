@@ -49,10 +49,7 @@ pub(in crate::frontend::parser) fn parse_break_token(
     let label = match state.tokens.peek() {
         Some((Token::Lifetime(name), _)) => {
             // Strip the leading quote from 'outer to get "outer"
-            let stripped = name
-                .strip_prefix('\'')
-                .unwrap_or(name)
-                .to_string();
+            let stripped = name.strip_prefix('\'').unwrap_or(name).to_string();
             state.tokens.advance();
             Some(stripped)
         }
@@ -104,10 +101,7 @@ pub(in crate::frontend::parser) fn parse_continue_token(
     let label = match state.tokens.peek() {
         Some((Token::Lifetime(name), _)) => {
             // Strip the leading quote from 'outer to get "outer"
-            let stripped = name
-                .strip_prefix('\'')
-                .unwrap_or(name)
-                .to_string();
+            let stripped = name.strip_prefix('\'').unwrap_or(name).to_string();
             state.tokens.advance();
             Some(stripped)
         }
@@ -365,7 +359,10 @@ mod tests {
     #[test]
     fn test_continue_followed_by_semicolon() {
         let result = parse("loop { continue; x }");
-        assert!(result.is_ok(), "Continue followed by semicolon should parse");
+        assert!(
+            result.is_ok(),
+            "Continue followed by semicolon should parse"
+        );
     }
 
     #[test]
@@ -703,7 +700,10 @@ mod tests {
     #[test]
     fn test_throw_interpolated_string() {
         let result = Parser::new(r#"fun f() { throw "error: {msg}" }"#).parse();
-        assert!(result.is_ok(), "Throw with interpolated string should parse");
+        assert!(
+            result.is_ok(),
+            "Throw with interpolated string should parse"
+        );
     }
 
     // Test 52: Return with closure call

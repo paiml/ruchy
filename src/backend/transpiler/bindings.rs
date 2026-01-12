@@ -316,8 +316,7 @@ impl Transpiler {
         is_mutable_var: bool,
     ) -> Result<(TokenStream, bool)> {
         match (&value.kind, type_annotation) {
-            (ExprKind::Literal(Literal::String(s)), Some(type_ann))
-                if matches!(&type_ann.kind, TypeKind::Named(n) if n == "String") =>
+            (ExprKind::Literal(Literal::String(s)), Some(type_ann)) if matches!(&type_ann.kind, TypeKind::Named(n) if n == "String") =>
             {
                 // TRANSPILER-STRING-CONCAT-001 FIX: Register string variable for concatenation tracking
                 self.string_vars.borrow_mut().insert(name.to_string());
@@ -333,9 +332,7 @@ impl Transpiler {
                 self.string_vars.borrow_mut().insert(name.to_string());
                 Ok((self.transpile_expr(value)?, false))
             }
-            (ExprKind::List(_), Some(type_ann))
-                if matches!(&type_ann.kind, TypeKind::List(_)) =>
-            {
+            (ExprKind::List(_), Some(type_ann)) if matches!(&type_ann.kind, TypeKind::List(_)) => {
                 let list_tokens = self.transpile_expr(value)?;
                 Ok((quote! { #list_tokens.to_vec() }, false))
             }
@@ -699,7 +696,10 @@ mod tests {
         let else_block = int_expr(-1);
         let result = transpiler.transpile_let_pattern_else(&pattern, &value, &body, &else_block);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("bind at least one"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("bind at least one"));
     }
 
     #[test]

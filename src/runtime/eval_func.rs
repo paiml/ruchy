@@ -103,7 +103,10 @@ mod tests {
     use crate::frontend::ast::{ExprKind, Literal, Pattern, Span, Type, TypeKind};
 
     fn make_literal_expr(n: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::default(),
+        )
     }
 
     fn make_param(name: &str) -> Param {
@@ -305,7 +308,9 @@ mod tests {
 
         let result = eval_lambda(&params, &body, &env).unwrap();
         match result {
-            Value::Closure { env: captured_env, .. } => {
+            Value::Closure {
+                env: captured_env, ..
+            } => {
                 let borrowed = captured_env.borrow();
                 assert!(borrowed.contains_key("outer_var"));
                 assert_eq!(borrowed.get("outer_var"), Some(&Value::Integer(100)));
@@ -325,7 +330,9 @@ mod tests {
         let result = eval_function("my_fn", &params, &body, &env, |_, _| {}).unwrap();
 
         match result {
-            Value::Closure { env: captured_env, .. } => {
+            Value::Closure {
+                env: captured_env, ..
+            } => {
                 let borrowed = captured_env.borrow();
                 assert!(borrowed.contains_key("captured"));
             }
@@ -486,17 +493,18 @@ mod tests {
     #[test]
     fn test_eval_lambda_preserves_body() {
         let params = vec![];
-        let body = Expr::new(ExprKind::Literal(Literal::String("test".to_string())), Span::default());
+        let body = Expr::new(
+            ExprKind::Literal(Literal::String("test".to_string())),
+            Span::default(),
+        );
         let env = Rc::new(RefCell::new(HashMap::new()));
 
         let result = eval_lambda(&params, &body, &env).unwrap();
         match result {
-            Value::Closure { body, .. } => {
-                match &body.kind {
-                    ExprKind::Literal(Literal::String(s)) => assert_eq!(s, "test"),
-                    _ => panic!("Expected string literal body"),
-                }
-            }
+            Value::Closure { body, .. } => match &body.kind {
+                ExprKind::Literal(Literal::String(s)) => assert_eq!(s, "test"),
+                _ => panic!("Expected string literal body"),
+            },
             _ => panic!("Expected closure"),
         }
     }
@@ -505,7 +513,10 @@ mod tests {
     fn test_eval_lambda_with_float_default() {
         let params = vec![Param {
             pattern: Pattern::Identifier("x".to_string()),
-            ty: Type { kind: TypeKind::Named(String::new()), span: Span::default() },
+            ty: Type {
+                kind: TypeKind::Named(String::new()),
+                span: Span::default(),
+            },
             span: Span::default(),
             is_mutable: false,
             default_value: Some(Box::new(Expr::new(
@@ -550,7 +561,8 @@ mod tests {
 
         let result = eval_function("test", &params, &body, &env, |_, value| {
             bound_value = Some(value);
-        }).unwrap();
+        })
+        .unwrap();
 
         // The returned closure should match the bound one
         match (&result, &bound_value) {
@@ -572,14 +584,12 @@ mod tests {
 
         let result = eval_function("complex", &params, &body, &env, |_, _| {}).unwrap();
         match result {
-            Value::Closure { body, .. } => {
-                match &body.kind {
-                    ExprKind::Block(expressions) => {
-                        assert_eq!(expressions.len(), 2);
-                    }
-                    _ => panic!("Expected block body"),
+            Value::Closure { body, .. } => match &body.kind {
+                ExprKind::Block(expressions) => {
+                    assert_eq!(expressions.len(), 2);
                 }
-            }
+                _ => panic!("Expected block body"),
+            },
             _ => panic!("Expected closure"),
         }
     }
@@ -636,7 +646,10 @@ mod tests {
         env_map.insert("int_val".to_string(), Value::Integer(42));
         env_map.insert("float_val".to_string(), Value::Float(3.14));
         env_map.insert("bool_val".to_string(), Value::Bool(true));
-        env_map.insert("str_val".to_string(), Value::from_string("hello".to_string()));
+        env_map.insert(
+            "str_val".to_string(),
+            Value::from_string("hello".to_string()),
+        );
         let env = Rc::new(RefCell::new(env_map));
 
         let result = eval_lambda(&params, &body, &env).unwrap();
@@ -677,7 +690,8 @@ mod tests {
         let result = eval_function("test", &params, &body, &env, |_, _| {}).unwrap();
 
         // Modify original env after function creation
-        env.borrow_mut().insert("new_key".to_string(), Value::Integer(999));
+        env.borrow_mut()
+            .insert("new_key".to_string(), Value::Integer(999));
 
         // Closure should see the update (shared reference)
         match result {
@@ -745,11 +759,9 @@ mod tests {
         let _ = eval_function_call(
             &func_expr,
             &args,
-            |expr| {
-                match &expr.kind {
-                    ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n * 2)),
-                    _ => Ok(Value::Integer(0)),
-                }
+            |expr| match &expr.kind {
+                ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n * 2)),
+                _ => Ok(Value::Integer(0)),
             },
             |_, arg_vals| {
                 *received_args.borrow_mut() = arg_vals.to_vec();
@@ -758,7 +770,10 @@ mod tests {
         );
 
         // Args should be doubled by eval
-        assert_eq!(*received_args.borrow(), vec![Value::Integer(20), Value::Integer(40)]);
+        assert_eq!(
+            *received_args.borrow(),
+            vec![Value::Integer(20), Value::Integer(40)]
+        );
     }
 
     #[test]
@@ -771,7 +786,8 @@ mod tests {
             &args,
             |_| Ok(Value::Integer(0)),
             |_, _| Ok(Value::from_string("result".to_string())),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::from_string("result".to_string()));
     }
@@ -866,12 +882,10 @@ mod tests {
 
         let result = eval_function("bool_fn", &params, &body, &env, |_, _| {}).unwrap();
         match result {
-            Value::Closure { body, .. } => {
-                match &body.kind {
-                    ExprKind::Literal(Literal::Bool(b)) => assert!(*b),
-                    _ => panic!("Expected bool literal body"),
-                }
-            }
+            Value::Closure { body, .. } => match &body.kind {
+                ExprKind::Literal(Literal::Bool(b)) => assert!(*b),
+                _ => panic!("Expected bool literal body"),
+            },
             _ => panic!("Expected closure"),
         }
     }
@@ -906,7 +920,8 @@ mod tests {
                 assert_eq!(arg_vals.len(), 1);
                 Ok(arg_vals[0].clone())
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Integer(42));
     }
@@ -925,7 +940,10 @@ mod round_134_tests {
     use std::rc::Rc;
 
     fn make_literal_expr(val: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(val, None)), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(val, None)),
+            Span::default(),
+        )
     }
 
     fn make_string_literal_expr(s: &str) -> Expr {
@@ -974,12 +992,10 @@ mod round_134_tests {
 
         let result = eval_lambda(&params, &body, &env).unwrap();
         match result {
-            Value::Closure { body, .. } => {
-                match &body.kind {
-                    ExprKind::Literal(Literal::String(s)) => assert_eq!(s, "hello"),
-                    _ => panic!("Expected string literal body"),
-                }
-            }
+            Value::Closure { body, .. } => match &body.kind {
+                ExprKind::Literal(Literal::String(s)) => assert_eq!(s, "hello"),
+                _ => panic!("Expected string literal body"),
+            },
             _ => panic!("Expected closure"),
         }
     }
@@ -992,12 +1008,10 @@ mod round_134_tests {
 
         let result = eval_lambda(&params, &body, &env).unwrap();
         match result {
-            Value::Closure { body, .. } => {
-                match &body.kind {
-                    ExprKind::Literal(Literal::Bool(b)) => assert!(!*b),
-                    _ => panic!("Expected bool literal body"),
-                }
-            }
+            Value::Closure { body, .. } => match &body.kind {
+                ExprKind::Literal(Literal::Bool(b)) => assert!(!*b),
+                _ => panic!("Expected bool literal body"),
+            },
             _ => panic!("Expected closure"),
         }
     }
@@ -1093,7 +1107,8 @@ mod round_134_tests {
                 assert!(arg_vals.is_empty());
                 Ok(Value::from_string("no args".to_string()))
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::from_string("no args".to_string()));
     }
@@ -1104,11 +1119,14 @@ mod round_134_tests {
         let params = vec![];
         let body = make_literal_expr(0);
         let mut env_map = HashMap::new();
-        env_map.insert("arr".to_string(), Value::from_array(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3),
-        ]));
+        env_map.insert(
+            "arr".to_string(),
+            Value::from_array(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3),
+            ]),
+        );
         let env = Rc::new(RefCell::new(env_map));
 
         let result = eval_lambda(&params, &body, &env).unwrap();
@@ -1150,7 +1168,9 @@ mod round_134_tests {
             |_| {
                 *eval_count.borrow_mut() += 1;
                 if *eval_count.borrow() == 1 {
-                    Err(InterpreterError::RuntimeError("func eval error".to_string()))
+                    Err(InterpreterError::RuntimeError(
+                        "func eval error".to_string(),
+                    ))
                 } else {
                     Ok(Value::Integer(0))
                 }
@@ -1165,11 +1185,7 @@ mod round_134_tests {
     // --- Param name edge cases ---
     #[test]
     fn test_eval_lambda_single_char_params() {
-        let params = vec![
-            make_param("a"),
-            make_param("b"),
-            make_param("c"),
-        ];
+        let params = vec![make_param("a"), make_param("b"), make_param("c")];
         let body = make_literal_expr(0);
         let env = Rc::new(RefCell::new(HashMap::new()));
 
@@ -1231,7 +1247,8 @@ mod round_134_tests {
             &args,
             |_| Ok(Value::Integer(0)),
             |_, _| Ok(Value::Float(3.14)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Float(3.14));
     }
@@ -1246,7 +1263,8 @@ mod round_134_tests {
             &args,
             |_| Ok(Value::Integer(0)),
             |_, _| Ok(Value::Bool(true)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Bool(true));
     }
@@ -1261,7 +1279,8 @@ mod round_134_tests {
             &args,
             |_| Ok(Value::Integer(0)),
             |_, _| Ok(Value::Nil),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Nil);
     }
@@ -1355,10 +1374,7 @@ mod round_134_tests {
 
     #[test]
     fn test_eval_function_multiple_params_with_defaults() {
-        let params = vec![
-            make_param("a"),
-            make_param_with_default("b", 10),
-        ];
+        let params = vec![make_param("a"), make_param_with_default("b", 10)];
         let body = make_literal_expr(0);
         let env = Rc::new(RefCell::new(HashMap::new()));
 
@@ -1405,7 +1421,8 @@ mod round_134_tests {
                 assert_eq!(args.len(), 1);
                 Ok(Value::Integer(100))
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Integer(100));
     }
@@ -1423,7 +1440,8 @@ mod round_134_tests {
                 assert_eq!(args.len(), 10);
                 Ok(Value::Integer(args.len() as i64))
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Integer(10));
     }
@@ -1438,7 +1456,8 @@ mod round_134_tests {
             &args,
             |_| Ok(Value::Integer(0)),
             |_, _| Ok(Value::from_string("hello".to_string())),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
@@ -1452,8 +1471,14 @@ mod round_134_tests {
             &func_expr,
             &args,
             |_| Ok(Value::Integer(0)),
-            |_, _| Ok(Value::Array(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]))),
-        ).unwrap();
+            |_, _| {
+                Ok(Value::Array(std::sync::Arc::from(vec![
+                    Value::Integer(1),
+                    Value::Integer(2),
+                ])))
+            },
+        )
+        .unwrap();
 
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 2);
@@ -1566,11 +1591,7 @@ mod round_134_tests {
 
     #[test]
     fn test_eval_function_three_params() {
-        let params = vec![
-            make_param("x"),
-            make_param("y"),
-            make_param("z"),
-        ];
+        let params = vec![make_param("x"), make_param("y"), make_param("z")];
         let body = make_literal_expr(0);
         let env = Rc::new(RefCell::new(HashMap::new()));
 
@@ -1618,7 +1639,8 @@ mod round_134_tests {
 
         let result = eval_function("constant", &params, &body, &env, |name, val| {
             bound = Some((name, val));
-        }).unwrap();
+        })
+        .unwrap();
 
         assert!(bound.is_some());
         match result {
@@ -1686,7 +1708,9 @@ mod round_134_tests {
 
         let result = eval_function("test_fn", &params, &body, &env, |_, _| {}).unwrap();
         match result {
-            Value::Closure { env: closure_env, .. } => {
+            Value::Closure {
+                env: closure_env, ..
+            } => {
                 // Closure should capture the environment
                 assert!(closure_env.borrow().get("existing").is_some());
             }
@@ -1697,7 +1721,10 @@ mod round_134_tests {
     #[test]
     fn test_eval_lambda_captures_env_r159() {
         let mut env_map = HashMap::new();
-        env_map.insert("captured".to_string(), Value::from_string("value".to_string()));
+        env_map.insert(
+            "captured".to_string(),
+            Value::from_string("value".to_string()),
+        );
         let env = Rc::new(RefCell::new(env_map));
 
         let params = vec![];
@@ -1705,7 +1732,9 @@ mod round_134_tests {
 
         let result = eval_lambda(&params, &body, &env).unwrap();
         match result {
-            Value::Closure { env: closure_env, .. } => {
+            Value::Closure {
+                env: closure_env, ..
+            } => {
                 assert!(closure_env.borrow().get("captured").is_some());
             }
             _ => panic!("Expected closure"),
@@ -1733,7 +1762,8 @@ mod round_134_tests {
                 // Simple function that returns the first argument
                 Ok(args.get(0).cloned().unwrap_or(Value::Nil))
             },
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Integer(10));
     }

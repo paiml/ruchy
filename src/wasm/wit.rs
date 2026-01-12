@@ -1093,13 +1093,12 @@ mod additional_tests {
 
     #[test]
     fn test_format_wit_type_nested() {
-        let result =
-            WitGenerator::format_wit_type(&WitType::List(Box::new(WitType::Option(Box::new(
-                WitType::Result {
-                    ok: Some(Box::new(WitType::U32)),
-                    err: Some(Box::new(WitType::String)),
-                },
-            )))));
+        let result = WitGenerator::format_wit_type(&WitType::List(Box::new(WitType::Option(
+            Box::new(WitType::Result {
+                ok: Some(Box::new(WitType::U32)),
+                err: Some(Box::new(WitType::String)),
+            }),
+        ))));
         assert_eq!(result, "list<option<result<u32, string>>>");
     }
 
