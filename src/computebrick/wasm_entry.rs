@@ -212,4 +212,123 @@ mod tests {
         let output = widget.to_string();
         assert!(!output.is_empty());
     }
+
+    // WA03: WASM graph widget with title
+    #[test]
+    fn test_wasm_graph_with_title_wa03() {
+        let widget = WasmWidget::new_graph(
+            vec![1.0, 2.0, 3.0, 4.0, 5.0],
+            Some("Test Graph".to_string()),
+            None,
+        );
+        assert_eq!(widget.buffer.width(), 80);
+        assert_eq!(widget.buffer.height(), 24);
+    }
+
+    // WA04: WASM graph widget with color
+    #[test]
+    fn test_wasm_graph_with_color_wa04() {
+        let widget = WasmWidget::new_graph(
+            vec![10.0, 20.0, 30.0],
+            None,
+            Some("blue".to_string()),
+        );
+        assert_eq!(widget.buffer.width(), 80);
+    }
+
+    // WA06: WASM graph widget with title and color
+    #[test]
+    fn test_wasm_graph_with_title_and_color_wa06() {
+        let widget = WasmWidget::new_graph(
+            vec![5.0, 10.0, 15.0, 20.0],
+            Some("My Chart".to_string()),
+            Some("green".to_string()),
+        );
+        assert_eq!(widget.buffer.width(), 80);
+        assert_eq!(widget.buffer.height(), 24);
+    }
+
+    // WA07: WASM meter widget with no label
+    #[test]
+    fn test_wasm_meter_no_label_wa07() {
+        let widget = WasmWidget::new_meter(75.0, 100.0, None);
+        assert_eq!(widget.buffer.height(), 1);
+        assert_eq!(widget.buffer.width(), 80);
+    }
+
+    // WA08: WASM meter widget at zero value
+    #[test]
+    fn test_wasm_meter_zero_value_wa08() {
+        let widget = WasmWidget::new_meter(0.0, 100.0, Some("Empty".to_string()));
+        assert_eq!(widget.buffer.height(), 1);
+    }
+
+    // WA09: WASM meter widget at max value
+    #[test]
+    fn test_wasm_meter_max_value_wa09() {
+        let widget = WasmWidget::new_meter(100.0, 100.0, Some("Full".to_string()));
+        assert_eq!(widget.buffer.height(), 1);
+    }
+
+    // WA10: WASM graph with empty data
+    #[test]
+    fn test_wasm_graph_empty_data_wa10() {
+        let widget = WasmWidget::new_graph(vec![], None, None);
+        assert_eq!(widget.buffer.width(), 80);
+    }
+
+    // WA11: WASM graph with single data point
+    #[test]
+    fn test_wasm_graph_single_point_wa11() {
+        let widget = WasmWidget::new_graph(vec![42.0], None, None);
+        assert_eq!(widget.buffer.width(), 80);
+    }
+
+    // WA12: WASM meter to_string produces output
+    #[test]
+    fn test_wasm_meter_to_string_wa12() {
+        let mut widget = WasmWidget::new_meter(50.0, 100.0, Some("RAM".to_string()));
+        let output = widget.to_string();
+        assert!(!output.is_empty());
+        assert!(output.contains('\n')); // Should have at least one newline
+    }
+
+    // WA13: WASM graph with large data set
+    #[test]
+    fn test_wasm_graph_large_data_wa13() {
+        let data: Vec<f64> = (0..1000).map(|i| (i as f64).sin() * 100.0).collect();
+        let widget = WasmWidget::new_graph(data, Some("Sine Wave".to_string()), None);
+        assert_eq!(widget.buffer.width(), 80);
+    }
+
+    // WA14: WASM graph with negative values
+    #[test]
+    fn test_wasm_graph_negative_values_wa14() {
+        let widget = WasmWidget::new_graph(vec![-10.0, -5.0, 0.0, 5.0, 10.0], None, None);
+        assert_eq!(widget.buffer.width(), 80);
+    }
+
+    // WA15: WASM graph to_string produces lines
+    #[test]
+    fn test_wasm_graph_to_string_lines_wa15() {
+        let mut widget = WasmWidget::new_graph(vec![1.0, 2.0, 3.0], None, None);
+        let output = widget.to_string();
+        let line_count = output.lines().count();
+        assert!(line_count > 0);
+    }
+
+    // WA16: WASM meter with very large max
+    #[test]
+    fn test_wasm_meter_large_max_wa16() {
+        let widget = WasmWidget::new_meter(50.0, 1_000_000.0, Some("Big".to_string()));
+        assert_eq!(widget.buffer.height(), 1);
+    }
+
+    // WA17: WASM graph buffer dimensions correct
+    #[test]
+    fn test_wasm_graph_buffer_dimensions_wa17() {
+        let widget = WasmWidget::new_graph(vec![1.0, 2.0], None, None);
+        assert_eq!(widget.buffer.width(), 80);
+        assert_eq!(widget.buffer.height(), 24);
+    }
 }
