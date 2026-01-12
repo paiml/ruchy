@@ -11,14 +11,12 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::cast_possible_truncation)]
 
+use super::eval_func;
 use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::Param;
 use crate::runtime::interpreter::Interpreter;
-use super::eval_func;
 use crate::runtime::{InterpreterError, Value};
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
 use std::sync::Arc;
 
 impl Interpreter {
@@ -54,7 +52,11 @@ impl Interpreter {
     }
 
     /// Evaluate lambda expression
-    pub(crate) fn eval_lambda(&mut self, params: &[Param], body: &Expr) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_lambda(
+        &mut self,
+        params: &[Param],
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
         eval_func::eval_lambda(params, body, self.current_env())
     }
 
@@ -140,11 +142,7 @@ impl Interpreter {
 
         // Only return up to the number of provided args, in parameter order
         // This allows default params to kick in for any trailing None slots
-        result
-            .into_iter()
-            .take(provided_count)
-            .flatten()
-            .collect()
+        result.into_iter().take(provided_count).flatten().collect()
     }
 
     /// Evaluate function call
@@ -383,6 +381,9 @@ impl Interpreter {
 mod tests {
     use super::*;
     use crate::frontend::ast::{Literal, Pattern, Span, Type, TypeKind};
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    use std::rc::Rc;
 
     fn make_interpreter() -> Interpreter {
         Interpreter::new()
@@ -591,7 +592,10 @@ mod tests {
 
         let result = interp.eval_function_call(&func, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1"));
     }
 
     #[test]
@@ -622,7 +626,10 @@ mod tests {
 
         let result = interp.eval_function_call(&func, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
@@ -649,7 +656,10 @@ mod tests {
 
         let result = interp.eval_function_call(&func, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1"));
     }
 
     #[test]
@@ -663,7 +673,10 @@ mod tests {
 
         let result = interp.eval_function_call(&func, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1"));
     }
 
     #[test]
@@ -694,7 +707,10 @@ mod tests {
 
         let result = interp.eval_function_call(&func, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1"));
     }
 
     #[test]
@@ -708,7 +724,10 @@ mod tests {
 
         let result = interp.eval_function_call(&func, &args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1"));
     }
 
     #[test]

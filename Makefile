@@ -424,10 +424,10 @@ lint-check:
 		-A dead_code
 	@echo "✓ Strict lint check passed"
 
-# Run linter (default mode) - uses --no-default-features to avoid batteries-included bloat
+# Run linter (default mode) - uses minimal features including repl for binary
 lint:
 	@echo "Running clippy (minimal features for speed)..."
-	@cargo clippy --lib --bin ruchy --no-default-features -- -A clippy::arc-with-non-send-sync -A unsafe-code -D warnings
+	@cargo clippy --lib --bin ruchy --no-default-features --features repl -- -A clippy::arc-with-non-send-sync -A unsafe-code -D warnings
 	@echo "✓ Linting complete"
 
 # Run linter on all targets including tests (use with caution - test code may have warnings)

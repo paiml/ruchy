@@ -14,6 +14,8 @@
 #![allow(clippy::field_reassign_with_default)]
 #![allow(clippy::format_in_format_args)]
 #![allow(clippy::items_after_statements)]
+#![allow(clippy::redundant_pub_crate)]
+#![allow(clippy::doc_markdown)]
 #![allow(dead_code)]
 use anyhow::Result;
 use clap::{Parser, Subcommand};

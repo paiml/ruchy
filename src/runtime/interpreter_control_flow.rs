@@ -14,9 +14,6 @@
 use crate::frontend::ast::{BinaryOp as AstBinaryOp, Expr, ExprKind, Literal, MatchArm, Pattern};
 use crate::runtime::interpreter::{Interpreter, LoopControlOrError};
 use crate::runtime::{InterpreterError, Value};
-use std::cell::RefCell;
-use std::collections::HashMap;
-use std::rc::Rc;
 use std::sync::Arc;
 
 impl Interpreter {
@@ -411,7 +408,11 @@ impl Interpreter {
     /// let result = interpreter.eval_expr(&main_call).expect("eval_expr should succeed in doctest");
     /// assert!(matches!(result, Value::Integer(10)));
     /// ```
-    pub(crate) fn eval_assign(&mut self, target: &Expr, value: &Expr) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_assign(
+        &mut self,
+        target: &Expr,
+        value: &Expr,
+    ) -> Result<Value, InterpreterError> {
         let val = self.eval_expr(value)?;
 
         // Handle different assignment targets
@@ -685,6 +686,7 @@ impl Interpreter {
 mod tests {
     use super::*;
     use crate::frontend::ast::{Span, Type, TypeKind};
+    use std::collections::HashMap;
 
     fn make_interpreter() -> Interpreter {
         Interpreter::new()
@@ -767,7 +769,9 @@ mod tests {
         let mut interp = make_interpreter();
         let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
 
-        let result = interp.eval_for_array_iteration(None, "x", &[], &body).unwrap();
+        let result = interp
+            .eval_for_array_iteration(None, "x", &[], &body)
+            .unwrap();
         assert_eq!(result, Value::nil());
     }
 
@@ -780,7 +784,9 @@ mod tests {
         // Just return the loop variable - this tests iteration works
         let body = make_expr(ExprKind::Identifier("x".to_string()));
 
-        let result = interp.eval_for_array_iteration(None, "x", &arr, &body).unwrap();
+        let result = interp
+            .eval_for_array_iteration(None, "x", &arr, &body)
+            .unwrap();
         // Last value is 3
         assert_eq!(result, Value::Integer(3));
     }
@@ -797,7 +803,9 @@ mod tests {
         let end = Value::Integer(3);
         let body = make_expr(ExprKind::Identifier("i".to_string()));
 
-        let result = interp.eval_for_range_iteration(None, "i", &start, &end, false, &body).unwrap();
+        let result = interp
+            .eval_for_range_iteration(None, "i", &start, &end, false, &body)
+            .unwrap();
         // Last value is 2 (exclusive)
         assert_eq!(result, Value::Integer(2));
     }
@@ -810,7 +818,9 @@ mod tests {
         let end = Value::Integer(3);
         let body = make_expr(ExprKind::Identifier("i".to_string()));
 
-        let result = interp.eval_for_range_iteration(None, "i", &start, &end, true, &body).unwrap();
+        let result = interp
+            .eval_for_range_iteration(None, "i", &start, &end, true, &body)
+            .unwrap();
         // Last value is 3 (inclusive)
         assert_eq!(result, Value::Integer(3));
     }
@@ -861,12 +871,14 @@ mod tests {
         let mut interp = make_interpreter();
         let body = make_expr(ExprKind::Break {
             label: None,
-            value: Some(Box::new(make_expr(ExprKind::Literal(Literal::Integer(99, None))))),
+            value: Some(Box::new(make_expr(ExprKind::Literal(Literal::Integer(
+                99, None,
+            ))))),
         });
 
         let result = interp.eval_loop_body_with_control_flow(&body);
         match result {
-            Err(LoopControlOrError::Break(None, Value::Integer(99))) => {},
+            Err(LoopControlOrError::Break(None, Value::Integer(99))) => {}
             _ => panic!("Expected Break with value 99"),
         }
     }
@@ -878,7 +890,7 @@ mod tests {
 
         let result = interp.eval_loop_body_with_control_flow(&body);
         match result {
-            Err(LoopControlOrError::Continue(None)) => {},
+            Err(LoopControlOrError::Continue(None)) => {}
             _ => panic!("Expected Continue"),
         }
     }
@@ -887,12 +899,14 @@ mod tests {
     fn test_eval_loop_body_with_control_flow_return() {
         let mut interp = make_interpreter();
         let body = make_expr(ExprKind::Return {
-            value: Some(Box::new(make_expr(ExprKind::Literal(Literal::Integer(42, None)))))
+            value: Some(Box::new(make_expr(ExprKind::Literal(Literal::Integer(
+                42, None,
+            ))))),
         });
 
         let result = interp.eval_loop_body_with_control_flow(&body);
         match result {
-            Err(LoopControlOrError::Return(Value::Integer(42))) => {},
+            Err(LoopControlOrError::Return(Value::Integer(42))) => {}
             _ => panic!("Expected Return with value 42"),
         }
     }
@@ -952,13 +966,11 @@ mod tests {
 
         // match 42 { x => x }
         let expr = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let arms = vec![
-            make_match_arm(
-                Pattern::Identifier("x".to_string()),
-                None,
-                make_expr(ExprKind::Identifier("x".to_string())),
-            ),
-        ];
+        let arms = vec![make_match_arm(
+            Pattern::Identifier("x".to_string()),
+            None,
+            make_expr(ExprKind::Identifier("x".to_string())),
+        )];
 
         let result = interp.eval_match(&expr, &arms).unwrap();
         assert_eq!(result, Value::Integer(42));
@@ -1023,17 +1035,18 @@ mod tests {
         let mut interp = make_interpreter();
 
         let expr = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let arms = vec![
-            make_match_arm(
-                Pattern::Literal(Literal::Integer(1, None)),
-                None,
-                make_expr(ExprKind::Literal(Literal::Integer(0, None))),
-            ),
-        ];
+        let arms = vec![make_match_arm(
+            Pattern::Literal(Literal::Integer(1, None)),
+            None,
+            make_expr(ExprKind::Literal(Literal::Integer(0, None))),
+        )];
 
         let result = interp.eval_match(&expr, &arms);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("No match arm matched"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("No match arm matched"));
     }
 
     // =========================================================================
@@ -1184,10 +1197,13 @@ mod tests {
         // Create a struct with a field
         let mut fields = HashMap::new();
         fields.insert("x".to_string(), Value::Integer(0));
-        interp.set_variable("point", Value::Struct {
-            name: "Point".to_string(),
-            fields: Arc::new(fields),
-        });
+        interp.set_variable(
+            "point",
+            Value::Struct {
+                name: "Point".to_string(),
+                fields: Arc::new(fields),
+            },
+        );
 
         // point.x = 42
         let target = make_expr(ExprKind::FieldAccess {
@@ -1217,7 +1233,10 @@ mod tests {
 
         let result = interp.eval_assign(&target, &value);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid assignment target"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid assignment target"));
     }
 
     // =========================================================================
@@ -1229,17 +1248,22 @@ mod tests {
         let mut interp = make_interpreter();
 
         // arr = [1, 2, 3]
-        interp.set_variable("arr", Value::Array(Arc::from(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-            Value::Integer(3),
-        ])));
+        interp.set_variable(
+            "arr",
+            Value::Array(Arc::from(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3),
+            ])),
+        );
 
         // arr[1] = 99
         let object = make_expr(ExprKind::Identifier("arr".to_string()));
         let index = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
 
-        let result = interp.eval_index_assign(&object, &index, Value::Integer(99)).unwrap();
+        let result = interp
+            .eval_index_assign(&object, &index, Value::Integer(99))
+            .unwrap();
         assert_eq!(result, Value::Integer(99));
 
         let updated_arr = interp.lookup_variable("arr").unwrap();
@@ -1254,10 +1278,10 @@ mod tests {
     fn test_eval_index_assign_out_of_bounds() {
         let mut interp = make_interpreter();
 
-        interp.set_variable("arr", Value::Array(Arc::from(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-        ])));
+        interp.set_variable(
+            "arr",
+            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+        );
 
         let object = make_expr(ExprKind::Identifier("arr".to_string()));
         let index = make_expr(ExprKind::Literal(Literal::Integer(10, None)));
@@ -1271,16 +1295,17 @@ mod tests {
     fn test_eval_index_assign_non_integer_index() {
         let mut interp = make_interpreter();
 
-        interp.set_variable("arr", Value::Array(Arc::from(vec![
-            Value::Integer(1),
-        ])));
+        interp.set_variable("arr", Value::Array(Arc::from(vec![Value::Integer(1)])));
 
         let object = make_expr(ExprKind::Identifier("arr".to_string()));
         let index = make_expr(ExprKind::Literal(Literal::String("key".to_string())));
 
         let result = interp.eval_index_assign(&object, &index, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("must be an integer"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be an integer"));
     }
 
     #[test]
@@ -1294,7 +1319,10 @@ mod tests {
 
         let result = interp.eval_index_assign(&object, &index, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Cannot index non-array"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot index non-array"));
     }
 
     #[test]
@@ -1302,10 +1330,13 @@ mod tests {
         let mut interp = make_interpreter();
 
         // matrix = [[1, 2], [3, 4]]
-        interp.set_variable("matrix", Value::Array(Arc::from(vec![
-            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
-            Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)])),
-        ])));
+        interp.set_variable(
+            "matrix",
+            Value::Array(Arc::from(vec![
+                Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+                Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)])),
+            ])),
+        );
 
         // matrix[0][1] = 99
         let nested_obj = make_expr(ExprKind::Identifier("matrix".to_string()));
@@ -1316,7 +1347,9 @@ mod tests {
         });
         let inner_idx = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
 
-        let result = interp.eval_index_assign(&object, &inner_idx, Value::Integer(99)).unwrap();
+        let result = interp
+            .eval_index_assign(&object, &inner_idx, Value::Integer(99))
+            .unwrap();
         assert_eq!(result, Value::Integer(99));
 
         let updated = interp.lookup_variable("matrix").unwrap();
@@ -1344,7 +1377,9 @@ mod tests {
         let target = make_expr(ExprKind::Identifier("x".to_string()));
         let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
 
-        let result = interp.eval_compound_assign(&target, AstBinaryOp::Add, &value).unwrap();
+        let result = interp
+            .eval_compound_assign(&target, AstBinaryOp::Add, &value)
+            .unwrap();
         assert_eq!(result, Value::Integer(15));
         assert_eq!(interp.lookup_variable("x").unwrap(), Value::Integer(15));
     }
@@ -1358,7 +1393,9 @@ mod tests {
         let target = make_expr(ExprKind::Identifier("x".to_string()));
         let value = make_expr(ExprKind::Literal(Literal::Integer(3, None)));
 
-        let result = interp.eval_compound_assign(&target, AstBinaryOp::Subtract, &value).unwrap();
+        let result = interp
+            .eval_compound_assign(&target, AstBinaryOp::Subtract, &value)
+            .unwrap();
         assert_eq!(result, Value::Integer(7));
     }
 
@@ -1371,7 +1408,9 @@ mod tests {
         let target = make_expr(ExprKind::Identifier("x".to_string()));
         let value = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
 
-        let result = interp.eval_compound_assign(&target, AstBinaryOp::Multiply, &value).unwrap();
+        let result = interp
+            .eval_compound_assign(&target, AstBinaryOp::Multiply, &value)
+            .unwrap();
         assert_eq!(result, Value::Integer(20));
     }
 
@@ -1390,7 +1429,9 @@ mod tests {
         });
         let value = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
 
-        let result = interp.eval_compound_assign(&target, AstBinaryOp::Add, &value).unwrap();
+        let result = interp
+            .eval_compound_assign(&target, AstBinaryOp::Add, &value)
+            .unwrap();
         assert_eq!(result, Value::Integer(6));
     }
 
@@ -1404,6 +1445,9 @@ mod tests {
 
         let result = interp.eval_compound_assign(&target, AstBinaryOp::Add, &value);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid compound assignment target"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Invalid compound assignment target"));
     }
 }

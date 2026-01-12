@@ -9,16 +9,18 @@ use crate::frontend::ast::{Expr, ExprKind};
 use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::Arc;
 
 impl Interpreter {
     /// ISSUE-106: Evaluate module expression
     /// Creates a namespace object containing all functions defined in the module body
     /// MODULE-001 FIX: Two-pass approach so intra-module calls work
     /// Complexity: 8
-    pub(crate) fn eval_module_expr(&mut self, name: &str, body: &Expr) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_module_expr(
+        &mut self,
+        name: &str,
+        body: &Expr,
+    ) -> Result<Value, InterpreterError> {
         use std::collections::HashMap;
         use std::sync::Arc;
 
@@ -76,7 +78,9 @@ impl Interpreter {
                     let nested_module = self.eval_module_expr(nested_name, nested_body)?;
                     self.env_stack.pop();
                     // Add nested module to parent module's environment
-                    module_env.borrow_mut().insert(nested_name.clone(), nested_module);
+                    module_env
+                        .borrow_mut()
+                        .insert(nested_name.clone(), nested_module);
                 }
                 _ => {}
             }
@@ -105,7 +109,9 @@ impl Interpreter {
                     }
                 }
                 // MODULE-002 FIX: Public nested modules
-                ExprKind::Module { name: nested_name, .. } => {
+                ExprKind::Module {
+                    name: nested_name, ..
+                } => {
                     // Check if nested module is public (currently all modules are public)
                     if let Some(nested_mod) = module_env.borrow().get(nested_name) {
                         module_namespace.insert(nested_name.clone(), nested_mod.clone());
@@ -166,8 +172,14 @@ mod tests {
         let result = interp.eval_module_expr("empty_mod", &body).unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Module".to_string())));
-            assert_eq!(obj.get("__name"), Some(&Value::from_string("empty_mod".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Module".to_string()))
+            );
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("empty_mod".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -281,7 +293,10 @@ mod tests {
         let result = interp.eval_module_expr("single", &single).unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Module".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Module".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -298,7 +313,10 @@ mod tests {
         let lookup = interp.lookup_variable("my_mod");
         assert!(lookup.is_ok());
         if let Value::Object(obj) = lookup.unwrap() {
-            assert_eq!(obj.get("__name"), Some(&Value::from_string("my_mod".to_string())));
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("my_mod".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }

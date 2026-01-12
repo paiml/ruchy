@@ -17,19 +17,15 @@
 #![allow(clippy::cast_possible_truncation)] // Controlled truncations for indices
 
 use super::eval_expr;
-use super::eval_func;
 use super::eval_literal;
-use super::eval_method;
 use super::eval_operations;
 // EXTREME TDD Round 52: Value types imported from dedicated module
 pub use super::value::{DataFrameColumn, Value};
 // EXTREME TDD Round 52: Interpreter types imported from dedicated module
 pub use super::interpreter_types::{CallFrame, InterpreterError, InterpreterResult};
 use crate::frontend::ast::{
-    BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, MatchArm, Pattern,
-    StringPart,
+    BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, Pattern, StringPart,
 };
-use crate::frontend::Param;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
@@ -222,7 +218,10 @@ impl Interpreter {
     ///
     /// Returns an error if the expression evaluation fails or if the expression
     /// type is not yet implemented.
-    pub(crate) fn eval_expr_kind(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_expr_kind(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             // Simple expressions (complexity: 2)
             ExprKind::Literal(_) | ExprKind::Identifier(_) => self.eval_simple_expr(expr_kind),
@@ -260,7 +259,10 @@ impl Interpreter {
 
     /// Evaluate simple expressions (literals and identifiers)
     /// Complexity: 3
-    pub(crate) fn eval_simple_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_simple_expr(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Literal(lit) => Ok(eval_literal::eval_literal(lit)),
             ExprKind::Identifier(name) => self.lookup_variable(name),
@@ -270,7 +272,10 @@ impl Interpreter {
 
     /// Evaluate operation expressions (binary, unary, calls, method calls, type casts, etc.)
     /// Complexity: 9
-    pub(crate) fn eval_operation_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_operation_expr(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Binary { left, op, right } => self.eval_binary_expr(left, *op, right),
             ExprKind::Unary { op, operand } => self.eval_unary_expr(*op, operand),
@@ -292,7 +297,10 @@ impl Interpreter {
 
     /// Evaluate function expressions (function definitions and lambdas)
     /// Complexity: 3
-    pub(crate) fn eval_function_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_function_expr(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Function {
                 name, params, body, ..
@@ -345,7 +353,10 @@ impl Interpreter {
 
     /// Evaluate type definition expressions (Actor, Struct, Class, Impl)
     /// Complexity: 6
-    pub(crate) fn eval_type_definition(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_type_definition(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Actor {
                 name,
@@ -416,7 +427,10 @@ impl Interpreter {
 
     /// Evaluate actor operation expressions (Spawn, `ActorSend`, `ActorQuery`)
     /// Complexity: 4
-    pub(crate) fn eval_actor_operation(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_actor_operation(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Spawn { actor } => self.eval_spawn_actor(actor),
             ExprKind::ActorSend { actor, message } => self.eval_actor_send(actor, message),
@@ -427,7 +441,10 @@ impl Interpreter {
 
     /// Evaluate special form expressions (None, Some, Set, patterns, literals)
     /// Complexity: 9
-    pub(crate) fn eval_special_form(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_special_form(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::None => Ok(Value::EnumVariant {
                 enum_name: "Option".to_string(),
@@ -495,7 +512,10 @@ impl Interpreter {
 
     /// Evaluate miscellaneous expressions
     /// Complexity: 7 (was 5, added import handling)
-    pub(crate) fn eval_misc_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_misc_expr(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         if Self::is_type_definition(expr_kind) {
             return self.eval_type_definition(expr_kind);
         }
@@ -1218,7 +1238,11 @@ impl Interpreter {
 
     /// Helper: Evaluate actor send expression (fire-and-forget)
     /// Complexity: 4
-    pub(crate) fn eval_actor_send(&mut self, actor: &Expr, message: &Expr) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_actor_send(
+        &mut self,
+        actor: &Expr,
+        message: &Expr,
+    ) -> Result<Value, InterpreterError> {
         let actor_value = self.eval_expr(actor)?;
         let message_value = self.eval_message_expr(message)?;
 
@@ -1273,7 +1297,10 @@ impl Interpreter {
         eval_expr::is_assignment_expr(expr_kind)
     }
 
-    pub(crate) fn eval_control_flow_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_control_flow_expr(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::If {
                 condition,
@@ -1359,7 +1386,10 @@ impl Interpreter {
         }
     }
 
-    pub(crate) fn eval_assignment_expr(&mut self, expr_kind: &ExprKind) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_assignment_expr(
+        &mut self,
+        expr_kind: &ExprKind,
+    ) -> Result<Value, InterpreterError> {
         match expr_kind {
             ExprKind::Assign { target, value } => self.eval_assign(target, value),
             ExprKind::CompoundAssign { target, op, value } => {
@@ -1368,7 +1398,6 @@ impl Interpreter {
             _ => unreachable!("Non-assignment expression passed to eval_assignment_expr"),
         }
     }
-
 
     /// Evaluate a literal value
     pub(crate) fn eval_literal(&self, lit: &Literal) -> Value {
@@ -1589,7 +1618,11 @@ impl Interpreter {
     }
 
     /// Call a function with given arguments
-    pub(crate) fn call_function(&mut self, func: Value, args: &[Value]) -> Result<Value, InterpreterError> {
+    pub(crate) fn call_function(
+        &mut self,
+        func: Value,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
         match func {
             Value::String(ref s) if s.starts_with("__class_constructor__:") => {
                 // Extract class name and constructor name from the marker
@@ -1886,7 +1919,11 @@ impl Interpreter {
 
     /// Evaluate containment check (Python-style 'in' operator)
     /// Supports: strings, arrays/lists, maps/dicts
-    pub(crate) fn eval_contains(&self, element: &Value, collection: &Value) -> Result<bool, InterpreterError> {
+    pub(crate) fn eval_contains(
+        &self,
+        element: &Value,
+        collection: &Value,
+    ) -> Result<bool, InterpreterError> {
         match collection {
             // String contains: "substring" in "full string"
             Value::String(s) => {
@@ -2046,7 +2083,10 @@ impl Interpreter {
     }
 
     /// Evaluate return expression
-    pub(crate) fn eval_return_expr(&mut self, value: Option<&Expr>) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_return_expr(
+        &mut self,
+        value: Option<&Expr>,
+    ) -> Result<Value, InterpreterError> {
         crate::runtime::eval_control_flow_new::eval_return_expr(value, |e| self.eval_expr(e))
     }
 
@@ -2070,11 +2110,15 @@ impl Interpreter {
     /// QA-026 FIX: Block expressions must create a new scope so that `let` bindings
     /// inside the block shadow outer variables instead of overwriting them.
     /// This ensures `let x = 10; if true { let x = 20 }; println(x)` prints 10, not 20.
-    pub(crate) fn eval_block_expr(&mut self, statements: &[Expr]) -> Result<Value, InterpreterError> {
+    pub(crate) fn eval_block_expr(
+        &mut self,
+        statements: &[Expr],
+    ) -> Result<Value, InterpreterError> {
         // QA-026: Push new scope for block
         self.push_scope();
-        let result =
-            crate::runtime::eval_control_flow_new::eval_block_expr(statements, |e| self.eval_expr(e));
+        let result = crate::runtime::eval_control_flow_new::eval_block_expr(statements, |e| {
+            self.eval_expr(e)
+        });
         // QA-026: Pop scope after block completes (even on error)
         self.pop_scope();
         result
@@ -2543,10 +2587,6 @@ impl Interpreter {
         }
     }
 
-
-
-
-
     /// Evaluate string interpolation
     pub(crate) fn eval_string_interpolation(
         &mut self,
@@ -2578,7 +2618,6 @@ impl Interpreter {
     pub(crate) fn format_value_with_spec(value: &Value, spec: &str) -> String {
         crate::runtime::value_format::format_value_with_spec(value, spec)
     }
-
 
     /// Push an error handling scope for try/catch blocks
     ///
@@ -2882,7 +2921,9 @@ mod tests {
     #[test]
     fn test_is_actor_operation_spawn() {
         let inner = make_expr(ExprKind::Identifier("Counter".to_string()));
-        let kind = ExprKind::Spawn { actor: Box::new(inner) };
+        let kind = ExprKind::Spawn {
+            actor: Box::new(inner),
+        };
         assert!(Interpreter::is_actor_operation(&kind));
     }
 
@@ -2890,7 +2931,10 @@ mod tests {
     fn test_is_actor_operation_send() {
         let actor = Box::new(make_expr(ExprKind::Identifier("counter".to_string())));
         let msg = Box::new(make_expr(ExprKind::Identifier("Inc".to_string())));
-        let kind = ExprKind::ActorSend { actor, message: msg };
+        let kind = ExprKind::ActorSend {
+            actor,
+            message: msg,
+        };
         assert!(Interpreter::is_actor_operation(&kind));
     }
 
@@ -2910,7 +2954,9 @@ mod tests {
     #[test]
     fn test_is_special_form_some() {
         let inner = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let kind = ExprKind::Some { value: Box::new(inner) };
+        let kind = ExprKind::Some {
+            value: Box::new(inner),
+        };
         assert!(Interpreter::is_special_form(&kind));
     }
 
@@ -3067,7 +3113,10 @@ mod tests {
         let interp = make_interpreter();
         let result = interp.lookup_variable("nonexistent");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Undefined variable"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Undefined variable"));
     }
 
     #[test]
@@ -3353,7 +3402,9 @@ mod tests {
     fn test_eval_contains_string_found() {
         let interp = make_interpreter();
         let s = Value::from_string("hello world".to_string());
-        let result = interp.eval_contains(&Value::from_string("world".to_string()), &s).unwrap();
+        let result = interp
+            .eval_contains(&Value::from_string("world".to_string()), &s)
+            .unwrap();
         assert!(result);
     }
 
@@ -3361,7 +3412,9 @@ mod tests {
     fn test_eval_contains_string_not_found() {
         let interp = make_interpreter();
         let s = Value::from_string("hello world".to_string());
-        let result = interp.eval_contains(&Value::from_string("foo".to_string()), &s).unwrap();
+        let result = interp
+            .eval_contains(&Value::from_string("foo".to_string()), &s)
+            .unwrap();
         assert!(!result);
     }
 
@@ -3372,7 +3425,12 @@ mod tests {
         let start = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
         let end = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
         let result = interp.eval_range_expr(&start, &end, false).unwrap();
-        if let Value::Range { start: s, end: e, inclusive } = result {
+        if let Value::Range {
+            start: s,
+            end: e,
+            inclusive,
+        } = result
+        {
             assert_eq!(*s, Value::Integer(0));
             assert_eq!(*e, Value::Integer(5));
             assert!(!inclusive);
@@ -3387,7 +3445,12 @@ mod tests {
         let start = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
         let end = make_expr(ExprKind::Literal(Literal::Integer(10, None)));
         let result = interp.eval_range_expr(&start, &end, true).unwrap();
-        if let Value::Range { start: s, end: e, inclusive } = result {
+        if let Value::Range {
+            start: s,
+            end: e,
+            inclusive,
+        } = result
+        {
             assert_eq!(*s, Value::Integer(1));
             assert_eq!(*e, Value::Integer(10));
             assert!(inclusive);
@@ -3548,7 +3611,9 @@ mod tests {
     #[test]
     fn test_compute_field_access_type() {
         let interp = make_interpreter();
-        let result = interp.compute_field_access(&Value::Integer(42), "type").unwrap();
+        let result = interp
+            .compute_field_access(&Value::Integer(42), "type")
+            .unwrap();
         assert_eq!(result, Value::from_string("integer".to_string()));
     }
 
@@ -3582,7 +3647,12 @@ mod tests {
     #[test]
     fn test_record_binary_op_feedback() {
         let mut interp = make_interpreter();
-        interp.record_binary_op_feedback(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        interp.record_binary_op_feedback(
+            0,
+            &Value::Integer(1),
+            &Value::Integer(2),
+            &Value::Integer(3),
+        );
         // No panic = success
     }
 
@@ -3603,7 +3673,12 @@ mod tests {
     #[test]
     fn test_get_type_feedback_stats() {
         let mut interp = make_interpreter();
-        interp.record_binary_op_feedback(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        interp.record_binary_op_feedback(
+            0,
+            &Value::Integer(1),
+            &Value::Integer(2),
+            &Value::Integer(3),
+        );
         let stats = interp.get_type_feedback_stats();
         let _ = stats.total_operation_sites; // Verify field exists
     }
@@ -3619,7 +3694,12 @@ mod tests {
     #[test]
     fn test_clear_type_feedback() {
         let mut interp = make_interpreter();
-        interp.record_binary_op_feedback(0, &Value::Integer(1), &Value::Integer(2), &Value::Integer(3));
+        interp.record_binary_op_feedback(
+            0,
+            &Value::Integer(1),
+            &Value::Integer(2),
+            &Value::Integer(3),
+        );
         interp.clear_type_feedback();
         // No panic = success
     }
@@ -3739,7 +3819,9 @@ mod tests {
     #[test]
     fn test_apply_binary_op() {
         let interp = make_interpreter();
-        let result = interp.apply_binary_op(&Value::Integer(2), AstBinaryOp::Add, &Value::Integer(3)).unwrap();
+        let result = interp
+            .apply_binary_op(&Value::Integer(2), AstBinaryOp::Add, &Value::Integer(3))
+            .unwrap();
         assert_eq!(result, Value::Integer(5));
     }
 
@@ -3749,7 +3831,9 @@ mod tests {
     fn test_pattern_matches_identifier() {
         let mut interp = make_interpreter();
         let pattern = Pattern::Identifier("x".to_string());
-        let result = interp.pattern_matches(&pattern, &Value::Integer(42)).unwrap();
+        let result = interp
+            .pattern_matches(&pattern, &Value::Integer(42))
+            .unwrap();
         assert!(result);
     }
 
@@ -3757,7 +3841,9 @@ mod tests {
     fn test_pattern_matches_wildcard() {
         let mut interp = make_interpreter();
         let pattern = Pattern::Wildcard;
-        let result = interp.pattern_matches(&pattern, &Value::Integer(42)).unwrap();
+        let result = interp
+            .pattern_matches(&pattern, &Value::Integer(42))
+            .unwrap();
         assert!(result);
     }
 
@@ -3765,7 +3851,9 @@ mod tests {
     fn test_pattern_matches_literal_int() {
         let mut interp = make_interpreter();
         let pattern = Pattern::Literal(Literal::Integer(42, None));
-        let result = interp.pattern_matches(&pattern, &Value::Integer(42)).unwrap();
+        let result = interp
+            .pattern_matches(&pattern, &Value::Integer(42))
+            .unwrap();
         assert!(result);
     }
 
@@ -3773,7 +3861,9 @@ mod tests {
     fn test_pattern_matches_literal_int_mismatch() {
         let mut interp = make_interpreter();
         let pattern = Pattern::Literal(Literal::Integer(42, None));
-        let result = interp.pattern_matches(&pattern, &Value::Integer(99)).unwrap();
+        let result = interp
+            .pattern_matches(&pattern, &Value::Integer(99))
+            .unwrap();
         assert!(!result);
     }
 
@@ -3787,7 +3877,10 @@ mod tests {
     #[test]
     fn test_literal_matches_string() {
         let interp = make_interpreter();
-        let result = interp.literal_matches(&Literal::String("hello".to_string()), &Value::from_string("hello".to_string()));
+        let result = interp.literal_matches(
+            &Literal::String("hello".to_string()),
+            &Value::from_string("hello".to_string()),
+        );
         assert!(result);
     }
 
@@ -3802,7 +3895,9 @@ mod tests {
     fn test_try_pattern_match_identifier() {
         let interp = make_interpreter();
         let pattern = Pattern::Identifier("x".to_string());
-        let result = interp.try_pattern_match(&pattern, &Value::Integer(42)).unwrap();
+        let result = interp
+            .try_pattern_match(&pattern, &Value::Integer(42))
+            .unwrap();
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings.len(), 1);
@@ -3813,7 +3908,9 @@ mod tests {
     fn test_pattern_matches_internal() {
         let interp = make_interpreter();
         let pattern = Pattern::Wildcard;
-        let result = interp.pattern_matches_internal(&pattern, &Value::Integer(42)).unwrap();
+        let result = interp
+            .pattern_matches_internal(&pattern, &Value::Integer(42))
+            .unwrap();
         assert!(result);
     }
 
@@ -3835,7 +3932,12 @@ mod tests {
     fn test_lookup_option_none() {
         let interp = make_interpreter();
         let result = interp.lookup_variable("Option::None").unwrap();
-        if let Value::EnumVariant { enum_name, variant_name, .. } = result {
+        if let Value::EnumVariant {
+            enum_name,
+            variant_name,
+            ..
+        } = result
+        {
             assert_eq!(enum_name, "Option");
             assert_eq!(variant_name, "None");
         } else {
@@ -3848,7 +3950,10 @@ mod tests {
         let interp = make_interpreter();
         let result = interp.lookup_variable("JSON").unwrap();
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("JSON".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("JSON".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -3859,7 +3964,10 @@ mod tests {
         let interp = make_interpreter();
         let result = interp.lookup_variable("File").unwrap();
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("File".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("File".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -3896,7 +4004,9 @@ mod tests {
         let mut map = HashMap::new();
         map.insert("key".to_string(), Value::Integer(1));
         let obj = Value::Object(Arc::new(map));
-        let result = interp.eval_contains(&Value::from_string("key".to_string()), &obj).unwrap();
+        let result = interp
+            .eval_contains(&Value::from_string("key".to_string()), &obj)
+            .unwrap();
         assert!(result);
     }
 
@@ -3972,7 +4082,11 @@ mod tests {
         let mut interp = make_interpreter();
         let body = Arc::new(make_expr(ExprKind::Literal(Literal::Integer(42, None))));
         let env = Rc::new(RefCell::new(HashMap::new()));
-        let closure = Value::Closure { params: vec![], body, env };
+        let closure = Value::Closure {
+            params: vec![],
+            body,
+            env,
+        };
         let result = interp.eval_function_call_value(&closure, &[]).unwrap();
         assert_eq!(result, Value::Integer(42));
     }
@@ -3983,12 +4097,10 @@ mod tests {
     fn test_eval_dataframe_literal() {
         use crate::frontend::ast::DataFrameColumn as AstDFColumn;
         let mut interp = make_interpreter();
-        let columns = vec![
-            AstDFColumn {
-                name: "x".to_string(),
-                values: vec![make_expr(ExprKind::Literal(Literal::Integer(1, None)))],
-            },
-        ];
+        let columns = vec![AstDFColumn {
+            name: "x".to_string(),
+            values: vec![make_expr(ExprKind::Literal(Literal::Integer(1, None)))],
+        }];
         let result = interp.eval_dataframe_literal(&columns).unwrap();
         assert!(matches!(result, Value::DataFrame { .. }));
     }
@@ -4014,7 +4126,9 @@ mod tests {
         let mut interp = make_interpreter();
         let value_expr = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
         let size_expr = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
-        let result = interp.eval_array_init_expr(&value_expr, &size_expr).unwrap();
+        let result = interp
+            .eval_array_init_expr(&value_expr, &size_expr)
+            .unwrap();
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 5);
             for v in arr.iter() {
@@ -4032,7 +4146,12 @@ mod tests {
         let mut interp = make_interpreter();
         let kind = ExprKind::None;
         let result = interp.eval_special_form(&kind).unwrap();
-        if let Value::EnumVariant { enum_name, variant_name, data } = result {
+        if let Value::EnumVariant {
+            enum_name,
+            variant_name,
+            data,
+        } = result
+        {
             assert_eq!(enum_name, "Option");
             assert_eq!(variant_name, "None");
             assert!(data.is_none());
@@ -4045,9 +4164,16 @@ mod tests {
     fn test_eval_special_form_some() {
         let mut interp = make_interpreter();
         let inner = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let kind = ExprKind::Some { value: Box::new(inner) };
+        let kind = ExprKind::Some {
+            value: Box::new(inner),
+        };
         let result = interp.eval_special_form(&kind).unwrap();
-        if let Value::EnumVariant { enum_name, variant_name, data } = result {
+        if let Value::EnumVariant {
+            enum_name,
+            variant_name,
+            data,
+        } = result
+        {
             assert_eq!(enum_name, "Option");
             assert_eq!(variant_name, "Some");
             assert!(data.is_some());
@@ -4082,12 +4208,10 @@ mod tests {
         use crate::frontend::ast::ObjectField;
         let mut interp = make_interpreter();
         let kind = ExprKind::ObjectLiteral {
-            fields: vec![
-                ObjectField::KeyValue {
-                    key: "x".to_string(),
-                    value: make_expr(ExprKind::Literal(Literal::Integer(1, None))),
-                },
-            ],
+            fields: vec![ObjectField::KeyValue {
+                key: "x".to_string(),
+                value: make_expr(ExprKind::Literal(Literal::Integer(1, None))),
+            }],
         };
         let result = interp.eval_special_form(&kind).unwrap();
         if let Value::Object(obj) = result {
@@ -4162,7 +4286,11 @@ mod tests {
         let mut interp = make_interpreter();
         let body = Arc::new(make_expr(ExprKind::Literal(Literal::Integer(42, None))));
         let env = Rc::new(RefCell::new(HashMap::new()));
-        let closure = Value::Closure { params: vec![], body, env };
+        let closure = Value::Closure {
+            params: vec![],
+            body,
+            env,
+        };
         let result = interp.call_function(closure, &[]).unwrap();
         assert_eq!(result, Value::Integer(42));
     }
@@ -4172,8 +4300,14 @@ mod tests {
         let mut interp = make_interpreter();
         let body = Arc::new(make_expr(ExprKind::Identifier("x".to_string())));
         let env = Rc::new(RefCell::new(HashMap::new()));
-        let closure = Value::Closure { params: vec![("x".to_string(), None)], body, env };
-        let result = interp.call_function(closure, &[Value::Integer(42)]).unwrap();
+        let closure = Value::Closure {
+            params: vec![("x".to_string(), None)],
+            body,
+            env,
+        };
+        let result = interp
+            .call_function(closure, &[Value::Integer(42)])
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -4182,7 +4316,11 @@ mod tests {
         let mut interp = make_interpreter();
         let body = Arc::new(make_expr(ExprKind::Literal(Literal::Integer(42, None))));
         let env = Rc::new(RefCell::new(HashMap::new()));
-        let closure = Value::Closure { params: vec![("x".to_string(), None)], body, env };
+        let closure = Value::Closure {
+            params: vec![("x".to_string(), None)],
+            body,
+            env,
+        };
         let result = interp.call_function(closure, &[]); // Missing required arg
         assert!(result.is_err());
     }
@@ -4201,7 +4339,9 @@ mod tests {
         let mut interp = make_interpreter();
         let left = make_expr(ExprKind::Literal(Literal::Null));
         let right = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let result = interp.eval_binary_expr(&left, AstBinaryOp::NullCoalesce, &right).unwrap();
+        let result = interp
+            .eval_binary_expr(&left, AstBinaryOp::NullCoalesce, &right)
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -4210,7 +4350,9 @@ mod tests {
         let mut interp = make_interpreter();
         let left = make_expr(ExprKind::Literal(Literal::Integer(10, None)));
         let right = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let result = interp.eval_binary_expr(&left, AstBinaryOp::NullCoalesce, &right).unwrap();
+        let result = interp
+            .eval_binary_expr(&left, AstBinaryOp::NullCoalesce, &right)
+            .unwrap();
         assert_eq!(result, Value::Integer(10));
     }
 
@@ -4219,7 +4361,9 @@ mod tests {
         let mut interp = make_interpreter();
         let left = make_expr(ExprKind::Literal(Literal::Bool(false)));
         let right = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let result = interp.eval_binary_expr(&left, AstBinaryOp::And, &right).unwrap();
+        let result = interp
+            .eval_binary_expr(&left, AstBinaryOp::And, &right)
+            .unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 
@@ -4228,7 +4372,9 @@ mod tests {
         let mut interp = make_interpreter();
         let left = make_expr(ExprKind::Literal(Literal::Bool(true)));
         let right = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let result = interp.eval_binary_expr(&left, AstBinaryOp::Or, &right).unwrap();
+        let result = interp
+            .eval_binary_expr(&left, AstBinaryOp::Or, &right)
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -4241,7 +4387,9 @@ mod tests {
             make_expr(ExprKind::Literal(Literal::Integer(2, None))),
             make_expr(ExprKind::Literal(Literal::Integer(3, None))),
         ]));
-        let result = interp.eval_binary_expr(&element, AstBinaryOp::In, &collection).unwrap();
+        let result = interp
+            .eval_binary_expr(&element, AstBinaryOp::In, &collection)
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -4271,7 +4419,9 @@ mod tests {
         let cond = make_expr(ExprKind::Literal(Literal::Bool(true)));
         let then_branch = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
         let else_branch = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
-        let result = interp.eval_if_expr(&cond, &then_branch, Some(&else_branch)).unwrap();
+        let result = interp
+            .eval_if_expr(&cond, &then_branch, Some(&else_branch))
+            .unwrap();
         assert_eq!(result, Value::Integer(1));
     }
 
@@ -4281,7 +4431,9 @@ mod tests {
         let cond = make_expr(ExprKind::Literal(Literal::Bool(false)));
         let then_branch = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
         let else_branch = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
-        let result = interp.eval_if_expr(&cond, &then_branch, Some(&else_branch)).unwrap();
+        let result = interp
+            .eval_if_expr(&cond, &then_branch, Some(&else_branch))
+            .unwrap();
         assert_eq!(result, Value::Integer(2));
     }
 
@@ -4572,7 +4724,10 @@ mod tests {
             trailing_comment: None,
         };
         let result = interp.eval_expr(&expr);
-        assert!(matches!(result, Err(InterpreterError::Break(None, Value::Integer(42)))));
+        assert!(matches!(
+            result,
+            Err(InterpreterError::Break(None, Value::Integer(42)))
+        ));
     }
 
     #[test]
@@ -5128,7 +5283,10 @@ mod tests {
             ))))),
         });
         let result = interp.eval_expr(&expr);
-        assert!(matches!(result, Err(InterpreterError::Return(Value::Integer(123)))));
+        assert!(matches!(
+            result,
+            Err(InterpreterError::Return(Value::Integer(123)))
+        ));
     }
 
     #[test]
@@ -5187,7 +5345,10 @@ mod tests {
             "__type".to_string(),
             Value::from_string("Class".to_string()),
         );
-        class_def.insert("__name".to_string(), Value::from_string("Point".to_string()));
+        class_def.insert(
+            "__name".to_string(),
+            Value::from_string("Point".to_string()),
+        );
         class_def.insert(
             "__fields".to_string(),
             Value::Object(std::sync::Arc::new(HashMap::new())),
@@ -5239,9 +5400,9 @@ mod tests {
                 ("x".to_string(), None),
                 (
                     "y".to_string(),
-                    Some(std::sync::Arc::new(make_expr(ExprKind::Literal(Literal::Integer(
-                        10, None,
-                    ))))),
+                    Some(std::sync::Arc::new(make_expr(ExprKind::Literal(
+                        Literal::Integer(10, None),
+                    )))),
                 ),
             ],
             body: std::sync::Arc::new(make_expr(ExprKind::Binary {
@@ -5253,11 +5414,15 @@ mod tests {
         };
 
         // Call with only required arg - default should be used
-        let result = interp.call_function(closure.clone(), &[Value::Integer(5)]).unwrap();
+        let result = interp
+            .call_function(closure.clone(), &[Value::Integer(5)])
+            .unwrap();
         assert_eq!(result, Value::Integer(15));
 
         // Call with both args
-        let result = interp.call_function(closure, &[Value::Integer(5), Value::Integer(3)]).unwrap();
+        let result = interp
+            .call_function(closure, &[Value::Integer(5), Value::Integer(3)])
+            .unwrap();
         assert_eq!(result, Value::Integer(8));
     }
 
@@ -5438,4 +5603,3 @@ mod tests {
         assert_eq!(result, Value::Integer(3));
     }
 }
-

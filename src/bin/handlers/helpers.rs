@@ -188,7 +188,10 @@ mod tests {
         std::fs::write(temp_file.path(), "original").unwrap();
         let result = write_file_with_context(temp_file.path(), b"new content");
         assert!(result.is_ok());
-        assert_eq!(std::fs::read_to_string(temp_file.path()).unwrap(), "new content");
+        assert_eq!(
+            std::fs::read_to_string(temp_file.path()).unwrap(),
+            "new content"
+        );
     }
 
     #[test]
@@ -213,6 +216,9 @@ mod tests {
     fn test_write_file_with_context_error() {
         let result = write_file_with_context(Path::new("/nonexistent/dir/file.txt"), b"test");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("/nonexistent/dir/file.txt"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("/nonexistent/dir/file.txt"));
     }
 }

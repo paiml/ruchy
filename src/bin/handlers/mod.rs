@@ -72,7 +72,9 @@ pub use run_handler::{
     compile_rust_code, handle_run_command, prepare_compilation, transpile_for_execution, VmMode,
 };
 pub use transpile_handler::handle_transpile_command;
-pub use wasm_handler::{compile_ruchy_to_wasm, handle_wasm_command};
+pub use wasm_handler::handle_wasm_command;
+#[cfg(feature = "notebook")]
+pub use wasm_handler::compile_ruchy_to_wasm;
 
 // Testing command handlers
 pub use fuzz_handler::handle_fuzz_command;
@@ -98,11 +100,11 @@ pub use test_handler::handle_test_command;
 
 // Helper utilities (for use by other handlers)
 pub use helpers::{
-    create_repl, log_command_output, read_file_with_context,
-    write_file_with_context,
+    create_repl, log_command_output, read_file_with_context, write_file_with_context,
 };
 
-// Internal re-exports (used by extracted handlers)
+// Internal re-exports (used by extracted handlers when notebook feature is enabled)
+#[cfg(feature = "notebook")]
 pub(crate) use transpile_handler::parse_source;
 
 // ============================================================================
