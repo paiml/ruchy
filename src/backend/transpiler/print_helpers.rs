@@ -115,6 +115,14 @@ impl Transpiler {
             return self.transpile_print_multiple_args(func_tokens, args);
         }
         // Single string literal or simple case
+        // RUCHYRUCHY-001: Escape braces in string literals used as format strings
+        if args.len() == 1 {
+            if let ExprKind::Literal(Literal::String(s)) = &args[0].kind {
+                // For println!/print!, string literals are format strings, so escape braces
+                let escaped = s.replace('{', "{{").replace('}', "}}");
+                return Ok(Some(quote! { #func_tokens!(#escaped) }));
+            }
+        }
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;
         Ok(Some(quote! { #func_tokens!(#(#arg_tokens),*) }))
@@ -369,6 +377,25 @@ mod tests {
         assert!(tokens.is_some());
         let tokens_str = tokens.unwrap().to_string();
         assert!(tokens_str.contains("println"));
+    }
+
+    #[test]
+    fn test_print_macro_println_escapes_braces() {
+        // RUCHYRUCHY-001: Test brace escaping for ruchyruchy bootstrap compatibility
+        let transpiler = Transpiler::new();
+        let func_tokens = quote! { println };
+        let args = vec![string_expr("Delimiters: {, }")];
+        let result = transpiler.try_transpile_print_macro(&func_tokens, "println", &args);
+        assert!(result.is_ok());
+        let tokens = result.unwrap();
+        assert!(tokens.is_some());
+        let tokens_str = tokens.unwrap().to_string();
+        // Braces should be escaped to {{ and }}
+        assert!(
+            tokens_str.contains("{{") && tokens_str.contains("}}"),
+            "Expected escaped braces, got: {}",
+            tokens_str
+        );
     }
 
     #[test]

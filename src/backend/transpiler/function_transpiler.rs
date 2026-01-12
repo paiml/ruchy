@@ -3,10 +3,10 @@
 //!
 //! This module handles function definition transpilation.
 
-use crate::frontend::ast::{Expr, Param, Type, TypeKind};
+use crate::frontend::ast::{Expr, ExprKind, Param, Type, TypeKind};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::format_ident;
+use quote::{format_ident, quote};
 
 use super::Transpiler;
 
@@ -84,6 +84,10 @@ impl Transpiler {
             } else {
                 self.generate_body_tokens(body, is_async)?
             }
+        } else if name == "main" && Self::has_non_unit_last_expr(body) {
+            // BOOK-COMPAT-015: Main functions that end with a non-unit expression
+            // should print it instead of trying to return it
+            self.generate_main_body_with_print(body, is_async)?
         } else {
             self.generate_body_tokens(body, is_async)?
         };
@@ -108,6 +112,83 @@ impl Transpiler {
             &body_tokens,
             attributes,
         )
+    }
+
+    /// BOOK-COMPAT-015: Check if body has a non-unit last expression
+    fn has_non_unit_last_expr(body: &Expr) -> bool {
+        match &body.kind {
+            ExprKind::Block(exprs) => {
+                if let Some(last) = exprs.last() {
+                    Self::has_non_unit_last_expr(last)
+                } else {
+                    false
+                }
+            }
+            ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
+                Self::has_non_unit_last_expr(body)
+            }
+            _ => !Self::is_unit_expr(body),
+        }
+    }
+
+    /// Check if expression is a unit expression (doesn't return a value)
+    fn is_unit_expr(expr: &Expr) -> bool {
+        use crate::frontend::ast::Literal;
+        // RUCHYRUCHY-002: Add Literal(Unit) check for let statement bodies
+        matches!(&expr.kind, ExprKind::Literal(Literal::Unit))
+            || matches!(
+                &expr.kind,
+                ExprKind::Call { func, .. } if matches!(&func.kind, ExprKind::Identifier(name) if name == "println" || name == "print")
+            )
+            || matches!(
+                &expr.kind,
+                ExprKind::MacroInvocation { name, .. } if name == "println" || name == "print"
+            )
+            || matches!(&expr.kind, ExprKind::Assign { .. })
+            || matches!(&expr.kind, ExprKind::Return { value: None })
+            || matches!(&expr.kind, ExprKind::Return { value: Some(_) })  // Return with value is still unit for main
+    }
+
+    /// BOOK-COMPAT-015: Generate main body that prints the last expression
+    fn generate_main_body_with_print(&self, body: &Expr, is_async: bool) -> Result<TokenStream> {
+        match &body.kind {
+            ExprKind::Block(exprs) if !exprs.is_empty() => {
+                let mut tokens = Vec::new();
+                // Transpile all but last expression normally with proper semicolons
+                // RUCHYRUCHY-003: Add semicolons to non-final statements
+                for expr in exprs.iter().take(exprs.len() - 1) {
+                    let expr_tokens = self.transpile_expr(expr)?;
+                    let is_let = matches!(
+                        &expr.kind,
+                        ExprKind::Let { .. } | ExprKind::LetPattern { .. }
+                    );
+                    if is_let {
+                        tokens.push(expr_tokens);
+                    } else {
+                        tokens.push(quote! { #expr_tokens; });
+                    }
+                }
+                // Wrap last expression in println!
+                if let Some(last) = exprs.last() {
+                    let last_tokens = self.transpile_expr(last)?;
+                    tokens.push(quote! { println!("{:?}", #last_tokens); });
+                }
+                if is_async {
+                    Ok(quote! { async { #(#tokens)* } })
+                } else {
+                    Ok(quote! { #(#tokens)* })
+                }
+            }
+            _ => {
+                // Single expression body - wrap in println!
+                let body_tokens = self.transpile_expr(body)?;
+                if is_async {
+                    Ok(quote! { async { println!("{:?}", #body_tokens); } })
+                } else {
+                    Ok(quote! { println!("{:?}", #body_tokens); })
+                }
+            }
+        }
     }
 }
 

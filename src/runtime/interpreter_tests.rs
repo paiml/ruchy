@@ -14324,14 +14324,14 @@ mod coverage_tests {
 
     #[test]
     fn test_json_global() {
-        let mut interp = Interpreter::new();
+        let interp = Interpreter::new();
         let result = interp.lookup_variable("JSON");
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_file_global() {
-        let mut interp = Interpreter::new();
+        let interp = Interpreter::new();
         let result = interp.lookup_variable("File");
         assert!(result.is_ok());
     }
@@ -14485,7 +14485,7 @@ mod coverage_tests {
 
     #[test]
     fn test_option_none_lookup_cov2() {
-        let mut interp = Interpreter::new();
+        let interp = Interpreter::new();
         let result = interp.lookup_variable("Option::None");
         match result {
             Ok(Value::EnumVariant { variant_name, .. }) => {
@@ -20285,7 +20285,8 @@ mod coverage_tests {
     #[test]
     fn test_walk_function_cov() {
         let mut interp = Interpreter::new();
-        let result = interp.eval_string(r#"walk("/tmp")"#);
+        // Use /etc/hostname which exists and is small, not /tmp which can have many files
+        let result = interp.eval_string(r#"walk("/etc/hostname")"#);
         let _ = result;
     }
 

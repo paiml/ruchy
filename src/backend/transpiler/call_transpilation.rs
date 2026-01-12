@@ -394,6 +394,9 @@ impl Transpiler {
                 let obj_str = obj_tokens.to_string();
                 if obj_str.contains(". collect ::") || obj_str.contains(".collect::<") {
                     Ok(obj_tokens.clone())
+                } else if obj_str.contains(".chars()") || obj_str.contains(". chars ()") {
+                    // BOOK-COMPAT-014: Collecting from char iterator should produce String
+                    Ok(quote! { #obj_tokens.collect::<String>() })
                 } else {
                     Ok(quote! { #obj_tokens.collect::<Vec<_>>() })
                 }

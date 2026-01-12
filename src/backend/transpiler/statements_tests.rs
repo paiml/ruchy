@@ -314,7 +314,6 @@ fn test_complex_function_combinations() {
 
 #[test]
 fn test_is_variable_mutated() {
-    use super::Transpiler;
     use crate::frontend::ast::{Expr, ExprKind, Span};
 
     // Test direct assignment

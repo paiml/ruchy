@@ -683,8 +683,10 @@ mod tests {
 
         if let Value::Object(obj) = result {
             // Both functions should have the same environment (module_env)
-            if let (Some(Value::Closure { env: env_a, .. }), Some(Value::Closure { env: env_b, .. })) =
-                (obj.get("a"), obj.get("b"))
+            if let (
+                Some(Value::Closure { env: env_a, .. }),
+                Some(Value::Closure { env: env_b, .. }),
+            ) = (obj.get("a"), obj.get("b"))
             {
                 // Both closures should have "a" and "b" in their env
                 let env_a_ref = env_a.borrow();

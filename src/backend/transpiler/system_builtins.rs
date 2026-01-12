@@ -115,7 +115,8 @@ impl Transpiler {
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
         match base_name {
-            "fs_read" => {
+            // BOOK-COMPAT-008: Add common aliases for built-in functions
+            "read_file" | "fs_read" => {
                 if args.len() != 1 {
                     bail!("fs_read() expects 1 argument");
                 }

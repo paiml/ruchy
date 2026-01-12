@@ -215,9 +215,13 @@ mod tests {
         config.max_memory = 999;
         config.debug = true;
 
-        // Clone should be unaffected
+        // Clone should be unaffected (original changes don't affect clone)
         assert_eq!(cloned.max_memory, 1024 * 1024);
         assert!(!cloned.debug);
+
+        // Verify original was modified (prevents unused_assignments warning)
+        assert_eq!(config.max_memory, 999);
+        assert!(config.debug);
     }
 
     #[test]

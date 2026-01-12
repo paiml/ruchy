@@ -5202,7 +5202,6 @@ mod tests {
 
     #[test]
     fn test_eval_string_interpolation_empty() {
-        use crate::frontend::ast::StringPart;
         let mut interp = make_interpreter();
         let parts = vec![];
         let expr = make_expr(ExprKind::StringInterpolation { parts });

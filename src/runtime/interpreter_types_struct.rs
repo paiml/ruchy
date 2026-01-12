@@ -536,12 +536,10 @@ mod tests {
 
     fn make_tuple_type() -> Type {
         Type {
-            kind: TypeKind::Tuple(vec![
-                Type {
-                    kind: TypeKind::Named("i32".to_string()),
-                    span: Span::default(),
-                },
-            ]),
+            kind: TypeKind::Tuple(vec![Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            }]),
             span: Span::default(),
         }
     }
@@ -866,9 +864,13 @@ mod tests {
             Span::default(),
         );
 
-        let result = interp.eval_struct_literal("Point", &[("unknown".to_string(), unknown_field_expr)]);
+        let result =
+            interp.eval_struct_literal("Point", &[("unknown".to_string(), unknown_field_expr)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("does not have field"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("does not have field"));
     }
 
     // =========================================================================
@@ -898,13 +900,19 @@ mod tests {
         x_field.insert("type".to_string(), Value::from_string("i32".to_string()));
         x_field.insert("is_pub".to_string(), Value::from_bool(true));
         x_field.insert("is_mut".to_string(), Value::from_bool(false));
-        x_field.insert("visibility".to_string(), Value::from_string("pub".to_string()));
+        x_field.insert(
+            "visibility".to_string(),
+            Value::from_string("pub".to_string()),
+        );
         fields_obj.insert("x".to_string(), Value::Object(Arc::new(x_field)));
         class_def.insert("__fields".to_string(), Value::Object(Arc::new(fields_obj)));
 
         // Add methods
         let methods_obj = HashMap::new();
-        class_def.insert("__methods".to_string(), Value::Object(Arc::new(methods_obj)));
+        class_def.insert(
+            "__methods".to_string(),
+            Value::Object(Arc::new(methods_obj)),
+        );
 
         interp.set_variable("MyClass", Value::Object(Arc::new(class_def)));
 

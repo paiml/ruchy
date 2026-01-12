@@ -1200,7 +1200,7 @@ mod tests {
 
     #[test]
     fn test_eval_dataframe_operation_unimplemented() {
-        let source = Value::DataFrame {
+        let _source = Value::DataFrame {
             columns: vec![DataFrameColumn {
                 name: "x".to_string(),
                 values: vec![Value::Integer(1)],

@@ -634,7 +634,7 @@ mod tests {
 
     #[test]
     fn test_eval_function_call_json_parse() {
-        let mut interp = make_interpreter();
+        let interp = make_interpreter();
         // Test via the interpreter's json_parse directly (since static method goes through to_string)
         let result = interp.json_parse(r#"{"a": 1}"#).unwrap();
         // Should return an object

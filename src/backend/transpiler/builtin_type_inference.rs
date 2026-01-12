@@ -54,15 +54,46 @@ fn check_call_for_return_type(func: &Expr) -> Option<&'static str> {
 /// assert_eq!(result, Some("String"));
 /// ```
 pub fn infer_return_type_from_builtin_call(expr: &Expr) -> Option<&'static str> {
+    infer_with_context(expr, &std::collections::HashMap::new())
+}
+
+/// BOOK-COMPAT-011: Infer return type with variable type context
+fn infer_with_context(
+    expr: &Expr,
+    var_types: &std::collections::HashMap<String, &'static str>,
+) -> Option<&'static str> {
     match &expr.kind {
         ExprKind::Call { func, .. } => check_call_for_return_type(func),
         // ISSUE-103 FIX: Handle macro invocations (println!, format!, etc.)
         ExprKind::MacroInvocation { name, .. } => get_builtin_return_type(name),
-        ExprKind::Block(exprs) => exprs.last().and_then(infer_return_type_from_builtin_call),
-        ExprKind::If { then_branch, .. } => infer_return_type_from_builtin_call(then_branch),
-        ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-            infer_return_type_from_builtin_call(body)
+        ExprKind::Block(exprs) => {
+            // Build up variable context through block
+            let mut ctx = var_types.clone();
+            for e in exprs.iter().take(exprs.len().saturating_sub(1)) {
+                if let ExprKind::Let { name, value, .. } = &e.kind {
+                    if let Some(ty) = infer_with_context(value, &ctx) {
+                        ctx.insert(name.clone(), ty);
+                    }
+                }
+            }
+            exprs.last().and_then(|e| infer_with_context(e, &ctx))
         }
+        ExprKind::If { then_branch, .. } => infer_with_context(then_branch, var_types),
+        ExprKind::Let {
+            name, value, body, ..
+        } => {
+            // Track let-bound variable type
+            let mut ctx = var_types.clone();
+            if let Some(ty) = infer_with_context(value, &ctx) {
+                ctx.insert(name.clone(), ty);
+            }
+            infer_with_context(body, &ctx)
+        }
+        ExprKind::LetPattern { body, .. } => infer_with_context(body, var_types),
+        // BOOK-COMPAT-011: DataFrame returns HashMap<String, Vec<String>>
+        ExprKind::DataFrame { .. } => Some("std::collections::HashMap<String, Vec<String>>"),
+        // BOOK-COMPAT-011: Look up identifier in variable context
+        ExprKind::Identifier(name) => var_types.get(name).copied(),
         _ => None,
     }
 }

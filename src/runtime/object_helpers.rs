@@ -685,8 +685,6 @@ fn test_large_object_100_fields_r162() {
 
 #[test]
 fn test_nested_mutable_in_immutable_r162() {
-    use std::sync::Arc;
-
     let inner_mutable = new_mutable_object(HashMap::new());
     set_object_field(&inner_mutable, "inner", Value::Integer(42)).unwrap();
 
@@ -705,8 +703,6 @@ fn test_nested_mutable_in_immutable_r162() {
 
 #[test]
 fn test_nested_immutable_in_mutable_r162() {
-    use std::sync::Arc;
-
     let inner = new_immutable_object(HashMap::from([
         ("x".to_string(), Value::Integer(10)),
         ("y".to_string(), Value::Integer(20)),

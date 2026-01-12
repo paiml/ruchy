@@ -44,6 +44,24 @@ impl Transpiler {
             }
         }
 
+        // BOOK-COMPAT-009: Handle mixed int/float arithmetic
+        // When one operand is int and other is float, cast both to f64
+        if Self::is_arithmetic_op(op) {
+            let left_is_int = Self::is_integer_literal(left);
+            let left_is_float = Self::is_float_literal(left);
+            let right_is_int = Self::is_integer_literal(right);
+            let right_is_float = Self::is_float_literal(right);
+
+            if (left_is_int && right_is_float) || (left_is_float && right_is_int) {
+                let left_tokens = self.transpile_expr(left)?;
+                let right_tokens = self.transpile_expr(right)?;
+                // Cast both to f64 for mixed arithmetic
+                let casted_left = quote! { (#left_tokens as f64) };
+                let casted_right = quote! { (#right_tokens as f64) };
+                return Ok(Self::transpile_binary_op(casted_left, op, casted_right));
+            }
+        }
+
         // Transpile operands with precedence-aware parentheses
         let left_tokens = self.transpile_expr_with_precedence(left, op, true)?;
         let right_tokens = self.transpile_expr_with_precedence(right, op, false)?;
@@ -131,7 +149,8 @@ impl Transpiler {
             Add | Subtract | Multiply | Divide | Modulo => {
                 Self::transpile_basic_arithmetic(left, op, right)
             }
-            Power => quote! { #left.pow(#right) },
+            // BOOK-COMPAT-013: Use powf for float exponents (f64.pow takes i32)
+            Power => quote! { #left.powf(#right) },
             _ => unreachable!(),
         }
     }
@@ -238,6 +257,31 @@ impl Transpiler {
                 | BinaryOp::Equal
                 | BinaryOp::NotEqual
         )
+    }
+
+    /// Check if operator is an arithmetic operator (BOOK-COMPAT-009)
+    fn is_arithmetic_op(op: BinaryOp) -> bool {
+        matches!(
+            op,
+            BinaryOp::Add
+                | BinaryOp::Subtract
+                | BinaryOp::Multiply
+                | BinaryOp::Divide
+                | BinaryOp::Modulo
+                | BinaryOp::Power
+        )
+    }
+
+    /// Check if expression is an integer literal (BOOK-COMPAT-009)
+    fn is_integer_literal(expr: &Expr) -> bool {
+        use crate::frontend::ast::Literal;
+        matches!(&expr.kind, ExprKind::Literal(Literal::Integer(_, _)))
+    }
+
+    /// Check if expression is a float literal (BOOK-COMPAT-009)
+    fn is_float_literal(expr: &Expr) -> bool {
+        use crate::frontend::ast::Literal;
+        matches!(&expr.kind, ExprKind::Literal(Literal::Float(_)))
     }
 
     /// Check if this is a vector + array concatenation pattern (TRANSPILER-005)
@@ -369,10 +413,11 @@ mod tests {
     // Test 14: transpile_binary_op - Power arithmetic
     #[test]
     fn test_transpile_binary_op_power() {
+        // BOOK-COMPAT-013: Use powf for float exponents (f64.pow takes i32)
         let left = quote! { base };
         let right = quote! { exp };
         let result = Transpiler::transpile_binary_op(left, BinaryOp::Power, right);
-        assert_eq!(result.to_string(), "base . pow (exp)");
+        assert_eq!(result.to_string(), "base . powf (exp)");
     }
 
     // Test 15: transpile_binary_op - Equal comparison

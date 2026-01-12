@@ -5,7 +5,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, UnaryOp};
+    use crate::frontend::ast::{Expr, ExprKind, Literal, UnaryOp};
     use crate::frontend::parser::Parser;
     use crate::quality::formatter::Formatter;
 

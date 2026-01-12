@@ -46,11 +46,15 @@ impl Transpiler {
             self.collect_const_declarations(exprs);
             self.collect_function_signatures(exprs);
             self.collect_module_names(exprs);
+            // BOOK-COMPAT-017: Collect call-site argument types for parameter inference
+            self.collect_call_site_types(exprs);
         } else {
             self.analyze_expr_mutability(expr);
             self.collect_const_declarations_from_expr(expr);
             self.collect_signatures_from_expr(expr);
             self.collect_module_names_from_expr(expr);
+            // BOOK-COMPAT-017: Collect call-site types for single expressions too
+            self.collect_call_site_types(std::slice::from_ref(expr));
         }
         let result = self.transpile_to_program_with_context(expr, None);
         if let Ok(ref token_stream) = result {
@@ -89,15 +93,19 @@ impl Transpiler {
             constant_folder::eliminate_dead_code(after_inlining, inlined_functions)
         };
 
-        // CRITICAL: Analyze mutability, signatures, and modules BEFORE transpiling
+        // CRITICAL: Analyze mutability, signatures, modules, and call-site types BEFORE transpiling
         if let ExprKind::Block(exprs) = &optimized_expr.kind {
             self.analyze_mutability(exprs);
             self.collect_function_signatures(exprs);
             self.collect_module_names(exprs);
+            // BOOK-COMPAT-017: Collect call-site types from optimized expression
+            self.collect_call_site_types(exprs);
         } else {
             self.analyze_expr_mutability(&optimized_expr);
             self.collect_signatures_from_expr(&optimized_expr);
             self.collect_module_names_from_expr(&optimized_expr);
+            // BOOK-COMPAT-017: Collect call-site types from single expression
+            self.collect_call_site_types(std::slice::from_ref(&optimized_expr));
         }
 
         let needs_polars = Self::contains_dataframe(&optimized_expr);

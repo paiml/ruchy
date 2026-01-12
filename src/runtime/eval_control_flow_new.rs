@@ -1486,7 +1486,7 @@ mod tests {
 #[cfg(test)]
 mod round_130_tests {
     use super::*;
-    use crate::frontend::ast::{BinaryOp, ExprKind, Literal, MatchArm, Span};
+    use crate::frontend::ast::{ExprKind, Literal, MatchArm, Span};
 
     // EXTREME TDD Round 130: eval_control_flow_new.rs coverage boost
     // Target: 75.42% -> 90%+

@@ -111,10 +111,26 @@ impl Transpiler {
                 })
                 .collect()
         } else {
-            // No signature info - transpile as-is
+            // No signature info - transpile with type conversions
             args.iter()
                 .map(|arg| {
                     let mut base_tokens = self.transpile_expr(arg)?;
+
+                    // BOOK-COMPAT-017: String literals passed to functions should convert to String
+                    // Most functions with string params need String not &str
+                    if matches!(&arg.kind, crate::frontend::ast::ExprKind::Literal(
+                        crate::frontend::ast::Literal::String(_)
+                    )) {
+                        return Ok(quote! { #base_tokens.to_string() });
+                    }
+
+                    // BOOK-COMPAT-017: Array literals passed to functions should convert to Vec
+                    // Most functions with untyped params expect Vec<T> semantics
+                    if let crate::frontend::ast::ExprKind::List(elements) = &arg.kind {
+                        if !elements.is_empty() {
+                            return Ok(quote! { #base_tokens.to_vec() });
+                        }
+                    }
 
                     // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
                     if self.in_loop_context.get()
@@ -131,8 +147,8 @@ impl Transpiler {
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
     }
 
-    /// Apply String/&str coercion based on expected type
-    /// Complexity: 4 (within Toyota Way limits)
+    /// Apply type coercion based on expected type
+    /// Complexity: 6 (within Toyota Way limits)
     pub fn apply_string_coercion(
         &self,
         arg: &Expr,
@@ -143,6 +159,21 @@ impl Transpiler {
         match (&arg.kind, expected_type) {
             // String literal to String parameter: add .to_string()
             (ExprKind::Literal(Literal::String(_)), "String") => Ok(quote! { #tokens.to_string() }),
+            // BOOK-COMPAT-017: String literal to Any/Unknown parameter (inferred as String from body)
+            // String operations in function body typically infer String type, so convert
+            (ExprKind::Literal(Literal::String(_)), "Any" | "Unknown") => {
+                Ok(quote! { #tokens.to_string() })
+            }
+            // BOOK-COMPAT-017: Array literal to Any parameter (function with inferred Vec<T> type)
+            // Convert array [1, 2, 3] to vec via .to_vec() for functions expecting Vec
+            // But NOT when expected type is explicit array type [T; N]
+            (ExprKind::List(elements), "Any" | "Unknown") if !elements.is_empty() => {
+                Ok(quote! { #tokens.to_vec() })
+            }
+            // Array literal to explicit array type [T; N]: keep as-is
+            (ExprKind::List(_), expected) if expected.starts_with('[') && expected.contains(';') => {
+                Ok(tokens.clone())
+            }
             // String literal to &str parameter: keep as-is
             (ExprKind::Literal(Literal::String(_)), expected) if expected.starts_with('&') => {
                 Ok(tokens.clone())

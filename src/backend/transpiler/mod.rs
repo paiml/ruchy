@@ -217,8 +217,23 @@ pub struct Transpiler {
     ///
     /// Maps (struct_name, field_name) -> field_type for struct literal transpilation.
     /// When a field type is "String" and the value is a string literal, we add .to_string().
-    pub struct_field_types:
-        std::cell::RefCell<std::collections::HashMap<(String, String), String>>,
+    pub struct_field_types: std::cell::RefCell<std::collections::HashMap<(String, String), String>>,
+    /// BOOK-COMPAT-007: Track current struct being defined for recursive type detection
+    ///
+    /// When transpiling struct definitions, this holds the struct name so that
+    /// recursive types (e.g., `Option<Node>` in a `Node` struct) can be auto-boxed.
+    pub current_struct_name: std::cell::RefCell<Option<String>>,
+    /// BOOK-COMPAT-007B: Track auto-boxed recursive type fields
+    ///
+    /// Maps (struct_name, field_name) to the inner type name for fields that were auto-boxed.
+    /// Used during struct literal transpilation to wrap `Some(x)` as `Some(Box::new(x))`.
+    pub auto_boxed_fields: std::cell::RefCell<std::collections::HashMap<(String, String), String>>,
+    /// BOOK-COMPAT-017: Track call-site argument types for parameter inference
+    ///
+    /// Maps function name to a vector of inferred argument types from call sites.
+    /// Used when function parameters have no explicit type to infer types from usage.
+    pub call_site_arg_types:
+        std::cell::RefCell<std::collections::HashMap<String, Vec<String>>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -251,6 +266,11 @@ impl Clone for Transpiler {
             ),
             variable_types: std::cell::RefCell::new(self.variable_types.borrow().clone()),
             struct_field_types: std::cell::RefCell::new(self.struct_field_types.borrow().clone()),
+            current_struct_name: std::cell::RefCell::new(self.current_struct_name.borrow().clone()),
+            auto_boxed_fields: std::cell::RefCell::new(self.auto_boxed_fields.borrow().clone()),
+            call_site_arg_types: std::cell::RefCell::new(
+                self.call_site_arg_types.borrow().clone(),
+            ),
         }
     }
 }
@@ -278,6 +298,9 @@ impl Transpiler {
             const_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
             variable_types: std::cell::RefCell::new(std::collections::HashMap::new()),
             struct_field_types: std::cell::RefCell::new(std::collections::HashMap::new()),
+            current_struct_name: std::cell::RefCell::new(None),
+            auto_boxed_fields: std::cell::RefCell::new(std::collections::HashMap::new()),
+            call_site_arg_types: std::cell::RefCell::new(std::collections::HashMap::new()),
         }
     }
     // EXTREME TDD Round 64: generate_value_printing_tokens moved to print_helpers.rs

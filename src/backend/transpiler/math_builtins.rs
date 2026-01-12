@@ -42,8 +42,23 @@ impl Transpiler {
             ("floor", 1) => self.transpile_floor(&args[0]).map(Some),
             ("ceil", 1) => self.transpile_ceil(&args[0]).map(Some),
             ("round", 1) => self.transpile_round(&args[0]).map(Some),
+            // Note: safe_divide removed - conflicts with user-defined functions in book examples
             _ => Ok(None),
         }
+    }
+
+    /// Transpile safe_divide function
+    /// Returns None (or 0.0 for f64) if dividing by zero
+    /// BOOK-COMPAT-008: Handle safe division for error handling examples
+    fn transpile_safe_divide(&self, numerator: &Expr, denominator: &Expr) -> Result<TokenStream> {
+        let num_tokens = self.transpile_expr(numerator)?;
+        let den_tokens = self.transpile_expr(denominator)?;
+        Ok(quote! {
+            {
+                let denom = #den_tokens as f64;
+                if denom == 0.0 { f64::NAN } else { (#num_tokens as f64) / denom }
+            }
+        })
     }
 
     /// Transpile sqrt function
