@@ -17175,7 +17175,7 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_json_stringify_cov() {
+    fn test_json_stringify_builtin_cov() {
         let mut interp = Interpreter::new();
         let _ = interp.eval_string(r#"let obj = { name: "Bob", value: 42 }"#);
         let result = interp.eval_string(r#"json_stringify(obj)"#);
@@ -18346,7 +18346,7 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_fs_is_file_cov() {
+    fn test_fs_is_file_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"fs::is_file("/etc/passwd")"#);
         let _ = result;
@@ -18360,21 +18360,21 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_fs_read_dir_cov() {
+    fn test_fs_read_dir_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"fs::read_dir("/tmp")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_fs_canonicalize_cov() {
+    fn test_fs_canonicalize_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"fs::canonicalize(".")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_fs_metadata_cov() {
+    fn test_fs_metadata_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"fs::metadata("/tmp")"#);
         let _ = result;
@@ -18420,42 +18420,42 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_path_is_absolute_cov() {
+    fn test_path_is_absolute_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"path::is_absolute("/home/user")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_path_is_relative_cov() {
+    fn test_path_is_relative_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"path::is_relative("./file.txt")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_path_with_extension_cov() {
+    fn test_path_with_extension_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"path::with_extension("file.txt", "rs")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_path_with_file_name_cov() {
+    fn test_path_with_file_name_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"path::with_file_name("/home/user/old.txt", "new.txt")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_path_components_cov() {
+    fn test_path_components_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"path::components("/home/user/file")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_path_normalize_cov() {
+    fn test_path_normalize_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"path::normalize("/home/../home/user")"#);
         let _ = result;
@@ -18499,7 +18499,7 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_json_pretty_cov() {
+    fn test_json_pretty_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(
             r#"
@@ -18511,35 +18511,35 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_json_validate_cov() {
+    fn test_json_validate_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"json::validate("{\"key\": 1}")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_json_type_cov() {
+    fn test_json_type_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"json::type("{\"key\": 1}")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_json_get_cov() {
+    fn test_json_get_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"json::get("{\"name\": \"test\"}", "name")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_json_set_cov() {
+    fn test_json_set_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"json::set("{\"name\": \"old\"}", "name", "new")"#);
         let _ = result;
     }
 
     #[test]
-    fn test_json_merge_cov() {
+    fn test_json_merge_builtin_cov() {
         let mut interp = Interpreter::new();
         let result =
             interp.eval_string(r#"json::merge("{\"a\": 1}", "{\"b\": 2}")"#);
@@ -18572,7 +18572,7 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_env_vars_cov() {
+    fn test_env_vars_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"env::vars()"#);
         let _ = result;
@@ -18586,7 +18586,7 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_env_temp_dir_cov() {
+    fn test_env_temp_dir_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"env::temp_dir()"#);
         let _ = result;
@@ -18902,7 +18902,7 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_chrono_utc_now_cov() {
+    fn test_chrono_utc_now_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"chrono::utc_now()"#);
         let _ = result;
@@ -19214,7 +19214,7 @@ mod coverage_tests {
     }
 
     #[test]
-    fn test_string_from_cov() {
+    fn test_string_from_builtin_cov() {
         let mut interp = Interpreter::new();
         let result = interp.eval_string(r#"String::from("hello")"#);
         let _ = result;
@@ -23385,6 +23385,653 @@ line 3"
             let a = Number { value: 5 }
             let b = Number { value: 3 }
             a.add(b).value
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: JSON stringify function
+    #[test]
+    fn test_json_stringify_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let data = {"name": "test", "value": 42}
+            json_stringify(data)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: JSON pretty printing
+    #[test]
+    fn test_json_pretty_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let data = {"key": "value"}
+            json_pretty(data)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: JSON type function
+    #[test]
+    fn test_json_type_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            json_type("{}")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: JSON merge function
+    #[test]
+    fn test_json_merge_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = {"x": 1}
+            let b = {"y": 2}
+            json_merge(a, b)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: JSON get function
+    #[test]
+    fn test_json_get_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let data = {"nested": {"value": 100}}
+            json_get(data, "nested.value")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: JSON set function
+    #[test]
+    fn test_json_set_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let data = {"key": 1}
+            json_set(data, "key", 2)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Path is_absolute function
+    #[test]
+    fn test_path_is_absolute_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            path_is_absolute("/home/user")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Path is_relative function
+    #[test]
+    fn test_path_is_relative_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            path_is_relative("./relative/path")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Path with_extension function
+    #[test]
+    fn test_path_with_extension_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            path_with_extension("file.txt", "md")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Path with_file_name function
+    #[test]
+    fn test_path_with_file_name_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            path_with_file_name("/path/to/old.txt", "new.txt")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Path components function
+    #[test]
+    fn test_path_components_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            path_components("/home/user/file.txt")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Path normalize function
+    #[test]
+    fn test_path_normalize_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            path_normalize("/home/../home/user/./file.txt")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: String from function
+    #[test]
+    fn test_string_from_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            String::from("hello")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: int conversion
+    #[test]
+    fn test_int_conversion_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            int(3.14)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: float conversion
+    #[test]
+    fn test_float_conversion_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            float(42)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: bool conversion
+    #[test]
+    fn test_bool_conversion_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            bool(1)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: parse_int function
+    #[test]
+    fn test_parse_int_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            parse_int("42")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: parse_float function
+    #[test]
+    fn test_parse_float_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            parse_float("3.14")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: str function
+    #[test]
+    fn test_str_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            str(42)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: to_string function
+    #[test]
+    fn test_to_string_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            to_string(100)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: assert_eq function
+    #[test]
+    fn test_assert_eq_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            assert_eq(1, 1)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: is_nil function
+    #[test]
+    fn test_is_nil_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            is_nil(nil)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: timestamp function
+    #[test]
+    fn test_timestamp_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            timestamp()
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: chrono_utc_now function
+    #[test]
+    fn test_chrono_utc_now_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            chrono_utc_now()
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - asin
+    #[test]
+    fn test_asin_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            asin(0.5)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - acos
+    #[test]
+    fn test_acos_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            acos(0.5)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - atan
+    #[test]
+    fn test_atan_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            atan(1.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - atan2
+    #[test]
+    fn test_atan2_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            atan2(1.0, 1.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - sinh
+    #[test]
+    fn test_sinh_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            sinh(1.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - cosh
+    #[test]
+    fn test_cosh_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            cosh(1.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - tanh
+    #[test]
+    fn test_tanh_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            tanh(0.5)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - log2
+    #[test]
+    fn test_log2_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            log2(8.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - ln
+    #[test]
+    fn test_ln_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            ln(2.718281828)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - trunc
+    #[test]
+    fn test_trunc_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            trunc(3.9)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - fract
+    #[test]
+    fn test_fract_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fract(3.14)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - signum
+    #[test]
+    fn test_signum_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            signum(-42.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - clamp
+    #[test]
+    fn test_clamp_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            clamp(5.0, 0.0, 10.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - hypot
+    #[test]
+    fn test_hypot_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            hypot(3.0, 4.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Advanced math - cbrt
+    #[test]
+    fn test_cbrt_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            cbrt(27.0)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Sleep function (short duration)
+    #[test]
+    fn test_sleep_short_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            sleep(1)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Enumerate with offset
+    #[test]
+    fn test_enumerate_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let items = ["a", "b", "c"]
+            let result = []
+            for i, item in enumerate(items) {
+                result = result + [[i, item]]
+            }
+            result
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Zip function
+    #[test]
+    fn test_zip_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = [1, 2, 3]
+            let b = ["a", "b", "c"]
+            zip(a, b)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Sort function
+    #[test]
+    fn test_sort_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [3, 1, 4, 1, 5]
+            sort(arr)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Pop function
+    #[test]
+    fn test_pop_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [1, 2, 3]
+            pop(arr)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Push function
+    #[test]
+    fn test_push_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [1, 2]
+            push(arr, 3)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Type of function
+    #[test]
+    fn test_type_of_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            type_of(42)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Type function
+    #[test]
+    fn test_type_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            type([1, 2, 3])
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Range with step
+    #[test]
+    fn test_range_with_step_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            range(0, 10, 2)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Range reverse (negative step)
+    #[test]
+    fn test_range_reverse_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            range(10, 0, -1)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Compute hash
+    #[test]
+    fn test_compute_hash_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            compute_hash("test string")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: FS metadata
+    #[test]
+    fn test_fs_metadata_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fs_metadata(".")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: FS read_dir
+    #[test]
+    fn test_fs_read_dir_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fs_read_dir(".")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: FS is_file
+    #[test]
+    fn test_fs_is_file_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fs_is_file("Cargo.toml")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: FS canonicalize
+    #[test]
+    fn test_fs_canonicalize_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fs_canonicalize(".")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Path canonicalize
+    #[test]
+    fn test_path_canonicalize_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            path_canonicalize(".")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Glob function
+    #[test]
+    fn test_glob_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            glob("*.toml")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Search function
+    #[test]
+    fn test_search_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            search(".", "*.rs")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: JSON validate
+    #[test]
+    fn test_json_validate_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            json_validate("{\"key\": \"value\"}")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Env vars function
+    #[test]
+    fn test_env_vars_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let vars = env_vars()
+            len(vars) > 0
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Env temp_dir function
+    #[test]
+    fn test_env_temp_dir_fn_v2() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            env_temp_dir()
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Dbg function
+    #[test]
+    fn test_dbg_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            dbg(42)
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Print function
+    #[test]
+    fn test_print_function_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            print("test")
+        "#);
+        let _ = result;
+    }
+
+    // COVERAGE: Println with format string
+    #[test]
+    fn test_println_format_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            println("value: {}", 42)
         "#);
         let _ = result;
     }
