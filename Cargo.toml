@@ -256,7 +256,6 @@ watch-mode = ["dep:notify"]
 
 [dependencies]
 rand = "0.8"
-ruchyruchy = "1.10.0"  # TEMPORARY: Use published version to bypass local build errors
 
 # Sovereign AI Stack Core (REQUIRED) - trueno-aprender-stdlib-core-language-spec.md v2.0
 # Six Pillars of Batteries-Included Data Science:
