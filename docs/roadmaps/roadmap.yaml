@@ -1746,3 +1746,19 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage module_resolver.rs 80%→90%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage module_resolver.rs 80%→90%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T12:21:15.567591800+00:00
+  updated: 2026-01-12T12:21:15.567591800+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
