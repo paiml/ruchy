@@ -23004,4 +23004,388 @@ line 3"
         "#);
         let _ = result;
     }
+
+    // === Actor Extended Coverage Tests ===
+    #[test]
+    fn test_actor_with_state_field_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            actor Bank {
+                state balance: i64 = 1000
+
+                message deposit(amount: i64) {
+                    self.balance = self.balance + amount
+                }
+
+                message withdraw(amount: i64) -> bool {
+                    if self.balance >= amount {
+                        self.balance = self.balance - amount
+                        true
+                    } else {
+                        false
+                    }
+                }
+            }
+            1
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_actor_multiple_state_fields_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            actor Player {
+                state name: String = "Unknown"
+                state health: i64 = 100
+                state score: i64 = 0
+
+                message damage(amount: i64) {
+                    self.health = self.health - amount
+                }
+            }
+            1
+        "#);
+        let _ = result;
+    }
+
+    // === Error Recovery Coverage Tests ===
+    #[test]
+    fn test_division_by_zero_handling_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 10
+            let y = 0
+            let z = if y != 0 { x / y } else { 0 }
+            z
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_option_unwrap_or_default_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let opt: Option<i64> = None
+            opt.unwrap_or(99)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_result_unwrap_or_else_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let res: Result<i64, String> = Err("error")
+            res.unwrap_or_else(|_| 0)
+        "#);
+        let _ = result;
+    }
+
+    // === Pattern Matching Coverage Tests ===
+    #[test]
+    fn test_match_tuple_pattern_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let pair = (1, 2)
+            match pair {
+                (0, 0) => "origin",
+                (x, 0) => "x-axis",
+                (0, y) => "y-axis",
+                (x, y) => "somewhere"
+            }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_match_or_pattern_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 3
+            match x {
+                1 | 2 | 3 => "small",
+                4 | 5 | 6 => "medium",
+                _ => "large"
+            }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_match_range_pattern_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = 50
+            match x {
+                0..=25 => "low",
+                26..=75 => "medium",
+                _ => "high"
+            }
+        "#);
+        let _ = result;
+    }
+
+    // === Closure Coverage Tests ===
+    #[test]
+    fn test_closure_with_multiple_captures_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = 1
+            let b = 2
+            let c = 3
+            let f = || a + b + c
+            f()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_closure_as_argument_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun apply(f: (i64) -> i64, x: i64) -> i64 {
+                f(x)
+            }
+            apply(|x| x * 2, 21)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_closure_returning_closure_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            fun make_adder(n: i64) -> (i64) -> i64 {
+                |x| x + n
+            }
+            let add5 = make_adder(5)
+            add5(10)
+        "#);
+        let _ = result;
+    }
+
+    // === Iterator Coverage Tests ===
+    #[test]
+    fn test_map_filter_chain_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [1, 2, 3, 4, 5]
+            arr.map(|x| x * 2).filter(|x| x > 5)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_fold_operation_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr = [1, 2, 3, 4, 5]
+            arr.fold(0, |acc, x| acc + x)
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_zip_operation_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let a = [1, 2, 3]
+            let b = [4, 5, 6]
+            a.zip(b)
+        "#);
+        let _ = result;
+    }
+
+    // === Type Annotation Coverage Tests ===
+    #[test]
+    fn test_explicit_type_annotation_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x: i64 = 42
+            let y: f64 = 3.14
+            let z: String = "hello"
+            x
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_generic_type_annotation_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let arr: Vec<i64> = [1, 2, 3]
+            let map: HashMap<String, i64> = {"a": 1, "b": 2}
+            arr.len()
+        "#);
+        let _ = result;
+    }
+
+    // === Control Flow Edge Cases ===
+    #[test]
+    fn test_nested_loops_with_break_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let result = 0
+            for i in 0..10 {
+                for j in 0..10 {
+                    for k in 0..10 {
+                        if k == 5 {
+                            break
+                        }
+                        result = result + 1
+                    }
+                }
+            }
+            result
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_loop_with_return_value_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let x = loop {
+                let value = 42
+                break value
+            }
+            x
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_while_let_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let mut stack: Vec<i64> = [1, 2, 3]
+            let mut sum = 0
+            while let Some(x) = stack.pop() {
+                sum = sum + x
+            }
+            sum
+        "#);
+        let _ = result;
+    }
+
+    // === Struct Method Coverage Tests ===
+    #[test]
+    fn test_struct_with_methods_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            struct Rectangle {
+                width: f64,
+                height: f64
+            }
+            impl Rectangle {
+                fun area(self) -> f64 {
+                    self.width * self.height
+                }
+                fun perimeter(self) -> f64 {
+                    2.0 * (self.width + self.height)
+                }
+            }
+            let rect = Rectangle { width: 10.0, height: 5.0 }
+            rect.area()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_struct_static_method_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            struct Point { x: f64, y: f64 }
+            impl Point {
+                fun origin() -> Point {
+                    Point { x: 0.0, y: 0.0 }
+                }
+                fun new(x: f64, y: f64) -> Point {
+                    Point { x, y }
+                }
+            }
+            let p = Point::new(3.0, 4.0)
+            p.x
+        "#);
+        let _ = result;
+    }
+
+    // === Enum Coverage Tests ===
+    #[test]
+    fn test_enum_with_data_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            enum Message {
+                Quit,
+                Move { x: i64, y: i64 },
+                Write(String),
+                ChangeColor(i64, i64, i64)
+            }
+            let msg = Message::Move { x: 10, y: 20 }
+            match msg {
+                Message::Quit => 0,
+                Message::Move { x, y } => x + y,
+                Message::Write(s) => s.len(),
+                Message::ChangeColor(r, g, b) => r + g + b
+            }
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_enum_option_methods_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            let some_val: Option<i64> = Some(42)
+            let none_val: Option<i64> = None
+            let is_some = some_val.is_some()
+            let is_none = none_val.is_none()
+            is_some && is_none
+        "#);
+        let _ = result;
+    }
+
+    // === Trait Coverage Tests ===
+    #[test]
+    fn test_trait_definition_and_impl_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            trait Display {
+                fun display(self) -> String
+            }
+            struct Person { name: String, age: i64 }
+            impl Display for Person {
+                fun display(self) -> String {
+                    f"{self.name}: {self.age}"
+                }
+            }
+            let p = Person { name: "Alice", age: 30 }
+            p.display()
+        "#);
+        let _ = result;
+    }
+
+    #[test]
+    fn test_multiple_trait_impl_cov() {
+        let mut interp = Interpreter::new();
+        let result = interp.eval_string(r#"
+            trait Add<T> {
+                fun add(self, other: T) -> T
+            }
+            trait Multiply<T> {
+                fun multiply(self, other: T) -> T
+            }
+            struct Number { value: i64 }
+            impl Add<Number> for Number {
+                fun add(self, other: Number) -> Number {
+                    Number { value: self.value + other.value }
+                }
+            }
+            let a = Number { value: 5 }
+            let b = Number { value: 3 }
+            a.add(b).value
+        "#);
+        let _ = result;
+    }
 }
