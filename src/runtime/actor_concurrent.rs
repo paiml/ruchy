@@ -1032,4 +1032,722 @@ mod tests {
         let tree = system.supervision_tree.read().unwrap();
         assert!(tree.is_empty());
     }
+
+    // Additional comprehensive tests for coverage
+
+    /// Test process_envelope with user message that has handler
+    #[test]
+    fn test_process_envelope_with_handler() {
+        let mut state = HashMap::new();
+        state.insert("count".to_string(), ActorFieldValue::Integer(0));
+
+        let mut actor = ConcurrentActor::new(
+            "envelope_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        let mut handlers = HashMap::new();
+        handlers.insert("Increment".to_string(), "handler".to_string());
+
+        actor.start(handlers.clone()).expect("should start");
+
+        // Send Increment message
+        let msg = ActorMessage {
+            message_type: "Increment".to_string(),
+            data: vec![],
+        };
+        actor.send(msg, Some("sender".to_string())).expect("should send");
+
+        // Give thread time to process
+        thread::sleep(Duration::from_millis(200));
+
+        // Check state was updated
+        let s = actor.state.read().unwrap();
+        assert_eq!(s.get("count"), Some(&ActorFieldValue::Integer(1)));
+
+        drop(s);
+        actor.stop().ok();
+    }
+
+    /// Test process_envelope with unknown message type (no handler)
+    #[test]
+    fn test_process_envelope_no_handler() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "no_handler_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        let handlers = HashMap::new(); // No handlers registered
+        actor.start(handlers).expect("should start");
+
+        let msg = ActorMessage {
+            message_type: "Unknown".to_string(),
+            data: vec![],
+        };
+        // Should not fail, just won't process
+        actor.send(msg, None).expect("should send");
+
+        thread::sleep(Duration::from_millis(100));
+        actor.stop().ok();
+    }
+
+    /// Test handle_system_message Start
+    #[test]
+    fn test_handle_system_message_start() {
+        let mut state = HashMap::new();
+        state.insert("count".to_string(), ActorFieldValue::Integer(0));
+
+        let mut actor = ConcurrentActor::new(
+            "sys_start_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.start(HashMap::new()).expect("should start");
+
+        // Send Start system message
+        actor
+            .mailbox_sender
+            .send(Envelope::SystemMessage(SystemMessage::Start))
+            .expect("should send");
+
+        thread::sleep(Duration::from_millis(100));
+
+        let ls = actor.lifecycle_state.read().unwrap();
+        assert_eq!(*ls, ActorState::Running);
+
+        drop(ls);
+        actor.stop().ok();
+    }
+
+    /// Test handle_system_message Restart
+    #[test]
+    fn test_handle_system_message_restart() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "sys_restart_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.start(HashMap::new()).expect("should start");
+
+        // Send Restart system message
+        actor
+            .mailbox_sender
+            .send(Envelope::SystemMessage(SystemMessage::Restart))
+            .expect("should send");
+
+        thread::sleep(Duration::from_millis(100));
+
+        let ls = actor.lifecycle_state.read().unwrap();
+        assert_eq!(*ls, ActorState::Restarting);
+
+        drop(ls);
+        // Can't call stop() on restarting actor easily, just let it drop
+    }
+
+    /// Test handle_system_message Supervise
+    #[test]
+    fn test_handle_system_message_supervise() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "sys_supervise_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.start(HashMap::new()).expect("should start");
+
+        // Send Supervise system message
+        actor
+            .mailbox_sender
+            .send(Envelope::SystemMessage(SystemMessage::Supervise(
+                "child1".to_string(),
+                "error".to_string(),
+            )))
+            .expect("should send");
+
+        thread::sleep(Duration::from_millis(100));
+
+        // Actor should still be running
+        let ls = actor.lifecycle_state.read().unwrap();
+        assert_eq!(*ls, ActorState::Running);
+
+        drop(ls);
+        actor.stop().ok();
+    }
+
+    /// Test should_restart resets counter after time window
+    #[test]
+    fn test_should_restart_resets_counter() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "restart_reset_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        // Set strategy with very short time window
+        actor.supervision_strategy = SupervisionStrategy::OneForOne {
+            max_restarts: 2,
+            within: Duration::from_millis(1), // Very short window
+        };
+
+        // Simulate restart count at limit
+        *actor.restart_count.lock().unwrap() = 2;
+        // Set last_restart to be old enough
+        *actor.last_restart.lock().unwrap() =
+            std::time::Instant::now() - Duration::from_millis(100);
+
+        // Should reset counter because we're outside the time window
+        assert!(actor.should_restart());
+
+        // Counter should be reset to 0
+        assert_eq!(*actor.restart_count.lock().unwrap(), 0);
+    }
+
+    /// Test should_restart returns false when at limit within window
+    #[test]
+    fn test_should_restart_at_limit() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "at_limit_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.supervision_strategy = SupervisionStrategy::OneForOne {
+            max_restarts: 2,
+            within: Duration::from_secs(60),
+        };
+
+        // Set restart count at limit
+        *actor.restart_count.lock().unwrap() = 2;
+        // Set last_restart to now (within window)
+        *actor.last_restart.lock().unwrap() = std::time::Instant::now();
+
+        // Should return false because we're at max_restarts
+        assert!(!actor.should_restart());
+    }
+
+    /// Test should_restart with AllForOne strategy (simplified always returns true)
+    #[test]
+    fn test_should_restart_all_for_one() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "all_for_one_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.supervision_strategy = SupervisionStrategy::AllForOne {
+            max_restarts: 2,
+            within: Duration::from_secs(60),
+        };
+
+        // AllForOne always returns true in simplified implementation
+        assert!(actor.should_restart());
+    }
+
+    /// Test should_restart with RestForOne strategy
+    #[test]
+    fn test_should_restart_rest_for_one() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "rest_for_one_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.supervision_strategy = SupervisionStrategy::RestForOne {
+            max_restarts: 2,
+            within: Duration::from_secs(60),
+        };
+
+        // RestForOne always returns true in simplified implementation
+        assert!(actor.should_restart());
+    }
+
+    /// Test actor restart method
+    #[test]
+    fn test_actor_restart() {
+        let mut state = HashMap::new();
+        state.insert("count".to_string(), ActorFieldValue::Integer(10));
+
+        let mut actor = ConcurrentActor::new(
+            "restart_method_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.start(HashMap::new()).expect("should start");
+
+        // Verify initial state
+        {
+            let s = actor.state.read().unwrap();
+            assert_eq!(s.get("count"), Some(&ActorFieldValue::Integer(10)));
+        }
+
+        // Restart the actor
+        let handlers = HashMap::new();
+        actor.restart(handlers).expect("should restart");
+
+        // State should be reset
+        {
+            let s = actor.state.read().unwrap();
+            assert_eq!(s.get("count"), Some(&ActorFieldValue::Integer(0)));
+        }
+
+        // Restart count should be incremented
+        assert_eq!(*actor.restart_count.lock().unwrap(), 1);
+
+        actor.stop().ok();
+    }
+
+    /// Test handle_failure with OneForOne strategy
+    #[test]
+    fn test_handle_failure_one_for_one() {
+        let system = ConcurrentActorSystem::new();
+
+        // Create supervisor
+        let mut sup_state = HashMap::new();
+        sup_state.insert("count".to_string(), ActorFieldValue::Integer(0));
+        let sup_handlers = HashMap::new();
+        let sup_id = system
+            .spawn_actor("Supervisor".to_string(), sup_state, sup_handlers, None)
+            .expect("should spawn supervisor");
+
+        // Create child with supervisor
+        let mut child_state = HashMap::new();
+        child_state.insert("count".to_string(), ActorFieldValue::Integer(0));
+        let child_handlers = HashMap::new();
+        let child_id = system
+            .spawn_actor(
+                "Child".to_string(),
+                child_state,
+                child_handlers,
+                Some(sup_id.clone()),
+            )
+            .expect("should spawn child");
+
+        // Handle failure
+        let result = system.handle_failure(&child_id, "test error".to_string(), &sup_id);
+        assert!(result.is_ok());
+
+        thread::sleep(Duration::from_millis(200));
+        system.shutdown().ok();
+    }
+
+    /// Test handle_failure when supervisor not found
+    #[test]
+    fn test_handle_failure_supervisor_not_found() {
+        let system = ConcurrentActorSystem::new();
+
+        // Create a child without supervisor
+        let mut child_state = HashMap::new();
+        child_state.insert("count".to_string(), ActorFieldValue::Integer(0));
+        let child_id = system
+            .spawn_actor("Child".to_string(), child_state, HashMap::new(), None)
+            .expect("should spawn");
+
+        // Handle failure with non-existent supervisor
+        let result = system.handle_failure(&child_id, "error".to_string(), "nonexistent_sup");
+        // Should be ok (supervisor not found is not an error)
+        assert!(result.is_ok());
+
+        system.shutdown().ok();
+    }
+
+    /// Test handle_failure stops actor when max restarts exceeded
+    #[test]
+    fn test_handle_failure_stop_after_max_restarts() {
+        let system = ConcurrentActorSystem::new();
+
+        // Create supervisor with low max restarts
+        let sup_state = HashMap::new();
+        let sup_id = system
+            .spawn_actor("Supervisor".to_string(), sup_state, HashMap::new(), None)
+            .expect("should spawn supervisor");
+
+        // Manually set supervisor's restart count high
+        {
+            let actors = system.actors.read().unwrap();
+            let sup = actors.get(&sup_id).unwrap();
+            let mut sup_actor = sup.lock().unwrap();
+            sup_actor.supervision_strategy = SupervisionStrategy::OneForOne {
+                max_restarts: 0, // No restarts allowed
+                within: Duration::from_secs(60),
+            };
+        }
+
+        // Create child
+        let child_state = HashMap::new();
+        let child_id = system
+            .spawn_actor(
+                "Child".to_string(),
+                child_state,
+                HashMap::new(),
+                Some(sup_id.clone()),
+            )
+            .expect("should spawn child");
+
+        // Handle failure - should stop instead of restart
+        let result = system.handle_failure(&child_id, "error".to_string(), &sup_id);
+        assert!(result.is_ok());
+
+        thread::sleep(Duration::from_millis(200));
+        system.shutdown().ok();
+    }
+
+    /// Test envelope with from field None
+    #[test]
+    fn test_envelope_user_message_from_none() {
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec!["arg".to_string()],
+        };
+        let envelope = Envelope::UserMessage { from: None, message: msg };
+
+        if let Envelope::UserMessage { from, message } = envelope {
+            assert!(from.is_none());
+            assert_eq!(message.message_type, "Test");
+            assert_eq!(message.data, vec!["arg".to_string()]);
+        } else {
+            panic!("Expected UserMessage");
+        }
+    }
+
+    /// Test actor message with data
+    #[test]
+    fn test_actor_message_with_data() {
+        let msg = ActorMessage {
+            message_type: "Command".to_string(),
+            data: vec!["arg1".to_string(), "arg2".to_string(), "arg3".to_string()],
+        };
+        assert_eq!(msg.message_type, "Command");
+        assert_eq!(msg.data.len(), 3);
+    }
+
+    /// Test actor message clone
+    #[test]
+    fn test_actor_message_clone() {
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec!["data".to_string()],
+        };
+        let cloned = msg.clone();
+        assert_eq!(cloned.message_type, msg.message_type);
+        assert_eq!(cloned.data, msg.data);
+    }
+
+    /// Test concurrent actor field value types
+    #[test]
+    fn test_actor_field_value_types() {
+        let int_val = ActorFieldValue::Integer(42);
+        let float_val = ActorFieldValue::Float(3.14);
+        let str_val = ActorFieldValue::String("hello".to_string());
+        let bool_val = ActorFieldValue::Bool(true);
+        let nil_val = ActorFieldValue::Nil;
+
+        assert_eq!(int_val, ActorFieldValue::Integer(42));
+        assert_eq!(float_val, ActorFieldValue::Float(3.14));
+        assert_eq!(str_val, ActorFieldValue::String("hello".to_string()));
+        assert_eq!(bool_val, ActorFieldValue::Bool(true));
+        assert_eq!(nil_val, ActorFieldValue::Nil);
+    }
+
+    /// Test supervision tree updates correctly with multiple children
+    #[test]
+    fn test_supervision_tree_multiple_children() {
+        let system = ConcurrentActorSystem::new();
+
+        // Create parent
+        let parent_id = system
+            .spawn_actor("Parent".to_string(), HashMap::new(), HashMap::new(), None)
+            .expect("should spawn parent");
+
+        // Create multiple children
+        let child1_id = system
+            .spawn_actor(
+                "Child1".to_string(),
+                HashMap::new(),
+                HashMap::new(),
+                Some(parent_id.clone()),
+            )
+            .expect("should spawn child1");
+
+        let child2_id = system
+            .spawn_actor(
+                "Child2".to_string(),
+                HashMap::new(),
+                HashMap::new(),
+                Some(parent_id.clone()),
+            )
+            .expect("should spawn child2");
+
+        // Verify supervision tree
+        let tree = system.supervision_tree.read().unwrap();
+        let children = tree.get(&parent_id).unwrap();
+        assert!(children.contains(&child1_id));
+        assert!(children.contains(&child2_id));
+        assert_eq!(children.len(), 2);
+
+        drop(tree);
+        system.shutdown().ok();
+    }
+
+    /// Test actor state with multiple fields
+    #[test]
+    fn test_actor_state_multiple_fields() {
+        let mut state = HashMap::new();
+        state.insert("name".to_string(), ActorFieldValue::String("actor1".to_string()));
+        state.insert("count".to_string(), ActorFieldValue::Integer(0));
+        state.insert("active".to_string(), ActorFieldValue::Bool(true));
+        state.insert("rate".to_string(), ActorFieldValue::Float(1.5));
+
+        let actor = ConcurrentActor::new("multi_field".to_string(), "Test".to_string(), state, None);
+
+        let s = actor.state.read().unwrap();
+        assert_eq!(s.len(), 4);
+        assert!(s.contains_key("name"));
+        assert!(s.contains_key("count"));
+        assert!(s.contains_key("active"));
+        assert!(s.contains_key("rate"));
+    }
+
+    /// Test actor with nil field value
+    #[test]
+    fn test_actor_state_nil_field() {
+        let mut state = HashMap::new();
+        state.insert("value".to_string(), ActorFieldValue::Nil);
+
+        let actor = ConcurrentActor::new("nil_field".to_string(), "Test".to_string(), state, None);
+
+        let s = actor.state.read().unwrap();
+        assert_eq!(s.get("value"), Some(&ActorFieldValue::Nil));
+    }
+
+    /// Test global CONCURRENT_ACTOR_SYSTEM exists
+    #[test]
+    fn test_global_actor_system_exists() {
+        // Just verify we can access the global system
+        let actors = CONCURRENT_ACTOR_SYSTEM.actors.read().unwrap();
+        // Global system should be empty or have actors from other tests
+        let _ = actors.len();
+    }
+
+    /// Test ActorState inequality
+    #[test]
+    fn test_actor_state_inequality() {
+        assert_ne!(ActorState::Starting, ActorState::Stopped);
+        assert_ne!(ActorState::Running, ActorState::Restarting);
+        assert_ne!(ActorState::Stopping, ActorState::Failed("error".to_string()));
+    }
+
+    /// Test ActorState Failed equality
+    #[test]
+    fn test_actor_state_failed_equality() {
+        let f1 = ActorState::Failed("error1".to_string());
+        let f2 = ActorState::Failed("error1".to_string());
+        let f3 = ActorState::Failed("error2".to_string());
+
+        assert_eq!(f1, f2);
+        assert_ne!(f1, f3);
+    }
+
+    /// Test stopping actor that's not started
+    #[test]
+    fn test_stop_not_started_actor() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "not_started".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        // Stopping an actor that was never started
+        // The receiver was never created properly, so this will fail
+        // But the thread_handle is None so it should be ok
+        let result = actor.stop();
+        // Should fail because mailbox channel is invalid
+        assert!(result.is_err());
+    }
+
+    /// Test send to stopped actor
+    #[test]
+    fn test_send_to_stopped_actor() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "stop_send_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.start(HashMap::new()).expect("should start");
+        actor.stop().expect("should stop");
+
+        // Sending to stopped actor should fail
+        let msg = ActorMessage {
+            message_type: "Test".to_string(),
+            data: vec![],
+        };
+        let result = actor.send(msg, None);
+        assert!(result.is_err());
+    }
+
+    /// Test restart tracking increments correctly
+    #[test]
+    fn test_restart_tracking() {
+        let mut state = HashMap::new();
+        state.insert("count".to_string(), ActorFieldValue::Integer(0));
+
+        let mut actor = ConcurrentActor::new(
+            "tracking_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        actor.start(HashMap::new()).expect("should start");
+
+        // Initial values
+        assert_eq!(*actor.restart_count.lock().unwrap(), 0);
+
+        // First restart
+        actor.restart(HashMap::new()).expect("should restart");
+        assert_eq!(*actor.restart_count.lock().unwrap(), 1);
+
+        // Second restart
+        actor.restart(HashMap::new()).expect("should restart");
+        assert_eq!(*actor.restart_count.lock().unwrap(), 2);
+
+        actor.stop().ok();
+    }
+
+    /// Test lifecycle state changes during start
+    #[test]
+    fn test_lifecycle_during_start() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "lifecycle_start_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        // Before start
+        {
+            let ls = actor.lifecycle_state.read().unwrap();
+            assert_eq!(*ls, ActorState::Starting);
+        }
+
+        actor.start(HashMap::new()).expect("should start");
+
+        // After start
+        {
+            let ls = actor.lifecycle_state.read().unwrap();
+            assert_eq!(*ls, ActorState::Running);
+        }
+
+        actor.stop().ok();
+    }
+
+    /// Test sending multiple messages sequentially
+    #[test]
+    fn test_send_multiple_messages() {
+        let mut state = HashMap::new();
+        state.insert("count".to_string(), ActorFieldValue::Integer(0));
+
+        let mut actor = ConcurrentActor::new(
+            "multi_msg_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        let mut handlers = HashMap::new();
+        handlers.insert("Increment".to_string(), "handler".to_string());
+
+        actor.start(handlers).expect("should start");
+
+        // Send 5 increment messages
+        for _ in 0..5 {
+            let msg = ActorMessage {
+                message_type: "Increment".to_string(),
+                data: vec![],
+            };
+            actor.send(msg, None).expect("should send");
+        }
+
+        // Give time to process
+        thread::sleep(Duration::from_millis(500));
+
+        // Check state
+        let s = actor.state.read().unwrap();
+        assert_eq!(s.get("count"), Some(&ActorFieldValue::Integer(5)));
+
+        drop(s);
+        actor.stop().ok();
+    }
+
+    /// Test actor type is preserved
+    #[test]
+    fn test_actor_type_preserved() {
+        let state = HashMap::new();
+        let actor = ConcurrentActor::new(
+            "type_test".to_string(),
+            "CustomActorType".to_string(),
+            state,
+            None,
+        );
+
+        assert_eq!(actor.actor_type, "CustomActorType");
+    }
+
+    /// Test supervision strategy can be changed
+    #[test]
+    fn test_supervision_strategy_changeable() {
+        let state = HashMap::new();
+        let mut actor = ConcurrentActor::new(
+            "strategy_change_test".to_string(),
+            "Test".to_string(),
+            state,
+            None,
+        );
+
+        // Default should be OneForOne
+        if let SupervisionStrategy::OneForOne { .. } = actor.supervision_strategy {
+            // ok
+        } else {
+            panic!("Expected default OneForOne");
+        }
+
+        // Change to AllForOne
+        actor.supervision_strategy = SupervisionStrategy::AllForOne {
+            max_restarts: 5,
+            within: Duration::from_secs(120),
+        };
+
+        if let SupervisionStrategy::AllForOne { max_restarts, .. } = actor.supervision_strategy {
+            assert_eq!(max_restarts, 5);
+        } else {
+            panic!("Expected AllForOne");
+        }
+    }
 }
