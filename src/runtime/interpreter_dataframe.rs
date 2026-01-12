@@ -13,10 +13,7 @@
 use crate::frontend::ast::{Expr, ExprKind};
 use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{DataFrameColumn, InterpreterError, Value};
-use std::cell::RefCell;
 use std::collections::HashMap;
-use std::rc::Rc;
-use std::sync::Arc;
 
 impl Interpreter {
     /// Evaluate `DataFrame` builder methods (.column, .build)
@@ -542,6 +539,7 @@ impl Interpreter {
 mod tests {
     use super::*;
     use crate::frontend::ast::{Literal, Pattern, Span, Type};
+    use std::sync::Arc;
 
     // Helper to create Expr
     fn make_expr(kind: ExprKind) -> Expr {

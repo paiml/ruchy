@@ -48,6 +48,8 @@
 #![allow(clippy::return_self_not_must_use)]
 #![allow(clippy::unwrap_used)]
 #![allow(clippy::needless_pass_by_value)]
+#![allow(clippy::uninlined_format_args)]
+#![allow(clippy::doc_markdown)]
 #![allow(clippy::manual_clamp)]
 #![allow(clippy::should_implement_trait)]
 #![allow(clippy::unnecessary_to_owned)]

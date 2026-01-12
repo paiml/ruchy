@@ -9,9 +9,7 @@ use crate::frontend::ast::Expr;
 use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::Arc;
 
 impl Interpreter {
     /// Evaluate enum definition
@@ -122,7 +120,9 @@ impl Interpreter {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{EnumVariant, EnumVariantKind, ImplMethod, Param, Pattern, Span, Type, TypeKind};
+    use crate::frontend::ast::{
+        EnumVariant, EnumVariantKind, ImplMethod, Param, Pattern, Span, Type, TypeKind,
+    };
 
     fn make_interpreter() -> Interpreter {
         Interpreter::new()
@@ -164,11 +164,19 @@ mod tests {
     #[test]
     fn test_eval_enum_definition_empty() {
         let mut interp = make_interpreter();
-        let result = interp.eval_enum_definition("Empty", &[], &[], false).unwrap();
+        let result = interp
+            .eval_enum_definition("Empty", &[], &[], false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Enum".to_string())));
-            assert_eq!(obj.get("__name"), Some(&Value::from_string("Empty".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Enum".to_string()))
+            );
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("Empty".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -183,7 +191,9 @@ mod tests {
             make_unit_variant("Blue"),
         ];
 
-        let result = interp.eval_enum_definition("Color", &[], &variants, false).unwrap();
+        let result = interp
+            .eval_enum_definition("Color", &[], &variants, false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(variants_obj)) = obj.get("__variants") {
@@ -207,7 +217,9 @@ mod tests {
             make_variant_with_discriminant("C", 20),
         ];
 
-        let result = interp.eval_enum_definition("TestEnum", &[], &variants, false).unwrap();
+        let result = interp
+            .eval_enum_definition("TestEnum", &[], &variants, false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(variants_obj)) = obj.get("__variants") {
@@ -241,7 +253,9 @@ mod tests {
             params: vec![make_param("self")],
             return_type: None,
             body: Box::new(Expr::new(
-                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    42, None,
+                )),
                 Span::default(),
             )),
             is_pub: true,
@@ -265,7 +279,9 @@ mod tests {
             params: vec![make_param("self")],
             return_type: None,
             body: Box::new(Expr::new(
-                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    1, None,
+                )),
                 Span::default(),
             )),
             is_pub: true,
@@ -276,13 +292,17 @@ mod tests {
             params: vec![make_param("self"), make_param("x")],
             return_type: None,
             body: Box::new(Expr::new(
-                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)),
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    2, None,
+                )),
                 Span::default(),
             )),
             is_pub: true,
         };
 
-        let result = interp.eval_impl_block("MyStruct", &[method1, method2]).unwrap();
+        let result = interp
+            .eval_impl_block("MyStruct", &[method1, method2])
+            .unwrap();
         assert_eq!(result, Value::Nil);
 
         // Verify both methods were registered
@@ -293,20 +313,23 @@ mod tests {
     #[test]
     fn test_eval_enum_tuple_variant() {
         let mut interp = make_interpreter();
-        let variants = vec![
-            EnumVariant {
-                name: "Point".to_string(),
-                kind: EnumVariantKind::Tuple(vec![make_type("i32"), make_type("i32")]),
-                discriminant: None,
-            },
-        ];
+        let variants = vec![EnumVariant {
+            name: "Point".to_string(),
+            kind: EnumVariantKind::Tuple(vec![make_type("i32"), make_type("i32")]),
+            discriminant: None,
+        }];
 
-        let result = interp.eval_enum_definition("MyEnum", &[], &variants, false).unwrap();
+        let result = interp
+            .eval_enum_definition("MyEnum", &[], &variants, false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(variants_obj)) = obj.get("__variants") {
                 if let Some(Value::Object(point_info)) = variants_obj.get("Point") {
-                    assert_eq!(point_info.get("kind"), Some(&Value::from_string("Tuple".to_string())));
+                    assert_eq!(
+                        point_info.get("kind"),
+                        Some(&Value::from_string("Tuple".to_string()))
+                    );
                 } else {
                     panic!("Expected Point variant");
                 }
@@ -323,31 +346,32 @@ mod tests {
         let mut interp = make_interpreter();
 
         use crate::frontend::ast::{StructField, Visibility};
-        let struct_fields = vec![
-            StructField {
-                name: "x".to_string(),
-                ty: make_type("i32"),
-                default_value: None,
-                is_mut: false,
-                visibility: Visibility::Public,
-                decorators: vec![],
-            },
-        ];
+        let struct_fields = vec![StructField {
+            name: "x".to_string(),
+            ty: make_type("i32"),
+            default_value: None,
+            is_mut: false,
+            visibility: Visibility::Public,
+            decorators: vec![],
+        }];
 
-        let variants = vec![
-            EnumVariant {
-                name: "Named".to_string(),
-                kind: EnumVariantKind::Struct(struct_fields),
-                discriminant: None,
-            },
-        ];
+        let variants = vec![EnumVariant {
+            name: "Named".to_string(),
+            kind: EnumVariantKind::Struct(struct_fields),
+            discriminant: None,
+        }];
 
-        let result = interp.eval_enum_definition("MyEnum", &[], &variants, false).unwrap();
+        let result = interp
+            .eval_enum_definition("MyEnum", &[], &variants, false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(variants_obj)) = obj.get("__variants") {
                 if let Some(Value::Object(named_info)) = variants_obj.get("Named") {
-                    assert_eq!(named_info.get("kind"), Some(&Value::from_string("Struct".to_string())));
+                    assert_eq!(
+                        named_info.get("kind"),
+                        Some(&Value::from_string("Struct".to_string()))
+                    );
                 } else {
                     panic!("Expected Named variant");
                 }

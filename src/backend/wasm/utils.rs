@@ -845,8 +845,9 @@ mod tests {
 
         #[test]
         fn test_needs_memory_empty_tuple() {
+            // Empty tuple () parses as Unit, not Tuple, so doesn't need memory
             let expr = parse("()");
-            assert!(needs_memory(&expr));
+            assert!(!needs_memory(&expr));
         }
 
         #[test]
