@@ -11,6 +11,45 @@ use super::{
     handle_serve_command, handle_wasm_command,
 };
 
+// ============================================================================
+// Extracted pure functions for testability
+// ============================================================================
+
+/// Derive quality gate flags from CLI arguments
+///
+/// Returns (strict, quiet, json)
+pub fn derive_quality_gate_flags(fail_fast: bool, verbose: bool, format: &str) -> (bool, bool, bool) {
+    (fail_fast, !verbose, format == "json")
+}
+
+/// Derive fmt write flag from CLI arguments
+///
+/// Write is enabled when neither check nor stdout mode is active
+pub fn derive_fmt_write_flag(check: bool, stdout: bool) -> bool {
+    !check && !stdout
+}
+
+/// Derive coverage threshold with default
+pub fn derive_coverage_threshold(threshold: Option<f64>) -> f64 {
+    threshold.unwrap_or(80.0)
+}
+
+/// Derive color flag (inverts no_color)
+pub fn derive_color_flag(no_color: bool) -> bool {
+    !no_color
+}
+
+/// Validate lint command has required file argument
+pub fn validate_lint_args(file: &Option<String>, init_config: bool) -> Result<(), &'static str> {
+    if init_config {
+        Ok(())
+    } else if file.is_some() {
+        Ok(())
+    } else {
+        Err("Error: Either provide a file or use --all flag")
+    }
+}
+
 /// Handle complex commands that require special routing
 ///
 /// This function routes CLI commands to their appropriate handlers based on
@@ -116,15 +155,15 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             ci: _,
             verbose,
         } => {
-            // Simplified quality gate handling
+            let (strict, quiet, json) = derive_quality_gate_flags(fail_fast, verbose, &format);
             commands::handle_quality_gate_command(
                 &path,
                 config.as_deref(),
-                fail_fast, // Use as strict
-                !verbose,  // Use as quiet
-                format == "json",
+                strict,
+                quiet,
+                json,
                 verbose,
-                None, // No output field
+                None,
                 export.as_deref(),
             )
         }
@@ -139,16 +178,16 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             indent: _,
             use_tabs: _,
         } => {
-            // Simplified fmt handling
+            let write = derive_fmt_write_flag(check, stdout);
             commands::handle_fmt_command(
                 &file,
                 check,
-                !check && !stdout, // write if not check or stdout
+                write,
                 config.as_deref(),
                 all,
                 diff,
                 stdout,
-                false, // verbose not available
+                false,
             )
         }
         crate::Commands::Lint {
@@ -213,7 +252,7 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             threshold,
             format,
             verbose,
-        } => handle_coverage_command(&path, threshold.unwrap_or(80.0), &format, verbose),
+        } => handle_coverage_command(&path, derive_coverage_threshold(threshold), &format, verbose),
         crate::Commands::Notebook {
             file,
             port,
@@ -387,7 +426,7 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             enable_deadlock_detection,
             deadlock_interval,
             &start_mode,
-            !no_color,
+            derive_color_flag(no_color),
             &format,
             export.as_deref(),
             duration,
@@ -422,7 +461,7 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             compute_diffs,
             sample_rate,
             refresh_interval,
-            !no_color,
+            derive_color_flag(no_color),
             &format,
             export.as_deref(),
             verbose,
@@ -439,6 +478,142 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    // Router tests would require mocking Commands enum
-    // which is defined in main.rs
+    use super::*;
+
+    // ========================================================================
+    // derive_quality_gate_flags tests
+    // ========================================================================
+
+    #[test]
+    fn test_quality_gate_flags_all_false() {
+        let (strict, quiet, json) = derive_quality_gate_flags(false, false, "text");
+        assert!(!strict);
+        assert!(quiet); // !verbose when verbose=false
+        assert!(!json);
+    }
+
+    #[test]
+    fn test_quality_gate_flags_fail_fast_true() {
+        let (strict, quiet, json) = derive_quality_gate_flags(true, false, "text");
+        assert!(strict);
+        assert!(quiet);
+        assert!(!json);
+    }
+
+    #[test]
+    fn test_quality_gate_flags_verbose_true() {
+        let (strict, quiet, json) = derive_quality_gate_flags(false, true, "text");
+        assert!(!strict);
+        assert!(!quiet); // !verbose when verbose=true
+        assert!(!json);
+    }
+
+    #[test]
+    fn test_quality_gate_flags_json_format() {
+        let (strict, quiet, json) = derive_quality_gate_flags(false, false, "json");
+        assert!(!strict);
+        assert!(quiet);
+        assert!(json);
+    }
+
+    #[test]
+    fn test_quality_gate_flags_all_true() {
+        let (strict, quiet, json) = derive_quality_gate_flags(true, true, "json");
+        assert!(strict);
+        assert!(!quiet);
+        assert!(json);
+    }
+
+    // ========================================================================
+    // derive_fmt_write_flag tests
+    // ========================================================================
+
+    #[test]
+    fn test_fmt_write_neither_check_nor_stdout() {
+        assert!(derive_fmt_write_flag(false, false));
+    }
+
+    #[test]
+    fn test_fmt_write_check_mode() {
+        assert!(!derive_fmt_write_flag(true, false));
+    }
+
+    #[test]
+    fn test_fmt_write_stdout_mode() {
+        assert!(!derive_fmt_write_flag(false, true));
+    }
+
+    #[test]
+    fn test_fmt_write_both_check_and_stdout() {
+        assert!(!derive_fmt_write_flag(true, true));
+    }
+
+    // ========================================================================
+    // derive_coverage_threshold tests
+    // ========================================================================
+
+    #[test]
+    fn test_coverage_threshold_none() {
+        assert!((derive_coverage_threshold(None) - 80.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_coverage_threshold_some() {
+        assert!((derive_coverage_threshold(Some(95.0)) - 95.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_coverage_threshold_zero() {
+        assert!((derive_coverage_threshold(Some(0.0)) - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_coverage_threshold_hundred() {
+        assert!((derive_coverage_threshold(Some(100.0)) - 100.0).abs() < f64::EPSILON);
+    }
+
+    // ========================================================================
+    // derive_color_flag tests
+    // ========================================================================
+
+    #[test]
+    fn test_color_flag_no_color_false() {
+        assert!(derive_color_flag(false)); // use color
+    }
+
+    #[test]
+    fn test_color_flag_no_color_true() {
+        assert!(!derive_color_flag(true)); // no color
+    }
+
+    // ========================================================================
+    // validate_lint_args tests
+    // ========================================================================
+
+    #[test]
+    fn test_lint_args_init_config() {
+        assert!(validate_lint_args(&None, true).is_ok());
+    }
+
+    #[test]
+    fn test_lint_args_with_file() {
+        assert!(validate_lint_args(&Some("test.ruchy".to_string()), false).is_ok());
+    }
+
+    #[test]
+    fn test_lint_args_no_file_no_init() {
+        assert!(validate_lint_args(&None, false).is_err());
+    }
+
+    #[test]
+    fn test_lint_args_file_and_init() {
+        // init_config takes precedence
+        assert!(validate_lint_args(&Some("test.ruchy".to_string()), true).is_ok());
+    }
+
+    #[test]
+    fn test_lint_args_error_message() {
+        let err = validate_lint_args(&None, false).unwrap_err();
+        assert!(err.contains("file") || err.contains("--all"));
+    }
 }
