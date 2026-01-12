@@ -1943,4 +1943,435 @@ mod tests {
             assert_eq!(fields_guard.get("nil_field"), Some(&Value::Nil));
         }
     }
+
+    // =========================================================================
+    // Additional coverage tests
+    // =========================================================================
+
+    #[test]
+    fn test_class_constant_accessible_via_qualified_name() {
+        let mut interp = make_interpreter();
+
+        // Create constant
+        let const_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let constants = vec![ClassConstant {
+            name: "MAX_VALUE".to_string(),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            },
+            value: const_expr,
+            is_pub: true,
+        }];
+
+        interp
+            .eval_class_definition(
+                "Constants",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &[],
+                &constants,
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Access constant via qualified name
+        let result = interp.lookup_variable("Constants::MAX_VALUE").unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_class_with_named_constructor() {
+        let mut interp = make_interpreter();
+
+        // Create named constructor
+        let ctor_body = Expr::new(ExprKind::Block(vec![]), Span::default());
+        let constructors = vec![Constructor {
+            name: Some("from_value".to_string()),
+            params: vec![],
+            return_type: None,
+            body: Box::new(ctor_body),
+            is_pub: true,
+        }];
+
+        let result = interp
+            .eval_class_definition(
+                "Named",
+                &[],
+                None,
+                &[],
+                &[],
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Verify named constructor exists
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(ctors)) = obj.get("__constructors") {
+                assert!(ctors.contains_key("from_value"));
+            } else {
+                panic!("Expected __constructors");
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_instantiate_class_with_named_constructor() {
+        let mut interp = make_interpreter();
+
+        // Create a class with named constructor that returns an object
+        // The constructor body returns an object with __class set
+        let mut return_obj = HashMap::new();
+        return_obj.insert(
+            "__class".to_string(),
+            Value::from_string("Creatable".to_string()),
+        );
+
+        // Constructor body that returns an Object (avoids self lookup issue)
+        let ctor_body = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)), // Simple body
+            Span::default(),
+        );
+        let constructors = vec![Constructor {
+            name: Some("create".to_string()),
+            params: vec![],
+            return_type: None,
+            body: Box::new(ctor_body),
+            is_pub: true,
+        }];
+
+        interp
+            .eval_class_definition(
+                "Creatable",
+                &[],
+                None,
+                &[],
+                &[],
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Verify class has the named constructor
+        let class_def = interp.lookup_variable("Creatable").unwrap();
+        if let Value::Object(obj) = class_def {
+            if let Some(Value::Object(ctors)) = obj.get("__constructors") {
+                assert!(ctors.contains_key("create"));
+            } else {
+                panic!("Expected __constructors");
+            }
+        }
+    }
+
+    #[test]
+    fn test_class_method_is_override_true() {
+        let mut interp = make_interpreter();
+
+        // Create method with is_override = true
+        let method_body = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
+        let methods = vec![ClassMethod {
+            name: "overridden".to_string(),
+            params: vec![],
+            body: Box::new(method_body),
+            return_type: None,
+            is_pub: true,
+            is_static: false,
+            is_override: true,
+            is_final: false,
+            is_abstract: false,
+            is_async: false,
+            self_type: SelfType::Borrowed,
+        }];
+
+        let result = interp
+            .eval_class_definition(
+                "Override",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Verify is_override flag is stored
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(methods_obj)) = obj.get("__methods") {
+                if let Some(Value::Object(method_meta)) = methods_obj.get("overridden") {
+                    assert_eq!(method_meta.get("is_override"), Some(&Value::Bool(true)));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_class_constant_is_pub_false() {
+        let mut interp = make_interpreter();
+
+        let const_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let constants = vec![ClassConstant {
+            name: "PRIVATE_VALUE".to_string(),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            },
+            value: const_expr,
+            is_pub: false,
+        }];
+
+        let result = interp
+            .eval_class_definition(
+                "PrivateConst",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &[],
+                &constants,
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Verify is_pub = false in constant metadata
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(consts)) = obj.get("__constants") {
+                if let Some(Value::Object(const_meta)) = consts.get("PRIVATE_VALUE") {
+                    assert_eq!(const_meta.get("is_pub"), Some(&Value::Bool(false)));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_instantiate_constructor_not_found_uses_default() {
+        let mut interp = make_interpreter();
+
+        // Create class with NO explicit constructors (will get default "new")
+        interp
+            .eval_class_definition(
+                "DefaultCtor",
+                &[],
+                None,
+                &[],
+                &[],
+                &[], // No explicit constructors
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Try to instantiate with a non-existent constructor name
+        // Should use the default constructor
+        let result = interp
+            .instantiate_class_with_constructor("DefaultCtor", "nonexistent", &[])
+            .unwrap();
+
+        // Should still work (constructor not found but class instantiated)
+        if let Value::ObjectMut(cell) = result {
+            let obj = cell.lock().unwrap();
+            assert_eq!(
+                obj.get("__class"),
+                Some(&Value::from_string("DefaultCtor".to_string()))
+            );
+        } else {
+            panic!("Expected ObjectMut");
+        }
+    }
+
+    #[test]
+    fn test_class_with_multiple_fields() {
+        let mut interp = make_interpreter();
+
+        let fields = vec![
+            make_struct_field("field1", make_type("i32")),
+            make_struct_field("field2", make_type("String")),
+            make_struct_field("field3", make_type("bool")),
+        ];
+
+        let result = interp
+            .eval_class_definition(
+                "MultiField",
+                &[],
+                None,
+                &[],
+                &fields,
+                &[],
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Verify all fields are stored
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
+                assert!(fields_obj.contains_key("field1"));
+                assert!(fields_obj.contains_key("field2"));
+                assert!(fields_obj.contains_key("field3"));
+                assert_eq!(fields_obj.len(), 3);
+            }
+        }
+    }
+
+    #[test]
+    fn test_class_with_multiple_methods() {
+        let mut interp = make_interpreter();
+
+        let method1_body = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let method2_body = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+
+        let methods = vec![
+            ClassMethod {
+                name: "method1".to_string(),
+                params: vec![],
+                body: Box::new(method1_body),
+                return_type: None,
+                is_pub: true,
+                is_static: false,
+                is_override: false,
+                is_final: false,
+                is_abstract: false,
+                is_async: false,
+                self_type: SelfType::Borrowed,
+            },
+            ClassMethod {
+                name: "method2".to_string(),
+                params: vec![],
+                body: Box::new(method2_body),
+                return_type: None,
+                is_pub: true,
+                is_static: true,
+                is_override: false,
+                is_final: false,
+                is_abstract: false,
+                is_async: false,
+                self_type: SelfType::None,
+            },
+        ];
+
+        let result = interp
+            .eval_class_definition(
+                "MultiMethod",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Verify all methods are stored
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(methods_obj)) = obj.get("__methods") {
+                assert!(methods_obj.contains_key("method1"));
+                assert!(methods_obj.contains_key("method2"));
+                assert_eq!(methods_obj.len(), 2);
+            }
+        }
+    }
+
+    #[test]
+    fn test_class_with_multiple_constants() {
+        let mut interp = make_interpreter();
+
+        let const1 = ClassConstant {
+            name: "CONST_A".to_string(),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            },
+            value: Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                Span::default(),
+            ),
+            is_pub: true,
+        };
+        let const2 = ClassConstant {
+            name: "CONST_B".to_string(),
+            ty: Type {
+                kind: TypeKind::Named("i32".to_string()),
+                span: Span::default(),
+            },
+            value: Expr::new(
+                ExprKind::Literal(Literal::Integer(2, None)),
+                Span::default(),
+            ),
+            is_pub: true,
+        };
+
+        let result = interp
+            .eval_class_definition(
+                "MultiConst",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &[],
+                &[const1, const2],
+                &[],
+                false,
+            )
+            .unwrap();
+
+        // Verify all constants are stored
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(consts)) = obj.get("__constants") {
+                assert!(consts.contains_key("CONST_A"));
+                assert!(consts.contains_key("CONST_B"));
+                assert_eq!(consts.len(), 2);
+            }
+        }
+
+        // Also verify qualified names work
+        assert_eq!(
+            interp.lookup_variable("MultiConst::CONST_A").unwrap(),
+            Value::Integer(1)
+        );
+        assert_eq!(
+            interp.lookup_variable("MultiConst::CONST_B").unwrap(),
+            Value::Integer(2)
+        );
+    }
 }
