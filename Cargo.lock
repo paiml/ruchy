@@ -6600,7 +6600,6 @@ dependencies = [
  "regex",
  "reqwest",
  "rexpect",
- "ruchyruchy",
  "rustyline",
  "semver",
  "serde",
