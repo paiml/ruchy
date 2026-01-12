@@ -382,4 +382,286 @@ mod tests {
             panic!("Expected Object");
         }
     }
+
+    // =========================================================================
+    // Additional coverage tests
+    // =========================================================================
+
+    #[test]
+    fn test_eval_enum_mixed_variants() {
+        use crate::frontend::ast::{StructField, Visibility};
+
+        let mut interp = make_interpreter();
+
+        // Mix of Unit, Tuple, and Struct variants
+        let variants = vec![
+            EnumVariant {
+                name: "None".to_string(),
+                kind: EnumVariantKind::Unit,
+                discriminant: None,
+            },
+            EnumVariant {
+                name: "Point".to_string(),
+                kind: EnumVariantKind::Tuple(vec![make_type("i32"), make_type("i32")]),
+                discriminant: None,
+            },
+            EnumVariant {
+                name: "Named".to_string(),
+                kind: EnumVariantKind::Struct(vec![StructField {
+                    name: "value".to_string(),
+                    ty: make_type("String"),
+                    default_value: None,
+                    is_mut: false,
+                    visibility: Visibility::Public,
+                    decorators: vec![],
+                }]),
+                discriminant: None,
+            },
+        ];
+
+        let result = interp
+            .eval_enum_definition("MixedEnum", &[], &variants, false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(variants_obj)) = obj.get("__variants") {
+                // Verify all three kinds are present
+                if let Some(Value::Object(none_info)) = variants_obj.get("None") {
+                    assert_eq!(
+                        none_info.get("kind"),
+                        Some(&Value::from_string("Unit".to_string()))
+                    );
+                }
+                if let Some(Value::Object(point_info)) = variants_obj.get("Point") {
+                    assert_eq!(
+                        point_info.get("kind"),
+                        Some(&Value::from_string("Tuple".to_string()))
+                    );
+                }
+                if let Some(Value::Object(named_info)) = variants_obj.get("Named") {
+                    assert_eq!(
+                        named_info.get("kind"),
+                        Some(&Value::from_string("Struct".to_string()))
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_eval_enum_registered_in_environment() {
+        let mut interp = make_interpreter();
+        let variants = vec![make_unit_variant("Value")];
+
+        interp
+            .eval_enum_definition("MyEnum", &[], &variants, false)
+            .unwrap();
+
+        // Verify enum is accessible from environment
+        let result = interp.lookup_variable("MyEnum");
+        assert!(result.is_ok());
+        if let Value::Object(obj) = result.unwrap() {
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Enum".to_string()))
+            );
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_enum_with_type_params() {
+        let mut interp = make_interpreter();
+        let variants = vec![
+            EnumVariant {
+                name: "Some".to_string(),
+                kind: EnumVariantKind::Tuple(vec![make_type("T")]),
+                discriminant: None,
+            },
+            make_unit_variant("None"),
+        ];
+
+        // Even though type params aren't used at runtime, they should be accepted
+        let result = interp
+            .eval_enum_definition("Option", &["T".to_string()], &variants, false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("Option".to_string()))
+            );
+        }
+    }
+
+    #[test]
+    fn test_eval_impl_method_with_wildcard_pattern() {
+        let mut interp = make_interpreter();
+
+        // Method with wildcard pattern (non-Identifier) - tests the "_" fallback branch
+        let method = ImplMethod {
+            name: "wildcard_method".to_string(),
+            params: vec![Param {
+                pattern: Pattern::Wildcard,
+                ty: make_type("Any"),
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: None,
+            body: Box::new(Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    0, None,
+                )),
+                Span::default(),
+            )),
+            is_pub: true,
+        };
+
+        let result = interp.eval_impl_block("WildcardType", &[method]).unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Verify method was registered
+        let method_val = interp.lookup_variable("WildcardType::wildcard_method");
+        assert!(method_val.is_ok());
+    }
+
+    #[test]
+    fn test_eval_impl_method_with_default_param() {
+        let mut interp = make_interpreter();
+
+        // Method with default parameter value
+        let default_expr = Box::new(Expr::new(
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                42, None,
+            )),
+            Span::default(),
+        ));
+
+        let method = ImplMethod {
+            name: "with_default".to_string(),
+            params: vec![
+                make_param("self"),
+                Param {
+                    pattern: Pattern::Identifier("x".to_string()),
+                    ty: make_type("i32"),
+                    span: Span::default(),
+                    is_mutable: false,
+                    default_value: Some(default_expr),
+                },
+            ],
+            return_type: None,
+            body: Box::new(Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    0, None,
+                )),
+                Span::default(),
+            )),
+            is_pub: true,
+        };
+
+        let result = interp.eval_impl_block("DefaultParam", &[method]).unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Verify method was registered with params
+        let method_val = interp.lookup_variable("DefaultParam::with_default").unwrap();
+        if let Value::Closure { params, .. } = method_val {
+            assert_eq!(params.len(), 2);
+            // Second param should have a default
+            assert!(params[1].1.is_some());
+        } else {
+            panic!("Expected Closure");
+        }
+    }
+
+    #[test]
+    fn test_eval_enum_variant_no_discriminant() {
+        let mut interp = make_interpreter();
+        let variants = vec![make_unit_variant("NoDisc")];
+
+        let result = interp
+            .eval_enum_definition("NoDiscEnum", &[], &variants, false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(variants_obj)) = obj.get("__variants") {
+                if let Some(Value::Object(info)) = variants_obj.get("NoDisc") {
+                    // Should not have discriminant key
+                    assert!(info.get("discriminant").is_none());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_eval_impl_is_pub_flag() {
+        let mut interp = make_interpreter();
+
+        // Test that is_pub flag is accepted (even if not used at runtime)
+        let method = ImplMethod {
+            name: "private_method".to_string(),
+            params: vec![make_param("self")],
+            return_type: None,
+            body: Box::new(Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    0, None,
+                )),
+                Span::default(),
+            )),
+            is_pub: false, // Private method
+        };
+
+        let result = interp.eval_impl_block("PrivType", &[method]).unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Method should still be registered
+        assert!(interp.lookup_variable("PrivType::private_method").is_ok());
+    }
+
+    #[test]
+    fn test_eval_enum_variant_count() {
+        let mut interp = make_interpreter();
+        let variants = vec![
+            make_unit_variant("A"),
+            make_unit_variant("B"),
+            make_unit_variant("C"),
+            make_unit_variant("D"),
+            make_unit_variant("E"),
+        ];
+
+        let result = interp
+            .eval_enum_definition("FiveVariants", &[], &variants, false)
+            .unwrap();
+
+        if let Value::Object(obj) = result {
+            if let Some(Value::Object(variants_obj)) = obj.get("__variants") {
+                assert_eq!(variants_obj.len(), 5);
+            }
+        }
+    }
+
+    #[test]
+    fn test_eval_impl_method_with_return_type() {
+        let mut interp = make_interpreter();
+
+        let method = ImplMethod {
+            name: "typed_return".to_string(),
+            params: vec![make_param("self")],
+            return_type: Some(make_type("i32")), // Explicit return type
+            body: Box::new(Expr::new(
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    42, None,
+                )),
+                Span::default(),
+            )),
+            is_pub: true,
+        };
+
+        let result = interp.eval_impl_block("TypedReturn", &[method]).unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Method should still be registered
+        assert!(interp.lookup_variable("TypedReturn::typed_return").is_ok());
+    }
 }
