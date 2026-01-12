@@ -307,3 +307,512 @@ impl LspServer {
         diags.get(uri).cloned()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lsp_server_new() {
+        let server = LspServer::new();
+        // Should create server without panic
+        assert!(std::mem::size_of_val(&server) > 0);
+    }
+
+    #[test]
+    fn test_lsp_server_default() {
+        let server = LspServer::default();
+        // Should create server via default
+        assert!(std::mem::size_of_val(&server) > 0);
+    }
+
+    #[test]
+    fn test_handle_request_initialize() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {}
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert_eq!(response["id"], 1);
+        assert!(response["result"]["capabilities"].is_object());
+        assert!(response["result"]["capabilities"]["hoverProvider"].as_bool().unwrap());
+    }
+
+    #[test]
+    fn test_handle_request_shutdown() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "shutdown",
+            "params": null
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert_eq!(response["id"], 2);
+        assert!(response["result"].is_null());
+    }
+
+    #[test]
+    fn test_handle_request_hover() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 3,
+            "method": "textDocument/hover",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" },
+                "position": { "line": 0, "character": 5 }
+            }
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert_eq!(response["id"], 3);
+        assert!(response["result"]["contents"].is_object());
+    }
+
+    #[test]
+    fn test_handle_request_hover_null_params() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 4,
+            "method": "textDocument/hover",
+            "params": null
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert!(response["result"].is_null());
+    }
+
+    #[test]
+    fn test_handle_request_completion() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 5,
+            "method": "textDocument/completion",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" },
+                "position": { "line": 0, "character": 0 }
+            }
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert_eq!(response["id"], 5);
+        assert!(response["result"].is_array());
+        let completions = response["result"].as_array().unwrap();
+        assert!(!completions.is_empty());
+        assert_eq!(completions[0]["label"], "println");
+    }
+
+    #[test]
+    fn test_handle_request_definition() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 6,
+            "method": "textDocument/definition",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" },
+                "position": { "line": 5, "character": 10 }
+            }
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert_eq!(response["id"], 6);
+        assert_eq!(response["result"]["uri"], "file:///test.ruchy");
+        assert!(response["result"]["range"].is_object());
+    }
+
+    #[test]
+    fn test_handle_request_unknown_method() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "unknown/method",
+            "params": {}
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert_eq!(response["id"], 7);
+        assert!(response["error"].is_object());
+        assert_eq!(response["error"]["code"], -32601);
+        assert_eq!(response["error"]["message"], "Method not found");
+    }
+
+    #[test]
+    fn test_handle_raw_message() {
+        let server = LspServer::new();
+        let result = server.handle_raw_message("invalid json").unwrap();
+        assert!(result["error"].is_object());
+        assert_eq!(result["error"]["code"], -32700);
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_initialized() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "initialized",
+            "params": {}
+        });
+
+        server.handle_notification(notification).await.unwrap();
+        let initialized = server.initialized.lock().await;
+        assert!(*initialized);
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_exit() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "exit",
+            "params": null
+        });
+
+        // Should not panic
+        server.handle_notification(notification).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_did_open() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": "file:///test.ruchy",
+                    "languageId": "ruchy",
+                    "version": 1,
+                    "text": "fun main() { println(\"Hello\") }"
+                }
+            }
+        });
+
+        server.handle_notification(notification).await.unwrap();
+
+        let docs = server.documents.lock().await;
+        assert!(docs.contains_key("file:///test.ruchy"));
+        assert_eq!(
+            docs.get("file:///test.ruchy").unwrap(),
+            "fun main() { println(\"Hello\") }"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_did_change() {
+        let server = LspServer::new();
+
+        // First open a document
+        let open_notif = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": "file:///test.ruchy",
+                    "text": "original"
+                }
+            }
+        });
+        server.handle_notification(open_notif).await.unwrap();
+
+        // Then change it
+        let change_notif = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" },
+                "contentChanges": [{ "text": "changed" }]
+            }
+        });
+        server.handle_notification(change_notif).await.unwrap();
+
+        let docs = server.documents.lock().await;
+        assert_eq!(docs.get("file:///test.ruchy").unwrap(), "changed");
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_did_close() {
+        let server = LspServer::new();
+
+        // First open a document
+        let open_notif = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": "file:///test.ruchy",
+                    "text": "content"
+                }
+            }
+        });
+        server.handle_notification(open_notif).await.unwrap();
+
+        // Then close it
+        let close_notif = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didClose",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" }
+            }
+        });
+        server.handle_notification(close_notif).await.unwrap();
+
+        let docs = server.documents.lock().await;
+        assert!(!docs.contains_key("file:///test.ruchy"));
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_did_save() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didSave",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" }
+            }
+        });
+
+        // Should not panic
+        server.handle_notification(notification).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_unknown() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "unknown/notification",
+            "params": {}
+        });
+
+        // Should not panic - unknown notifications are ignored
+        server.handle_notification(notification).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_diagnostics_on_error() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": "file:///error.ruchy",
+                    "text": "let x = }"
+                }
+            }
+        });
+
+        server.handle_notification(notification).await.unwrap();
+
+        let diags = server.get_diagnostics("file:///error.ruchy").await;
+        assert!(diags.is_some());
+        let diags = diags.unwrap();
+        assert!(!diags.is_empty());
+        assert_eq!(diags[0].message, "Expected expression after '='");
+    }
+
+    #[tokio::test]
+    async fn test_diagnostics_cleared_on_fix() {
+        let server = LspServer::new();
+
+        // Open with error
+        let open_notif = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {
+                "textDocument": {
+                    "uri": "file:///fix.ruchy",
+                    "text": "let x = }"
+                }
+            }
+        });
+        server.handle_notification(open_notif).await.unwrap();
+
+        // Fix the error
+        let change_notif = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": { "uri": "file:///fix.ruchy" },
+                "contentChanges": [{ "text": "let x = 42" }]
+            }
+        });
+        server.handle_notification(change_notif).await.unwrap();
+
+        let diags = server.get_diagnostics("file:///fix.ruchy").await;
+        assert!(diags.is_none());
+    }
+
+    #[test]
+    fn test_diagnostic_struct() {
+        let diag = Diagnostic {
+            range: Range {
+                start: Position {
+                    line: 1,
+                    character: 5,
+                },
+                end: Position {
+                    line: 1,
+                    character: 10,
+                },
+            },
+            severity: DiagnosticSeverity::Error,
+            message: "Test error".to_string(),
+        };
+
+        assert_eq!(diag.message, "Test error");
+        assert_eq!(diag.range.start.line, 1);
+        assert_eq!(diag.range.start.character, 5);
+    }
+
+    #[test]
+    fn test_diagnostic_severity_values() {
+        assert_eq!(DiagnosticSeverity::Error as u8, 1);
+        assert_eq!(DiagnosticSeverity::Warning as u8, 2);
+        assert_eq!(DiagnosticSeverity::Information as u8, 3);
+        assert_eq!(DiagnosticSeverity::Hint as u8, 4);
+    }
+
+    #[test]
+    fn test_position_struct() {
+        let pos = Position {
+            line: 10,
+            character: 20,
+        };
+        assert_eq!(pos.line, 10);
+        assert_eq!(pos.character, 20);
+    }
+
+    #[test]
+    fn test_range_struct() {
+        let range = Range {
+            start: Position {
+                line: 0,
+                character: 0,
+            },
+            end: Position {
+                line: 5,
+                character: 10,
+            },
+        };
+        assert_eq!(range.start.line, 0);
+        assert_eq!(range.end.line, 5);
+    }
+
+    #[test]
+    fn test_request_wrapper() {
+        let val = json!({"method": "test"});
+        let req = Request(val.clone());
+        assert_eq!(req.0, val);
+    }
+
+    #[test]
+    fn test_response_wrapper() {
+        let val = json!({"result": "ok"});
+        let resp = Response(val.clone());
+        assert_eq!(resp.0, val);
+    }
+
+    #[test]
+    fn test_notification_wrapper() {
+        let val = json!({"method": "notify"});
+        let notif = Notification(val.clone());
+        assert_eq!(notif.0, val);
+    }
+
+    #[test]
+    fn test_handle_request_missing_method() {
+        let server = LspServer::new();
+        let request = json!({
+            "jsonrpc": "2.0",
+            "id": 8
+        });
+
+        let response = server.handle_request(request).unwrap();
+        assert!(response["error"].is_object());
+    }
+
+    #[tokio::test]
+    async fn test_handle_notification_missing_method() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "params": {}
+        });
+
+        // Should not panic
+        server.handle_notification(notification).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_did_open_missing_text_document() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didOpen",
+            "params": {}
+        });
+
+        // Should not panic
+        server.handle_notification(notification).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_did_change_missing_changes() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" }
+            }
+        });
+
+        // Should not panic
+        server.handle_notification(notification).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_did_change_empty_changes() {
+        let server = LspServer::new();
+        let notification = json!({
+            "jsonrpc": "2.0",
+            "method": "textDocument/didChange",
+            "params": {
+                "textDocument": { "uri": "file:///test.ruchy" },
+                "contentChanges": []
+            }
+        });
+
+        // Should not panic
+        server.handle_notification(notification).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_get_diagnostics_not_found() {
+        let server = LspServer::new();
+        let diags = server.get_diagnostics("file:///nonexistent.ruchy").await;
+        assert!(diags.is_none());
+    }
+
+    #[test]
+    fn test_initialize_capabilities() {
+        let server = LspServer::new();
+        let result = server.handle_initialize(&json!({})).unwrap();
+
+        assert_eq!(result["capabilities"]["textDocumentSync"], 1);
+        assert!(result["capabilities"]["hoverProvider"].as_bool().unwrap());
+        assert!(result["capabilities"]["definitionProvider"].as_bool().unwrap());
+        assert!(result["capabilities"]["completionProvider"].is_object());
+    }
+}
