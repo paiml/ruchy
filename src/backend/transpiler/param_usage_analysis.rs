@@ -6,9 +6,7 @@
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
 
 // Re-export from builtin_type_inference for backwards compatibility
-pub use super::builtin_type_inference::{
-    infer_param_type_from_builtin_usage, is_string_literal,
-};
+pub use super::builtin_type_inference::{infer_param_type_from_builtin_usage, is_string_literal};
 
 /// Generic AST traversal for parameter usage checks.
 ///
@@ -229,7 +227,12 @@ pub fn is_string_concatenation(op: &BinaryOp, left: &Expr, right: &Expr) -> bool
 
 /// Check numeric usage in binary expressions
 #[must_use]
-pub fn check_binary_numeric_usage(param_name: &str, op: &BinaryOp, left: &Expr, right: &Expr) -> bool {
+pub fn check_binary_numeric_usage(
+    param_name: &str,
+    op: &BinaryOp,
+    left: &Expr,
+    right: &Expr,
+) -> bool {
     if is_numeric_operator(op) && has_param_in_operation(param_name, left, right) {
         // Special case: string concatenation
         if is_string_concatenation(op, left, right) {
@@ -2002,5 +2005,236 @@ mod tests {
         assert!(!is_numeric_operator(&BinaryOp::NotEqual));
         assert!(!is_numeric_operator(&BinaryOp::And));
         assert!(!is_numeric_operator(&BinaryOp::Or));
+    }
+
+    // ==================== Coverage Improvement Tests ====================
+
+    #[test]
+    fn test_traverse_expr_assign() {
+        let code = "fun test(arr) { arr[0] = 5 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_array("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_expr_compound_assign() {
+        let code = "fun test(x) { x += 1 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_param("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_expr_unary() {
+        let code = "fun test(x) { -x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_param("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_expr_index_access() {
+        let code = "fun test(arr, idx) { arr[idx] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_index("idx", body));
+                    assert!(is_param_used_as_array("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_string_concatenation_not_numeric() {
+        let code = r#"fun test(x) { "hello" + x }"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    // String concat should NOT be detected as numeric
+                    assert!(!is_param_used_numerically("x", body));
+                    // But should be detected as string concat
+                    assert!(is_param_used_in_string_concat("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_in_while_numeric() {
+        let code = "fun test(n) { while n > 0 { n - 1 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("n", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_in_for_numeric() {
+        let code = "fun test(x) { for i in [1,2,3] { x + i } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_coverage_infer_bool_from_condition() {
+        let code = "fun test(flag) { if flag { 1 } else { 0 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type("flag", body), Some("bool"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_coverage_infer_array_from_indexing() {
+        let code = "fun test(arr) { arr[0] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    let inferred = infer_param_type("arr", body);
+                    assert!(inferred == Some("Vec<_>") || inferred == Some("&[_]"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_coverage_infer_callable() {
+        let code = "fun test(f) { f(1) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type("f", body), Some("impl Fn(_) -> _"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_coverage_infer_usize_index() {
+        let code = "fun test(i, arr) { arr[i] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert_eq!(infer_param_type("i", body), Some("usize"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_coverage_nested_array_true() {
+        let code = "fun test(matrix) { matrix[0][1] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_nested_array_access("matrix", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_coverage_nested_array_false() {
+        let code = "fun test(arr) { arr[0] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(!is_nested_array_access("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_check_let_pattern_traversal() {
+        let code = "fun test(x) { let (a, b) = (1, 2); x + a }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_used_with_len() {
+        let code = "fun test(arr) { arr.len() }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_with_len("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_in_print_macro() {
+        let code = r#"fun test(msg) { print!("{}", msg) }"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_in_print_macro("msg", body));
+                }
+            }
+        }
     }
 }
