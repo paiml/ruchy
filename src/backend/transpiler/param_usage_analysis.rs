@@ -1697,4 +1697,310 @@ mod tests {
             }
         }
     }
+
+    // ===== Coverage Tests: traverse_expr_for_check branches =====
+
+    #[test]
+    fn test_traverse_while_loop() {
+        let code = "fun test(x) { while x > 0 { x = x - 1 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_for_loop() {
+        let code = "fun test(arr) { for x in arr { print(x) } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_array("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_compound_assign() {
+        let code = "fun test(x) { x += 1 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_unary_op() {
+        let code = "fun test(x) { -x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_index_access() {
+        let code = "fun test(arr, i) { arr[i] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_index("i", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_let_pattern() {
+        let code = "fun test(t) { let (a, b) = t; a + b }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_param("t", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_traverse_assign() {
+        let code = "fun test(x) { x = 10 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_param("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_nested_array_access_detection() {
+        let code = "fun test(arr) { arr[0][1] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_nested_array_access("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_with_len() {
+        let code = "fun test(arr) { arr.len() }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_with_len("arr", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_as_bool() {
+        let code = "fun test(flag) { if flag { 1 } else { 0 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_as_bool("flag", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_in_string_concat() {
+        let code = "fun test(name) { \"Hello \" + name }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_in_string_concat("name", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_is_param_used_in_print_macro() {
+        let code = "fun test(x) { print(x) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_in_print_macro("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_numeric() {
+        let code = "fun test(x) { x * 2 + 1 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    let inferred = infer_param_type("x", body);
+                    // Should infer numeric type
+                    assert!(inferred.is_some());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_string() {
+        let code = "fun test(s) { \"prefix: \" + s }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    let inferred = infer_param_type("s", body);
+                    assert!(inferred.is_some());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_array_index() {
+        let code = "fun test(arr) { arr[0] }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    let inferred = infer_param_type("arr", body);
+                    assert!(inferred.is_some());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_bool() {
+        let code = "fun test(flag) { if flag { 1 } else { 0 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    let inferred = infer_param_type("flag", body);
+                    assert!(inferred.is_some());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_infer_param_type_function() {
+        let code = "fun test(f) { f(1) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    let inferred = infer_param_type("f", body);
+                    assert!(inferred.is_some());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_complex_expression_traversal() {
+        let code = "fun test(x, y) { if x > 0 { y * 2 } else { y - 1 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("x", body));
+                    assert!(is_param_used_numerically("y", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_deeply_nested_expression() {
+        let code = "fun test(a) { if true { if true { if true { a + 1 } } } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(is_param_used_numerically("a", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_param_in_closure_body() {
+        let code = "fun test(x) { let f = |y| x + y; f(1) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_param("x", body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_numeric_operator_detection() {
+        assert!(is_numeric_operator(&BinaryOp::Add));
+        assert!(is_numeric_operator(&BinaryOp::Subtract));
+        assert!(is_numeric_operator(&BinaryOp::Multiply));
+        assert!(is_numeric_operator(&BinaryOp::Divide));
+        assert!(is_numeric_operator(&BinaryOp::Modulo));
+        assert!(is_numeric_operator(&BinaryOp::Less));
+        assert!(is_numeric_operator(&BinaryOp::Greater));
+        assert!(is_numeric_operator(&BinaryOp::LessEqual));
+        assert!(is_numeric_operator(&BinaryOp::GreaterEqual));
+        assert!(!is_numeric_operator(&BinaryOp::Equal));
+        assert!(!is_numeric_operator(&BinaryOp::NotEqual));
+        assert!(!is_numeric_operator(&BinaryOp::And));
+        assert!(!is_numeric_operator(&BinaryOp::Or));
+    }
 }
