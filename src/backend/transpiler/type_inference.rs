@@ -28,7 +28,7 @@ mod tests {
     use crate::Parser;
 
     /// Checks if an expression contains numeric operations (test helper)
-    fn contains_numeric_operations(expr: &crate::frontend::ast::Expr) -> bool {
+    pub(super) fn contains_numeric_operations(expr: &crate::frontend::ast::Expr) -> bool {
         match &expr.kind {
             ExprKind::Binary { op, left, right } => {
                 matches!(
@@ -638,6 +638,128 @@ mod coverage_push_tests {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
                     assert!(is_param_used_numerically("x", body));
+                }
+            }
+        }
+    }
+
+    // === COVERAGE: contains_numeric_operations helper branches ===
+
+    #[test]
+    fn test_contains_numeric_in_block() {
+        use super::tests::contains_numeric_operations;
+        let code = "fun test() { { 1 + 2 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_numeric_operations(body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_contains_numeric_in_if_else() {
+        use super::tests::contains_numeric_operations;
+        let code = "fun test(flag) { if flag { 0 } else { 1 + 2 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_numeric_operations(body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_contains_numeric_in_let_value() {
+        use super::tests::contains_numeric_operations;
+        let code = "fun test() { let x = 1 + 2; x }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_numeric_operations(body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_contains_numeric_in_let_body() {
+        use super::tests::contains_numeric_operations;
+        let code = "fun test() { let x = 0; x * 2 }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_numeric_operations(body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_contains_numeric_in_call_args() {
+        use super::tests::contains_numeric_operations;
+        let code = "fun test() { foo(1 + 2) }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_numeric_operations(body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_contains_numeric_in_lambda() {
+        use super::tests::contains_numeric_operations;
+        let code = "fun test() { let f = fn(x) { x + 1 }; f }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_numeric_operations(body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_contains_numeric_returns_false_for_string() {
+        use super::tests::contains_numeric_operations;
+        let code = r#"fun test() { "hello" }"#;
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(!contains_numeric_operations(body));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_contains_numeric_in_if_then_branch() {
+        use super::tests::contains_numeric_operations;
+        let code = "fun test(flag) { if flag { 1 + 2 } }";
+        let mut parser = Parser::new(code);
+        let ast = parser.parse().expect("Failed to parse");
+        if let ExprKind::Block(exprs) = &ast.kind {
+            for expr in exprs {
+                if let ExprKind::Function { body, .. } = &expr.kind {
+                    assert!(contains_numeric_operations(body));
                 }
             }
         }
