@@ -1128,6 +1128,214 @@ mod tests {
 
         Ok(())
     }
+
+    // === COVERAGE: Additional tests for uncovered branches ===
+
+    #[test]
+    fn test_resolve_import_all() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let import_all = Expr::new(
+            ExprKind::ImportAll {
+                module: "std::collections".to_string(),
+                alias: "collections".to_string(),
+            },
+            Span { start: 0, end: 0 },
+        );
+        let result = resolver.resolve_imports(import_all)?;
+        // Non-file import should be preserved
+        if let ExprKind::ImportAll { module, alias } = result.kind {
+            assert_eq!(module, "std::collections");
+            assert_eq!(alias, "collections");
+        } else {
+            panic!("Expected ImportAll");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_resolve_import_default() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let import_default = Expr::new(
+            ExprKind::ImportDefault {
+                module: "std::io".to_string(),
+                name: "stdout".to_string(),
+            },
+            Span { start: 0, end: 0 },
+        );
+        let result = resolver.resolve_imports(import_default)?;
+        if let ExprKind::ImportDefault { module, name } = result.kind {
+            assert_eq!(module, "std::io");
+            assert_eq!(name, "stdout");
+        } else {
+            panic!("Expected ImportDefault");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_resolve_reexport() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let reexport = Expr::new(
+            ExprKind::ReExport {
+                items: vec!["foo".to_string(), "bar".to_string()],
+                module: "std::lib".to_string(),
+            },
+            Span { start: 0, end: 0 },
+        );
+        let result = resolver.resolve_imports(reexport)?;
+        if let ExprKind::ReExport { items, module } = result.kind {
+            assert_eq!(module, "std::lib");
+            assert_eq!(items.len(), 2);
+        } else {
+            panic!("Expected ReExport");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_make_functions_public() {
+        // Test function is made public
+        let private_func = Expr::new(
+            ExprKind::Function {
+                name: "my_func".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
+                    Span { start: 0, end: 2 },
+                )),
+                is_async: false,
+                return_type: None,
+                is_pub: false,
+            },
+            Span { start: 0, end: 10 },
+        );
+        let result = ModuleResolver::make_functions_public(private_func);
+        if let ExprKind::Function { is_pub, .. } = result.kind {
+            assert!(is_pub, "Function should be made public");
+        } else {
+            panic!("Expected Function");
+        }
+    }
+
+    #[test]
+    fn test_make_functions_public_in_block() {
+        // Test block of functions are all made public
+        let block = Expr::new(
+            ExprKind::Block(vec![
+                Expr::new(
+                    ExprKind::Function {
+                        name: "f1".to_string(),
+                        type_params: vec![],
+                        params: vec![],
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                            Span { start: 0, end: 1 },
+                        )),
+                        is_async: false,
+                        return_type: None,
+                        is_pub: false,
+                    },
+                    Span { start: 0, end: 5 },
+                ),
+                Expr::new(
+                    ExprKind::Function {
+                        name: "f2".to_string(),
+                        type_params: vec![],
+                        params: vec![],
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)),
+                            Span { start: 0, end: 1 },
+                        )),
+                        is_async: false,
+                        return_type: None,
+                        is_pub: false,
+                    },
+                    Span { start: 0, end: 5 },
+                ),
+            ]),
+            Span { start: 0, end: 20 },
+        );
+        let result = ModuleResolver::make_functions_public(block);
+        if let ExprKind::Block(exprs) = result.kind {
+            for expr in exprs {
+                if let ExprKind::Function { is_pub, .. } = expr.kind {
+                    assert!(is_pub, "All functions in block should be public");
+                }
+            }
+        } else {
+            panic!("Expected Block");
+        }
+    }
+
+    #[test]
+    fn test_make_functions_public_passthrough() {
+        // Non-function expressions pass through unchanged
+        let literal = Expr::new(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
+            Span { start: 0, end: 2 },
+        );
+        let result = ModuleResolver::make_functions_public(literal);
+        if let ExprKind::Literal(crate::frontend::ast::Literal::Integer(n, _)) = result.kind {
+            assert_eq!(n, 42);
+        } else {
+            panic!("Expected Literal");
+        }
+    }
+
+    #[test]
+    fn test_resolve_module_declaration() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut resolver = ModuleResolver::new();
+        resolver.module_loader.search_paths.clear();
+        resolver.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "mymod", "fun helper() { 1 }")?;
+
+        let module_decl = Expr::new(
+            ExprKind::ModuleDeclaration {
+                name: "mymod".to_string(),
+            },
+            Span { start: 0, end: 10 },
+        );
+        let result = resolver.resolve_imports(module_decl)?;
+        // Should be resolved to inline Module
+        if let ExprKind::Module { name, .. } = result.kind {
+            assert_eq!(name, "mymod");
+        } else {
+            panic!("Expected Module, got {:?}", result.kind);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_resolve_if_expression() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let if_expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::Bool(true)),
+                    Span { start: 0, end: 4 },
+                )),
+                then_branch: Box::new(Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                    Span { start: 5, end: 6 },
+                )),
+                else_branch: Some(Box::new(Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)),
+                    Span { start: 7, end: 8 },
+                ))),
+            },
+            Span { start: 0, end: 10 },
+        );
+        let result = resolver.resolve_imports(if_expr)?;
+        if let ExprKind::If { .. } = result.kind {
+            // If expression is preserved
+        } else {
+            panic!("Expected If expression");
+        }
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_module_resolver {
