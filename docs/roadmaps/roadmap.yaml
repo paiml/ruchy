@@ -1778,3 +1778,83 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage push to 92%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage push to 92%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T12:27:40.387954231+00:00
+  updated: 2026-01-12T12:27:40.387954231+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage push to 95%'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage push to 95%'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T13:18:45.939771234+00:00
+  updated: 2026-01-12T13:18:45.939771234+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage push continuation'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage push continuation'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T14:26:28.043594455+00:00
+  updated: 2026-01-12T14:26:28.043594455+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle - Coverage edge cases'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle - Coverage edge cases'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T14:40:11.930915607+00:00
+  updated: 2026-01-12T14:40:11.930915607+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Coverage: interpreter_types_module.rs'
+  github_issue: null
+  item_type: task
+  title: 'New task: Coverage: interpreter_types_module.rs'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-01-12T14:45:26.394508300+00:00
+  updated: 2026-01-12T14:45:26.394508300+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null

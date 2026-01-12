@@ -359,4 +359,345 @@ mod tests {
             panic!("Expected Object");
         }
     }
+
+    #[test]
+    fn test_eval_module_function_with_default_param() {
+        let mut interp = make_interpreter();
+
+        // Create: mod defaults { pub fn greet(name = "World") { name } }
+        let fn_body = make_expr(ExprKind::Identifier("name".to_string()));
+        let default_expr = make_expr(ExprKind::Literal(Literal::String("World".to_string())));
+
+        let param_with_default = Param {
+            pattern: Pattern::Identifier("name".to_string()),
+            ty: make_type("String"),
+            span: Span::default(),
+            is_mutable: false,
+            default_value: Some(Box::new(default_expr)),
+        };
+
+        let func = make_expr(ExprKind::Function {
+            name: "greet".to_string(),
+            params: vec![param_with_default],
+            return_type: None,
+            body: Box::new(fn_body),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![func]));
+        let result = interp.eval_module_expr("defaults", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("greet"));
+            // Verify closure captured default value
+            if let Some(Value::Closure { params, .. }) = obj.get("greet") {
+                assert_eq!(params.len(), 1);
+                assert!(params[0].1.is_some()); // Has default value
+            } else {
+                panic!("Expected Closure");
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_async_function() {
+        let mut interp = make_interpreter();
+
+        // Create: mod async_mod { pub async fn fetch() { 1 } }
+        let fn_body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+
+        let func = make_expr(ExprKind::Function {
+            name: "fetch".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(fn_body),
+            type_params: vec![],
+            is_pub: true,
+            is_async: true,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![func]));
+        let result = interp.eval_module_expr("async_mod", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("fetch"));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_mixed_expressions() {
+        let mut interp = make_interpreter();
+
+        // Module with function AND non-function expressions
+        let fn_body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+        let func = make_expr(ExprKind::Function {
+            name: "process".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(fn_body),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        // Add a let binding - should be ignored
+        let let_expr = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            type_annotation: None,
+            value: Box::new(make_expr(ExprKind::Literal(Literal::Integer(42, None)))),
+            body: Box::new(make_expr(ExprKind::Identifier("x".to_string()))),
+            is_mutable: false,
+            else_block: None,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![let_expr, func]));
+        let result = interp.eval_module_expr("mixed", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("process"));
+            // x should not be exposed in module namespace
+            assert!(!obj.contains_key("x"));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_deeply_nested() {
+        let mut interp = make_interpreter();
+
+        // Create: mod a { mod b { mod c { pub fn deep() { 99 } } } }
+        let fn_body = make_expr(ExprKind::Literal(Literal::Integer(99, None)));
+        let deep_fn = make_expr(ExprKind::Function {
+            name: "deep".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(fn_body),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let c_body = make_expr(ExprKind::Block(vec![deep_fn]));
+        let c_module = make_expr(ExprKind::Module {
+            name: "c".to_string(),
+            body: Box::new(c_body),
+        });
+
+        let b_body = make_expr(ExprKind::Block(vec![c_module]));
+        let b_module = make_expr(ExprKind::Module {
+            name: "b".to_string(),
+            body: Box::new(b_body),
+        });
+
+        let a_body = make_expr(ExprKind::Block(vec![b_module]));
+        let result = interp.eval_module_expr("a", &a_body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("b"));
+            if let Some(Value::Object(b_obj)) = obj.get("b") {
+                assert!(b_obj.contains_key("c"));
+                if let Some(Value::Object(c_obj)) = b_obj.get("c") {
+                    assert!(c_obj.contains_key("deep"));
+                } else {
+                    panic!("Expected c module");
+                }
+            } else {
+                panic!("Expected b module");
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_mutable_param() {
+        let mut interp = make_interpreter();
+
+        // Create: mod mutables { pub fn modify(mut x) { x } }
+        let fn_body = make_expr(ExprKind::Identifier("x".to_string()));
+
+        let mutable_param = Param {
+            pattern: Pattern::Identifier("x".to_string()),
+            ty: make_type("i32"),
+            span: Span::default(),
+            is_mutable: true,
+            default_value: None,
+        };
+
+        let func = make_expr(ExprKind::Function {
+            name: "modify".to_string(),
+            params: vec![mutable_param],
+            return_type: None,
+            body: Box::new(fn_body),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![func]));
+        let result = interp.eval_module_expr("mutables", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("modify"));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_with_type_params() {
+        let mut interp = make_interpreter();
+
+        // Create: mod generics { pub fn identity<T>(x: T) { x } }
+        let fn_body = make_expr(ExprKind::Identifier("x".to_string()));
+
+        let func = make_expr(ExprKind::Function {
+            name: "identity".to_string(),
+            params: vec![make_param("x")],
+            return_type: None,
+            body: Box::new(fn_body),
+            type_params: vec!["T".to_string()],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![func]));
+        let result = interp.eval_module_expr("generics", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("identity"));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_with_return_type() {
+        let mut interp = make_interpreter();
+
+        // Create: mod typed { pub fn get_number() -> i32 { 42 } }
+        let fn_body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+
+        let func = make_expr(ExprKind::Function {
+            name: "get_number".to_string(),
+            params: vec![],
+            return_type: Some(make_type("i32")),
+            body: Box::new(fn_body),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![func]));
+        let result = interp.eval_module_expr("typed", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("get_number"));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_mixed_visibility() {
+        let mut interp = make_interpreter();
+
+        // Create: mod mixed_vis { pub fn public() { 1 } fn private() { 2 } pub fn also_public() { 3 } }
+        let pub1 = make_expr(ExprKind::Function {
+            name: "public".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(make_expr(ExprKind::Literal(Literal::Integer(1, None)))),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let private = make_expr(ExprKind::Function {
+            name: "private".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(make_expr(ExprKind::Literal(Literal::Integer(2, None)))),
+            type_params: vec![],
+            is_pub: false,
+            is_async: false,
+        });
+
+        let pub2 = make_expr(ExprKind::Function {
+            name: "also_public".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(make_expr(ExprKind::Literal(Literal::Integer(3, None)))),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![pub1, private, pub2]));
+        let result = interp.eval_module_expr("mixed_vis", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            assert!(obj.contains_key("public"));
+            assert!(obj.contains_key("also_public"));
+            assert!(!obj.contains_key("private"));
+        } else {
+            panic!("Expected Object");
+        }
+    }
+
+    #[test]
+    fn test_eval_module_sibling_functions_environment() {
+        let mut interp = make_interpreter();
+
+        // Test that sibling functions share module environment
+        // mod siblings { pub fn a() { 1 } pub fn b() { 2 } }
+        let func_a = make_expr(ExprKind::Function {
+            name: "a".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(make_expr(ExprKind::Literal(Literal::Integer(1, None)))),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let func_b = make_expr(ExprKind::Function {
+            name: "b".to_string(),
+            params: vec![],
+            return_type: None,
+            body: Box::new(make_expr(ExprKind::Literal(Literal::Integer(2, None)))),
+            type_params: vec![],
+            is_pub: true,
+            is_async: false,
+        });
+
+        let body = make_expr(ExprKind::Block(vec![func_a, func_b]));
+        let result = interp.eval_module_expr("siblings", &body).unwrap();
+
+        if let Value::Object(obj) = result {
+            // Both functions should have the same environment (module_env)
+            if let (Some(Value::Closure { env: env_a, .. }), Some(Value::Closure { env: env_b, .. })) =
+                (obj.get("a"), obj.get("b"))
+            {
+                // Both closures should have "a" and "b" in their env
+                let env_a_ref = env_a.borrow();
+                let env_b_ref = env_b.borrow();
+                assert!(env_a_ref.contains_key("a"));
+                assert!(env_a_ref.contains_key("b"));
+                assert!(env_b_ref.contains_key("a"));
+                assert!(env_b_ref.contains_key("b"));
+            } else {
+                panic!("Expected Closures");
+            }
+        } else {
+            panic!("Expected Object");
+        }
+    }
 }
