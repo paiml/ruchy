@@ -330,3 +330,137 @@ cargo clean
         if is_lib { "lib.ruchy" } else { "main.ruchy" }
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_main_template_not_empty() {
+        let template = get_main_template();
+        assert!(!template.is_empty());
+    }
+
+    #[test]
+    fn test_get_main_template_has_fun_main() {
+        let template = get_main_template();
+        assert!(template.contains("fun main()"));
+    }
+
+    #[test]
+    fn test_get_main_template_has_println() {
+        let template = get_main_template();
+        assert!(template.contains("println"));
+    }
+
+    #[test]
+    fn test_get_lib_template_not_empty() {
+        let template = get_lib_template();
+        assert!(!template.is_empty());
+    }
+
+    #[test]
+    fn test_get_lib_template_has_pub_functions() {
+        let template = get_lib_template();
+        assert!(template.contains("pub fun"));
+    }
+
+    #[test]
+    fn test_get_lib_template_has_add_function() {
+        let template = get_lib_template();
+        assert!(template.contains("fun add"));
+    }
+
+    #[test]
+    fn test_get_lib_template_has_multiply_function() {
+        let template = get_lib_template();
+        assert!(template.contains("fun multiply"));
+    }
+
+    #[test]
+    fn test_add_build_dependencies_no_existing_section() {
+        let content = "[package]\nname = \"test\"\n[dependencies]\nfoo = \"1.0\"";
+        let result = add_build_dependencies(content);
+        assert!(result.contains("[build-dependencies]"));
+        assert!(result.contains("ruchy = \"3.71\""));
+    }
+
+    #[test]
+    fn test_add_build_dependencies_with_existing_section() {
+        let content = "[package]\nname = \"test\"\n[build-dependencies]\nbar = \"2.0\"";
+        let result = add_build_dependencies(content);
+        assert!(result.contains("ruchy = \"3.71\""));
+        // Should only have one [build-dependencies] header (replaced)
+        let count = result.matches("[build-dependencies]").count();
+        assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn test_add_build_script_and_dependencies() {
+        let content = "[package]\nname = \"test\"";
+        let result = add_build_script_and_dependencies(content);
+        assert!(result.contains("build = \"build.rs\""));
+        assert!(result.contains("[build-dependencies]"));
+        assert!(result.contains("ruchy = \"3.71\""));
+    }
+
+    #[test]
+    fn test_get_readme_template_for_binary() {
+        let result = get_readme_template("my_project", false);
+        assert!(result.contains("# my_project"));
+        assert!(result.contains("Application"));
+        assert!(result.contains("main.ruchy"));
+        assert!(result.contains("cargo run"));
+    }
+
+    #[test]
+    fn test_get_readme_template_for_library() {
+        let result = get_readme_template("my_lib", true);
+        assert!(result.contains("# my_lib"));
+        assert!(result.contains("Library"));
+        assert!(result.contains("lib.ruchy"));
+    }
+
+    #[test]
+    fn test_get_readme_template_has_build_instructions() {
+        let result = get_readme_template("test_project", false);
+        assert!(result.contains("cargo build"));
+        assert!(result.contains("cargo test"));
+        assert!(result.contains("cargo clean"));
+    }
+
+    #[test]
+    fn test_get_readme_template_has_about_section() {
+        let result = get_readme_template("test", false);
+        assert!(result.contains("## About Ruchy"));
+        assert!(result.contains(".ruchy"));
+        assert!(result.contains(".rs"));
+    }
+
+    #[test]
+    fn test_get_readme_template_has_learn_more() {
+        let result = get_readme_template("test", false);
+        assert!(result.contains("## Learn More"));
+        assert!(result.contains("github.com/paiml/ruchy"));
+    }
+
+    #[test]
+    fn test_main_template_has_variables_example() {
+        let template = get_main_template();
+        assert!(template.contains("let name"));
+    }
+
+    #[test]
+    fn test_main_template_has_collections_example() {
+        let template = get_main_template();
+        assert!(template.contains("let numbers"));
+        assert!(template.contains("[1, 2, 3, 4, 5]"));
+    }
+
+    #[test]
+    fn test_lib_template_has_doctests() {
+        let template = get_lib_template();
+        assert!(template.contains("/// # Examples"));
+        assert!(template.contains("assert_eq!"));
+    }
+}
