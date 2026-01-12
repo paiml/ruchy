@@ -233,4 +233,279 @@ mod tests {
             result => panic!("Expected Value for let binding, got {result:?}"),
         }
     }
+
+    // === Additional tests for improved coverage ===
+
+    #[test]
+    fn test_evaluator_debug_trait() {
+        let evaluator = Evaluator::new();
+        let debug_str = format!("{:?}", evaluator);
+        assert!(debug_str.contains("Evaluator"));
+    }
+
+    #[test]
+    fn test_evaluator_is_multiline_false_initially() {
+        let evaluator = Evaluator::new();
+        assert!(!evaluator.is_multiline());
+    }
+
+    #[test]
+    fn test_float_evaluation() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("3.14", &mut state).unwrap() {
+            EvalResult::Value(Value::Float(f)) => {
+                assert!((f - 3.14).abs() < 0.0001);
+            }
+            result => panic!("Expected Float, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_boolean_evaluation() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("true", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true), got {result:?}"),
+        }
+
+        match evaluator.evaluate_line("false", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(false)) => {}
+            result => panic!("Expected Bool(false), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_nil_evaluation() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("nil", &mut state).unwrap() {
+            EvalResult::Value(Value::Nil) => {}
+            result => panic!("Expected Nil, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_arithmetic_expressions() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        // Addition
+        match evaluator.evaluate_line("10 + 5", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(15)) => {}
+            result => panic!("Expected Integer(15), got {result:?}"),
+        }
+
+        // Subtraction
+        match evaluator.evaluate_line("10 - 3", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(7)) => {}
+            result => panic!("Expected Integer(7), got {result:?}"),
+        }
+
+        // Multiplication
+        match evaluator.evaluate_line("4 * 5", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(20)) => {}
+            result => panic!("Expected Integer(20), got {result:?}"),
+        }
+
+        // Division
+        match evaluator.evaluate_line("20 / 4", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(5)) => {}
+            result => panic!("Expected Integer(5), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_comparison_expressions() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("5 > 3", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true), got {result:?}"),
+        }
+
+        match evaluator.evaluate_line("3 < 5", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true), got {result:?}"),
+        }
+
+        match evaluator.evaluate_line("5 == 5", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true), got {result:?}"),
+        }
+
+        match evaluator.evaluate_line("5 != 3", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_parenthesized_expressions() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("(2 + 3) * 4", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(20)) => {}
+            result => panic!("Expected Integer(20), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_negative_numbers() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("-5", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(-5)) => {}
+            result => panic!("Expected Integer(-5), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_set_variable() {
+        let mut evaluator = Evaluator::new();
+        evaluator.set_variable("test_var".to_string(), Value::Integer(42));
+        // Verify the variable was set by evaluating it
+        let mut state = crate::runtime::repl::state::ReplState::new();
+        match evaluator.evaluate_line("test_var", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(42)) => {}
+            result => panic!("Expected Integer(42), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_clear_interpreter_variables() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        // Define a variable
+        evaluator.evaluate_line("let my_var = 100", &mut state).unwrap();
+
+        // Clear variables
+        evaluator.clear_interpreter_variables();
+
+        // Variable should no longer exist
+        match evaluator.evaluate_line("my_var", &mut state).unwrap() {
+            EvalResult::Error(_) => {} // Expected: variable undefined
+            result => panic!("Expected Error (undefined variable), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_is_incomplete_error_patterns() {
+        let evaluator = Evaluator::new();
+
+        // Should detect as incomplete
+        assert!(evaluator.is_incomplete_error("unexpected end of input"));
+        assert!(evaluator.is_incomplete_error("expression is incomplete"));
+        assert!(evaluator.is_incomplete_error("Expected } but found EOF"));
+        assert!(evaluator.is_incomplete_error("expected ) at EOF"));
+        assert!(evaluator.is_incomplete_error("found EOF while parsing"));
+
+        // Should NOT detect as incomplete
+        assert!(!evaluator.is_incomplete_error("syntax error"));
+        assert!(!evaluator.is_incomplete_error("invalid token"));
+        assert!(!evaluator.is_incomplete_error("type error: cannot add"));
+    }
+
+    #[test]
+    fn test_logical_expressions() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("true && true", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true) for AND, got {result:?}"),
+        }
+
+        match evaluator.evaluate_line("true || false", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true) for OR, got {result:?}"),
+        }
+
+        match evaluator.evaluate_line("!false", &mut state).unwrap() {
+            EvalResult::Value(Value::Bool(true)) => {}
+            result => panic!("Expected Bool(true) for NOT, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_if_expression() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("if true { 1 } else { 2 }", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(1)) => {}
+            result => panic!("Expected Integer(1), got {result:?}"),
+        }
+
+        match evaluator.evaluate_line("if false { 1 } else { 2 }", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(2)) => {}
+            result => panic!("Expected Integer(2), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_state_synchronization() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        // Define a variable via evaluator
+        evaluator.evaluate_line("let sync_var = 999", &mut state).unwrap();
+
+        // State should have the binding now
+        assert!(state.get_bindings().contains_key("sync_var"));
+    }
+
+    #[test]
+    fn test_string_concatenation() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("\"hello\" + \" \" + \"world\"", &mut state).unwrap() {
+            EvalResult::Value(Value::String(s)) => {
+                assert_eq!(&*s, "hello world");
+            }
+            result => panic!("Expected String, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_modulo_operator() {
+        let mut evaluator = Evaluator::new();
+        let mut state = crate::runtime::repl::state::ReplState::new();
+
+        match evaluator.evaluate_line("10 % 3", &mut state).unwrap() {
+            EvalResult::Value(Value::Integer(1)) => {}
+            result => panic!("Expected Integer(1), got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_eval_result_clone_variants() {
+        // Test clone for all EvalResult variants
+        let value = EvalResult::Value(Value::String("test".into()));
+        let cloned = value.clone();
+        match cloned {
+            EvalResult::Value(Value::String(s)) => assert_eq!(&*s, "test"),
+            _ => panic!("Clone failed for Value variant"),
+        }
+
+        let need_more = EvalResult::NeedMoreInput;
+        let cloned = need_more.clone();
+        assert!(matches!(cloned, EvalResult::NeedMoreInput));
+
+        let error = EvalResult::Error("error msg".to_string());
+        let cloned = error.clone();
+        match cloned {
+            EvalResult::Error(msg) => assert_eq!(msg, "error msg"),
+            _ => panic!("Clone failed for Error variant"),
+        }
+    }
 }

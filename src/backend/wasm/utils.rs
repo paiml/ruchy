@@ -649,4 +649,223 @@ mod tests {
             assert!(needs_locals(&expr));
         }
     }
+
+    // ============================================================================
+    // Additional coverage tests for WASM utils
+    // ============================================================================
+    mod additional_coverage_tests {
+        use super::*;
+
+        // --- uses_builtins: Match expression tests ---
+        #[test]
+        fn test_uses_builtins_match_expr() {
+            let expr = parse(r#"match println("x") { _ => 0 }"#);
+            assert!(uses_builtins(&expr));
+        }
+
+        #[test]
+        fn test_uses_builtins_match_arm_body() {
+            let expr = parse(r#"match 1 { x => println(x) }"#);
+            assert!(uses_builtins(&expr));
+        }
+
+        #[test]
+        fn test_uses_builtins_match_no_builtins() {
+            let expr = parse("match 1 { x => x + 1 }");
+            assert!(!uses_builtins(&expr));
+        }
+
+        // --- uses_builtins: Let expression tests ---
+        #[test]
+        fn test_uses_builtins_let_value() {
+            let expr = parse(r#"let x = println("hi"); x"#);
+            assert!(uses_builtins(&expr));
+        }
+
+        #[test]
+        fn test_uses_builtins_let_body() {
+            let expr = parse(r#"let x = 1; println(x)"#);
+            assert!(uses_builtins(&expr));
+        }
+
+        // --- uses_builtins: Complex nested scenarios ---
+        #[test]
+        fn test_uses_builtins_deeply_nested_if() {
+            let expr = parse(r#"if true { if false { if true { println("deep") } } }"#);
+            assert!(uses_builtins(&expr));
+        }
+
+        #[test]
+        fn test_uses_builtins_function_with_if() {
+            let expr = parse(r#"fun f() { if true { println("hi") } else { 0 } }"#);
+            assert!(uses_builtins(&expr));
+        }
+
+        // --- needs_memory: LetPattern tests ---
+        #[test]
+        fn test_needs_memory_let_pattern_value() {
+            let expr = parse(r#"let (a, b) = ("x", "y"); 0"#);
+            assert!(needs_memory(&expr));
+        }
+
+        #[test]
+        fn test_needs_memory_let_pattern_body() {
+            let expr = parse(r#"let (a, b) = (1, 2); "result""#);
+            assert!(needs_memory(&expr));
+        }
+
+        // --- needs_memory: Complex nested scenarios ---
+        #[test]
+        fn test_needs_memory_if_no_else() {
+            let expr = parse(r#"if true { "hello" }"#);
+            assert!(needs_memory(&expr));
+        }
+
+        #[test]
+        fn test_needs_memory_deeply_nested_function() {
+            let expr = parse(r#"fun f() { fun g() { "inner" } }"#);
+            assert!(needs_memory(&expr));
+        }
+
+        #[test]
+        fn test_needs_memory_binary_both_sides() {
+            let expr = parse(r#""a" + "b""#);
+            assert!(needs_memory(&expr));
+        }
+
+        #[test]
+        fn test_needs_memory_binary_neither_side() {
+            let expr = parse("1 + 2");
+            assert!(!needs_memory(&expr));
+        }
+
+        // --- has_return_with_value: Additional edge cases ---
+        #[test]
+        fn test_has_return_with_value_if_condition() {
+            let expr = parse("if (return 1) { 2 } else { 3 }");
+            assert!(has_return_with_value(&expr));
+        }
+
+        #[test]
+        fn test_has_return_with_value_if_then_only() {
+            let expr = parse("if true { return 1 }");
+            assert!(has_return_with_value(&expr));
+        }
+
+        #[test]
+        fn test_has_return_with_value_no_return() {
+            let expr = parse("1 + 2");
+            assert!(!has_return_with_value(&expr));
+        }
+
+        #[test]
+        fn test_has_return_with_value_let_body() {
+            let expr = parse("let x = 1; return x");
+            assert!(has_return_with_value(&expr));
+        }
+
+        #[test]
+        fn test_has_return_with_value_binary() {
+            let expr = parse("(return 1) * (return 2)");
+            assert!(has_return_with_value(&expr));
+        }
+
+        // --- needs_locals: Additional edge cases ---
+        #[test]
+        fn test_needs_locals_empty_block() {
+            let expr = parse("{ 1 + 2 }");
+            assert!(!needs_locals(&expr));
+        }
+
+        #[test]
+        fn test_needs_locals_while_neither() {
+            let expr = parse("while true { 1 + 2 }");
+            assert!(!needs_locals(&expr));
+        }
+
+        #[test]
+        fn test_needs_locals_if_no_else() {
+            let expr = parse("if x { y }");
+            assert!(needs_locals(&expr));
+        }
+
+        #[test]
+        fn test_needs_locals_if_else_only() {
+            let expr = parse("if true { 1 } else { x }");
+            assert!(needs_locals(&expr));
+        }
+
+        // --- has_main_function: Additional tests ---
+        #[test]
+        fn test_has_main_function_empty_block() {
+            let expr = parse("{ 1 }");
+            assert!(!has_main_function(&expr));
+        }
+
+        #[test]
+        fn test_has_main_function_identifier() {
+            let expr = parse("main");
+            assert!(!has_main_function(&expr));
+        }
+
+        // --- Combined scenarios ---
+        #[test]
+        fn test_all_utils_on_complex_expr() {
+            let expr = parse(r#"fun main() { let x = "hello"; println(x); return 0 }"#);
+            assert!(has_main_function(&expr));
+            assert!(uses_builtins(&expr));
+            assert!(needs_memory(&expr));
+            assert!(needs_locals(&expr));
+            // Function body is separate, so outer expr doesn't have return
+            assert!(!has_return_with_value(&expr));
+        }
+
+        #[test]
+        fn test_all_utils_on_simple_expr() {
+            let expr = parse("42");
+            assert!(!has_main_function(&expr));
+            assert!(!uses_builtins(&expr));
+            assert!(!needs_memory(&expr));
+            assert!(!needs_locals(&expr));
+            assert!(!has_return_with_value(&expr));
+        }
+
+        // --- Edge case: empty and minimal expressions ---
+        #[test]
+        fn test_uses_builtins_identifier_not_builtin() {
+            let expr = parse("println_custom");
+            assert!(!uses_builtins(&expr));
+        }
+
+        #[test]
+        fn test_needs_memory_empty_list() {
+            let expr = parse("[]");
+            assert!(needs_memory(&expr));
+        }
+
+        #[test]
+        fn test_needs_memory_empty_tuple() {
+            let expr = parse("()");
+            assert!(needs_memory(&expr));
+        }
+
+        #[test]
+        fn test_has_return_with_value_empty_return() {
+            let expr = parse("return");
+            assert!(!has_return_with_value(&expr));
+        }
+
+        // --- Binary expressions with identifiers ---
+        #[test]
+        fn test_needs_locals_binary_left_only() {
+            let expr = parse("x + 1");
+            assert!(needs_locals(&expr));
+        }
+
+        #[test]
+        fn test_needs_locals_binary_both() {
+            let expr = parse("x + y");
+            assert!(needs_locals(&expr));
+        }
+    }
 }

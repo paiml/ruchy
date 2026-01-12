@@ -99,6 +99,8 @@ pub mod param_usage_analysis;
 mod param_usage_analysis_tests; // EXTREME TDD Round 85: Parameter usage analysis tests
 #[cfg(test)]
 mod tests_compound_assignment;
+#[cfg(test)]
+mod integration_tests; // Transpiler integration tests for coverage improvement
 mod type_conversion_refactored;
 mod type_inference;
 mod types;

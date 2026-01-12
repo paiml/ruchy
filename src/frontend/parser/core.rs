@@ -146,6 +146,11 @@ impl<'a> Parser<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::Literal;
+
+    // ============================================================
+    // Parser struct tests
+    // ============================================================
 
     #[test]
     fn test_parser_creation() {
@@ -160,8 +165,55 @@ mod tests {
     }
 
     #[test]
+    fn test_parser_new_with_whitespace_only() {
+        let parser = Parser::new("   \n\t  ");
+        assert!(parser.get_errors().is_empty());
+    }
+
+    #[test]
+    fn test_parser_new_with_comments_only() {
+        let parser = Parser::new("// just a comment");
+        assert!(parser.get_errors().is_empty());
+    }
+
+    // ============================================================
+    // Simple literal tests
+    // ============================================================
+
+    #[test]
     fn test_parse_simple_integer() {
         let mut parser = Parser::new("42");
+        let result = parser.parse();
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_integer_produces_literal() {
+        let mut parser = Parser::new("42");
+        let result = parser.parse().unwrap();
+        assert!(
+            matches!(result.kind, ExprKind::Literal(Literal::Integer(42, _))),
+            "Should produce integer literal 42"
+        );
+    }
+
+    #[test]
+    fn test_parse_negative_integer() {
+        let mut parser = Parser::new("-42");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Negative integer should parse");
+    }
+
+    #[test]
+    fn test_parse_large_integer() {
+        let mut parser = Parser::new("9223372036854775807");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Large integer should parse");
+    }
+
+    #[test]
+    fn test_parse_zero() {
+        let mut parser = Parser::new("0");
         let result = parser.parse();
         assert!(result.is_ok());
     }
