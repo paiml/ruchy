@@ -12,7 +12,6 @@ use proc_macro2::TokenStream;
 impl Transpiler {
     // EXTREME TDD Round 53: transpile_if moved to control_flow.rs
 
-
     // EXTREME TDD Round 54: Let binding methods moved to bindings.rs
     // (generate_let_binding, require_exact_args, require_no_args, transpile_let,
     //  transpile_let_pattern, transpile_let_with_type, transpile_let_pattern_with_type,
@@ -33,7 +32,12 @@ impl Transpiler {
     /// Transpiles function definitions
     /// Infer parameter type based on usage in function body
     /// EXTREME TDD Round 79: Delegates to function_param_inference module
-    pub(crate) fn infer_param_type(&self, param: &Param, body: &Expr, func_name: &str) -> TokenStream {
+    pub(crate) fn infer_param_type(
+        &self,
+        param: &Param,
+        body: &Expr,
+        func_name: &str,
+    ) -> TokenStream {
         self.infer_param_type_impl(param, body, func_name)
     }
 
@@ -78,7 +82,10 @@ impl Transpiler {
     /// Generate type parameter tokens with trait bound support
     /// DEFECT-021 FIX: Properly handle trait bounds like "T: Clone + Debug"
     /// EXTREME TDD Round 76: Delegates to function_signature module
-    pub(crate) fn generate_type_param_tokens(&self, type_params: &[String]) -> Result<Vec<TokenStream>> {
+    pub(crate) fn generate_type_param_tokens(
+        &self,
+        type_params: &[String],
+    ) -> Result<Vec<TokenStream>> {
         self.generate_type_param_tokens_impl(type_params)
     }
     /// Generate complete function signature
@@ -297,7 +304,6 @@ impl Transpiler {
     //  handle_single_import_item, handle_multiple_import_items, process_import_items,
     //  transpile_export_legacy)
 
-
     // EXTREME TDD Round 56: Math built-in functions moved to math_builtins.rs
     // (try_transpile_math_function, transpile_sqrt, transpile_pow, transpile_abs,
     //  transpile_min, transpile_max, transpile_floor, transpile_ceil, transpile_round)
@@ -346,10 +352,13 @@ impl Transpiler {
 #[cfg(test)]
 mod extreme_tdd_tests {
     use super::*;
-    use crate::frontend::ast::{Span, Type, TypeKind, Literal, ExprKind};
+    use crate::frontend::ast::{ExprKind, Literal, Span, Type, TypeKind};
 
     fn make_type(kind: TypeKind) -> Type {
-        Type { kind, span: Span::new(0, 0) }
+        Type {
+            kind,
+            span: Span::new(0, 0),
+        }
     }
 
     fn make_expr(kind: ExprKind) -> Expr {
@@ -378,16 +387,18 @@ mod extreme_tdd_tests {
     fn test_transpile_function_simple() {
         let t = Transpiler::new();
         let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
-        let result = t.transpile_function(
-            "answer",
-            &[],
-            &[],
-            &body,
-            false,
-            Some(&make_type(TypeKind::Named("i32".to_string()))),
-            true,
-            &[],
-        ).unwrap();
+        let result = t
+            .transpile_function(
+                "answer",
+                &[],
+                &[],
+                &body,
+                false,
+                Some(&make_type(TypeKind::Named("i32".to_string()))),
+                true,
+                &[],
+            )
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("fn answer"));
         assert!(s.contains("i32"));
@@ -398,17 +409,22 @@ mod extreme_tdd_tests {
     fn test_transpile_function_with_params() {
         let t = Transpiler::new();
         let body = make_expr(ExprKind::Identifier("x".to_string()));
-        let params = vec![make_param("x", make_type(TypeKind::Named("i32".to_string())))];
-        let result = t.transpile_function(
-            "identity",
-            &[],
-            &params,
-            &body,
-            false,
-            Some(&make_type(TypeKind::Named("i32".to_string()))),
-            false,
-            &[],
-        ).unwrap();
+        let params = vec![make_param(
+            "x",
+            make_type(TypeKind::Named("i32".to_string())),
+        )];
+        let result = t
+            .transpile_function(
+                "identity",
+                &[],
+                &params,
+                &body,
+                false,
+                Some(&make_type(TypeKind::Named("i32".to_string()))),
+                false,
+                &[],
+            )
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("fn identity"));
         assert!(s.contains("x"));
@@ -418,16 +434,9 @@ mod extreme_tdd_tests {
     fn test_transpile_function_async() {
         let t = Transpiler::new();
         let body = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
-        let result = t.transpile_function(
-            "async_func",
-            &[],
-            &[],
-            &body,
-            true,
-            None,
-            true,
-            &[],
-        ).unwrap();
+        let result = t
+            .transpile_function("async_func", &[], &[], &body, true, None, true, &[])
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("async"));
         assert!(s.contains("async_func"));
@@ -437,17 +446,22 @@ mod extreme_tdd_tests {
     fn test_transpile_function_with_type_params() {
         let t = Transpiler::new();
         let body = make_expr(ExprKind::Identifier("value".to_string()));
-        let params = vec![make_param("value", make_type(TypeKind::Named("T".to_string())))];
-        let result = t.transpile_function(
-            "generic",
-            &["T".to_string()],
-            &params,
-            &body,
-            false,
-            Some(&make_type(TypeKind::Named("T".to_string()))),
-            true,
-            &[],
-        ).unwrap();
+        let params = vec![make_param(
+            "value",
+            make_type(TypeKind::Named("T".to_string())),
+        )];
+        let result = t
+            .transpile_function(
+                "generic",
+                &["T".to_string()],
+                &params,
+                &body,
+                false,
+                Some(&make_type(TypeKind::Named("T".to_string()))),
+                true,
+                &[],
+            )
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("generic"));
         assert!(s.contains("<"));
@@ -470,7 +484,10 @@ mod extreme_tdd_tests {
     fn test_transpile_lambda_with_params() {
         let t = Transpiler::new();
         let body = make_expr(ExprKind::Identifier("x".to_string()));
-        let params = vec![make_param("x", make_type(TypeKind::Named("i32".to_string())))];
+        let params = vec![make_param(
+            "x",
+            make_type(TypeKind::Named("i32".to_string())),
+        )];
         let result = t.transpile_lambda(&params, &body).unwrap();
         let s = result.to_string();
         assert!(s.contains("|"));
@@ -573,12 +590,10 @@ mod extreme_tdd_tests {
             method: "len".to_string(),
             args: vec![],
         });
-        let stages = vec![
-            crate::frontend::ast::PipelineStage {
-                op: Box::new(method_call),
-                span: Span::new(0, 0),
-            },
-        ];
+        let stages = vec![crate::frontend::ast::PipelineStage {
+            op: Box::new(method_call),
+            span: Span::new(0, 0),
+        }];
         let result = t.transpile_pipeline(&expr, &stages).unwrap();
         let s = result.to_string();
         assert!(s.contains("len"));
@@ -611,14 +626,18 @@ mod extreme_tdd_tests {
     #[test]
     fn test_generate_type_param_tokens_multiple() {
         let t = Transpiler::new();
-        let result = t.generate_type_param_tokens(&["T".to_string(), "U".to_string()]).unwrap();
+        let result = t
+            .generate_type_param_tokens(&["T".to_string(), "U".to_string()])
+            .unwrap();
         assert_eq!(result.len(), 2);
     }
 
     #[test]
     fn test_generate_type_param_tokens_with_bound() {
         let t = Transpiler::new();
-        let result = t.generate_type_param_tokens(&["T: Clone".to_string()]).unwrap();
+        let result = t
+            .generate_type_param_tokens(&["T: Clone".to_string()])
+            .unwrap();
         assert_eq!(result.len(), 1);
         let s = result[0].to_string();
         assert!(s.contains("T"));
@@ -677,7 +696,10 @@ mod extreme_tdd_tests {
     #[test]
     fn test_generate_param_tokens_single() {
         let t = Transpiler::new();
-        let params = vec![make_param("x", make_type(TypeKind::Named("i32".to_string())))];
+        let params = vec![make_param(
+            "x",
+            make_type(TypeKind::Named("i32".to_string())),
+        )];
         let body = make_expr(ExprKind::Identifier("x".to_string()));
         let result = t.generate_param_tokens(&params, &body, "test").unwrap();
         assert_eq!(result.len(), 1);
@@ -688,7 +710,9 @@ mod extreme_tdd_tests {
         let t = Transpiler::new();
         let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
         let ret_type = make_type(TypeKind::Named("i32".to_string()));
-        let result = t.generate_return_type_tokens("test", Some(&ret_type), &body, &[]).unwrap();
+        let result = t
+            .generate_return_type_tokens("test", Some(&ret_type), &body, &[])
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("i32"));
     }
@@ -735,13 +759,18 @@ mod extreme_tdd_tests {
     #[test]
     fn test_generate_param_tokens_with_lifetime() {
         let t = Transpiler::new();
-        let params = vec![make_param("s", make_type(TypeKind::Reference {
-            is_mut: false,
-            lifetime: None,
-            inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
-        }))];
+        let params = vec![make_param(
+            "s",
+            make_type(TypeKind::Reference {
+                is_mut: false,
+                lifetime: None,
+                inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+            }),
+        )];
         let body = make_expr(ExprKind::Identifier("s".to_string()));
-        let result = t.generate_param_tokens_with_lifetime(&params, &body, "test").unwrap();
+        let result = t
+            .generate_param_tokens_with_lifetime(&params, &body, "test")
+            .unwrap();
         assert_eq!(result.len(), 1);
     }
 
@@ -754,7 +783,9 @@ mod extreme_tdd_tests {
             inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
         });
         let body = make_expr(ExprKind::Identifier("s".to_string()));
-        let result = t.generate_return_type_tokens_with_lifetime("test", Some(&ret_type), &body).unwrap();
+        let result = t
+            .generate_return_type_tokens_with_lifetime("test", Some(&ret_type), &body)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("str"));
     }
@@ -763,7 +794,9 @@ mod extreme_tdd_tests {
     fn test_generate_body_tokens_with_string_conversion() {
         let t = Transpiler::new();
         let body = make_expr(ExprKind::Literal(Literal::String("hello".to_string())));
-        let result = t.generate_body_tokens_with_string_conversion(&body, false).unwrap();
+        let result = t
+            .generate_body_tokens_with_string_conversion(&body, false)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("hello"));
     }
@@ -780,7 +813,9 @@ mod extreme_tdd_tests {
     #[test]
     fn test_try_transpile_dataframe_function_col() {
         let t = Transpiler::new();
-        let args = vec![make_expr(ExprKind::Literal(Literal::String("name".to_string())))];
+        let args = vec![make_expr(ExprKind::Literal(Literal::String(
+            "name".to_string(),
+        )))];
         let result = t.try_transpile_dataframe_function("col", &args).unwrap();
         if let Some(tokens) = result {
             let s = tokens.to_string();
@@ -791,9 +826,10 @@ mod extreme_tdd_tests {
     #[test]
     fn test_try_transpile_dataframe_function_unknown() {
         let t = Transpiler::new();
-        let result = t.try_transpile_dataframe_function("unknown_func", &[]).unwrap();
+        let result = t
+            .try_transpile_dataframe_function("unknown_func", &[])
+            .unwrap();
         // Unknown function should return None
         assert!(result.is_none());
     }
 }
-

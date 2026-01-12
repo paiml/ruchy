@@ -1245,7 +1245,10 @@ mod tests {
     #[test]
     fn test_handle_loop_control_break_with_value() {
         let mut last_val = Value::Nil;
-        let result = handle_loop_control(Err(InterpreterError::Break(None, Value::Integer(99))), &mut last_val);
+        let result = handle_loop_control(
+            Err(InterpreterError::Break(None, Value::Integer(99))),
+            &mut last_val,
+        );
         assert!(result.unwrap().is_some());
     }
 
@@ -1268,7 +1271,10 @@ mod tests {
     #[test]
     fn test_handle_loop_control_propagates_error() {
         let mut last_val = Value::Nil;
-        let result = handle_loop_control(Err(InterpreterError::RuntimeError("test".to_string())), &mut last_val);
+        let result = handle_loop_control(
+            Err(InterpreterError::RuntimeError("test".to_string())),
+            &mut last_val,
+        );
         assert!(result.is_err());
     }
 
@@ -1319,9 +1325,8 @@ mod tests {
 
     #[test]
     fn test_eval_loop_condition_true_r126() {
-        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Bool(true))
-        };
+        let mut eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Bool(true)) };
 
         let condition = Expr::new(
             crate::frontend::ast::ExprKind::Literal(Literal::Bool(true)),
@@ -1335,9 +1340,8 @@ mod tests {
 
     #[test]
     fn test_eval_loop_condition_false_r126() {
-        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Bool(false))
-        };
+        let mut eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Bool(false)) };
 
         let condition = Expr::new(
             crate::frontend::ast::ExprKind::Literal(Literal::Bool(false)),
@@ -1351,9 +1355,8 @@ mod tests {
 
     #[test]
     fn test_eval_loop_body_normal_r126() {
-        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Integer(42))
-        };
+        let mut eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Integer(42)) };
 
         let body = Expr::new(
             crate::frontend::ast::ExprKind::Literal(Literal::Integer(42, None)),
@@ -1436,7 +1439,10 @@ mod tests {
     #[test]
     fn test_handle_loop_control_break_no_value_r126() {
         let mut last_val = Value::Integer(10);
-        let result = handle_loop_control(Err(InterpreterError::Break(None, Value::Nil)), &mut last_val);
+        let result = handle_loop_control(
+            Err(InterpreterError::Break(None, Value::Nil)),
+            &mut last_val,
+        );
         assert!(result.is_ok());
         let opt = result.unwrap();
         assert!(opt.is_some());
@@ -1445,9 +1451,8 @@ mod tests {
 
     #[test]
     fn test_eval_return_expr_with_float_r126() {
-        let eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Ok(Value::Float(3.14))
-        };
+        let eval_expr =
+            |_expr: &Expr| -> Result<Value, InterpreterError> { Ok(Value::Float(3.14)) };
 
         let value = Expr::new(
             crate::frontend::ast::ExprKind::Literal(Literal::Float(3.14)),
@@ -1488,7 +1493,10 @@ mod round_130_tests {
 
     // Helper functions for creating test expressions
     fn make_lit_int(val: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(val, None)), Span::new(0, 0))
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(val, None)),
+            Span::new(0, 0),
+        )
     }
 
     fn make_lit_bool(val: bool) -> Expr {
@@ -1553,11 +1561,9 @@ mod round_130_tests {
         let mut last_val = Value::Nil;
 
         // Simulate a break with value
-        let result = eval_loop_body(
-            &body,
-            &mut last_val,
-            &mut |_| Err(InterpreterError::Break(None, Value::Integer(42))),
-        );
+        let result = eval_loop_body(&body, &mut last_val, &mut |_| {
+            Err(InterpreterError::Break(None, Value::Integer(42)))
+        });
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Some(Value::Integer(42)));
@@ -1568,11 +1574,9 @@ mod round_130_tests {
         let body = make_lit_int(99);
         let mut last_val = Value::Nil;
 
-        let result = eval_loop_body(
-            &body,
-            &mut last_val,
-            &mut |_| Err(InterpreterError::Continue(None)),
-        );
+        let result = eval_loop_body(&body, &mut last_val, &mut |_| {
+            Err(InterpreterError::Continue(None))
+        });
 
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), None);
@@ -1583,11 +1587,9 @@ mod round_130_tests {
         let body = make_unit_expr();
         let mut last_val = Value::Nil;
 
-        let result = eval_loop_body(
-            &body,
-            &mut last_val,
-            &mut |_| Err(InterpreterError::RuntimeError("test error".to_string())),
-        );
+        let result = eval_loop_body(&body, &mut last_val, &mut |_| {
+            Err(InterpreterError::RuntimeError("test error".to_string()))
+        });
 
         assert!(result.is_err());
     }
@@ -1617,10 +1619,7 @@ mod round_130_tests {
     fn test_eval_match_guard_true_r130() {
         let guard = make_lit_bool(true);
 
-        let result = eval_match_guard(
-            Some(&guard),
-            &mut |_| Ok(Value::Bool(true)),
-        );
+        let result = eval_match_guard(Some(&guard), &mut |_| Ok(Value::Bool(true)));
 
         assert!(result.is_ok());
         assert!(result.unwrap());
@@ -1630,10 +1629,7 @@ mod round_130_tests {
     fn test_eval_match_guard_false_r130() {
         let guard = make_lit_bool(false);
 
-        let result = eval_match_guard(
-            Some(&guard),
-            &mut |_| Ok(Value::Bool(false)),
-        );
+        let result = eval_match_guard(Some(&guard), &mut |_| Ok(Value::Bool(false)));
 
         assert!(result.is_ok());
         assert!(!result.unwrap());
@@ -1641,10 +1637,7 @@ mod round_130_tests {
 
     #[test]
     fn test_eval_match_guard_none_r130() {
-        let result = eval_match_guard(
-            None,
-            &mut |_| Ok(Value::Bool(true)),
-        );
+        let result = eval_match_guard(None, &mut |_| Ok(Value::Bool(true)));
 
         assert!(result.is_ok());
         assert!(result.unwrap()); // No guard means it passes
@@ -1922,10 +1915,7 @@ mod round_130_tests {
     fn test_handle_loop_control_continue_r130() {
         let mut last_val = Value::Integer(50);
 
-        let result = handle_loop_control(
-            Err(InterpreterError::Continue(None)),
-            &mut last_val,
-        );
+        let result = handle_loop_control(Err(InterpreterError::Continue(None)), &mut last_val);
 
         assert!(result.is_ok());
         assert!(result.unwrap().is_none()); // Continue - returns None
@@ -1986,10 +1976,8 @@ mod round_130_tests {
 
     #[test]
     fn test_pattern_matches_simple_identifier_r130() {
-        let result = pattern_matches_simple(
-            &Pattern::Identifier("x".to_string()),
-            &Value::Integer(42),
-        );
+        let result =
+            pattern_matches_simple(&Pattern::Identifier("x".to_string()), &Value::Integer(42));
         assert!(result.is_ok());
         assert!(result.unwrap()); // Identifier always matches
     }
@@ -2066,7 +2054,8 @@ mod round_130_tests {
     #[test]
     fn test_match_literal_pattern_type_mismatch_r130() {
         // Integer literal against String value
-        let result = match_literal_pattern(&Literal::Integer(42, None), &Value::String(Arc::from("42")));
+        let result =
+            match_literal_pattern(&Literal::Integer(42, None), &Value::String(Arc::from("42")));
         assert!(result.is_ok());
         assert!(!result.unwrap());
     }
@@ -2130,14 +2119,16 @@ mod round_130_tests {
 
     #[test]
     fn test_match_literal_pattern_char_r161() {
-        let result = match_literal_pattern(&Literal::Char('a'), &Value::from_string("a".to_string()));
+        let result =
+            match_literal_pattern(&Literal::Char('a'), &Value::from_string("a".to_string()));
         assert!(result.is_ok());
         assert!(result.unwrap());
     }
 
     #[test]
     fn test_match_literal_pattern_char_mismatch_r161() {
-        let result = match_literal_pattern(&Literal::Char('a'), &Value::from_string("b".to_string()));
+        let result =
+            match_literal_pattern(&Literal::Char('a'), &Value::from_string("b".to_string()));
         assert!(result.is_ok());
         assert!(!result.unwrap());
     }
@@ -2179,7 +2170,8 @@ mod round_130_tests {
 
     #[test]
     fn test_match_literal_pattern_large_int_r161() {
-        let result = match_literal_pattern(&Literal::Integer(i64::MAX, None), &Value::Integer(i64::MAX));
+        let result =
+            match_literal_pattern(&Literal::Integer(i64::MAX, None), &Value::Integer(i64::MAX));
         assert!(result.is_ok());
         assert!(result.unwrap());
     }
@@ -2222,10 +2214,7 @@ mod round_130_tests {
 
     #[test]
     fn test_match_literal_pattern_string_vs_nil_r161() {
-        let result = match_literal_pattern(
-            &Literal::String("test".to_string()),
-            &Value::Nil,
-        );
+        let result = match_literal_pattern(&Literal::String("test".to_string()), &Value::Nil);
         assert!(result.is_ok());
         assert!(!result.unwrap());
     }
@@ -2260,7 +2249,8 @@ mod round_130_tests {
 
     #[test]
     fn test_match_literal_pattern_float_infinity_r161() {
-        let result = match_literal_pattern(&Literal::Float(f64::INFINITY), &Value::Float(f64::INFINITY));
+        let result =
+            match_literal_pattern(&Literal::Float(f64::INFINITY), &Value::Float(f64::INFINITY));
         assert!(result.is_ok());
         // Note: Infinity == Infinity should be true
         assert!(result.unwrap());
@@ -2275,14 +2265,16 @@ mod round_130_tests {
 
     #[test]
     fn test_match_literal_pattern_char_newline_r161() {
-        let result = match_literal_pattern(&Literal::Char('\n'), &Value::from_string("\n".to_string()));
+        let result =
+            match_literal_pattern(&Literal::Char('\n'), &Value::from_string("\n".to_string()));
         assert!(result.is_ok());
         assert!(result.unwrap());
     }
 
     #[test]
     fn test_match_literal_pattern_char_unicode_r161() {
-        let result = match_literal_pattern(&Literal::Char('日'), &Value::from_string("日".to_string()));
+        let result =
+            match_literal_pattern(&Literal::Char('日'), &Value::from_string("日".to_string()));
         assert!(result.is_ok());
         assert!(result.unwrap());
     }

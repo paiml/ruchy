@@ -360,7 +360,10 @@ fn test_to_immutable_idempotent() {
 
     // Converting already immutable object should return clone
     assert!(!is_mutable_object(&immutable2));
-    assert_eq!(get_object_field(&immutable2, "key"), Some(Value::Integer(42)));
+    assert_eq!(
+        get_object_field(&immutable2, "key"),
+        Some(Value::Integer(42))
+    );
 }
 
 #[test]
@@ -604,11 +607,17 @@ fn test_special_field_names() {
 
     // Field name with spaces
     assert!(set_object_field(&mutable, "field with spaces", Value::Integer(2)).is_ok());
-    assert_eq!(get_object_field(&mutable, "field with spaces"), Some(Value::Integer(2)));
+    assert_eq!(
+        get_object_field(&mutable, "field with spaces"),
+        Some(Value::Integer(2))
+    );
 
     // Field name with special characters
     assert!(set_object_field(&mutable, "field_123", Value::Integer(3)).is_ok());
-    assert_eq!(get_object_field(&mutable, "field_123"), Some(Value::Integer(3)));
+    assert_eq!(
+        get_object_field(&mutable, "field_123"),
+        Some(Value::Integer(3))
+    );
 }
 
 // === EXTREME TDD Round 162 - Quick Wins Coverage Push ===
@@ -619,7 +628,10 @@ fn test_unicode_field_names_r162() {
 
     // Japanese
     assert!(set_object_field(&mutable, "日本語", Value::Integer(1)).is_ok());
-    assert_eq!(get_object_field(&mutable, "日本語"), Some(Value::Integer(1)));
+    assert_eq!(
+        get_object_field(&mutable, "日本語"),
+        Some(Value::Integer(1))
+    );
 
     // Emoji
     assert!(set_object_field(&mutable, "🎉🚀", Value::Integer(2)).is_ok());
@@ -631,7 +643,10 @@ fn test_unicode_field_names_r162() {
 
     // Mixed script
     assert!(set_object_field(&mutable, "hello世界", Value::Integer(4)).is_ok());
-    assert_eq!(get_object_field(&mutable, "hello世界"), Some(Value::Integer(4)));
+    assert_eq!(
+        get_object_field(&mutable, "hello世界"),
+        Some(Value::Integer(4))
+    );
 }
 
 #[test]
@@ -766,8 +781,14 @@ fn test_bool_values_in_object_r162() {
     set_object_field(&obj, "true_field", Value::Bool(true)).unwrap();
     set_object_field(&obj, "false_field", Value::Bool(false)).unwrap();
 
-    assert_eq!(get_object_field(&obj, "true_field"), Some(Value::Bool(true)));
-    assert_eq!(get_object_field(&obj, "false_field"), Some(Value::Bool(false)));
+    assert_eq!(
+        get_object_field(&obj, "true_field"),
+        Some(Value::Bool(true))
+    );
+    assert_eq!(
+        get_object_field(&obj, "false_field"),
+        Some(Value::Bool(false))
+    );
 }
 
 #[test]
@@ -792,8 +813,14 @@ fn test_negative_integers_in_object_r162() {
     set_object_field(&obj, "max", Value::Integer(i64::MAX)).unwrap();
 
     assert_eq!(get_object_field(&obj, "neg"), Some(Value::Integer(-100)));
-    assert_eq!(get_object_field(&obj, "min"), Some(Value::Integer(i64::MIN)));
-    assert_eq!(get_object_field(&obj, "max"), Some(Value::Integer(i64::MAX)));
+    assert_eq!(
+        get_object_field(&obj, "min"),
+        Some(Value::Integer(i64::MIN))
+    );
+    assert_eq!(
+        get_object_field(&obj, "max"),
+        Some(Value::Integer(i64::MAX))
+    );
 }
 
 #[test]
@@ -1074,14 +1101,15 @@ fn test_very_long_field_name_r162() {
     let obj = new_mutable_object(HashMap::new());
     let long_name = "a".repeat(1000);
     set_object_field(&obj, &long_name, Value::Integer(999)).unwrap();
-    assert_eq!(get_object_field(&obj, &long_name), Some(Value::Integer(999)));
+    assert_eq!(
+        get_object_field(&obj, &long_name),
+        Some(Value::Integer(999))
+    );
 }
 
 #[test]
 fn test_mutable_object_clone_behavior_r162() {
-    let obj = new_mutable_object(HashMap::from([
-        ("x".to_string(), Value::Integer(10)),
-    ]));
+    let obj = new_mutable_object(HashMap::from([("x".to_string(), Value::Integer(10))]));
 
     // Clone the value
     let cloned = obj.clone();
@@ -1095,9 +1123,7 @@ fn test_mutable_object_clone_behavior_r162() {
 
 #[test]
 fn test_immutable_object_clone_behavior_r162() {
-    let obj = new_immutable_object(HashMap::from([
-        ("x".to_string(), Value::Integer(10)),
-    ]));
+    let obj = new_immutable_object(HashMap::from([("x".to_string(), Value::Integer(10))]));
 
     // Clone should share the same Arc
     let cloned = obj.clone();

@@ -361,9 +361,7 @@ mod tests {
     #[test]
     fn test_write_json_fuzz_report_all_success() {
         let path = Path::new("/test/file.ruchy");
-        let result = write_json_fuzz_report(
-            path, None, 100, 100, 0, 0, 100.0, &[],
-        );
+        let result = write_json_fuzz_report(path, None, 100, 100, 0, 0, 100.0, &[]);
         assert!(result.is_ok());
     }
 
@@ -371,9 +369,7 @@ mod tests {
     fn test_write_json_fuzz_report_with_crashes() {
         let path = Path::new("/test/file.ruchy");
         let crashes = vec!["Crash at iteration 5".to_string()];
-        let result = write_json_fuzz_report(
-            path, None, 100, 95, 5, 0, 95.0, &crashes,
-        );
+        let result = write_json_fuzz_report(path, None, 100, 95, 5, 0, 95.0, &crashes);
         assert!(result.is_ok());
     }
 
@@ -381,9 +377,7 @@ mod tests {
     fn test_write_json_fuzz_report_to_file() {
         let path = Path::new("/test/file.ruchy");
         let temp = NamedTempFile::new().unwrap();
-        let result = write_json_fuzz_report(
-            path, Some(temp.path()), 50, 50, 0, 0, 100.0, &[],
-        );
+        let result = write_json_fuzz_report(path, Some(temp.path()), 50, 50, 0, 0, 100.0, &[]);
         assert!(result.is_ok());
         let content = std::fs::read_to_string(temp.path()).unwrap();
         assert!(content.contains("passed"));
@@ -392,9 +386,7 @@ mod tests {
     #[test]
     fn test_write_text_fuzz_report_all_success() {
         let path = Path::new("/test/file.ruchy");
-        let result = write_text_fuzz_report(
-            path, None, 100, 100, 0, 0, 100.0, &[],
-        );
+        let result = write_text_fuzz_report(path, None, 100, 100, 0, 0, 100.0, &[]);
         assert!(result.is_ok());
     }
 
@@ -405,9 +397,7 @@ mod tests {
             "Crash at iteration 1".to_string(),
             "Timeout at iteration 50".to_string(),
         ];
-        let result = write_text_fuzz_report(
-            path, None, 100, 90, 5, 5, 90.0, &failures,
-        );
+        let result = write_text_fuzz_report(path, None, 100, 90, 5, 5, 90.0, &failures);
         assert!(result.is_ok());
     }
 
@@ -415,9 +405,7 @@ mod tests {
     fn test_write_text_fuzz_report_to_file() {
         let path = Path::new("/test/file.ruchy");
         let temp = NamedTempFile::new().unwrap();
-        let result = write_text_fuzz_report(
-            path, Some(temp.path()), 50, 50, 0, 0, 100.0, &[],
-        );
+        let result = write_text_fuzz_report(path, Some(temp.path()), 50, 50, 0, 0, 100.0, &[]);
         assert!(result.is_ok());
     }
 

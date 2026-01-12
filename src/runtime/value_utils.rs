@@ -472,11 +472,7 @@ mod coverage_tests {
 
     #[test]
     fn test_from_enum_variant() {
-        let variant = Value::from_enum_variant(
-            "Color".to_string(),
-            "Red".to_string(),
-            None,
-        );
+        let variant = Value::from_enum_variant("Color".to_string(), "Red".to_string(), None);
         assert_eq!(variant.type_name(), "enum_variant");
     }
 
@@ -1035,7 +1031,11 @@ mod coverage_push_round28 {
     fn test_from_range_floats() {
         let val = Value::from_range(Value::Float(0.5), Value::Float(10.5), false);
         match val {
-            Value::Range { start, end, inclusive } => {
+            Value::Range {
+                start,
+                end,
+                inclusive,
+            } => {
                 assert_eq!(*start, Value::Float(0.5));
                 assert_eq!(*end, Value::Float(10.5));
                 assert!(!inclusive);
@@ -1084,7 +1084,10 @@ mod coverage_push_round28 {
         assert_eq!(Value::Float(0.0).as_f64().unwrap(), 0.0);
         assert_eq!(Value::Float(-0.0).as_f64().unwrap(), -0.0);
         assert!(Value::Float(f64::INFINITY).as_f64().unwrap().is_infinite());
-        assert!(Value::Float(f64::NEG_INFINITY).as_f64().unwrap().is_infinite());
+        assert!(Value::Float(f64::NEG_INFINITY)
+            .as_f64()
+            .unwrap()
+            .is_infinite());
     }
 
     #[test]

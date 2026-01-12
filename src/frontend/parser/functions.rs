@@ -1217,7 +1217,10 @@ mod tests {
     fn test_parse_anonymous_function_empty_params() {
         let mut parser = Parser::new("fun () { 42 }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse anonymous function with empty params");
+        assert!(
+            result.is_ok(),
+            "Should parse anonymous function with empty params"
+        );
     }
 
     // Test 35: async function
@@ -1241,13 +1244,17 @@ mod tests {
     fn test_parse_function_multiple_generics() {
         let mut parser = Parser::new("fun pair<T, U>(a: T, b: U) -> (T, U) { (a, b) }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse function with multiple generics");
+        assert!(
+            result.is_ok(),
+            "Should parse function with multiple generics"
+        );
     }
 
     // Test 38: function with where clause
     #[test]
     fn test_parse_function_where_clause() {
-        let mut parser = Parser::new("fun print_item<T>(item: T) where T: Display { println(item) }");
+        let mut parser =
+            Parser::new("fun print_item<T>(item: T) where T: Display { println(item) }");
         let result = parser.parse();
         assert!(result.is_ok(), "Should parse function with where clause");
     }
@@ -1265,7 +1272,10 @@ mod tests {
     fn test_parse_function_complex_return() {
         let mut parser = Parser::new("fun get_result() -> Result<i32, String> { Ok(42) }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse function with Result return type");
+        assert!(
+            result.is_ok(),
+            "Should parse function with Result return type"
+        );
     }
 
     // Test 41: function with Option return type
@@ -1273,7 +1283,10 @@ mod tests {
     fn test_parse_function_option_return() {
         let mut parser = Parser::new("fun find(key: String) -> Option<i32> { Some(1) }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse function with Option return type");
+        assert!(
+            result.is_ok(),
+            "Should parse function with Option return type"
+        );
     }
 
     // Test 42: multi-line lambda
@@ -1289,7 +1302,10 @@ mod tests {
     fn test_parse_lambda_with_type_annotation_and_body() {
         let mut parser = Parser::new("|x: i32| -> i32 { x * 2 }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse lambda with type annotations and body");
+        assert!(
+            result.is_ok(),
+            "Should parse lambda with type annotations and body"
+        );
     }
 
     // Test 44: method call chain
@@ -1319,7 +1335,8 @@ mod tests {
     // Test 47: function with Vec parameter
     #[test]
     fn test_parse_function_vec_param() {
-        let mut parser = Parser::new("fun sum_all(nums: Vec<i32>) -> i32 { nums.fold(0, |a, b| a + b) }");
+        let mut parser =
+            Parser::new("fun sum_all(nums: Vec<i32>) -> i32 { nums.fold(0, |a, b| a + b) }");
         let result = parser.parse();
         assert!(result.is_ok(), "Should parse function with Vec parameter");
     }
@@ -1327,9 +1344,14 @@ mod tests {
     // Test 48: function with HashMap parameter
     #[test]
     fn test_parse_function_hashmap_param() {
-        let mut parser = Parser::new("fun get_value(map: HashMap<String, i32>, key: String) -> i32 { map[key] }");
+        let mut parser = Parser::new(
+            "fun get_value(map: HashMap<String, i32>, key: String) -> i32 { map[key] }",
+        );
         let result = parser.parse();
-        assert!(result.is_ok(), "Should parse function with HashMap parameter");
+        assert!(
+            result.is_ok(),
+            "Should parse function with HashMap parameter"
+        );
     }
 
     // Test 49: zero-argument function call
@@ -1347,6 +1369,9 @@ mod tests {
         let mut parser = Parser::new("list.map { |x| x * 2 }");
         let result = parser.parse();
         // May or may not be supported
-        assert!(result.is_ok() || result.is_err(), "Should handle trailing lambda syntax");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Should handle trailing lambda syntax"
+        );
     }
 }

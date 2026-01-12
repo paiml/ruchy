@@ -38,7 +38,8 @@ fn eval_dataframe_select(
 ) -> Result<Value, InterpreterError> {
     if arg_values.len() != 1 {
         return Err(InterpreterError::RuntimeError(
-            "DataFrame.select() requires exactly 1 argument (column_name or [column_names])".to_string(),
+            "DataFrame.select() requires exactly 1 argument (column_name or [column_names])"
+                .to_string(),
         ));
     }
 
@@ -829,10 +830,7 @@ mod tests {
             values: vec![Value::Integer(1)],
         }];
 
-        let args = vec![
-            Value::Integer(0),
-            Value::from_string("not_int".to_string()),
-        ];
+        let args = vec![Value::Integer(0), Value::from_string("not_int".to_string())];
         let result = eval_dataframe_slice(&columns, &args);
         assert!(result.is_err());
     }
@@ -1094,24 +1092,20 @@ mod tests {
             values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
         }];
 
-        let condition = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
 
-        let result = eval_dataframe_filter_op(&columns, &condition, |_, _, _| Ok(Value::Bool(true)));
+        let result =
+            eval_dataframe_filter_op(&columns, &condition, |_, _, _| Ok(Value::Bool(true)));
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_eval_dataframe_filter_op_empty() {
         let columns: Vec<DataFrameColumn> = vec![];
-        let condition = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
 
-        let result = eval_dataframe_filter_op(&columns, &condition, |_, _, _| Ok(Value::Bool(true)));
+        let result =
+            eval_dataframe_filter_op(&columns, &condition, |_, _, _| Ok(Value::Bool(true)));
         assert!(result.is_ok());
     }
 
@@ -1137,10 +1131,7 @@ mod tests {
             name: "x".to_string(),
             values: vec![Value::Integer(1)],
         }];
-        let condition = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Span::default(),
-        );
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
 
         let result = eval_dataframe_filter_op(&columns, &condition, |_, _, _| {
             Err(InterpreterError::RuntimeError("test error".to_string()))
@@ -1485,7 +1476,7 @@ mod round_134_tests {
         let result = eval_dataframe_groupby(&columns, &args).unwrap();
         if let Value::DataFrame { columns: cols } = result {
             assert_eq!(cols.len(), 2); // cat + val_sum
-            // Check the sum column
+                                       // Check the sum column
             let sum_col = cols.iter().find(|c| c.name == "val_sum").unwrap();
             assert_eq!(sum_col.values.len(), 1);
             assert_eq!(sum_col.values[0], Value::Integer(30));
@@ -1787,11 +1778,7 @@ mod round_134_tests {
     fn test_create_groups_float_values() {
         let col = DataFrameColumn {
             name: "float_col".to_string(),
-            values: vec![
-                Value::Float(1.0),
-                Value::Float(2.0),
-                Value::Float(1.0),
-            ],
+            values: vec![Value::Float(1.0), Value::Float(2.0), Value::Float(1.0)],
         };
         let groups = create_groups(&col);
         assert_eq!(groups.len(), 2);
@@ -1801,11 +1788,7 @@ mod round_134_tests {
     fn test_create_groups_bool_values() {
         let col = DataFrameColumn {
             name: "bool_col".to_string(),
-            values: vec![
-                Value::Bool(true),
-                Value::Bool(false),
-                Value::Bool(true),
-            ],
+            values: vec![Value::Bool(true), Value::Bool(false), Value::Bool(true)],
         };
         let groups = create_groups(&col);
         assert_eq!(groups.len(), 2);
@@ -1834,13 +1817,12 @@ mod round_134_tests {
 
     #[test]
     fn test_select_op_duplicate_columns() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "a".to_string(),
-                values: vec![Value::Integer(1)],
-            },
-        ];
-        let result = eval_dataframe_select_op(&columns, &["a".to_string(), "a".to_string()]).unwrap();
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let result =
+            eval_dataframe_select_op(&columns, &["a".to_string(), "a".to_string()]).unwrap();
         if let Value::DataFrame { columns: cols } = result {
             assert_eq!(cols.len(), 2); // Both selected
         } else {

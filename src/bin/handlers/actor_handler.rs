@@ -302,10 +302,9 @@ mod tests {
 
     #[test]
     fn test_generate_actor_observe_json() {
-        let output = generate_actor_observe_json(
-            1000, 100, 50, true, 5000, "overview", None, false, None,
-        )
-        .unwrap();
+        let output =
+            generate_actor_observe_json(1000, 100, 50, true, 5000, "overview", None, false, None)
+                .unwrap();
         assert!(output.contains("\"mode\": \"overview\""));
     }
 
@@ -346,7 +345,16 @@ mod tests {
     #[test]
     fn test_generate_actor_observe_text_deadlocks_mode() {
         let output = generate_actor_observe_text(
-            1000, 100, 50, true, 5000, "deadlocks", false, None, false, None,
+            1000,
+            100,
+            50,
+            true,
+            5000,
+            "deadlocks",
+            false,
+            None,
+            false,
+            None,
         );
         assert!(output.contains("Mode: deadlocks"));
         assert!(output.contains("Deadlock Detection"));
@@ -355,7 +363,16 @@ mod tests {
     #[test]
     fn test_generate_actor_observe_text_with_filter_actor() {
         let output = generate_actor_observe_text(
-            1000, 100, 50, false, 5000, "overview", false, Some("worker*"), false, None,
+            1000,
+            100,
+            50,
+            false,
+            5000,
+            "overview",
+            false,
+            Some("worker*"),
+            false,
+            None,
         );
         assert!(output.contains("Filter (Actor): worker*"));
     }
@@ -371,24 +388,42 @@ mod tests {
     #[test]
     fn test_generate_actor_observe_text_with_filter_slow() {
         let output = generate_actor_observe_text(
-            1000, 100, 50, false, 5000, "overview", false, None, false, Some(1000),
+            1000,
+            100,
+            50,
+            false,
+            5000,
+            "overview",
+            false,
+            None,
+            false,
+            Some(1000),
         );
         assert!(output.contains("Filter (Slow Messages)"));
     }
 
     #[test]
     fn test_generate_actor_observe_json_actors_mode() {
-        let output = generate_actor_observe_json(
-            500, 50, 25, false, 3000, "actors", None, false, None,
-        ).unwrap();
+        let output =
+            generate_actor_observe_json(500, 50, 25, false, 3000, "actors", None, false, None)
+                .unwrap();
         assert!(output.contains("\"mode\": \"actors\""));
     }
 
     #[test]
     fn test_generate_actor_observe_json_with_filters() {
         let output = generate_actor_observe_json(
-            1000, 100, 50, true, 5000, "overview", Some("test*"), true, Some(500),
-        ).unwrap();
+            1000,
+            100,
+            50,
+            true,
+            5000,
+            "overview",
+            Some("test*"),
+            true,
+            Some(500),
+        )
+        .unwrap();
         assert!(output.contains("\"actor_pattern\": \"test*\""));
         assert!(output.contains("\"failed_only\": true"));
         assert!(output.contains("\"slow_threshold_us\": 500"));
@@ -414,7 +449,16 @@ mod tests {
     #[test]
     fn test_generate_actor_observe_interactive_with_filters() {
         let output = generate_actor_observe_interactive(
-            1000, 100, 50, false, 5000, "actors", false, Some("main*"), true, Some(100),
+            1000,
+            100,
+            50,
+            false,
+            5000,
+            "actors",
+            false,
+            Some("main*"),
+            true,
+            Some(100),
         );
         assert!(output.contains("actor=main*"));
         assert!(output.contains("failed"));
@@ -424,8 +468,8 @@ mod tests {
     #[test]
     fn test_handle_actor_observe_text_format() {
         let result = handle_actor_observe_command(
-            None, 1000, 100, 50, false, 5000, "overview", false, "text",
-            None, 0, false, None, false, None,
+            None, 1000, 100, 50, false, 5000, "overview", false, "text", None, 0, false, None,
+            false, None,
         );
         assert!(result.is_ok());
     }
@@ -433,8 +477,8 @@ mod tests {
     #[test]
     fn test_handle_actor_observe_json_format() {
         let result = handle_actor_observe_command(
-            None, 1000, 100, 50, false, 5000, "overview", false, "json",
-            None, 0, false, None, false, None,
+            None, 1000, 100, 50, false, 5000, "overview", false, "json", None, 0, false, None,
+            false, None,
         );
         assert!(result.is_ok());
     }
@@ -442,8 +486,21 @@ mod tests {
     #[test]
     fn test_handle_actor_observe_interactive_format() {
         let result = handle_actor_observe_command(
-            None, 1000, 100, 50, false, 5000, "overview", false, "interactive",
-            None, 0, false, None, false, None,
+            None,
+            1000,
+            100,
+            50,
+            false,
+            5000,
+            "overview",
+            false,
+            "interactive",
+            None,
+            0,
+            false,
+            None,
+            false,
+            None,
         );
         assert!(result.is_ok());
     }
@@ -451,8 +508,8 @@ mod tests {
     #[test]
     fn test_handle_actor_observe_invalid_format() {
         let result = handle_actor_observe_command(
-            None, 1000, 100, 50, false, 5000, "overview", false, "invalid",
-            None, 0, false, None, false, None,
+            None, 1000, 100, 50, false, 5000, "overview", false, "invalid", None, 0, false, None,
+            false, None,
         );
         assert!(result.is_err());
     }
@@ -460,8 +517,21 @@ mod tests {
     #[test]
     fn test_handle_actor_observe_invalid_mode() {
         let result = handle_actor_observe_command(
-            None, 1000, 100, 50, false, 5000, "invalid_mode", false, "text",
-            None, 0, false, None, false, None,
+            None,
+            1000,
+            100,
+            50,
+            false,
+            5000,
+            "invalid_mode",
+            false,
+            "text",
+            None,
+            0,
+            false,
+            None,
+            false,
+            None,
         );
         assert!(result.is_err());
     }
@@ -470,8 +540,21 @@ mod tests {
     fn test_handle_actor_observe_with_export() {
         let temp = NamedTempFile::new().unwrap();
         let result = handle_actor_observe_command(
-            None, 1000, 100, 50, false, 5000, "overview", false, "text",
-            Some(temp.path()), 0, false, None, false, None,
+            None,
+            1000,
+            100,
+            50,
+            false,
+            5000,
+            "overview",
+            false,
+            "text",
+            Some(temp.path()),
+            0,
+            false,
+            None,
+            false,
+            None,
         );
         assert!(result.is_ok());
         let content = std::fs::read_to_string(temp.path()).unwrap();
@@ -481,8 +564,8 @@ mod tests {
     #[test]
     fn test_handle_actor_observe_verbose() {
         let result = handle_actor_observe_command(
-            None, 1000, 100, 50, false, 5000, "overview", false, "text",
-            None, 0, true, None, false, None,
+            None, 1000, 100, 50, false, 5000, "overview", false, "text", None, 0, true, None,
+            false, None,
         );
         assert!(result.is_ok());
     }

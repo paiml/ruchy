@@ -1126,7 +1126,10 @@ mod round_130_tests {
     fn test_to_rfc3339_r130() {
         let s = Arc::from("2024-01-01T00:00:00Z");
         let result = eval_zero_arg_string_method(&s, "to_rfc3339").unwrap();
-        assert_eq!(result, Value::from_string("2024-01-01T00:00:00Z".to_string()));
+        assert_eq!(
+            result,
+            Value::from_string("2024-01-01T00:00:00Z".to_string())
+        );
     }
 
     // === EXTREME TDD Round 159 - Coverage Push Tests ===
@@ -1403,14 +1406,23 @@ mod round_130_tests {
     #[test]
     fn test_string_unknown_two_arg_r159() {
         let s = Arc::from("test");
-        let result = eval_two_arg_string_method(&s, "unknown_method", &Value::Integer(1), &Value::Integer(2));
+        let result = eval_two_arg_string_method(
+            &s,
+            "unknown_method",
+            &Value::Integer(1),
+            &Value::Integer(2),
+        );
         assert!(result.is_err());
     }
 
     #[test]
     fn test_string_method_wrong_arg_count_r159() {
         let s = Arc::from("test");
-        let result = eval_string_method(&s, "len", &[Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let result = eval_string_method(
+            &s,
+            "len",
+            &[Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        );
         assert!(result.is_err());
     }
 
@@ -1433,21 +1445,24 @@ mod round_130_tests {
     #[test]
     fn test_string_replace_wrong_types_r159() {
         let s = Arc::from("test");
-        let result = eval_two_arg_string_method(&s, "replace", &Value::Integer(1), &Value::Integer(2));
+        let result =
+            eval_two_arg_string_method(&s, "replace", &Value::Integer(1), &Value::Integer(2));
         assert!(result.is_err());
     }
 
     #[test]
     fn test_string_substring_wrong_types_r159() {
         let s = Arc::from("test");
-        let result = eval_two_arg_string_method(&s, "substring", &Value::Bool(true), &Value::Bool(false));
+        let result =
+            eval_two_arg_string_method(&s, "substring", &Value::Bool(true), &Value::Bool(false));
         assert!(result.is_err());
     }
 
     #[test]
     fn test_string_substring_negative_start_r159() {
         let s = Arc::from("test");
-        let result = eval_two_arg_string_method(&s, "substring", &Value::Integer(-1), &Value::Integer(2));
+        let result =
+            eval_two_arg_string_method(&s, "substring", &Value::Integer(-1), &Value::Integer(2));
         assert!(result.is_err());
     }
 

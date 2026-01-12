@@ -227,7 +227,10 @@ mod tests {
     #[test]
     fn test_build_param_list_multiple() {
         let transpiler = make_transpiler();
-        let params = vec![make_typed_param("a", "i32"), make_typed_param("b", "String")];
+        let params = vec![
+            make_typed_param("a", "i32"),
+            make_typed_param("b", "String"),
+        ];
         let result = transpiler.build_lambda_param_list(&params).unwrap();
         assert!(result.contains("a"));
         assert!(result.contains("b"));

@@ -340,7 +340,10 @@ mod tests {
     #[test]
     fn test_trait_with_multiple_params() {
         let result = parse("trait Foo { fun bar(&self, x: i32, y: i32) -> i32 }");
-        assert!(result.is_ok(), "Trait method with multiple params should parse");
+        assert!(
+            result.is_ok(),
+            "Trait method with multiple params should parse"
+        );
     }
 
     // ============================================================

@@ -109,7 +109,11 @@ impl Transpiler {
         Ok(rust_type)
     }
     /// Transpile generic types with type parameters
-    pub(crate) fn transpile_generic_type(&self, base: &str, params: &[Type]) -> Result<TokenStream> {
+    pub(crate) fn transpile_generic_type(
+        &self,
+        base: &str,
+        params: &[Type],
+    ) -> Result<TokenStream> {
         let base_ident = format_ident!("{}", base);
         let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
         let param_tokens = param_tokens?;
@@ -126,7 +130,11 @@ impl Transpiler {
         Ok(quote! { Vec<#elem_tokens> })
     }
     /// Transpile array types with fixed size
-    pub(crate) fn transpile_array_type(&self, elem_type: &Type, size: usize) -> Result<TokenStream> {
+    pub(crate) fn transpile_array_type(
+        &self,
+        elem_type: &Type,
+        size: usize,
+    ) -> Result<TokenStream> {
         let elem_tokens = self.transpile_type(elem_type)?;
         let size_lit = proc_macro2::Literal::usize_unsuffixed(size);
         Ok(quote! { [#elem_tokens; #size_lit] })
@@ -138,7 +146,11 @@ impl Transpiler {
         Ok(quote! { (#(#type_tokens),*) })
     }
     /// Transpile function types
-    pub(crate) fn transpile_function_type(&self, params: &[Type], ret: &Type) -> Result<TokenStream> {
+    pub(crate) fn transpile_function_type(
+        &self,
+        params: &[Type],
+        ret: &Type,
+    ) -> Result<TokenStream> {
         let param_tokens: Result<Vec<_>> = params.iter().map(|p| self.transpile_type(p)).collect();
         let param_tokens = param_tokens?;
         let ret_tokens = self.transpile_type(ret)?;
@@ -549,7 +561,10 @@ impl Transpiler {
 
     /// Generate type parameter tokens for classes
     /// Complexity: 2 (within Toyota Way limits)
-    pub(crate) fn generate_class_type_param_tokens(&self, type_params: &[String]) -> Vec<TokenStream> {
+    pub(crate) fn generate_class_type_param_tokens(
+        &self,
+        type_params: &[String],
+    ) -> Vec<TokenStream> {
         type_params
             .iter()
             .map(|p| {
@@ -566,7 +581,10 @@ impl Transpiler {
 
     /// Transpile constructors to methods
     /// Complexity: 6 (within Toyota Way limits)
-    pub(crate) fn transpile_constructors(&self, constructors: &[Constructor]) -> Result<Vec<TokenStream>> {
+    pub(crate) fn transpile_constructors(
+        &self,
+        constructors: &[Constructor],
+    ) -> Result<Vec<TokenStream>> {
         constructors
             .iter()
             .map(|ctor| {
@@ -599,7 +617,10 @@ impl Transpiler {
 
     /// Transpile class methods
     /// Complexity: 5 (within Toyota Way limits)
-    pub(crate) fn transpile_class_methods(&self, methods: &[ClassMethod]) -> Result<Vec<TokenStream>> {
+    pub(crate) fn transpile_class_methods(
+        &self,
+        methods: &[ClassMethod],
+    ) -> Result<Vec<TokenStream>> {
         methods
             .iter()
             .map(|method| {
@@ -732,7 +753,10 @@ impl Transpiler {
     }
 
     /// Simple parameter transpilation for class methods (no body analysis needed)
-    pub(crate) fn transpile_params(&self, params: &[crate::frontend::ast::Param]) -> Result<Vec<TokenStream>> {
+    pub(crate) fn transpile_params(
+        &self,
+        params: &[crate::frontend::ast::Param],
+    ) -> Result<Vec<TokenStream>> {
         params
             .iter()
             .map(|param| -> Result<TokenStream> {
@@ -882,10 +906,11 @@ impl Transpiler {
                 let method_name = format_ident!("{}", method.name);
                 // TRANSPILER-TRAIT-001 FIX: Determine if self is mutated for &mut self inference
                 // For traits with default implementations, check the body for mutations
-                let self_is_mutated = method
-                    .body
-                    .as_ref()
-                    .is_some_and(|body| crate::backend::transpiler::mutation_detection::is_variable_mutated("self", body));
+                let self_is_mutated = method.body.as_ref().is_some_and(|body| {
+                    crate::backend::transpiler::mutation_detection::is_variable_mutated(
+                        "self", body,
+                    )
+                });
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -993,7 +1018,11 @@ impl Transpiler {
                 let method_name = format_ident!("{}", method.name);
                 // TRANSPILER-METHOD-SELF-001 FIX: Check if self is mutated in method body
                 // to infer &mut self vs &self when not explicitly annotated
-                let self_is_mutated = crate::backend::transpiler::mutation_detection::is_variable_mutated("self", &method.body);
+                let self_is_mutated =
+                    crate::backend::transpiler::mutation_detection::is_variable_mutated(
+                        "self",
+                        &method.body,
+                    );
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
@@ -1247,10 +1276,16 @@ impl Transpiler {
 #[cfg(test)]
 mod extreme_tdd_tests {
     use super::*;
-    use crate::frontend::ast::{Span, Type, TypeKind, StructField, Visibility, EnumVariant, EnumVariantKind, TraitMethod, ImplMethod};
+    use crate::frontend::ast::{
+        EnumVariant, EnumVariantKind, ImplMethod, Span, StructField, TraitMethod, Type, TypeKind,
+        Visibility,
+    };
 
     fn make_type(kind: TypeKind) -> Type {
-        Type { kind, span: Span::new(0, 0) }
+        Type {
+            kind,
+            span: Span::new(0, 0),
+        }
     }
 
     fn make_expr(kind: crate::frontend::ast::ExprKind) -> Expr {
@@ -1496,7 +1531,9 @@ mod extreme_tdd_tests {
     fn test_transpile_reference_type_with_lifetime() {
         let t = Transpiler::new();
         let inner = make_type(TypeKind::Named("i32".to_string()));
-        let result = t.transpile_reference_type(false, Some("'a"), &inner).unwrap();
+        let result = t
+            .transpile_reference_type(false, Some("'a"), &inner)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("'a"));
         assert!(s.contains("i32"));
@@ -1548,10 +1585,20 @@ mod extreme_tdd_tests {
     fn test_transpile_struct_with_fields() {
         let t = Transpiler::new();
         let fields = vec![
-            make_struct_field("x", make_type(TypeKind::Named("i32".to_string())), Visibility::Public),
-            make_struct_field("y", make_type(TypeKind::Named("i32".to_string())), Visibility::Private),
+            make_struct_field(
+                "x",
+                make_type(TypeKind::Named("i32".to_string())),
+                Visibility::Public,
+            ),
+            make_struct_field(
+                "y",
+                make_type(TypeKind::Named("i32".to_string())),
+                Visibility::Private,
+            ),
         ];
-        let result = t.transpile_struct("Point", &[], &fields, &[], true).unwrap();
+        let result = t
+            .transpile_struct("Point", &[], &fields, &[], true)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("pub struct"));
         assert!(s.contains("Point"));
@@ -1562,10 +1609,14 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_struct_with_type_params() {
         let t = Transpiler::new();
-        let fields = vec![
-            make_struct_field("value", make_type(TypeKind::Named("T".to_string())), Visibility::Public),
-        ];
-        let result = t.transpile_struct("Container", &["T".to_string()], &fields, &[], true).unwrap();
+        let fields = vec![make_struct_field(
+            "value",
+            make_type(TypeKind::Named("T".to_string())),
+            Visibility::Public,
+        )];
+        let result = t
+            .transpile_struct("Container", &["T".to_string()], &fields, &[], true)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("Container"));
         assert!(s.contains("<"));
@@ -1575,7 +1626,15 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_struct_with_derives() {
         let t = Transpiler::new();
-        let result = t.transpile_struct("MyStruct", &[], &[], &["Debug".to_string(), "Clone".to_string()], false).unwrap();
+        let result = t
+            .transpile_struct(
+                "MyStruct",
+                &[],
+                &[],
+                &["Debug".to_string(), "Clone".to_string()],
+                false,
+            )
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("derive"));
         assert!(s.contains("Debug"));
@@ -1591,7 +1650,9 @@ mod extreme_tdd_tests {
             make_type(TypeKind::Named("i32".to_string())),
             make_type(TypeKind::Named("String".to_string())),
         ];
-        let result = t.transpile_tuple_struct("Pair", &[], &fields, &[], true).unwrap();
+        let result = t
+            .transpile_tuple_struct("Pair", &[], &fields, &[], true)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("pub struct"));
         assert!(s.contains("Pair"));
@@ -1667,7 +1728,9 @@ mod extreme_tdd_tests {
                 discriminant: None,
             },
         ];
-        let result = t.transpile_enum("MyOption", &["T".to_string()], &variants, true).unwrap();
+        let result = t
+            .transpile_enum("MyOption", &["T".to_string()], &variants, true)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("MyOption"));
         assert!(s.contains("Some"));
@@ -1677,16 +1740,22 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_enum_struct_variant() {
         let t = Transpiler::new();
-        let variants = vec![
-            EnumVariant {
-                name: "Move".to_string(),
-                kind: EnumVariantKind::Struct(vec![
-                    make_struct_field("x", make_type(TypeKind::Named("i32".to_string())), Visibility::Public),
-                    make_struct_field("y", make_type(TypeKind::Named("i32".to_string())), Visibility::Public),
-                ]),
-                discriminant: None,
-            },
-        ];
+        let variants = vec![EnumVariant {
+            name: "Move".to_string(),
+            kind: EnumVariantKind::Struct(vec![
+                make_struct_field(
+                    "x",
+                    make_type(TypeKind::Named("i32".to_string())),
+                    Visibility::Public,
+                ),
+                make_struct_field(
+                    "y",
+                    make_type(TypeKind::Named("i32".to_string())),
+                    Visibility::Public,
+                ),
+            ]),
+            discriminant: None,
+        }];
         let result = t.transpile_enum("Message", &[], &variants, true).unwrap();
         let s = result.to_string();
         assert!(s.contains("Move"));
@@ -1708,20 +1777,23 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_trait_with_method() {
         let t = Transpiler::new();
-        let methods = vec![
-            TraitMethod {
-                name: "do_something".to_string(),
-                params: vec![make_param("self", make_type(TypeKind::Reference {
+        let methods = vec![TraitMethod {
+            name: "do_something".to_string(),
+            params: vec![make_param(
+                "self",
+                make_type(TypeKind::Reference {
                     is_mut: false,
                     lifetime: None,
                     inner: Box::new(make_type(TypeKind::Named("Self".to_string()))),
-                }))],
-                return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
-                body: None,
-                is_pub: false,
-            },
-        ];
-        let result = t.transpile_trait("MyTrait", &[], &[], &methods, true).unwrap();
+                }),
+            )],
+            return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
+            body: None,
+            is_pub: false,
+        }];
+        let result = t
+            .transpile_trait("MyTrait", &[], &[], &methods, true)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("MyTrait"));
         assert!(s.contains("do_something"));
@@ -1731,7 +1803,9 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_trait_with_associated_type() {
         let t = Transpiler::new();
-        let result = t.transpile_trait("Iterator", &[], &["Item".to_string()], &[], true).unwrap();
+        let result = t
+            .transpile_trait("Iterator", &[], &["Item".to_string()], &[], true)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("type Item"));
     }
@@ -1742,18 +1816,18 @@ mod extreme_tdd_tests {
     fn test_transpile_impl_inherent() {
         let t = Transpiler::new();
         let body = make_expr(crate::frontend::ast::ExprKind::Literal(
-            crate::frontend::ast::Literal::Integer(42, None)
+            crate::frontend::ast::Literal::Integer(42, None),
         ));
-        let methods = vec![
-            ImplMethod {
-                name: "answer".to_string(),
-                params: vec![],
-                return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
-                body: Box::new(body),
-                is_pub: true,
-            },
-        ];
-        let result = t.transpile_impl("MyStruct", &[], None, &methods, true).unwrap();
+        let methods = vec![ImplMethod {
+            name: "answer".to_string(),
+            params: vec![],
+            return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
+            body: Box::new(body),
+            is_pub: true,
+        }];
+        let result = t
+            .transpile_impl("MyStruct", &[], None, &methods, true)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("impl MyStruct"));
         assert!(s.contains("answer"));
@@ -1763,18 +1837,18 @@ mod extreme_tdd_tests {
     fn test_transpile_impl_trait() {
         let t = Transpiler::new();
         let body = make_expr(crate::frontend::ast::ExprKind::Literal(
-            crate::frontend::ast::Literal::Integer(0, None)
+            crate::frontend::ast::Literal::Integer(0, None),
         ));
-        let methods = vec![
-            ImplMethod {
-                name: "default".to_string(),
-                params: vec![],
-                return_type: Some(make_type(TypeKind::Named("Self".to_string()))),
-                body: Box::new(body),
-                is_pub: false,
-            },
-        ];
-        let result = t.transpile_impl("MyStruct", &[], Some("Default"), &methods, false).unwrap();
+        let methods = vec![ImplMethod {
+            name: "default".to_string(),
+            params: vec![],
+            return_type: Some(make_type(TypeKind::Named("Self".to_string()))),
+            body: Box::new(body),
+            is_pub: false,
+        }];
+        let result = t
+            .transpile_impl("MyStruct", &[], Some("Default"), &methods, false)
+            .unwrap();
         let s = result.to_string();
         assert!(s.contains("impl Default for MyStruct"));
     }
@@ -1785,21 +1859,22 @@ mod extreme_tdd_tests {
     fn test_transpile_extend() {
         let t = Transpiler::new();
         let body = make_expr(crate::frontend::ast::ExprKind::Literal(
-            crate::frontend::ast::Literal::Bool(true)
+            crate::frontend::ast::Literal::Bool(true),
         ));
-        let methods = vec![
-            ImplMethod {
-                name: "is_empty".to_string(),
-                params: vec![make_param("self", make_type(TypeKind::Reference {
+        let methods = vec![ImplMethod {
+            name: "is_empty".to_string(),
+            params: vec![make_param(
+                "self",
+                make_type(TypeKind::Reference {
                     is_mut: false,
                     lifetime: None,
                     inner: Box::new(make_type(TypeKind::Named("Self".to_string()))),
-                }))],
-                return_type: Some(make_type(TypeKind::Named("bool".to_string()))),
-                body: Box::new(body),
-                is_pub: true,
-            },
-        ];
+                }),
+            )],
+            return_type: Some(make_type(TypeKind::Named("bool".to_string()))),
+            body: Box::new(body),
+            is_pub: true,
+        }];
         let result = t.transpile_extend("String", &methods).unwrap();
         let s = result.to_string();
         assert!(s.contains("trait StringExt"));
@@ -1811,36 +1886,32 @@ mod extreme_tdd_tests {
     #[test]
     fn test_has_reference_fields_true() {
         let t = Transpiler::new();
-        let fields = vec![
-            StructField {
-                name: "data".to_string(),
-                ty: make_type(TypeKind::Reference {
-                    is_mut: false,
-                    lifetime: None,
-                    inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
-                }),
-                visibility: Visibility::Public,
-                default_value: None,
-                decorators: vec![],
+        let fields = vec![StructField {
+            name: "data".to_string(),
+            ty: make_type(TypeKind::Reference {
                 is_mut: false,
-            },
-        ];
+                lifetime: None,
+                inner: Box::new(make_type(TypeKind::Named("str".to_string()))),
+            }),
+            visibility: Visibility::Public,
+            default_value: None,
+            decorators: vec![],
+            is_mut: false,
+        }];
         assert!(t.has_reference_fields(&fields));
     }
 
     #[test]
     fn test_has_reference_fields_false() {
         let t = Transpiler::new();
-        let fields = vec![
-            StructField {
-                name: "data".to_string(),
-                ty: make_type(TypeKind::Named("String".to_string())),
-                visibility: Visibility::Public,
-                default_value: None,
-                decorators: vec![],
-                is_mut: false,
-            },
-        ];
+        let fields = vec![StructField {
+            name: "data".to_string(),
+            ty: make_type(TypeKind::Named("String".to_string())),
+            visibility: Visibility::Public,
+            default_value: None,
+            decorators: vec![],
+            is_mut: false,
+        }];
         assert!(!t.has_reference_fields(&fields));
     }
 
@@ -1893,7 +1964,9 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_type_optional() {
         let t = Transpiler::new();
-        let ty = make_type(TypeKind::Optional(Box::new(make_type(TypeKind::Named("i32".to_string())))));
+        let ty = make_type(TypeKind::Optional(Box::new(make_type(TypeKind::Named(
+            "i32".to_string(),
+        )))));
         let result = t.transpile_type(&ty).unwrap();
         assert!(result.to_string().contains("Option"));
     }
@@ -1901,7 +1974,9 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_type_list() {
         let t = Transpiler::new();
-        let ty = make_type(TypeKind::List(Box::new(make_type(TypeKind::Named("String".to_string())))));
+        let ty = make_type(TypeKind::List(Box::new(make_type(TypeKind::Named(
+            "String".to_string(),
+        )))));
         let result = t.transpile_type(&ty).unwrap();
         assert!(result.to_string().contains("Vec"));
     }
@@ -1917,7 +1992,9 @@ mod extreme_tdd_tests {
     #[test]
     fn test_transpile_type_series() {
         let t = Transpiler::new();
-        let ty = make_type(TypeKind::Series { dtype: Box::new(make_type(TypeKind::Named("f64".to_string()))) });
+        let ty = make_type(TypeKind::Series {
+            dtype: Box::new(make_type(TypeKind::Named("f64".to_string()))),
+        });
         let result = t.transpile_type(&ty).unwrap();
         assert!(result.to_string().contains("Series"));
     }
@@ -1928,7 +2005,7 @@ mod extreme_tdd_tests {
         let ty = make_type(TypeKind::Refined {
             base: Box::new(make_type(TypeKind::Named("i32".to_string()))),
             constraint: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
-                crate::frontend::ast::Literal::Bool(true)
+                crate::frontend::ast::Literal::Bool(true),
             ))),
         });
         let result = t.transpile_type(&ty).unwrap();

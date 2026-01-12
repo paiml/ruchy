@@ -263,7 +263,10 @@ edition = "2021"
         env::set_current_dir(_original_dir).expect("Failed to restore dir");
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Cargo.toml not found"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cargo.toml not found"));
     }
 
     #[test]

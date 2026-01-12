@@ -1953,10 +1953,10 @@ mod tests {
     #[test]
     fn test_tuple_types_registration() {
         let emitter = WasmEmitter::new();
-        emitter.tuple_types.borrow_mut().insert(
-            "pair".to_string(),
-            vec![WasmType::I32, WasmType::F32],
-        );
+        emitter
+            .tuple_types
+            .borrow_mut()
+            .insert("pair".to_string(), vec![WasmType::I32, WasmType::F32]);
         let types = emitter.tuple_types.borrow();
         assert!(types.contains_key("pair"));
         assert_eq!(types["pair"].len(), 2);

@@ -137,11 +137,7 @@ mod tests {
     #[test]
     fn test_repl_handler_temp_file_recording() {
         let temp_dir = TempDir::new().unwrap();
-        let files = [
-            "session1.txt",
-            "session2.record",
-            "test.log",
-        ];
+        let files = ["session1.txt", "session2.record", "test.log"];
         for file in &files {
             let record_path = temp_dir.path().join(file);
             let _ = handle_repl_command(Some(record_path));

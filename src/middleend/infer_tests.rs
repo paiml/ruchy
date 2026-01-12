@@ -471,10 +471,8 @@ mod tests {
 
     #[test]
     fn test_type_constraint_iterable_debug() {
-        let constraint = TypeConstraint::Iterable(
-            MonoType::List(Box::new(MonoType::Int)),
-            MonoType::Int,
-        );
+        let constraint =
+            TypeConstraint::Iterable(MonoType::List(Box::new(MonoType::Int)), MonoType::Int);
         let debug_str = format!("{constraint:?}");
         assert!(debug_str.contains("Iterable"));
     }
@@ -703,7 +701,10 @@ mod tests {
         let result = ctx.infer(&expr);
         // Return may return Unit or the return value type
         if let Ok(ty) = result {
-            assert!(matches!(ty, MonoType::Int | MonoType::Var(_) | MonoType::Unit));
+            assert!(matches!(
+                ty,
+                MonoType::Int | MonoType::Var(_) | MonoType::Unit
+            ));
         }
     }
 
@@ -959,7 +960,10 @@ mod tests {
         let expr = parse_code("None");
         let result = ctx.infer(&expr);
         if let Ok(ty) = result {
-            assert!(matches!(ty, MonoType::Optional(_) | MonoType::Named(_) | MonoType::Var(_)));
+            assert!(matches!(
+                ty,
+                MonoType::Optional(_) | MonoType::Named(_) | MonoType::Var(_)
+            ));
         }
     }
 
@@ -1293,7 +1297,10 @@ mod tests {
         let result = ctx.infer(&expr);
         // Break with value exercises infer_other_control_flow_expr
         if let Ok(ty) = result {
-            assert!(matches!(ty, MonoType::Unit | MonoType::Int | MonoType::Var(_)));
+            assert!(matches!(
+                ty,
+                MonoType::Unit | MonoType::Int | MonoType::Var(_)
+            ));
         }
     }
 

@@ -487,7 +487,10 @@ mod tests {
         let non_empty = Arc::from("hello");
 
         assert_eq!(eval_string_is_empty(&empty).unwrap(), Value::Bool(true));
-        assert_eq!(eval_string_is_empty(&non_empty).unwrap(), Value::Bool(false));
+        assert_eq!(
+            eval_string_is_empty(&non_empty).unwrap(),
+            Value::Bool(false)
+        );
     }
 
     #[test]
@@ -569,7 +572,8 @@ mod tests {
     #[test]
     fn test_unknown_two_arg_method() {
         let s = Arc::from("hello");
-        let result = dispatch_two_arg_string_method(&s, "unknown", &Value::Integer(1), &Value::Integer(2));
+        let result =
+            dispatch_two_arg_string_method(&s, "unknown", &Value::Integer(1), &Value::Integer(2));
         assert!(result.is_err());
     }
 
@@ -654,11 +658,13 @@ mod tests {
     fn test_string_replace_wrong_types() {
         let s = Arc::from("hello");
         // First arg wrong type
-        let result = eval_string_replace(&s, &Value::Integer(1), &Value::from_string("x".to_string()));
+        let result =
+            eval_string_replace(&s, &Value::Integer(1), &Value::from_string("x".to_string()));
         assert!(result.is_err());
 
         // Second arg wrong type
-        let result2 = eval_string_replace(&s, &Value::from_string("l".to_string()), &Value::Integer(1));
+        let result2 =
+            eval_string_replace(&s, &Value::from_string("l".to_string()), &Value::Integer(1));
         assert!(result2.is_err());
     }
 
@@ -666,11 +672,13 @@ mod tests {
     fn test_string_substring_wrong_types() {
         let s = Arc::from("hello");
         // First arg wrong type
-        let result = eval_string_substring(&s, &Value::from_string("a".to_string()), &Value::Integer(3));
+        let result =
+            eval_string_substring(&s, &Value::from_string("a".to_string()), &Value::Integer(3));
         assert!(result.is_err());
 
         // Second arg wrong type
-        let result2 = eval_string_substring(&s, &Value::Integer(0), &Value::from_string("a".to_string()));
+        let result2 =
+            eval_string_substring(&s, &Value::Integer(0), &Value::from_string("a".to_string()));
         assert!(result2.is_err());
     }
 

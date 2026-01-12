@@ -797,7 +797,10 @@ mod tests {
     #[test]
     fn test_register_function() {
         let mut engine = CompletionEngine::new();
-        engine.register_function("my_func".to_string(), vec!["arg1".to_string(), "arg2".to_string()]);
+        engine.register_function(
+            "my_func".to_string(),
+            vec!["arg1".to_string(), "arg2".to_string()],
+        );
         let completions = engine.get_completions("my_", 3);
         assert!(completions.iter().any(|c| c.text == "my_func"));
     }
@@ -813,7 +816,10 @@ mod tests {
     #[test]
     fn test_register_methods() {
         let mut engine = CompletionEngine::new();
-        engine.register_methods("MyType".to_string(), vec!["method1".to_string(), "method2".to_string()]);
+        engine.register_methods(
+            "MyType".to_string(),
+            vec!["method1".to_string(), "method2".to_string()],
+        );
         // Methods require member access context to show
     }
 

@@ -1407,7 +1407,9 @@ mod tests {
             Span::default(),
         );
         let expr = Expr::new(
-            ExprKind::Return { value: Some(Box::new(val)) },
+            ExprKind::Return {
+                value: Some(Box::new(val)),
+            },
             Span::default(),
         );
         assert!(!transpiler.looks_like_real_set(&expr));

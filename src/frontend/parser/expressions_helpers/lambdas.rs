@@ -204,7 +204,10 @@ mod tests {
         let result = Parser::new(code).parse().unwrap();
         if let Some(expr) = get_first_expr(&result) {
             if let ExprKind::Lambda { params, .. } = &expr.kind {
-                assert!(params.is_empty(), "No-param lambda should have empty params vec");
+                assert!(
+                    params.is_empty(),
+                    "No-param lambda should have empty params vec"
+                );
             } else {
                 panic!("Expected Lambda ExprKind");
             }
@@ -215,7 +218,10 @@ mod tests {
     fn test_lambda_no_params_with_complex_body() {
         let code = "|| { let x = 1; let y = 2; x + y }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "No-param lambda with complex body should parse");
+        assert!(
+            result.is_ok(),
+            "No-param lambda with complex body should parse"
+        );
     }
 
     // ============================================================
@@ -288,14 +294,20 @@ mod tests {
     fn test_lambda_multiple_typed_params() {
         let code = "|x: i32, y: f64| x as f64 + y";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Lambda with multiple typed params should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with multiple typed params should parse"
+        );
     }
 
     #[test]
     fn test_lambda_mixed_typed_untyped_params() {
         let code = "|x: i32, y, z: String| x";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Lambda with mixed typed/untyped params should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with mixed typed/untyped params should parse"
+        );
     }
 
     // ============================================================
@@ -399,7 +411,10 @@ mod tests {
     fn test_lambda_with_return_type_and_block() {
         let code = "|x| -> i32 { x + 1 }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Lambda with return type and block should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with return type and block should parse"
+        );
     }
 
     // ============================================================
@@ -431,7 +446,10 @@ mod tests {
     fn test_chained_higher_order_with_lambdas() {
         let code = "[1, 2, 3, 4, 5].filter(|x| x > 2).map(|x| x * 2)";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Chained higher-order functions with lambdas should parse");
+        assert!(
+            result.is_ok(),
+            "Chained higher-order functions with lambdas should parse"
+        );
     }
 
     // ============================================================
@@ -491,13 +509,19 @@ mod tests {
     #[test]
     fn test_lambda_no_params_string() {
         let result = parse("|| \"hello\"");
-        assert!(result.is_ok(), "No-param lambda returning string should parse");
+        assert!(
+            result.is_ok(),
+            "No-param lambda returning string should parse"
+        );
     }
 
     #[test]
     fn test_lambda_no_params_boolean() {
         let result = parse("|| true");
-        assert!(result.is_ok(), "No-param lambda returning boolean should parse");
+        assert!(
+            result.is_ok(),
+            "No-param lambda returning boolean should parse"
+        );
     }
 
     #[test]
@@ -583,7 +607,10 @@ mod tests {
     #[test]
     fn test_lambda_params_with_expression() {
         let result = parse("|x, y| (x + y) * 2");
-        assert!(result.is_ok(), "Lambda with grouped expression should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with grouped expression should parse"
+        );
     }
 
     // ============================================================
@@ -611,13 +638,19 @@ mod tests {
     #[test]
     fn test_lambda_multiple_typed_params_v2() {
         let result = parse("|x: i32, y: i32| x + y");
-        assert!(result.is_ok(), "Lambda with multiple typed params should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with multiple typed params should parse"
+        );
     }
 
     #[test]
     fn test_lambda_mixed_typed_params() {
         let result = parse("|x: i32, y| x + y");
-        assert!(result.is_ok(), "Lambda with mixed typed params should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with mixed typed params should parse"
+        );
     }
 
     // ============================================================
@@ -757,7 +790,10 @@ mod tests {
     #[test]
     fn test_lambda_return_type_string() {
         let result = parse("|x| -> String format(x)");
-        assert!(result.is_ok(), "Lambda with String return type should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with String return type should parse"
+        );
     }
 
     // ============================================================
@@ -793,7 +829,10 @@ mod tests {
     #[test]
     fn test_lambda_single_char_params() {
         let result = parse("|a, b, c, d, e| a + b + c + d + e");
-        assert!(result.is_ok(), "Lambda with single char params should parse");
+        assert!(
+            result.is_ok(),
+            "Lambda with single char params should parse"
+        );
     }
 
     // ===== Additional coverage tests (Round 107) =====
@@ -865,7 +904,10 @@ mod tests {
     #[test]
     fn test_lambda_chained_higher_order() {
         let result = parse("items.filter(|x| x > 0).map(|x| x * 2)");
-        assert!(result.is_ok(), "Chained higher-order functions should parse");
+        assert!(
+            result.is_ok(),
+            "Chained higher-order functions should parse"
+        );
     }
 
     // Property tests for lambdas

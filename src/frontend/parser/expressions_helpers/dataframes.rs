@@ -134,7 +134,10 @@ mod tests {
     fn test_dataframe_let_binding_literal() {
         let code = "let data = df![x => [1, 2, 3]]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame let binding with literal should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame let binding with literal should parse"
+        );
     }
 
     // Test 12: DataFrame in function parameter
@@ -142,7 +145,10 @@ mod tests {
     fn test_dataframe_function_parameter() {
         let code = "fun process(df) { df }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame as function parameter should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame as function parameter should parse"
+        );
     }
 
     // Test 13: DataFrame with boolean values
@@ -198,7 +204,10 @@ mod tests {
     fn test_dataframe_underscore_columns() {
         let code = "df![first_name => [\"A\"], last_name => [\"B\"]]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame with underscore columns should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame with underscore columns should parse"
+        );
     }
 
     // Test 20: DataFrame head method
@@ -313,7 +322,10 @@ mod tests {
     fn test_dataframe_method_with_multiple_args() {
         let code = r#"df.join(other, "id", "inner")"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame method with multiple args should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame method with multiple args should parse"
+        );
     }
 
     // =========================================================================
@@ -331,7 +343,10 @@ mod tests {
     fn test_dataframe_column_bracket_access() {
         let code = r#"df["column_name"]"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame column bracket access should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame column bracket access should parse"
+        );
     }
 
     #[test]
@@ -345,21 +360,30 @@ mod tests {
     fn test_dataframe_nested_column_access() {
         let code = "df.data.values";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Nested DataFrame column access should parse");
+        assert!(
+            result.is_ok(),
+            "Nested DataFrame column access should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_column_access_then_method() {
         let code = "df.column.sum()";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame column access then method should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame column access then method should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_method_then_column_access() {
         let code = r#"df.filter("x > 0").result"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame method then column access should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame method then column access should parse"
+        );
     }
 
     // =========================================================================
@@ -377,35 +401,50 @@ mod tests {
     fn test_dataframe_filter_with_comparison() {
         let code = "df.filter(x > 5)";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame filter with comparison should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame filter with comparison should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_filter_with_and_condition() {
         let code = "df.filter(x > 5 && y < 10)";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame filter with AND condition should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame filter with AND condition should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_filter_with_or_condition() {
         let code = "df.filter(x > 5 || x < 0)";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame filter with OR condition should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame filter with OR condition should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_filter_with_equality() {
         let code = r#"df.filter(name == "Alice")"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame filter with equality should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame filter with equality should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_filter_with_not_equal() {
         let code = r#"df.filter(status != "inactive")"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame filter with not equal should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame filter with not equal should parse"
+        );
     }
 
     // =========================================================================
@@ -458,14 +497,20 @@ mod tests {
     fn test_dataframe_groupby_then_aggregate() {
         let code = r#"df.groupby("category").sum("amount")"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame groupby then aggregate should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame groupby then aggregate should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_multiple_aggregates_chain() {
         let code = r#"df.sum("a").mean("b").max("c")"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame multiple aggregates chain should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame multiple aggregates chain should parse"
+        );
     }
 
     // =========================================================================
@@ -511,7 +556,10 @@ mod tests {
     fn test_dataframe_method_missing_parens() {
         let code = "df.filter";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Method without parens parses as field access");
+        assert!(
+            result.is_ok(),
+            "Method without parens parses as field access"
+        );
     }
 
     #[test]
@@ -529,14 +577,20 @@ mod tests {
         let result = Parser::new(code).parse();
         // This actually parses (df identifier followed by double negation of empty array)
         // so we just verify it parses without crashing
-        assert!(result.is_ok() || result.is_err(), "Double bang should parse or error gracefully");
+        assert!(
+            result.is_ok() || result.is_err(),
+            "Double bang should parse or error gracefully"
+        );
     }
 
     #[test]
     fn test_dataframe_trailing_comma_in_columns() {
         let code = "df![x => [1, 2, 3],]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Trailing comma in columns should be allowed");
+        assert!(
+            result.is_ok(),
+            "Trailing comma in columns should be allowed"
+        );
     }
 
     #[test]
@@ -625,21 +679,30 @@ mod tests {
     fn test_dataframe_nested_expressions_in_values() {
         let code = "df![x => [1 + 2, 3 * 4, 5 - 6]]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame with expressions in values should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame with expressions in values should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_function_call_in_values() {
         let code = "df![x => [foo(), bar(), baz()]]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame with function calls in values should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame with function calls in values should parse"
+        );
     }
 
     #[test]
     fn test_dataframe_conditional_in_values() {
         let code = "df![x => [if true { 1 } else { 0 }]]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame with conditional in values should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame with conditional in values should parse"
+        );
     }
 
     #[test]
@@ -660,7 +723,10 @@ mod tests {
     fn test_dataframe_chained_from_literal() {
         let code = r#"df![x => [1, 2, 3]].filter("x > 1").select("x")"#;
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame chained from literal should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame chained from literal should parse"
+        );
     }
 
     #[test]
@@ -803,7 +869,10 @@ mod tests {
     fn test_dataframe_empty_array_values() {
         let code = "df![x => []]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame with empty array values should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame with empty array values should parse"
+        );
     }
 
     #[test]
@@ -824,7 +893,10 @@ mod tests {
     fn test_dataframe_negative_numbers() {
         let code = "df![x => [-1, -2, -3]]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame with negative numbers should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame with negative numbers should parse"
+        );
     }
 
     #[test]
@@ -838,7 +910,10 @@ mod tests {
     fn test_dataframe_scientific_notation() {
         let code = "df![x => [1e10, 2e-5, 3.14e2]]";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "DataFrame with scientific notation should parse");
+        assert!(
+            result.is_ok(),
+            "DataFrame with scientific notation should parse"
+        );
     }
 
     #[test]

@@ -1522,8 +1522,8 @@ mod coverage_tests {
         let pattern = Pattern::Wildcard;
         let value = Value::Integer(42);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         assert!(result.unwrap().is_empty()); // No bindings
     }
@@ -1533,8 +1533,8 @@ mod coverage_tests {
         let pattern = Pattern::Wildcard;
         let value = Value::from_string("hello".to_string());
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1543,8 +1543,8 @@ mod coverage_tests {
         let pattern = Pattern::Wildcard;
         let value = Value::Nil;
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1554,8 +1554,8 @@ mod coverage_tests {
         let pattern = Pattern::Identifier("x".to_string());
         let value = Value::Integer(42);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings.len(), 1);
@@ -1568,8 +1568,8 @@ mod coverage_tests {
         let pattern = Pattern::Identifier("arr".to_string());
         let value = Value::from_array(vec![Value::Integer(1), Value::Integer(2)]);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings[0].0, "arr");
@@ -1581,8 +1581,8 @@ mod coverage_tests {
         let pattern = Pattern::Tuple(vec![]);
         let value = Value::Tuple(Arc::from(vec![]));
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1591,8 +1591,8 @@ mod coverage_tests {
         let pattern = Pattern::Tuple(vec![Pattern::Identifier("x".to_string())]);
         let value = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings[0], ("x".to_string(), Value::Integer(1)));
@@ -1603,8 +1603,8 @@ mod coverage_tests {
         let pattern = Pattern::Tuple(vec![Pattern::Wildcard, Pattern::Wildcard]);
         let value = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1613,8 +1613,8 @@ mod coverage_tests {
         let pattern = Pattern::Tuple(vec![Pattern::Wildcard]);
         let value = Value::Integer(42);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1624,8 +1624,8 @@ mod coverage_tests {
         let pattern = Pattern::List(vec![]);
         let value = Value::from_array(vec![]);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1634,8 +1634,8 @@ mod coverage_tests {
         let pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
         let value = Value::from_array(vec![Value::Integer(42)]);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings[0], ("x".to_string(), Value::Integer(42)));
@@ -1646,8 +1646,8 @@ mod coverage_tests {
         let pattern = Pattern::List(vec![Pattern::Wildcard, Pattern::Wildcard]);
         let value = Value::from_array(vec![Value::Integer(1)]);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1656,8 +1656,8 @@ mod coverage_tests {
         let pattern = Pattern::List(vec![Pattern::Wildcard]);
         let value = Value::Integer(42);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1670,8 +1670,8 @@ mod coverage_tests {
         ]);
         let value = Value::Integer(1);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1683,8 +1683,8 @@ mod coverage_tests {
         ]);
         let value = Value::Integer(2);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1696,8 +1696,8 @@ mod coverage_tests {
         ]);
         let value = Value::Integer(3);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1706,8 +1706,8 @@ mod coverage_tests {
         let pattern = Pattern::Or(vec![]);
         let value = Value::Integer(1);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1721,8 +1721,8 @@ mod coverage_tests {
         };
         let value = Value::Integer(3);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1735,8 +1735,8 @@ mod coverage_tests {
         };
         let value = Value::Integer(5);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1749,8 +1749,8 @@ mod coverage_tests {
         };
         let value = Value::Integer(5);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1763,8 +1763,8 @@ mod coverage_tests {
         };
         let value = Value::Integer(0);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1777,8 +1777,8 @@ mod coverage_tests {
         };
         let value = Value::from_string("hello".to_string());
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1791,8 +1791,8 @@ mod coverage_tests {
         };
         let value = Value::Integer(42);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings.len(), 1);
@@ -1807,8 +1807,8 @@ mod coverage_tests {
         };
         let value = Value::Integer(43);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1822,8 +1822,8 @@ mod coverage_tests {
             data: Some(vec![Value::Integer(42)]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings[0], ("x".to_string(), Value::Integer(42)));
@@ -1838,8 +1838,8 @@ mod coverage_tests {
             data: None,
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1852,8 +1852,8 @@ mod coverage_tests {
             data: None,
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1866,8 +1866,8 @@ mod coverage_tests {
             data: Some(vec![Value::Integer(1)]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1881,8 +1881,8 @@ mod coverage_tests {
             data: Some(vec![Value::Integer(42)]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
         assert_eq!(bindings[0], ("x".to_string(), Value::Integer(42)));
@@ -1897,8 +1897,8 @@ mod coverage_tests {
             data: Some(vec![Value::from_string("error".to_string())]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1911,11 +1911,14 @@ mod coverage_tests {
             data: Some(vec![Value::from_string("error".to_string())]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
         let bindings = result.unwrap();
-        assert_eq!(bindings[0], ("e".to_string(), Value::from_string("error".to_string())));
+        assert_eq!(
+            bindings[0],
+            ("e".to_string(), Value::from_string("error".to_string()))
+        );
     }
 
     #[test]
@@ -1927,8 +1930,8 @@ mod coverage_tests {
             data: Some(vec![Value::Integer(42)]),
         };
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1938,8 +1941,8 @@ mod coverage_tests {
         let pattern = Pattern::Literal(Literal::Char('a'));
         let value = Value::from_string("a".to_string());
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1948,8 +1951,8 @@ mod coverage_tests {
         let pattern = Pattern::Literal(Literal::Char('a'));
         let value = Value::from_string("b".to_string());
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1959,8 +1962,8 @@ mod coverage_tests {
         let pattern = Pattern::Literal(Literal::Byte(255));
         let value = Value::Byte(255);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1969,8 +1972,8 @@ mod coverage_tests {
         let pattern = Pattern::Literal(Literal::Byte(255));
         let value = Value::Byte(254);
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -1980,8 +1983,8 @@ mod coverage_tests {
         let pattern = Pattern::Literal(Literal::Null);
         let value = Value::Nil;
 
-        let result = try_pattern_match(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result =
+            try_pattern_match(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -1991,8 +1994,7 @@ mod coverage_tests {
         let pattern = Pattern::Literal(Literal::Integer(42, None));
         let value = Value::Integer(42);
 
-        let result = pattern_matches(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result = pattern_matches(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(result);
     }
 
@@ -2001,8 +2003,7 @@ mod coverage_tests {
         let pattern = Pattern::Literal(Literal::Integer(42, None));
         let value = Value::Integer(43);
 
-        let result = pattern_matches(&pattern, &value, &test_eval_literal)
-            .expect("should succeed");
+        let result = pattern_matches(&pattern, &value, &test_eval_literal).expect("should succeed");
         assert!(!result);
     }
 }

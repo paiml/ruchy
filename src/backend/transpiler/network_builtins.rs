@@ -570,10 +570,7 @@ mod tests {
     #[test]
     fn test_http_delete_wrong_args() {
         let transpiler = Transpiler::new();
-        let args = vec![
-            string_expr("https://api.example.com"),
-            string_expr("extra"),
-        ];
+        let args = vec![string_expr("https://api.example.com"), string_expr("extra")];
         let result = transpiler.try_transpile_http_function("http_delete", &args);
         assert!(result.is_err());
     }

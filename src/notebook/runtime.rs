@@ -75,7 +75,8 @@ impl NotebookRuntime {
                     Ok(output) => {
                         cell.output = Some(output.clone());
                         cell.execution_count = Some(self.execution_count as u32);
-                        self.cell_outputs.insert(cell_id.to_string(), output.clone());
+                        self.cell_outputs
+                            .insert(cell_id.to_string(), output.clone());
                         output
                     }
                     Err(e) => {

@@ -248,7 +248,7 @@ fn eval_object_method(
             "ExitStatus" => eval_exit_status_method(obj, method, arg_values),
             // Module calls are handled in interpreter.rs eval_method_call
             "Module" => Err(InterpreterError::RuntimeError(
-                "Module method dispatch should be handled in interpreter".to_string()
+                "Module method dispatch should be handled in interpreter".to_string(),
             )),
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Unknown object type: {type_name}"
@@ -521,7 +521,8 @@ fn eval_dataframe_select(
 ) -> Result<Value, InterpreterError> {
     if arg_values.len() != 1 {
         return Err(InterpreterError::RuntimeError(
-            "DataFrame.select() requires exactly 1 argument (column_name or [column_names])".to_string(),
+            "DataFrame.select() requires exactly 1 argument (column_name or [column_names])"
+                .to_string(),
         ));
     }
 
@@ -1247,8 +1248,8 @@ mod tests {
             name: "a".to_string(),
             values: vec![Value::Integer(42)],
         }];
-        let result = eval_dataframe_mean(&columns, &[])
-            .expect("eval_dataframe_mean should succeed");
+        let result =
+            eval_dataframe_mean(&columns, &[]).expect("eval_dataframe_mean should succeed");
         assert_eq!(result, Value::Float(42.0));
     }
 
@@ -1344,8 +1345,8 @@ mod tests {
                 values: vec![Value::Integer(3)],
             },
         ];
-        let result = eval_dataframe_shape(&columns, &[])
-            .expect("eval_dataframe_shape should succeed");
+        let result =
+            eval_dataframe_shape(&columns, &[]).expect("eval_dataframe_shape should succeed");
         match result {
             Value::Array(arr) => {
                 assert_eq!(arr[0], Value::Integer(1)); // 1 row
@@ -1364,15 +1365,8 @@ mod tests {
         let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
         let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
 
-        let result = dispatch_method_call(
-            &value,
-            "len",
-            &[],
-            true,
-            &mut eval_fn,
-            eval_df,
-            eval_ctx,
-        );
+        let result =
+            dispatch_method_call(&value, "len", &[], true, &mut eval_fn, eval_df, eval_ctx);
         assert!(result.is_ok());
     }
 
@@ -1578,7 +1572,10 @@ mod tests {
         }];
         let result = eval_dataframe_method(&columns, "unknown_method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown DataFrame"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown DataFrame"));
     }
 
     // Test R127-16: dataframe count empty
@@ -1593,12 +1590,14 @@ mod tests {
     #[test]
     fn test_exit_status_method_success_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ExitStatus".to_string()),
+        );
         obj.insert("success".to_string(), Value::Bool(true));
         obj.insert("code".to_string(), Value::Integer(0));
 
-        let result = eval_exit_status_method(&obj, "success", &[])
-            .expect("should get success");
+        let result = eval_exit_status_method(&obj, "success", &[]).expect("should get success");
         assert_eq!(result, Value::Bool(true));
     }
 
@@ -1606,12 +1605,14 @@ mod tests {
     #[test]
     fn test_exit_status_method_success_false_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ExitStatus".to_string()),
+        );
         obj.insert("success".to_string(), Value::Bool(false));
         obj.insert("code".to_string(), Value::Integer(1));
 
-        let result = eval_exit_status_method(&obj, "success", &[])
-            .expect("should get success");
+        let result = eval_exit_status_method(&obj, "success", &[]).expect("should get success");
         assert_eq!(result, Value::Bool(false));
     }
 
@@ -1619,7 +1620,10 @@ mod tests {
     #[test]
     fn test_exit_status_method_with_args_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ExitStatus".to_string()),
+        );
         obj.insert("success".to_string(), Value::Bool(true));
 
         let result = eval_exit_status_method(&obj, "success", &[Value::Integer(1)]);
@@ -1631,19 +1635,28 @@ mod tests {
     #[test]
     fn test_exit_status_method_unknown_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ExitStatus".to_string()),
+        );
         obj.insert("success".to_string(), Value::Bool(true));
 
         let result = eval_exit_status_method(&obj, "unknown", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown ExitStatus"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown ExitStatus"));
     }
 
     // Test R127-21: eval_exit_status_method missing success field
     #[test]
     fn test_exit_status_method_missing_field_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ExitStatus".to_string()),
+        );
         // Missing "success" field
 
         let result = eval_exit_status_method(&obj, "success", &[]);
@@ -1678,8 +1691,7 @@ mod tests {
     #[test]
     fn test_try_dispatch_builtin_no_marker_r127() {
         let obj = std::collections::HashMap::new();
-        let result = try_dispatch_builtin(&obj, "some_method", &[])
-            .expect("should return None");
+        let result = try_dispatch_builtin(&obj, "some_method", &[]).expect("should return None");
         assert!(result.is_none());
     }
 
@@ -1687,7 +1699,10 @@ mod tests {
     #[test]
     fn test_try_dispatch_builtin_not_builtin_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("some_method".to_string(), Value::from_string("regular_value".to_string()));
+        obj.insert(
+            "some_method".to_string(),
+            Value::from_string("regular_value".to_string()),
+        );
         let result = try_dispatch_builtin(&obj, "some_method", &[])
             .expect("should return None for non-builtin");
         assert!(result.is_none());
@@ -1706,10 +1721,16 @@ mod tests {
     #[test]
     fn test_object_method_unknown_type_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("UnknownType".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("UnknownType".to_string()),
+        );
         let result = eval_object_method(&obj, "test", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown object type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown object type"));
     }
 
     // Test R127-29: generic method with args (should fail)
@@ -1734,15 +1755,8 @@ mod tests {
         let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
         let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
 
-        let result = dispatch_method_call(
-            &value,
-            "count",
-            &[],
-            true,
-            &mut eval_fn,
-            eval_df,
-            eval_ctx,
-        );
+        let result =
+            dispatch_method_call(&value, "count", &[], true, &mut eval_fn, eval_df, eval_ctx);
         assert!(result.is_ok());
         assert_eq!(result.expect("should work"), Value::Integer(1));
     }
@@ -1756,15 +1770,8 @@ mod tests {
         let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
         let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
 
-        let result = dispatch_method_call(
-            &value,
-            "sqrt",
-            &[],
-            true,
-            &mut eval_fn,
-            eval_df,
-            eval_ctx,
-        );
+        let result =
+            dispatch_method_call(&value, "sqrt", &[], true, &mut eval_fn, eval_df, eval_ctx);
         assert!(result.is_ok());
         assert_eq!(result.expect("should work"), Value::Float(3.0));
     }
@@ -1778,15 +1785,8 @@ mod tests {
         let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
         let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
 
-        let result = dispatch_method_call(
-            &value,
-            "abs",
-            &[],
-            true,
-            &mut eval_fn,
-            eval_df,
-            eval_ctx,
-        );
+        let result =
+            dispatch_method_call(&value, "abs", &[], true, &mut eval_fn, eval_df, eval_ctx);
         assert!(result.is_ok());
         assert_eq!(result.expect("should work"), Value::Integer(42));
     }
@@ -1796,8 +1796,14 @@ mod tests {
     #[test]
     fn test_dispatch_object_command_r127() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Command".to_string()));
-        obj.insert("program".to_string(), Value::from_string("echo".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Command".to_string()),
+        );
+        obj.insert(
+            "program".to_string(),
+            Value::from_string("echo".to_string()),
+        );
         obj.insert("args".to_string(), Value::Array(Arc::from(vec![])));
         let value = Value::Object(Arc::new(obj));
 
@@ -1912,14 +1918,20 @@ mod tests {
     fn test_float_method_with_args_error() {
         let result = eval_float_method(2.0, "sqrt", false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
     fn test_float_method_unknown() {
         let result = eval_float_method(2.0, "unknown_method", true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown float method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown float method"));
     }
 
     #[test]
@@ -1995,35 +2007,50 @@ mod tests {
     fn test_integer_method_pow_wrong_arg_count() {
         let result = eval_integer_pow(2, &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1 argument"));
     }
 
     #[test]
     fn test_integer_method_pow_negative_exp() {
         let result = eval_integer_pow(2, &[Value::Integer(-1)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("must be non-negative"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("must be non-negative"));
     }
 
     #[test]
     fn test_integer_method_pow_wrong_type() {
         let result = eval_integer_pow(2, &[Value::from_string("3".to_string())]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires integer exponent"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires integer exponent"));
     }
 
     #[test]
     fn test_integer_method_unknown() {
         let result = eval_integer_method(42, "unknown_method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown integer method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown integer method"));
     }
 
     #[test]
     fn test_integer_method_abs_with_args() {
         let result = eval_integer_method(42, "abs", &[Value::Integer(1)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[test]
@@ -2072,10 +2099,16 @@ mod tests {
     #[test]
     fn test_object_method_unknown_type() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("UnknownType".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("UnknownType".to_string()),
+        );
         let result = eval_object_method(&obj, "method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown object type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown object type"));
     }
 
     #[test]
@@ -2083,7 +2116,10 @@ mod tests {
         let obj = std::collections::HashMap::new();
         let result = eval_object_method(&obj, "method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("missing __type marker"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("missing __type marker"));
     }
 
     // --- Generic method error paths ---
@@ -2099,7 +2135,10 @@ mod tests {
         let columns = vec![];
         let result = eval_dataframe_method(&columns, "unknown_method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown DataFrame method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown DataFrame method"));
     }
 
     #[test]
@@ -2167,7 +2206,8 @@ mod tests {
                 values: vec![Value::Integer(2)],
             },
         ];
-        let result = eval_dataframe_select(&columns, &[Value::from_string("a".to_string())]).unwrap();
+        let result =
+            eval_dataframe_select(&columns, &[Value::from_string("a".to_string())]).unwrap();
         if let Value::DataFrame { columns: new_cols } = result {
             assert_eq!(new_cols.len(), 1);
             assert_eq!(new_cols[0].name, "a");
@@ -2184,7 +2224,10 @@ mod tests {
         }];
         let result = eval_dataframe_select(&columns, &[Value::from_string("z".to_string())]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Column 'z' not found"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Column 'z' not found"));
     }
 
     // --- Dispatch turbofish stripping test ---
@@ -2255,7 +2298,8 @@ mod tests {
         #[test]
         fn test_command_arg_success() {
             let obj = create_command_obj("echo");
-            let result = eval_command_method(&obj, "arg", &[Value::from_string("hello".to_string())]);
+            let result =
+                eval_command_method(&obj, "arg", &[Value::from_string("hello".to_string())]);
             assert!(result.is_ok());
             if let Value::Object(new_obj) = result.unwrap() {
                 if let Some(Value::Array(args)) = new_obj.get("args") {
@@ -2274,7 +2318,10 @@ mod tests {
             let obj = create_command_obj("echo");
             let result = eval_command_method(&obj, "arg", &[]);
             assert!(result.is_err());
-            assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+            assert!(result
+                .unwrap_err()
+                .to_string()
+                .contains("requires exactly 1 argument"));
         }
 
         #[test]
@@ -2282,7 +2329,10 @@ mod tests {
             let obj = create_command_obj("echo");
             let result = eval_command_method(&obj, "arg", &[Value::Integer(42)]);
             assert!(result.is_err());
-            assert!(result.unwrap_err().to_string().contains("expects a string argument"));
+            assert!(result
+                .unwrap_err()
+                .to_string()
+                .contains("expects a string argument"));
         }
 
         #[test]
@@ -2290,7 +2340,10 @@ mod tests {
             let obj = create_command_obj("echo");
             let result = eval_command_method(&obj, "unknown_method", &[]);
             assert!(result.is_err());
-            assert!(result.unwrap_err().to_string().contains("Unknown Command method"));
+            assert!(result
+                .unwrap_err()
+                .to_string()
+                .contains("Unknown Command method"));
         }
 
         #[test]
@@ -2299,7 +2352,12 @@ mod tests {
             let obj = create_command_obj("true");
             let result = eval_command_method(&obj, "status", &[]);
             assert!(result.is_ok());
-            if let Value::EnumVariant { enum_name, variant_name, data } = result.unwrap() {
+            if let Value::EnumVariant {
+                enum_name,
+                variant_name,
+                data,
+            } = result.unwrap()
+            {
                 assert_eq!(enum_name, "Result");
                 assert_eq!(variant_name, "Ok");
                 assert!(data.is_some());
@@ -2321,7 +2379,12 @@ mod tests {
             let obj = create_command_obj("false");
             let result = eval_command_method(&obj, "status", &[]);
             assert!(result.is_ok());
-            if let Value::EnumVariant { enum_name, variant_name, data } = result.unwrap() {
+            if let Value::EnumVariant {
+                enum_name,
+                variant_name,
+                data,
+            } = result.unwrap()
+            {
                 assert_eq!(enum_name, "Result");
                 assert_eq!(variant_name, "Ok");
                 assert!(data.is_some());
@@ -2338,7 +2401,12 @@ mod tests {
             let obj = create_command_obj("nonexistent_command_12345");
             let result = eval_command_method(&obj, "status", &[]);
             assert!(result.is_ok());
-            if let Value::EnumVariant { enum_name, variant_name, .. } = result.unwrap() {
+            if let Value::EnumVariant {
+                enum_name,
+                variant_name,
+                ..
+            } = result.unwrap()
+            {
                 assert_eq!(enum_name, "Result");
                 assert_eq!(variant_name, "Err");
             } else {
@@ -2356,7 +2424,12 @@ mod tests {
             );
             let result = eval_command_method(&obj_with_args, "output", &[]);
             assert!(result.is_ok());
-            if let Value::EnumVariant { enum_name, variant_name, data } = result.unwrap() {
+            if let Value::EnumVariant {
+                enum_name,
+                variant_name,
+                data,
+            } = result.unwrap()
+            {
                 assert_eq!(enum_name, "Result");
                 assert_eq!(variant_name, "Ok");
                 assert!(data.is_some());
@@ -2376,7 +2449,12 @@ mod tests {
             let obj = create_command_obj("nonexistent_command_12345");
             let result = eval_command_method(&obj, "output", &[]);
             assert!(result.is_ok());
-            if let Value::EnumVariant { enum_name, variant_name, .. } = result.unwrap() {
+            if let Value::EnumVariant {
+                enum_name,
+                variant_name,
+                ..
+            } = result.unwrap()
+            {
                 assert_eq!(enum_name, "Result");
                 assert_eq!(variant_name, "Err");
             }
@@ -2387,13 +2465,19 @@ mod tests {
             let obj = std::collections::HashMap::new();
             let result = build_command_from_obj(&obj);
             assert!(result.is_err());
-            assert!(result.unwrap_err().to_string().contains("missing 'program' field"));
+            assert!(result
+                .unwrap_err()
+                .to_string()
+                .contains("missing 'program' field"));
         }
 
         #[test]
         fn test_build_command_with_args() {
             let mut obj = std::collections::HashMap::new();
-            obj.insert("program".to_string(), Value::from_string("echo".to_string()));
+            obj.insert(
+                "program".to_string(),
+                Value::from_string("echo".to_string()),
+            );
             obj.insert(
                 "args".to_string(),
                 Value::Array(Arc::from(vec![
@@ -2408,7 +2492,10 @@ mod tests {
         #[test]
         fn test_build_command_no_args() {
             let mut obj = std::collections::HashMap::new();
-            obj.insert("program".to_string(), Value::from_string("echo".to_string()));
+            obj.insert(
+                "program".to_string(),
+                Value::from_string("echo".to_string()),
+            );
             // No args field - should default to empty
             let result = build_command_from_obj(&obj);
             assert!(result.is_ok());
@@ -2417,7 +2504,10 @@ mod tests {
         #[test]
         fn test_build_command_args_with_non_string() {
             let mut obj = std::collections::HashMap::new();
-            obj.insert("program".to_string(), Value::from_string("echo".to_string()));
+            obj.insert(
+                "program".to_string(),
+                Value::from_string("echo".to_string()),
+            );
             obj.insert(
                 "args".to_string(),
                 Value::Array(Arc::from(vec![
@@ -2437,7 +2527,8 @@ mod tests {
             assert!(result1.is_ok());
             if let Value::Object(obj1) = result1.unwrap() {
                 // Second arg
-                let result2 = eval_command_method(&obj1, "arg", &[Value::from_string("hello".to_string())]);
+                let result2 =
+                    eval_command_method(&obj1, "arg", &[Value::from_string("hello".to_string())]);
                 assert!(result2.is_ok());
                 if let Value::Object(obj2) = result2.unwrap() {
                     if let Some(Value::Array(args)) = obj2.get("args") {
@@ -2483,12 +2574,10 @@ mod tests {
 
     #[test]
     fn test_dataframe_select_array_not_found() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "a".to_string(),
-                values: vec![Value::Integer(1)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
         let col_names = Value::Array(Arc::from(vec![
             Value::from_string("a".to_string()),
             Value::from_string("missing".to_string()),
@@ -2500,12 +2589,10 @@ mod tests {
 
     #[test]
     fn test_dataframe_select_array_non_string_element() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "a".to_string(),
-                values: vec![Value::Integer(1)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
         let col_names = Value::Array(Arc::from(vec![
             Value::from_string("a".to_string()),
             Value::Integer(42), // Not a string
@@ -2517,12 +2604,10 @@ mod tests {
 
     #[test]
     fn test_dataframe_select_empty_array() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "a".to_string(),
-                values: vec![Value::Integer(1)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
         let col_names = Value::Array(Arc::from(vec![]));
         let result = eval_dataframe_select(&columns, &[col_names]);
         assert!(result.is_ok());
@@ -2536,10 +2621,16 @@ mod tests {
     #[test]
     fn test_object_method_module_type() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Module".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Module".to_string()),
+        );
         let result = eval_object_method(&obj, "some_method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("handled in interpreter"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("handled in interpreter"));
     }
 
     // --- More dispatch tests ---
@@ -2551,15 +2642,8 @@ mod tests {
         let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
         let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
 
-        let result = dispatch_method_call(
-            &value,
-            "len",
-            &[],
-            true,
-            &mut eval_fn,
-            eval_df,
-            eval_ctx,
-        );
+        let result =
+            dispatch_method_call(&value, "len", &[], true, &mut eval_fn, eval_df, eval_ctx);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Value::Integer(5));
     }
@@ -2567,7 +2651,10 @@ mod tests {
     #[test]
     fn test_dispatch_object_method() {
         let mut obj = std::collections::HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("ExitStatus".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("ExitStatus".to_string()),
+        );
         obj.insert("success".to_string(), Value::Bool(true));
         let value = Value::Object(Arc::new(obj));
 
@@ -2900,15 +2987,8 @@ mod tests {
         let eval_df = |_v: &Value, _args: &[Expr]| Ok(Value::Integer(0));
         let eval_ctx = |_e: &Expr, _cols: &[DataFrameColumn], _row: usize| Ok(Value::Integer(0));
 
-        let result = dispatch_method_call(
-            &value,
-            "sqrt",
-            &[],
-            true,
-            &mut eval_fn,
-            eval_df,
-            eval_ctx,
-        );
+        let result =
+            dispatch_method_call(&value, "sqrt", &[], true, &mut eval_fn, eval_df, eval_ctx);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Value::Float(4.0));
     }
@@ -2951,7 +3031,11 @@ mod tests {
 
     #[test]
     fn test_eval_method_call_array_len() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         let result = eval_method_call(
             &arr,
             "len",

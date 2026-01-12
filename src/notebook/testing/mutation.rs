@@ -713,7 +713,10 @@ mod tests {
         let mutations = tester.generate_mutations(&cell);
         // No arithmetic, comparison, or logical operators
         assert!(
-            mutations.is_empty() || mutations.iter().all(|m| m.mutation_type == MutationType::BoundaryValue),
+            mutations.is_empty()
+                || mutations
+                    .iter()
+                    .all(|m| m.mutation_type == MutationType::BoundaryValue),
             "Should have no mutations or only boundary mutations"
         );
     }

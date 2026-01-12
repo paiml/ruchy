@@ -1002,7 +1002,10 @@ mod round_130_tests {
 
     // Helper to create a simple literal expression
     fn make_lit_expr(val: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(val, None)), Span::new(0, 0))
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(val, None)),
+            Span::new(0, 0),
+        )
     }
 
     fn make_unit_expr() -> Expr {
@@ -1123,7 +1126,10 @@ mod round_130_tests {
 
         let closure = Closure::new(params, body, env.clone());
         assert!(closure.captured_env.contains_key("outer_var"));
-        assert_eq!(closure.captured_env.get("outer_var"), Some(&Value::Integer(100)));
+        assert_eq!(
+            closure.captured_env.get("outer_var"),
+            Some(&Value::Integer(100))
+        );
     }
 
     #[test]
@@ -1195,10 +1201,7 @@ mod round_130_tests {
     #[test]
     fn test_get_arity_closure_r130() {
         let value = Value::Closure {
-            params: vec![
-                ("x".to_string(), None),
-                ("y".to_string(), None),
-            ],
+            params: vec![("x".to_string(), None), ("y".to_string(), None)],
             body: Arc::new(make_lit_expr(42)),
             env: Rc::new(RefCell::new(HashMap::new())),
         };
@@ -1299,12 +1302,7 @@ mod round_130_tests {
 
         let non_callable = Value::Integer(42);
 
-        let result = eval_function_call(
-            &non_callable,
-            &[],
-            |_, _| Ok(Value::Nil),
-            |_, _| Ok(None),
-        );
+        let result = eval_function_call(&non_callable, &[], |_, _| Ok(Value::Nil), |_, _| Ok(None));
 
         assert!(result.is_err());
         CALL_DEPTH.with(|d| d.set(0));
@@ -1344,12 +1342,7 @@ mod round_130_tests {
             env: Rc::new(RefCell::new(HashMap::new())),
         };
 
-        let result = eval_function_call(
-            &closure,
-            &[],
-            |_, _| Ok(Value::Nil),
-            |_, _| Ok(None),
-        );
+        let result = eval_function_call(&closure, &[], |_, _| Ok(Value::Nil), |_, _| Ok(None));
 
         assert!(result.is_err());
         CALL_DEPTH.with(|d| d.set(0));
@@ -1446,19 +1439,22 @@ mod round_130_tests {
             &Pattern::Identifier("a".to_string()),
             &Value::Integer(1),
             &mut env,
-        ).unwrap();
+        )
+        .unwrap();
 
         bind_parameter(
             &Pattern::Identifier("b".to_string()),
             &Value::Float(2.5),
             &mut env,
-        ).unwrap();
+        )
+        .unwrap();
 
         bind_parameter(
             &Pattern::Identifier("c".to_string()),
             &Value::String(Arc::from("test")),
             &mut env,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(env.len(), 3);
         assert_eq!(env.get("a"), Some(&Value::Integer(1)));
@@ -1471,10 +1467,7 @@ mod round_130_tests {
     #[test]
     fn test_create_partial_application_r130() {
         let closure = Value::Closure {
-            params: vec![
-                ("x".to_string(), None),
-                ("y".to_string(), None),
-            ],
+            params: vec![("x".to_string(), None), ("y".to_string(), None)],
             body: Arc::new(make_lit_expr(42)),
             env: Rc::new(RefCell::new(HashMap::new())),
         };
@@ -1512,7 +1505,10 @@ mod comprehensive_coverage_tests {
 
     // Helper functions
     fn make_int_expr(val: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(val, None)), Span::new(0, 0))
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(val, None)),
+            Span::new(0, 0),
+        )
     }
 
     fn make_unit_expr() -> Expr {
@@ -1555,7 +1551,11 @@ mod comprehensive_coverage_tests {
         let result = eval_function_def("test_fn", &params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 1);
             assert_eq!(closure_params[0].0, "x");
             assert!(closure_params[0].1.is_none());
@@ -1572,7 +1572,11 @@ mod comprehensive_coverage_tests {
         let result = eval_function_def("multi_param_fn", &params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 3);
             assert_eq!(closure_params[0].0, "a");
             assert_eq!(closure_params[1].0, "b");
@@ -1593,7 +1597,11 @@ mod comprehensive_coverage_tests {
         let result = eval_function_def("fn_with_defaults", &params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 2);
             assert!(closure_params[0].1.is_none()); // x has no default
             assert!(closure_params[1].1.is_some()); // y has default
@@ -1628,7 +1636,11 @@ mod comprehensive_coverage_tests {
         let result = eval_function_def("no_params_fn", &params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 0);
         } else {
             panic!("Expected Closure");
@@ -1654,7 +1666,11 @@ mod comprehensive_coverage_tests {
         let result = eval_function_def("wildcard_fn", &params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 1);
             assert_eq!(closure_params[0].0, "_");
         } else {
@@ -1672,7 +1688,11 @@ mod comprehensive_coverage_tests {
         let result = eval_lambda(&params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 1);
         } else {
             panic!("Expected Closure");
@@ -1687,7 +1707,11 @@ mod comprehensive_coverage_tests {
         let result = eval_lambda(&params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 2);
         } else {
             panic!("Expected Closure");
@@ -1705,7 +1729,11 @@ mod comprehensive_coverage_tests {
         let result = eval_lambda(&params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 2);
             assert!(closure_params[0].1.is_none());
             assert!(closure_params[1].1.is_some());
@@ -1720,7 +1748,10 @@ mod comprehensive_coverage_tests {
         let body = make_unit_expr();
 
         let mut captured = HashMap::new();
-        captured.insert("captured_val".to_string(), Value::String(Arc::from("hello")));
+        captured.insert(
+            "captured_val".to_string(),
+            Value::String(Arc::from("hello")),
+        );
 
         let result = eval_lambda(&params, &body, || captured.clone());
         assert!(result.is_ok());
@@ -1740,7 +1771,11 @@ mod comprehensive_coverage_tests {
         let result = eval_lambda(&params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params.len(), 0);
         } else {
             panic!("Expected Closure");
@@ -1765,7 +1800,11 @@ mod comprehensive_coverage_tests {
         let result = eval_lambda(&params, &body, HashMap::new);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { params: closure_params, .. }) = result {
+        if let Ok(Value::Closure {
+            params: closure_params,
+            ..
+        }) = result
+        {
             assert_eq!(closure_params[0].0, "_");
         } else {
             panic!("Expected Closure");
@@ -1778,12 +1817,7 @@ mod comprehensive_coverage_tests {
     fn test_eval_function_call_string_value_error() {
         let non_function = Value::String(Arc::from("not a function"));
 
-        let result = eval_function_call(
-            &non_function,
-            &[],
-            |_, _| Ok(Value::Nil),
-            |_, _| Ok(None),
-        );
+        let result = eval_function_call(&non_function, &[], |_, _| Ok(Value::Nil), |_, _| Ok(None));
 
         assert!(result.is_err());
         if let Err(InterpreterError::TypeError(msg)) = result {
@@ -1795,12 +1829,7 @@ mod comprehensive_coverage_tests {
     fn test_eval_function_call_array_error() {
         let non_function = Value::from_array(vec![Value::Integer(1), Value::Integer(2)]);
 
-        let result = eval_function_call(
-            &non_function,
-            &[],
-            |_, _| Ok(Value::Nil),
-            |_, _| Ok(None),
-        );
+        let result = eval_function_call(&non_function, &[], |_, _| Ok(Value::Nil), |_, _| Ok(None));
 
         assert!(result.is_err());
     }
@@ -1809,12 +1838,7 @@ mod comprehensive_coverage_tests {
     fn test_eval_function_call_nil_error() {
         let non_function = Value::Nil;
 
-        let result = eval_function_call(
-            &non_function,
-            &[],
-            |_, _| Ok(Value::Nil),
-            |_, _| Ok(None),
-        );
+        let result = eval_function_call(&non_function, &[], |_, _| Ok(Value::Nil), |_, _| Ok(None));
 
         assert!(result.is_err());
     }
@@ -1856,12 +1880,7 @@ mod comprehensive_coverage_tests {
         };
 
         // Call with 0 args when 2 required
-        let result = eval_function_call(
-            &closure,
-            &[],
-            |_, _| Ok(Value::Nil),
-            |_, _| Ok(None),
-        );
+        let result = eval_function_call(&closure, &[], |_, _| Ok(Value::Nil), |_, _| Ok(None));
 
         assert!(result.is_err());
         CALL_DEPTH.with(|d| d.set(0));
@@ -1923,7 +1942,7 @@ mod comprehensive_coverage_tests {
         // Create closure with one required and one optional param
         let closure = Value::Closure {
             params: vec![
-                ("x".to_string(), None), // required
+                ("x".to_string(), None),                              // required
                 ("y".to_string(), Some(Arc::new(make_int_expr(10)))), // optional with default
             ],
             body: Arc::new(make_unit_expr()),
@@ -2035,9 +2054,14 @@ mod comprehensive_coverage_tests {
         let result = create_partial_application(&closure, &[Value::Integer(5)]);
         assert!(result.is_ok());
 
-        if let Ok(Value::Closure { env: new_env, params, .. }) = result {
+        if let Ok(Value::Closure {
+            env: new_env,
+            params,
+            ..
+        }) = result
+        {
             assert_eq!(params.len(), 1); // One param remaining
-            // Check x is bound in new env
+                                         // Check x is bound in new env
             assert!(new_env.borrow().contains_key("x"));
             assert_eq!(new_env.borrow().get("x"), Some(&Value::Integer(5)));
             // Check captured var is preserved
@@ -2315,7 +2339,9 @@ mod comprehensive_coverage_tests {
         );
 
         let result = eval_closure_call(&closure, &[Value::Integer(1)], |_, _| {
-            Err(InterpreterError::Return(Value::String(Arc::from("early return"))))
+            Err(InterpreterError::Return(Value::String(Arc::from(
+                "early return",
+            ))))
         });
 
         assert!(result.is_ok());
@@ -2339,13 +2365,11 @@ mod comprehensive_coverage_tests {
 
     #[test]
     fn test_eval_closure_call_with_wildcard_pattern() {
-        let closure = Closure::new(
-            vec![Pattern::Wildcard],
-            make_int_expr(99),
-            HashMap::new(),
-        );
+        let closure = Closure::new(vec![Pattern::Wildcard], make_int_expr(99), HashMap::new());
 
-        let result = eval_closure_call(&closure, &[Value::Integer(1)], |_, _| Ok(Value::Integer(99)));
+        let result = eval_closure_call(&closure, &[Value::Integer(1)], |_, _| {
+            Ok(Value::Integer(99))
+        });
 
         assert!(result.is_ok());
     }

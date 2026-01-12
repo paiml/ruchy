@@ -520,7 +520,10 @@ mod tests {
     #[test]
     fn test_select_article_tag() {
         let html = HtmlDocument::parse("<article>Content</article>");
-        let elem = html.query_selector("article").expect("should parse").unwrap();
+        let elem = html
+            .query_selector("article")
+            .expect("should parse")
+            .unwrap();
         assert!(elem.text().contains("Content"));
     }
 

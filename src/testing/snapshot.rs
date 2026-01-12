@@ -778,7 +778,10 @@ mod coverage_push_tests {
         let hash = SnapshotRunner::hash("");
         assert_eq!(hash.len(), 64);
         // SHA256 of empty string
-        assert_eq!(hash, "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855");
+        assert_eq!(
+            hash,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
     }
 
     #[test]
@@ -801,7 +804,9 @@ mod coverage_push_tests {
         let mut runner = SnapshotRunner::load(config).expect("load");
 
         // Create a snapshot
-        runner.test("test1", "input1", |_| Ok("output1".to_string())).expect("create");
+        runner
+            .test("test1", "input1", |_| Ok("output1".to_string()))
+            .expect("create");
 
         // Run with failing transform
         let result = runner.run_all(|_| Ok("wrong_output".to_string()));
@@ -831,20 +836,18 @@ mod coverage_push_tests {
     #[test]
     fn test_snapshot_suite_serialize_deserialize() {
         let suite = SnapshotSuite {
-            tests: vec![
-                SnapshotTest {
-                    name: "t1".to_string(),
-                    input: "1".to_string(),
-                    output_hash: "h1".to_string(),
-                    rust_output: "o1".to_string(),
-                    metadata: SnapshotMetadata {
-                        created_at: "now".to_string(),
-                        updated_at: "now".to_string(),
-                        ruchy_version: "1.0".to_string(),
-                        rustc_version: "1.75".to_string(),
-                    },
+            tests: vec![SnapshotTest {
+                name: "t1".to_string(),
+                input: "1".to_string(),
+                output_hash: "h1".to_string(),
+                rust_output: "o1".to_string(),
+                metadata: SnapshotMetadata {
+                    created_at: "now".to_string(),
+                    updated_at: "now".to_string(),
+                    ruchy_version: "1.0".to_string(),
+                    rustc_version: "1.75".to_string(),
                 },
-            ],
+            }],
             config: SnapshotConfig::default(),
         };
         let toml_str = toml::to_string(&suite).expect("serialize");

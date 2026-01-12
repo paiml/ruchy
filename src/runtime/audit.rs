@@ -1189,19 +1189,40 @@ mod tests {
     #[test]
     fn test_infer_eval_type_edge_cases() {
         // Test 'fn' keyword for function definitions
-        assert_eq!(ReplPath::infer_eval_type("fn foo() {}"), EvalType::FunctionDef);
+        assert_eq!(
+            ReplPath::infer_eval_type("fn foo() {}"),
+            EvalType::FunctionDef
+        );
         // Test 'match' for control flow
-        assert_eq!(ReplPath::infer_eval_type("match x { }"), EvalType::ControlFlow);
+        assert_eq!(
+            ReplPath::infer_eval_type("match x { }"),
+            EvalType::ControlFlow
+        );
         // Test 'while' for control flow
-        assert_eq!(ReplPath::infer_eval_type("while true {}"), EvalType::ControlFlow);
+        assert_eq!(
+            ReplPath::infer_eval_type("while true {}"),
+            EvalType::ControlFlow
+        );
         // Test 'for' for control flow
-        assert_eq!(ReplPath::infer_eval_type("for i in range {}"), EvalType::ControlFlow);
+        assert_eq!(
+            ReplPath::infer_eval_type("for i in range {}"),
+            EvalType::ControlFlow
+        );
         // Test 'struct' for type def
-        assert_eq!(ReplPath::infer_eval_type("struct Foo {}"), EvalType::TypeDef);
+        assert_eq!(
+            ReplPath::infer_eval_type("struct Foo {}"),
+            EvalType::TypeDef
+        );
         // Test 'enum' for type def
-        assert_eq!(ReplPath::infer_eval_type("enum Color {}"), EvalType::TypeDef);
+        assert_eq!(
+            ReplPath::infer_eval_type("enum Color {}"),
+            EvalType::TypeDef
+        );
         // Test 'type' alias for type def
-        assert_eq!(ReplPath::infer_eval_type("type MyInt = i32"), EvalType::TypeDef);
+        assert_eq!(
+            ReplPath::infer_eval_type("type MyInt = i32"),
+            EvalType::TypeDef
+        );
     }
 
     #[test]

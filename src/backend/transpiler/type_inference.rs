@@ -369,7 +369,10 @@ mod coverage_push_tests {
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
-                    assert_eq!(infer_param_type_from_builtin_usage("path", body), Some("&str"));
+                    assert_eq!(
+                        infer_param_type_from_builtin_usage("path", body),
+                        Some("&str")
+                    );
                 }
             }
         }
@@ -560,7 +563,10 @@ mod coverage_push_tests {
         if let ExprKind::Block(exprs) = &ast.kind {
             for expr in exprs {
                 if let ExprKind::Function { body, .. } = &expr.kind {
-                    assert_eq!(infer_param_type_from_builtin_usage("key", body), Some("&str"));
+                    assert_eq!(
+                        infer_param_type_from_builtin_usage("key", body),
+                        Some("&str")
+                    );
                 }
             }
         }

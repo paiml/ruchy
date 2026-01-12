@@ -252,7 +252,13 @@ mod tests {
         let expr = parse("-42").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
             assert!(
-                matches!(&exprs[0].kind, ExprKind::Unary { op: UnaryOp::Negate, .. }),
+                matches!(
+                    &exprs[0].kind,
+                    ExprKind::Unary {
+                        op: UnaryOp::Negate,
+                        ..
+                    }
+                ),
                 "Should produce Unary with Negate"
             );
         }
@@ -313,7 +319,13 @@ mod tests {
         let expr = parse("!true").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
             assert!(
-                matches!(&exprs[0].kind, ExprKind::Unary { op: UnaryOp::Not, .. }),
+                matches!(
+                    &exprs[0].kind,
+                    ExprKind::Unary {
+                        op: UnaryOp::Not,
+                        ..
+                    }
+                ),
                 "Should produce Unary with Not"
             );
         }
@@ -352,7 +364,13 @@ mod tests {
         let expr = parse("&x").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
             assert!(
-                matches!(&exprs[0].kind, ExprKind::Unary { op: UnaryOp::Reference, .. }),
+                matches!(
+                    &exprs[0].kind,
+                    ExprKind::Unary {
+                        op: UnaryOp::Reference,
+                        ..
+                    }
+                ),
                 "Should produce Unary with Reference"
             );
         }
@@ -375,7 +393,13 @@ mod tests {
         let expr = parse("&mut x").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
             assert!(
-                matches!(&exprs[0].kind, ExprKind::Unary { op: UnaryOp::MutableReference, .. }),
+                matches!(
+                    &exprs[0].kind,
+                    ExprKind::Unary {
+                        op: UnaryOp::MutableReference,
+                        ..
+                    }
+                ),
                 "Should produce Unary with MutableReference"
             );
         }
@@ -397,7 +421,13 @@ mod tests {
         let expr = parse("*ptr").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
             assert!(
-                matches!(&exprs[0].kind, ExprKind::Unary { op: UnaryOp::Deref, .. }),
+                matches!(
+                    &exprs[0].kind,
+                    ExprKind::Unary {
+                        op: UnaryOp::Deref,
+                        ..
+                    }
+                ),
                 "Should produce Unary with Deref"
             );
         }
@@ -424,9 +454,19 @@ mod tests {
         let expr = parse("**ptr").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
             // Should be nested Deref
-            if let ExprKind::Unary { op: UnaryOp::Deref, operand } = &exprs[0].kind {
+            if let ExprKind::Unary {
+                op: UnaryOp::Deref,
+                operand,
+            } = &exprs[0].kind
+            {
                 assert!(
-                    matches!(&operand.kind, ExprKind::Unary { op: UnaryOp::Deref, .. }),
+                    matches!(
+                        &operand.kind,
+                        ExprKind::Unary {
+                            op: UnaryOp::Deref,
+                            ..
+                        }
+                    ),
                     "Should have nested Deref"
                 );
             }
@@ -481,7 +521,13 @@ mod tests {
         let expr = parse("~x").unwrap();
         if let Some(exprs) = get_block_exprs(&expr) {
             assert!(
-                matches!(&exprs[0].kind, ExprKind::Unary { op: UnaryOp::BitwiseNot, .. }),
+                matches!(
+                    &exprs[0].kind,
+                    ExprKind::Unary {
+                        op: UnaryOp::BitwiseNot,
+                        ..
+                    }
+                ),
                 "Should produce Unary with BitwiseNot"
             );
         }

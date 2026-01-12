@@ -191,7 +191,8 @@ mod tests {
     #[test]
     fn test_dataframe_builder_multiple_columns() {
         let mut transpiler = create_transpiler();
-        let mut parser = Parser::new(r#"DataFrame::new().column("a", [1]).column("b", [2]).build()"#);
+        let mut parser =
+            Parser::new(r#"DataFrame::new().column("a", [1]).column("b", [2]).build()"#);
         let ast = parser.parse().expect("parse");
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
@@ -202,7 +203,8 @@ mod tests {
     #[test]
     fn test_dataframe_builder_string_values() {
         let mut transpiler = create_transpiler();
-        let mut parser = Parser::new(r#"DataFrame::new().column("name", ["Alice", "Bob"]).build()"#);
+        let mut parser =
+            Parser::new(r#"DataFrame::new().column("name", ["Alice", "Bob"]).build()"#);
         let ast = parser.parse().expect("parse");
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
@@ -289,7 +291,9 @@ mod tests {
             leading_comments: vec![],
             trailing_comment: None,
         };
-        let result = transpiler.try_transpile_dataframe_builder_inline_impl(&expr).unwrap();
+        let result = transpiler
+            .try_transpile_dataframe_builder_inline_impl(&expr)
+            .unwrap();
         assert!(result.is_none());
     }
 

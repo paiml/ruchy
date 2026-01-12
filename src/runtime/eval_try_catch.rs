@@ -752,11 +752,17 @@ mod round_133_tests {
     use std::collections::HashMap;
 
     fn make_int_expr(n: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::default(),
+        )
     }
 
     fn make_string_expr(s: &str) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::String(s.to_string())), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::String(s.to_string())),
+            Span::default(),
+        )
     }
 
     // --- error_to_value edge cases ---
@@ -1145,7 +1151,10 @@ mod round_136_tests {
     use std::collections::HashMap;
 
     fn make_int_expr(n: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::default(),
+        )
     }
 
     #[test]
@@ -1236,9 +1245,7 @@ mod round_136_tests {
         let mut interp = Interpreter::new();
         interp.push_scope();
 
-        let pattern = Pattern::List(vec![
-            Pattern::Identifier("x".to_string()),
-        ]);
+        let pattern = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
         let value = Value::Integer(42);
 
         let result = bind_pattern_variables(&mut interp, &pattern, &value);
@@ -1480,7 +1487,10 @@ mod round_136_tests {
             Pattern::Identifier("a".to_string()),
             Pattern::Identifier("b".to_string()),
         ]);
-        let value = Value::Tuple(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let value = Value::Tuple(std::sync::Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
         let result = bind_pattern_variables(&mut interp, &pattern, &value);
         assert!(result.is_ok());
     }
@@ -1498,7 +1508,10 @@ mod round_136_tests {
     fn test_bind_pattern_rest_r159() {
         let mut interp = Interpreter::new();
         let pattern = Pattern::Rest;
-        let value = Value::Array(std::sync::Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let value = Value::Array(std::sync::Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
         let result = bind_pattern_variables(&mut interp, &pattern, &value);
         assert!(result.is_ok());
     }

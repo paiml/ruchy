@@ -1297,7 +1297,11 @@ mod tests {
 
     #[test]
     fn test_array_pop_returns_shorter_array() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = eval_array_pop(&arr).unwrap();
         if let Value::Array(new_arr) = result {
             assert_eq!(new_arr.len(), 2);
@@ -1433,7 +1437,11 @@ mod tests {
     #[test]
     fn test_array_slice_wrong_types() {
         let arr = Arc::from(vec![Value::Integer(1)]);
-        let result = eval_array_slice(&arr, &Value::from_string("a".to_string()), &Value::Integer(1));
+        let result = eval_array_slice(
+            &arr,
+            &Value::from_string("a".to_string()),
+            &Value::Integer(1),
+        );
         assert!(result.is_err());
     }
 
@@ -1562,8 +1570,16 @@ mod tests {
 
     #[test]
     fn test_array_intersection_basic() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
-        let other = Value::Array(Arc::from(vec![Value::Integer(2), Value::Integer(3), Value::Integer(4)]));
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+        let other = Value::Array(Arc::from(vec![
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ]));
         let result = eval_array_intersection(&arr, &other).unwrap();
         if let Value::Array(inter) = result {
             assert_eq!(inter.len(), 2);
@@ -1593,7 +1609,11 @@ mod tests {
 
     #[test]
     fn test_array_difference_basic() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let other = Value::Array(Arc::from(vec![Value::Integer(2)]));
         let result = eval_array_difference(&arr, &other).unwrap();
         if let Value::Array(diff) = result {
@@ -1709,7 +1729,9 @@ mod tests {
         let arr = Arc::from(vec![Value::Integer(100)]);
         let result = eval_array_nth(&arr, &Value::Integer(0)).unwrap();
         match result {
-            Value::EnumVariant { variant_name, data, .. } if variant_name == "Some" => {
+            Value::EnumVariant {
+                variant_name, data, ..
+            } if variant_name == "Some" => {
                 assert_eq!(data.unwrap()[0], Value::Integer(100));
             }
             _ => panic!("Expected Some variant"),
@@ -1718,7 +1740,11 @@ mod tests {
 
     #[test]
     fn test_array_slice_full() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = eval_array_slice(&arr, &Value::Integer(0), &Value::Integer(3)).unwrap();
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 3);
@@ -1764,7 +1790,11 @@ mod tests {
 
     #[test]
     fn test_array_unique_all_same() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(1), Value::Integer(1)]);
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(1),
+            Value::Integer(1),
+        ]);
         let result = eval_array_unique(&arr).unwrap();
         if let Value::Array(unique) = result {
             assert_eq!(unique.len(), 1);
@@ -1822,7 +1852,11 @@ mod tests {
     #[test]
     fn test_array_difference_all_removed() {
         let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
-        let other = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let other = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         let result = eval_array_difference(&arr, &other).unwrap();
         if let Value::Array(diff) = result {
             assert_eq!(diff.len(), 0);
@@ -1928,7 +1962,11 @@ mod tests {
 
     #[test]
     fn test_array_pop_r159() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = eval_array_pop(&arr).unwrap();
         if let Value::Array(new_arr) = result {
             assert_eq!(new_arr.len(), 2);
@@ -1980,7 +2018,10 @@ mod tests {
     fn test_array_nth_valid_r159() {
         let arr = Arc::from(vec![Value::Integer(10), Value::Integer(20)]);
         let result = eval_array_nth(&arr, &Value::Integer(0)).unwrap();
-        if let Value::EnumVariant { variant_name, data, .. } = result {
+        if let Value::EnumVariant {
+            variant_name, data, ..
+        } = result
+        {
             assert_eq!(variant_name, "Some");
             assert_eq!(data, Some(vec![Value::Integer(10)]));
         } else {
@@ -1992,7 +2033,10 @@ mod tests {
     fn test_array_nth_out_of_bounds_r159() {
         let arr = Arc::from(vec![Value::Integer(10)]);
         let result = eval_array_nth(&arr, &Value::Integer(5)).unwrap();
-        if let Value::EnumVariant { variant_name, data, .. } = result {
+        if let Value::EnumVariant {
+            variant_name, data, ..
+        } = result
+        {
             assert_eq!(variant_name, "None");
             assert!(data.is_none());
         } else {
@@ -2020,7 +2064,11 @@ mod tests {
 
     #[test]
     fn test_array_contains_true_r159() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let result = eval_array_contains(&arr, &Value::Integer(2)).unwrap();
         assert_eq!(result, Value::Bool(true));
     }
@@ -2034,7 +2082,10 @@ mod tests {
 
     #[test]
     fn test_array_enumerate_r159() {
-        let arr = Arc::from(vec![Value::from_string("a".to_string()), Value::from_string("b".to_string())]);
+        let arr = Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ]);
         let result = eval_array_enumerate(&arr).unwrap();
         if let Value::Array(enumerated) = result {
             assert_eq!(enumerated.len(), 2);
@@ -2050,7 +2101,12 @@ mod tests {
 
     #[test]
     fn test_array_slice_r159() {
-        let arr = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)]);
+        let arr = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ]);
         let result = eval_array_slice(&arr, &Value::Integer(1), &Value::Integer(3)).unwrap();
         if let Value::Array(sliced) = result {
             assert_eq!(sliced.len(), 2);
@@ -2175,8 +2231,16 @@ mod tests {
 
     #[test]
     fn test_array_intersection_r159() {
-        let arr1 = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
-        let arr2 = Value::Array(Arc::from(vec![Value::Integer(2), Value::Integer(3), Value::Integer(4)]));
+        let arr1 = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
+        let arr2 = Value::Array(Arc::from(vec![
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ]));
         let result = eval_array_intersection(&arr1, &arr2).unwrap();
         if let Value::Array(intersection) = result {
             assert_eq!(intersection.len(), 2);
@@ -2206,7 +2270,11 @@ mod tests {
 
     #[test]
     fn test_array_difference_r159() {
-        let arr1 = Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr1 = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         let arr2 = Value::Array(Arc::from(vec![Value::Integer(2), Value::Integer(4)]));
         let result = eval_array_difference(&arr1, &arr2).unwrap();
         if let Value::Array(diff) = result {
@@ -2219,7 +2287,11 @@ mod tests {
     #[test]
     fn test_array_difference_all_removed_r159() {
         let arr1 = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
-        let arr2 = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let arr2 = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         let result = eval_array_difference(&arr1, &arr2).unwrap();
         if let Value::Array(diff) = result {
             assert_eq!(diff.len(), 0);

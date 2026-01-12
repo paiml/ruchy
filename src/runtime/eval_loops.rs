@@ -475,9 +475,14 @@ mod tests {
         };
         let body = make_literal_expr(10);
 
-        let result = eval_for_loop("x", None, range, &body, |_name, _val| {}, |_expr| {
-            Ok(Value::Integer(10))
-        });
+        let result = eval_for_loop(
+            "x",
+            None,
+            range,
+            &body,
+            |_name, _val| {},
+            |_expr| Ok(Value::Integer(10)),
+        );
 
         assert!(result.is_err());
     }
@@ -491,9 +496,14 @@ mod tests {
         };
         let body = make_literal_expr(10);
 
-        let result = eval_for_loop("x", None, range, &body, |_name, _val| {}, |_expr| {
-            Ok(Value::Integer(10))
-        });
+        let result = eval_for_loop(
+            "x",
+            None,
+            range,
+            &body,
+            |_name, _val| {},
+            |_expr| Ok(Value::Integer(10)),
+        );
 
         assert!(result.is_err());
     }
@@ -503,9 +513,14 @@ mod tests {
         let arr = Value::Array(Arc::from(vec![]));
         let body = make_literal_expr(10);
 
-        let result = eval_for_loop("x", None, arr, &body, |_name, _val| {}, |_expr| {
-            Ok(Value::Integer(10))
-        })
+        let result = eval_for_loop(
+            "x",
+            None,
+            arr,
+            &body,
+            |_name, _val| {},
+            |_expr| Ok(Value::Integer(10)),
+        )
         .expect("operation should succeed in test");
 
         assert_eq!(result, Value::Nil); // Empty array returns Nil
@@ -721,9 +736,14 @@ mod tests {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
         let body = make_literal_expr(10);
 
-        let result = eval_for_loop("x", None, arr, &body, |_name, _val| {}, |_expr| {
-            Err(InterpreterError::RuntimeError("custom error".to_string()))
-        });
+        let result = eval_for_loop(
+            "x",
+            None,
+            arr,
+            &body,
+            |_name, _val| {},
+            |_expr| Err(InterpreterError::RuntimeError("custom error".to_string())),
+        );
 
         assert!(result.is_err());
         if let Err(InterpreterError::RuntimeError(msg)) = result {
@@ -756,7 +776,9 @@ mod tests {
         let body = make_literal_expr(42);
 
         let result = eval_loop(&body, |_expr| {
-            Err(InterpreterError::RuntimeError("infinite loop error".to_string()))
+            Err(InterpreterError::RuntimeError(
+                "infinite loop error".to_string(),
+            ))
         });
 
         assert!(result.is_err());
@@ -770,10 +792,7 @@ mod tests {
     // Test 32: for loop with Break enum variant
     #[test]
     fn test_for_loop_break_enum() {
-        let arr = Value::Array(Arc::from(vec![
-            Value::Integer(1),
-            Value::Integer(2),
-        ]));
+        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         let body = make_literal_expr(10);
         let count = std::cell::RefCell::new(0);
 
@@ -806,9 +825,14 @@ mod tests {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
         let body = make_literal_expr(10);
 
-        let result = eval_for_loop("x", None, arr, &body, |_name, _val| {}, |_expr| {
-            Err(InterpreterError::Return(Value::Integer(42)))
-        });
+        let result = eval_for_loop(
+            "x",
+            None,
+            arr,
+            &body,
+            |_name, _val| {},
+            |_expr| Err(InterpreterError::Return(Value::Integer(42))),
+        );
 
         // Return is handled by re-evaluating body
         assert!(result.is_err());
@@ -822,7 +846,9 @@ mod tests {
 
         let result = eval_while_loop(&condition, &body, |expr| {
             if matches!(expr.kind, ExprKind::Literal(Literal::Integer(1, None))) {
-                Err(InterpreterError::RuntimeError("condition error".to_string()))
+                Err(InterpreterError::RuntimeError(
+                    "condition error".to_string(),
+                ))
             } else {
                 Ok(Value::Integer(42))
             }
@@ -962,7 +988,8 @@ mod round_133_tests {
                 bound_value = val;
             },
             |_expr| Ok(Value::Integer(100)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Integer(100));
         assert_eq!(bound_value, Value::Integer(42));
@@ -983,9 +1010,12 @@ mod round_133_tests {
             None,
             range,
             &body,
-            |_name, _val| { count += 1; },
+            |_name, _val| {
+                count += 1;
+            },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Nil); // No iterations
         assert_eq!(count, 0);
@@ -1006,9 +1036,12 @@ mod round_133_tests {
             None,
             range,
             &body,
-            |_name, _val| { count += 1; },
+            |_name, _val| {
+                count += 1;
+            },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Integer(10)); // One iteration
         assert_eq!(count, 1);
@@ -1029,9 +1062,12 @@ mod round_133_tests {
             None,
             range,
             &body,
-            |_name, _val| { *count.borrow_mut() += 1; },
+            |_name, _val| {
+                *count.borrow_mut() += 1;
+            },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(result, Value::Integer(10));
         assert_eq!(*count.borrow(), 100);
@@ -1070,7 +1106,8 @@ mod round_133_tests {
 
         let result = eval_loop(&body, |_expr| {
             Err(InterpreterError::Break(None, Value::Integer(0)))
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(result, Value::Integer(0));
     }
@@ -1083,11 +1120,15 @@ mod round_133_tests {
         let result = eval_loop(&body, |_expr| {
             *iterations.borrow_mut() += 1;
             if *iterations.borrow() == 10 {
-                Err(InterpreterError::Break(None, Value::from_string("done".to_string())))
+                Err(InterpreterError::Break(
+                    None,
+                    Value::from_string("done".to_string()),
+                ))
             } else {
                 Ok(Value::Integer(42))
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         match result {
             Value::String(s) => assert_eq!(s.as_ref(), "done"),
@@ -1112,9 +1153,12 @@ mod round_133_tests {
             None,
             arr,
             &body,
-            |_name, _val| { *count.borrow_mut() += 1; },
+            |_name, _val| {
+                *count.borrow_mut() += 1;
+            },
             |_expr| Err(InterpreterError::Continue(Default::default())),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(*count.borrow(), 3); // All iterations still run
     }
@@ -1208,9 +1252,12 @@ mod round_135_tests {
             None,
             arr,
             &body,
-            |_name, _val| { count += 1; },
+            |_name, _val| {
+                count += 1;
+            },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(count, 2);
     }
@@ -1226,9 +1273,12 @@ mod round_135_tests {
             None,
             arr,
             &body,
-            |name, _val| { bound_names.borrow_mut().push(name.to_string()); },
+            |name, _val| {
+                bound_names.borrow_mut().push(name.to_string());
+            },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(*bound_names.borrow(), vec!["item", "item"]);
     }
@@ -1248,9 +1298,12 @@ mod round_135_tests {
             None,
             arr,
             &body,
-            |_name, val| { values.borrow_mut().push(val); },
+            |_name, val| {
+                values.borrow_mut().push(val);
+            },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(values.borrow().len(), 3);
     }
@@ -1269,7 +1322,8 @@ mod round_135_tests {
             } else {
                 Ok(Value::Integer(42))
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert!(condition_checked);
         assert_eq!(result, Value::Nil); // No iterations
@@ -1292,7 +1346,8 @@ mod round_135_tests {
             } else {
                 Ok(Value::Integer(42))
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(*iterations.borrow(), 6); // 5 true + 1 false
         assert_eq!(result, Value::Integer(42));
@@ -1315,7 +1370,8 @@ mod round_135_tests {
             } else {
                 Err(InterpreterError::Continue(Default::default()))
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         // Continue causes loop to check condition again
         assert_eq!(*condition_checks.borrow(), 6);
@@ -1329,7 +1385,8 @@ mod round_135_tests {
 
         let result = eval_loop(&body, |_expr| {
             Err(InterpreterError::Break(None, Value::Integer(123)))
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(result, Value::Integer(123));
     }
@@ -1347,7 +1404,8 @@ mod round_135_tests {
             } else {
                 Err(InterpreterError::Break(None, Value::Integer(i)))
             }
-        }).unwrap();
+        })
+        .unwrap();
 
         assert_eq!(result, Value::Integer(3));
     }
@@ -1385,7 +1443,8 @@ mod round_135_tests {
                 values.borrow_mut().push(val);
             },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(values.borrow().len(), 2);
     }
@@ -1402,9 +1461,12 @@ mod round_135_tests {
             None,
             outer,
             &body,
-            |_name, _val| { count += 1; },
+            |_name, _val| {
+                count += 1;
+            },
             |_expr| Ok(Value::Integer(10)),
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(count, 2); // Two inner arrays
     }

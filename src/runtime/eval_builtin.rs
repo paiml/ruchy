@@ -4515,7 +4515,10 @@ mod property_tests_builtin {
         assert!(result.is_err());
         if let Err(InterpreterError::AssertionFailed(msg)) = result {
             // Message may include "Assertion failed:" prefix from format!("{}", Value)
-            assert!(msg.contains("custom error"), "Message should contain custom error text");
+            assert!(
+                msg.contains("custom error"),
+                "Message should contain custom error text"
+            );
         }
     }
 
@@ -4840,15 +4843,15 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_builtin_function_str() {
-        let result =
-            eval_builtin_function("__builtin_str__", &[Value::Integer(42)]).expect("should succeed");
+        let result = eval_builtin_function("__builtin_str__", &[Value::Integer(42)])
+            .expect("should succeed");
         assert_eq!(result, Some(Value::from_string("42".to_string())));
     }
 
     #[test]
     fn test_eval_builtin_function_int() {
-        let result = eval_builtin_function("__builtin_int__", &[Value::Float(3.9)])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_int__", &[Value::Float(3.9)]).expect("should succeed");
         assert_eq!(result, Some(Value::Integer(3)));
     }
 
@@ -5064,7 +5067,11 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_len_on_array() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         let args = vec![arr];
         let result = eval_len(&args).expect("eval_len should succeed");
         assert_eq!(result, Value::Integer(3));
@@ -5111,7 +5118,10 @@ mod property_tests_builtin {
         let args = vec![Value::from_string("a".to_string()), Value::Integer(2)];
         let result = eval_pow(&args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects two numbers"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects two numbers"));
     }
 
     #[test]
@@ -5440,7 +5450,10 @@ mod property_tests_builtin {
         let args = vec![Value::Integer(0), Value::Integer(10), Value::Integer(0)];
         let result = eval_range(&args);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("step cannot be zero"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("step cannot be zero"));
     }
 
     #[test]
@@ -5483,7 +5496,11 @@ mod property_tests_builtin {
     // --- Collection function tests ---
     #[test]
     fn test_eval_len_on_tuple() {
-        let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
+        let tuple = Value::Tuple(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
         let args = vec![tuple];
         let result = eval_len(&args).expect("should succeed");
         assert_eq!(result, Value::Integer(3));
@@ -5902,7 +5919,10 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_assert_custom_message_included() {
-        let args = vec![Value::Bool(false), Value::from_string("custom message".to_string())];
+        let args = vec![
+            Value::Bool(false),
+            Value::from_string("custom message".to_string()),
+        ];
         let result = eval_assert(&args);
         assert!(result.is_err());
         let err_msg = result.unwrap_err().to_string();
@@ -5985,8 +6005,8 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_io_function_dbg() {
-        let result = try_eval_io_function("__builtin_dbg__", &[Value::Integer(42)])
-            .expect("should succeed");
+        let result =
+            try_eval_io_function("__builtin_dbg__", &[Value::Integer(42)]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -6005,31 +6025,25 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_basic_math_part1_pow() {
-        let result = try_eval_basic_math_part1(
-            "__builtin_pow__",
-            &[Value::Integer(2), Value::Integer(3)],
-        )
-        .expect("should succeed");
+        let result =
+            try_eval_basic_math_part1("__builtin_pow__", &[Value::Integer(2), Value::Integer(3)])
+                .expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_basic_math_part2_min() {
-        let result = try_eval_basic_math_part2(
-            "__builtin_min__",
-            &[Value::Integer(1), Value::Integer(2)],
-        )
-        .expect("should succeed");
+        let result =
+            try_eval_basic_math_part2("__builtin_min__", &[Value::Integer(1), Value::Integer(2)])
+                .expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_basic_math_part2_max() {
-        let result = try_eval_basic_math_part2(
-            "__builtin_max__",
-            &[Value::Integer(1), Value::Integer(2)],
-        )
-        .expect("should succeed");
+        let result =
+            try_eval_basic_math_part2("__builtin_max__", &[Value::Integer(1), Value::Integer(2)])
+                .expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -6098,8 +6112,8 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_advanced_math_part3_random() {
-        let result = try_eval_advanced_math_part3("__builtin_random__", &[])
-            .expect("should succeed");
+        let result =
+            try_eval_advanced_math_part3("__builtin_random__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -6136,16 +6150,15 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_utility_part2_is_nil() {
-        let result = try_eval_utility_part2("__builtin_is_nil__", &[Value::Nil])
-            .expect("should succeed");
+        let result =
+            try_eval_utility_part2("__builtin_is_nil__", &[Value::Nil]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_utility_part2_reverse() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
-        let result = try_eval_utility_part2("__builtin_reverse__", &[arr])
-            .expect("should succeed");
+        let result = try_eval_utility_part2("__builtin_reverse__", &[arr]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -6170,16 +6183,15 @@ mod property_tests_builtin {
     fn test_try_eval_utility_part2_zip() {
         let a = Value::Array(Arc::from(vec![Value::Integer(1)]));
         let b = Value::Array(Arc::from(vec![Value::Integer(2)]));
-        let result = try_eval_utility_part2("__builtin_zip__", &[a, b])
-            .expect("should succeed");
+        let result = try_eval_utility_part2("__builtin_zip__", &[a, b]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_utility_part2_enumerate() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
-        let result = try_eval_utility_part2("__builtin_enumerate__", &[arr])
-            .expect("should succeed");
+        let result =
+            try_eval_utility_part2("__builtin_enumerate__", &[arr]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -6194,16 +6206,16 @@ mod property_tests_builtin {
     #[test]
     fn test_try_eval_collection_function_pop() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
-        let result = try_eval_collection_function("__builtin_pop__", &[arr])
-            .expect("should succeed");
+        let result =
+            try_eval_collection_function("__builtin_pop__", &[arr]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_collection_function_sort() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(2), Value::Integer(1)]));
-        let result = try_eval_collection_function("__builtin_sort__", &[arr])
-            .expect("should succeed");
+        let result =
+            try_eval_collection_function("__builtin_sort__", &[arr]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -6271,15 +6283,14 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_time_function_timestamp() {
-        let result = try_eval_time_function("__builtin_timestamp__", &[])
-            .expect("should succeed");
+        let result = try_eval_time_function("__builtin_timestamp__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_time_function_chrono_utc_now() {
-        let result = try_eval_time_function("__builtin_chrono_utc_now__", &[])
-            .expect("should succeed");
+        let result =
+            try_eval_time_function("__builtin_chrono_utc_now__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -6293,21 +6304,17 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_builtin_function_min() {
-        let result = eval_builtin_function(
-            "__builtin_min__",
-            &[Value::Integer(3), Value::Integer(5)],
-        )
-        .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_min__", &[Value::Integer(3), Value::Integer(5)])
+                .expect("should succeed");
         assert_eq!(result, Some(Value::Integer(3)));
     }
 
     #[test]
     fn test_eval_builtin_function_max() {
-        let result = eval_builtin_function(
-            "__builtin_max__",
-            &[Value::Integer(3), Value::Integer(5)],
-        )
-        .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_max__", &[Value::Integer(3), Value::Integer(5)])
+                .expect("should succeed");
         assert_eq!(result, Some(Value::Integer(5)));
     }
 
@@ -6335,8 +6342,7 @@ mod property_tests_builtin {
     #[test]
     fn test_eval_builtin_function_reverse() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = eval_builtin_function("__builtin_reverse__", &[arr])
-            .expect("should succeed");
+        let result = eval_builtin_function("__builtin_reverse__", &[arr]).expect("should succeed");
         if let Some(Value::Array(reversed)) = result {
             assert_eq!(reversed[0], Value::Integer(2));
         }
@@ -6355,15 +6361,14 @@ mod property_tests_builtin {
     #[test]
     fn test_eval_builtin_function_pop() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
-        let result = eval_builtin_function("__builtin_pop__", &[arr])
-            .expect("should succeed");
+        let result = eval_builtin_function("__builtin_pop__", &[arr]).expect("should succeed");
         assert_eq!(result, Some(Value::Integer(2)));
     }
 
     #[test]
     fn test_eval_builtin_function_is_nil() {
-        let result = eval_builtin_function("__builtin_is_nil__", &[Value::Nil])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_is_nil__", &[Value::Nil]).expect("should succeed");
         assert_eq!(result, Some(Value::Bool(true)));
     }
 
@@ -6538,7 +6543,12 @@ mod property_tests_builtin {
         let result = eval_range(&[]);
         assert!(result.is_err());
 
-        let result = eval_range(&[Value::Integer(1), Value::Integer(2), Value::Integer(3), Value::Integer(4)]);
+        let result = eval_range(&[
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ]);
         assert!(result.is_err());
     }
 
@@ -6938,12 +6948,16 @@ mod property_tests_builtin {
         eval_env_set_var(&[
             Value::from_string(key.to_string()),
             Value::from_string(value.to_string()),
-        ]).expect("set should succeed");
+        ])
+        .expect("set should succeed");
 
         // Get it back
-        let result = eval_env_var(&[Value::from_string(key.to_string())])
-            .expect("get should succeed");
-        if let Value::EnumVariant { variant_name, data, .. } = result {
+        let result =
+            eval_env_var(&[Value::from_string(key.to_string())]).expect("get should succeed");
+        if let Value::EnumVariant {
+            variant_name, data, ..
+        } = result
+        {
             assert_eq!(variant_name, "Ok");
             if let Some(d) = data {
                 assert_eq!(d[0], Value::from_string(value.to_string()));
@@ -7021,7 +7035,8 @@ mod property_tests_builtin {
         let result = eval_path_join(&[
             Value::from_string("/home".to_string()),
             Value::from_string("user".to_string()),
-        ]).expect("should succeed");
+        ])
+        .expect("should succeed");
         if let Value::String(s) = result {
             assert!(s.contains("home") && s.contains("user"));
         }
@@ -7044,8 +7059,8 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_path_parent_root() {
-        let result = eval_path_parent(&[Value::from_string("/".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_path_parent(&[Value::from_string("/".to_string())]).expect("should succeed");
         assert_eq!(result, Value::Nil);
     }
 
@@ -7064,8 +7079,8 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_path_file_name_no_file() {
-        let result = eval_path_file_name(&[Value::from_string("/".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_path_file_name(&[Value::from_string("/".to_string())]).expect("should succeed");
         assert_eq!(result, Value::Nil);
     }
 
@@ -7117,7 +7132,8 @@ mod property_tests_builtin {
         let result = eval_path_with_extension(&[
             Value::from_string("/home/file.txt".to_string()),
             Value::from_string("md".to_string()),
-        ]).expect("should succeed");
+        ])
+        .expect("should succeed");
         if let Value::String(s) = result {
             assert!(s.ends_with(".md"));
         }
@@ -7128,7 +7144,8 @@ mod property_tests_builtin {
         let result = eval_path_with_file_name(&[
             Value::from_string("/home/old.txt".to_string()),
             Value::from_string("new.txt".to_string()),
-        ]).expect("should succeed");
+        ])
+        .expect("should succeed");
         if let Value::String(s) = result {
             assert!(s.ends_with("new.txt"));
         }
@@ -7145,8 +7162,9 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_path_normalize() {
-        let result = eval_path_normalize(&[Value::from_string("/home/../home/user/./file".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_path_normalize(&[Value::from_string("/home/../home/user/./file".to_string())])
+                .expect("should succeed");
         if let Value::String(s) = result {
             assert!(!s.contains(".."));
             assert!(!s.contains("./"));
@@ -7208,20 +7226,20 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_json_parse_primitives() {
-        let result = eval_json_parse(&[Value::from_string("null".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_parse(&[Value::from_string("null".to_string())]).expect("should succeed");
         assert_eq!(result, Value::Nil);
 
-        let result = eval_json_parse(&[Value::from_string("true".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_parse(&[Value::from_string("true".to_string())]).expect("should succeed");
         assert_eq!(result, Value::Bool(true));
 
-        let result = eval_json_parse(&[Value::from_string("42".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_parse(&[Value::from_string("42".to_string())]).expect("should succeed");
         assert_eq!(result, Value::Integer(42));
 
-        let result = eval_json_parse(&[Value::from_string("3.14".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_parse(&[Value::from_string("3.14".to_string())]).expect("should succeed");
         if let Value::Float(f) = result {
             assert!((f - 3.14).abs() < 0.001);
         }
@@ -7303,28 +7321,28 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_json_type() {
-        let result = eval_json_type(&[Value::from_string("null".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_type(&[Value::from_string("null".to_string())]).expect("should succeed");
         assert_eq!(result, Value::from_string("null".to_string()));
 
-        let result = eval_json_type(&[Value::from_string("true".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_type(&[Value::from_string("true".to_string())]).expect("should succeed");
         assert_eq!(result, Value::from_string("boolean".to_string()));
 
-        let result = eval_json_type(&[Value::from_string("42".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_type(&[Value::from_string("42".to_string())]).expect("should succeed");
         assert_eq!(result, Value::from_string("number".to_string()));
 
         let result = eval_json_type(&[Value::from_string(r#""hello""#.to_string())])
             .expect("should succeed");
         assert_eq!(result, Value::from_string("string".to_string()));
 
-        let result = eval_json_type(&[Value::from_string("[]".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_type(&[Value::from_string("[]".to_string())]).expect("should succeed");
         assert_eq!(result, Value::from_string("array".to_string()));
 
-        let result = eval_json_type(&[Value::from_string("{}".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_json_type(&[Value::from_string("{}".to_string())]).expect("should succeed");
         assert_eq!(result, Value::from_string("object".to_string()));
     }
 
@@ -7396,8 +7414,8 @@ mod property_tests_builtin {
         let result = eval_string_from(&[Value::Integer(42)]).expect("should succeed");
         assert_eq!(result, Value::from_string("42".to_string()));
 
-        let result = eval_string_from(&[Value::from_string("hello".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_string_from(&[Value::from_string("hello".to_string())]).expect("should succeed");
         assert_eq!(result, Value::from_string("hello".to_string()));
     }
 
@@ -7414,7 +7432,10 @@ mod property_tests_builtin {
             Value::Byte(105), // i
         ]));
         let result = eval_string_from_utf8(&[bytes]).expect("should succeed");
-        if let Value::EnumVariant { variant_name, data, .. } = result {
+        if let Value::EnumVariant {
+            variant_name, data, ..
+        } = result
+        {
             assert_eq!(variant_name, "Ok");
             if let Some(d) = data {
                 assert_eq!(d[0], Value::from_string("Hi".to_string()));
@@ -7426,10 +7447,7 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_string_from_utf8_invalid() {
-        let bytes = Value::Array(Arc::from(vec![
-            Value::Byte(0xFF),
-            Value::Byte(0xFE),
-        ]));
+        let bytes = Value::Array(Arc::from(vec![Value::Byte(0xFF), Value::Byte(0xFE)]));
         let result = eval_string_from_utf8(&[bytes]).expect("should succeed");
         if let Value::EnumVariant { variant_name, .. } = result {
             assert_eq!(variant_name, "Err");
@@ -7455,15 +7473,16 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_fs_exists_true() {
-        let result = eval_fs_exists(&[Value::from_string(".".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_fs_exists(&[Value::from_string(".".to_string())]).expect("should succeed");
         assert_eq!(result, Value::Bool(true));
     }
 
     #[test]
     fn test_eval_fs_exists_false() {
-        let result = eval_fs_exists(&[Value::from_string("__nonexistent_path_12345__".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_fs_exists(&[Value::from_string("__nonexistent_path_12345__".to_string())])
+                .expect("should succeed");
         assert_eq!(result, Value::Bool(false));
     }
 
@@ -7479,8 +7498,8 @@ mod property_tests_builtin {
             .expect("should succeed");
         assert_eq!(result, Value::Bool(true));
 
-        let result = eval_fs_is_file(&[Value::from_string(".".to_string())])
-            .expect("should succeed");
+        let result =
+            eval_fs_is_file(&[Value::from_string(".".to_string())]).expect("should succeed");
         assert_eq!(result, Value::Bool(false));
     }
 
@@ -7573,8 +7592,8 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_dataframe_function_new() {
-        let result = try_eval_dataframe_function("__builtin_dataframe_new__", &[])
-            .expect("should succeed");
+        let result =
+            try_eval_dataframe_function("__builtin_dataframe_new__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -7600,22 +7619,21 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_dataframe_function_unknown() {
-        let result = try_eval_dataframe_function("unknown", &[])
-            .expect("should succeed");
+        let result = try_eval_dataframe_function("unknown", &[]).expect("should succeed");
         assert!(result.is_none());
     }
 
     #[test]
     fn test_try_eval_environment_function_args() {
-        let result = try_eval_environment_function("__builtin_env_args__", &[])
-            .expect("should succeed");
+        let result =
+            try_eval_environment_function("__builtin_env_args__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_environment_function_vars() {
-        let result = try_eval_environment_function("__builtin_env_vars__", &[])
-            .expect("should succeed");
+        let result =
+            try_eval_environment_function("__builtin_env_vars__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -7628,15 +7646,14 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_environment_function_temp_dir() {
-        let result = try_eval_environment_function("__builtin_env_temp_dir__", &[])
-            .expect("should succeed");
+        let result =
+            try_eval_environment_function("__builtin_env_temp_dir__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_environment_function_unknown() {
-        let result = try_eval_environment_function("unknown", &[])
-            .expect("should succeed");
+        let result = try_eval_environment_function("unknown", &[]).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -7672,8 +7689,7 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_fs_function_unknown() {
-        let result = try_eval_fs_function("unknown", &[])
-            .expect("should succeed");
+        let result = try_eval_fs_function("unknown", &[]).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -7752,8 +7768,7 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_path_function_unknown() {
-        let result = try_eval_path_function("unknown", &[])
-            .expect("should succeed");
+        let result = try_eval_path_function("unknown", &[]).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -7769,21 +7784,15 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_json_function_stringify() {
-        let result = try_eval_json_function(
-            "__builtin_json_stringify__",
-            &[Value::Integer(42)],
-        )
-        .expect("should succeed");
+        let result = try_eval_json_function("__builtin_json_stringify__", &[Value::Integer(42)])
+            .expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_json_function_pretty() {
-        let result = try_eval_json_function(
-            "__builtin_json_pretty__",
-            &[Value::Integer(42)],
-        )
-        .expect("should succeed");
+        let result = try_eval_json_function("__builtin_json_pretty__", &[Value::Integer(42)])
+            .expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -7809,32 +7818,27 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_json_function_unknown() {
-        let result = try_eval_json_function("unknown", &[])
-            .expect("should succeed");
+        let result = try_eval_json_function("unknown", &[]).expect("should succeed");
         assert!(result.is_none());
     }
 
     #[test]
     fn test_try_eval_string_function_new() {
-        let result = try_eval_string_function("__builtin_String_new__", &[])
-            .expect("should succeed");
+        let result =
+            try_eval_string_function("__builtin_String_new__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_string_function_from() {
-        let result = try_eval_string_function(
-            "__builtin_String_from__",
-            &[Value::Integer(42)],
-        )
-        .expect("should succeed");
+        let result = try_eval_string_function("__builtin_String_from__", &[Value::Integer(42)])
+            .expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_try_eval_string_function_unknown() {
-        let result = try_eval_string_function("unknown", &[])
-            .expect("should succeed");
+        let result = try_eval_string_function("unknown", &[]).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -7850,8 +7854,7 @@ mod property_tests_builtin {
 
     #[test]
     fn test_try_eval_file_function_unknown() {
-        let result = try_eval_file_function("unknown", &[])
-            .expect("should succeed");
+        let result = try_eval_file_function("unknown", &[]).expect("should succeed");
         assert!(result.is_none());
     }
 
@@ -7888,16 +7891,16 @@ mod property_tests_builtin {
 
     #[test]
     fn test_format_println_output_non_string_first() {
-        let output = format_println_output(&[
-            Value::Integer(42),
-            Value::Integer(43),
-        ]);
+        let output = format_println_output(&[Value::Integer(42), Value::Integer(43)]);
         assert_eq!(output, "42 43\n");
     }
 
     #[test]
     fn test_format_value_for_println() {
-        assert_eq!(format_value_for_println(&Value::from_string("hello".to_string())), "hello");
+        assert_eq!(
+            format_value_for_println(&Value::from_string("hello".to_string())),
+            "hello"
+        );
         assert_eq!(format_value_for_println(&Value::Integer(42)), "42");
         assert_eq!(format_value_for_println(&Value::Float(3.14)), "3.14");
         assert_eq!(format_value_for_println(&Value::Bool(true)), "true");
@@ -7932,9 +7935,12 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_builtin_function_sort() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(1), Value::Integer(2)]));
-        let result = eval_builtin_function("__builtin_sort__", &[arr])
-            .expect("should succeed");
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(3),
+            Value::Integer(1),
+            Value::Integer(2),
+        ]));
+        let result = eval_builtin_function("__builtin_sort__", &[arr]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -7942,44 +7948,43 @@ mod property_tests_builtin {
     fn test_eval_builtin_function_zip() {
         let a = Value::Array(Arc::from(vec![Value::Integer(1)]));
         let b = Value::Array(Arc::from(vec![Value::Integer(2)]));
-        let result = eval_builtin_function("__builtin_zip__", &[a, b])
-            .expect("should succeed");
+        let result = eval_builtin_function("__builtin_zip__", &[a, b]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_enumerate() {
         let arr = Value::Array(Arc::from(vec![Value::Integer(1)]));
-        let result = eval_builtin_function("__builtin_enumerate__", &[arr])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_enumerate__", &[arr]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_sin() {
-        let result = eval_builtin_function("__builtin_sin__", &[Value::Float(0.0)])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_sin__", &[Value::Float(0.0)]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_cos() {
-        let result = eval_builtin_function("__builtin_cos__", &[Value::Float(0.0)])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_cos__", &[Value::Float(0.0)]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_tan() {
-        let result = eval_builtin_function("__builtin_tan__", &[Value::Float(0.0)])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_tan__", &[Value::Float(0.0)]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_log() {
-        let result = eval_builtin_function("__builtin_log__", &[Value::Float(1.0)])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_log__", &[Value::Float(1.0)]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -7992,29 +7997,27 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_builtin_function_exp() {
-        let result = eval_builtin_function("__builtin_exp__", &[Value::Float(0.0)])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_exp__", &[Value::Float(0.0)]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_random() {
-        let result = eval_builtin_function("__builtin_random__", &[])
-            .expect("should succeed");
+        let result = eval_builtin_function("__builtin_random__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_timestamp() {
-        let result = eval_builtin_function("__builtin_timestamp__", &[])
-            .expect("should succeed");
+        let result = eval_builtin_function("__builtin_timestamp__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
     #[test]
     fn test_eval_builtin_function_chrono_utc_now() {
-        let result = eval_builtin_function("__builtin_chrono_utc_now__", &[])
-            .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_chrono_utc_now__", &[]).expect("should succeed");
         assert!(result.is_some());
     }
 
@@ -8037,11 +8040,9 @@ mod property_tests_builtin {
 
     #[test]
     fn test_eval_builtin_function_pow() {
-        let result = eval_builtin_function(
-            "__builtin_pow__",
-            &[Value::Integer(2), Value::Integer(3)],
-        )
-        .expect("should succeed");
+        let result =
+            eval_builtin_function("__builtin_pow__", &[Value::Integer(2), Value::Integer(3)])
+                .expect("should succeed");
         assert_eq!(result, Some(Value::Integer(8)));
     }
 

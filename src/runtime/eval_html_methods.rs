@@ -225,7 +225,10 @@ mod tests {
         // No arguments
         let result = eval_html_document_select(&html, &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1 argument"));
 
         // Too many arguments
         let selector1 = Value::from_string("div".to_string());
@@ -244,7 +247,10 @@ mod tests {
 
         let result = eval_html_document_select(&html, &[non_string]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects selector as string"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects selector as string"));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -323,7 +329,10 @@ mod tests {
 
         let result = eval_html_document_method(&html, "unknown_method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown HtmlDocument method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown HtmlDocument method"));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -354,7 +363,10 @@ mod tests {
 
         let result = eval_html_element_html(&elements[0], &[Value::Integer(1)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -367,7 +379,10 @@ mod tests {
 
         let result = eval_html_element_text(&elements[0], &[Value::Integer(1)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("takes no arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("takes no arguments"));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -414,12 +429,18 @@ mod tests {
         // No arguments
         let result = eval_html_element_attr(&elements[0], &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1 argument"));
 
         // Wrong type
         let result = eval_html_element_attr(&elements[0], &[Value::Integer(42)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects attribute name as string"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects attribute name as string"));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -432,7 +453,10 @@ mod tests {
 
         let result = eval_html_element_method(&elements[0], "unknown_method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Unknown HtmlElement method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown HtmlElement method"));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -607,7 +631,8 @@ mod tests {
         assert!(!elements.is_empty());
 
         // Check href
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("href".to_string())]);
+        let result =
+            eval_html_element_attr(&elements[0], &[Value::from_string("href".to_string())]);
         assert!(result.is_ok());
         match result.unwrap() {
             Value::String(s) => assert_eq!(s.as_ref(), "link"),
@@ -615,7 +640,8 @@ mod tests {
         }
 
         // Check class
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("class".to_string())]);
+        let result =
+            eval_html_element_attr(&elements[0], &[Value::from_string("class".to_string())]);
         assert!(result.is_ok());
         match result.unwrap() {
             Value::String(s) => assert_eq!(s.as_ref(), "btn"),
@@ -709,7 +735,11 @@ mod tests {
         let html = HtmlDocument::parse("<a href='test'>Link</a>");
         let elements = html.select("a").unwrap();
 
-        let result = eval_html_element_method(&elements[0], "attr", &[Value::from_string("href".to_string())]);
+        let result = eval_html_element_method(
+            &elements[0],
+            "attr",
+            &[Value::from_string("href".to_string())],
+        );
         assert!(result.is_ok());
     }
 
@@ -768,7 +798,8 @@ mod tests {
         let elements = html.select("input").unwrap();
         assert!(!elements.is_empty());
 
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("value".to_string())]);
+        let result =
+            eval_html_element_attr(&elements[0], &[Value::from_string("value".to_string())]);
         assert!(result.is_ok());
 
         match result.unwrap() {
@@ -787,7 +818,10 @@ mod tests {
 
         let result = eval_html_document_select(&html, &[float_val]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects selector as string"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects selector as string"));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -812,10 +846,16 @@ mod tests {
 
         let result = eval_html_element_attr(
             &elements[0],
-            &[Value::from_string("a".to_string()), Value::from_string("b".to_string())]
+            &[
+                Value::from_string("a".to_string()),
+                Value::from_string("b".to_string()),
+            ],
         );
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires exactly 1 argument"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires exactly 1 argument"));
     }
 }
 
@@ -890,7 +930,8 @@ mod round_134_tests {
     fn test_query_selector_deeply_nested() {
         use crate::stdlib::html::HtmlDocument;
 
-        let html = HtmlDocument::parse("<div><div><div><div><span>Deep</span></div></div></div></div>");
+        let html =
+            HtmlDocument::parse("<div><div><div><div><span>Deep</span></div></div></div></div>");
         let selector = Value::from_string("span".to_string());
 
         let result = eval_html_document_query_selector(&html, &[selector]);
@@ -1001,7 +1042,10 @@ mod round_134_tests {
         let html = HtmlDocument::parse("<div data-value='42' data-name='test'>Content</div>");
         let elements = html.select("div").unwrap();
 
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("data-value".to_string())]);
+        let result = eval_html_element_attr(
+            &elements[0],
+            &[Value::from_string("data-value".to_string())],
+        );
         assert!(result.is_ok());
         match result.unwrap() {
             Value::String(s) => assert_eq!(s.as_ref(), "42"),
@@ -1018,7 +1062,8 @@ mod round_134_tests {
         let elements = html.select("input").unwrap();
 
         // Type attribute should be accessible
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("type".to_string())]);
+        let result =
+            eval_html_element_attr(&elements[0], &[Value::from_string("type".to_string())]);
         assert!(result.is_ok());
         match result.unwrap() {
             Value::String(s) => assert_eq!(s.as_ref(), "checkbox"),
@@ -1207,7 +1252,8 @@ mod round_134_tests {
         use crate::stdlib::html::HtmlDocument;
 
         let html = HtmlDocument::parse("<p>First</p><p>Second</p>");
-        let result = eval_html_document_query_selector(&html, &[Value::from_string("p".to_string())]);
+        let result =
+            eval_html_document_query_selector(&html, &[Value::from_string("p".to_string())]);
         assert!(result.is_ok());
     }
 
@@ -1217,7 +1263,8 @@ mod round_134_tests {
         use crate::stdlib::html::HtmlDocument;
 
         let html = HtmlDocument::parse("<div>Content</div>");
-        let result = eval_html_document_query_selector(&html, &[Value::from_string("span".to_string())]);
+        let result =
+            eval_html_document_query_selector(&html, &[Value::from_string("span".to_string())]);
         assert!(result.is_ok());
         if let Ok(val) = result {
             assert_eq!(val, Value::Nil);
@@ -1230,7 +1277,8 @@ mod round_134_tests {
         use crate::stdlib::html::HtmlDocument;
 
         let html = HtmlDocument::parse("<div><span>A</span><div><span>B</span></div></div>");
-        let result = eval_html_document_query_selector_all(&html, &[Value::from_string("span".to_string())]);
+        let result =
+            eval_html_document_query_selector_all(&html, &[Value::from_string("span".to_string())]);
         assert!(result.is_ok());
         if let Ok(Value::Array(arr)) = result {
             assert_eq!(arr.len(), 2);
@@ -1266,7 +1314,8 @@ mod round_134_tests {
 
         let html = HtmlDocument::parse("<div data-id=\"123\">Content</div>");
         let elements = html.select("div").unwrap();
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("data-id".to_string())]);
+        let result =
+            eval_html_element_attr(&elements[0], &[Value::from_string("data-id".to_string())]);
         assert!(result.is_ok());
     }
 
@@ -1277,7 +1326,10 @@ mod round_134_tests {
 
         let html = HtmlDocument::parse("<div>Content</div>");
         let elements = html.select("div").unwrap();
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("nonexistent".to_string())]);
+        let result = eval_html_element_attr(
+            &elements[0],
+            &[Value::from_string("nonexistent".to_string())],
+        );
         assert!(result.is_ok());
         if let Ok(val) = result {
             assert_eq!(val, Value::Nil);
@@ -1322,7 +1374,8 @@ mod round_134_tests {
 
         let html = HtmlDocument::parse("<input disabled=\"\"/>");
         let elements = html.select("input").unwrap();
-        let result = eval_html_element_attr(&elements[0], &[Value::from_string("disabled".to_string())]);
+        let result =
+            eval_html_element_attr(&elements[0], &[Value::from_string("disabled".to_string())]);
         assert!(result.is_ok());
     }
 }

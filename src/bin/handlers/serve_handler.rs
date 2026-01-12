@@ -261,19 +261,11 @@ fn handle_file_changes(changed_files: &[std::path::PathBuf], watch_wasm: bool, v
         if watch_wasm {
             for file in changed_files {
                 if file.extension().and_then(|s| s.to_str()) == Some("ruchy") {
-                    println!(
-                        "  🦀 {}: {}",
-                        "Compiling".cyan().bold(),
-                        file.display()
-                    );
+                    println!("  🦀 {}: {}", "Compiling".cyan().bold(), file.display());
 
                     match compile_ruchy_to_wasm(file, verbose) {
                         Ok(wasm_path) => {
-                            println!(
-                                "  ✅ {}: {}",
-                                "Compiled".green(),
-                                wasm_path.display()
-                            );
+                            println!("  ✅ {}: {}", "Compiled".green(), wasm_path.display());
                         }
                         Err(e) => {
                             println!("  ❌ {}: {}", "Failed".red(), e);
@@ -630,11 +622,11 @@ mod tests {
             temp_dir.path(),
             8087,
             "127.0.0.1",
-            true,  // verbose
-            true,  // watch
-            250,   // debounce
+            true, // verbose
+            true, // watch
+            250,  // debounce
             Some(&pid_path),
-            true,  // watch_wasm
+            true, // watch_wasm
         );
     }
 
@@ -658,15 +650,6 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let nested = temp_dir.path().join("a").join("b").join("c");
         std::fs::create_dir_all(&nested).unwrap();
-        let _ = handle_serve_command(
-            &nested,
-            8089,
-            "127.0.0.1",
-            false,
-            false,
-            100,
-            None,
-            false,
-        );
+        let _ = handle_serve_command(&nested, 8089, "127.0.0.1", false, false, 100, None, false);
     }
 }

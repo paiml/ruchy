@@ -899,7 +899,10 @@ mod tests {
     fn test_add_math_functions() {
         let mut env = HashMap::new();
         add_math_functions(&mut env);
-        let math_fns = ["sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round", "sin", "cos", "tan", "log", "log10", "random"];
+        let math_fns = [
+            "sqrt", "pow", "abs", "min", "max", "floor", "ceil", "round", "sin", "cos", "tan",
+            "log", "log10", "random",
+        ];
         for func in &math_fns {
             assert!(env.contains_key(*func), "Missing: {func}");
         }
@@ -943,7 +946,16 @@ mod tests {
     fn test_add_advanced_utility_functions() {
         let mut env = HashMap::new();
         add_advanced_utility_functions(&mut env);
-        let funcs = ["reverse", "sort", "sum", "product", "unique", "flatten", "zip", "enumerate"];
+        let funcs = [
+            "reverse",
+            "sort",
+            "sum",
+            "product",
+            "unique",
+            "flatten",
+            "zip",
+            "enumerate",
+        ];
         for func in &funcs {
             assert!(env.contains_key(*func), "Missing: {func}");
         }
@@ -976,7 +988,16 @@ mod tests {
     fn test_add_environment_functions() {
         let mut env = HashMap::new();
         add_environment_functions(&mut env);
-        let funcs = ["env_args", "env_var", "env_set_var", "env_remove_var", "env_vars", "env_current_dir", "env_set_current_dir", "env_temp_dir"];
+        let funcs = [
+            "env_args",
+            "env_var",
+            "env_set_var",
+            "env_remove_var",
+            "env_vars",
+            "env_current_dir",
+            "env_set_current_dir",
+            "env_temp_dir",
+        ];
         for func in &funcs {
             assert!(env.contains_key(*func), "Missing: {func}");
         }
@@ -987,7 +1008,20 @@ mod tests {
     fn test_add_fs_functions() {
         let mut env = HashMap::new();
         add_fs_functions(&mut env);
-        let funcs = ["fs_read", "fs_write", "fs_exists", "fs_create_dir", "fs_remove_file", "fs_remove_dir", "fs_copy", "fs_rename", "fs_metadata", "fs_read_dir", "fs_canonicalize", "fs_is_file"];
+        let funcs = [
+            "fs_read",
+            "fs_write",
+            "fs_exists",
+            "fs_create_dir",
+            "fs_remove_file",
+            "fs_remove_dir",
+            "fs_copy",
+            "fs_rename",
+            "fs_metadata",
+            "fs_read_dir",
+            "fs_canonicalize",
+            "fs_is_file",
+        ];
         for func in &funcs {
             assert!(env.contains_key(*func), "Missing: {func}");
         }
@@ -1024,7 +1058,21 @@ mod tests {
     fn test_add_path_functions() {
         let mut env = HashMap::new();
         add_path_functions(&mut env);
-        let funcs = ["path_join", "path_join_many", "path_parent", "path_file_name", "path_file_stem", "path_extension", "path_is_absolute", "path_is_relative", "path_canonicalize", "path_with_extension", "path_with_file_name", "path_components", "path_normalize"];
+        let funcs = [
+            "path_join",
+            "path_join_many",
+            "path_parent",
+            "path_file_name",
+            "path_file_stem",
+            "path_extension",
+            "path_is_absolute",
+            "path_is_relative",
+            "path_canonicalize",
+            "path_with_extension",
+            "path_with_file_name",
+            "path_components",
+            "path_normalize",
+        ];
         for func in &funcs {
             assert!(env.contains_key(*func), "Missing: {func}");
         }
@@ -1035,7 +1083,19 @@ mod tests {
     fn test_add_json_functions() {
         let mut env = HashMap::new();
         add_json_functions(&mut env);
-        let funcs = ["json_parse", "parse_json", "json_stringify", "json_pretty", "json_read", "json_write", "json_validate", "json_type", "json_merge", "json_get", "json_set"];
+        let funcs = [
+            "json_parse",
+            "parse_json",
+            "json_stringify",
+            "json_pretty",
+            "json_read",
+            "json_write",
+            "json_validate",
+            "json_type",
+            "json_merge",
+            "json_get",
+            "json_set",
+        ];
         for func in &funcs {
             assert!(env.contains_key(*func), "Missing: {func}");
         }
@@ -1146,7 +1206,10 @@ mod tests {
         add_std_namespace(&mut env);
         if let Some(Value::Object(std_obj)) = env.get("std") {
             if let Some(Value::Object(math_obj)) = std_obj.get("math") {
-                let funcs = ["sqrt", "sin", "cos", "tan", "pow", "abs", "floor", "ceil", "log", "log10", "exp", "random", "min", "max", "round"];
+                let funcs = [
+                    "sqrt", "sin", "cos", "tan", "pow", "abs", "floor", "ceil", "log", "log10",
+                    "exp", "random", "min", "max", "round",
+                ];
                 for func in &funcs {
                     assert!(math_obj.contains_key(*func), "Missing std::math::{func}");
                 }
@@ -1176,7 +1239,11 @@ mod tests {
         let test_funcs = ["sqrt", "println", "len", "range", "int"];
         for func in &test_funcs {
             if let Some(Value::String(s)) = env.get(*func) {
-                assert!(s.starts_with("__builtin_"), "Function {} should start with __builtin_", func);
+                assert!(
+                    s.starts_with("__builtin_"),
+                    "Function {} should start with __builtin_",
+                    func
+                );
                 assert!(s.ends_with("__"), "Function {} should end with __", func);
             }
         }
@@ -1246,8 +1313,14 @@ mod tests {
         let mut env = HashMap::new();
         add_fs_functions(&mut env);
         let expected = [
-            "fs_read", "fs_write", "fs_exists", "fs_create_dir",
-            "fs_remove_file", "fs_remove_dir", "fs_copy", "fs_rename",
+            "fs_read",
+            "fs_write",
+            "fs_exists",
+            "fs_create_dir",
+            "fs_remove_file",
+            "fs_remove_dir",
+            "fs_copy",
+            "fs_rename",
         ];
         for func in &expected {
             assert!(env.contains_key(*func), "Missing fs function: {func}");
@@ -1259,8 +1332,11 @@ mod tests {
         let mut env = HashMap::new();
         add_path_functions(&mut env);
         let expected = [
-            "path_join", "path_join_many", "path_parent",
-            "path_file_name", "path_file_stem",
+            "path_join",
+            "path_join_many",
+            "path_parent",
+            "path_file_name",
+            "path_file_stem",
         ];
         for func in &expected {
             assert!(env.contains_key(*func), "Missing path function: {func}");
@@ -1281,9 +1357,18 @@ mod tests {
     fn test_stdlib003_functions_complete() {
         let mut env = HashMap::new();
         add_stdlib003_functions(&mut env);
-        let expected = ["read_file", "write_file", "file_exists", "append_file", "delete_file"];
+        let expected = [
+            "read_file",
+            "write_file",
+            "file_exists",
+            "append_file",
+            "delete_file",
+        ];
         for func in &expected {
-            assert!(env.contains_key(*func), "Missing stdlib003 function: {func}");
+            assert!(
+                env.contains_key(*func),
+                "Missing stdlib003 function: {func}"
+            );
         }
     }
 
@@ -1291,9 +1376,18 @@ mod tests {
     fn test_stdlib005_functions_complete() {
         let mut env = HashMap::new();
         add_stdlib005_functions(&mut env);
-        let expected = ["walk", "walk_parallel", "glob", "search", "walk_with_options"];
+        let expected = [
+            "walk",
+            "walk_parallel",
+            "glob",
+            "search",
+            "walk_with_options",
+        ];
         for func in &expected {
-            assert!(env.contains_key(*func), "Missing stdlib005 function: {func}");
+            assert!(
+                env.contains_key(*func),
+                "Missing stdlib005 function: {func}"
+            );
         }
     }
 
@@ -1301,7 +1395,13 @@ mod tests {
     fn test_environment_functions_complete() {
         let mut env = HashMap::new();
         add_environment_functions(&mut env);
-        let expected = ["env_args", "env_var", "env_set_var", "env_remove_var", "env_vars"];
+        let expected = [
+            "env_args",
+            "env_var",
+            "env_set_var",
+            "env_remove_var",
+            "env_vars",
+        ];
         for func in &expected {
             assert!(env.contains_key(*func), "Missing env function: {func}");
         }
@@ -1311,9 +1411,19 @@ mod tests {
     fn test_random_time_functions_complete() {
         let mut env = HashMap::new();
         add_random_time_functions(&mut env);
-        let expected = ["random", "random_int", "timestamp", "get_time_ms", "sleep", "std::time::now_millis"];
+        let expected = [
+            "random",
+            "random_int",
+            "timestamp",
+            "get_time_ms",
+            "sleep",
+            "std::time::now_millis",
+        ];
         for func in &expected {
-            assert!(env.contains_key(*func), "Missing random/time function: {func}");
+            assert!(
+                env.contains_key(*func),
+                "Missing random/time function: {func}"
+            );
         }
     }
 
@@ -1321,7 +1431,16 @@ mod tests {
     fn test_advanced_utility_functions_complete() {
         let mut env = HashMap::new();
         add_advanced_utility_functions(&mut env);
-        let expected = ["reverse", "sort", "sum", "product", "unique", "flatten", "zip", "enumerate"];
+        let expected = [
+            "reverse",
+            "sort",
+            "sum",
+            "product",
+            "unique",
+            "flatten",
+            "zip",
+            "enumerate",
+        ];
         for func in &expected {
             assert!(env.contains_key(*func), "Missing advanced util: {func}");
         }

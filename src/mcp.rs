@@ -667,7 +667,9 @@ mod tests {
     #[test]
     fn test_validate_json_value_list() {
         let value = serde_json::json!([1, 2, 3]);
-        assert!(RuchyMCP::validate_json_value(&value, &MonoType::List(Box::new(MonoType::Int))).is_ok());
+        assert!(
+            RuchyMCP::validate_json_value(&value, &MonoType::List(Box::new(MonoType::Int))).is_ok()
+        );
     }
 
     #[test]
@@ -704,7 +706,9 @@ mod tests {
 
     #[test]
     fn test_ruchy_mcp_tool_description() {
-        let tool = RuchyMCPTool::new("tool".to_string(), "My description".to_string(), |args| Ok(args));
+        let tool = RuchyMCPTool::new("tool".to_string(), "My description".to_string(), |args| {
+            Ok(args)
+        });
         assert_eq!(tool.description(), "My description");
     }
 

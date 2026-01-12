@@ -541,7 +541,10 @@ mod tests {
         let lazy = LazyIterator::from_vec(values).take(3);
         let result = lazy.collect().unwrap();
         assert_eq!(result.len(), 3);
-        assert_eq!(result, vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        assert_eq!(
+            result,
+            vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]
+        );
     }
 
     #[test]
@@ -556,7 +559,10 @@ mod tests {
         let lazy = LazyIterator::from_vec(values).skip(2);
         let result = lazy.collect().unwrap();
         assert_eq!(result.len(), 3);
-        assert_eq!(result, vec![Value::Integer(3), Value::Integer(4), Value::Integer(5)]);
+        assert_eq!(
+            result,
+            vec![Value::Integer(3), Value::Integer(4), Value::Integer(5)]
+        );
     }
 
     #[test]
@@ -598,8 +604,12 @@ mod tests {
     #[test]
     fn test_lazy_cache_clear() {
         let cache = LazyCache::new();
-        cache.get_or_compute("key1", || Ok(Value::Integer(1))).unwrap();
-        cache.get_or_compute("key2", || Ok(Value::Integer(2))).unwrap();
+        cache
+            .get_or_compute("key1", || Ok(Value::Integer(1)))
+            .unwrap();
+        cache
+            .get_or_compute("key2", || Ok(Value::Integer(2)))
+            .unwrap();
         assert_eq!(cache.size(), 2);
         cache.clear();
         assert_eq!(cache.size(), 0);
@@ -609,9 +619,13 @@ mod tests {
     fn test_lazy_cache_size() {
         let cache = LazyCache::new();
         assert_eq!(cache.size(), 0);
-        cache.get_or_compute("key1", || Ok(Value::Integer(1))).unwrap();
+        cache
+            .get_or_compute("key1", || Ok(Value::Integer(1)))
+            .unwrap();
         assert_eq!(cache.size(), 1);
-        cache.get_or_compute("key2", || Ok(Value::Integer(2))).unwrap();
+        cache
+            .get_or_compute("key2", || Ok(Value::Integer(2)))
+            .unwrap();
         assert_eq!(cache.size(), 2);
     }
 
@@ -630,18 +644,18 @@ mod tests {
             Value::Integer(4),
             Value::Integer(5),
         ];
-        let lazy = LazyIterator::from_vec(values)
-            .skip(1)
-            .take(3)
-            .map(|v| {
-                if let Value::Integer(n) = v {
-                    Ok(Value::Integer(n * 10))
-                } else {
-                    Ok(v)
-                }
-            });
+        let lazy = LazyIterator::from_vec(values).skip(1).take(3).map(|v| {
+            if let Value::Integer(n) = v {
+                Ok(Value::Integer(n * 10))
+            } else {
+                Ok(v)
+            }
+        });
         let result = lazy.collect().unwrap();
-        assert_eq!(result, vec![Value::Integer(20), Value::Integer(30), Value::Integer(40)]);
+        assert_eq!(
+            result,
+            vec![Value::Integer(20), Value::Integer(30), Value::Integer(40)]
+        );
     }
 }
 #[cfg(test)]

@@ -654,7 +654,8 @@ mod tests {
         let pattern = Pattern::Identifier("x".to_string());
         let value = Value::Integer(42);
 
-        let bindings = extract_pattern_bindings(&pattern, &value).expect("operation should succeed");
+        let bindings =
+            extract_pattern_bindings(&pattern, &value).expect("operation should succeed");
         assert_eq!(bindings.get("x"), Some(&Value::Integer(42)));
     }
 
@@ -684,7 +685,10 @@ mod tests {
 
     #[test]
     fn test_irrefutable_pattern_tuple() {
-        let pattern = Pattern::Tuple(vec![Pattern::Identifier("a".to_string()), Pattern::Wildcard]);
+        let pattern = Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Wildcard,
+        ]);
         assert!(is_irrefutable_pattern(&pattern));
     }
 
@@ -873,7 +877,10 @@ mod tests {
     #[test]
     fn test_nested_tuple_pattern() {
         let inner_patterns = vec![Pattern::Identifier("x".to_string())];
-        let patterns = vec![Pattern::Tuple(inner_patterns), Pattern::Identifier("y".to_string())];
+        let patterns = vec![
+            Pattern::Tuple(inner_patterns),
+            Pattern::Identifier("y".to_string()),
+        ];
         let pattern = Pattern::Tuple(patterns);
 
         let inner_tuple = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
@@ -925,7 +932,10 @@ mod round_134_tests {
     fn test_values_equal_integers() {
         assert!(values_equal(&Value::Integer(0), &Value::Integer(0)));
         assert!(values_equal(&Value::Integer(-1), &Value::Integer(-1)));
-        assert!(values_equal(&Value::Integer(i64::MAX), &Value::Integer(i64::MAX)));
+        assert!(values_equal(
+            &Value::Integer(i64::MAX),
+            &Value::Integer(i64::MAX)
+        ));
         assert!(!values_equal(&Value::Integer(1), &Value::Integer(2)));
     }
 
@@ -945,7 +955,10 @@ mod round_134_tests {
     #[test]
     fn test_values_equal_different_types() {
         assert!(!values_equal(&Value::Integer(1), &Value::Float(1.0)));
-        assert!(!values_equal(&Value::from_string("1".to_string()), &Value::Integer(1)));
+        assert!(!values_equal(
+            &Value::from_string("1".to_string()),
+            &Value::Integer(1)
+        ));
         assert!(!values_equal(&Value::Bool(true), &Value::Integer(1)));
     }
 
@@ -1053,12 +1066,16 @@ mod round_134_tests {
 
     #[test]
     fn test_is_irrefutable_identifier() {
-        assert!(is_irrefutable_pattern(&Pattern::Identifier("x".to_string())));
+        assert!(is_irrefutable_pattern(&Pattern::Identifier(
+            "x".to_string()
+        )));
     }
 
     #[test]
     fn test_is_irrefutable_literal_false() {
-        assert!(!is_irrefutable_pattern(&Pattern::Literal(Literal::Integer(42, None))));
+        assert!(!is_irrefutable_pattern(&Pattern::Literal(
+            Literal::Integer(42, None)
+        )));
     }
 
     #[test]
@@ -1141,9 +1158,9 @@ mod round_134_tests {
         let pattern = Pattern::Tuple(vec![Pattern::Tuple(vec![Pattern::Tuple(vec![
             Pattern::Identifier("x".to_string()),
         ])])]);
-        let value = Value::Tuple(Arc::from(vec![Value::Tuple(Arc::from(vec![Value::Tuple(
-            Arc::from(vec![Value::Integer(42)]),
-        )]))]));
+        let value = Value::Tuple(Arc::from(vec![Value::Tuple(Arc::from(vec![
+            Value::Tuple(Arc::from(vec![Value::Integer(42)])),
+        ]))]));
 
         let result = match_pattern(&pattern, &value).unwrap();
         assert!(result.matches);
@@ -1423,10 +1440,7 @@ mod round_134_tests {
 
     #[test]
     fn test_is_irrefutable_tuple_all_irrefutable_r159() {
-        let patterns = vec![
-            Pattern::Identifier("x".to_string()),
-            Pattern::Wildcard,
-        ];
+        let patterns = vec![Pattern::Identifier("x".to_string()), Pattern::Wildcard];
         let pattern = Pattern::Tuple(patterns);
         assert!(is_irrefutable_pattern(&pattern));
     }
@@ -1450,10 +1464,7 @@ mod round_134_tests {
 
     #[test]
     fn test_is_irrefutable_list_not_all_irrefutable_r159() {
-        let patterns = vec![
-            Pattern::Wildcard,
-            Pattern::Literal(Literal::Bool(true)),
-        ];
+        let patterns = vec![Pattern::Wildcard, Pattern::Literal(Literal::Bool(true))];
         let pattern = Pattern::List(patterns);
         assert!(!is_irrefutable_pattern(&pattern));
     }

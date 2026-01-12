@@ -687,7 +687,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":h", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":h", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(_)));
     }
 
@@ -702,7 +704,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":exit", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":exit", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Exit));
     }
 
@@ -716,7 +720,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":q", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":q", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Exit));
     }
 
@@ -732,7 +738,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":clear", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":clear", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("cleared")));
     }
 
@@ -748,7 +756,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":reset", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":reset", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("reset")));
     }
 
@@ -763,7 +773,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":type", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":type", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("Usage")));
     }
 
@@ -778,8 +790,12 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":type", &mut context).expect("should succeed");
-        assert!(matches!(result, CommandResult::Success(s) if s.contains("Evaluator not available")));
+        let result = registry
+            .execute(":type", &mut context)
+            .expect("should succeed");
+        assert!(
+            matches!(result, CommandResult::Success(s) if s.contains("Evaluator not available"))
+        );
     }
 
     // Inspect command - no args
@@ -793,7 +809,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":inspect", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":inspect", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("Usage")));
     }
 
@@ -808,8 +826,12 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":inspect", &mut context).expect("should succeed");
-        assert!(matches!(result, CommandResult::Success(s) if s.contains("Evaluator not available")));
+        let result = registry
+            .execute(":inspect", &mut context)
+            .expect("should succeed");
+        assert!(
+            matches!(result, CommandResult::Success(s) if s.contains("Evaluator not available"))
+        );
     }
 
     // AST command - no args
@@ -823,7 +845,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":ast", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":ast", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("Usage")));
     }
 
@@ -838,7 +862,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":ast", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":ast", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(_)));
     }
 
@@ -853,8 +879,12 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":ast", &mut context).expect("should succeed");
-        assert!(matches!(result, CommandResult::Success(s) if s.contains("error") || s.contains("Error")));
+        let result = registry
+            .execute(":ast", &mut context)
+            .expect("should succeed");
+        assert!(
+            matches!(result, CommandResult::Success(s) if s.contains("error") || s.contains("Error"))
+        );
     }
 
     // Mode commands - all modes
@@ -868,8 +898,13 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":mode", &mut context).expect("should succeed");
-        assert!(matches!(result, CommandResult::ModeChange(ReplMode::Normal)));
+        let result = registry
+            .execute(":mode", &mut context)
+            .expect("should succeed");
+        assert!(matches!(
+            result,
+            CommandResult::ModeChange(ReplMode::Normal)
+        ));
     }
 
     #[test]
@@ -882,7 +917,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":mode", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::ModeChange(ReplMode::Ast)));
     }
 
@@ -896,8 +933,13 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":mode", &mut context).expect("should succeed");
-        assert!(matches!(result, CommandResult::ModeChange(ReplMode::Transpile)));
+        let result = registry
+            .execute(":mode", &mut context)
+            .expect("should succeed");
+        assert!(matches!(
+            result,
+            CommandResult::ModeChange(ReplMode::Transpile)
+        ));
     }
 
     #[test]
@@ -910,7 +952,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":mode", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("Unknown mode")));
     }
 
@@ -924,7 +968,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":mode", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":mode", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("Current mode")));
     }
 
@@ -939,7 +985,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":history", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":history", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("No history")));
     }
 
@@ -955,7 +1003,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":history", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":history", &mut context)
+            .expect("should succeed");
         if let CommandResult::Success(s) = result {
             assert!(s.contains("1:"));
             assert!(s.contains("let x = 1"));
@@ -975,7 +1025,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":vars", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":vars", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("No variables")));
     }
 
@@ -990,7 +1042,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":vars", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":vars", &mut context)
+            .expect("should succeed");
         if let CommandResult::Success(s) = result {
             assert!(s.contains("x"));
         } else {
@@ -1009,7 +1063,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":env", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":env", &mut context)
+            .expect("should succeed");
         if let CommandResult::Success(s) = result {
             assert!(s.contains("REPL Environment"));
             assert!(s.contains("Mode:"));
@@ -1032,7 +1088,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":env", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":env", &mut context)
+            .expect("should succeed");
         if let CommandResult::Success(s) = result {
             assert!(s.contains("x: Integer"));
         } else {
@@ -1051,7 +1109,9 @@ mod tests {
             state: &mut state,
         };
 
-        let result = registry.execute(":unknown", &mut context).expect("should succeed");
+        let result = registry
+            .execute(":unknown", &mut context)
+            .expect("should succeed");
         assert!(matches!(result, CommandResult::Success(s) if s.contains("Unknown command")));
     }
 
@@ -1095,12 +1155,18 @@ mod tests {
     // value_type_name tests
     #[test]
     fn test_value_type_name_integer() {
-        assert_eq!(CommandRegistry::value_type_name(&Value::Integer(42)), "Integer");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::Integer(42)),
+            "Integer"
+        );
     }
 
     #[test]
     fn test_value_type_name_float() {
-        assert_eq!(CommandRegistry::value_type_name(&Value::Float(3.14)), "Float");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::Float(3.14)),
+            "Float"
+        );
     }
 
     #[test]
@@ -1120,29 +1186,44 @@ mod tests {
 
     #[test]
     fn test_value_type_name_string() {
-        assert_eq!(CommandRegistry::value_type_name(&Value::String("test".into())), "String");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::String("test".into())),
+            "String"
+        );
     }
 
     #[test]
     fn test_value_type_name_array() {
-        assert_eq!(CommandRegistry::value_type_name(&Value::Array(vec![].into())), "Array");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::Array(vec![].into())),
+            "Array"
+        );
     }
 
     #[test]
     fn test_value_type_name_tuple() {
-        assert_eq!(CommandRegistry::value_type_name(&Value::Tuple(vec![].into())), "Tuple");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::Tuple(vec![].into())),
+            "Tuple"
+        );
     }
 
     #[test]
     fn test_value_type_name_object() {
         let map = HashMap::new();
-        assert_eq!(CommandRegistry::value_type_name(&Value::Object(Arc::new(map))), "Object");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::Object(Arc::new(map))),
+            "Object"
+        );
     }
 
     #[test]
     fn test_value_type_name_object_mut() {
         let map = HashMap::new();
-        assert_eq!(CommandRegistry::value_type_name(&Value::ObjectMut(Arc::new(Mutex::new(map)))), "Object");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::ObjectMut(Arc::new(Mutex::new(map)))),
+            "Object"
+        );
     }
 
     #[test]
@@ -1167,7 +1248,10 @@ mod tests {
 
     #[test]
     fn test_value_type_name_builtin_function() {
-        assert_eq!(CommandRegistry::value_type_name(&Value::BuiltinFunction("print".to_string())), "BuiltinFunction");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::BuiltinFunction("print".to_string())),
+            "BuiltinFunction"
+        );
     }
 
     #[test]
@@ -1191,7 +1275,10 @@ mod tests {
 
     #[test]
     fn test_value_type_name_atom() {
-        assert_eq!(CommandRegistry::value_type_name(&Value::Atom("ok".to_string())), "Atom");
+        assert_eq!(
+            CommandRegistry::value_type_name(&Value::Atom("ok".to_string())),
+            "Atom"
+        );
     }
 
     // estimate_value_memory tests
@@ -1299,7 +1386,8 @@ mod tests {
 
     #[test]
     fn test_estimate_value_memory_builtin_function() {
-        let size = CommandRegistry::estimate_value_memory(&Value::BuiltinFunction("print".to_string()));
+        let size =
+            CommandRegistry::estimate_value_memory(&Value::BuiltinFunction("print".to_string()));
         assert!(size > 0);
     }
 
@@ -1496,12 +1584,10 @@ mod tests {
     #[test]
     fn test_inspect_value_dataframe() {
         use crate::runtime::DataFrameColumn;
-        let columns = vec![
-            DataFrameColumn {
-                name: "col1".to_string(),
-                values: vec![Value::Integer(1), Value::Integer(2)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "col1".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
         let df = Value::DataFrame { columns };
         let output = CommandRegistry::inspect_value(&df);
         assert!(output.contains("Columns: 1"));
@@ -1516,7 +1602,10 @@ mod tests {
 
         let closure = Value::Closure {
             params: vec![("x".to_string(), None)],
-            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            body: Arc::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::default(),
+            )),
             env: Rc::new(RefCell::new(HashMap::new())),
         };
         let output = CommandRegistry::inspect_value(&closure);
@@ -1533,7 +1622,10 @@ mod tests {
 
         let closure = Value::Closure {
             params: vec![("x".to_string(), None)],
-            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            body: Arc::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::default(),
+            )),
             env: Rc::new(RefCell::new(HashMap::new())),
         };
         let size = CommandRegistry::estimate_value_memory(&closure);
@@ -1544,12 +1636,10 @@ mod tests {
     #[test]
     fn test_estimate_value_memory_dataframe() {
         use crate::runtime::DataFrameColumn;
-        let columns = vec![
-            DataFrameColumn {
-                name: "col1".to_string(),
-                values: vec![Value::Integer(1)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "col1".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
         let df = Value::DataFrame { columns };
         let size = CommandRegistry::estimate_value_memory(&df);
         assert!(size > 0);
@@ -1571,7 +1661,10 @@ mod tests {
 
         let closure = Value::Closure {
             params: vec![],
-            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            body: Arc::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::default(),
+            )),
             env: Rc::new(RefCell::new(HashMap::new())),
         };
         assert_eq!(CommandRegistry::value_type_name(&closure), "Function");

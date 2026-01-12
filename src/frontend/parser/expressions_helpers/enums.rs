@@ -442,7 +442,10 @@ mod tests {
     #[test]
     fn test_tuple_variant_single_field() {
         let result = parse("enum Message { Text(String) }");
-        assert!(result.is_ok(), "Tuple variant with single field should parse");
+        assert!(
+            result.is_ok(),
+            "Tuple variant with single field should parse"
+        );
     }
 
     #[test]
@@ -454,7 +457,10 @@ mod tests {
     #[test]
     fn test_tuple_variant_three_fields() {
         let result = parse("enum Color { RGB(u8, u8, u8) }");
-        assert!(result.is_ok(), "Tuple variant with three fields should parse");
+        assert!(
+            result.is_ok(),
+            "Tuple variant with three fields should parse"
+        );
     }
 
     #[test]
@@ -473,13 +479,19 @@ mod tests {
     #[test]
     fn test_tuple_variant_complex_types() {
         let result = parse("enum Container { Data(Vec<i32>, HashMap<String, i32>) }");
-        assert!(result.is_ok(), "Tuple variant with complex types should parse");
+        assert!(
+            result.is_ok(),
+            "Tuple variant with complex types should parse"
+        );
     }
 
     #[test]
     fn test_tuple_variant_nested_generic() {
         let result = parse("enum Wrapper { Value(Option<Vec<String>>) }");
-        assert!(result.is_ok(), "Tuple variant with nested generic should parse");
+        assert!(
+            result.is_ok(),
+            "Tuple variant with nested generic should parse"
+        );
     }
 
     // ============================================================
@@ -489,13 +501,19 @@ mod tests {
     #[test]
     fn test_struct_variant_single_field() {
         let result = parse("enum Shape { Circle { radius: f64 } }");
-        assert!(result.is_ok(), "Struct variant with single field should parse");
+        assert!(
+            result.is_ok(),
+            "Struct variant with single field should parse"
+        );
     }
 
     #[test]
     fn test_struct_variant_two_fields() {
         let result = parse("enum Shape { Rectangle { width: f64, height: f64 } }");
-        assert!(result.is_ok(), "Struct variant with two fields should parse");
+        assert!(
+            result.is_ok(),
+            "Struct variant with two fields should parse"
+        );
     }
 
     #[test]
@@ -514,13 +532,19 @@ mod tests {
     #[test]
     fn test_struct_variant_complex_type() {
         let result = parse("enum Widget { Form { data: HashMap<String, Value> } }");
-        assert!(result.is_ok(), "Struct variant with complex type should parse");
+        assert!(
+            result.is_ok(),
+            "Struct variant with complex type should parse"
+        );
     }
 
     #[test]
     fn test_struct_variant_trailing_comma() {
         let result = parse("enum Event { Click { x: i32, y: i32, } }");
-        assert!(result.is_ok(), "Struct variant with trailing comma should parse");
+        assert!(
+            result.is_ok(),
+            "Struct variant with trailing comma should parse"
+        );
     }
 
     // ============================================================
@@ -637,7 +661,10 @@ mod tests {
     #[test]
     fn test_mixed_with_discriminants() {
         let result = parse("enum Code { Ok = 0, Error(String), Data { value: i32 } }");
-        assert!(result.is_ok(), "Mixed variants with discriminants should parse");
+        assert!(
+            result.is_ok(),
+            "Mixed variants with discriminants should parse"
+        );
     }
 
     // ============================================================
@@ -734,7 +761,10 @@ mod tests {
     #[test]
     fn test_enum_result_in_struct_variant() {
         let result = parse("enum Response { Success { data: Result<String, Error> }, Failure }");
-        assert!(result.is_ok(), "Result in struct variant field should parse");
+        assert!(
+            result.is_ok(),
+            "Result in struct variant field should parse"
+        );
     }
 
     #[test]
@@ -744,7 +774,10 @@ mod tests {
             Full { host: String, port: i32, timeout: u64, enabled: bool }
         }"#,
         );
-        assert!(result.is_ok(), "Struct variant with many fields should parse");
+        assert!(
+            result.is_ok(),
+            "Struct variant with many fields should parse"
+        );
     }
 
     // ============================================================

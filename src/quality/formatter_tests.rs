@@ -5,7 +5,7 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::frontend::ast::{Expr, ExprKind, Literal, BinaryOp, UnaryOp};
+    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, UnaryOp};
     use crate::frontend::parser::Parser;
     use crate::quality::formatter::Formatter;
 
@@ -31,7 +31,10 @@ mod tests {
 
     // Helper to create simple literal
     fn make_lit(val: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(val, None)), Default::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(val, None)),
+            Default::default(),
+        )
     }
 
     // Helper to create identifier
@@ -103,7 +106,9 @@ mod tests {
     #[test]
     fn test_format_field_access() {
         let result = format_code("obj.field");
-        assert!(result.contains("obj.field") || (result.contains("obj") && result.contains("field")));
+        assert!(
+            result.contains("obj.field") || (result.contains("obj") && result.contains("field"))
+        );
     }
 
     #[test]
@@ -1717,7 +1722,9 @@ mod tests {
         let formatter = Formatter::new();
         let target = make_ident("x");
         let expr = Expr::new(
-            ExprKind::PreIncrement { target: Box::new(target) },
+            ExprKind::PreIncrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -1729,7 +1736,9 @@ mod tests {
         let formatter = Formatter::new();
         let target = make_ident("x");
         let expr = Expr::new(
-            ExprKind::PostIncrement { target: Box::new(target) },
+            ExprKind::PostIncrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -1741,7 +1750,9 @@ mod tests {
         let formatter = Formatter::new();
         let target = make_ident("x");
         let expr = Expr::new(
-            ExprKind::PreDecrement { target: Box::new(target) },
+            ExprKind::PreDecrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -1753,7 +1764,9 @@ mod tests {
         let formatter = Formatter::new();
         let target = make_ident("x");
         let expr = Expr::new(
-            ExprKind::PostDecrement { target: Box::new(target) },
+            ExprKind::PostDecrement {
+                target: Box::new(target),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -1920,7 +1933,9 @@ mod tests {
         let formatter = Formatter::new();
         let inner = make_ident("args");
         let expr = Expr::new(
-            ExprKind::Spread { expr: Box::new(inner) },
+            ExprKind::Spread {
+                expr: Box::new(inner),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -1948,7 +1963,9 @@ mod tests {
         let formatter = Formatter::new();
         let inner = make_lit(42);
         let expr = Expr::new(
-            ExprKind::Lazy { expr: Box::new(inner) },
+            ExprKind::Lazy {
+                expr: Box::new(inner),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -1959,10 +1976,7 @@ mod tests {
     fn test_format_set_direct() {
         let formatter = Formatter::new();
         let items = vec![make_lit(1), make_lit(2), make_lit(3)];
-        let expr = Expr::new(
-            ExprKind::Set(items),
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Set(items), Default::default());
         let result = formatter.format(&expr).expect("should format");
         assert!(result.contains("{") && result.contains("}"));
     }
@@ -1980,7 +1994,9 @@ mod tests {
         let formatter = Formatter::new();
         let value = make_lit(42);
         let expr = Expr::new(
-            ExprKind::Ok { value: Box::new(value) },
+            ExprKind::Ok {
+                value: Box::new(value),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -1995,7 +2011,9 @@ mod tests {
             Default::default(),
         );
         let expr = Expr::new(
-            ExprKind::Err { error: Box::new(error) },
+            ExprKind::Err {
+                error: Box::new(error),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2007,7 +2025,9 @@ mod tests {
         let formatter = Formatter::new();
         let value = make_lit(42);
         let expr = Expr::new(
-            ExprKind::Some { value: Box::new(value) },
+            ExprKind::Some {
+                value: Box::new(value),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2019,7 +2039,9 @@ mod tests {
         let formatter = Formatter::new();
         let inner = make_ident("result");
         let expr = Expr::new(
-            ExprKind::Try { expr: Box::new(inner) },
+            ExprKind::Try {
+                expr: Box::new(inner),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2031,7 +2053,9 @@ mod tests {
         let formatter = Formatter::new();
         let actor = make_ident("MyActor");
         let expr = Expr::new(
-            ExprKind::Spawn { actor: Box::new(actor) },
+            ExprKind::Spawn {
+                actor: Box::new(actor),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2043,7 +2067,9 @@ mod tests {
         let formatter = Formatter::new();
         let inner = make_ident("future");
         let expr = Expr::new(
-            ExprKind::Await { expr: Box::new(inner) },
+            ExprKind::Await {
+                expr: Box::new(inner),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2055,7 +2081,9 @@ mod tests {
         let formatter = Formatter::new();
         let body = make_lit(42);
         let expr = Expr::new(
-            ExprKind::AsyncBlock { body: Box::new(body) },
+            ExprKind::AsyncBlock {
+                body: Box::new(body),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2070,7 +2098,9 @@ mod tests {
             Default::default(),
         );
         let expr = Expr::new(
-            ExprKind::Throw { expr: Box::new(error) },
+            ExprKind::Throw {
+                expr: Box::new(error),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2082,7 +2112,9 @@ mod tests {
         let formatter = Formatter::new();
         let value = make_lit(42);
         let expr = Expr::new(
-            ExprKind::Return { value: Some(Box::new(value)) },
+            ExprKind::Return {
+                value: Some(Box::new(value)),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2092,10 +2124,7 @@ mod tests {
     #[test]
     fn test_format_return_without_value_direct() {
         let formatter = Formatter::new();
-        let expr = Expr::new(
-            ExprKind::Return { value: None },
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Return { value: None }, Default::default());
         let result = formatter.format(&expr).expect("should format");
         assert_eq!(result, "return");
     }
@@ -2104,7 +2133,10 @@ mod tests {
     fn test_format_break_direct() {
         let formatter = Formatter::new();
         let expr = Expr::new(
-            ExprKind::Break { label: None, value: None },
+            ExprKind::Break {
+                label: None,
+                value: None,
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2116,7 +2148,10 @@ mod tests {
         let formatter = Formatter::new();
         let value = make_lit(42);
         let expr = Expr::new(
-            ExprKind::Break { label: None, value: Some(Box::new(value)) },
+            ExprKind::Break {
+                label: None,
+                value: Some(Box::new(value)),
+            },
             Default::default(),
         );
         let result = formatter.format(&expr).expect("should format");
@@ -2126,10 +2161,7 @@ mod tests {
     #[test]
     fn test_format_continue_direct() {
         let formatter = Formatter::new();
-        let expr = Expr::new(
-            ExprKind::Continue { label: None },
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Continue { label: None }, Default::default());
         let result = formatter.format(&expr).expect("should format");
         assert_eq!(result, "continue");
     }
@@ -2137,10 +2169,7 @@ mod tests {
     #[test]
     fn test_format_unary_not_direct() {
         let formatter = Formatter::new();
-        let operand = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Default::default(),
-        );
+        let operand = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
         let expr = Expr::new(
             ExprKind::Unary {
                 op: UnaryOp::Not,
@@ -2287,10 +2316,7 @@ mod tests {
     #[test]
     fn test_format_ternary_direct() {
         let formatter = Formatter::new();
-        let condition = Expr::new(
-            ExprKind::Literal(Literal::Bool(true)),
-            Default::default(),
-        );
+        let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Default::default());
         let then_expr = make_lit(1);
         let else_expr = make_lit(2);
         let expr = Expr::new(
@@ -2382,12 +2408,10 @@ mod tests {
     #[test]
     fn test_format_macro_invocation_direct() {
         let formatter = Formatter::new();
-        let args = vec![
-            Expr::new(
-                ExprKind::Literal(Literal::String("hello".to_string())),
-                Default::default(),
-            ),
-        ];
+        let args = vec![Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Default::default(),
+        )];
         let expr = Expr::new(
             ExprKind::MacroInvocation {
                 name: "println".to_string(),

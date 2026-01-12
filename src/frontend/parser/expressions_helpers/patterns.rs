@@ -1499,7 +1499,10 @@ mod tests {
     fn test_constructor_pattern_no_args() {
         let code = "match x { Unit => 0 }";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Constructor pattern without args should parse");
+        assert!(
+            result.is_ok(),
+            "Constructor pattern without args should parse"
+        );
     }
 
     #[test]
@@ -1735,7 +1738,10 @@ mod tests {
     #[test]
     fn test_match_guard_with_function_call() {
         let result = parse("match x { n if is_valid(n) => true, _ => false }");
-        assert!(result.is_ok(), "Match with function call guard should parse");
+        assert!(
+            result.is_ok(),
+            "Match with function call guard should parse"
+        );
     }
 
     #[test]
@@ -1746,7 +1752,8 @@ mod tests {
 
     #[test]
     fn test_match_nested() {
-        let result = parse("match x { Some(y) => match y { 1 => true, _ => false }, None => false }");
+        let result =
+            parse("match x { Some(y) => match y { 1 => true, _ => false }, None => false }");
         assert!(result.is_ok(), "Nested match should parse");
     }
 
@@ -1926,7 +1933,10 @@ mod tests {
     #[test]
     fn test_pattern_in_function_param() {
         let result = parse("fun foo((x, y)) { x + y }");
-        assert!(result.is_ok(), "Tuple pattern in function param should parse");
+        assert!(
+            result.is_ok(),
+            "Tuple pattern in function param should parse"
+        );
     }
 
     #[test]

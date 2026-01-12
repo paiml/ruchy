@@ -229,7 +229,9 @@ mod tests {
     #[test]
     fn test_named_type_namespaced() {
         let transpiler = make_transpiler();
-        let result = transpiler.transpile_named_type_impl("std::io::Error").unwrap();
+        let result = transpiler
+            .transpile_named_type_impl("std::io::Error")
+            .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("std"));
         assert!(token_str.contains("io"));
@@ -244,7 +246,9 @@ mod tests {
     fn test_generic_single_param() {
         let transpiler = make_transpiler();
         let params = vec![make_type(TypeKind::Named("i32".to_string()))];
-        let result = transpiler.transpile_generic_type_impl("Vec", &params).unwrap();
+        let result = transpiler
+            .transpile_generic_type_impl("Vec", &params)
+            .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("Vec"));
         assert!(token_str.contains("i32"));
@@ -257,7 +261,9 @@ mod tests {
             make_type(TypeKind::Named("String".to_string())),
             make_type(TypeKind::Named("i32".to_string())),
         ];
-        let result = transpiler.transpile_generic_type_impl("HashMap", &params).unwrap();
+        let result = transpiler
+            .transpile_generic_type_impl("HashMap", &params)
+            .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("HashMap"));
         assert!(token_str.contains("String"));
@@ -332,7 +338,9 @@ mod tests {
         let transpiler = make_transpiler();
         let params = vec![make_type(TypeKind::Named("i32".to_string()))];
         let ret = make_type(TypeKind::Named("bool".to_string()));
-        let result = transpiler.transpile_function_type_impl(&params, &ret).unwrap();
+        let result = transpiler
+            .transpile_function_type_impl(&params, &ret)
+            .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("fn"));
         assert!(token_str.contains("i32"));
@@ -347,7 +355,9 @@ mod tests {
     fn test_reference_immutable() {
         let transpiler = make_transpiler();
         let inner = make_type(TypeKind::Named("i32".to_string()));
-        let result = transpiler.transpile_reference_type_impl(false, None, &inner).unwrap();
+        let result = transpiler
+            .transpile_reference_type_impl(false, None, &inner)
+            .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("&"));
         assert!(token_str.contains("i32"));
@@ -358,7 +368,9 @@ mod tests {
     fn test_reference_mutable() {
         let transpiler = make_transpiler();
         let inner = make_type(TypeKind::Named("i32".to_string()));
-        let result = transpiler.transpile_reference_type_impl(true, None, &inner).unwrap();
+        let result = transpiler
+            .transpile_reference_type_impl(true, None, &inner)
+            .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("&"));
         assert!(token_str.contains("mut"));
@@ -368,7 +380,9 @@ mod tests {
     fn test_reference_with_lifetime() {
         let transpiler = make_transpiler();
         let inner = make_type(TypeKind::Named("str".to_string()));
-        let result = transpiler.transpile_reference_type_impl(false, Some("'a"), &inner).unwrap();
+        let result = transpiler
+            .transpile_reference_type_impl(false, Some("'a"), &inner)
+            .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("'a"));
     }

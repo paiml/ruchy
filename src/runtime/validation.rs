@@ -276,11 +276,7 @@ mod tests {
 
     #[test]
     fn test_validate_numeric_error_message() {
-        let result = validate_numeric(
-            "compute",
-            &Value::from_string("text".to_string()),
-            "input",
-        );
+        let result = validate_numeric("compute", &Value::from_string("text".to_string()), "input");
         let err_msg = result.unwrap_err().to_string();
         assert!(err_msg.contains("compute"));
         assert!(err_msg.contains("input"));

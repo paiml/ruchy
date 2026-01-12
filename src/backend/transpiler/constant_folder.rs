@@ -1683,10 +1683,7 @@ mod tests {
                     },
                     Span::new(0, 0),
                 ),
-                Expr::new(
-                    ExprKind::Identifier("outer".to_string()),
-                    Span::new(0, 0),
-                ),
+                Expr::new(ExprKind::Identifier("outer".to_string()), Span::new(0, 0)),
             ]),
             Span::new(0, 0),
         );
@@ -1844,25 +1841,23 @@ mod tests {
                 type_annotation: None,
                 value: Box::new(int_lit(1)),
                 body: Box::new(Expr::new(
-                    ExprKind::Block(vec![
-                        Expr::new(
-                            ExprKind::Let {
-                                name: "y".to_string(),
-                                type_annotation: None,
-                                value: Box::new(Expr::new(
-                                    ExprKind::Identifier("x".to_string()),
-                                    Span::new(0, 0),
-                                )),
-                                body: Box::new(Expr::new(
-                                    ExprKind::Identifier("y".to_string()),
-                                    Span::new(0, 0),
-                                )),
-                                is_mutable: false,
-                                else_block: None,
-                            },
-                            Span::new(0, 0),
-                        ),
-                    ]),
+                    ExprKind::Block(vec![Expr::new(
+                        ExprKind::Let {
+                            name: "y".to_string(),
+                            type_annotation: None,
+                            value: Box::new(Expr::new(
+                                ExprKind::Identifier("x".to_string()),
+                                Span::new(0, 0),
+                            )),
+                            body: Box::new(Expr::new(
+                                ExprKind::Identifier("y".to_string()),
+                                Span::new(0, 0),
+                            )),
+                            is_mutable: false,
+                            else_block: None,
+                        },
+                        Span::new(0, 0),
+                    )]),
                     Span::new(0, 0),
                 )),
                 is_mutable: false,
@@ -1929,10 +1924,7 @@ mod tests {
             s
         };
         let value = int_lit(5);
-        let body = Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::new(0, 0),
-        );
+        let body = Expr::new(ExprKind::Identifier("x".to_string()), Span::new(0, 0));
         let result = process_let_elimination("x", &value, &body, &used);
         assert!(result.is_none()); // Should not eliminate used variable
     }

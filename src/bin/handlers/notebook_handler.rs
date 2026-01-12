@@ -239,7 +239,11 @@ mod tests {
     fn test_notebook_command_with_function_file() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("function.ruchy");
-        std::fs::write(&file_path, "fun add(a, b) { a + b }\nfun main() { add(1, 2) }").unwrap();
+        std::fs::write(
+            &file_path,
+            "fun add(a, b) { a + b }\nfun main() { add(1, 2) }",
+        )
+        .unwrap();
         let _ = handle_notebook_command(Some(&file_path), 8080, false, "localhost");
     }
 }

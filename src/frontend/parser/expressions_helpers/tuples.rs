@@ -209,14 +209,20 @@ mod tests {
     fn test_grouped_expression_in_arithmetic() {
         let code = "(1 + 2) * 3";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Grouped expression in arithmetic should parse");
+        assert!(
+            result.is_ok(),
+            "Grouped expression in arithmetic should parse"
+        );
     }
 
     #[test]
     fn test_deeply_nested_grouped_expressions() {
         let code = "(((((42)))))";
         let result = Parser::new(code).parse();
-        assert!(result.is_ok(), "Deeply nested grouped expressions should parse");
+        assert!(
+            result.is_ok(),
+            "Deeply nested grouped expressions should parse"
+        );
     }
 
     // ============================================================

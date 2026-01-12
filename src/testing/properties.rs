@@ -846,10 +846,7 @@ mod tests {
 
     #[test]
     fn test_well_typed_with_mutable_reference() {
-        let expr = Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Default::default());
         let mut_ref_expr = Expr::new(
             ExprKind::Unary {
                 operand: Box::new(expr),
@@ -862,10 +859,7 @@ mod tests {
 
     #[test]
     fn test_well_typed_with_deref() {
-        let expr = Expr::new(
-            ExprKind::Identifier("ptr".to_string()),
-            Default::default(),
-        );
+        let expr = Expr::new(ExprKind::Identifier("ptr".to_string()), Default::default());
         let deref_expr = Expr::new(
             ExprKind::Unary {
                 operand: Box::new(expr),
@@ -905,20 +899,14 @@ mod tests {
 
     #[test]
     fn test_is_well_typed_char_literal() {
-        let char_expr = Expr::new(
-            ExprKind::Literal(Literal::Char('a')),
-            Default::default(),
-        );
+        let char_expr = Expr::new(ExprKind::Literal(Literal::Char('a')), Default::default());
         assert!(is_well_typed(&char_expr));
     }
 
     #[test]
     fn test_is_well_typed_unit_literal() {
         // Unit literal (closest to nil in Ruchy)
-        let unit_expr = Expr::new(
-            ExprKind::Literal(Literal::Unit),
-            Default::default(),
-        );
+        let unit_expr = Expr::new(ExprKind::Literal(Literal::Unit), Default::default());
         assert!(is_well_typed(&unit_expr));
     }
 

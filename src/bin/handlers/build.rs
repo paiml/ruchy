@@ -241,15 +241,14 @@ mod tests {
         // Create a minimal Cargo.toml for testing
         std::fs::write(
             temp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"
-        ).expect("Failed to write Cargo.toml");
+            "[package]\nname = \"test\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+        )
+        .expect("Failed to write Cargo.toml");
 
         // Create src/main.rs
         std::fs::create_dir(temp_dir.path().join("src")).ok();
-        std::fs::write(
-            temp_dir.path().join("src/main.rs"),
-            "fn main() {}"
-        ).expect("Failed to write main.rs");
+        std::fs::write(temp_dir.path().join("src/main.rs"), "fn main() {}")
+            .expect("Failed to write main.rs");
 
         let result = run_cargo_build(false, false);
         env::set_current_dir(_original_dir).expect("Failed to restore dir");
@@ -267,14 +266,16 @@ mod tests {
 
         std::fs::write(
             temp_dir.path().join("Cargo.toml"),
-            "[package]\nname = \"test2\"\nversion = \"0.1.0\"\nedition = \"2021\"\n"
-        ).expect("Failed to write Cargo.toml");
+            "[package]\nname = \"test2\"\nversion = \"0.1.0\"\nedition = \"2021\"\n",
+        )
+        .expect("Failed to write Cargo.toml");
 
         std::fs::create_dir(temp_dir.path().join("src")).ok();
         std::fs::write(
             temp_dir.path().join("src/main.rs"),
-            "fn main() { println!(\"Hello\"); }"
-        ).expect("Failed to write main.rs");
+            "fn main() { println!(\"Hello\"); }",
+        )
+        .expect("Failed to write main.rs");
 
         let result = run_cargo_build(false, true); // verbose
         env::set_current_dir(_original_dir).expect("Failed to restore dir");

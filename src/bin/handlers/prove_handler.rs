@@ -95,16 +95,7 @@ mod tests {
     #[test]
     fn test_handle_prove_command_no_file() {
         let result = handle_prove_command(
-            None,
-            "default",
-            false,
-            30,
-            None,
-            None,
-            false,
-            false,
-            false,
-            "text",
+            None, "default", false, 30, None, None, false, false, false, "text",
         );
         let _ = result;
     }
@@ -129,16 +120,8 @@ mod tests {
     #[test]
     fn test_handle_prove_command_with_ml_suggestions() {
         let result = handle_prove_command(
-            None,
-            "default",
-            true, // ml_suggestions
-            60,
-            None,
-            None,
-            false,
-            false,
-            false,
-            "text",
+            None, "default", true, // ml_suggestions
+            60, None, None, false, false, false, "text",
         );
         let _ = result;
     }
@@ -146,16 +129,8 @@ mod tests {
     #[test]
     fn test_handle_prove_command_check_mode() {
         let result = handle_prove_command(
-            None,
-            "default",
-            false,
-            30,
-            None,
-            None,
-            true, // check
-            false,
-            false,
-            "text",
+            None, "default", false, 30, None, None, true, // check
+            false, false, "text",
         );
         let _ = result;
     }
@@ -163,16 +138,8 @@ mod tests {
     #[test]
     fn test_handle_prove_command_counterexample() {
         let result = handle_prove_command(
-            None,
-            "default",
-            false,
-            30,
-            None,
-            None,
-            false,
-            true, // counterexample
-            false,
-            "text",
+            None, "default", false, 30, None, None, false, true, // counterexample
+            false, "text",
         );
         let _ = result;
     }
@@ -180,15 +147,7 @@ mod tests {
     #[test]
     fn test_handle_prove_command_verbose() {
         let result = handle_prove_command(
-            None,
-            "default",
-            false,
-            30,
-            None,
-            None,
-            false,
-            false,
-            true, // verbose
+            None, "default", false, 30, None, None, false, false, true, // verbose
             "text",
         );
         let _ = result;
@@ -197,16 +156,7 @@ mod tests {
     #[test]
     fn test_handle_prove_command_json_format() {
         let result = handle_prove_command(
-            None,
-            "default",
-            false,
-            30,
-            None,
-            None,
-            false,
-            false,
-            false,
-            "json",
+            None, "default", false, 30, None, None, false, false, false, "json",
         );
         let _ = result;
     }
@@ -216,16 +166,7 @@ mod tests {
         let backends = ["default", "z3", "smt", "custom"];
         for backend in &backends {
             let result = handle_prove_command(
-                None,
-                backend,
-                false,
-                30,
-                None,
-                None,
-                false,
-                false,
-                false,
-                "text",
+                None, backend, false, 30, None, None, false, false, false, "text",
             );
             let _ = result;
         }
@@ -236,16 +177,7 @@ mod tests {
         let timeouts = [1, 10, 30, 60, 300, 3600];
         for timeout in &timeouts {
             let result = handle_prove_command(
-                None,
-                "default",
-                false,
-                *timeout,
-                None,
-                None,
-                false,
-                false,
-                false,
-                "text",
+                None, "default", false, *timeout, None, None, false, false, false, "text",
             );
             let _ = result;
         }
@@ -335,16 +267,8 @@ mod tests {
     #[test]
     fn test_handle_prove_command_zero_timeout() {
         let result = handle_prove_command(
-            None,
-            "default",
-            false,
-            0, // zero timeout
-            None,
-            None,
-            false,
-            false,
-            false,
-            "text",
+            None, "default", false, 0, // zero timeout
+            None, None, false, false, false, "text",
         );
         let _ = result;
     }
@@ -352,15 +276,10 @@ mod tests {
     #[test]
     fn test_handle_prove_command_all_true_flags() {
         let result = handle_prove_command(
-            None,
-            "default",
-            true,  // ml_suggestions
-            30,
-            None,
-            None,
-            true,  // check
-            true,  // counterexample
-            true,  // verbose
+            None, "default", true, // ml_suggestions
+            30, None, None, true, // check
+            true, // counterexample
+            true, // verbose
             "json",
         );
         let _ = result;
@@ -369,16 +288,7 @@ mod tests {
     #[test]
     fn test_handle_prove_command_xml_format() {
         let result = handle_prove_command(
-            None,
-            "default",
-            false,
-            30,
-            None,
-            None,
-            false,
-            false,
-            false,
-            "xml",
+            None, "default", false, 30, None, None, false, false, false, "xml",
         );
         let _ = result;
     }

@@ -213,7 +213,10 @@ impl Transpiler {
             )
         } else {
             self.transpile_expression_program(
-                &Expr::new(ExprKind::Block(exprs.to_vec()), crate::frontend::ast::Span::new(0, 0)),
+                &Expr::new(
+                    ExprKind::Block(exprs.to_vec()),
+                    crate::frontend::ast::Span::new(0, 0),
+                ),
                 needs_polars,
                 needs_hashmap,
             )

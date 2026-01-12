@@ -748,9 +748,10 @@ mod coverage_tests {
     fn test_composite_form_clone() {
         let form = CompositeForm {
             opener: "{",
-            elements: vec![
-                (Some("key".to_string()), DisplayForm::Atomic("value".to_string())),
-            ],
+            elements: vec![(
+                Some("key".to_string()),
+                DisplayForm::Atomic("value".to_string()),
+            )],
             closer: "}",
             elided: Some(5),
         };

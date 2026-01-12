@@ -44,66 +44,66 @@ mod effects;
 pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
                          // #[cfg(feature = "dataframe")]
                          // mod dataframe_arrow; // Temporarily disabled until proper implementation
-mod dataframe_builder;
-mod dataframe_helpers;
-mod dispatcher;
-mod expressions;
-mod method_call_refactored;
-mod patterns;
-mod result_type;
-pub mod return_type_helpers;
-mod statements;
+mod advanced_math; // EXTREME TDD Round 59: trig/log/random/trueno functions
+mod ast_analysis; // EXTREME TDD Round 66: AST analysis, collection, detection functions
+mod bindings; // EXTREME TDD Round 54: let bindings and patterns
+mod block_categorization; // EXTREME TDD Round 67: Block categorization, statement detection
+mod block_transpiler; // EXTREME TDD Round 71: Block and pipeline transpilation
+mod body_generation; // EXTREME TDD Round 70: Function body token generation
+pub mod builtin_type_inference;
+mod call_helpers; // EXTREME TDD Round 63: result/option call and function call helpers
+mod call_transpilation; // EXTREME TDD Round 72: Call and method call transpilation
 mod comprehensions; // EXTREME TDD Round 53: List/set/dict comprehensions
 mod control_flow; // EXTREME TDD Round 53: if/for/while/loop/try-catch
-mod bindings; // EXTREME TDD Round 54: let bindings and patterns
-mod imports; // EXTREME TDD Round 55: imports and exports
-mod math_builtins; // EXTREME TDD Round 56: math built-in functions
-mod input_builtins; // EXTREME TDD Round 57: input/readline functions
-mod type_conversions; // EXTREME TDD Round 58: str/int/float/bool conversions
-mod advanced_math; // EXTREME TDD Round 59: trig/log/random/trueno functions
-mod utility_builtins; // EXTREME TDD Round 60: time/assert/collection/range functions
-mod system_builtins; // EXTREME TDD Round 61: env/fs/path functions
-mod network_builtins; // EXTREME TDD Round 62: json/http functions
-mod call_helpers; // EXTREME TDD Round 63: result/option call and function call helpers
-mod print_helpers; // EXTREME TDD Round 64: print/println/dbg/panic macros
-mod method_transpilers; // EXTREME TDD Round 65: iterator/map/set/string/collection methods
-mod ast_analysis; // EXTREME TDD Round 66: AST analysis, collection, detection functions
-mod block_categorization; // EXTREME TDD Round 67: Block categorization, statement detection
-mod program_transpiler; // EXTREME TDD Round 68: Program-level transpilation
+mod dataframe_builder;
+mod dataframe_helpers;
+mod dataframe_transpilers; // EXTREME TDD Round 80: DataFrame transpilation
+mod dispatcher;
 mod expr_dispatcher; // EXTREME TDD Round 69: Expression dispatcher and utilities
+pub mod expression_analysis;
+mod expressions;
+pub mod function_analysis;
 mod function_param_inference; // EXTREME TDD Round 70: Function parameter inference
 mod function_signature; // EXTREME TDD Round 70: Function signature generation
-mod body_generation; // EXTREME TDD Round 70: Function body token generation
-mod lambda_transpiler; // EXTREME TDD Round 71: Lambda/closure transpilation
-mod block_transpiler; // EXTREME TDD Round 71: Block and pipeline transpilation
-mod call_transpilation; // EXTREME TDD Round 72: Call and method call transpilation
-mod string_body_conversion; // EXTREME TDD Round 73: String body conversion helpers
-mod lifetime_helpers; // EXTREME TDD Round 74: Lifetime parameter helpers
-mod type_transpilers; // EXTREME TDD Round 75: Type transpilation helpers
-mod dataframe_transpilers; // EXTREME TDD Round 80: DataFrame transpilation
 mod function_transpiler; // EXTREME TDD Round 81: Function transpilation
-#[cfg(test)]
-mod statements_tests; // EXTREME TDD Round 83: Statement tests extracted
-#[cfg(test)]
-mod types_tests; // EXTREME TDD Round 84: Type tests extracted
-pub mod builtin_type_inference;
-pub mod mutation_detection;
-pub mod pattern_bindings;
-pub mod function_analysis;
-pub mod type_analysis;
 pub mod import_helpers;
-pub mod expression_analysis;
-pub mod std_imports;
+mod imports; // EXTREME TDD Round 55: imports and exports
+mod input_builtins; // EXTREME TDD Round 57: input/readline functions
+#[cfg(test)]
+mod integration_tests; // Transpiler integration tests for coverage improvement
+mod lambda_transpiler; // EXTREME TDD Round 71: Lambda/closure transpilation
+mod lifetime_helpers; // EXTREME TDD Round 74: Lifetime parameter helpers
+mod math_builtins; // EXTREME TDD Round 56: math built-in functions
+mod method_call_refactored;
+mod method_transpilers; // EXTREME TDD Round 65: iterator/map/set/string/collection methods
+pub mod mutation_detection;
+mod network_builtins; // EXTREME TDD Round 62: json/http functions
 pub mod param_usage_analysis;
 #[cfg(test)]
 mod param_usage_analysis_tests; // EXTREME TDD Round 85: Parameter usage analysis tests
+pub mod pattern_bindings;
+mod patterns;
+mod print_helpers; // EXTREME TDD Round 64: print/println/dbg/panic macros
+mod program_transpiler; // EXTREME TDD Round 68: Program-level transpilation
+mod result_type;
+pub mod return_type_helpers;
+mod statements;
+#[cfg(test)]
+mod statements_tests; // EXTREME TDD Round 83: Statement tests extracted
+pub mod std_imports;
+mod string_body_conversion; // EXTREME TDD Round 73: String body conversion helpers
+mod system_builtins; // EXTREME TDD Round 61: env/fs/path functions
 #[cfg(test)]
 mod tests_compound_assignment;
-#[cfg(test)]
-mod integration_tests; // Transpiler integration tests for coverage improvement
+pub mod type_analysis;
 mod type_conversion_refactored;
+mod type_conversions; // EXTREME TDD Round 58: str/int/float/bool conversions
 mod type_inference;
+mod type_transpilers; // EXTREME TDD Round 75: Type transpilation helpers
 mod types;
+#[cfg(test)]
+mod types_tests; // EXTREME TDD Round 84: Type tests extracted
+mod utility_builtins; // EXTREME TDD Round 60: time/assert/collection/range functions
 use crate::frontend::ast::{Attribute, Expr, ExprKind, Type};
 use anyhow::Result;
 use proc_macro2::TokenStream;

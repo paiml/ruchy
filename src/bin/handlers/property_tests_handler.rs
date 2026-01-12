@@ -259,10 +259,7 @@ fn write_text_property_report(
     println!("Property Test Report");
     println!("====================");
     println!("File: {}", path.display());
-    println!(
-        "Status: {}",
-        if success { "PASSED" } else { "FAILED" }
-    );
+    println!("Status: {}", if success { "PASSED" } else { "FAILED" });
     println!("Total tests: {}", total_tests);
     println!("Passed: {}", passed);
     println!("Failed: {}", failed);
@@ -422,9 +419,7 @@ mod tests {
     #[test]
     fn test_write_json_property_report_success() {
         let path = Path::new("/test/file.ruchy");
-        let result = write_json_property_report(
-            path, None, true, 10, 10, 0, 100, true, &[],
-        );
+        let result = write_json_property_report(path, None, true, 10, 10, 0, 100, true, &[]);
         assert!(result.is_ok());
     }
 
@@ -432,9 +427,7 @@ mod tests {
     fn test_write_json_property_report_failure() {
         let path = Path::new("/test/file.ruchy");
         let failures = vec!["Test failed".to_string()];
-        let result = write_json_property_report(
-            path, None, false, 10, 8, 2, 100, false, &failures,
-        );
+        let result = write_json_property_report(path, None, false, 10, 8, 2, 100, false, &failures);
         assert!(result.is_ok());
     }
 
@@ -442,9 +435,8 @@ mod tests {
     fn test_write_json_property_report_to_file() {
         let path = Path::new("/test/file.ruchy");
         let temp = NamedTempFile::new().unwrap();
-        let result = write_json_property_report(
-            path, Some(temp.path()), true, 5, 5, 0, 50, true, &[],
-        );
+        let result =
+            write_json_property_report(path, Some(temp.path()), true, 5, 5, 0, 50, true, &[]);
         assert!(result.is_ok());
         let content = std::fs::read_to_string(temp.path()).unwrap();
         assert!(content.contains("passed"));
@@ -453,9 +445,7 @@ mod tests {
     #[test]
     fn test_write_text_property_report_success() {
         let path = Path::new("/test/file.ruchy");
-        let result = write_text_property_report(
-            path, None, true, 10, 10, 0, 100, true, &[],
-        );
+        let result = write_text_property_report(path, None, true, 10, 10, 0, 100, true, &[]);
         assert!(result.is_ok());
     }
 
@@ -466,9 +456,7 @@ mod tests {
             "Panic at iteration 5".to_string(),
             "Determinism failed".to_string(),
         ];
-        let result = write_text_property_report(
-            path, None, false, 10, 8, 2, 100, false, &failures,
-        );
+        let result = write_text_property_report(path, None, false, 10, 8, 2, 100, false, &failures);
         assert!(result.is_ok());
     }
 
@@ -476,27 +464,22 @@ mod tests {
     fn test_write_text_property_report_to_file() {
         let path = Path::new("/test/file.ruchy");
         let temp = NamedTempFile::new().unwrap();
-        let result = write_text_property_report(
-            path, Some(temp.path()), true, 5, 5, 0, 50, true, &[],
-        );
+        let result =
+            write_text_property_report(path, Some(temp.path()), true, 5, 5, 0, 50, true, &[]);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_generate_property_test_report_json() {
         let path = Path::new("/test/file.ruchy");
-        let result = generate_property_test_report(
-            path, "json", None, 100, 100, 0, true, &[],
-        );
+        let result = generate_property_test_report(path, "json", None, 100, 100, 0, true, &[]);
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_generate_property_test_report_text() {
         let path = Path::new("/test/file.ruchy");
-        let result = generate_property_test_report(
-            path, "text", None, 100, 100, 0, true, &[],
-        );
+        let result = generate_property_test_report(path, "text", None, 100, 100, 0, true, &[]);
         assert!(result.is_ok());
     }
 
@@ -504,9 +487,8 @@ mod tests {
     fn test_generate_property_test_report_with_failures() {
         let path = Path::new("/test/file.ruchy");
         let failures = vec!["Failure 1".to_string()];
-        let result = generate_property_test_report(
-            path, "text", None, 100, 95, 5, false, &failures,
-        );
+        let result =
+            generate_property_test_report(path, "text", None, 100, 95, 5, false, &failures);
         assert!(result.is_ok());
     }
 

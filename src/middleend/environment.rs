@@ -445,18 +445,24 @@ mod tests {
         let var2 = TyVar(101);
         let var3 = TyVar(102);
         // Binding with free var1
-        env.bind("a", TypeScheme {
-            vars: vec![],
-            ty: MonoType::Var(var1.clone()),
-        });
+        env.bind(
+            "a",
+            TypeScheme {
+                vars: vec![],
+                ty: MonoType::Var(var1.clone()),
+            },
+        );
         // Binding with free var2 and bound var3
-        env.bind("b", TypeScheme {
-            vars: vec![var3.clone()],
-            ty: MonoType::Function(
-                Box::new(MonoType::Var(var2.clone())),
-                Box::new(MonoType::Var(var3)),
-            ),
-        });
+        env.bind(
+            "b",
+            TypeScheme {
+                vars: vec![var3.clone()],
+                ty: MonoType::Function(
+                    Box::new(MonoType::Var(var2.clone())),
+                    Box::new(MonoType::Var(var3)),
+                ),
+            },
+        );
         let free = env.free_vars();
         assert!(free.contains(&var1));
         assert!(free.contains(&var2));
@@ -487,10 +493,13 @@ mod tests {
         let var1 = TyVar(200);
         let var2 = TyVar(201);
         // env has var1 free
-        env.bind("x", TypeScheme {
-            vars: vec![],
-            ty: MonoType::Var(var1.clone()),
-        });
+        env.bind(
+            "x",
+            TypeScheme {
+                vars: vec![],
+                ty: MonoType::Var(var1.clone()),
+            },
+        );
         // Generalize a type with var1 and var2
         let ty = MonoType::Function(
             Box::new(MonoType::Var(var1)),

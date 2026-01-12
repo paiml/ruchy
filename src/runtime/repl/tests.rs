@@ -87,8 +87,7 @@ fn test_empty_line_handling() {
 #[test]
 fn test_tab_completion() {
     let temp_dir = TempDir::new().expect("TempDir::new should succeed in test");
-    let repl =
-        Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
+    let repl = Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
     let completions = repl.get_completions(":he");
     assert!(completions.contains(&":help".to_string()));
@@ -210,15 +209,34 @@ fn test_all_expression_types_in_repl() {
         Repl::new(temp_dir.path().to_path_buf()).expect("Repl::new should succeed in test");
 
     let expressions = vec![
-        "42", "3.15", "true", "false", "\"hello world\"", "'c'", "()",
-        "1 + 2 * 3", "10 / 2 - 1", "7 % 3", "2 ** 8",
-        "5 > 3", "2 <= 4", "1 == 1", "3 != 2",
-        "true && false", "true || false", "!true",
-        "let x = 5", "let mut y = 10",
-        "[1, 2, 3, 4, 5]", "(1, \"hello\", true)", "{x: 1, y: 2, z: 3}",
+        "42",
+        "3.15",
+        "true",
+        "false",
+        "\"hello world\"",
+        "'c'",
+        "()",
+        "1 + 2 * 3",
+        "10 / 2 - 1",
+        "7 % 3",
+        "2 ** 8",
+        "5 > 3",
+        "2 <= 4",
+        "1 == 1",
+        "3 != 2",
+        "true && false",
+        "true || false",
+        "!true",
+        "let x = 5",
+        "let mut y = 10",
+        "[1, 2, 3, 4, 5]",
+        "(1, \"hello\", true)",
+        "{x: 1, y: 2, z: 3}",
         "fn add(a, b) { a + b }",
-        "x => x * 2", "(a, b) => a + b",
-        "undefined_variable", "1 / 0",
+        "x => x * 2",
+        "(a, b) => a + b",
+        "undefined_variable",
+        "1 / 0",
     ];
 
     for expr in expressions {
@@ -257,14 +275,30 @@ fn test_repl_error_handling_comprehensive() {
     let long_variable = format!("let {} = 42", "very_long_variable_name".repeat(100));
 
     let error_cases = vec![
-        "let = 5", "fn ()", "if {", "match {", "1 +", "+ 2",
-        "true + 5", "\"string\" * false",
-        "1 / 0", "undefined_function()",
-        ":invalid_command", ":help invalid_arg extra_arg",
-        ":load", ":save",
-        "", "   ", "\n", "\t", ";;;", "{}{}{}",
-        &long_input, &long_variable,
-        "let 🚀 = 42", "let 变量 = \"unicode\"",
+        "let = 5",
+        "fn ()",
+        "if {",
+        "match {",
+        "1 +",
+        "+ 2",
+        "true + 5",
+        "\"string\" * false",
+        "1 / 0",
+        "undefined_function()",
+        ":invalid_command",
+        ":help invalid_arg extra_arg",
+        ":load",
+        ":save",
+        "",
+        "   ",
+        "\n",
+        "\t",
+        ";;;",
+        "{}{}{}",
+        &long_input,
+        &long_variable,
+        "let 🚀 = 42",
+        "let 变量 = \"unicode\"",
     ];
 
     for error_case in error_cases {
@@ -295,7 +329,8 @@ fn test_repl_file_operations() {
     assert!(result.is_ok() || result.is_err());
 
     let invalid_paths = vec![
-        ":load", ":save",
+        ":load",
+        ":save",
         ":load /dev/null/invalid",
         ":save /root/no_permission",
     ];
@@ -386,7 +421,10 @@ fn test_eval_with_limits_enforcement() {
 #[test]
 fn test_sandboxed_repl_creation() {
     let repl = Repl::sandboxed();
-    assert!(repl.is_ok(), "sandboxed REPL should be created successfully");
+    assert!(
+        repl.is_ok(),
+        "sandboxed REPL should be created successfully"
+    );
 }
 
 #[test]

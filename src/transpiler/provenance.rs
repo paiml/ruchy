@@ -609,8 +609,7 @@ mod tests {
         assert!(json.contains("source_hash"));
         assert!(json.contains("abc"));
 
-        let deserialized: CompilationTrace =
-            serde_json::from_str(&json).expect("deserialize");
+        let deserialized: CompilationTrace = serde_json::from_str(&json).expect("deserialize");
         assert_eq!(deserialized.source_hash, trace.source_hash);
     }
 

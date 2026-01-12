@@ -72,7 +72,10 @@ pub(crate) fn generate_and_validate_wasm(ast: &Expr, verbose: bool) -> Result<Ve
 
     #[cfg(not(feature = "notebook"))]
     if verbose {
-        println!("{} WASM module generated (validation requires notebook feature)", "→".bright_cyan());
+        println!(
+            "{} WASM module generated (validation requires notebook feature)",
+            "→".bright_cyan()
+        );
     }
 
     Ok(wasm_bytes)
@@ -309,18 +312,18 @@ mod tests {
             Path::new("/nonexistent/file.ruchy"),
             Some(Path::new("output.wasm")),
             "wasm32-wasi",
-            true,  // wit
-            true,  // deploy
+            true, // wit
+            true, // deploy
             Some("cloudflare"),
-            true,  // portability
-            "3",   // opt_level
-            true,  // debug
-            true,  // simd
-            true,  // threads
-            true,  // component_model
+            true, // portability
+            "3",  // opt_level
+            true, // debug
+            true, // simd
+            true, // threads
+            true, // component_model
             Some("my-module"),
             "1.0.0",
-            true,  // verbose
+            true, // verbose
         );
         assert!(result.is_err()); // File doesn't exist
     }

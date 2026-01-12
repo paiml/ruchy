@@ -386,16 +386,28 @@ mod tests {
         let mut corpus = Corpus::new();
         // Use completely different messages to avoid deduplication
         corpus.add(
-            Sample::new("mismatched types: expected i32, found String", Some("E0308".into()), ErrorCategory::TypeMismatch)
-                .with_difficulty(0.25),
+            Sample::new(
+                "mismatched types: expected i32, found String",
+                Some("E0308".into()),
+                ErrorCategory::TypeMismatch,
+            )
+            .with_difficulty(0.25),
         );
         corpus.add(
-            Sample::new("mismatched types: expected bool, found char", Some("E0308".into()), ErrorCategory::TypeMismatch)
-                .with_difficulty(0.25),
+            Sample::new(
+                "mismatched types: expected bool, found char",
+                Some("E0308".into()),
+                ErrorCategory::TypeMismatch,
+            )
+            .with_difficulty(0.25),
         );
         corpus.add(
-            Sample::new("borrow of moved value", Some("E0382".into()), ErrorCategory::BorrowChecker)
-                .with_difficulty(0.50),
+            Sample::new(
+                "borrow of moved value",
+                Some("E0382".into()),
+                ErrorCategory::BorrowChecker,
+            )
+            .with_difficulty(0.50),
         );
 
         let scheduler = CurriculumScheduler::new();

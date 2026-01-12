@@ -1492,7 +1492,9 @@ mod additional_portability_tests {
     fn test_analyzer_analyze_small_component() {
         let analyzer = PortabilityAnalyzer::new();
         let component = create_test_wasm_component();
-        let report = analyzer.analyze(&component).expect("analysis should succeed");
+        let report = analyzer
+            .analyze(&component)
+            .expect("analysis should succeed");
 
         assert_eq!(report.component_info.name, "test-component");
         assert!(report.score.overall_score > 0.0);
@@ -1503,7 +1505,9 @@ mod additional_portability_tests {
     fn test_analyzer_analyze_large_component() {
         let analyzer = PortabilityAnalyzer::new();
         let component = create_large_wasm_component();
-        let report = analyzer.analyze(&component).expect("analysis should succeed");
+        let report = analyzer
+            .analyze(&component)
+            .expect("analysis should succeed");
 
         assert_eq!(report.component_info.name, "large-component");
         // Large component should have recommendations
@@ -1514,7 +1518,9 @@ mod additional_portability_tests {
     fn test_analyzer_analyze_very_large_component() {
         let analyzer = PortabilityAnalyzer::new();
         let component = create_very_large_wasm_component();
-        let report = analyzer.analyze(&component).expect("analysis should succeed");
+        let report = analyzer
+            .analyze(&component)
+            .expect("analysis should succeed");
 
         // Very large component (1MB) should have lower size efficiency
         assert!(report.score.size_efficiency < 1.0);
@@ -1567,7 +1573,9 @@ mod additional_portability_tests {
             custom_sections: HashMap::new(),
         };
 
-        let report = analyzer.analyze(&component).expect("analysis should succeed");
+        let report = analyzer
+            .analyze(&component)
+            .expect("analysis should succeed");
         assert!(report.component_info.features.contains("large-module"));
         assert_eq!(report.component_info.imports_count, 1);
         assert_eq!(report.component_info.exports_count, 2);
@@ -1590,7 +1598,9 @@ mod additional_portability_tests {
             custom_sections,
         };
 
-        let report = analyzer.analyze(&component).expect("analysis should succeed");
+        let report = analyzer
+            .analyze(&component)
+            .expect("analysis should succeed");
         assert_eq!(report.size_analysis.custom_sections_size, 8);
         assert_eq!(report.size_analysis.section_sizes.len(), 2);
     }
@@ -1778,7 +1788,9 @@ mod additional_portability_tests {
         };
         let issues = analyzer.find_issues(&info).unwrap();
         // Should find size constraint issues for platforms with limits
-        assert!(issues.iter().any(|i| i.category == IssueCategory::SizeConstraint));
+        assert!(issues
+            .iter()
+            .any(|i| i.category == IssueCategory::SizeConstraint));
     }
 
     // Test enum variants not covered
@@ -1886,7 +1898,9 @@ mod additional_portability_tests {
         };
         let analyzer = PortabilityAnalyzer::new_with_config(config);
         let component = create_test_wasm_component();
-        let report = analyzer.analyze(&component).expect("analysis should succeed");
+        let report = analyzer
+            .analyze(&component)
+            .expect("analysis should succeed");
 
         assert!(report.score.overall_score > 0.0);
     }
@@ -1954,7 +1968,9 @@ mod additional_portability_tests {
         }];
         let recommendations = analyzer.generate_recommendations(&info, &issues).unwrap();
         // Should have critical recommendation for feature incompatibility
-        assert!(recommendations.iter().any(|r| r.priority == RecommendationPriority::Critical));
+        assert!(recommendations
+            .iter()
+            .any(|r| r.priority == RecommendationPriority::Critical));
     }
 
     // Test analyze feature usage

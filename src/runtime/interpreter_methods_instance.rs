@@ -492,19 +492,27 @@ mod tests {
         let file_rc = Arc::new(Mutex::new(file_obj));
 
         // Read first line
-        let result = interp.eval_file_method_mut(&file_rc, "read_line", &[]).unwrap();
+        let result = interp
+            .eval_file_method_mut(&file_rc, "read_line", &[])
+            .unwrap();
         assert_eq!(result, Value::from_string("line1".to_string()));
 
         // Read second line
-        let result = interp.eval_file_method_mut(&file_rc, "read_line", &[]).unwrap();
+        let result = interp
+            .eval_file_method_mut(&file_rc, "read_line", &[])
+            .unwrap();
         assert_eq!(result, Value::from_string("line2".to_string()));
 
         // Read third line
-        let result = interp.eval_file_method_mut(&file_rc, "read_line", &[]).unwrap();
+        let result = interp
+            .eval_file_method_mut(&file_rc, "read_line", &[])
+            .unwrap();
         assert_eq!(result, Value::from_string("line3".to_string()));
 
         // EOF - empty string
-        let result = interp.eval_file_method_mut(&file_rc, "read_line", &[]).unwrap();
+        let result = interp
+            .eval_file_method_mut(&file_rc, "read_line", &[])
+            .unwrap();
         assert_eq!(result, Value::from_string("".to_string()));
     }
 
@@ -653,7 +661,10 @@ mod tests {
 
         let result = interp.eval_object_method_mut(&obj_rc, "test", &[], true);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("missing __type marker"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("missing __type marker"));
     }
 
     // Actor instance method mut tests
@@ -661,12 +672,18 @@ mod tests {
     fn test_actor_instance_method_mut_send_empty() {
         let mut interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__actor".to_string(), Value::from_string("TestActor".to_string()));
+        obj.insert(
+            "__actor".to_string(),
+            Value::from_string("TestActor".to_string()),
+        );
         let obj_rc = Arc::new(Mutex::new(obj));
 
         let result = interp.eval_actor_instance_method_mut(&obj_rc, "TestActor", "send", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("requires a message"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("requires a message"));
     }
 
     // Struct instance method with self capture tests - error path
@@ -684,7 +701,10 @@ mod tests {
             &[],
         );
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a method closure"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a method closure"));
     }
 
     #[test]
@@ -698,7 +718,10 @@ mod tests {
 
         let result = interp.eval_struct_instance_method_mut(&obj_rc, "TestStruct", "method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a method closure"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a method closure"));
     }
 
     // Class instance method on class tests
@@ -845,7 +868,10 @@ mod tests {
         let method_meta = HashMap::new(); // No "closure" key
 
         let mut methods_map = HashMap::new();
-        methods_map.insert("no_closure".to_string(), Value::Object(Arc::new(method_meta)));
+        methods_map.insert(
+            "no_closure".to_string(),
+            Value::Object(Arc::new(method_meta)),
+        );
 
         let mut class_info = HashMap::new();
         class_info.insert(
@@ -1011,9 +1037,7 @@ mod tests {
         );
         let file_rc = Arc::new(Mutex::new(file_obj));
 
-        let result = interp
-            .eval_file_method_mut(&file_rc, "read", &[])
-            .unwrap();
+        let result = interp.eval_file_method_mut(&file_rc, "read", &[]).unwrap();
         // Integer should be filtered out
         assert_eq!(result, Value::from_string("line1\nline2".to_string()));
     }
@@ -1076,10 +1100,7 @@ mod tests {
 
         // Create method with 2 params
         let closure = Value::Closure {
-            params: vec![
-                ("a".to_string(), None),
-                ("b".to_string(), None),
-            ],
+            params: vec![("a".to_string(), None), ("b".to_string(), None)],
             body: Arc::new(Expr::new(
                 ExprKind::Literal(Literal::Integer(42, None)),
                 Span::new(0, 0),
@@ -1249,8 +1270,7 @@ mod tests {
         obj.insert("value".to_string(), Value::Integer(100));
         let obj_rc = Arc::new(Mutex::new(obj));
 
-        let result =
-            interp.eval_struct_instance_method_mut(&obj_rc, "MyStruct", "get_value", &[]);
+        let result = interp.eval_struct_instance_method_mut(&obj_rc, "MyStruct", "get_value", &[]);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Value::Integer(42));
     }

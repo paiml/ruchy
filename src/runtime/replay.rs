@@ -1264,7 +1264,9 @@ mod tests {
                 cpu_ns_percent: 25.0,
             };
             let cloned = tolerance.clone();
-            assert!((tolerance.heap_bytes_percent - cloned.heap_bytes_percent).abs() < f64::EPSILON);
+            assert!(
+                (tolerance.heap_bytes_percent - cloned.heap_bytes_percent).abs() < f64::EPSILON
+            );
             assert!((tolerance.cpu_ns_percent - cloned.cpu_ns_percent).abs() < f64::EPSILON);
         }
 
@@ -1285,7 +1287,10 @@ mod tests {
             let cloned = checkpoint.clone();
             assert_eq!(checkpoint.state_hash, cloned.state_hash);
             assert_eq!(checkpoint.bindings.len(), cloned.bindings.len());
-            assert_eq!(checkpoint.type_environment.len(), cloned.type_environment.len());
+            assert_eq!(
+                checkpoint.type_environment.len(),
+                cloned.type_environment.len()
+            );
         }
 
         // Test 42: Environment Clone
@@ -1360,7 +1365,9 @@ mod tests {
         // Test 47: EvalResult Clone
         #[test]
         fn test_eval_result_clone_r163() {
-            let result = EvalResult::Success { value: "42".to_string() };
+            let result = EvalResult::Success {
+                value: "42".to_string(),
+            };
             let cloned = result.clone();
             match cloned {
                 EvalResult::Success { value } => assert_eq!(value, "42"),
@@ -1395,7 +1402,11 @@ mod tests {
             };
             let cloned = event.clone();
             match cloned {
-                Event::Output { result, stdout, stderr } => {
+                Event::Output {
+                    result,
+                    stdout,
+                    stderr,
+                } => {
                     assert!(matches!(result, EvalResult::Unit));
                     assert_eq!(stdout, vec![1, 2, 3]);
                     assert_eq!(stderr, vec![4, 5]);
@@ -1535,18 +1546,35 @@ mod tests {
             let mut report = ValidationReport::new();
             report.total_events = 5;
 
-            report.add_divergence(EventId(1), Divergence::Output {
-                expected: "1".to_string(),
-                actual: "2".to_string(),
-            });
-            report.add_divergence(EventId(2), Divergence::State {
-                expected_hash: "a".to_string(),
-                actual_hash: "b".to_string(),
-            });
-            report.add_divergence(EventId(3), Divergence::Resources {
-                expected: ResourceUsage { heap_bytes: 100, stack_depth: 1, cpu_ns: 100 },
-                actual: ResourceUsage { heap_bytes: 200, stack_depth: 2, cpu_ns: 200 },
-            });
+            report.add_divergence(
+                EventId(1),
+                Divergence::Output {
+                    expected: "1".to_string(),
+                    actual: "2".to_string(),
+                },
+            );
+            report.add_divergence(
+                EventId(2),
+                Divergence::State {
+                    expected_hash: "a".to_string(),
+                    actual_hash: "b".to_string(),
+                },
+            );
+            report.add_divergence(
+                EventId(3),
+                Divergence::Resources {
+                    expected: ResourceUsage {
+                        heap_bytes: 100,
+                        stack_depth: 1,
+                        cpu_ns: 100,
+                    },
+                    actual: ResourceUsage {
+                        heap_bytes: 200,
+                        stack_depth: 2,
+                        cpu_ns: 200,
+                    },
+                },
+            );
 
             assert_eq!(report.divergences.len(), 3);
             assert!(!report.passed);

@@ -836,9 +836,13 @@ mod tests {
             ],
             checkpoints: std::collections::BTreeMap::new(),
         };
-        let tests = converter.convert_session(&session, "error").expect("convert");
+        let tests = converter
+            .convert_session(&session, "error")
+            .expect("convert");
         // Should generate error handling tests
-        assert!(tests.iter().any(|t| t.category == TestCategory::ErrorHandling));
+        assert!(tests
+            .iter()
+            .any(|t| t.category == TestCategory::ErrorHandling));
     }
 
     #[test]
@@ -886,7 +890,9 @@ mod tests {
             ],
             checkpoints: std::collections::BTreeMap::new(),
         };
-        let tests = converter.convert_session(&session, "unit").expect("convert");
+        let tests = converter
+            .convert_session(&session, "unit")
+            .expect("convert");
         assert!(!tests.is_empty());
     }
 
@@ -937,10 +943,15 @@ mod tests {
             ],
             checkpoints: std::collections::BTreeMap::new(),
         };
-        let tests = converter.convert_session(&session, "string_wrap").expect("convert");
+        let tests = converter
+            .convert_session(&session, "string_wrap")
+            .expect("convert");
         // Verify the String("...") format is handled
         assert!(!tests.is_empty());
-        let unit_tests: Vec<_> = tests.iter().filter(|t| t.category == TestCategory::Unit).collect();
+        let unit_tests: Vec<_> = tests
+            .iter()
+            .filter(|t| t.category == TestCategory::Unit)
+            .collect();
         assert!(!unit_tests.is_empty());
     }
 
@@ -991,7 +1002,9 @@ mod tests {
             ],
             checkpoints: std::collections::BTreeMap::new(),
         };
-        let tests = converter.convert_session(&session, "script").expect("convert");
+        let tests = converter
+            .convert_session(&session, "script")
+            .expect("convert");
         assert!(!tests.is_empty());
     }
 
@@ -1083,7 +1096,9 @@ mod tests {
             ],
             checkpoints: std::collections::BTreeMap::new(),
         };
-        let tests = converter.convert_session(&session, "no_prop").expect("convert");
+        let tests = converter
+            .convert_session(&session, "no_prop")
+            .expect("convert");
         // Should NOT have property tests
         assert!(!tests.iter().any(|t| t.category == TestCategory::Property));
     }
@@ -1121,9 +1136,13 @@ mod tests {
             timeline: vec![],
             checkpoints: std::collections::BTreeMap::new(),
         };
-        let tests = converter.convert_session(&session, "empty").expect("convert");
+        let tests = converter
+            .convert_session(&session, "empty")
+            .expect("convert");
         // Should at least have integration and property tests
-        assert!(tests.iter().any(|t| t.category == TestCategory::Integration));
+        assert!(tests
+            .iter()
+            .any(|t| t.category == TestCategory::Integration));
     }
 
     #[test]
@@ -1199,9 +1218,15 @@ mod tests {
             checkpoints: std::collections::BTreeMap::new(),
         };
         // Use hyphenated prefix - should be sanitized to underscores
-        let tests = converter.convert_session(&session, "my-replay-session").expect("convert");
+        let tests = converter
+            .convert_session(&session, "my-replay-session")
+            .expect("convert");
         for test in &tests {
-            assert!(!test.name.contains('-'), "Test name should not contain hyphens: {}", test.name);
+            assert!(
+                !test.name.contains('-'),
+                "Test name should not contain hyphens: {}",
+                test.name
+            );
         }
     }
 }

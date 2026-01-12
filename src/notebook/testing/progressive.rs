@@ -821,7 +821,9 @@ mod tests {
         let result = pd.record_attempt("student1", "test1", 30.0);
         assert_eq!(result.attempt_number, 1);
         // Score < 50 = "Don't give up! Learning takes practice."
-        assert!(result.encouragement.contains("give up") || result.encouragement.contains("practice"));
+        assert!(
+            result.encouragement.contains("give up") || result.encouragement.contains("practice")
+        );
     }
 
     #[test]
@@ -832,7 +834,9 @@ mod tests {
 
         let result = pd.record_attempt("student1", "test1", 60.0);
         // Score 50-69 = "You're on the right track"
-        assert!(result.encouragement.contains("right track") || result.encouragement.contains("hint"));
+        assert!(
+            result.encouragement.contains("right track") || result.encouragement.contains("hint")
+        );
     }
 
     #[test]
@@ -843,7 +847,10 @@ mod tests {
 
         let result = pd.record_attempt("student1", "test1", 95.0);
         // Score 90+ = "Excellent work!"
-        assert!(result.encouragement.contains("Excellent") || result.encouragement.contains("mastering"));
+        assert!(
+            result.encouragement.contains("Excellent")
+                || result.encouragement.contains("mastering")
+        );
     }
 
     #[test]

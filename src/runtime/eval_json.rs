@@ -16,9 +16,8 @@ pub fn json_parse(json_str: &str) -> Result<Value, InterpreterError> {
 /// ISSUE-117: Stringify Value to JSON string (complexity: 4)
 pub fn json_stringify(value: &Value) -> Result<Value, InterpreterError> {
     let json_value = value_to_serde(value)?;
-    let json_str = serde_json::to_string(&json_value).map_err(|e| {
-        InterpreterError::RuntimeError(format!("JSON.stringify() failed: {e}"))
-    })?;
+    let json_str = serde_json::to_string(&json_value)
+        .map_err(|e| InterpreterError::RuntimeError(format!("JSON.stringify() failed: {e}")))?;
     Ok(Value::from_string(json_str))
 }
 
@@ -440,7 +439,9 @@ mod tests {
 
     #[test]
     fn test_json_stringify_nested_array() {
-        let inner = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice()));
+        let inner = Value::Array(Arc::from(
+            vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice(),
+        ));
         let outer = Value::Array(Arc::from(vec![inner].into_boxed_slice()));
         let result = json_stringify(&outer).unwrap();
         assert!(result.to_string().contains("[[1,2]]"));
@@ -761,7 +762,13 @@ mod tests {
 
     #[test]
     fn test_json_parse_large_array() {
-        let arr_str: String = format!("[{}]", (0..100).map(|i| i.to_string()).collect::<Vec<_>>().join(","));
+        let arr_str: String = format!(
+            "[{}]",
+            (0..100)
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        );
         let result = json_parse(&arr_str).unwrap();
         if let Value::Array(arr) = result {
             assert_eq!(arr.len(), 100);
@@ -1002,8 +1009,8 @@ mod tests {
 
     #[test]
     fn test_json_stringify_empty_object_r160() {
-        use std::sync::Arc;
         use std::collections::HashMap;
+        use std::sync::Arc;
         let obj = Value::Object(Arc::new(HashMap::new()));
         let result = json_stringify(&obj).unwrap();
         if let Value::String(s) = result {
@@ -1015,8 +1022,8 @@ mod tests {
 
     #[test]
     fn test_json_roundtrip_object_r160() {
-        use std::sync::Arc;
         use std::collections::HashMap;
+        use std::sync::Arc;
         let mut map = HashMap::new();
         map.insert("key".to_string(), Value::Integer(42));
         let obj = Value::Object(Arc::new(map));

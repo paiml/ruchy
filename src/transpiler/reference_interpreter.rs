@@ -575,42 +575,54 @@ mod tests {
     #[test]
     fn test_eval_literal_integer() {
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&CoreExpr::Literal(CoreLiteral::Integer(42))).unwrap();
+        let result = interp
+            .eval(&CoreExpr::Literal(CoreLiteral::Integer(42)))
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
     #[test]
     fn test_eval_literal_float() {
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&CoreExpr::Literal(CoreLiteral::Float(3.14))).unwrap();
+        let result = interp
+            .eval(&CoreExpr::Literal(CoreLiteral::Float(3.14)))
+            .unwrap();
         assert_eq!(result, Value::Float(3.14));
     }
 
     #[test]
     fn test_eval_literal_string() {
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&CoreExpr::Literal(CoreLiteral::String("hello".to_string()))).unwrap();
+        let result = interp
+            .eval(&CoreExpr::Literal(CoreLiteral::String("hello".to_string())))
+            .unwrap();
         assert_eq!(result, Value::String("hello".to_string()));
     }
 
     #[test]
     fn test_eval_literal_bool_true() {
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&CoreExpr::Literal(CoreLiteral::Bool(true))).unwrap();
+        let result = interp
+            .eval(&CoreExpr::Literal(CoreLiteral::Bool(true)))
+            .unwrap();
         assert_eq!(result, Value::Bool(true));
     }
 
     #[test]
     fn test_eval_literal_bool_false() {
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&CoreExpr::Literal(CoreLiteral::Bool(false))).unwrap();
+        let result = interp
+            .eval(&CoreExpr::Literal(CoreLiteral::Bool(false)))
+            .unwrap();
         assert_eq!(result, Value::Bool(false));
     }
 
     #[test]
     fn test_eval_literal_char() {
         let mut interp = ReferenceInterpreter::new();
-        let result = interp.eval(&CoreExpr::Literal(CoreLiteral::Char('x'))).unwrap();
+        let result = interp
+            .eval(&CoreExpr::Literal(CoreLiteral::Char('x')))
+            .unwrap();
         assert_eq!(result, Value::Char('x'));
     }
 
@@ -1451,7 +1463,11 @@ mod tests {
     #[test]
     fn test_eval_array_len() {
         let mut interp = ReferenceInterpreter::new();
-        let arr = Value::Array(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]);
+        let arr = Value::Array(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]);
         interp.env.push(arr);
         let expr = CoreExpr::Prim(PrimOp::ArrayLen, vec![CoreExpr::Var(DeBruijnIndex(0))]);
         let result = interp.eval(&expr).unwrap();

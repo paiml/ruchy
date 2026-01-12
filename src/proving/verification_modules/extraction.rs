@@ -188,7 +188,10 @@ mod tests {
     use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span};
 
     fn create_int_literal(n: i64) -> Expr {
-        Expr::new(ExprKind::Literal(Literal::Integer(n, None)), Span::default())
+        Expr::new(
+            ExprKind::Literal(Literal::Integer(n, None)),
+            Span::default(),
+        )
     }
 
     fn create_identifier(name: &str) -> Expr {
@@ -321,7 +324,12 @@ mod tests {
         let then_branch = create_int_literal(1);
         let else_branch = create_int_literal(2);
         let mut assertions = vec![];
-        extract_from_if(&condition, &then_branch, Some(&else_branch), &mut assertions);
+        extract_from_if(
+            &condition,
+            &then_branch,
+            Some(&else_branch),
+            &mut assertions,
+        );
         assert!(assertions.is_empty());
     }
 
@@ -335,10 +343,7 @@ mod tests {
 
     #[test]
     fn test_is_assert_statement_true() {
-        let exprs = vec![
-            create_identifier("assert"),
-            create_int_literal(1),
-        ];
+        let exprs = vec![create_identifier("assert"), create_int_literal(1)];
         assert!(is_assert_statement(&exprs, 0));
     }
 

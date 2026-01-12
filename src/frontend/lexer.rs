@@ -1334,7 +1334,10 @@ mod tests {
     fn test_tokenize_scientific_notation() {
         let mut stream = TokenStream::new("1e10");
         let token = stream.next();
-        assert!(matches!(token, Some((Token::Float(_), _)) | Some((Token::Integer(_), _))));
+        assert!(matches!(
+            token,
+            Some((Token::Float(_), _)) | Some((Token::Integer(_), _))
+        ));
     }
 
     #[test]

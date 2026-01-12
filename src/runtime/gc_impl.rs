@@ -528,13 +528,16 @@ mod tests {
 
     #[test]
     fn test_estimate_object_size_closure() {
-        use std::sync::Arc;
-        use std::rc::Rc;
-        use std::cell::RefCell;
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        use std::cell::RefCell;
+        use std::rc::Rc;
+        use std::sync::Arc;
         let closure = Value::Closure {
             params: vec![("x".to_string(), None), ("y".to_string(), None)],
-            body: Arc::new(Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default())),
+            body: Arc::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::default(),
+            )),
             env: Rc::new(RefCell::new(std::collections::HashMap::new())),
         };
         let size = ConservativeGC::estimate_object_size(&closure);
@@ -592,8 +595,8 @@ mod tests {
 
     #[test]
     fn test_estimate_object_size_object_mut() {
-        use std::sync::Mutex;
         use std::sync::Arc;
+        use std::sync::Mutex;
         let mut map = std::collections::HashMap::new();
         map.insert("key".to_string(), Value::Integer(42));
         let obj = Value::ObjectMut(Arc::new(Mutex::new(map)));
@@ -717,7 +720,9 @@ mod tests {
     #[test]
     fn test_gc_track_array_triggers_mark() {
         let mut gc = ConservativeGC::new();
-        gc.track_object(Value::Array(vec![Value::Integer(1), Value::Integer(2)].into()));
+        gc.track_object(Value::Array(
+            vec![Value::Integer(1), Value::Integer(2)].into(),
+        ));
         gc.collect();
         let stats = gc.get_stats();
         assert_eq!(stats.collections, 1);
@@ -726,7 +731,9 @@ mod tests {
     #[test]
     fn test_gc_track_tuple_triggers_mark() {
         let mut gc = ConservativeGC::new();
-        gc.track_object(Value::Tuple(vec![Value::Integer(1), Value::Bool(true)].into()));
+        gc.track_object(Value::Tuple(
+            vec![Value::Integer(1), Value::Bool(true)].into(),
+        ));
         gc.collect();
         let stats = gc.get_stats();
         assert_eq!(stats.collections, 1);

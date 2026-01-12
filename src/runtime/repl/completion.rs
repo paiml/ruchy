@@ -389,9 +389,9 @@ mod tests {
     fn test_all_keywords_present() {
         let engine = CompletionEngine::new();
         let expected_keywords = vec![
-            "fn", "let", "if", "else", "for", "while", "match", "true", "false",
-            "nil", "return", "break", "continue", "in", "mut", "struct", "enum",
-            "impl", "trait", "pub", "use", "mod", "type", "const", "static",
+            "fn", "let", "if", "else", "for", "while", "match", "true", "false", "nil", "return",
+            "break", "continue", "in", "mut", "struct", "enum", "impl", "trait", "pub", "use",
+            "mod", "type", "const", "static",
         ];
         for keyword in expected_keywords {
             assert!(
@@ -406,9 +406,22 @@ mod tests {
     fn test_all_commands_present() {
         let engine = CompletionEngine::new();
         let expected_commands = vec![
-            ":help", ":quit", ":exit", ":clear", ":history", ":reset",
-            ":mode", ":debug", ":ast", ":transpile", ":bench",
-            ":load", ":save", ":vars", ":funcs", ":types",
+            ":help",
+            ":quit",
+            ":exit",
+            ":clear",
+            ":history",
+            ":reset",
+            ":mode",
+            ":debug",
+            ":ast",
+            ":transpile",
+            ":bench",
+            ":load",
+            ":save",
+            ":vars",
+            ":funcs",
+            ":types",
         ];
         for command in expected_commands {
             assert!(

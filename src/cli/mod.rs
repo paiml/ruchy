@@ -1332,7 +1332,13 @@ mod tests {
             five_whys: true,
             hansei_report: None,
         };
-        if let Command::Hunt { cycles, andon, five_whys, .. } = cmd {
+        if let Command::Hunt {
+            cycles,
+            andon,
+            five_whys,
+            ..
+        } = cmd
+        {
             assert_eq!(cycles, 5);
             assert!(andon);
             assert!(five_whys);
@@ -1348,7 +1354,12 @@ mod tests {
             format: "json".to_string(),
             output: None,
         };
-        if let Command::Report { target, format, output } = cmd {
+        if let Command::Report {
+            target,
+            format,
+            output,
+        } = cmd
+        {
             assert_eq!(target, PathBuf::from("test.ruchy"));
             assert_eq!(format, "json");
             assert!(output.is_none());
@@ -1364,7 +1375,9 @@ mod tests {
             verbose: false,
             quiet: false,
             vm_mode: VmMode::default(),
-            command: Command::Run { path: PathBuf::from("nonexistent.ruchy") },
+            command: Command::Run {
+                path: PathBuf::from("nonexistent.ruchy"),
+            },
         };
         let result = cli.execute();
         assert!(result.is_err());
@@ -1788,7 +1801,14 @@ mod tests {
             hansei_report: Some(PathBuf::from("report.md")),
             five_whys: true,
         };
-        if let Command::Hunt { target, cycles, andon, hansei_report, five_whys } = cmd {
+        if let Command::Hunt {
+            target,
+            cycles,
+            andon,
+            hansei_report,
+            five_whys,
+        } = cmd
+        {
             assert_eq!(target, PathBuf::from("examples"));
             assert_eq!(cycles, 5);
             assert!(andon);
@@ -1807,7 +1827,12 @@ mod tests {
             format: "json".to_string(),
             output: Some(PathBuf::from("output.json")),
         };
-        if let Command::Report { target, format, output } = cmd {
+        if let Command::Report {
+            target,
+            format,
+            output,
+        } = cmd
+        {
             assert_eq!(target, PathBuf::from("examples"));
             assert_eq!(format, "json");
             assert!(output.is_some());

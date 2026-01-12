@@ -844,12 +844,13 @@ mod tests {
         let runtime = RuntimeConfig {
             memory_limit: Some(256),
             cpu_limit: Some(5000),
-            env_vars: HashMap::from([
-                ("NODE_ENV".to_string(), "production".to_string()),
-            ]),
+            env_vars: HashMap::from([("NODE_ENV".to_string(), "production".to_string())]),
             runtime_version: Some("18".to_string()),
         };
-        assert_eq!(runtime.env_vars.get("NODE_ENV"), Some(&"production".to_string()));
+        assert_eq!(
+            runtime.env_vars.get("NODE_ENV"),
+            Some(&"production".to_string())
+        );
     }
 
     // ===== Deployer Tests =====

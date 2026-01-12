@@ -1019,7 +1019,10 @@ mod tests {
         let ok_value = Value::Object(Arc::new({
             let mut map = HashMap::new();
             map.insert("type".to_string(), Value::from_string("Ok".to_string()));
-            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::Integer(42)])));
+            map.insert(
+                "data".to_string(),
+                Value::Array(Arc::from(vec![Value::Integer(42)])),
+            );
             map
         }));
 
@@ -1038,7 +1041,10 @@ mod tests {
         let err_value = Value::Object(Arc::new({
             let mut map = HashMap::new();
             map.insert("type".to_string(), Value::from_string("Err".to_string()));
-            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::from_string("error".to_string())])));
+            map.insert(
+                "data".to_string(),
+                Value::Array(Arc::from(vec![Value::from_string("error".to_string())])),
+            );
             map
         }));
 
@@ -1056,7 +1062,10 @@ mod tests {
         let err_value = Value::Object(Arc::new({
             let mut map = HashMap::new();
             map.insert("type".to_string(), Value::from_string("Err".to_string()));
-            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::Integer(42)])));
+            map.insert(
+                "data".to_string(),
+                Value::Array(Arc::from(vec![Value::Integer(42)])),
+            );
             map
         }));
 
@@ -1070,7 +1079,10 @@ mod tests {
         let ok_value = Value::Object(Arc::new({
             let mut map = HashMap::new();
             map.insert("type".to_string(), Value::from_string("Ok".to_string()));
-            map.insert("data".to_string(), Value::Array(Arc::from(vec![Value::Integer(42)])));
+            map.insert(
+                "data".to_string(),
+                Value::Array(Arc::from(vec![Value::Integer(42)])),
+            );
             map
         }));
 
@@ -1550,7 +1562,10 @@ mod tests {
     fn test_tuple_variant_wrong_length() {
         let variant_pattern = Pattern::TupleVariant {
             path: vec!["Some".to_string()],
-            patterns: vec![Pattern::Identifier("a".to_string()), Pattern::Identifier("b".to_string())],
+            patterns: vec![
+                Pattern::Identifier("a".to_string()),
+                Pattern::Identifier("b".to_string()),
+            ],
         };
         let tuple_value = Value::Tuple(Arc::from(vec![Value::Integer(42)])); // Only 1 element
         assert!(match_pattern(&variant_pattern, &tuple_value).is_none());
@@ -1560,7 +1575,10 @@ mod tests {
     fn test_tuple_variant_match() {
         let variant_pattern = Pattern::TupleVariant {
             path: vec!["Pair".to_string()],
-            patterns: vec![Pattern::Identifier("a".to_string()), Pattern::Identifier("b".to_string())],
+            patterns: vec![
+                Pattern::Identifier("a".to_string()),
+                Pattern::Identifier("b".to_string()),
+            ],
         };
         let tuple_value = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
         let binding = match_pattern(&variant_pattern, &tuple_value);

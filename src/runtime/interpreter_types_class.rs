@@ -673,8 +673,8 @@ impl Interpreter {
 mod tests {
     use super::*;
     use crate::frontend::ast::{
-        ClassConstant, ClassMethod, Constructor, Literal, Param, Pattern,
-        SelfType, Span, StructField, Type, TypeKind, Visibility,
+        ClassConstant, ClassMethod, Constructor, Literal, Param, Pattern, SelfType, Span,
+        StructField, Type, TypeKind, Visibility,
     };
 
     fn make_interpreter() -> Interpreter {
@@ -746,7 +746,11 @@ mod tests {
             is_final: false,
             is_abstract: false,
             is_async: false,
-            self_type: if is_static { SelfType::None } else { SelfType::Borrowed },
+            self_type: if is_static {
+                SelfType::None
+            } else {
+                SelfType::Borrowed
+            },
         }
     }
 
@@ -762,7 +766,10 @@ mod tests {
     fn make_struct_literal(name: &str, fields: Vec<(&str, Expr)>) -> Expr {
         make_expr(ExprKind::StructLiteral {
             name: name.to_string(),
-            fields: fields.into_iter().map(|(n, e)| (n.to_string(), e)).collect(),
+            fields: fields
+                .into_iter()
+                .map(|(n, e)| (n.to_string(), e))
+                .collect(),
             base: None,
         })
     }
@@ -770,13 +777,19 @@ mod tests {
     #[test]
     fn test_eval_class_definition_empty() {
         let mut interp = make_interpreter();
-        let result = interp.eval_class_definition(
-            "Empty", &[], None, &[], &[], &[], &[], &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition("Empty", &[], None, &[], &[], &[], &[], &[], &[], false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Class".to_string())));
-            assert_eq!(obj.get("__name"), Some(&Value::from_string("Empty".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Class".to_string()))
+            );
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("Empty".to_string()))
+            );
             // Should have default "new" constructor
             if let Some(Value::Object(ctors)) = obj.get("__constructors") {
                 assert!(ctors.contains_key("new"));
@@ -790,12 +803,26 @@ mod tests {
     fn test_eval_class_definition_with_superclass() {
         let mut interp = make_interpreter();
         let parent = "ParentClass".to_string();
-        let result = interp.eval_class_definition(
-            "ChildClass", &[], Some(&parent), &[], &[], &[], &[], &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "ChildClass",
+                &[],
+                Some(&parent),
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__superclass"), Some(&Value::from_string("ParentClass".to_string())));
+            assert_eq!(
+                obj.get("__superclass"),
+                Some(&Value::from_string("ParentClass".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -807,14 +834,20 @@ mod tests {
         interp.set_variable("NotClass", Value::Integer(42));
         let result = interp.instantiate_class_with_constructor("NotClass", "new", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a class definition"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a class definition"));
     }
 
     #[test]
     fn test_instantiate_class_wrong_type() {
         let mut interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Struct".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
         interp.set_variable("WrongType", Value::Object(Arc::new(obj)));
 
         let result = interp.instantiate_class_with_constructor("WrongType", "new", &[]);
@@ -828,14 +861,20 @@ mod tests {
         interp.set_variable("NotClass", Value::Integer(42));
         let result = interp.instantiate_class_with_args("NotClass", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a class definition"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a class definition"));
     }
 
     #[test]
     fn test_instantiate_class_with_args_wrong_type() {
         let mut interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Struct".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
         interp.set_variable("WrongType", Value::Object(Arc::new(obj)));
 
         let result = interp.instantiate_class_with_args("WrongType", &[]);
@@ -864,7 +903,9 @@ mod tests {
     #[test]
     fn test_call_static_method_not_found() {
         let mut interp = make_interpreter();
-        interp.eval_class_definition("TestClass", &[], None, &[], &[], &[], &[], &[], &[], false).unwrap();
+        interp
+            .eval_class_definition("TestClass", &[], None, &[], &[], &[], &[], &[], &[], false)
+            .unwrap();
         let result = interp.call_static_method("TestClass", "nonexistent", &[]);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("not found"));
@@ -873,8 +914,11 @@ mod tests {
     #[test]
     fn test_eval_class_instance_method_not_found() {
         let mut interp = make_interpreter();
-        interp.eval_class_definition("TestClass", &[], None, &[], &[], &[], &[], &[], &[], false).unwrap();
-        let result = interp.eval_class_instance_method(&HashMap::new(), "TestClass", "nonexistent", &[]);
+        interp
+            .eval_class_definition("TestClass", &[], None, &[], &[], &[], &[], &[], &[], false)
+            .unwrap();
+        let result =
+            interp.eval_class_instance_method(&HashMap::new(), "TestClass", "nonexistent", &[]);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("no method named"));
     }
@@ -891,9 +935,9 @@ mod tests {
             make_struct_field("y", make_type("String")),
         ];
 
-        let result = interp.eval_class_definition(
-            "Point", &[], None, &[], &fields, &[], &[], &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition("Point", &[], None, &[], &fields, &[], &[], &[], &[], false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(field_defs)) = obj.get("__fields") {
@@ -910,17 +954,26 @@ mod tests {
     #[test]
     fn test_eval_class_definition_with_field_defaults() {
         let mut interp = make_interpreter();
-        let fields = vec![
-            make_struct_field_with_default(
-                "count",
-                make_type("i32"),
-                make_expr(ExprKind::Literal(Literal::Integer(42, None))),
-            ),
-        ];
+        let fields = vec![make_struct_field_with_default(
+            "count",
+            make_type("i32"),
+            make_expr(ExprKind::Literal(Literal::Integer(42, None))),
+        )];
 
-        let result = interp.eval_class_definition(
-            "Counter", &[], None, &[], &fields, &[], &[], &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "Counter",
+                &[],
+                None,
+                &[],
+                &fields,
+                &[],
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(field_defs)) = obj.get("__fields") {
@@ -939,17 +992,26 @@ mod tests {
     #[test]
     fn test_eval_class_definition_with_constructor() {
         let mut interp = make_interpreter();
-        let constructors = vec![
-            make_constructor(
-                Some("new"),
-                vec![make_param("value")],
-                make_expr(ExprKind::Block(vec![])),
-            ),
-        ];
+        let constructors = vec![make_constructor(
+            Some("new"),
+            vec![make_param("value")],
+            make_expr(ExprKind::Block(vec![])),
+        )];
 
-        let result = interp.eval_class_definition(
-            "MyClass", &[], None, &[], &[], &constructors, &[], &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "MyClass",
+                &[],
+                None,
+                &[],
+                &[],
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(ctors)) = obj.get("__constructors") {
@@ -982,9 +1044,20 @@ mod tests {
             ),
         ];
 
-        let result = interp.eval_class_definition(
-            "MyClass", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "MyClass",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(method_defs)) = obj.get("__methods") {
@@ -1004,13 +1077,25 @@ mod tests {
     #[test]
     fn test_eval_class_definition_with_constants() {
         let mut interp = make_interpreter();
-        let constants = vec![
-            make_constant("MAX_VALUE", make_expr(ExprKind::Literal(Literal::Integer(1000, None)))),
-        ];
+        let constants = vec![make_constant(
+            "MAX_VALUE",
+            make_expr(ExprKind::Literal(Literal::Integer(1000, None))),
+        )];
 
-        let result = interp.eval_class_definition(
-            "Config", &[], None, &[], &[], &[], &[], &constants, &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "Config",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &[],
+                &constants,
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(const_defs)) = obj.get("__constants") {
@@ -1028,31 +1113,47 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Define a class with a field and constructor that returns a struct literal
-        let fields = vec![
-            make_struct_field("value", make_type("i32")),
-        ];
+        let fields = vec![make_struct_field("value", make_type("i32"))];
 
-        let constructors = vec![
-            make_constructor(
-                Some("new"),
-                vec![],
-                make_struct_literal("Simple", vec![
-                    ("value", make_expr(ExprKind::Literal(Literal::Integer(0, None)))),
-                ]),
+        let constructors = vec![make_constructor(
+            Some("new"),
+            vec![],
+            make_struct_literal(
+                "Simple",
+                vec![(
+                    "value",
+                    make_expr(ExprKind::Literal(Literal::Integer(0, None))),
+                )],
             ),
-        ];
+        )];
 
-        interp.eval_class_definition(
-            "Simple", &[], None, &[], &fields, &constructors, &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "Simple",
+                &[],
+                None,
+                &[],
+                &fields,
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         // Instantiate it
-        let result = interp.instantiate_class_with_constructor("Simple", "new", &[]).unwrap();
+        let result = interp
+            .instantiate_class_with_constructor("Simple", "new", &[])
+            .unwrap();
 
         // Should be ObjectMut
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
-            assert_eq!(obj.get("__class"), Some(&Value::from_string("Simple".to_string())));
+            assert_eq!(
+                obj.get("__class"),
+                Some(&Value::from_string("Simple".to_string()))
+            );
         } else {
             panic!("Expected ObjectMut, got {:?}", result);
         }
@@ -1067,29 +1168,48 @@ mod tests {
             make_struct_field("x", make_type("i32")),
             make_struct_field("y", make_type("i32")),
         ];
-        let constructors = vec![
-            make_constructor(
-                Some("new"),
-                vec![make_param("x"), make_param("y")],
-                make_struct_literal("Point", vec![
+        let constructors = vec![make_constructor(
+            Some("new"),
+            vec![make_param("x"), make_param("y")],
+            make_struct_literal(
+                "Point",
+                vec![
                     ("x", make_expr(ExprKind::Identifier("x".to_string()))),
                     ("y", make_expr(ExprKind::Identifier("y".to_string()))),
-                ]),
+                ],
             ),
-        ];
+        )];
 
-        interp.eval_class_definition(
-            "Point", &[], None, &[], &fields, &constructors, &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "Point",
+                &[],
+                None,
+                &[],
+                &fields,
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         // Instantiate with arguments
-        let result = interp.instantiate_class_with_constructor(
-            "Point", "new", &[Value::Integer(10), Value::Integer(20)]
-        ).unwrap();
+        let result = interp
+            .instantiate_class_with_constructor(
+                "Point",
+                "new",
+                &[Value::Integer(10), Value::Integer(20)],
+            )
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
-            assert_eq!(obj.get("__class"), Some(&Value::from_string("Point".to_string())));
+            assert_eq!(
+                obj.get("__class"),
+                Some(&Value::from_string("Point".to_string()))
+            );
         } else {
             panic!("Expected ObjectMut");
         }
@@ -1099,42 +1219,61 @@ mod tests {
     fn test_instantiate_class_with_constructor_wrong_arg_count() {
         let mut interp = make_interpreter();
 
-        let constructors = vec![
-            make_constructor(
-                Some("new"),
-                vec![make_param("x")],
-                make_expr(ExprKind::Block(vec![])),
-            ),
-        ];
+        let constructors = vec![make_constructor(
+            Some("new"),
+            vec![make_param("x")],
+            make_expr(ExprKind::Block(vec![])),
+        )];
 
-        interp.eval_class_definition(
-            "OneArg", &[], None, &[], &[], &constructors, &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "OneArg",
+                &[],
+                None,
+                &[],
+                &[],
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         // Wrong number of arguments
         let result = interp.instantiate_class_with_constructor("OneArg", "new", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects 1 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 1 arguments"));
     }
 
     #[test]
     fn test_instantiate_class_with_args_success() {
         let mut interp = make_interpreter();
 
-        let fields = vec![
-            make_struct_field("count", make_type("i32")),
-        ];
-        let constructors = vec![
-            make_constructor(
-                Some("init"),
-                vec![],
-                make_expr(ExprKind::Block(vec![])),
-            ),
-        ];
+        let fields = vec![make_struct_field("count", make_type("i32"))];
+        let constructors = vec![make_constructor(
+            Some("init"),
+            vec![],
+            make_expr(ExprKind::Block(vec![])),
+        )];
 
-        interp.eval_class_definition(
-            "Counter", &[], None, &[], &fields, &constructors, &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "Counter",
+                &[],
+                None,
+                &[],
+                &fields,
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let result = interp.instantiate_class_with_args("Counter", &[]).unwrap();
 
@@ -1150,21 +1289,33 @@ mod tests {
     fn test_instantiate_class_with_args_wrong_count() {
         let mut interp = make_interpreter();
 
-        let constructors = vec![
-            make_constructor(
-                Some("init"),
-                vec![make_param("value")],
-                make_expr(ExprKind::Block(vec![])),
-            ),
-        ];
+        let constructors = vec![make_constructor(
+            Some("init"),
+            vec![make_param("value")],
+            make_expr(ExprKind::Block(vec![])),
+        )];
 
-        interp.eval_class_definition(
-            "NeedsArg", &[], None, &[], &[], &constructors, &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "NeedsArg",
+                &[],
+                None,
+                &[],
+                &[],
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let result = interp.instantiate_class_with_args("NeedsArg", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects 1 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 1 arguments"));
     }
 
     #[test]
@@ -1172,21 +1323,32 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Create a method that returns a literal
-        let methods = vec![
-            make_method(
-                "get_value",
-                vec![], // self is filtered out automatically
-                make_expr(ExprKind::Literal(Literal::Integer(42, None))),
-                false,
-            ),
-        ];
+        let methods = vec![make_method(
+            "get_value",
+            vec![], // self is filtered out automatically
+            make_expr(ExprKind::Literal(Literal::Integer(42, None))),
+            false,
+        )];
 
-        interp.eval_class_definition(
-            "Getter", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "Getter",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let instance = HashMap::new();
-        let result = interp.eval_class_instance_method(&instance, "Getter", "get_value", &[]).unwrap();
+        let result = interp
+            .eval_class_instance_method(&instance, "Getter", "get_value", &[])
+            .unwrap();
         assert_eq!(result, Value::Integer(42));
     }
 
@@ -1195,23 +1357,21 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Method that takes an argument and returns it
-        let methods = vec![
-            make_method(
-                "echo",
-                vec![make_param("x")],
-                make_expr(ExprKind::Identifier("x".to_string())),
-                false,
-            ),
-        ];
+        let methods = vec![make_method(
+            "echo",
+            vec![make_param("x")],
+            make_expr(ExprKind::Identifier("x".to_string())),
+            false,
+        )];
 
-        interp.eval_class_definition(
-            "Echo", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition("Echo", &[], None, &[], &[], &[], &methods, &[], &[], false)
+            .unwrap();
 
         let instance = HashMap::new();
-        let result = interp.eval_class_instance_method(
-            &instance, "Echo", "echo", &[Value::Integer(99)]
-        ).unwrap();
+        let result = interp
+            .eval_class_instance_method(&instance, "Echo", "echo", &[Value::Integer(99)])
+            .unwrap();
         assert_eq!(result, Value::Integer(99));
     }
 
@@ -1219,64 +1379,97 @@ mod tests {
     fn test_eval_class_instance_method_wrong_arg_count() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            make_method(
-                "need_one",
-                vec![make_param("x")],
-                make_expr(ExprKind::Literal(Literal::Integer(0, None))),
-                false,
-            ),
-        ];
+        let methods = vec![make_method(
+            "need_one",
+            vec![make_param("x")],
+            make_expr(ExprKind::Literal(Literal::Integer(0, None))),
+            false,
+        )];
 
-        interp.eval_class_definition(
-            "NeedOne", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "NeedOne",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let instance = HashMap::new();
         let result = interp.eval_class_instance_method(&instance, "NeedOne", "need_one", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects 1 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 1 arguments"));
     }
 
     #[test]
     fn test_eval_class_instance_method_on_static() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            make_method(
-                "static_fn",
-                vec![],
-                make_expr(ExprKind::Literal(Literal::Integer(0, None))),
-                true, // is_static = true
-            ),
-        ];
+        let methods = vec![make_method(
+            "static_fn",
+            vec![],
+            make_expr(ExprKind::Literal(Literal::Integer(0, None))),
+            true, // is_static = true
+        )];
 
-        interp.eval_class_definition(
-            "HasStatic", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "HasStatic",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let instance = HashMap::new();
         let result = interp.eval_class_instance_method(&instance, "HasStatic", "static_fn", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Cannot call static method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot call static method"));
     }
 
     #[test]
     fn test_call_static_method_success() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            make_method(
-                "create",
-                vec![],
-                make_expr(ExprKind::Literal(Literal::Integer(999, None))),
-                true, // is_static = true
-            ),
-        ];
+        let methods = vec![make_method(
+            "create",
+            vec![],
+            make_expr(ExprKind::Literal(Literal::Integer(999, None))),
+            true, // is_static = true
+        )];
 
-        interp.eval_class_definition(
-            "Factory", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "Factory",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let result = interp.call_static_method("Factory", "create", &[]).unwrap();
         assert_eq!(result, Value::Integer(999));
@@ -1286,22 +1479,20 @@ mod tests {
     fn test_call_static_method_with_args() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            make_method(
-                "add",
-                vec![make_param("a"), make_param("b")],
-                make_expr(ExprKind::Identifier("a".to_string())), // Just return a for simplicity
-                true,
-            ),
-        ];
+        let methods = vec![make_method(
+            "add",
+            vec![make_param("a"), make_param("b")],
+            make_expr(ExprKind::Identifier("a".to_string())), // Just return a for simplicity
+            true,
+        )];
 
-        interp.eval_class_definition(
-            "Math", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition("Math", &[], None, &[], &[], &[], &methods, &[], &[], false)
+            .unwrap();
 
-        let result = interp.call_static_method(
-            "Math", "add", &[Value::Integer(10), Value::Integer(20)]
-        ).unwrap();
+        let result = interp
+            .call_static_method("Math", "add", &[Value::Integer(10), Value::Integer(20)])
+            .unwrap();
         assert_eq!(result, Value::Integer(10));
     }
 
@@ -1309,44 +1500,68 @@ mod tests {
     fn test_call_static_method_wrong_arg_count() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            make_method(
-                "need_two",
-                vec![make_param("a"), make_param("b")],
-                make_expr(ExprKind::Literal(Literal::Integer(0, None))),
-                true,
-            ),
-        ];
+        let methods = vec![make_method(
+            "need_two",
+            vec![make_param("a"), make_param("b")],
+            make_expr(ExprKind::Literal(Literal::Integer(0, None))),
+            true,
+        )];
 
-        interp.eval_class_definition(
-            "NeedTwo", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "NeedTwo",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let result = interp.call_static_method("NeedTwo", "need_two", &[Value::Integer(1)]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("expects 2 arguments"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 2 arguments"));
     }
 
     #[test]
     fn test_call_static_method_on_non_static() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            make_method(
-                "instance_method",
-                vec![],
-                make_expr(ExprKind::Literal(Literal::Integer(0, None))),
-                false, // is_static = false
-            ),
-        ];
+        let methods = vec![make_method(
+            "instance_method",
+            vec![],
+            make_expr(ExprKind::Literal(Literal::Integer(0, None))),
+            false, // is_static = false
+        )];
 
-        interp.eval_class_definition(
-            "HasInstance", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "HasInstance",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let result = interp.call_static_method("HasInstance", "instance_method", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a static method"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a static method"));
     }
 
     #[test]
@@ -1354,26 +1569,37 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Define parent class with a field
-        let parent_fields = vec![
-            make_struct_field_with_default(
-                "parent_val",
-                make_type("i32"),
-                make_expr(ExprKind::Literal(Literal::Integer(100, None))),
-            ),
-        ];
+        let parent_fields = vec![make_struct_field_with_default(
+            "parent_val",
+            make_type("i32"),
+            make_expr(ExprKind::Literal(Literal::Integer(100, None))),
+        )];
         // Parent constructor returns struct literal
-        let parent_constructors = vec![
-            make_constructor(
-                Some("new"),
-                vec![],
-                make_struct_literal("Parent", vec![
-                    ("parent_val", make_expr(ExprKind::Literal(Literal::Integer(100, None)))),
-                ]),
+        let parent_constructors = vec![make_constructor(
+            Some("new"),
+            vec![],
+            make_struct_literal(
+                "Parent",
+                vec![(
+                    "parent_val",
+                    make_expr(ExprKind::Literal(Literal::Integer(100, None))),
+                )],
             ),
-        ];
-        interp.eval_class_definition(
-            "Parent", &[], None, &[], &parent_fields, &parent_constructors, &[], &[], &[], false
-        ).unwrap();
+        )];
+        interp
+            .eval_class_definition(
+                "Parent",
+                &[],
+                None,
+                &[],
+                &parent_fields,
+                &parent_constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         // Define child class with both parent and child fields (inheritance not fully supported)
         let child_fields = vec![
@@ -1390,22 +1616,42 @@ mod tests {
         ];
         let parent_name = "Parent".to_string();
         // Child constructor returns struct literal with both fields
-        let child_constructors = vec![
-            make_constructor(
-                Some("new"),
-                vec![],
-                make_struct_literal("Child", vec![
-                    ("parent_val", make_expr(ExprKind::Literal(Literal::Integer(100, None)))),
-                    ("child_val", make_expr(ExprKind::Literal(Literal::Integer(200, None)))),
-                ]),
+        let child_constructors = vec![make_constructor(
+            Some("new"),
+            vec![],
+            make_struct_literal(
+                "Child",
+                vec![
+                    (
+                        "parent_val",
+                        make_expr(ExprKind::Literal(Literal::Integer(100, None))),
+                    ),
+                    (
+                        "child_val",
+                        make_expr(ExprKind::Literal(Literal::Integer(200, None))),
+                    ),
+                ],
             ),
-        ];
-        interp.eval_class_definition(
-            "Child", &[], Some(&parent_name), &[], &child_fields, &child_constructors, &[], &[], &[], false
-        ).unwrap();
+        )];
+        interp
+            .eval_class_definition(
+                "Child",
+                &[],
+                Some(&parent_name),
+                &[],
+                &child_fields,
+                &child_constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         // Instantiate child
-        let result = interp.instantiate_class_with_constructor("Child", "new", &[]).unwrap();
+        let result = interp
+            .instantiate_class_with_constructor("Child", "new", &[])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -1431,9 +1677,20 @@ mod tests {
 
         let methods = vec![override_method];
 
-        let result = interp.eval_class_definition(
-            "Subclass", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "Subclass",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(method_defs)) = obj.get("__methods") {
@@ -1448,20 +1705,31 @@ mod tests {
     fn test_instantiate_class_with_args_has_methods() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            make_method(
-                "do_something",
-                vec![],
-                make_expr(ExprKind::Literal(Literal::Integer(42, None))),
+        let methods = vec![make_method(
+            "do_something",
+            vec![],
+            make_expr(ExprKind::Literal(Literal::Integer(42, None))),
+            false,
+        )];
+
+        interp
+            .eval_class_definition(
+                "WithMethods",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
                 false,
-            ),
-        ];
+            )
+            .unwrap();
 
-        interp.eval_class_definition(
-            "WithMethods", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
-
-        let result = interp.instantiate_class_with_args("WithMethods", &[]).unwrap();
+        let result = interp
+            .instantiate_class_with_args("WithMethods", &[])
+            .unwrap();
 
         if let Value::Class { methods: m, .. } = result {
             assert!(m.contains_key("do_something"));
@@ -1474,19 +1742,30 @@ mod tests {
     fn test_instantiate_class_with_args_has_field_defaults() {
         let mut interp = make_interpreter();
 
-        let fields = vec![
-            make_struct_field_with_default(
-                "initialized",
-                make_type("i32"),
-                make_expr(ExprKind::Literal(Literal::Integer(777, None))),
-            ),
-        ];
+        let fields = vec![make_struct_field_with_default(
+            "initialized",
+            make_type("i32"),
+            make_expr(ExprKind::Literal(Literal::Integer(777, None))),
+        )];
 
-        interp.eval_class_definition(
-            "WithDefaults", &[], None, &[], &fields, &[], &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "WithDefaults",
+                &[],
+                None,
+                &[],
+                &fields,
+                &[],
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
-        let result = interp.instantiate_class_with_args("WithDefaults", &[]).unwrap();
+        let result = interp
+            .instantiate_class_with_args("WithDefaults", &[])
+            .unwrap();
 
         if let Value::Class { fields: f, .. } = result {
             let fields_guard = f.read().unwrap();
@@ -1501,27 +1780,34 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Constructor with a non-identifier pattern (wildcard)
-        let constructors = vec![
-            Constructor {
-                name: Some("new".to_string()),
-                params: vec![
-                    Param {
-                        pattern: Pattern::Wildcard,
-                        ty: make_type("Any"),
-                        span: Span::default(),
-                        is_mutable: false,
-                        default_value: None,
-                    },
-                ],
-                return_type: None,
-                body: Box::new(make_expr(ExprKind::Block(vec![]))),
-                is_pub: true,
-            },
-        ];
+        let constructors = vec![Constructor {
+            name: Some("new".to_string()),
+            params: vec![Param {
+                pattern: Pattern::Wildcard,
+                ty: make_type("Any"),
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: None,
+            body: Box::new(make_expr(ExprKind::Block(vec![]))),
+            is_pub: true,
+        }];
 
-        let result = interp.eval_class_definition(
-            "WildcardClass", &[], None, &[], &[], &constructors, &[], &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "WildcardClass",
+                &[],
+                None,
+                &[],
+                &[],
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(ctors)) = obj.get("__constructors") {
@@ -1537,33 +1823,40 @@ mod tests {
     fn test_method_with_pattern_wildcard() {
         let mut interp = make_interpreter();
 
-        let methods = vec![
-            ClassMethod {
-                name: "ignore_arg".to_string(),
-                params: vec![
-                    Param {
-                        pattern: Pattern::Wildcard,
-                        ty: make_type("Any"),
-                        span: Span::default(),
-                        is_mutable: false,
-                        default_value: None,
-                    },
-                ],
-                return_type: Some(make_type("Any")),
-                body: Box::new(make_expr(ExprKind::Literal(Literal::Integer(0, None)))),
-                is_pub: true,
-                is_static: false,
-                is_override: false,
-                is_final: false,
-                is_abstract: false,
-                is_async: false,
-                self_type: SelfType::Borrowed,
-            },
-        ];
+        let methods = vec![ClassMethod {
+            name: "ignore_arg".to_string(),
+            params: vec![Param {
+                pattern: Pattern::Wildcard,
+                ty: make_type("Any"),
+                span: Span::default(),
+                is_mutable: false,
+                default_value: None,
+            }],
+            return_type: Some(make_type("Any")),
+            body: Box::new(make_expr(ExprKind::Literal(Literal::Integer(0, None)))),
+            is_pub: true,
+            is_static: false,
+            is_override: false,
+            is_final: false,
+            is_abstract: false,
+            is_async: false,
+            self_type: SelfType::Borrowed,
+        }];
 
-        let result = interp.eval_class_definition(
-            "WildcardMethod", &[], None, &[], &[], &[], &methods, &[], &[], false
-        ).unwrap();
+        let result = interp
+            .eval_class_definition(
+                "WildcardMethod",
+                &[],
+                None,
+                &[],
+                &[],
+                &[],
+                &methods,
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(method_defs)) = obj.get("__methods") {
@@ -1582,27 +1875,37 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Field without default value should be initialized to Nil
-        let fields = vec![
-            make_struct_field("uninitialized", make_type("Any")),
-        ];
+        let fields = vec![make_struct_field("uninitialized", make_type("Any"))];
 
         // Constructor returns struct literal (avoids the self lookup issue)
         // Use Literal::Unit which maps to Value::Nil
-        let constructors = vec![
-            make_constructor(
-                Some("new"),
-                vec![],
-                make_struct_literal("NoDefault", vec![
-                    ("uninitialized", make_expr(ExprKind::Literal(Literal::Unit))),
-                ]),
+        let constructors = vec![make_constructor(
+            Some("new"),
+            vec![],
+            make_struct_literal(
+                "NoDefault",
+                vec![("uninitialized", make_expr(ExprKind::Literal(Literal::Unit)))],
             ),
-        ];
+        )];
 
-        interp.eval_class_definition(
-            "NoDefault", &[], None, &[], &fields, &constructors, &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "NoDefault",
+                &[],
+                None,
+                &[],
+                &fields,
+                &constructors,
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
-        let result = interp.instantiate_class_with_constructor("NoDefault", "new", &[]).unwrap();
+        let result = interp
+            .instantiate_class_with_constructor("NoDefault", "new", &[])
+            .unwrap();
 
         if let Value::ObjectMut(cell) = result {
             let obj = cell.lock().unwrap();
@@ -1616,13 +1919,22 @@ mod tests {
     fn test_instantiate_class_with_args_field_without_default() {
         let mut interp = make_interpreter();
 
-        let fields = vec![
-            make_struct_field("nil_field", make_type("Any")),
-        ];
+        let fields = vec![make_struct_field("nil_field", make_type("Any"))];
 
-        interp.eval_class_definition(
-            "NilField", &[], None, &[], &fields, &[], &[], &[], &[], false
-        ).unwrap();
+        interp
+            .eval_class_definition(
+                "NilField",
+                &[],
+                None,
+                &[],
+                &fields,
+                &[],
+                &[],
+                &[],
+                &[],
+                false,
+            )
+            .unwrap();
 
         let result = interp.instantiate_class_with_args("NilField", &[]).unwrap();
 

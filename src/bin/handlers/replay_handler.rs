@@ -356,13 +356,7 @@ mod tests {
         let invalid_file = temp_dir.path().join("test.txt");
         std::fs::write(&invalid_file, "content").unwrap();
 
-        let result = handle_replay_to_tests_command(
-            &invalid_file,
-            None,
-            false,
-            false,
-            5000,
-        );
+        let result = handle_replay_to_tests_command(&invalid_file, None, false, false, 5000);
         assert!(result.is_err());
     }
 
@@ -397,13 +391,7 @@ mod tests {
     fn test_handle_replay_empty_directory() {
         let temp_dir = tempfile::TempDir::new().unwrap();
 
-        let result = handle_replay_to_tests_command(
-            temp_dir.path(),
-            None,
-            false,
-            false,
-            5000,
-        );
+        let result = handle_replay_to_tests_command(temp_dir.path(), None, false, false, 5000);
         // Should succeed with "No tests generated" message
         assert!(result.is_ok());
     }

@@ -243,7 +243,13 @@ mod tests {
     fn test_get_completions_includes_keywords() {
         let analyzer = SemanticAnalyzer::new();
         let completions = analyzer
-            .get_completions("", Position { line: 0, character: 0 })
+            .get_completions(
+                "",
+                Position {
+                    line: 0,
+                    character: 0,
+                },
+            )
             .expect("should succeed");
         let labels: Vec<_> = completions.iter().map(|c| c.label.as_str()).collect();
         assert!(labels.contains(&"fun"));
@@ -255,7 +261,13 @@ mod tests {
     fn test_get_completions_includes_types() {
         let analyzer = SemanticAnalyzer::new();
         let completions = analyzer
-            .get_completions("", Position { line: 0, character: 0 })
+            .get_completions(
+                "",
+                Position {
+                    line: 0,
+                    character: 0,
+                },
+            )
             .expect("should succeed");
         let labels: Vec<_> = completions.iter().map(|c| c.label.as_str()).collect();
         assert!(labels.contains(&"i32"));
@@ -267,7 +279,13 @@ mod tests {
     fn test_get_hover_info_returns_some() {
         let analyzer = SemanticAnalyzer::new();
         let hover = analyzer
-            .get_hover_info("let x = 42", Position { line: 0, character: 0 })
+            .get_hover_info(
+                "let x = 42",
+                Position {
+                    line: 0,
+                    character: 0,
+                },
+            )
             .expect("should succeed");
         assert!(hover.is_some());
     }
@@ -276,7 +294,13 @@ mod tests {
     fn test_get_definition_returns_none() {
         let analyzer = SemanticAnalyzer::new();
         let location = analyzer
-            .get_definition("let x = 42", Position { line: 0, character: 0 })
+            .get_definition(
+                "let x = 42",
+                Position {
+                    line: 0,
+                    character: 0,
+                },
+            )
             .expect("should succeed");
         assert!(location.is_none());
     }

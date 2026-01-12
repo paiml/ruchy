@@ -545,7 +545,9 @@ mod tests {
     fn test_load_program_with_ast() {
         let mut debugger = Debugger::new();
         let ast = crate::frontend::ast::Expr::new(
-            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
+            crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                42, None,
+            )),
             crate::frontend::ast::Span::default(),
         );
         debugger.load_program(&ast);

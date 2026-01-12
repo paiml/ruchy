@@ -6,10 +6,10 @@
 #[allow(clippy::approx_constant)] // Test constants are acceptable
 #[allow(clippy::panic)] // Tests can panic on assertion failures
 mod tests {
-    use crate::runtime::interpreter::*;
     use crate::runtime::interpreter::Interpreter;
-    use crate::runtime::Value;
+    use crate::runtime::interpreter::*;
     use crate::runtime::InterpreterError;
+    use crate::runtime::Value;
 
     #[test]
     fn test_value_creation() {

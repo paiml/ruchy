@@ -160,9 +160,9 @@ impl Transpiler {
             } => {
                 Self::find_nested_array_access_impl(param_name, condition, visited)
                     || Self::find_nested_array_access_impl(param_name, then_branch, visited)
-                    || else_branch
-                        .as_ref()
-                        .is_some_and(|e| Self::find_nested_array_access_impl(param_name, e, visited))
+                    || else_branch.as_ref().is_some_and(|e| {
+                        Self::find_nested_array_access_impl(param_name, e, visited)
+                    })
             }
             // Assignments
             ExprKind::Assign { target, value } | ExprKind::CompoundAssign { target, value, .. } => {
@@ -388,15 +388,13 @@ mod tests {
     #[test]
     fn test_is_nested_array_in_block() {
         let transpiler = make_transpiler();
-        let body = make_expr(ExprKind::Block(vec![
-            make_expr(ExprKind::IndexAccess {
-                object: Box::new(make_expr(ExprKind::IndexAccess {
-                    object: Box::new(ident_expr("m")),
-                    index: Box::new(ident_expr("i")),
-                })),
-                index: Box::new(ident_expr("j")),
-            }),
-        ]));
+        let body = make_expr(ExprKind::Block(vec![make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(ident_expr("i")),
+            })),
+            index: Box::new(ident_expr("j")),
+        })]));
         assert!(transpiler.is_nested_array_param_impl("m", &body));
     }
 

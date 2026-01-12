@@ -645,7 +645,8 @@ mod tests {
     #[test]
     fn test_repl_clear_bindings() {
         let mut repl = Repl::new(std::env::temp_dir()).unwrap();
-        repl.get_bindings_mut().insert("x".to_string(), Value::Integer(1));
+        repl.get_bindings_mut()
+            .insert("x".to_string(), Value::Integer(1));
         assert!(!repl.get_bindings().is_empty());
         repl.clear_bindings();
         assert!(repl.get_bindings().is_empty());

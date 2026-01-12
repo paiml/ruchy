@@ -30,7 +30,9 @@ impl Transpiler {
             ExprKind::Block(exprs) if exprs.len() == 1 => {
                 self.convert_single_expr_block_to_string(&exprs[0])
             }
-            ExprKind::Match { expr, arms } => self.transpile_match_with_string_arms_impl(expr, arms),
+            ExprKind::Match { expr, arms } => {
+                self.transpile_match_with_string_arms_impl(expr, arms)
+            }
             _ => {
                 let body_tokens = self.transpile_expr(body)?;
                 Ok(quote! { (#body_tokens).to_string() })
@@ -79,8 +81,16 @@ impl Transpiler {
                 body: let_body,
                 is_mutable,
                 ..
-            } => self.convert_let_body_to_string(name, type_annotation.as_ref(), value, let_body, *is_mutable),
-            ExprKind::Match { expr, arms } => self.transpile_match_with_string_arms_impl(expr, arms),
+            } => self.convert_let_body_to_string(
+                name,
+                type_annotation.as_ref(),
+                value,
+                let_body,
+                *is_mutable,
+            ),
+            ExprKind::Match { expr, arms } => {
+                self.transpile_match_with_string_arms_impl(expr, arms)
+            }
             _ => {
                 let expr_tokens = self.transpile_expr(expr)?;
                 Ok(quote! { (#expr_tokens).to_string() })
@@ -99,7 +109,8 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let name_ident = format_ident!("{}", name);
         let is_mutable_var = self.check_mutability(name, is_mutable, let_body);
-        let value_tokens = self.convert_value_for_string_context(name, value, type_annotation, is_mutable_var)?;
+        let value_tokens =
+            self.convert_value_for_string_context(name, value, type_annotation, is_mutable_var)?;
         let let_body_tokens = self.transpile_expr(let_body)?;
 
         let mutability = if is_mutable_var {
@@ -140,8 +151,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         match (&value.kind, type_annotation) {
             // String literal with String type annotation
-            (ExprKind::Literal(Literal::String(s)), Some(type_ann))
-                if matches!(&type_ann.kind, TypeKind::Named(n) if n == "String") =>
+            (ExprKind::Literal(Literal::String(s)), Some(type_ann)) if matches!(&type_ann.kind, TypeKind::Named(n) if n == "String") =>
             {
                 self.string_vars.borrow_mut().insert(name.to_string());
                 Ok(quote! { #s.to_string() })
@@ -325,7 +335,9 @@ mod tests {
     fn test_multi_expr_block_semicolons() {
         let transpiler = make_transpiler();
         let exprs = vec![ident_expr("x"), ident_expr("y"), int_expr(10)];
-        let result = transpiler.convert_multi_expr_block_to_string(&exprs).unwrap();
+        let result = transpiler
+            .convert_multi_expr_block_to_string(&exprs)
+            .unwrap();
         let result_str = result.to_string();
         assert!(result_str.contains("x"));
         assert!(result_str.contains("y"));
@@ -345,7 +357,9 @@ mod tests {
             else_block: None,
         });
         let exprs = vec![let_expr, int_expr(42)];
-        let result = transpiler.convert_multi_expr_block_to_string(&exprs).unwrap();
+        let result = transpiler
+            .convert_multi_expr_block_to_string(&exprs)
+            .unwrap();
         assert!(result.to_string().contains("to_string"));
     }
 
@@ -358,7 +372,10 @@ mod tests {
         let transpiler = make_transpiler();
         let expr = ident_expr("x");
         let arms = vec![
-            make_match_arm(Pattern::Literal(Literal::Integer(1, None)), string_expr("one")),
+            make_match_arm(
+                Pattern::Literal(Literal::Integer(1, None)),
+                string_expr("one"),
+            ),
             make_match_arm(Pattern::Wildcard, string_expr("other")),
         ];
         let result = transpiler

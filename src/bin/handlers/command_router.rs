@@ -6,9 +6,9 @@ use anyhow::Result;
 
 use super::{
     add, commands, handle_actor_observe_command, handle_bench_command, handle_coverage_command,
-    handle_dataflow_debug_command, handle_doc_command, handle_mcp_command,
-    handle_notebook_command, handle_optimize_command, handle_prove_command,
-    handle_replay_to_tests_command, handle_serve_command, handle_wasm_command,
+    handle_dataflow_debug_command, handle_doc_command, handle_mcp_command, handle_notebook_command,
+    handle_optimize_command, handle_prove_command, handle_replay_to_tests_command,
+    handle_serve_command, handle_wasm_command,
 };
 
 /// Handle complex commands that require special routing

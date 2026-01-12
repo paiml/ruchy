@@ -85,7 +85,7 @@ pub fn slice_string(
             let type_name = start.type_name();
             return Err(InterpreterError::RuntimeError(format!(
                 "Range start must be integer or nil, got {type_name}"
-            )))
+            )));
         }
     };
 
@@ -109,7 +109,7 @@ pub fn slice_string(
             let type_name = end.type_name();
             return Err(InterpreterError::RuntimeError(format!(
                 "Range end must be integer or nil, got {type_name}"
-            )))
+            )));
         }
     };
 
@@ -235,9 +235,10 @@ pub fn index_tuple(tuple: &[Value], idx: i64) -> Result<Value, InterpreterError>
 
 /// Index into an object with string key (complexity: 1)
 pub fn index_object(fields: &HashMap<String, Value>, key: &str) -> Result<Value, InterpreterError> {
-    fields.get(key).cloned().ok_or_else(|| {
-        InterpreterError::RuntimeError(format!("Key '{key}' not found in object"))
-    })
+    fields
+        .get(key)
+        .cloned()
+        .ok_or_else(|| InterpreterError::RuntimeError(format!("Key '{key}' not found in object")))
 }
 
 /// Index into a mutable object with string key (complexity: 1)
@@ -595,13 +596,17 @@ mod tests {
 
     #[test]
     fn test_slice_string_negative_both() {
-        let result = slice_string("hello", &Value::Integer(-4), &Value::Integer(-1), false).unwrap();
+        let result =
+            slice_string("hello", &Value::Integer(-4), &Value::Integer(-1), false).unwrap();
         assert_eq!(result.to_string(), "\"ell\"");
     }
 
     #[test]
     fn test_index_tuple_string_element() {
-        let tuple = vec![Value::from_string("first".to_string()), Value::from_string("second".to_string())];
+        let tuple = vec![
+            Value::from_string("first".to_string()),
+            Value::from_string("second".to_string()),
+        ];
         let result = index_tuple(&tuple, 1).unwrap();
         if let Value::String(s) = result {
             assert_eq!(s.as_ref(), "second");
@@ -623,12 +628,10 @@ mod tests {
 
     #[test]
     fn test_index_dataframe_row_second() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "x".to_string(),
-                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        }];
         let row = index_dataframe_row(&columns, 2).unwrap();
         if let Value::Object(obj) = row {
             assert_eq!(obj.get("x"), Some(&Value::Integer(3)));
@@ -675,7 +678,10 @@ mod tests {
 
     #[test]
     fn test_index_array_with_string_values() {
-        let arr = vec![Value::from_string("a".to_string()), Value::from_string("b".to_string())];
+        let arr = vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ];
         let result = index_array(&arr, 0).unwrap();
         if let Value::String(s) = result {
             assert_eq!(s.as_ref(), "a");
@@ -735,7 +741,9 @@ mod tests {
 
     #[test]
     fn test_index_array_nested() {
-        let inner = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice()));
+        let inner = Value::Array(Arc::from(
+            vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice(),
+        ));
         let arr = vec![inner.clone()];
         let result = index_array(&arr, 0).unwrap();
         if let Value::Array(inner_arr) = result {
@@ -760,7 +768,10 @@ mod tests {
             },
             DataFrameColumn {
                 name: "b".to_string(),
-                values: vec![Value::from_string("x".to_string()), Value::from_string("y".to_string())],
+                values: vec![
+                    Value::from_string("x".to_string()),
+                    Value::from_string("y".to_string()),
+                ],
             },
             DataFrameColumn {
                 name: "c".to_string(),
@@ -888,7 +899,8 @@ mod tests {
 
     #[test]
     fn test_slice_string_with_spaces() {
-        let result = slice_string("hello world", &Value::Integer(0), &Value::Integer(5), false).unwrap();
+        let result =
+            slice_string("hello world", &Value::Integer(0), &Value::Integer(5), false).unwrap();
         if let Value::String(s) = result {
             assert_eq!(s.as_ref(), "hello");
         } else {
@@ -963,7 +975,8 @@ mod tests {
     #[test]
     fn test_slice_string_long_string() {
         let long_str = "a".repeat(100);
-        let result = slice_string(&long_str, &Value::Integer(50), &Value::Integer(60), false).unwrap();
+        let result =
+            slice_string(&long_str, &Value::Integer(50), &Value::Integer(60), false).unwrap();
         if let Value::String(s) = result {
             assert_eq!(s.len(), 10);
         } else {
@@ -975,7 +988,10 @@ mod tests {
 
     #[test]
     fn test_index_array_first_element_r159() {
-        let arr = vec![Value::from_string("first".to_string()), Value::from_string("second".to_string())];
+        let arr = vec![
+            Value::from_string("first".to_string()),
+            Value::from_string("second".to_string()),
+        ];
         let result = index_array(&arr, 0).unwrap();
         assert_eq!(result.to_string(), "\"first\"");
     }
@@ -1020,7 +1036,8 @@ mod tests {
 
     #[test]
     fn test_slice_string_middle_r159() {
-        let result = slice_string("abcdefgh", &Value::Integer(2), &Value::Integer(6), false).unwrap();
+        let result =
+            slice_string("abcdefgh", &Value::Integer(2), &Value::Integer(6), false).unwrap();
         assert_eq!(result.to_string(), "\"cdef\"");
     }
 
@@ -1067,12 +1084,10 @@ mod tests {
 
     #[test]
     fn test_index_dataframe_row_last_r159() {
-        let columns = vec![
-            DataFrameColumn {
-                name: "col".to_string(),
-                values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
-            },
-        ];
+        let columns = vec![DataFrameColumn {
+            name: "col".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)],
+        }];
         let row = index_dataframe_row(&columns, 2).unwrap();
         if let Value::Object(obj) = row {
             assert_eq!(obj.get("col"), Some(&Value::Integer(3)));
@@ -1105,7 +1120,8 @@ mod tests {
 
     #[test]
     fn test_slice_string_unicode_r159() {
-        let result = slice_string("こんにちは", &Value::Integer(1), &Value::Integer(4), false).unwrap();
+        let result =
+            slice_string("こんにちは", &Value::Integer(1), &Value::Integer(4), false).unwrap();
         if let Value::String(s) = result {
             assert_eq!(s.len(), 9); // 3 characters * 3 bytes each
         } else {
@@ -1144,7 +1160,10 @@ mod tests {
             },
             DataFrameColumn {
                 name: "name".to_string(),
-                values: vec![Value::from_string("Alice".to_string()), Value::from_string("Bob".to_string())],
+                values: vec![
+                    Value::from_string("Alice".to_string()),
+                    Value::from_string("Bob".to_string()),
+                ],
             },
             DataFrameColumn {
                 name: "active".to_string(),

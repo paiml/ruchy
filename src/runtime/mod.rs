@@ -69,35 +69,35 @@ pub mod cache;
 pub mod completion;
 pub mod grammar_coverage;
 pub mod interpreter;
+pub mod interpreter_control_flow; // Control flow: loops, match, assignments
+pub mod interpreter_dataframe; // DataFrame operations and methods
+pub mod interpreter_functions; // Function definitions, lambdas, and calls
+pub mod interpreter_index; // Index access, field access, qualified names
 #[cfg(test)]
 pub mod interpreter_inline_tests; // Extracted tests from interpreter.rs
-pub mod interpreter_types; // EXTREME TDD Round 52: InterpreterError, CallFrame extracted
-pub mod interpreter_types_impl; // Class/struct/enum/actor definitions (re-export)
-pub mod interpreter_types_actor; // Actor definition and instantiation
-pub mod interpreter_types_struct; // Struct definition and instantiation
-pub mod interpreter_types_class; // Class definition, instantiation, methods
-pub mod interpreter_types_enum; // Enum and impl block definitions
-pub mod interpreter_types_module; // Module expression evaluation
 pub mod interpreter_methods; // Method dispatch for all value types (re-export)
-pub mod interpreter_methods_string; // String/array method dispatch
+pub mod interpreter_methods_actor; // Actor/struct/object methods
 pub mod interpreter_methods_dispatch; // Core method dispatch logic
 #[cfg(not(target_arch = "wasm32"))]
 pub mod interpreter_methods_html; // HTML document/element methods
 pub mod interpreter_methods_instance; // Mutable object instance methods
-pub mod interpreter_methods_actor; // Actor/struct/object methods
-pub mod interpreter_dataframe; // DataFrame operations and methods
-pub mod interpreter_control_flow; // Control flow: loops, match, assignments
-pub mod interpreter_functions; // Function definitions, lambdas, and calls
-pub mod interpreter_index; // Index access, field access, qualified names
+pub mod interpreter_methods_string; // String/array method dispatch
+pub mod interpreter_types; // EXTREME TDD Round 52: InterpreterError, CallFrame extracted
+pub mod interpreter_types_actor; // Actor definition and instantiation
+pub mod interpreter_types_class; // Class definition, instantiation, methods
+pub mod interpreter_types_enum; // Enum and impl block definitions
+pub mod interpreter_types_impl; // Class/struct/enum/actor definitions (re-export)
+pub mod interpreter_types_module; // Module expression evaluation
+pub mod interpreter_types_struct; // Struct definition and instantiation
 pub mod module_loader; // PARSER-060: Module resolution and import system
 pub mod object_helpers; // EXTREME TDD: RefCell-based mutable objects
 pub mod value; // EXTREME TDD Round 52: Value type extracted from interpreter.rs
 pub mod value_utils;
 // Decomposed interpreter modules
 pub mod builtin_init; // EXTREME TDD: Builtin functions initialization
-pub mod eval_actor; // EXTREME TDD: Actor operations extracted for 100% coverage
 pub mod builtins;
 pub mod compilation; // EXTREME TDD: Direct-threaded interpreter compilation
+pub mod eval_actor; // EXTREME TDD: Actor operations extracted for 100% coverage
 pub mod eval_array;
 pub mod eval_builtin;
 pub mod eval_control_flow_new;
@@ -108,9 +108,9 @@ pub mod eval_display;
 pub mod eval_expr;
 pub mod eval_func;
 pub mod eval_function;
+pub mod eval_html_methods; // HTTP-002-D: HTML parsing method support
 pub mod eval_index; // EXTREME TDD: Index operations extracted for 100% coverage
 pub mod eval_json; // EXTREME TDD: JSON operations extracted for 100% coverage
-pub mod eval_html_methods; // HTTP-002-D: HTML parsing method support
 pub mod eval_literal;
 pub mod eval_loops;
 pub mod eval_method;
@@ -123,10 +123,10 @@ pub mod eval_string_interpolation;
 pub mod eval_string_methods;
 pub mod eval_try_catch; // EXTREME TDD: Try/catch error handling
 pub mod gc;
-pub mod type_feedback; // EXTREME TDD: JIT type feedback system (extracted from interpreter.rs)
-pub mod value_format; // EXTREME TDD: Value formatting utilities (extracted from interpreter.rs)
 pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
+pub mod type_feedback; // EXTREME TDD: JIT type feedback system (extracted from interpreter.rs)
 pub mod validation;
+pub mod value_format; // EXTREME TDD: Value formatting utilities (extracted from interpreter.rs)
 // pub mod interpreter_modules;  // Temporarily disabled - compilation errors
 pub mod lazy;
 pub mod pattern_matching;
@@ -200,9 +200,9 @@ pub use audit::{
 
 // EXTREME TDD Round 86: Comprehensive tests extracted to separate files
 #[cfg(test)]
-mod interpreter_tests;
-#[cfg(test)]
 mod eval_builtin_tests;
+#[cfg(test)]
+mod interpreter_tests;
 
 #[cfg(all(test, feature = "repl"))]
 mod tests {

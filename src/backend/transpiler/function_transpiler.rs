@@ -263,7 +263,8 @@ mod tests {
     #[test]
     fn test_transpile_function_returning_result() {
         let mut transpiler = create_transpiler();
-        let mut parser = Parser::new(r#"fun try_parse(s: String) -> Result<i32, String> { Ok(42) }"#);
+        let mut parser =
+            Parser::new(r#"fun try_parse(s: String) -> Result<i32, String> { Ok(42) }"#);
         let ast = parser.parse().expect("parse");
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
@@ -311,7 +312,8 @@ mod tests {
     #[test]
     fn test_transpile_function_with_default_value() {
         let mut transpiler = create_transpiler();
-        let mut parser = Parser::new(r#"fun greet(name: String = "World") { println("Hello, " + name) }"#);
+        let mut parser =
+            Parser::new(r#"fun greet(name: String = "World") { println("Hello, " + name) }"#);
         let ast = parser.parse().expect("parse");
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());

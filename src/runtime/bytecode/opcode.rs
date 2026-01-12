@@ -517,21 +517,33 @@ mod tests {
     #[test]
     fn test_stack_operations_range() {
         for i in 0x00..=0x0F {
-            assert!(OpCode::from_u8(i).is_some(), "Stack op 0x{:02X} should exist", i);
+            assert!(
+                OpCode::from_u8(i).is_some(),
+                "Stack op 0x{:02X} should exist",
+                i
+            );
         }
     }
 
     #[test]
     fn test_arithmetic_operations_range() {
         for i in 0x10..=0x1F {
-            assert!(OpCode::from_u8(i).is_some(), "Arithmetic op 0x{:02X} should exist", i);
+            assert!(
+                OpCode::from_u8(i).is_some(),
+                "Arithmetic op 0x{:02X} should exist",
+                i
+            );
         }
     }
 
     #[test]
     fn test_control_flow_operations_range() {
         for i in 0x30..=0x3B {
-            assert!(OpCode::from_u8(i).is_some(), "Control flow op 0x{:02X} should exist", i);
+            assert!(
+                OpCode::from_u8(i).is_some(),
+                "Control flow op 0x{:02X} should exist",
+                i
+            );
         }
     }
 
@@ -543,10 +555,22 @@ mod tests {
     #[test]
     fn test_opcode_category_stack() {
         let stack_ops = [
-            OpCode::Nop, OpCode::Const, OpCode::LoadLocal, OpCode::StoreLocal,
-            OpCode::LoadGlobal, OpCode::StoreGlobal, OpCode::LoadField, OpCode::StoreField,
-            OpCode::LoadIndex, OpCode::StoreIndex, OpCode::LoadUpvalue, OpCode::StoreUpvalue,
-            OpCode::Move, OpCode::Pop, OpCode::Dup, OpCode::Swap,
+            OpCode::Nop,
+            OpCode::Const,
+            OpCode::LoadLocal,
+            OpCode::StoreLocal,
+            OpCode::LoadGlobal,
+            OpCode::StoreGlobal,
+            OpCode::LoadField,
+            OpCode::StoreField,
+            OpCode::LoadIndex,
+            OpCode::StoreIndex,
+            OpCode::LoadUpvalue,
+            OpCode::StoreUpvalue,
+            OpCode::Move,
+            OpCode::Pop,
+            OpCode::Dup,
+            OpCode::Swap,
         ];
         for op in stack_ops {
             assert!(op.to_u8() <= 0x0F, "{:?} should be in stack range", op);
@@ -556,38 +580,75 @@ mod tests {
     #[test]
     fn test_opcode_category_arithmetic() {
         let arith_ops = [
-            OpCode::Add, OpCode::Sub, OpCode::Mul, OpCode::Div, OpCode::Mod, OpCode::Neg,
-            OpCode::BitAnd, OpCode::BitOr, OpCode::BitXor, OpCode::BitNot,
-            OpCode::ShiftLeft, OpCode::ShiftRight,
+            OpCode::Add,
+            OpCode::Sub,
+            OpCode::Mul,
+            OpCode::Div,
+            OpCode::Mod,
+            OpCode::Neg,
+            OpCode::BitAnd,
+            OpCode::BitOr,
+            OpCode::BitXor,
+            OpCode::BitNot,
+            OpCode::ShiftLeft,
+            OpCode::ShiftRight,
         ];
         for op in arith_ops {
             let val = op.to_u8();
-            assert!(val >= 0x10 && val <= 0x1F, "{:?} should be in arithmetic range", op);
+            assert!(
+                val >= 0x10 && val <= 0x1F,
+                "{:?} should be in arithmetic range",
+                op
+            );
         }
     }
 
     #[test]
     fn test_opcode_category_comparison() {
         let cmp_ops = [
-            OpCode::Equal, OpCode::NotEqual, OpCode::Greater, OpCode::GreaterEqual,
-            OpCode::Less, OpCode::LessEqual, OpCode::Not, OpCode::And, OpCode::Or,
+            OpCode::Equal,
+            OpCode::NotEqual,
+            OpCode::Greater,
+            OpCode::GreaterEqual,
+            OpCode::Less,
+            OpCode::LessEqual,
+            OpCode::Not,
+            OpCode::And,
+            OpCode::Or,
         ];
         for op in cmp_ops {
             let val = op.to_u8();
-            assert!(val >= 0x20 && val <= 0x2F, "{:?} should be in comparison range", op);
+            assert!(
+                val >= 0x20 && val <= 0x2F,
+                "{:?} should be in comparison range",
+                op
+            );
         }
     }
 
     #[test]
     fn test_opcode_category_control() {
         let ctrl_ops = [
-            OpCode::Jump, OpCode::JumpIfTrue, OpCode::JumpIfFalse, OpCode::Call,
-            OpCode::TailCall, OpCode::Return, OpCode::Throw, OpCode::EnterTry,
-            OpCode::ExitTry, OpCode::For, OpCode::MethodCall, OpCode::Match,
+            OpCode::Jump,
+            OpCode::JumpIfTrue,
+            OpCode::JumpIfFalse,
+            OpCode::Call,
+            OpCode::TailCall,
+            OpCode::Return,
+            OpCode::Throw,
+            OpCode::EnterTry,
+            OpCode::ExitTry,
+            OpCode::For,
+            OpCode::MethodCall,
+            OpCode::Match,
         ];
         for op in ctrl_ops {
             let val = op.to_u8();
-            assert!(val >= 0x30 && val <= 0x3F, "{:?} should be in control range", op);
+            assert!(
+                val >= 0x30 && val <= 0x3F,
+                "{:?} should be in control range",
+                op
+            );
         }
     }
 

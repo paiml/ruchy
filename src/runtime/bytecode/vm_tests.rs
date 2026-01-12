@@ -222,7 +222,11 @@ mod tests {
 
     #[test]
     fn test_vm_divide_floats() {
-        let expr = make_binary_expr(BinaryOp::Divide, make_float_expr(10.0), make_float_expr(4.0));
+        let expr = make_binary_expr(
+            BinaryOp::Divide,
+            make_float_expr(10.0),
+            make_float_expr(4.0),
+        );
         let result = compile_and_execute(&expr).expect("execution should succeed");
         match result {
             Value::Float(f) => assert!((f - 2.5).abs() < 0.0001),
@@ -778,10 +782,7 @@ mod tests {
 
     #[test]
     fn test_vm_empty_object() {
-        let expr = Expr::new(
-            ExprKind::ObjectLiteral { fields: vec![] },
-            Span::default(),
-        );
+        let expr = Expr::new(ExprKind::ObjectLiteral { fields: vec![] }, Span::default());
         let result = compile_and_execute(&expr).expect("execution should succeed");
         match result {
             Value::Object(map) => assert!(map.is_empty()),
@@ -1001,7 +1002,11 @@ mod tests {
 
     #[test]
     fn test_vm_r158_subtract_floats() {
-        let expr = make_binary_expr(BinaryOp::Subtract, make_float_expr(10.5), make_float_expr(3.5));
+        let expr = make_binary_expr(
+            BinaryOp::Subtract,
+            make_float_expr(10.5),
+            make_float_expr(3.5),
+        );
         let result = compile_and_execute(&expr).expect("execution should succeed");
         match result {
             Value::Float(f) => assert!((f - 7.0).abs() < 0.0001),
@@ -1011,7 +1016,11 @@ mod tests {
 
     #[test]
     fn test_vm_r158_multiply_floats() {
-        let expr = make_binary_expr(BinaryOp::Multiply, make_float_expr(2.5), make_float_expr(4.0));
+        let expr = make_binary_expr(
+            BinaryOp::Multiply,
+            make_float_expr(2.5),
+            make_float_expr(4.0),
+        );
         let result = compile_and_execute(&expr).expect("execution should succeed");
         match result {
             Value::Float(f) => assert!((f - 10.0).abs() < 0.0001),

@@ -19,7 +19,10 @@ mod tests {
         linter.lint(&ast, source).expect("linting should succeed")
     }
 
-    fn parse_and_lint_with_rules(source: &str, rules: &str) -> Vec<crate::quality::linter::LintIssue> {
+    fn parse_and_lint_with_rules(
+        source: &str,
+        rules: &str,
+    ) -> Vec<crate::quality::linter::LintIssue> {
         let mut parser = Parser::new(source);
         let ast = parser.parse().expect("parsing should succeed");
         let mut linter = Linter::new();
@@ -212,14 +215,18 @@ mod tests {
     #[test]
     fn test_defined_variable_no_error() {
         let issues = parse_and_lint("let x = 42\nx");
-        assert!(!issues.iter().any(|i| i.rule == "undefined" && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule == "undefined" && i.name == "x"));
     }
 
     #[test]
     fn test_builtin_not_undefined() {
         let issues = parse_and_lint("println");
         // println is a builtin, should not be undefined
-        assert!(!issues.iter().any(|i| i.rule == "undefined" && i.name == "println"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule == "undefined" && i.name == "println"));
     }
 
     #[test]
@@ -235,14 +242,18 @@ mod tests {
     fn test_unused_variable_detected() {
         let issues = parse_and_lint("let unused_x = 42");
         // Check if unused variable is detected
-        assert!(issues.iter().any(|i| i.name == "unused_x" && i.rule.contains("unused")));
+        assert!(issues
+            .iter()
+            .any(|i| i.name == "unused_x" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_used_variable_no_warning() {
         let issues = parse_and_lint("let x = 42\nx + 1");
         // Should not have unused variable warning for x
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Variable Shadowing Tests ==============
@@ -263,14 +274,18 @@ mod tests {
     fn test_function_parameter_used() {
         let issues = parse_and_lint("fun foo(x) { x + 1 }");
         // Parameter x is used, should not be flagged
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_function_forward_reference() {
         let issues = parse_and_lint("fun foo() { bar() }\nfun bar() { 42 }");
         // bar should be defined (forward reference resolution)
-        assert!(!issues.iter().any(|i| i.name == "bar" && i.rule == "undefined"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "bar" && i.rule == "undefined"));
     }
 
     // ============== Loop Variable Tests ==============
@@ -279,14 +294,18 @@ mod tests {
     fn test_loop_variable_used() {
         let issues = parse_and_lint("for i in range(0, 10) { println(i) }");
         // i is used, should not be flagged
-        assert!(!issues.iter().any(|i| i.name == "i" && i.rule.contains("unused_loop")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "i" && i.rule.contains("unused_loop")));
     }
 
     #[test]
     fn test_loop_variable_unused() {
         let issues = parse_and_lint("for i in range(0, 10) { println(\"hello\") }");
         // i is unused, should be flagged
-        assert!(issues.iter().any(|i| i.name == "i" && i.rule.contains("unused_loop")));
+        assert!(issues
+            .iter()
+            .any(|i| i.name == "i" && i.rule.contains("unused_loop")));
     }
 
     // ============== Match Binding Tests ==============
@@ -295,14 +314,18 @@ mod tests {
     fn test_match_binding_used() {
         let issues = parse_and_lint("let x = 42\nmatch x { n => n + 1 }");
         // n is used, should not be flagged as unused match binding
-        assert!(!issues.iter().any(|i| i.name == "n" && i.rule.contains("unused_match")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "n" && i.rule.contains("unused_match")));
     }
 
     #[test]
     fn test_match_binding_unused() {
         let issues = parse_and_lint("let x = 42\nmatch x { n => 42 }");
         // n is unused, should be flagged
-        assert!(issues.iter().any(|i| i.name == "n" && i.rule.contains("unused_match")));
+        assert!(issues
+            .iter()
+            .any(|i| i.name == "n" && i.rule.contains("unused_match")));
     }
 
     // ============== If Expression Tests ==============
@@ -318,7 +341,9 @@ mod tests {
     fn test_if_branches_analyzed() {
         let issues = parse_and_lint("let x = 1\nif true { x } else { x + 1 }");
         // Should not panic, and x should be visible in both branches
-        assert!(!issues.iter().any(|i| i.rule == "undefined" && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule == "undefined" && i.name == "x"));
     }
 
     // ============== Lambda Tests ==============
@@ -327,14 +352,18 @@ mod tests {
     fn test_lambda_parameter_used() {
         let issues = parse_and_lint("|x| x + 1");
         // x is used in lambda, should not be flagged
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_lambda_parameter_unused() {
         let issues = parse_and_lint("|x| 42");
         // x is unused in lambda, should be flagged
-        assert!(issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Binary Expression Tests ==============
@@ -361,7 +390,9 @@ mod tests {
     fn test_block_sequential_visibility() {
         let issues = parse_and_lint("let x = 1\nx + 1");
         // x should be visible in subsequent statement
-        assert!(!issues.iter().any(|i| i.rule == "undefined" && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule == "undefined" && i.name == "x"));
     }
 
     // ============== List/Array Tests ==============
@@ -426,7 +457,12 @@ mod tests {
     fn test_enum_type_defined() {
         let issues = parse_and_lint("enum Color { Red, Green, Blue }");
         // Should not error
-        assert!(issues.is_empty() || !issues.iter().any(|i| i.name == "Color" && i.rule == "undefined"));
+        assert!(
+            issues.is_empty()
+                || !issues
+                    .iter()
+                    .any(|i| i.name == "Color" && i.rule == "undefined")
+        );
     }
 
     // ============== Struct Tests ==============
@@ -435,7 +471,12 @@ mod tests {
     fn test_struct_type_defined() {
         let issues = parse_and_lint("struct Point { x: i32, y: i32 }");
         // Should not error
-        assert!(issues.is_empty() || !issues.iter().any(|i| i.name == "Point" && i.rule == "undefined"));
+        assert!(
+            issues.is_empty()
+                || !issues
+                    .iter()
+                    .any(|i| i.name == "Point" && i.rule == "undefined")
+        );
     }
 
     // ============== LintIssue Tests ==============
@@ -467,7 +508,9 @@ mod tests {
     fn test_clean_code_no_issues() {
         let issues = parse_and_lint("let x = 42\nx");
         // No unused or undefined issues expected
-        assert!(!issues.iter().any(|i| i.rule == "undefined" && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule == "undefined" && i.name == "x"));
     }
 
     // ============== Edge Case Tests ==============
@@ -586,14 +629,18 @@ mod tests {
     fn test_nested_scope_variable_visibility() {
         let issues = parse_and_lint("let x = 1\nif true { let y = x } else { x }");
         // x should be visible in both branches
-        assert!(!issues.iter().any(|i| i.rule == "undefined" && i.name == "x"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.rule == "undefined" && i.name == "x"));
     }
 
     #[test]
     fn test_inner_scope_not_visible_outside() {
         let issues = parse_and_lint("if true { let inner = 1 }\ninner");
         // inner should not be visible outside the if block
-        assert!(issues.iter().any(|i| i.rule == "undefined" && i.name == "inner"));
+        assert!(issues
+            .iter()
+            .any(|i| i.rule == "undefined" && i.name == "inner"));
     }
 
     // ============== F-String Interpolation Tests ==============
@@ -602,7 +649,9 @@ mod tests {
     fn test_fstring_variable_marked_used() {
         let issues = parse_and_lint("let x = 42\nf\"{x}\"");
         // x is used in f-string, should not be flagged as unused
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Macro Tests ==============
@@ -611,7 +660,9 @@ mod tests {
     fn test_macro_args_analyzed() {
         let issues = parse_and_lint("let x = 42\nformat!(\"{}\", x)");
         // x is used in macro, should not be flagged as unused
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Additional Builtin Tests ==============
@@ -657,14 +708,18 @@ mod tests {
     fn test_variable_reassignment() {
         let issues = parse_and_lint("let x = 1\nx = 2\nx");
         // x is used after reassignment
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_compound_assignment() {
         let issues = parse_and_lint("let x = 1\nx += 5\nx");
         // x is used in compound assignment
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Control Flow Tests ==============
@@ -673,14 +728,18 @@ mod tests {
     fn test_if_condition_uses_variable() {
         let issues = parse_and_lint("let x = true\nif x { 1 } else { 0 }");
         // x is used in condition
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_while_condition_uses_variable() {
         let issues = parse_and_lint("let x = true\nwhile x { break }");
         // x is used in condition
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Binary/Unary Expression Tests ==============
@@ -689,8 +748,12 @@ mod tests {
     fn test_variable_in_binary_expr() {
         let issues = parse_and_lint("let x = 5\nlet y = 3\nx + y");
         // Both x and y are used
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
-        assert!(!issues.iter().any(|i| i.name == "y" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "y" && i.rule.contains("unused")));
     }
 
     #[test]
@@ -705,14 +768,18 @@ mod tests {
     fn test_variable_used_in_array() {
         let issues = parse_and_lint("let x = 1\n[x, 2, 3]");
         // x is used in array literal
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_variable_used_as_index() {
         let issues = parse_and_lint("let arr = [1,2,3]\nlet i = 0\narr[i]");
         // i is used as index
-        assert!(!issues.iter().any(|i| i.name == "i" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "i" && i.rule.contains("unused")));
     }
 
     // ============== Call Expression Tests ==============
@@ -721,14 +788,18 @@ mod tests {
     fn test_variable_used_in_call_arg() {
         let issues = parse_and_lint("let x = 42\nprintln(x)");
         // x is used as argument
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_variable_used_in_method_call() {
         let issues = parse_and_lint("let s = \"hello\"\ns.len()");
         // s is used as method receiver
-        assert!(!issues.iter().any(|i| i.name == "s" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "s" && i.rule.contains("unused")));
     }
 
     // ============== Struct/Object Tests ==============
@@ -743,7 +814,9 @@ mod tests {
     fn test_variable_used_in_field_access() {
         let issues = parse_and_lint("let obj = { x: 1 }\nobj.x");
         // obj is used in field access
-        assert!(!issues.iter().any(|i| i.name == "obj" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "obj" && i.rule.contains("unused")));
     }
 
     // ============== Closure/Lambda Tests ==============
@@ -760,7 +833,9 @@ mod tests {
     fn test_variable_used_in_return() {
         let issues = parse_and_lint("fun foo() { let x = 42\nreturn x }");
         // x is used in return
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Edge Cases ==============
@@ -776,7 +851,9 @@ mod tests {
     fn test_simple_let_used() {
         let issues = parse_and_lint("let x = 1\nx");
         // x is defined and used
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule == "undefined"));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule == "undefined"));
     }
 
     #[test]
@@ -798,7 +875,9 @@ mod tests {
     fn test_variable_with_type_annotation() {
         let issues = parse_and_lint("let x: int = 42\nx");
         // x with type annotation is used
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
     }
 
     // ============== Tuple Tests ==============
@@ -807,8 +886,12 @@ mod tests {
     fn test_variable_used_in_tuple() {
         let issues = parse_and_lint("let x = 1\nlet y = 2\n(x, y)");
         // Both x and y are used in tuple
-        assert!(!issues.iter().any(|i| i.name == "x" && i.rule.contains("unused")));
-        assert!(!issues.iter().any(|i| i.name == "y" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "x" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "y" && i.rule.contains("unused")));
     }
 
     // ============== Range Expression Tests ==============
@@ -817,14 +900,18 @@ mod tests {
     fn test_variable_in_range_start() {
         let issues = parse_and_lint("let start = 0\nrange(start, 10)");
         // start is used in range
-        assert!(!issues.iter().any(|i| i.name == "start" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "start" && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_variable_in_range_end() {
         let issues = parse_and_lint("let end = 10\nrange(0, end)");
         // end is used in range
-        assert!(!issues.iter().any(|i| i.name == "end" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "end" && i.rule.contains("unused")));
     }
 
     // === EXTREME TDD Round 124 tests ===
@@ -860,14 +947,18 @@ mod tests {
     fn test_function_parameter_used_in_binary() {
         let issues = parse_and_lint("fun add(a, b) { a + b }");
         // Parameters used in binary expression
-        assert!(!issues.iter().any(|i| (i.name == "a" || i.name == "b") && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| (i.name == "a" || i.name == "b") && i.rule.contains("unused")));
     }
 
     #[test]
     fn test_function_parameter_used_in_call() {
         let issues = parse_and_lint("fun wrapper(f, x) { f(x) }");
         // f used as function, x used as argument
-        assert!(!issues.iter().any(|i| (i.name == "f" || i.name == "x") && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| (i.name == "f" || i.name == "x") && i.rule.contains("unused")));
     }
 
     #[test]
@@ -886,7 +977,9 @@ mod tests {
     fn test_variable_used_in_array_index() {
         let issues = parse_and_lint("let i = 0\nlet arr = [1,2,3]\narr[i]");
         // i used as index
-        assert!(!issues.iter().any(|i| i.name == "i" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "i" && i.rule.contains("unused")));
     }
 
     #[test]
@@ -1034,7 +1127,9 @@ mod tests {
     fn test_for_loop_variable_used_r129() {
         let issues = parse_and_lint("for i in range(10) { println(i) }");
         // i should be considered used
-        assert!(!issues.iter().any(|i| i.name == "i" && i.rule.contains("unused")));
+        assert!(!issues
+            .iter()
+            .any(|i| i.name == "i" && i.rule.contains("unused")));
     }
 
     #[test]
@@ -1118,7 +1213,9 @@ mod tests {
 
     #[test]
     fn test_impl_block_linting_r129() {
-        let _issues = parse_and_lint("impl Point { fun new(x: int, y: int) -> Point { Point { x: x, y: y } } }");
+        let _issues = parse_and_lint(
+            "impl Point { fun new(x: int, y: int) -> Point { Point { x: x, y: y } } }",
+        );
         // Should lint without crash
     }
 
@@ -1142,7 +1239,8 @@ mod tests {
 
     #[test]
     fn test_recursive_function_linting_r129() {
-        let _issues = parse_and_lint("fun fact(n: int) -> int { if n <= 1 { 1 } else { n * fact(n - 1) } }");
+        let _issues =
+            parse_and_lint("fun fact(n: int) -> int { if n <= 1 { 1 } else { n * fact(n - 1) } }");
         // Should lint without crash
     }
 

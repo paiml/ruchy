@@ -700,7 +700,11 @@ mod tests {
             rustc_flags: vec![],
             embed_models: vec![],
         };
-        let info = ("nasa".to_string(), Some("fat".to_string()), Some("native".to_string()));
+        let info = (
+            "nasa".to_string(),
+            Some("fat".to_string()),
+            Some("native".to_string()),
+        );
         let result = generate_compilation_json(
             &json_path,
             Path::new("test.ruchy"),

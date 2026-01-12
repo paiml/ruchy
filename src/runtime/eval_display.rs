@@ -412,7 +412,9 @@ mod tests {
         let val = Value::Closure {
             params: vec![],
             body: Arc::new(crate::frontend::ast::Expr::new(
-                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(0, None)),
+                crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+                    0, None,
+                )),
                 crate::frontend::ast::Span::default(),
             )),
             env: std::rc::Rc::new(std::cell::RefCell::new(HashMap::new())),
@@ -532,22 +534,34 @@ mod tests {
 
     #[test]
     fn test_interpreter_error_stack_overflow() {
-        assert_eq!(InterpreterError::StackOverflow.to_string(), "Stack overflow");
+        assert_eq!(
+            InterpreterError::StackOverflow.to_string(),
+            "Stack overflow"
+        );
     }
 
     #[test]
     fn test_interpreter_error_stack_underflow() {
-        assert_eq!(InterpreterError::StackUnderflow.to_string(), "Stack underflow");
+        assert_eq!(
+            InterpreterError::StackUnderflow.to_string(),
+            "Stack underflow"
+        );
     }
 
     #[test]
     fn test_interpreter_error_invalid_instruction() {
-        assert_eq!(InterpreterError::InvalidInstruction.to_string(), "Invalid instruction");
+        assert_eq!(
+            InterpreterError::InvalidInstruction.to_string(),
+            "Invalid instruction"
+        );
     }
 
     #[test]
     fn test_interpreter_error_index_out_of_bounds() {
-        assert_eq!(InterpreterError::IndexOutOfBounds.to_string(), "Index out of bounds");
+        assert_eq!(
+            InterpreterError::IndexOutOfBounds.to_string(),
+            "Index out of bounds"
+        );
     }
 
     #[test]

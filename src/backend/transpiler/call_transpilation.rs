@@ -195,7 +195,8 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         // Check for DataFrame builder pattern
         if method == "column" || method == "build" {
-            if let Some(builder_tokens) = self.try_transpile_builder_pattern(object, method, args)?
+            if let Some(builder_tokens) =
+                self.try_transpile_builder_pattern(object, method, args)?
             {
                 return Ok(builder_tokens);
             }
@@ -290,7 +291,8 @@ impl Transpiler {
     fn is_dataframe_method(method: &str) -> bool {
         matches!(
             method,
-            "get" | "rows"
+            "get"
+                | "rows"
                 | "columns"
                 | "select"
                 | "filter"
@@ -363,9 +365,9 @@ impl Transpiler {
                 }
             }
             // DataFrame-only operations
-            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std"
-            | "drop_nulls" | "fill_null" | "pivot" | "melt" | "head" | "tail"
-            | "sample" | "describe" | "rows" | "columns" | "column" | "build" => {
+            "select" | "groupby" | "group_by" | "agg" | "sort" | "mean" | "std" | "drop_nulls"
+            | "fill_null" | "pivot" | "melt" | "head" | "tail" | "sample" | "describe" | "rows"
+            | "columns" | "column" | "build" => {
                 if Transpiler::is_dataframe_expr(object) {
                     self.transpile_dataframe_method(object, method, &[])
                 } else {
@@ -587,13 +589,7 @@ mod tests {
         let method_ident = format_ident!("append");
         let object = ident_expr("vec");
         let result = transpiler
-            .dispatch_method_by_category(
-                &obj_tokens,
-                "append",
-                &method_ident,
-                &arg_tokens,
-                &object,
-            )
+            .dispatch_method_by_category(&obj_tokens, "append", &method_ident, &arg_tokens, &object)
             .unwrap();
         assert!(result.to_string().contains("push"));
     }
@@ -606,13 +602,7 @@ mod tests {
         let method_ident = format_ident!("extend");
         let object = ident_expr("vec");
         let result = transpiler
-            .dispatch_method_by_category(
-                &obj_tokens,
-                "extend",
-                &method_ident,
-                &arg_tokens,
-                &object,
-            )
+            .dispatch_method_by_category(&obj_tokens, "extend", &method_ident, &arg_tokens, &object)
             .unwrap();
         assert!(result.to_string().contains("extend"));
     }
@@ -660,13 +650,8 @@ mod tests {
         let obj_tokens = quote! { vec };
         let method_ident = format_ident!("pop");
         let object = ident_expr("vec");
-        let result = transpiler.dispatch_method_by_category(
-            &obj_tokens,
-            "pop",
-            &method_ident,
-            &[],
-            &object,
-        );
+        let result =
+            transpiler.dispatch_method_by_category(&obj_tokens, "pop", &method_ident, &[], &object);
         assert!(result.is_ok());
     }
 
@@ -676,13 +661,8 @@ mod tests {
         let obj_tokens = quote! { vec };
         let method_ident = format_ident!("len");
         let object = ident_expr("vec");
-        let result = transpiler.dispatch_method_by_category(
-            &obj_tokens,
-            "len",
-            &method_ident,
-            &[],
-            &object,
-        );
+        let result =
+            transpiler.dispatch_method_by_category(&obj_tokens, "len", &method_ident, &[], &object);
         assert!(result.is_ok());
         assert!(result.unwrap().to_string().contains("len"));
     }

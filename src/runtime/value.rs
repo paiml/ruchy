@@ -226,8 +226,14 @@ mod tests {
 
     #[test]
     fn test_value_atom_equality() {
-        assert_eq!(Value::Atom("foo".to_string()), Value::Atom("foo".to_string()));
-        assert_ne!(Value::Atom("foo".to_string()), Value::Atom("bar".to_string()));
+        assert_eq!(
+            Value::Atom("foo".to_string()),
+            Value::Atom("foo".to_string())
+        );
+        assert_ne!(
+            Value::Atom("foo".to_string()),
+            Value::Atom("bar".to_string())
+        );
     }
 
     #[test]

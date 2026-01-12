@@ -237,8 +237,8 @@ fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
 
 #[cfg(test)]
 mod tests {
-    use crate::Parser;
     use crate::frontend::ast::ExprKind;
+    use crate::Parser;
 
     #[test]
     fn test_parse_impl_block_simple() {
@@ -277,7 +277,12 @@ mod tests {
         if let Ok(ast) = &result {
             if let ExprKind::Block(exprs) = &ast.kind {
                 for expr in exprs {
-                    if let ExprKind::Impl { trait_name, for_type, .. } = &expr.kind {
+                    if let ExprKind::Impl {
+                        trait_name,
+                        for_type,
+                        ..
+                    } = &expr.kind
+                    {
                         assert_eq!(trait_name.as_deref(), Some("Display"));
                         assert_eq!(for_type, "Point");
                     }
@@ -585,26 +590,31 @@ mod tests {
 
     #[test]
     fn test_impl_with_doc_comment() {
-        let result = parse(r#"impl Point {
+        let result = parse(
+            r#"impl Point {
             /// Gets the x coordinate
             fun get_x(&self) { self.x }
-        }"#);
+        }"#,
+        );
         assert!(result.is_ok(), "Impl with doc comment should parse");
     }
 
     #[test]
     fn test_impl_with_block_comment() {
-        let result = parse(r#"impl Point {
+        let result = parse(
+            r#"impl Point {
             /* Multi-line
                comment */
             fun get_x(&self) { self.x }
-        }"#);
+        }"#,
+        );
         assert!(result.is_ok(), "Impl with block comment should parse");
     }
 
     #[test]
     fn test_impl_multiline() {
-        let result = parse(r#"
+        let result = parse(
+            r#"
             impl Point {
                 fun new(x: i32, y: i32) -> Point {
                     Point { x, y }
@@ -614,7 +624,8 @@ mod tests {
                     Point::new(0, 0)
                 }
             }
-        "#);
+        "#,
+        );
         assert!(result.is_ok(), "Multiline impl should parse");
     }
 
@@ -835,13 +846,16 @@ mod tests {
 
     #[test]
     fn test_impl_trait_defaultable() {
-        let result = parse("impl Defaultable for Point { fun make_default() -> Point { Point { x: 0, y: 0 } } }");
+        let result = parse(
+            "impl Defaultable for Point { fun make_default() -> Point { Point { x: 0, y: 0 } } }",
+        );
         assert!(result.is_ok());
     }
 
     #[test]
     fn test_impl_trait_iterator() {
-        let result = parse("impl Iterator for MyIter { fun next(&mut self) -> Option<i32> { None } }");
+        let result =
+            parse("impl Iterator for MyIter { fun next(&mut self) -> Option<i32> { None } }");
         assert!(result.is_ok());
     }
 

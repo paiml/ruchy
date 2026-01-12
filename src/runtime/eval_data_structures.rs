@@ -1558,8 +1558,13 @@ mod round_130_tests {
 
     #[test]
     fn test_destructuring_array_multiple() {
-        let arr = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
-        let pattern = DestructuringPattern::Array(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        let arr = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let pattern =
+            DestructuringPattern::Array(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
 
         let mut count = 0;
         let result = eval_destructuring_assignment(&pattern, &arr, |_, _| {
@@ -1639,8 +1644,13 @@ mod round_130_tests {
 
     #[test]
     fn test_eval_destructuring_array_three_elements_r160() {
-        let value = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)]));
-        let pattern = DestructuringPattern::Array(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
+        let value = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let pattern =
+            DestructuringPattern::Array(vec!["a".to_string(), "b".to_string(), "c".to_string()]);
 
         let mut bindings = vec![];
         let result = eval_destructuring_assignment(&pattern, &value, |name, val| {

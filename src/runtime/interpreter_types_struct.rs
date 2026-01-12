@@ -355,11 +355,19 @@ mod tests {
     #[test]
     fn test_eval_struct_definition_empty() {
         let mut interp = make_interpreter();
-        let result = interp.eval_struct_definition("Empty", &[], &[], &[], false).unwrap();
+        let result = interp
+            .eval_struct_definition("Empty", &[], &[], &[], false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__type"), Some(&Value::from_string("Struct".to_string())));
-            assert_eq!(obj.get("__name"), Some(&Value::from_string("Empty".to_string())));
+            assert_eq!(
+                obj.get("__type"),
+                Some(&Value::from_string("Struct".to_string()))
+            );
+            assert_eq!(
+                obj.get("__name"),
+                Some(&Value::from_string("Empty".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }
@@ -373,7 +381,9 @@ mod tests {
             make_struct_field("y", make_type("i32")),
         ];
 
-        let result = interp.eval_struct_definition("Point", &[], &fields, &[], false).unwrap();
+        let result = interp
+            .eval_struct_definition("Point", &[], &fields, &[], false)
+            .unwrap();
 
         if let Value::Object(obj) = result {
             if let Some(Value::Object(fields_obj)) = obj.get("__fields") {
@@ -392,7 +402,10 @@ mod tests {
         let mut interp = make_interpreter();
         let result = interp.eval_struct_literal("UndefinedStruct", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Undefined struct type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Undefined struct type"));
     }
 
     #[test]
@@ -401,19 +414,28 @@ mod tests {
         interp.set_variable("NotStruct", Value::Integer(42));
         let result = interp.eval_struct_literal("NotStruct", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a struct type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a struct type"));
     }
 
     #[test]
     fn test_eval_struct_literal_wrong_type() {
         let mut interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Other".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Other".to_string()),
+        );
         interp.set_variable("WrongType", Value::Object(Arc::new(obj)));
 
         let result = interp.eval_struct_literal("WrongType", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a struct or class type"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a struct or class type"));
     }
 
     #[test]
@@ -429,14 +451,20 @@ mod tests {
         interp.set_variable("NotStruct", Value::Integer(42));
         let result = interp.instantiate_struct_with_args("NotStruct", &[]);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("not a struct definition"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not a struct definition"));
     }
 
     #[test]
     fn test_instantiate_struct_wrong_type() {
         let mut interp = make_interpreter();
         let mut obj = HashMap::new();
-        obj.insert("__type".to_string(), Value::from_string("Class".to_string()));
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
         interp.set_variable("WrongType", Value::Object(Arc::new(obj)));
 
         let result = interp.instantiate_struct_with_args("WrongType", &[]);
@@ -449,16 +477,21 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Create struct definition
-        let fields = vec![
-            make_struct_field("x", make_type("i32")),
-        ];
-        interp.eval_struct_definition("Point", &[], &fields, &[], false).unwrap();
+        let fields = vec![make_struct_field("x", make_type("i32"))];
+        interp
+            .eval_struct_definition("Point", &[], &fields, &[], false)
+            .unwrap();
 
         // Instantiate with args
-        let result = interp.instantiate_struct_with_args("Point", &[Value::Integer(10)]).unwrap();
+        let result = interp
+            .instantiate_struct_with_args("Point", &[Value::Integer(10)])
+            .unwrap();
 
         if let Value::Object(obj) = result {
-            assert_eq!(obj.get("__struct"), Some(&Value::from_string("Point".to_string())));
+            assert_eq!(
+                obj.get("__struct"),
+                Some(&Value::from_string("Point".to_string()))
+            );
         } else {
             panic!("Expected Object");
         }

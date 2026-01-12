@@ -503,10 +503,7 @@ mod coverage_tests {
 
     #[test]
     fn test_display_tuple_single() {
-        assert_eq!(
-            MonoType::Tuple(vec![MonoType::Int]).to_string(),
-            "(i32)"
-        );
+        assert_eq!(MonoType::Tuple(vec![MonoType::Int]).to_string(), "(i32)");
     }
 
     #[test]
@@ -638,10 +635,7 @@ mod coverage_tests {
         subst.insert(var1.clone(), MonoType::Int);
         subst.insert(var2.clone(), MonoType::String);
 
-        let ty = MonoType::Result(
-            Box::new(MonoType::Var(var1)),
-            Box::new(MonoType::Var(var2)),
-        );
+        let ty = MonoType::Result(Box::new(MonoType::Var(var1)), Box::new(MonoType::Var(var2)));
         let result = ty.substitute(&subst);
         assert_eq!(
             result,
@@ -666,11 +660,7 @@ mod coverage_tests {
         let mut subst = HashMap::new();
         subst.insert(var.clone(), MonoType::Float);
 
-        let ty = MonoType::Tuple(vec![
-            MonoType::Int,
-            MonoType::Var(var),
-            MonoType::Bool,
-        ]);
+        let ty = MonoType::Tuple(vec![MonoType::Int, MonoType::Var(var), MonoType::Bool]);
         let result = ty.substitute(&subst);
         assert_eq!(
             result,
@@ -770,9 +760,7 @@ mod coverage_tests {
     #[test]
     fn test_free_vars_dataframe() {
         let var = TyVar(0);
-        let ty = MonoType::DataFrame(vec![
-            ("col".into(), MonoType::Var(var.clone())),
-        ]);
+        let ty = MonoType::DataFrame(vec![("col".into(), MonoType::Var(var.clone()))]);
         let vars = ty.free_vars();
         assert!(vars.contains(&var));
     }

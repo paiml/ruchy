@@ -530,9 +530,8 @@ pub fn is_std_import(path: &str) -> bool {
 /// Get the std submodule from a path
 #[must_use]
 pub fn get_std_submodule(path: &str) -> Option<&str> {
-    path.strip_prefix("std::").map(|rest| {
-        rest.split("::").next().unwrap_or(rest)
-    })
+    path.strip_prefix("std::")
+        .map(|rest| rest.split("::").next().unwrap_or(rest))
 }
 
 #[cfg(test)]

@@ -3,8 +3,8 @@
 //! Handles execution of Ruchy files via compilation or interpretation.
 
 use anyhow::{Context, Result};
-use ruchy::{Parser as RuchyParser, Transpiler};
 use ruchy::frontend::ast::Expr;
+use ruchy::{Parser as RuchyParser, Transpiler};
 use std::fs;
 use std::path::{Path, PathBuf};
 

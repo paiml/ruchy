@@ -255,8 +255,7 @@ mod tests {
     fn test_handle_mutations_with_output_path() {
         let path = Path::new("/nonexistent/file.ruchy");
         let temp = NamedTempFile::new().unwrap();
-        let result =
-            handle_mutations_command(path, 60, "text", Some(temp.path()), 0.0, false);
+        let result = handle_mutations_command(path, 60, "text", Some(temp.path()), 0.0, false);
         assert!(result.is_ok());
     }
 

@@ -140,7 +140,11 @@ impl Transpiler {
     }
 
     /// Analyze mutability for match expressions (complexity: 1)
-    pub fn analyze_match_mutability(&mut self, expr: &Expr, arms: &[crate::frontend::ast::MatchArm]) {
+    pub fn analyze_match_mutability(
+        &mut self,
+        expr: &Expr,
+        arms: &[crate::frontend::ast::MatchArm],
+    ) {
         self.analyze_expr_mutability(expr);
         for arm in arms {
             self.analyze_expr_mutability(&arm.body);
@@ -454,7 +458,9 @@ impl Transpiler {
                 }
                 false
             }
-            ExprKind::MethodCall { receiver, method, .. } => {
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } => {
                 // DataFrame-specific methods (don't exist on iterators)
                 let is_df_only_method = matches!(
                     method.as_str(),
@@ -481,7 +487,16 @@ impl Transpiler {
                 // if the receiver is already detected as a DataFrame
                 let is_common_method = matches!(
                     method.as_str(),
-                    "filter" | "sort" | "head" | "tail" | "mean" | "std" | "min" | "max" | "sum" | "count"
+                    "filter"
+                        | "sort"
+                        | "head"
+                        | "tail"
+                        | "mean"
+                        | "std"
+                        | "min"
+                        | "max"
+                        | "sum"
+                        | "count"
                 );
                 if is_common_method {
                     // Only return true if receiver is a DataFrame
@@ -649,11 +664,7 @@ mod tests {
     fn test_collect_const_declarations_empty() {
         let mut transpiler = Transpiler::new();
         transpiler.collect_const_declarations(&[]);
-        assert!(transpiler
-            .const_vars
-            .read()
-            .expect("rwlock")
-            .is_empty());
+        assert!(transpiler.const_vars.read().expect("rwlock").is_empty());
     }
 
     #[test]

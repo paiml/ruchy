@@ -607,7 +607,11 @@ mod tests {
     #[test]
     fn test_json_type_number() {
         let result = eval("json_type(\"42\")");
-        assert!(result.to_lowercase().contains("number") || result.contains("Number") || result.contains("int"));
+        assert!(
+            result.to_lowercase().contains("number")
+                || result.contains("Number")
+                || result.contains("int")
+        );
     }
 
     #[test]
@@ -625,7 +629,11 @@ mod tests {
     #[test]
     fn test_json_type_null() {
         let result = eval("json_type(\"null\")");
-        assert!(result.to_lowercase().contains("null") || result.contains("Null") || result.contains("nil"));
+        assert!(
+            result.to_lowercase().contains("null")
+                || result.contains("Null")
+                || result.contains("nil")
+        );
     }
 
     // ============== Assertion Functions ==============
@@ -828,7 +836,10 @@ mod tests {
         for _ in 0..5 {
             let result = eval("random()");
             let val: f64 = result.parse().unwrap_or(-1.0);
-            assert!(val >= 0.0 && val < 1.0, "random() should return 0.0 <= x < 1.0");
+            assert!(
+                val >= 0.0 && val < 1.0,
+                "random() should return 0.0 <= x < 1.0"
+            );
         }
     }
 
@@ -933,7 +944,12 @@ mod tests {
     #[test]
     fn test_type_of_int_r125() {
         let result = eval("type_of(42)");
-        assert!(result.contains("int") || result.contains("Integer") || result.contains("i32") || result.contains("i64"));
+        assert!(
+            result.contains("int")
+                || result.contains("Integer")
+                || result.contains("i32")
+                || result.contains("i64")
+        );
     }
 
     #[test]
@@ -1218,7 +1234,12 @@ mod tests {
     #[test]
     fn test_type_of_array_r126() {
         let result = eval("type_of([1, 2, 3])");
-        assert!(result.contains("array") || result.contains("Array") || result.contains("Vec") || result.contains("list"));
+        assert!(
+            result.contains("array")
+                || result.contains("Array")
+                || result.contains("Vec")
+                || result.contains("list")
+        );
     }
 
     // Range function
@@ -1271,14 +1292,24 @@ mod tests {
     fn test_assert_true_r126() {
         let result = eval("assert(true)");
         // Should not panic, returns nil or unit
-        assert!(result.contains("nil") || result.contains("()") || result.is_empty() || result.contains("Nil"));
+        assert!(
+            result.contains("nil")
+                || result.contains("()")
+                || result.is_empty()
+                || result.contains("Nil")
+        );
     }
 
     #[test]
     fn test_assert_eq_same_r126() {
         let result = eval("assert_eq(42, 42)");
         // Should not panic
-        assert!(result.contains("nil") || result.contains("()") || result.is_empty() || result.contains("Nil"));
+        assert!(
+            result.contains("nil")
+                || result.contains("()")
+                || result.is_empty()
+                || result.contains("Nil")
+        );
     }
 
     // Print/println (just test they don't crash)
@@ -1708,7 +1739,8 @@ mod tests {
 
     #[test]
     fn test_dataframe_from_json() {
-        let result = try_eval("DataFrame::from_json(\"[{\\\"name\\\": \\\"Alice\\\", \\\"age\\\": 30}]\")");
+        let result =
+            try_eval("DataFrame::from_json(\"[{\\\"name\\\": \\\"Alice\\\", \\\"age\\\": 30}]\")");
         if let Some(r) = result {
             assert!(r.contains("Alice") || r.contains("name") || r.contains("DataFrame"));
         }
@@ -2027,7 +2059,11 @@ mod tests {
     // === File Read/Write (Using Temp Files) ===
     #[test]
     fn test_fs_write_and_read() {
-        let temp_file = format!("{}/ruchy_test_{}.txt", std::env::temp_dir().display(), std::process::id());
+        let temp_file = format!(
+            "{}/ruchy_test_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
         let write_code = format!("fs_write(\"{}\", \"hello world\")", temp_file);
         let _ = try_eval(&write_code);
 
@@ -2043,7 +2079,11 @@ mod tests {
 
     #[test]
     fn test_fs_create_and_remove_dir() {
-        let temp_dir = format!("{}/ruchy_test_dir_{}", std::env::temp_dir().display(), std::process::id());
+        let temp_dir = format!(
+            "{}/ruchy_test_dir_{}",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
         let create_code = format!("fs_create_dir(\"{}\")", temp_dir);
         let create_result = try_eval(&create_code);
         assert!(create_result.is_some());
@@ -2061,7 +2101,11 @@ mod tests {
     #[test]
     fn test_read_file_unwrapped() {
         // Create a temp file first
-        let temp_file = format!("{}/ruchy_read_test_{}.txt", std::env::temp_dir().display(), std::process::id());
+        let temp_file = format!(
+            "{}/ruchy_read_test_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
         std::fs::write(&temp_file, "test content").ok();
 
         let read_code = format!("read_file(\"{}\")", temp_file);
@@ -2076,7 +2120,11 @@ mod tests {
 
     #[test]
     fn test_append_file() {
-        let temp_file = format!("{}/ruchy_append_test_{}.txt", std::env::temp_dir().display(), std::process::id());
+        let temp_file = format!(
+            "{}/ruchy_append_test_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
         std::fs::write(&temp_file, "first").ok();
 
         let append_code = format!("append_file(\"{}\", \" second\")", temp_file);
@@ -2119,7 +2167,11 @@ mod tests {
     #[test]
     fn test_compute_hash_file() {
         // Create a temp file
-        let temp_file = format!("{}/ruchy_hash_test_{}.txt", std::env::temp_dir().display(), std::process::id());
+        let temp_file = format!(
+            "{}/ruchy_hash_test_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
         std::fs::write(&temp_file, "hash me").ok();
 
         let hash_code = format!("compute_hash(\"{}\")", temp_file);
@@ -2136,8 +2188,16 @@ mod tests {
     // === FS Copy and Rename ===
     #[test]
     fn test_fs_copy() {
-        let temp_src = format!("{}/ruchy_copy_src_{}.txt", std::env::temp_dir().display(), std::process::id());
-        let temp_dst = format!("{}/ruchy_copy_dst_{}.txt", std::env::temp_dir().display(), std::process::id());
+        let temp_src = format!(
+            "{}/ruchy_copy_src_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
+        let temp_dst = format!(
+            "{}/ruchy_copy_dst_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
         std::fs::write(&temp_src, "copy me").ok();
 
         let copy_code = format!("fs_copy(\"{}\", \"{}\")", temp_src, temp_dst);
@@ -2155,8 +2215,16 @@ mod tests {
 
     #[test]
     fn test_fs_rename() {
-        let temp_src = format!("{}/ruchy_rename_src_{}.txt", std::env::temp_dir().display(), std::process::id());
-        let temp_dst = format!("{}/ruchy_rename_dst_{}.txt", std::env::temp_dir().display(), std::process::id());
+        let temp_src = format!(
+            "{}/ruchy_rename_src_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
+        let temp_dst = format!(
+            "{}/ruchy_rename_dst_{}.txt",
+            std::env::temp_dir().display(),
+            std::process::id()
+        );
         std::fs::write(&temp_src, "rename me").ok();
 
         let rename_code = format!("fs_rename(\"{}\", \"{}\")", temp_src, temp_dst);
@@ -2374,5 +2442,4 @@ mod tests {
         let result = try_eval("glob(42)");
         assert!(result.is_none() || result.unwrap_or_default().contains("error"));
     }
-
 }

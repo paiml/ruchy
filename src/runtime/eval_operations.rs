@@ -826,28 +826,48 @@ mod tests {
     #[test]
     fn test_bitwise_ops() {
         // AND
-        let result = eval_bitwise_op(AstBinaryOp::BitwiseAnd, &Value::Integer(0b1100), &Value::Integer(0b1010))
-            .expect("operation should succeed in test");
+        let result = eval_bitwise_op(
+            AstBinaryOp::BitwiseAnd,
+            &Value::Integer(0b1100),
+            &Value::Integer(0b1010),
+        )
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(0b1000));
 
         // OR
-        let result = eval_bitwise_op(AstBinaryOp::BitwiseOr, &Value::Integer(0b1100), &Value::Integer(0b1010))
-            .expect("operation should succeed in test");
+        let result = eval_bitwise_op(
+            AstBinaryOp::BitwiseOr,
+            &Value::Integer(0b1100),
+            &Value::Integer(0b1010),
+        )
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(0b1110));
 
         // XOR
-        let result = eval_bitwise_op(AstBinaryOp::BitwiseXor, &Value::Integer(0b1100), &Value::Integer(0b1010))
-            .expect("operation should succeed in test");
+        let result = eval_bitwise_op(
+            AstBinaryOp::BitwiseXor,
+            &Value::Integer(0b1100),
+            &Value::Integer(0b1010),
+        )
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(0b0110));
 
         // Left shift
-        let result = eval_bitwise_op(AstBinaryOp::LeftShift, &Value::Integer(1), &Value::Integer(4))
-            .expect("operation should succeed in test");
+        let result = eval_bitwise_op(
+            AstBinaryOp::LeftShift,
+            &Value::Integer(1),
+            &Value::Integer(4),
+        )
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(16));
 
         // Right shift
-        let result = eval_bitwise_op(AstBinaryOp::RightShift, &Value::Integer(16), &Value::Integer(2))
-            .expect("operation should succeed in test");
+        let result = eval_bitwise_op(
+            AstBinaryOp::RightShift,
+            &Value::Integer(16),
+            &Value::Integer(2),
+        )
+        .expect("operation should succeed in test");
         assert_eq!(result, Value::Integer(4));
     }
 
@@ -857,18 +877,26 @@ mod tests {
             .expect("operation should succeed in test"));
         assert!(less_or_equal_values(&Value::Integer(5), &Value::Integer(5))
             .expect("operation should succeed in test"));
-        assert!(!less_or_equal_values(&Value::Integer(6), &Value::Integer(5))
-            .expect("operation should succeed in test"));
+        assert!(
+            !less_or_equal_values(&Value::Integer(6), &Value::Integer(5))
+                .expect("operation should succeed in test")
+        );
     }
 
     #[test]
     fn test_greater_or_equal_values() {
-        assert!(greater_or_equal_values(&Value::Integer(6), &Value::Integer(5))
-            .expect("operation should succeed in test"));
-        assert!(greater_or_equal_values(&Value::Integer(5), &Value::Integer(5))
-            .expect("operation should succeed in test"));
-        assert!(!greater_or_equal_values(&Value::Integer(4), &Value::Integer(5))
-            .expect("operation should succeed in test"));
+        assert!(
+            greater_or_equal_values(&Value::Integer(6), &Value::Integer(5))
+                .expect("operation should succeed in test")
+        );
+        assert!(
+            greater_or_equal_values(&Value::Integer(5), &Value::Integer(5))
+                .expect("operation should succeed in test")
+        );
+        assert!(
+            !greater_or_equal_values(&Value::Integer(4), &Value::Integer(5))
+                .expect("operation should succeed in test")
+        );
     }
 
     #[test]
@@ -1031,7 +1059,11 @@ mod tests {
 
     #[test]
     fn test_bitwise_on_non_integer() {
-        let result = eval_bitwise_op(AstBinaryOp::BitwiseAnd, &Value::Float(1.0), &Value::Integer(1));
+        let result = eval_bitwise_op(
+            AstBinaryOp::BitwiseAnd,
+            &Value::Float(1.0),
+            &Value::Integer(1),
+        );
         assert!(result.is_err());
     }
 
@@ -1094,7 +1126,8 @@ mod tests {
 
     #[test]
     fn test_modulo_float() {
-        let result = modulo_values(&Value::Float(10.0), &Value::Float(3.0)).expect("should succeed");
+        let result =
+            modulo_values(&Value::Float(10.0), &Value::Float(3.0)).expect("should succeed");
         if let Value::Float(f) = result {
             assert!((f - 1.0).abs() < f64::EPSILON);
         } else {
@@ -1117,14 +1150,16 @@ mod tests {
     #[test]
     fn test_power_large_overflow() {
         // Large exponent that causes overflow
-        let result = power_values(&Value::Integer(100), &Value::Integer(100)).expect("should succeed");
+        let result =
+            power_values(&Value::Integer(100), &Value::Integer(100)).expect("should succeed");
         // Should convert to float on overflow
         assert!(matches!(result, Value::Float(_)));
     }
 
     #[test]
     fn test_modulo_int_float_mixed() {
-        let result = modulo_values(&Value::Integer(10), &Value::Float(3.0)).expect("should succeed");
+        let result =
+            modulo_values(&Value::Integer(10), &Value::Float(3.0)).expect("should succeed");
         if let Value::Float(f) = result {
             assert!((f - 1.0).abs() < f64::EPSILON);
         } else {
@@ -1134,7 +1169,8 @@ mod tests {
 
     #[test]
     fn test_modulo_float_int_mixed() {
-        let result = modulo_values(&Value::Float(10.0), &Value::Integer(3)).expect("should succeed");
+        let result =
+            modulo_values(&Value::Float(10.0), &Value::Integer(3)).expect("should succeed");
         if let Value::Float(f) = result {
             assert!((f - 1.0).abs() < f64::EPSILON);
         } else {
@@ -1466,7 +1502,8 @@ mod tests {
         let result = add_values(
             &Value::from_string("hello".to_string()),
             &Value::from_string(" world".to_string()),
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result, Value::from_string("hello world".to_string()));
     }
 
@@ -1598,7 +1635,8 @@ mod tests {
         let result = less_than_values(
             &Value::from_string("apple".to_string()),
             &Value::from_string("banana".to_string()),
-        ).unwrap();
+        )
+        .unwrap();
         assert!(result);
     }
 
@@ -1607,7 +1645,8 @@ mod tests {
         let result = greater_than_values(
             &Value::from_string("zebra".to_string()),
             &Value::from_string("apple".to_string()),
-        ).unwrap();
+        )
+        .unwrap();
         assert!(result);
     }
 
@@ -1661,21 +1700,27 @@ mod tests {
 
     #[test]
     fn test_logical_and_values_r160() {
-        let result = eval_logical_op(AstBinaryOp::And, &Value::Bool(true), &Value::Bool(true)).unwrap();
+        let result =
+            eval_logical_op(AstBinaryOp::And, &Value::Bool(true), &Value::Bool(true)).unwrap();
         assert!(result.is_truthy());
-        let result = eval_logical_op(AstBinaryOp::And, &Value::Bool(true), &Value::Bool(false)).unwrap();
+        let result =
+            eval_logical_op(AstBinaryOp::And, &Value::Bool(true), &Value::Bool(false)).unwrap();
         assert!(!result.is_truthy());
-        let result = eval_logical_op(AstBinaryOp::And, &Value::Bool(false), &Value::Bool(true)).unwrap();
+        let result =
+            eval_logical_op(AstBinaryOp::And, &Value::Bool(false), &Value::Bool(true)).unwrap();
         assert!(!result.is_truthy());
     }
 
     #[test]
     fn test_logical_or_values_r160() {
-        let result = eval_logical_op(AstBinaryOp::Or, &Value::Bool(true), &Value::Bool(false)).unwrap();
+        let result =
+            eval_logical_op(AstBinaryOp::Or, &Value::Bool(true), &Value::Bool(false)).unwrap();
         assert!(result.is_truthy());
-        let result = eval_logical_op(AstBinaryOp::Or, &Value::Bool(false), &Value::Bool(true)).unwrap();
+        let result =
+            eval_logical_op(AstBinaryOp::Or, &Value::Bool(false), &Value::Bool(true)).unwrap();
         assert!(result.is_truthy());
-        let result = eval_logical_op(AstBinaryOp::Or, &Value::Bool(false), &Value::Bool(false)).unwrap();
+        let result =
+            eval_logical_op(AstBinaryOp::Or, &Value::Bool(false), &Value::Bool(false)).unwrap();
         assert!(!result.is_truthy());
     }
 }

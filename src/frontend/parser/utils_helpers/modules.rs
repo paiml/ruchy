@@ -177,7 +177,10 @@ mod tests {
 
     #[test]
     fn test_create_module_body_expr_single() {
-        let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::new(0, 2));
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 2),
+        );
         let result = create_module_body_expr(vec![expr]);
         match result.kind {
             ExprKind::Literal(Literal::Integer(n, _)) => assert_eq!(n, 42),
@@ -187,8 +190,14 @@ mod tests {
 
     #[test]
     fn test_create_module_body_expr_multiple() {
-        let expr1 = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::new(0, 1));
-        let expr2 = Expr::new(ExprKind::Literal(Literal::Integer(2, None)), Span::new(2, 3));
+        let expr1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::new(0, 1),
+        );
+        let expr2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::new(2, 3),
+        );
         let result = create_module_body_expr(vec![expr1, expr2]);
         match result.kind {
             ExprKind::Block(exprs) => assert_eq!(exprs.len(), 2),

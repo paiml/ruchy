@@ -923,7 +923,10 @@ mod tests {
     #[test]
     fn test_let_struct_destructure_brace_only() {
         let result = parse("let { name, age } = person");
-        assert!(result.is_ok(), "Brace-only struct destructuring should parse");
+        assert!(
+            result.is_ok(),
+            "Brace-only struct destructuring should parse"
+        );
     }
 
     #[test]
@@ -1040,13 +1043,19 @@ mod tests {
     #[test]
     fn test_let_custom_variant_single() {
         let result = parse("let Color(r) = c else { return }");
-        assert!(result.is_ok(), "Custom variant with single element should parse");
+        assert!(
+            result.is_ok(),
+            "Custom variant with single element should parse"
+        );
     }
 
     #[test]
     fn test_let_custom_variant_multiple() {
         let result = parse("let Point(x, y) = p else { return }");
-        assert!(result.is_ok(), "Custom variant with multiple elements should parse");
+        assert!(
+            result.is_ok(),
+            "Custom variant with multiple elements should parse"
+        );
     }
 
     #[test]
@@ -1075,7 +1084,10 @@ mod tests {
     #[test]
     fn test_let_with_match_value() {
         let result = parse("let x = match opt { Some(v) => v, None => 0 }");
-        assert!(result.is_ok(), "Let with match expression value should parse");
+        assert!(
+            result.is_ok(),
+            "Let with match expression value should parse"
+        );
     }
 
     #[test]

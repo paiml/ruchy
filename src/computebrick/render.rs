@@ -263,7 +263,7 @@ impl DiffRenderer {
     pub fn reset(&mut self, output: &mut Vec<u8>) {
         self.show_cursor(output);
         output.extend_from_slice(b"\x1b[0m"); // Reset attributes
-        // output.extend_from_slice(b"\x1b[?1049l"); // Exit alternate screen
+                                              // output.extend_from_slice(b"\x1b[?1049l"); // Exit alternate screen
     }
 }
 
@@ -326,7 +326,11 @@ fn color_to_16(color: Color) -> u8 {
         (true, true, true) => 7,    // white
     };
 
-    if bright { base + 8 } else { base }
+    if bright {
+        base + 8
+    } else {
+        base
+    }
 }
 
 #[cfg(test)]
@@ -344,7 +348,10 @@ mod tests {
         let backend = RenderBackend::detect();
         #[cfg(not(target_arch = "wasm32"))]
         {
-            assert!(matches!(backend, RenderBackend::Terminal | RenderBackend::Headless));
+            assert!(matches!(
+                backend,
+                RenderBackend::Terminal | RenderBackend::Headless
+            ));
         }
     }
 
@@ -491,7 +498,12 @@ mod tests {
 
         // Differential should be smaller than full redraw
         // (can't guarantee <50% due to positioning overhead)
-        assert!(diff_size < full_size, "diff {} should be < full {}", diff_size, full_size);
+        assert!(
+            diff_size < full_size,
+            "diff {} should be < full {}",
+            diff_size,
+            full_size
+        );
     }
 
     // R14: Render idempotent (same input = same output)

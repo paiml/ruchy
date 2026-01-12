@@ -2251,7 +2251,20 @@ mod tests {
         let mut parser = crate::frontend::parser::Parser::new("fun foo() { 1 + 2 }");
         let ast = parser.parse().expect("parse should succeed");
         let score = engine.score(&ast, AnalysisDepth::Deep);
-        assert!(matches!(score.grade, Grade::APlus | Grade::A | Grade::AMinus | Grade::BPlus | Grade::B | Grade::BMinus | Grade::CPlus | Grade::C | Grade::CMinus | Grade::D | Grade::F));
+        assert!(matches!(
+            score.grade,
+            Grade::APlus
+                | Grade::A
+                | Grade::AMinus
+                | Grade::BPlus
+                | Grade::B
+                | Grade::BMinus
+                | Grade::CPlus
+                | Grade::C
+                | Grade::CMinus
+                | Grade::D
+                | Grade::F
+        ));
     }
 
     #[test]
@@ -2284,8 +2297,8 @@ mod tests {
 
     #[test]
     fn test_cache_key_hash() {
-        use std::hash::{Hash, Hasher};
         use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
 
         let key1 = CacheKey {
             file_path: PathBuf::from("test.rs"),
@@ -2321,8 +2334,8 @@ mod tests {
 
     #[test]
     fn test_analysis_depth_hash() {
-        use std::hash::{Hash, Hasher};
         use std::collections::hash_map::DefaultHasher;
+        use std::hash::{Hash, Hasher};
 
         let mut hasher = DefaultHasher::new();
         AnalysisDepth::Shallow.hash(&mut hasher);

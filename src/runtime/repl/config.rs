@@ -125,9 +125,9 @@ mod tests {
     fn test_repl_config_sandbox_settings() {
         // Simulate sandbox configuration
         let config = ReplConfig {
-            max_memory: 256 * 1024,               // 256KB limit
-            timeout: Duration::from_millis(500),  // 500ms timeout
-            maxdepth: 25,                         // Low recursion
+            max_memory: 256 * 1024,              // 256KB limit
+            timeout: Duration::from_millis(500), // 500ms timeout
+            maxdepth: 25,                        // Low recursion
             debug: false,
         };
         assert_eq!(config.max_memory, 256 * 1024);
@@ -140,9 +140,9 @@ mod tests {
     fn test_repl_config_production_settings() {
         // Simulate production configuration
         let config = ReplConfig {
-            max_memory: 10 * 1024 * 1024,          // 10MB limit
-            timeout: Duration::from_secs(60),      // 60s timeout
-            maxdepth: 500,                         // Higher recursion
+            max_memory: 10 * 1024 * 1024,     // 10MB limit
+            timeout: Duration::from_secs(60), // 60s timeout
+            maxdepth: 500,                    // Higher recursion
             debug: false,
         };
         assert_eq!(config.max_memory, 10 * 1024 * 1024);
@@ -155,8 +155,8 @@ mod tests {
     fn test_repl_config_debug_development_settings() {
         // Simulate development configuration with debug enabled
         let config = ReplConfig {
-            max_memory: 2 * 1024 * 1024,           // 2MB limit
-            timeout: Duration::from_secs(120),     // 2 minute timeout for debugging
+            max_memory: 2 * 1024 * 1024,       // 2MB limit
+            timeout: Duration::from_secs(120), // 2 minute timeout for debugging
             maxdepth: 100,
             debug: true,
         };

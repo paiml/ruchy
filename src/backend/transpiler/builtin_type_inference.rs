@@ -172,8 +172,10 @@ pub fn infer_param_type_from_builtin_usage(param_name: &str, expr: &Expr) -> Opt
         ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
             check_let_bindings(param_name, value, body)
         }
-        ExprKind::Binary { left, right, .. } => infer_param_type_from_builtin_usage(param_name, left)
-            .or_else(|| infer_param_type_from_builtin_usage(param_name, right)),
+        ExprKind::Binary { left, right, .. } => {
+            infer_param_type_from_builtin_usage(param_name, left)
+                .or_else(|| infer_param_type_from_builtin_usage(param_name, right))
+        }
         ExprKind::Unary { operand, .. } => infer_param_type_from_builtin_usage(param_name, operand),
         _ => None,
     }
@@ -611,11 +613,7 @@ mod tests {
 
     #[test]
     fn test_infer_return_type_let_body() {
-        let expr = let_expr(
-            "x",
-            int_lit(5),
-            call("fs_exists", vec![string_lit("path")]),
-        );
+        let expr = let_expr("x", int_lit(5), call("fs_exists", vec![string_lit("path")]));
         assert_eq!(infer_return_type_from_builtin_call(&expr), Some("bool"));
     }
 
@@ -687,10 +685,7 @@ mod tests {
 
     #[test]
     fn test_infer_param_type_in_block() {
-        let expr = block(vec![
-            int_lit(1),
-            call("fs_read", vec![ident("path")]),
-        ]);
+        let expr = block(vec![int_lit(1), call("fs_read", vec![ident("path")])]);
         assert_eq!(
             infer_param_type_from_builtin_usage("path", &expr),
             Some("&str")
@@ -699,11 +694,7 @@ mod tests {
 
     #[test]
     fn test_infer_param_type_in_if_condition() {
-        let expr = if_expr(
-            call("fs_exists", vec![ident("path")]),
-            int_lit(1),
-            None,
-        );
+        let expr = if_expr(call("fs_exists", vec![ident("path")]), int_lit(1), None);
         assert_eq!(
             infer_param_type_from_builtin_usage("path", &expr),
             Some("&str")
@@ -712,11 +703,7 @@ mod tests {
 
     #[test]
     fn test_infer_param_type_in_if_then() {
-        let expr = if_expr(
-            bool_lit(true),
-            call("fs_read", vec![ident("path")]),
-            None,
-        );
+        let expr = if_expr(bool_lit(true), call("fs_read", vec![ident("path")]), None);
         assert_eq!(
             infer_param_type_from_builtin_usage("path", &expr),
             Some("&str")
@@ -751,11 +738,7 @@ mod tests {
 
     #[test]
     fn test_infer_param_type_in_let_body() {
-        let expr = let_expr(
-            "x",
-            int_lit(5),
-            call("fs_read", vec![ident("path")]),
-        );
+        let expr = let_expr("x", int_lit(5), call("fs_read", vec![ident("path")]));
         assert_eq!(
             infer_param_type_from_builtin_usage("path", &expr),
             Some("&str")
@@ -764,10 +747,7 @@ mod tests {
 
     #[test]
     fn test_infer_param_type_in_binary_left() {
-        let expr = binary(
-            call("fs_read", vec![ident("path")]),
-            string_lit("suffix"),
-        );
+        let expr = binary(call("fs_read", vec![ident("path")]), string_lit("suffix"));
         assert_eq!(
             infer_param_type_from_builtin_usage("path", &expr),
             Some("&str")
@@ -776,10 +756,7 @@ mod tests {
 
     #[test]
     fn test_infer_param_type_in_binary_right() {
-        let expr = binary(
-            string_lit("prefix"),
-            call("fs_read", vec![ident("path")]),
-        );
+        let expr = binary(string_lit("prefix"), call("fs_read", vec![ident("path")]));
         assert_eq!(
             infer_param_type_from_builtin_usage("path", &expr),
             Some("&str")
