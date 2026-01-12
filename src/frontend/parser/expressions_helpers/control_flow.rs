@@ -723,4 +723,173 @@ mod tests {
         let result = Parser::new("fun f(x) { if x > 0 { return 1 } throw \"error\" }").parse();
         assert!(result.is_ok(), "Multiple control flow should parse");
     }
+
+    // ===== Coverage Tests: skip_comments function =====
+
+    #[test]
+    fn test_break_with_line_comment() {
+        let result = parse("while true { break // comment\n 42 }");
+        assert!(result.is_ok(), "Break with line comment should parse");
+    }
+
+    #[test]
+    fn test_break_with_block_comment() {
+        let result = parse("while true { break /* block */ }");
+        assert!(result.is_ok(), "Break with block comment should parse");
+    }
+
+    #[test]
+    fn test_continue_with_line_comment() {
+        let result = parse("while true { continue // comment\n }");
+        assert!(result.is_ok(), "Continue with line comment should parse");
+    }
+
+    #[test]
+    fn test_continue_with_block_comment() {
+        let result = parse("while true { continue /* block */ }");
+        assert!(result.is_ok(), "Continue with block comment should parse");
+    }
+
+    #[test]
+    fn test_return_with_line_comment() {
+        let result = parse("fun f() { return // comment\n }");
+        assert!(result.is_ok(), "Return with line comment should parse");
+    }
+
+    #[test]
+    fn test_return_with_block_comment() {
+        let result = parse("fun f() { return /* block */ }");
+        assert!(result.is_ok(), "Return with block comment should parse");
+    }
+
+    #[test]
+    fn test_break_with_doc_comment() {
+        let result = parse("while true { break /// doc comment\n }");
+        assert!(result.is_ok(), "Break with doc comment should parse");
+    }
+
+    #[test]
+    fn test_continue_with_doc_comment() {
+        let result = parse("while true { continue /// doc comment\n }");
+        assert!(result.is_ok(), "Continue with doc comment should parse");
+    }
+
+    #[test]
+    fn test_return_with_doc_comment() {
+        let result = parse("fun f() { return /// doc comment\n }");
+        assert!(result.is_ok(), "Return with doc comment should parse");
+    }
+
+    #[test]
+    fn test_break_with_hash_comment() {
+        let result = parse("while true { break # hash comment\n }");
+        assert!(result.is_ok(), "Break with hash comment should parse");
+    }
+
+    #[test]
+    fn test_continue_with_hash_comment() {
+        let result = parse("while true { continue # hash comment\n }");
+        assert!(result.is_ok(), "Continue with hash comment should parse");
+    }
+
+    #[test]
+    fn test_return_with_hash_comment() {
+        let result = parse("fun f() { return # hash comment\n }");
+        assert!(result.is_ok(), "Return with hash comment should parse");
+    }
+
+    #[test]
+    fn test_break_with_multiple_comments() {
+        let result = parse("while true { break // first\n /* second */ }");
+        assert!(result.is_ok(), "Break with multiple comments should parse");
+    }
+
+    // ===== Coverage Tests: Token::Label branch =====
+
+    #[test]
+    fn test_break_with_at_label() {
+        // Test @label syntax for break
+        let result = parse("@outer: while true { break @outer }");
+        assert!(result.is_ok(), "Break with @label should parse");
+    }
+
+    #[test]
+    fn test_continue_with_at_label() {
+        // Test @label syntax for continue
+        let result = parse("@outer: while true { continue @outer }");
+        assert!(result.is_ok(), "Continue with @label should parse");
+    }
+
+    #[test]
+    fn test_break_at_label_with_value() {
+        let result = parse("@loop1: while true { break @loop1 42 }");
+        assert!(result.is_ok(), "Break with @label and value should parse");
+    }
+
+    // ===== Coverage Tests: EOF/terminator paths =====
+
+    #[test]
+    fn test_break_at_eof() {
+        // Break followed by nothing (EOF in expression context)
+        let result = parse("while true { break }");
+        assert!(result.is_ok(), "Break at block end should parse");
+    }
+
+    #[test]
+    fn test_return_at_eof() {
+        // Return followed by nothing
+        let result = parse("fun f() { return }");
+        assert!(result.is_ok(), "Bare return should parse");
+    }
+
+    #[test]
+    fn test_break_in_right_paren_context() {
+        // Break followed by right paren (in grouped expression)
+        let result = parse("while true { (break) }");
+        assert!(result.is_ok(), "Break in parens should parse");
+    }
+
+    // ===== Coverage Tests: complex control flow scenarios =====
+
+    #[test]
+    fn test_throw_with_complex_expr() {
+        let result = parse("fun f() { throw Error { msg: \"fail\", code: 1 } }");
+        assert!(result.is_ok(), "Throw with struct literal should parse");
+    }
+
+    #[test]
+    fn test_return_with_match() {
+        let result = parse("fun f(x) { return match x { 1 => \"one\", _ => \"other\" } }");
+        assert!(result.is_ok(), "Return with match should parse");
+    }
+
+    #[test]
+    fn test_break_with_if_value() {
+        let result = parse("while true { break if x { 1 } else { 2 } }");
+        assert!(result.is_ok(), "Break with if value should parse");
+    }
+
+    #[test]
+    fn test_nested_control_flow() {
+        let result = parse("fun f() { while true { for i in xs { if i > 5 { return i } } } }");
+        assert!(result.is_ok(), "Nested control flow should parse");
+    }
+
+    #[test]
+    fn test_control_flow_in_closure() {
+        let result = parse("let f = |x| { if x { return 1 } 2 }");
+        assert!(result.is_ok(), "Control flow in closure should parse");
+    }
+
+    #[test]
+    fn test_throw_in_try_block() {
+        let result = parse("try { throw \"error\" } catch e { e }");
+        assert!(result.is_ok(), "Throw in try block should parse");
+    }
+
+    #[test]
+    fn test_return_in_finally() {
+        let result = parse("fun f() { try { 1 } finally { return 2 } }");
+        assert!(result.is_ok(), "Return in finally should parse");
+    }
 }
