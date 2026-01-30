@@ -233,9 +233,9 @@ dependencies = [
 
 [[package]]
 name = "aprender"
-version = "0.24.0"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d1140494fee114ac8ae686c8d4e0d859b421c8e082e7a8c4a3f67d0e3f9e2754"
+checksum = "f3c85734a8105872bdc276d1271b93eadf2954e5d9016d92e7c8421292f0a5f6"
 dependencies = [
  "bincode 1.3.3",
  "dirs 6.0.0",
@@ -251,7 +251,9 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "trueno 0.11.0",
+ "sha2",
+ "trueno 0.14.3",
+ "ureq",
 ]
 
 [[package]]
@@ -6586,11 +6588,11 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "4.1.1"
+version = "4.1.2"
 dependencies = [
  "alimentar",
  "anyhow",
- "aprender 0.24.0",
+ "aprender 0.25.1",
  "arbitrary",
  "arrow",
  "arrow-array",
