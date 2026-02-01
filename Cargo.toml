@@ -158,7 +158,7 @@ assertions_on_constants = "allow"  # Tests assert expected constants
 overly_complex_bool_expr = "allow"  # Tests can have complex conditions
 
 [workspace.package]
-version = "4.1.2"
+version = "4.2.0"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -259,13 +259,13 @@ rand = "0.8"
 
 # Sovereign AI Stack Core (REQUIRED) - trueno-aprender-stdlib-core-language-spec.md v2.0
 # Six Pillars of Batteries-Included Data Science:
-trueno = "0.14"          # Pillar 1: SIMD compute engine
-alimentar = "0.2"        # Pillar 2: Data loading, transforms, drift detection
+trueno = "0.14.4"        # Pillar 1: SIMD compute engine
+alimentar = "0.2.5"      # Pillar 2: Data loading, transforms, drift detection
 # Removed: trueno-db = "0.3" (unused per cargo-machete)
-aprender = { version = "0.25", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
-entrenar = { version = "0.5", features = ["citl"] }  # CITL, distillation, Tarantula fault localization, audit logging (inference module always available)
-trueno-viz = "0.1.22"       # Pillar 5: GPU/WASM visualization
-presentar = "0.3"        # Pillar 6: WASM-first notebook widgets
+aprender = { version = "0.25.1", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
+entrenar = { version = "0.5.8", features = ["citl"] }  # CITL, distillation, Tarantula fault localization, audit logging (inference module always available)
+trueno-viz = "0.1.23"    # Pillar 5: GPU/WASM visualization
+presentar = "0.3.1"      # Pillar 6: WASM-first notebook widgets
 wasm-encoder = "0.207.0"
 glob = "0.3"
 walkdir = "2.5"  # STDLIB-005: Directory traversal
@@ -341,8 +341,8 @@ html5ever = "0.27"
 # Removed: markup5ever = "0.13" (transitive dep via markup5ever_rcdom)
 markup5ever_rcdom = "0.3"
 # Notebook support
-wasmparser = { version = "0.239.0", optional = true }
-wasmtime = { version = "38.0.4", optional = true }
+wasmparser = { version = "0.244.0", optional = true }
+wasmtime = { version = "41.0.1", optional = true }
 # Markdown parsing - optional for minimal builds
 pulldown-cmark = { version = "0.9", optional = true }
 semver = "1.0.27"
@@ -392,7 +392,7 @@ axum = { version = "0.8", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # Probar: GUI coverage, Playwright-compatible testing, WASM worker harness
-jugar-probar = "1.0"
+jugar-probar = "1.0.2"
 
 # WASM QA Framework dependencies (following spec)
 wasm-bindgen-test = "0.3"
