@@ -2,6 +2,43 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+## [4.2.0] - 2026-02-01
+
+### Security & Sovereign AI Stack Update
+
+#### Security
+- **[RUSTSEC-2026-0006] wasmtime** - Upgraded from 38.0.4 to 41.0.1 to fix medium severity vulnerability
+- **[RUSTSEC-2026] wasmparser** - Upgraded from 0.239.0 to 0.244.0
+
+#### Quality (CB-020 Compliance)
+- **[CB-020] SAFETY Comments** - Added comprehensive SAFETY documentation to all unsafe blocks in arena.rs
+- **[CB-030] O(1) Hooks** - Initialized PMAT hooks cache for faster pre-commit checks
+- **[PMAT] Version Migration** - Updated from 2.211.1 to 2.215.0
+
+#### Fixed
+- **Unused Variable Warnings** - Fixed unused `transpiler` variables in statements_tests.rs
+- **Useless Comparisons** - Fixed `usize >= 0` comparisons in interpreter tests (always true)
+
+#### Dependencies (Sovereign AI Stack)
+| Package | Old | New |
+|---------|-----|-----|
+| trueno | 0.14 | 0.14.4 |
+| aprender | 0.25 | 0.25.1 |
+| entrenar | 0.5 | 0.5.8 |
+| trueno-viz | 0.1.22 | 0.1.23 |
+| alimentar | 0.2 | 0.2.5 |
+| presentar | 0.3 | 0.3.1 |
+| jugar-probar | 1.0 | 1.0.2 |
+
+#### Quality Metrics
+| Metric | Value |
+|--------|-------|
+| Tests | 19,890 passed |
+| Vulnerabilities | 0 (was 1) |
+| PMAT Compliance | v2.215.0 |
+
+---
+
 ## [4.0.1] - 2026-01-12
 
 ### Quality & Maintenance Release
