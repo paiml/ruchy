@@ -3464,8 +3464,9 @@ mod tests {
     #[test]
     fn test_gc_track() {
         let mut interp = make_interpreter();
-        let id = interp.gc_track(Value::Integer(42));
-        assert!(id >= 0);
+        // gc_track returns a usize ID for the tracked value
+        let _id = interp.gc_track(Value::Integer(42));
+        // Successfully tracking a value is the test - ID is a valid usize
     }
 
     #[test]
@@ -4946,7 +4947,7 @@ mod tests {
     #[test]
     fn test_try_operator_ok() {
         let mut interp = make_interpreter();
-        let ok_value = make_expr(ExprKind::Call {
+        let _ok_value = make_expr(ExprKind::Call {
             func: Box::new(make_expr(ExprKind::Identifier("Ok".to_string()))),
             args: vec![make_expr(ExprKind::Literal(Literal::Integer(42, None)))],
         });

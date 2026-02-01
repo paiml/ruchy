@@ -622,9 +622,8 @@ mod tests {
     #[test]
     fn test_repl_peak_memory() {
         let repl = Repl::new(std::env::temp_dir()).unwrap();
-        let peak = repl.peak_memory();
-        // Peak should be at least 0
-        assert!(peak >= 0);
+        // peak_memory returns a usize, just verify it doesn't panic
+        let _peak = repl.peak_memory();
     }
 
     #[test]
