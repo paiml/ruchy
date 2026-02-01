@@ -9792,16 +9792,16 @@ mod coverage_tests {
     fn test_gc_stats() {
         let interp = Interpreter::new();
         let stats = interp.gc_stats();
-        // Just verify we can get stats - field is 'collections'
-        assert!(stats.collections >= 0);
+        // Verify we can get stats - collections is a usize (always valid)
+        let _collections = stats.collections;
     }
 
     #[test]
     fn test_gc_info() {
         let interp = Interpreter::new();
         let info = interp.gc_info();
-        // Just verify we can get info - field is 'tracked_count'
-        assert!(info.tracked_count >= 0);
+        // Verify we can get info - tracked_count is a usize (always valid)
+        let _tracked = info.tracked_count;
     }
 
     #[test]
@@ -9835,8 +9835,8 @@ mod coverage_tests {
         let mut interp = Interpreter::new();
         interp.gc_track(Value::Integer(1));
         let stats = interp.gc_collect();
-        // Just verify collection runs - field is 'collections'
-        assert!(stats.collections >= 0);
+        // Verify collection runs - collections count is a usize (always valid)
+        let _collections = stats.collections;
     }
 
     #[test]
@@ -9865,16 +9865,16 @@ mod coverage_tests {
     fn test_type_feedback_stats() {
         let interp = Interpreter::new();
         let stats = interp.get_type_feedback_stats();
-        // Just verify we can get stats - field is 'total_operation_sites'
-        assert!(stats.total_operation_sites >= 0);
+        // Verify we can get stats - total_operation_sites is a usize (always valid)
+        let _sites = stats.total_operation_sites;
     }
 
     #[test]
     fn test_specialization_candidates() {
         let interp = Interpreter::new();
         let candidates = interp.get_specialization_candidates();
-        // Initially should be empty or have some candidates
-        assert!(candidates.len() >= 0);
+        // Verify we get candidates Vec - length is always valid usize
+        let _len = candidates.len();
     }
 
     #[test]
@@ -12479,7 +12479,8 @@ mod coverage_tests {
     fn test_gc_info_cov() {
         let interp = Interpreter::new();
         let info = interp.gc_info();
-        assert!(info.tracked_count >= 0);
+        // Verify we can access tracked_count - usize is always valid
+        let _tracked = info.tracked_count;
     }
 
     #[test]

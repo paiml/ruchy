@@ -1140,7 +1140,7 @@ fn test_is_variable_mutated_in_binary_expressions() {
 
 #[test]
 fn test_looks_like_numeric_function() {
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
 
     // Test mathematical functions
     assert!(super::function_analysis::looks_like_numeric_function("sin"));
@@ -1285,7 +1285,7 @@ fn test_is_variable_mutated_block() {
 // Test 5: looks_like_numeric_function - arithmetic functions
 #[test]
 fn test_looks_like_numeric_function_arithmetic() {
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     assert!(super::function_analysis::looks_like_numeric_function("add"));
     assert!(super::function_analysis::looks_like_numeric_function(
         "multiply"
@@ -1302,7 +1302,7 @@ fn test_looks_like_numeric_function_arithmetic() {
 // Test 9: looks_like_numeric_function - trigonometric functions
 #[test]
 fn test_looks_like_numeric_function_trig() {
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     assert!(super::function_analysis::looks_like_numeric_function("sin"));
     assert!(super::function_analysis::looks_like_numeric_function("cos"));
     assert!(super::function_analysis::looks_like_numeric_function(
@@ -1317,7 +1317,7 @@ fn test_looks_like_numeric_function_trig() {
 #[test]
 fn test_is_void_function_call_println() {
     use crate::frontend::ast::{Expr, ExprKind, Span};
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     let func = Expr::new(ExprKind::Identifier("println".to_string()), Span::default());
     let call_expr = Expr::new(
         ExprKind::Call {
@@ -1333,7 +1333,7 @@ fn test_is_void_function_call_println() {
 #[test]
 fn test_is_void_function_call_assert() {
     use crate::frontend::ast::{Expr, ExprKind, Span};
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     let func = Expr::new(ExprKind::Identifier("assert".to_string()), Span::default());
     let call_expr = Expr::new(
         ExprKind::Call {
@@ -1349,7 +1349,7 @@ fn test_is_void_function_call_assert() {
 #[test]
 fn test_is_void_expression_unit() {
     use crate::frontend::ast::{Expr, ExprKind, Span};
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     let unit_expr = Expr::new(ExprKind::Literal(Literal::Unit), Span::default());
     assert!(super::function_analysis::is_void_expression(&unit_expr));
 }
@@ -1358,7 +1358,7 @@ fn test_is_void_expression_unit() {
 #[test]
 fn test_is_void_expression_assignment() {
     use crate::frontend::ast::{Expr, ExprKind, Span};
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
     let value = Expr::new(
         ExprKind::Literal(Literal::Integer(5, None)),
@@ -1378,7 +1378,7 @@ fn test_is_void_expression_assignment() {
 #[test]
 fn test_returns_closure_false() {
     use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     let int_expr = Expr::new(
         ExprKind::Literal(Literal::Integer(42, None)),
         Span::default(),
@@ -1451,7 +1451,7 @@ fn test_returns_boolean_unary_not() {
 #[test]
 fn test_returns_vec_array_literal() {
     use crate::frontend::ast::{Expr, ExprKind, Span};
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     let array_expr = Expr::new(
         ExprKind::List(vec![
             Expr::new(
@@ -1472,7 +1472,7 @@ fn test_returns_vec_array_literal() {
 #[test]
 fn test_returns_string_concatenation() {
     use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Span};
-    let transpiler = create_transpiler();
+    let _transpiler = create_transpiler();
     let left = Expr::new(
         ExprKind::Literal(Literal::String("hello".to_string())),
         Span::default(),
@@ -2780,7 +2780,7 @@ fn test_is_variable_mutated_immutable_access() {
 // Test 115: needs_lifetime_parameter - no ref params
 #[test]
 fn test_needs_lifetime_parameter_no_refs() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     let params = vec![Param {
         pattern: Pattern::Identifier("x".to_string()),
         ty: Type {
@@ -3006,7 +3006,7 @@ fn test_transpile_set_operations_union() {
 // Test 130: looks_like_numeric_function - with numeric names
 #[test]
 fn test_looks_like_numeric_function_true() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     assert!(super::function_analysis::looks_like_numeric_function("abs"));
     assert!(super::function_analysis::looks_like_numeric_function(
         "sqrt"
@@ -3017,7 +3017,7 @@ fn test_looks_like_numeric_function_true() {
 // Test 131: looks_like_numeric_function - with non-numeric names
 #[test]
 fn test_looks_like_numeric_function_false() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     assert!(!super::function_analysis::looks_like_numeric_function(
         "print"
     ));
@@ -3097,7 +3097,7 @@ fn test_returns_string_literal_false() {
 // Test 136: returns_vec - with vec macro
 #[test]
 fn test_returns_vec_macro() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     let body = Expr {
         kind: ExprKind::MacroInvocation {
             name: "vec!".to_string(),
@@ -3114,7 +3114,7 @@ fn test_returns_vec_macro() {
 // Test 137: returns_vec - with list literal
 #[test]
 fn test_returns_vec_list() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     let body = Expr {
         kind: ExprKind::List(vec![Expr {
             kind: ExprKind::Literal(Literal::Integer(1, None)),
@@ -3160,7 +3160,7 @@ fn test_returns_object_literal_false() {
 // Test 140: expr_is_string - with string literal
 #[test]
 fn test_expr_is_string_literal() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     let expr = Expr {
         kind: ExprKind::Literal(Literal::String("test".to_string())),
         span: Span::default(),
@@ -3174,7 +3174,7 @@ fn test_expr_is_string_literal() {
 // Test 141: expr_is_string - with interpolation
 #[test]
 fn test_expr_is_string_interpolation() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     let expr = Expr {
         kind: ExprKind::StringInterpolation { parts: vec![] },
         span: Span::default(),
@@ -3188,7 +3188,7 @@ fn test_expr_is_string_interpolation() {
 // Test 142: has_non_unit_expression - with non-unit
 #[test]
 fn test_has_non_unit_expression_true() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     let body = Expr {
         kind: ExprKind::Literal(Literal::Integer(42, None)),
         span: Span::default(),
@@ -3202,7 +3202,7 @@ fn test_has_non_unit_expression_true() {
 // Test 143: has_non_unit_expression - with unit
 #[test]
 fn test_has_non_unit_expression_false() {
-    let transpiler = Transpiler::new();
+    let _transpiler = Transpiler::new();
     let body = Expr {
         kind: ExprKind::Literal(Literal::Unit),
         span: Span::default(),

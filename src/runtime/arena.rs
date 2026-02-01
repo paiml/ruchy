@@ -94,6 +94,9 @@ impl Arena {
     pub fn alloc<T>(&self, value: T) -> Result<ArenaBox<T>> {
         let layout = Layout::new::<T>();
         let ptr = self.alloc_raw(layout)?;
+        // SAFETY: ptr was just allocated with the correct layout for T by alloc_raw,
+        // so it is properly aligned and has enough space for a value of type T.
+        // The memory is uninitialized, so ptr::write is the correct way to initialize it.
         unsafe {
             ptr::write(ptr.cast::<T>().as_ptr(), value);
         }
@@ -284,6 +287,9 @@ impl Chunk {
 impl Drop for Chunk {
     fn drop(&mut self) {
         if self.size > 0 {
+            // SAFETY: self.ptr was allocated with self.layout in Chunk::new().
+            // We only deallocate if size > 0, ensuring the allocation is valid.
+            // This is called exactly once when the Chunk is dropped.
             unsafe {
                 dealloc(self.ptr.as_ptr(), self.layout);
             }
@@ -310,6 +316,9 @@ impl<T> ArenaBox<T> {
     /// assert_eq!(result, Ok(()));
     /// ```
     pub fn get(&self) -> &T {
+        // SAFETY: self.ptr was created from a valid allocation in Arena::alloc(),
+        // the value was properly initialized with ptr::write, and the ArenaBox
+        // ensures the pointer remains valid for the lifetime of the borrow.
         unsafe { self.ptr.as_ref() }
     }
     /// Get a mutable reference to the value
@@ -322,6 +331,9 @@ impl<T> ArenaBox<T> {
     /// assert_eq!(result, Ok(()));
     /// ```
     pub fn get_mut(&mut self) -> &mut T {
+        // SAFETY: self.ptr was created from a valid allocation in Arena::alloc(),
+        // the value was properly initialized with ptr::write, and the &mut self
+        // guarantees exclusive access to the pointed-to value.
         unsafe { self.ptr.as_mut() }
     }
 }
@@ -483,10 +495,14 @@ impl<T> Pool<T> {
     pub fn alloc(&self, value: T) -> Result<PoolBox<T>> {
         // Try to reuse from free list
         if let Some(ptr) = self.free_list.borrow_mut().pop() {
+            // SAFETY: ptr came from our free list, which only contains pointers
+            // that were previously allocated by this Pool and properly dropped.
+            // The memory is valid but uninitialized (drop_in_place was called).
             unsafe {
                 ptr::write(ptr, value);
             }
             return Ok(PoolBox {
+                // SAFETY: ptr is non-null because it came from a valid allocation.
                 ptr: unsafe { NonNull::new_unchecked(ptr) },
                 pool: self as *const Pool<T>,
             });
@@ -494,6 +510,9 @@ impl<T> Pool<T> {
         // Allocate new from arena
         let layout = Layout::new::<T>();
         let ptr = self.arena.alloc_raw(layout)?;
+        // SAFETY: ptr was just allocated with the correct layout for T,
+        // so it is properly aligned and has enough space. The memory is
+        // uninitialized, so ptr::write is the correct way to initialize it.
         unsafe {
             ptr::write(ptr.cast::<T>().as_ptr(), value);
         }
@@ -514,6 +533,10 @@ pub struct PoolBox<T> {
 }
 impl<T> Drop for PoolBox<T> {
     fn drop(&mut self) {
+        // SAFETY: self.ptr points to a valid, initialized value of type T that was
+        // allocated by the Pool. The pool pointer remains valid because Pool outlives
+        // all PoolBox instances (enforced by the Pool's lifetime). We drop the value
+        // in place and return the memory to the pool's free list for reuse.
         unsafe {
             // Drop the value
             ptr::drop_in_place(self.ptr.as_ptr());
@@ -525,11 +548,15 @@ impl<T> Drop for PoolBox<T> {
 impl<T> std::ops::Deref for PoolBox<T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
+        // SAFETY: self.ptr was created from a valid Pool allocation and
+        // initialized with ptr::write. The PoolBox ensures exclusive ownership.
         unsafe { self.ptr.as_ref() }
     }
 }
 impl<T> std::ops::DerefMut for PoolBox<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
+        // SAFETY: self.ptr was created from a valid Pool allocation and
+        // initialized with ptr::write. The &mut self guarantees exclusive access.
         unsafe { self.ptr.as_mut() }
     }
 }
