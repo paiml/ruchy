@@ -401,6 +401,20 @@ pub(crate) fn handle_postfix_operators(state: &mut ParserState, mut left: Expr) 
 }
 /// Try to handle a single postfix operator
 /// Returns Some(expr) if handled, None if no postfix operator found
+fn try_handle_postfix_call(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
+    if is_block_like_expression(&left) {
+        return Ok(None);
+    }
+    let paren_start = state.tokens.peek().map(|(_, s)| s.start);
+    if let Some(paren_pos) = paren_start {
+        let source = state.tokens.source();
+        if !is_on_same_line(source, left.span.end, paren_pos) {
+            return Ok(None);
+        }
+    }
+    Ok(Some(functions::parse_call(state, left)?))
+}
+
 fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
     // PARSER-053 FIX: Skip comments before checking for postfix operators
     // This allows: "hello" # comment\n .to_uppercase()
@@ -423,31 +437,7 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
         Some(Token::Dot) => handle_dot_operator(state, left).map(Some),
         Some(Token::ColonColon) => handle_colon_colon_operator(state, left).map(Some),
         Some(Token::SafeNav) => handle_safe_nav_operator(state, left).map(Some),
-        Some(Token::LeftParen) => {
-            // PARSER-DEFECT-001 FIX: Block-like control flow expressions should NOT
-            // consume `(...)` as function calls in statement position.
-            // This prevents: `loop { break; } (x, x)` from being parsed as
-            // `(loop { break; })(x, x)` (calling loop result with args).
-            // Instead it should be two separate statements.
-            if is_block_like_expression(&left) {
-                Ok(None) // Don't treat `(` as postfix call
-            } else {
-                // PARSER-XXX FIX: Don't parse `(` as function call if it's on a new line
-                // This prevents: `let sum = a + b\n(sum, product)` from being parsed as
-                // `let sum = a + b(sum, product)` (calling b with tuple args).
-                // Instead it should be two separate statements.
-                // Extract span start before borrowing source
-                let paren_start = state.tokens.peek().map(|(_, s)| s.start);
-                if let Some(paren_pos) = paren_start {
-                    // Check if there's a significant gap (newline) between expr and (
-                    let source = state.tokens.source();
-                    if !is_on_same_line(source, left.span.end, paren_pos) {
-                        return Ok(None); // `(` is on new line, not a function call
-                    }
-                }
-                Ok(Some(functions::parse_call(state, left)?))
-            }
-        }
+        Some(Token::LeftParen) => try_handle_postfix_call(state, left),
         Some(Token::LeftBracket) => {
             // PARSER-081 FIX: Don't treat `[` as array indexing after literals, struct literals, let statements, or standalone function calls
             // This prevents `let y = 2 [x, y]`, `let p = Point{...} [x]`, and `let result = foo() [1, 2]` from being parsed as indexing
@@ -548,19 +538,28 @@ fn token_as_identifier(token: &Token) -> Option<String> {
     }
 }
 
+fn try_make_qualified_name(left: &Expr, field: &str, state: &mut ParserState) -> Option<(String, String)> {
+    if let ExprKind::Identifier(ref module) = left.kind {
+        if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            let is_builtin = matches!(
+                module.as_str(),
+                "Command" | "DataFrame" | "Sql" | "Process" | "String"
+            );
+            if is_builtin {
+                return Some((module.clone(), field.to_string()));
+            }
+        }
+    }
+    None
+}
+
 fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Expr> {
     state.tokens.advance(); // consume ::
 
-    // PARSER-070: Check for turbofish syntax (`::<Type>`) in path expressions
-    // Examples: Vec::<i32>::new(), HashMap::<String, i32>::new()
     if let Some((Token::Less, _)) = state.tokens.peek() {
-        // Parse turbofish type parameters: ::<Type1, Type2, ...>
         parse_turbofish(state)?;
-
-        // After turbofish, expect :: again for method call
-        // Example: Vec::<i32>::new() - we're now at the second ::
         if let Some((Token::ColonColon, _)) = state.tokens.peek() {
-            state.tokens.advance(); // consume second ::
+            state.tokens.advance();
         } else {
             return Err(anyhow::anyhow!(
                 "Expected '::' after turbofish type parameters"
@@ -568,61 +567,31 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
         }
     }
 
-    // PARSER-064: Accept identifiers AND keywords after :: (keywords can be method names)
-    // Examples: String::from(), Result::Ok(), Option::Some()
-    match state.tokens.peek() {
-        Some((token, span)) => {
-            if let Some(field) = token_as_identifier(token) {
-                let field_span = *span;
-                state.tokens.advance();
+    let (token, span) = state
+        .tokens
+        .peek()
+        .ok_or_else(|| anyhow::anyhow!("Expected identifier after '::' but reached end of input"))?;
 
-                // PARSER-091: Fix for Issue #75 - Command::new() should parse as QualifiedName
-                // REGRESSION-076: Fix for Issue #76 - Vec/Box/HashMap should remain FieldAccess
-                // When we see `Module::function(`, determine if this should be QualifiedName or FieldAccess
-                // - QualifiedName: Builtin modules (Command, etc.)
-                // - FieldAccess: Standard library types (Vec, Box, HashMap, etc.)
-                if let ExprKind::Identifier(ref module) = left.kind {
-                    // Peek ahead to see if this is a function call
-                    if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
-                        // Check if this is a builtin module that should use QualifiedName
-                        // Standard library types (Vec, Box, HashMap, etc.) should remain FieldAccess
-                        let is_builtin_module = matches!(
-                            module.as_str(),
-                            "Command" | "DataFrame" | "Sql" | "Process" | "String"
-                        );
+    let field = token_as_identifier(token).ok_or_else(|| {
+        anyhow::anyhow!("Expected identifier or keyword usable as identifier after '::' but got {token:?}")
+    })?;
+    let field_span = *span;
+    state.tokens.advance();
 
-                        if is_builtin_module {
-                            // This is a builtin module → create QualifiedName
-                            return Ok(Expr::new(
-                                ExprKind::QualifiedName {
-                                    module: module.clone(),
-                                    name: field,
-                                },
-                                field_span,
-                            ));
-                        }
-                        // Otherwise, fall through to FieldAccess for stdlib types (Vec, Box, HashMap)
-                    }
-                }
-
-                // Not a call pattern → keep as FieldAccess for enum variants, etc.
-                Ok(Expr::new(
-                    ExprKind::FieldAccess {
-                        object: Box::new(left),
-                        field,
-                    },
-                    field_span,
-                ))
-            } else {
-                Err(anyhow::anyhow!(
-                    "Expected identifier or keyword usable as identifier after '::' but got {token:?}"
-                ))
-            }
-        }
-        Option::None => Err(anyhow::anyhow!(
-            "Expected identifier after '::' but reached end of input"
-        )),
+    if let Some((module, name)) = try_make_qualified_name(&left, &field, state) {
+        return Ok(Expr::new(
+            ExprKind::QualifiedName { module, name },
+            field_span,
+        ));
     }
+
+    Ok(Expr::new(
+        ExprKind::FieldAccess {
+            object: Box::new(left),
+            field,
+        },
+        field_span,
+    ))
 }
 
 /// Parse turbofish type parameters: ::<Type1, Type2, ...>
@@ -944,68 +913,68 @@ fn is_valid_ternary_start(token: &Token, min_prec: i32, ternary_prec: i32) -> bo
 /// Check if this is a try operator rather than ternary (complexity: 5, cognitive: 5)
 /// PARSER-XXX: Scan ahead to find `:` at same nesting level for ternary detection
 /// Returns true if this is definitely a try operator, false if it could be ternary
-fn is_try_operator_not_ternary(state: &mut ParserState) -> bool {
-    // First check: statement-starting keywords definitely indicate try
-    if let Some((next_token, _)) = state.tokens.peek_nth(1) {
-        if matches!(
-            next_token,
-            Token::Let
-                | Token::For
-                | Token::While
-                | Token::Match
-                | Token::Return
-                | Token::Fn
-                | Token::Fun
-                | Token::Loop
-                | Token::Continue
-                | Token::Break
-                | Token::Pub
-                | Token::Const
-                | Token::Static
-                | Token::Struct
-                | Token::Enum
-                | Token::Impl
-                | Token::Trait
-                | Token::Type
-                | Token::Use
-                | Token::Mod
-        ) {
-            return true;
-        }
-    }
+fn is_statement_keyword(token: &Token) -> bool {
+    matches!(
+        token,
+        Token::Let
+            | Token::For
+            | Token::While
+            | Token::Match
+            | Token::Return
+            | Token::Fn
+            | Token::Fun
+            | Token::Loop
+            | Token::Continue
+            | Token::Break
+            | Token::Pub
+            | Token::Const
+            | Token::Static
+            | Token::Struct
+            | Token::Enum
+            | Token::Impl
+            | Token::Trait
+            | Token::Type
+            | Token::Use
+            | Token::Mod
+    )
+}
 
-    // Second check: scan ahead for `:` at same nesting level
-    // Ternary requires `? expr : expr` - the `:` must exist at same level
+fn scan_for_ternary_colon(state: &mut ParserState) -> bool {
     let pos = state.tokens.position();
     state.tokens.advance(); // skip `?`
 
     let mut depth = 0i32;
     let mut found_colon = false;
-    let max_lookahead = 30;
 
-    for _ in 0..max_lookahead {
+    for _ in 0..30 {
         match state.tokens.advance() {
             Some((Token::LeftParen | Token::LeftBracket | Token::LeftBrace, _)) => depth += 1,
             Some((Token::RightParen | Token::RightBracket | Token::RightBrace, _)) => {
                 depth -= 1;
                 if depth < 0 {
-                    break; // Unbalanced - end of expression
+                    break;
                 }
             }
             Some((Token::Colon, _)) if depth == 0 => {
                 found_colon = true;
                 break;
             }
-            Some((Token::Semicolon, _)) => break, // Statement end
-            None => break,                        // EOF
+            Some((Token::Semicolon, _)) | None => break,
             _ => {}
         }
     }
 
     state.tokens.set_position(pos);
+    found_colon
+}
 
-    // If no colon found at depth 0, it's a try operator
-    !found_colon
+fn is_try_operator_not_ternary(state: &mut ParserState) -> bool {
+    if let Some((next_token, _)) = state.tokens.peek_nth(1) {
+        if is_statement_keyword(&next_token) {
+            return true;
+        }
+    }
+    !scan_for_ternary_colon(state)
 }
 
 /// Parse complete ternary expression (complexity: 3, cognitive: 3)
@@ -1346,855 +1315,11 @@ fn parse_generic_macro(state: &mut ParserState, name: &str) -> Result<Option<Exp
     )))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::frontend::ast::{Literal, UnaryOp};
-
-    // Sprint 4: Comprehensive parser unit tests for coverage improvement
-
-    #[test]
-    fn test_parser_basic_literals() {
-        let mut state = ParserState::new("42");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Literal(Literal::Integer(42, None))
-        ));
-
-        let mut state = ParserState::new("3.15");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Literal(Literal::Float(f)) = expr.kind {
-            assert!((f - 3.15).abs() < 0.001);
-        } else {
-            panic!("Expected float literal");
-        }
-
-        let mut state = ParserState::new("true");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::Literal(Literal::Bool(true))));
-
-        let mut state = ParserState::new("false");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::Literal(Literal::Bool(false))));
-    }
-
-    #[test]
-    fn test_parser_string_literals() {
-        let mut state = ParserState::new(r#""hello world""#);
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Literal(Literal::String(s)) = expr.kind {
-            assert_eq!(s, "hello world");
-        } else {
-            panic!("Expected string literal");
-        }
-
-        let mut state = ParserState::new(r#""""#);
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Literal(Literal::String(s)) = expr.kind {
-            assert_eq!(s, "");
-        } else {
-            panic!("Expected empty string literal");
-        }
-    }
-
-    #[test]
-    fn test_parser_identifiers() {
-        let mut state = ParserState::new("variable");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Identifier(name) = expr.kind {
-            assert_eq!(name, "variable");
-        } else {
-            panic!("Expected identifier");
-        }
-
-        let mut state = ParserState::new("_underscore");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Identifier(name) = expr.kind {
-            assert_eq!(name, "_underscore");
-        } else {
-            panic!("Expected identifier with underscore");
-        }
-    }
-
-    #[test]
-    fn test_parser_binary_operations() {
-        let mut state = ParserState::new("1 + 2");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Add,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("10 - 5");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Subtract,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("3 * 4");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Multiply,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("8 / 2");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Divide,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_comparison_operations() {
-        let mut state = ParserState::new("5 > 3");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Greater,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("3 < 5");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Less,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("5 == 5");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Equal,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("5 != 3");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::NotEqual,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_logical_operations() {
-        let mut state = ParserState::new("true && false");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::And,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("true || false");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Or,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_unary_operations() {
-        let mut state = ParserState::new("-42");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Unary {
-                op: UnaryOp::Negate,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("!true");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Unary {
-                op: UnaryOp::Not,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_parenthesized_expression() {
-        let mut state = ParserState::new("(42)");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        // Parentheses don't create a special node, just affect precedence
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Literal(Literal::Integer(42, None))
-        ));
-
-        let mut state = ParserState::new("(1 + 2) * 3");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Multiply,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_list_literal() {
-        let mut state = ParserState::new("[1, 2, 3]");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::List(items) = expr.kind {
-            assert_eq!(items.len(), 3);
-        } else {
-            panic!("Expected list literal");
-        }
-
-        let mut state = ParserState::new("[]");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::List(items) = expr.kind {
-            assert_eq!(items.len(), 0);
-        } else {
-            panic!("Expected empty list");
-        }
-    }
-
-    #[test]
-    fn test_parser_tuple_literal() {
-        let mut state = ParserState::new("(1, 2)");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Tuple(items) = expr.kind {
-            assert_eq!(items.len(), 2);
-        } else {
-            panic!("Expected tuple literal");
-        }
-
-        let mut state = ParserState::new("(1,)");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Tuple(items) = expr.kind {
-            assert_eq!(items.len(), 1);
-        } else {
-            panic!("Expected single-element tuple");
-        }
-    }
-
-    #[test]
-    fn test_parser_range_expressions() {
-        let mut state = ParserState::new("1..10");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Range { inclusive, .. } = expr.kind {
-            assert!(!inclusive);
-        } else {
-            panic!("Expected range expression");
-        }
-
-        let mut state = ParserState::new("1..=10");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Range { inclusive, .. } = expr.kind {
-            assert!(inclusive);
-        } else {
-            panic!("Expected inclusive range");
-        }
-    }
-
-    #[test]
-    fn test_parser_state_creation() {
-        let state = ParserState::new("test input");
-        assert_eq!(state.get_errors().len(), 0);
-
-        let (allocated, items) = state.arena_stats();
-        assert_eq!(allocated, 0);
-        assert_eq!(items, 0);
-
-        let (strings, bytes) = state.interner_stats();
-        assert_eq!(strings, 0);
-        assert_eq!(bytes, 0);
-    }
-
-    #[test]
-    fn test_parser_precedence_levels() {
-        // Test that multiplication has higher precedence than addition
-        let mut state = ParserState::new("1 + 2 * 3");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        // Should parse as 1 + (2 * 3), not (1 + 2) * 3
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Add,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-
-    fn test_parser_assignment_operators() {
-        // Assignment is parsed as a binary operation in this AST
-        let mut state = ParserState::new("x = 5");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        // Assignment might be parsed differently, just check it's an expression
-        // The AST does have an Assign variant
-        assert!(
-            matches!(expr.kind, ExprKind::Let { .. })
-                || matches!(expr.kind, ExprKind::Binary { .. })
-                || matches!(expr.kind, ExprKind::Assign { .. })
-        );
-
-        let mut state = ParserState::new("x += 5");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::CompoundAssign { .. }));
-    }
-
-    #[test]
-
-    fn test_parser_pipeline_operator() {
-        let mut state = ParserState::new("data >> transform");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::RightShift,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_try_operator() {
-        let mut state = ParserState::new("result?");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::Try { .. }));
-    }
-
-    #[test]
-    fn test_parser_index_access() {
-        let mut state = ParserState::new("array[0]");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::IndexAccess { .. }));
-    }
-
-    #[test]
-    fn test_parser_slice_expressions() {
-        let mut state = ParserState::new("array[1:5]");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::Slice { .. }));
-
-        let mut state = ParserState::new("array[:5]");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::Slice { .. }));
-
-        let mut state = ParserState::new("array[1:]");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::Slice { .. }));
-    }
-
-    #[test]
-    fn test_parser_postfix_increment() {
-        // PostIncrement doesn't exist in UnaryOp, skip this test
-        // The parser may handle this differently or not support it
-    }
-
-    #[test]
-    fn test_parser_postfix_decrement() {
-        // PostDecrement doesn't exist in UnaryOp, skip this test
-        // The parser may handle this differently or not support it
-    }
-
-    #[test]
-    fn test_parser_complex_expression() {
-        // Test a complex nested expression
-        let mut state = ParserState::new("(a + b) * (c - d) / 2");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        // Should parse successfully as a division operation at the top level
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Divide,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_character_literal() {
-        let mut state = ParserState::new("'a'");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Literal(Literal::Char(c)) = expr.kind {
-            assert_eq!(c, 'a');
-        } else {
-            panic!("Expected character literal");
-        }
-    }
-
-    #[test]
-    fn test_parser_method_call_chain() {
-        let mut state = ParserState::new("obj.method1().method2()");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        // Should parse as nested method calls
-        assert!(matches!(expr.kind, ExprKind::MethodCall { .. }));
-    }
-
-    #[test]
-
-    fn test_parser_safe_navigation() {
-        let mut state = ParserState::new("obj?.method()");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        // Safe navigation parses as OptionalMethodCall for obj?.method() syntax
-        assert!(
-            matches!(expr.kind, ExprKind::OptionalFieldAccess { .. })
-                || matches!(expr.kind, ExprKind::MethodCall { .. })
-                || matches!(expr.kind, ExprKind::OptionalMethodCall { .. })
-        );
-    }
-
-    #[test]
-    #[ignore = "Macro syntax not fully implemented"]
-    fn test_parser_macro_call() {
-        let mut state = ParserState::new("println!(\"hello\")");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::Call { func, args } = expr.kind {
-            if let ExprKind::Identifier(name) = func.kind {
-                assert_eq!(name, "println");
-                assert_eq!(args.len(), 1);
-            } else {
-                panic!("Expected function name");
-            }
-        } else {
-            panic!("Expected function call");
-        }
-    }
-
-    #[test]
-    fn test_parser_bitwise_operations() {
-        let mut state = ParserState::new("a & b");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::BitwiseAnd,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("a | b");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::BitwiseOr,
-                ..
-            }
-        ));
-
-        let mut state = ParserState::new("a ^ b");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::BitwiseXor,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_shift_operations() {
-        let mut state = ParserState::new("a << 2");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::LeftShift,
-                ..
-            }
-        ));
-
-        // Right shift doesn't exist in BinaryOp, skip this test
-        // The language may not support right shift or use a different representation
-    }
-
-    #[test]
-    fn test_parser_modulo_operation() {
-        let mut state = ParserState::new("10 % 3");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Modulo,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_type_cast() {
-        let mut state = ParserState::new("x as i32");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(expr.kind, ExprKind::TypeCast { .. }));
-    }
-
-    #[test]
-    fn test_parser_power_operation() {
-        let mut state = ParserState::new("2 ** 8");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        assert!(matches!(
-            expr.kind,
-            ExprKind::Binary {
-                op: BinaryOp::Power,
-                ..
-            }
-        ));
-    }
-
-    #[test]
-    fn test_parser_prefix_increment() {
-        // PreIncrement doesn't exist in UnaryOp, skip this test
-        // The parser may handle this differently or not support it
-    }
-
-    #[test]
-    fn test_parser_prefix_decrement() {
-        // PreDecrement doesn't exist in UnaryOp, skip this test
-        // The parser may handle this differently or not support it
-    }
-
-    #[test]
-    fn test_parser_empty_input() {
-        let mut state = ParserState::new("");
-        let result = parse_expr_recursive(&mut state);
-        // Empty input should return an error
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_parser_nested_lists() {
-        let mut state = ParserState::new("[[1, 2], [3, 4]]");
-        let expr =
-            parse_expr_recursive(&mut state).expect("parse_expr_recursive should succeed in test");
-        if let ExprKind::List(outer) = expr.kind {
-            assert_eq!(outer.len(), 2);
-            // Each element should itself be a list
-            for item in outer {
-                assert!(matches!(item.kind, ExprKind::List(_)));
-            }
-        } else {
-            panic!("Expected nested list");
-        }
-    }
-
-    // Sprint 8 Phase 2: Mutation test gap coverage for mod.rs
-    // Target: 8 MISSED → 0 MISSED (operator precedence boundaries & calculations)
-
-    #[test]
-    fn test_ternary_operator_precedence_boundary() {
-        // Test gap: Line 464 - verify > comparison (not ==) in try_ternary_operator
-        // Ternary should work when min_prec is LESS than TERNARY_PRECEDENCE
-        let mut state = ParserState::new("true ? 1 : 2");
-        let result = parse_expr_recursive(&mut state);
-        assert!(
-            result.is_ok(),
-            "Ternary with default precedence should work"
-        );
-    }
-
-    #[test]
-    fn test_ternary_precedence_calculation() {
-        // Test gap: Line 449 - verify + operator (not *) in prec + 1
-        // This tests the precedence calculation for ternary true branch
-        let mut state = ParserState::new("1 + 1 ? 10 : 20");
-        let result = parse_expr_recursive(&mut state);
-        assert!(
-            result.is_ok(),
-            "Ternary with addition should parse correctly"
-        );
-    }
-
-    #[test]
-    fn test_assignment_operator_precedence_boundary_less_than() {
-        // Test gap: Line 590 - verify < comparison (not <= or ==) in try_assignment_operators
-        // Assignment should NOT work when prec >= min_prec
-        let mut state = ParserState::new("x = 42");
-        let result = parse_expr_with_precedence_recursive(&mut state, 0);
-        assert!(
-            result.is_ok(),
-            "Assignment with min_prec=0 should work (prec < min_prec is false)"
-        );
-    }
-
-    #[test]
-    fn test_range_operator_precedence_boundary() {
-        // Test gap: Line 686 - verify < comparison (not ==) in try_range_operators
-        let mut state = ParserState::new("1..10");
-        let result = parse_expr_with_precedence_recursive(&mut state, 0);
-        assert!(result.is_ok(), "Range with low min_prec should work");
-    }
-
-    #[test]
-    fn test_range_precedence_calculation() {
-        // Test gap: Line 691 - verify + operator (not *) in prec + 1
-        let mut state = ParserState::new("1..10");
-        let result = parse_expr_recursive(&mut state);
-        assert!(
-            result.is_ok(),
-            "Range precedence calculation should use + not *"
-        );
-    }
-
-    #[test]
-    fn test_pipeline_precedence_calculation() {
-        // Test gap: Line 649 - verify + operator (not -) in prec + 1
-        let mut state = ParserState::new("x |> f");
-        let result = parse_expr_recursive(&mut state);
-        assert!(
-            result.is_ok(),
-            "Pipeline precedence should use + for right recursion"
-        );
-    }
-
-    #[test]
-    fn test_macro_call_returns_some() {
-        // Test gap: Line 705 - verify try_parse_macro_call returns Some (not None stub)
-        // FORMATTER-088: Changed to MacroInvocation (macro CALL, not definition)
-        let mut state = ParserState::new("vec![1, 2, 3]");
-        let result = parse_expr_recursive(&mut state);
-        assert!(result.is_ok(), "Macro call should parse successfully");
-
-        if let Ok(expr) = result {
-            assert!(
-                matches!(expr.kind, ExprKind::MacroInvocation { .. }),
-                "Should parse as MacroInvocation expression (macro CALL, not definition)"
-            );
-        }
-    }
-}
 
 #[cfg(test)]
-mod mutation_tests {
-    use super::*;
+#[path = "parser_tests.rs"]
+mod tests;
 
-    #[test]
-    fn test_try_range_operators_less_than_comparison() {
-        // MISSED: replace < with == in try_range_operators (line 686)
-
-        let mut state = ParserState::new("..10");
-        let left = Expr {
-            kind: ExprKind::Literal(Literal::Integer(0, None)),
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: vec![],
-            trailing_comment: None,
-        };
-
-        // Test when prec < min_prec (should return None)
-        let result = try_range_operators(&mut state, left.clone(), &Token::DotDot, 10);
-        assert!(result.is_ok());
-        assert!(
-            result.expect("result should be Some in test").is_none(),
-            "Should return None when prec < min_prec (not ==)"
-        );
-
-        // Test when prec >= min_prec (should return Some)
-        let mut state = ParserState::new("..10");
-        let result = try_range_operators(&mut state, left, &Token::DotDot, 5);
-        assert!(result.is_ok());
-        assert!(
-            result.expect("result should be Some in test").is_some(),
-            "Should return Some when prec >= min_prec"
-        );
-    }
-
-    #[test]
-    fn test_try_range_operators_plus_arithmetic() {
-        // MISSED: replace + with * in try_range_operators (line 691)
-
-        let mut state = ParserState::new("..10");
-        let left = Expr {
-            kind: ExprKind::Literal(Literal::Integer(0, None)),
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: vec![],
-            trailing_comment: None,
-        };
-
-        let result = try_range_operators(&mut state, left, &Token::DotDot, 1);
-        assert!(result.is_ok());
-
-        // The RHS should parse with precedence prec+1 (not prec*1)
-        // This ensures proper right-associativity
-        if let Ok(Some(expr)) = result {
-            assert!(
-                matches!(expr.kind, ExprKind::Range { .. }),
-                "Should parse range correctly with + operator"
-            );
-        }
-    }
-
-    #[test]
-    fn test_try_assignment_operators_less_than_comparison() {
-        // MISSED: replace < with <= in try_assignment_operators (line 590)
-
-        let mut state = ParserState::new("= 42");
-        let left = Expr {
-            kind: ExprKind::Identifier("x".to_string()),
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: vec![],
-            trailing_comment: None,
-        };
-
-        // Test boundary: when prec == min_prec
-        // With <: returns Some (prec is NOT < min_prec)
-        // With <=: would return None (prec IS <= min_prec)
-        let result = try_assignment_operators(&mut state, left.clone(), &Token::Equal, 1);
-        assert!(result.is_ok());
-        assert!(
-            result.expect("result should be Some in test").is_some(),
-            "Should return Some when prec == min_prec (using <, not <=)"
-        );
-
-        // Test when prec < min_prec (should return None)
-        let mut state = ParserState::new("= 42");
-        let result = try_assignment_operators(&mut state, left, &Token::Equal, 10);
-        assert!(result.is_ok());
-        assert!(
-            result.expect("result should be Some in test").is_none(),
-            "Should return None when prec < min_prec"
-        );
-    }
-
-    #[test]
-    fn test_try_assignment_operators_equals_comparison() {
-        // MISSED: replace < with == in try_assignment_operators (line 590)
-
-        let mut state = ParserState::new("= 42");
-        let left = Expr {
-            kind: ExprKind::Identifier("x".to_string()),
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: vec![],
-            trailing_comment: None,
-        };
-
-        // Test when prec < min_prec (should return None with < operator)
-        let result = try_assignment_operators(&mut state, left.clone(), &Token::Equal, 10);
-        assert!(result.is_ok());
-        assert!(
-            result.expect("result should be Some in test").is_none(),
-            "Should return None when prec < min_prec (not ==)"
-        );
-
-        // Test when prec > min_prec (should return Some)
-        let mut state = ParserState::new("= 42");
-        let result = try_assignment_operators(&mut state, left, &Token::Equal, 0);
-        assert!(result.is_ok());
-        assert!(
-            result.expect("result should be Some in test").is_some(),
-            "Should return Some when prec > min_prec"
-        );
-    }
-
-    #[test]
-    fn test_try_ternary_operator_plus_arithmetic() {
-        // MISSED: replace + with * in try_ternary_operator (line 464)
-
-        let mut state = ParserState::new("? 1 : 0");
-        let left = Expr {
-            kind: ExprKind::Literal(Literal::Bool(true)),
-            span: Span { start: 0, end: 0 },
-            attributes: Vec::new(),
-            leading_comments: vec![],
-            trailing_comment: None,
-        };
-
-        let result = try_ternary_operator(&mut state, left, &Token::Question, 1);
-        assert!(result.is_ok());
-
-        // The true branch should parse with TERNARY_PRECEDENCE+1 (not *1)
-        // This tests the correct arithmetic operator
-        if let Ok(Some(expr)) = result {
-            assert!(
-                matches!(expr.kind, ExprKind::Ternary { .. }),
-                "Should parse ternary with + operator"
-            );
-        }
-    }
-}
+#[cfg(test)]
+#[path = "parser_mutation_tests.rs"]
+mod mutation_tests;
