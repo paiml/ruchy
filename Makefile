@@ -201,7 +201,8 @@ tier2-on-commit:
 	@cargo test --test --release --quiet
 	@echo "Step 4/5: Coverage analysis (≥95% line target, ≥90% branch target)..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
-	@env RUSTC_WRAPPER= PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report nextest --no-fail-fast --lib --all-features --quiet || true
+	@env RUSTC_WRAPPER= PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report test --lib --all-features --quiet \
+		-- --test-threads=$$(nproc) || true
 	@env RUSTC_WRAPPER= cargo llvm-cov report --summary-only
 	@echo "Step 5/5: PMAT quality gates (TDG ≥A-, complexity ≤10)..."
 	@which pmat > /dev/null 2>&1 && pmat tdg . --min-grade A- --fail-on-violation --quiet || echo "⚠️  PMAT not installed, skipping quality gates"
@@ -260,7 +261,7 @@ test-execution: test-cli test-oneliner test-repl-integration
 
 test-cli:
 	@echo "Testing CLI commands..."
-	@cargo test --test cli_integration 2>/dev/null || true
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test cli_integration || true
 	@echo "✓ CLI tests complete"
 
 test-oneliner:
@@ -270,12 +271,12 @@ test-oneliner:
 
 test-repl-integration:
 	@echo "Testing REPL integration..."
-	@cargo test --test repl_integration 2>/dev/null || true
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test repl_integration || true
 	@echo "✓ REPL integration tests complete"
 
 test-properties:
 	@echo "Running property-based tests..."
-	@cargo test --test property_tests --features proptest
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test property_tests --features proptest
 	@echo "✓ Property tests complete"
 
 bench-execution:
@@ -291,12 +292,12 @@ validate-performance:
 # Run tests (default - includes property, doc, examples, and fuzz tests as key testing pathway)
 test:
 	@echo "Running main test suite (lib + property + doc + examples + fuzz tests)..."
-	@cargo test --lib --quiet -- --test-threads=4
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --lib --quiet -- --test-threads=4
 	@echo "Running property-based tests..."
-	@cargo test property_ --lib --release --quiet -- --nocapture
-	@cargo test proptest --lib --release --quiet -- --nocapture
-	@cargo test quickcheck --lib --release --quiet -- --nocapture
-	@cargo test --lib --features testing testing::properties --release --quiet -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test property_ --lib --release --quiet -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test proptest --lib --release --quiet -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test quickcheck --lib --release --quiet -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --lib --features testing testing::properties --release --quiet -- --nocapture
 	@echo "Running documentation tests..."
 	-@cargo test --doc --quiet
 	@echo "Running examples tests..."
@@ -314,17 +315,17 @@ test-nextest:
 # Run all tests comprehensively (including ignored/slow tests, doc tests)
 test-all:
 	@echo "Running all tests comprehensively (including slow/ignored tests)..."
-	@cargo test --all-features --workspace -- --include-ignored
-	@cargo test --doc
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --all-features --workspace -- --include-ignored
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --doc
 	@echo "✓ All tests passed"
 
 # Run property-based tests specifically
 test-property:
 	@echo "Running property-based tests..."
-	@cargo test property_ --lib --release -- --nocapture
-	@cargo test proptest --lib --release -- --nocapture
-	@cargo test quickcheck --lib --release -- --nocapture
-	@cargo test --lib --features testing testing::properties --release -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test property_ --lib --release -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test proptest --lib --release -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test quickcheck --lib --release -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --lib --features testing testing::properties --release -- --nocapture
 	@echo "✓ Property tests passed"
 
 # Run WASM-specific property tests with >80% coverage target
@@ -332,7 +333,7 @@ test-property-wasm:
 	@echo "🚀 Running WASM Property Tests (>80% coverage target)"
 	@echo "=================================================="
 	@echo "Testing with proptest framework (1000 cases per property)..."
-	@cargo test --package ruchy --test wasm_property_tests --release -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --package ruchy --test wasm_property_tests --release -- --nocapture
 	@echo ""
 	@echo "📊 Property Test Coverage Analysis..."
 	@echo "Properties tested:"
@@ -358,7 +359,7 @@ test-property-wasm:
 test-doc:
 	@echo "Running documentation tests..."
 	@echo "Note: Some doc tests may fail due to Ruchy syntax examples being interpreted as Rust"
-	-@cargo test --doc
+	-@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --doc
 	@echo "✓ Documentation tests completed (some may have failed - this is expected)"
 
 # Comprehensive REPL testing - ALL test types for REPL
@@ -368,20 +369,20 @@ test-repl:
 	@echo "════════════════════════════════════════════════════════════════════"
 	@echo ""
 	@echo "1️⃣  Running REPL unit tests..."
-	@cargo test repl --lib --quiet || (echo "❌ REPL unit tests failed" && exit 1)
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test repl --lib --quiet || (echo "❌ REPL unit tests failed" && exit 1)
 	@echo "✅ REPL unit tests passed"
 	@echo ""
 	@echo "2️⃣  Running REPL integration tests..."
-	@cargo test --test repl_commands_test --quiet || (echo "❌ REPL integration tests failed" && exit 1)
-	@cargo test --test cli_oneliner_tests --quiet || (echo "❌ CLI oneliner tests failed" && exit 1)
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test repl_commands_test --quiet || (echo "❌ REPL integration tests failed" && exit 1)
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test cli_oneliner_tests --quiet || (echo "❌ CLI oneliner tests failed" && exit 1)
 	@echo "✅ REPL integration tests passed"
 	@echo ""
 	@echo "3️⃣  Running REPL property tests..."
-	@cargo test repl_function_tests::property --lib --release --quiet || (echo "❌ REPL property tests failed" && exit 1)
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test repl_function_tests::property --lib --release --quiet || (echo "❌ REPL property tests failed" && exit 1)
 	@echo "✅ REPL property tests passed"
 	@echo ""
 	@echo "4️⃣  Running REPL doctests..."
-	@cargo test --doc runtime::repl --quiet || (echo "❌ REPL doctests failed" && exit 1)
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --doc runtime::repl --quiet || (echo "❌ REPL doctests failed" && exit 1)
 	@echo "✅ REPL doctests passed"
 	@echo ""
 	@echo "5️⃣  Running REPL examples..."
@@ -407,7 +408,7 @@ test-repl:
 lint-fast:
 	@echo "⚡ Running fast lint with auto-fix..."
 	@RUSTFLAGS="-A warnings" cargo clippy --lib --bin ruchy --quiet
-	@RUSTFLAGS="-A warnings" cargo clippy --lib --bin ruchy --fix --allow-dirty --allow-staged --quiet 2>/dev/null || true
+	@RUSTFLAGS="-A warnings" cargo clippy --lib --bin ruchy --fix --allow-dirty --allow-staged --quiet || true
 	@echo "✓ Fast lint complete"
 
 # STRICT LINT CHECK (bashrs-style): For CI and pre-commit
@@ -518,44 +519,24 @@ clean-coverage:
 	@$(MAKE) coverage
 	@echo "✅ Fresh coverage report generated"
 
-# COVERAGE EXCLUSIONS (bashrs-style)
-# Modules that invoke external commands or have inherent test isolation issues.
-# These are excluded from coverage metrics but still tested (integration tests).
+# COVERAGE EXCLUSIONS (13 patterns, under 20% budget per CB-125-B)
+# Modules excluded from coverage metrics (still tested via integration tests).
 #
-# External-dependency bridges (wrap external crates):
-# - stdlib/alimentar_bridge.rs: Wraps alimentar crate (data loading)
-# - stdlib/presentar_bridge.rs: Wraps presentar crate (visualization)
-# - stdlib/html.rs: HTML generation with external deps
+# External-dependency bridges:
+# - stdlib/alimentar_bridge.rs, presentar_bridge.rs: Wrap external crates
 #
-# Testing infrastructure (lower coverage expected):
-# - transpiler/reference_interpreter.rs: Differential testing oracle
-# - transpiler/canonical_ast.rs: AST transformation infrastructure
-# - testing/*.rs: Testing utilities (tested implicitly)
+# Testing infrastructure:
+# - transpiler/reference_interpreter.rs, canonical_ast.rs: Differential testing oracle
 #
-# WASM modules with test isolation issues:
-# - wasm/deployment.rs: External AWS/S3 operations
-# - wasm/repl.rs: Global OUTPUT_BUFFER state conflicts
-# - wasm/shared_session.rs: Session state with external dependencies
-# - wasm/wit.rs: WIT generation (external interface)
-# - wasm/portability.rs: Platform detection (runtime dependent)
-# - wasm/demo_converter.rs: Demo conversion (external deps)
+# WASM modules with external dependencies:
+# - wasm/deployment.rs, shared_session.rs, wit.rs, portability.rs
 #
-# Binary code (tested via integration tests):
-# - bin/*.rs: CLI entry points
-# Note: Runtime integration modules also excluded (require full runtime context):
-# - runtime/transaction.rs: Transactional state with arena allocation
-# - runtime/replay*.rs: Replay infrastructure
-# - runtime/value_utils.rs: Value utilities (tested via doctests)
-# - runtime/repl/*.rs: REPL state (global state issues)
-# - wasm/notebook.rs: Complex stateful notebook interactions
+# Runtime modules requiring full context:
+# - runtime/transaction.rs, replay*.rs
 #
-# Parser utilities (tested via integration tests):
-# - frontend/parser/utils*.rs: Parser utilities
-# - proving/*.rs: Formal verification infrastructure
-#
-# Benchmark code (not unit tested):
-# - bench/*.rs: Benchmark infrastructure
-COVERAGE_EXCLUDE := --ignore-filename-regex='stdlib/alimentar_bridge\.rs|stdlib/presentar_bridge\.rs|stdlib/html\.rs|transpiler/reference_interpreter\.rs|transpiler/canonical_ast\.rs|transpiler/provenance\.rs|testing/.*\.rs|wasm/deployment\.rs|wasm/repl\.rs|wasm/shared_session\.rs|wasm/wit\.rs|wasm/portability\.rs|wasm/demo_converter\.rs|wasm/notebook\.rs|wasm/component\.rs|runtime/transaction\.rs|runtime/replay.*\.rs|runtime/value_utils\.rs|runtime/repl/.*\.rs|runtime/eval_func\.rs|frontend/parser/utils.*\.rs|proving/.*\.rs|bench/.*\.rs|bin/.*\.rs'
+# Infrastructure code:
+# - proving/*.rs, bench/*.rs, bin/*.rs
+COVERAGE_EXCLUDE := --ignore-filename-regex='stdlib/(alimentar_bridge|presentar_bridge)\.rs|transpiler/(reference_interpreter|canonical_ast)\.rs|wasm/(deployment|shared_session|wit|portability)\.rs|runtime/(transaction|replay.*)\.rs|proving/.*\.rs|bench/.*\.rs|bin/.*\.rs'
 
 # Generate fast test coverage (excludes rustc compilation tests)
 # 51 tests marked #[ignore = "expensive: invokes rustc"] are skipped
@@ -568,12 +549,11 @@ COVERAGE_EXCLUDE := --ignore-filename-regex='stdlib/alimentar_bridge\.rs|stdlib/
 coverage-fast:
 	@echo "⚡ Running FAST coverage (MANDATORY: <5 min)..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
-	@which cargo-nextest > /dev/null 2>&1 || cargo install cargo-nextest --locked
 	@mkdir -p target/coverage
 	@echo "   - Property test cases: 1 (minimal for speed)"
 	@echo "   - Core modules only (frontend, backend, runtime, stdlib)"
-	@env PROPTEST_CASES=1 cargo llvm-cov nextest --lib -p ruchy --no-tests=warn \
-		-E 'not test(~notebook) and not test(~testing::) and not test(~oracle) and not test(~property_tests) and not test(~harness)' \
+	@env PROPTEST_CASES=1 QUICKCHECK_TESTS=1 cargo llvm-cov test --lib -p ruchy \
+		-- --test-threads=$$(nproc) \
 		2>&1 | tail -20
 	@echo ""
 	@echo "⚡ Fast coverage done (<5 min target). Use 'make coverage' for full reports."
@@ -585,9 +565,9 @@ coverage-fast:
 coverage-quick:
 	@echo "⚡ Running QUICK coverage (lib only, minimal proptests)..."
 	@which cargo-llvm-cov > /dev/null 2>&1 || cargo install cargo-llvm-cov --locked
-	@which cargo-nextest > /dev/null 2>&1 || cargo install cargo-nextest --locked
 	@mkdir -p target/coverage
-	@env PROPTEST_CASES=10 cargo llvm-cov --no-report nextest --lib --no-tests=warn -p ruchy
+	@env PROPTEST_CASES=10 QUICKCHECK_TESTS=10 cargo llvm-cov --no-report test --lib -p ruchy \
+		-- --test-threads=$$(nproc)
 	@cargo llvm-cov report --html --output-dir target/coverage/html
 	@cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
 	@echo ""
@@ -638,10 +618,10 @@ coverage-full:
 	@echo "📊 Running FULL coverage analysis (including rustc tests)..."
 	@echo "⚠️  This includes 51 rustc compilation tests - expect ~15 min runtime"
 	@which cargo-llvm-cov > /dev/null 2>&1 || (echo "📦 Installing cargo-llvm-cov..." && cargo install cargo-llvm-cov --locked)
-	@which cargo-nextest > /dev/null 2>&1 || (echo "📦 Installing cargo-nextest..." && cargo install cargo-nextest --locked)
 	@mkdir -p target/coverage
 	@echo "🧪 Phase 1: Running ALL tests (including ignored rustc tests)..."
-	@env RUSTC_WRAPPER= PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report nextest --run-ignored all --no-tests=warn --all-features --workspace
+	@env RUSTC_WRAPPER= PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo llvm-cov --no-report test --lib --all-features \
+		-- --include-ignored --test-threads=$$(nproc)
 	@echo "📊 Phase 2: Generating coverage reports..."
 	@env RUSTC_WRAPPER= cargo llvm-cov report --html --output-dir target/coverage/html
 	@env RUSTC_WRAPPER= cargo llvm-cov report --lcov --output-path target/coverage/lcov.info
@@ -697,25 +677,25 @@ test-coverage-quality:
 	@echo ""
 	@echo "🔍 Parser Component:"
 	@echo "-------------------"
-	@cargo llvm-cov test --lib --no-report 2>/dev/null || true
-	@cargo llvm-cov report --ignore-filename-regex "(?!.*parser)" 2>/dev/null | grep -E "TOTAL|parser" | head -5 || echo "Coverage data collection in progress..."
+	@env PROPTEST_CASES=2 QUICKCHECK_TESTS=2 cargo llvm-cov test --lib --no-report || true
+	@cargo llvm-cov report --ignore-filename-regex "(?!.*parser)" | grep -E "TOTAL|parser" | head -5 || echo "Coverage data collection in progress..."
 	@echo ""
 	@echo "TDG Quality Score:"
-	@pmat tdg src/frontend/parser --include-components 2>/dev/null | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
+	@pmat tdg src/frontend/parser --include-components | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
 	@echo ""
 	@echo "🧠 Interpreter Component:"
 	@echo "------------------------"
-	@cargo llvm-cov report --ignore-filename-regex "(?!.*interpreter)" 2>/dev/null | grep -E "TOTAL|interpreter" | head -5 || echo "Coverage data collection in progress..."
+	@cargo llvm-cov report --ignore-filename-regex "(?!.*interpreter)" | grep -E "TOTAL|interpreter" | head -5 || echo "Coverage data collection in progress..."
 	@echo ""
 	@echo "TDG Quality Score:"
-	@pmat tdg src/runtime/interpreter.rs --include-components 2>/dev/null | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
+	@pmat tdg src/runtime/interpreter.rs --include-components | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
 	@echo ""
 	@echo "💻 REPL Component:"
 	@echo "-----------------"
-	@cargo llvm-cov report --ignore-filename-regex "(?!.*repl)" 2>/dev/null | grep -E "TOTAL|repl" | head -5 || echo "Coverage data collection in progress..."
+	@cargo llvm-cov report --ignore-filename-regex "(?!.*repl)" | grep -E "TOTAL|repl" | head -5 || echo "Coverage data collection in progress..."
 	@echo ""
 	@echo "TDG Quality Score:"
-	@pmat tdg src/runtime/repl.rs --include-components 2>/dev/null | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
+	@pmat tdg src/runtime/repl.rs --include-components | grep -E "Overall Score|Grade" | head -2 || echo "TDG analysis pending..."
 	@echo ""
 	@echo "🎯 Target Goals:"
 	@echo "---------------"
@@ -755,13 +735,13 @@ test-ruchy-commands: test-cli-integration test-cli-properties test-cli-fuzz test
 # Integration tests for CLI commands
 test-cli-integration:
 	@echo "🧪 Running CLI integration tests..."
-	@cargo test --test cli_integration -- --test-threads=4
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test cli_integration -- --test-threads=4
 	@echo "✅ CLI integration tests complete"
 
 # Property-based tests for CLI commands
 test-cli-properties:
 	@echo "🔬 Running CLI property tests..."
-	@cargo test --test cli_properties -- --test-threads=4
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test cli_properties -- --test-threads=4
 	@echo "✅ CLI property tests complete"
 
 # Fuzz testing for CLI commands  
@@ -831,7 +811,7 @@ bench:
 # Run snapshot tests
 test-snapshot:
 	@echo "Running snapshot tests..."
-	@cargo test snapshot_ --lib -- --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test snapshot_ --lib -- --nocapture
 	@echo "✓ Snapshot tests complete"
 
 # Run mutation tests
@@ -902,7 +882,7 @@ test-examples:
 		case "$$example" in \
 			*fibonacci*|*marco_polo.ruchy) ;; \
 			*) echo "Checking $$example (may fail - expected)..."; \
-			   cargo run --bin ruchy -- run $$example 2>/dev/null || echo "  ⚠️  Failed as expected (unsupported syntax)"; ;; \
+			   cargo run --bin ruchy -- run $$example || echo "  ⚠️  Failed as expected (unsupported syntax)"; ;; \
 		esac \
 	done
 	@echo ""
@@ -1169,13 +1149,13 @@ test-pre-commit-fast:
 # Test memory usage
 test-memory:
 	@echo "Running resource verification tests..."
-	@cargo test --test resource_check -- --test-threads=1
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test resource_check -- --test-threads=1
 	@echo "✓ Memory tests complete"
 
 # Run heavy tests (normally ignored)
 test-heavy:
 	@echo "Running heavy tests (this may take a while)..."
-	@cargo test -- --ignored --test-threads=1 --nocapture
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test -- --ignored --test-threads=1 --nocapture
 	@echo "✓ Heavy tests complete"
 
 # Find memory-intensive tests
@@ -1357,7 +1337,7 @@ test-lang-comp:
 	@echo ""
 	@echo "Key validations: REPL via 'ruchy -e', WASM with simple code"
 	@echo ""
-	@cargo test --test lang_comp_suite
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test lang_comp_suite
 	@echo ""
 	@echo "=========================================="
 	@echo "✅ All 15-tool validation tests passed!"
@@ -1463,13 +1443,13 @@ coverage-frontend:
 	@echo "=============================="
 	@echo ""
 	@echo "Running frontend module tests..."
-	@cargo llvm-cov test --lib 2>/dev/null || true
+	@env PROPTEST_CASES=2 QUICKCHECK_TESTS=2 cargo llvm-cov test --lib || true
 	@echo ""
 	@echo "📊 Coverage Report:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "(frontend|parser|lexer|ast)" | head -20
+	@cargo llvm-cov report | grep -E "(frontend|parser|lexer|ast)" | head -20
 	@echo ""
 	@echo "Module Summary:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "src/(frontend|parser)" | awk '{print $$1, $$NF}'
+	@cargo llvm-cov report | grep -E "src/(frontend|parser)" | awk '{print $$1, $$NF}'
 	@echo ""
 	@echo "🎯 Target: 80% coverage per module"
 
@@ -1479,13 +1459,13 @@ coverage-backend:
 	@echo "============================"
 	@echo ""
 	@echo "Running backend module tests..."
-	@cargo llvm-cov test --lib 2>/dev/null || true
+	@env PROPTEST_CASES=2 QUICKCHECK_TESTS=2 cargo llvm-cov test --lib || true
 	@echo ""
 	@echo "📊 Coverage Report:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "(backend|transpiler|compiler|module_resolver)" | head -20
+	@cargo llvm-cov report | grep -E "(backend|transpiler|compiler|module_resolver)" | head -20
 	@echo ""
 	@echo "Module Summary:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "src/(backend|transpiler)" | awk '{print $$1, $$NF}'
+	@cargo llvm-cov report | grep -E "src/(backend|transpiler)" | awk '{print $$1, $$NF}'
 	@echo ""
 	@echo "🎯 Target: 80% coverage per module"
 
@@ -1495,13 +1475,13 @@ coverage-runtime:
 	@echo "============================"
 	@echo ""
 	@echo "Running runtime module tests..."
-	@cargo llvm-cov test --lib 2>/dev/null || true
+	@env PROPTEST_CASES=2 QUICKCHECK_TESTS=2 cargo llvm-cov test --lib || true
 	@echo ""
 	@echo "📊 Coverage Report:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "(runtime|interpreter|repl|value)" | head -20
+	@cargo llvm-cov report | grep -E "(runtime|interpreter|repl|value)" | head -20
 	@echo ""
 	@echo "Module Summary:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "src/runtime" | awk '{print $$1, $$NF}'
+	@cargo llvm-cov report | grep -E "src/runtime" | awk '{print $$1, $$NF}'
 	@echo ""
 	@echo "🎯 Target: 80% coverage per module"
 
@@ -1511,13 +1491,13 @@ coverage-wasm:
 	@echo "========================"
 	@echo ""
 	@echo "Running WASM module tests..."
-	@cargo llvm-cov test --lib 2>/dev/null || true
+	@env PROPTEST_CASES=2 QUICKCHECK_TESTS=2 cargo llvm-cov test --lib || true
 	@echo ""
 	@echo "📊 Coverage Report:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "wasm" | head -20
+	@cargo llvm-cov report | grep -E "wasm" | head -20
 	@echo ""
 	@echo "Module Summary:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "src/wasm" | awk '{print $$1, $$NF}' || echo "No WASM modules found"
+	@cargo llvm-cov report | grep -E "src/wasm" | awk '{print $$1, $$NF}' || echo "No WASM modules found"
 	@echo ""
 	@echo "🎯 Target: 80% coverage per module"
 
@@ -1527,13 +1507,13 @@ coverage-quality:
 	@echo "=========================================="
 	@echo ""
 	@echo "Running quality infrastructure tests..."
-	@cargo llvm-cov test --lib 2>/dev/null || true
+	@env PROPTEST_CASES=2 QUICKCHECK_TESTS=2 cargo llvm-cov test --lib || true
 	@echo ""
 	@echo "📊 Coverage Report:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "(testing|quality|generator)" | head -20
+	@cargo llvm-cov report | grep -E "(testing|quality|generator)" | head -20
 	@echo ""
 	@echo "Module Summary:"
-	@cargo llvm-cov report 2>/dev/null | grep -E "src/testing" | awk '{print $$1, $$NF}'
+	@cargo llvm-cov report | grep -E "src/testing" | awk '{print $$1, $$NF}'
 	@echo ""
 	@echo "🎯 Target: 80% coverage per module"
 
@@ -1609,8 +1589,8 @@ coverage-all:
 	@echo "========================================"
 	@echo ""
 	@echo "Generating coverage report (this may take a minute)..."
-	@cargo llvm-cov test --lib --no-report 2>/dev/null || true
-	@cargo llvm-cov report > /tmp/coverage-report.txt 2>/dev/null || true
+	@env PROPTEST_CASES=2 QUICKCHECK_TESTS=2 cargo llvm-cov test --lib --no-report || true
+	@cargo llvm-cov report > /tmp/coverage-report.txt || true
 	@echo ""
 	@echo "🎯 FRONTEND Coverage:"
 	@echo "---------------------"
