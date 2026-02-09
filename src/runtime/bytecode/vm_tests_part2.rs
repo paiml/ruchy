@@ -1,0 +1,1800 @@
+    use super::*;
+    use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span, UnaryOp};
+    use crate::runtime::bytecode::Compiler;
+
+    #[test]
+    #[ignore = "VM doesn't implement modulo-by-zero error handling yet - panics instead of returning error"]
+    fn test_vm_opcode_modulo_by_zero() {
+        // Compile: 10 % 0
+        // Should error with modulo by zero
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+                op: BinaryOp::Modulo,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("modulo by zero") || err_msg.contains("divide by zero"));
+    }
+
+    #[test]
+    fn test_vm_opcode_bitnot_on_float_error() {
+        // Compile: ~3.14
+        // Should error - bitwise NOT only works on integers
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::BitwiseNot,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(std::f64::consts::PI)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("bitwise NOT") || err_msg.contains("Float"));
+    }
+
+    #[test]
+    fn test_vm_opcode_negate_string_error() {
+        // Compile: -"hello"
+        // Should error - cannot negate string
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("hello".to_string())),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm.execute(&chunk);
+
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err();
+        assert!(err_msg.contains("negate") || err_msg.contains("String"));
+    }
+
+    #[test]
+    fn test_vm_opcode_complex_arithmetic() {
+        // Compile: ((10 + 20) * 3) - 5
+        // Tests nested binary operations
+        let mut compiler = Compiler::new("test".to_string());
+        let add = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+                op: BinaryOp::Add,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let mul = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(add),
+                op: BinaryOp::Multiply,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(3, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(mul),
+                op: BinaryOp::Subtract,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(85)); // (10+20)*3-5 = 30*3-5 = 90-5 = 85
+    }
+
+    #[test]
+    fn test_vm_opcode_complex_boolean_logic() {
+        // Compile: (true && false) || (true && true)
+        // Tests nested logical operations
+        let mut compiler = Compiler::new("test".to_string());
+        let and1 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::default(),
+                )),
+                op: BinaryOp::And,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(false)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let and2 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::default(),
+                )),
+                op: BinaryOp::And,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Bool(true)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(and1),
+                op: BinaryOp::Or,
+                right: Box::new(and2),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true)); // (true&&false)||(true&&true) = false||true = true
+    }
+
+    #[test]
+    fn test_vm_opcode_float_arithmetic() {
+        // Compile: 3.5 * 2.0 + 1.5
+        // Tests float operations
+        let mut compiler = Compiler::new("test".to_string());
+        let mul = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(3.5)),
+                    Span::default(),
+                )),
+                op: BinaryOp::Multiply,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(2.0)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(mul),
+                op: BinaryOp::Add,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(1.5)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Float(f) => assert!((f - 8.5).abs() < 0.001), // 3.5*2.0+1.5 = 7.0+1.5 = 8.5
+            _ => panic!("Expected Float, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_comparison_chain() {
+        // Compile: 5 > 3 && 3 > 1
+        // Tests chained comparisons with logical operators
+        let mut compiler = Compiler::new("test".to_string());
+        let cmp1 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
+                op: BinaryOp::Greater,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(3, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let cmp2 = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(3, None)),
+                    Span::default(),
+                )),
+                op: BinaryOp::Greater,
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(cmp1),
+                op: BinaryOp::And,
+                right: Box::new(cmp2),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true)); // 5>3 && 3>1 = true && true = true
+    }
+
+    #[test]
+    fn test_vm_opcode_nil_truthy() {
+        // Compile: if nil { 10 } else { 20 }
+        // Nil is falsy, should take else branch
+        let mut compiler = Compiler::new("test".to_string());
+        let condition = Expr::new(ExprKind::Literal(Literal::Null), Span::default());
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::default(),
+        );
+        let else_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(20, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(20)); // nil is falsy, takes else
+    }
+
+    #[test]
+    fn test_vm_opcode_double_negation() {
+        // Compile: -(-42)
+        // Tests unary operation on unary operation result
+        let mut compiler = Compiler::new("test".to_string());
+        let inner = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(inner),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(42)); // -(-42) = 42
+    }
+
+    // ============================================================================
+    // Sprint 5 Extended Phase 5: Additional Coverage Tests
+    // Target: Exercise more error paths and edge cases
+    // ============================================================================
+
+    #[test]
+    fn test_vm_default_trait() {
+        // Test VM Default trait implementation
+        let vm = VM::default();
+        assert!(vm.call_stack.is_empty());
+        assert!(vm.globals.is_empty());
+        for reg in vm.registers.iter() {
+            assert_eq!(*reg, Value::Nil);
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_bitnot_integer() {
+        // Compile: ~5 (bitwise NOT of 5)
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::BitwiseNot,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(!5)); // ~5 = -6
+    }
+
+    #[test]
+    fn test_vm_opcode_string_negative_index() {
+        // Compile: "hello"[-1]
+        // Negative indexing: last character
+        let mut compiler = Compiler::new("test".to_string());
+        let string = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let index = Expr::new(
+            ExprKind::Literal(Literal::Integer(-1, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(string),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::from_string("o".to_string()));
+    }
+
+    #[test]
+    fn test_vm_opcode_string_negative_index_second_last() {
+        // Compile: "hello"[-2]
+        // Negative indexing: second to last character
+        let mut compiler = Compiler::new("test".to_string());
+        let string = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let index = Expr::new(
+            ExprKind::Literal(Literal::Integer(-2, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(string),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::from_string("l".to_string()));
+    }
+
+    #[test]
+    fn test_vm_opcode_array_negative_index_second_last() {
+        // Compile: [10, 20, 30][-2]
+        // Negative indexing: second to last element
+        let mut compiler = Compiler::new("test".to_string());
+        let array = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(30, None)),
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+        let index = Expr::new(
+            ExprKind::Literal(Literal::Integer(-2, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(array),
+                index: Box::new(index),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_vm_opcode_jump_if_true_with_truthy_value() {
+        // Test JumpIfTrue behavior with truthy values (non-bool)
+        // Using if with comparison that evaluates to true at runtime
+        let mut compiler = Compiler::new("test".to_string());
+        // Compile: if 5 > 3 { 100 } else { 200 }
+        let condition = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Greater,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(3, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let else_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(200, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(100));
+    }
+
+    #[test]
+    fn test_vm_opcode_jump_if_true_with_false_comparison() {
+        // Test JumpIfTrue behavior when condition is false
+        let mut compiler = Compiler::new("test".to_string());
+        // Compile: if 3 > 5 { 100 } else { 200 }
+        let condition = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Greater,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(3, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(5, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let then_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(100, None)),
+            Span::default(),
+        );
+        let else_branch = Expr::new(
+            ExprKind::Literal(Literal::Integer(200, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(condition),
+                then_branch: Box::new(then_branch),
+                else_branch: Some(Box::new(else_branch)),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(200));
+    }
+
+    #[test]
+    fn test_vm_opcode_nested_block() {
+        // Compile: { { { 42 } } }
+        // Tests nested block compilation
+        let mut compiler = Compiler::new("test".to_string());
+        let inner = Expr::new(
+            ExprKind::Block(vec![Expr::new(
+                ExprKind::Literal(Literal::Integer(42, None)),
+                Span::default(),
+            )]),
+            Span::default(),
+        );
+        let middle = Expr::new(ExprKind::Block(vec![inner]), Span::default());
+        let outer = Expr::new(ExprKind::Block(vec![middle]), Span::default());
+
+        compiler
+            .compile_expr(&outer)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_vm_opcode_empty_block() {
+        // Compile: { }
+        // Empty block should return Nil
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(ExprKind::Block(vec![]), Span::default());
+
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_vm_opcode_nested_if() {
+        // Compile: if true { if false { 1 } else { 2 } } else { 3 }
+        // Tests nested control flow
+        let mut compiler = Compiler::new("test".to_string());
+        let inner_condition = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
+        let inner_then = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let inner_else = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let inner_if = Expr::new(
+            ExprKind::If {
+                condition: Box::new(inner_condition),
+                then_branch: Box::new(inner_then),
+                else_branch: Some(Box::new(inner_else)),
+            },
+            Span::default(),
+        );
+
+        let outer_condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+        let outer_else = Expr::new(
+            ExprKind::Literal(Literal::Integer(3, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::If {
+                condition: Box::new(outer_condition),
+                then_branch: Box::new(inner_if),
+                else_branch: Some(Box::new(outer_else)),
+            },
+            Span::default(),
+        );
+
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(2)); // outer true -> inner false -> inner else = 2
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_not_truthy_integer() {
+        // Compile: !42
+        // Non-zero integer is truthy, NOT of truthy is false
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_not_nil() {
+        // Compile: !nil
+        // nil is falsy, NOT of falsy is true
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(Expr::new(ExprKind::Literal(Literal::Null), Span::default())),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_and_with_truthy() {
+        // Compile: 1 && 2
+        // Both are truthy, result is true
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::And,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(2, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_logical_or_with_truthy() {
+        // Compile: nil || 1
+        // nil is falsy, 1 is truthy, result is true
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Or,
+                left: Box::new(Expr::new(ExprKind::Literal(Literal::Null), Span::default())),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_array_with_mixed_types() {
+        // Compile: [1, true, "hello", nil]
+        // Tests array with mixed types
+        let mut compiler = Compiler::new("test".to_string());
+        let elements = vec![
+            Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                Span::default(),
+            ),
+            Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default()),
+            Expr::new(
+                ExprKind::Literal(Literal::String("hello".to_string())),
+                Span::default(),
+            ),
+            Expr::new(ExprKind::Literal(Literal::Null), Span::default()),
+        ];
+        let expr = Expr::new(ExprKind::List(elements), Span::default());
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Array(arr) => {
+                assert_eq!(arr.len(), 4);
+                assert_eq!(arr[0], Value::Integer(1));
+                assert_eq!(arr[1], Value::Bool(true));
+                assert_eq!(arr[2], Value::from_string("hello".to_string()));
+                assert_eq!(arr[3], Value::Nil);
+            }
+            _ => panic!("Expected array, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_empty_tuple() {
+        // Compile: ()
+        // Empty tuple
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(ExprKind::Tuple(vec![]), Span::default());
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Tuple(tuple) => assert_eq!(tuple.len(), 0),
+            _ => panic!("Expected tuple, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_single_element_tuple() {
+        // Compile: (42,)
+        // Single element tuple
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Tuple(vec![Expr::new(
+                ExprKind::Literal(Literal::Integer(42, None)),
+                Span::default(),
+            )]),
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Tuple(tuple) => {
+                assert_eq!(tuple.len(), 1);
+                assert_eq!(tuple[0], Value::Integer(42));
+            }
+            _ => panic!("Expected tuple, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_tuple_second_element_access() {
+        // Compile: (10, 20, 30).1
+        // Access second element of tuple
+        let mut compiler = Compiler::new("test".to_string());
+        let tuple = Expr::new(
+            ExprKind::Tuple(vec![
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(30, None)),
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(tuple),
+                field: "1".to_string(),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(20));
+    }
+
+    #[test]
+    fn test_vm_opcode_string_comparison() {
+        // Compile: "abc" == "abc"
+        // String equality comparison
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Equal,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("abc".to_string())),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("abc".to_string())),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_string_inequality() {
+        // Compile: "abc" != "def"
+        // String inequality comparison
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::NotEqual,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("abc".to_string())),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::String("def".to_string())),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_float_division() {
+        // Compile: 7.5 / 2.5
+        // Float division
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Divide,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(7.5)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(2.5)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Float(f) => assert!((f - 3.0).abs() < 0.001),
+            _ => panic!("Expected Float, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_float_modulo() {
+        // Compile: 7.5 % 2.0
+        // Float modulo
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Modulo,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(7.5)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(2.0)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Float(f) => assert!((f - 1.5).abs() < 0.001),
+            _ => panic!("Expected Float, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_float_subtraction() {
+        // Compile: 10.5 - 3.5
+        // Float subtraction
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Subtract,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(10.5)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Float(3.5)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Float(f) => assert!((f - 7.0).abs() < 0.001),
+            _ => panic!("Expected Float, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_object_with_multiple_fields() {
+        // Compile: { a: 1, b: 2, c: 3 }
+        // Object with multiple fields
+        let mut compiler = Compiler::new("test".to_string());
+        use crate::frontend::ast::ObjectField;
+        let fields = vec![
+            ObjectField::KeyValue {
+                key: "a".to_string(),
+                value: Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                ),
+            },
+            ObjectField::KeyValue {
+                key: "b".to_string(),
+                value: Expr::new(
+                    ExprKind::Literal(Literal::Integer(2, None)),
+                    Span::default(),
+                ),
+            },
+            ObjectField::KeyValue {
+                key: "c".to_string(),
+                value: Expr::new(
+                    ExprKind::Literal(Literal::Integer(3, None)),
+                    Span::default(),
+                ),
+            },
+        ];
+        let expr = Expr::new(ExprKind::ObjectLiteral { fields }, Span::default());
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Object(obj) => {
+                assert_eq!(obj.len(), 3);
+                assert_eq!(obj.get("a"), Some(&Value::Integer(1)));
+                assert_eq!(obj.get("b"), Some(&Value::Integer(2)));
+                assert_eq!(obj.get("c"), Some(&Value::Integer(3)));
+            }
+            _ => panic!("Expected object, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_empty_object() {
+        // Compile: { }
+        // Empty object
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(ExprKind::ObjectLiteral { fields: vec![] }, Span::default());
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Object(obj) => assert!(obj.is_empty()),
+            _ => panic!("Expected object, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_less_than_false() {
+        // Compile: 20 < 10
+        // Less than comparison that is false
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Less,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_greater_than_false() {
+        // Compile: 10 > 20
+        // Greater than comparison that is false
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Greater,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_less_equal_strict_less() {
+        // Compile: 10 <= 20
+        // Less-equal where left is strictly less
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::LessEqual,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_greater_equal_strict_greater() {
+        // Compile: 20 >= 10
+        // Greater-equal where left is strictly greater
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::GreaterEqual,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_less_equal_false() {
+        // Compile: 20 <= 10
+        // Less-equal that is false
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::LessEqual,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_greater_equal_false() {
+        // Compile: 10 >= 20
+        // Greater-equal that is false
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::GreaterEqual,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_not_equal_same_values() {
+        // Compile: 42 != 42
+        // Not-equal comparison with same values
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::NotEqual,
+                left: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+                right: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_many_constants() {
+        // Test with multiple constants to exercise constant pool
+        let mut compiler = Compiler::new("test".to_string());
+        // Compile: 1 + 2 + 3 + 4 + 5
+        let expr1 = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let expr2 = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let add1 = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(expr1),
+                right: Box::new(expr2),
+            },
+            Span::default(),
+        );
+        let expr3 = Expr::new(
+            ExprKind::Literal(Literal::Integer(3, None)),
+            Span::default(),
+        );
+        let add2 = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(add1),
+                right: Box::new(expr3),
+            },
+            Span::default(),
+        );
+        let expr4 = Expr::new(
+            ExprKind::Literal(Literal::Integer(4, None)),
+            Span::default(),
+        );
+        let add3 = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(add2),
+                right: Box::new(expr4),
+            },
+            Span::default(),
+        );
+        let expr5 = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(add3),
+                right: Box::new(expr5),
+            },
+            Span::default(),
+        );
+
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(15)); // 1+2+3+4+5 = 15
+    }
+
+    #[test]
+    fn test_vm_opcode_bool_literal_false() {
+        // Compile: false
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(ExprKind::Literal(Literal::Bool(false)), Span::default());
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(false));
+    }
+
+    #[test]
+    fn test_vm_opcode_bool_literal_true() {
+        // Compile: true
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_vm_opcode_nil_literal() {
+        // Compile: nil/null
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(ExprKind::Literal(Literal::Null), Span::default());
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_vm_opcode_string_literal() {
+        // Compile: "hello world"
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello world".to_string())),
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::from_string("hello world".to_string()));
+    }
+
+    #[test]
+    fn test_vm_opcode_float_literal() {
+        // Compile: 3.14159
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Float(std::f64::consts::PI)),
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        match result {
+            Value::Float(f) => assert!((f - std::f64::consts::PI).abs() < 0.00001),
+            _ => panic!("Expected Float, got {result:?}"),
+        }
+    }
+
+    #[test]
+    fn test_vm_opcode_negative_integer() {
+        // Compile: -42
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(-42));
+    }
+
+    #[test]
+    fn test_vm_opcode_string_concatenation() {
+        // Compile: "hello" + " " + "world"
+        let mut compiler = Compiler::new("test".to_string());
+        let hello = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::default(),
+        );
+        let space = Expr::new(
+            ExprKind::Literal(Literal::String(" ".to_string())),
+            Span::default(),
+        );
+        let world = Expr::new(
+            ExprKind::Literal(Literal::String("world".to_string())),
+            Span::default(),
+        );
+        let first_concat = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(hello),
+                right: Box::new(space),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(first_concat),
+                right: Box::new(world),
+            },
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::from_string("hello world".to_string()));
+    }
+
+    #[test]
+    fn test_vm_opcode_deeply_nested_arithmetic() {
+        // Compile: (((1 + 2) + 3) + 4)
+        // Tests deeply nested binary operations
+        let mut compiler = Compiler::new("test".to_string());
+        let one = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let two = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let three = Expr::new(
+            ExprKind::Literal(Literal::Integer(3, None)),
+            Span::default(),
+        );
+        let four = Expr::new(
+            ExprKind::Literal(Literal::Integer(4, None)),
+            Span::default(),
+        );
+
+        let add1 = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(one),
+                right: Box::new(two),
+            },
+            Span::default(),
+        );
+        let add2 = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(add1),
+                right: Box::new(three),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                op: BinaryOp::Add,
+                left: Box::new(add2),
+                right: Box::new(four),
+            },
+            Span::default(),
+        );
+
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(10)); // 1+2+3+4 = 10
+    }
+
+    #[test]
+    fn test_vm_opcode_zero_integer() {
+        // Compile: 0
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(0));
+    }
+
+    #[test]
+    fn test_vm_opcode_large_integer() {
+        // Compile: large integer
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(i64::MAX - 1, None)),
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(i64::MAX - 1));
+    }
+
+    #[test]
+    fn test_vm_opcode_negative_large_integer() {
+        // Compile: negative large integer
+        let mut compiler = Compiler::new("test".to_string());
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(i64::MIN + 1, None)),
+            Span::default(),
+        );
+        compiler
+            .compile_expr(&expr)
+            .expect("compile_expr should succeed in test");
+        let chunk = compiler.finalize();
+
+        let mut vm = VM::new();
+        let result = vm
+            .execute(&chunk)
+            .expect("vm.execute should succeed in test");
+
+        assert_eq!(result, Value::Integer(i64::MIN + 1));
+    }
