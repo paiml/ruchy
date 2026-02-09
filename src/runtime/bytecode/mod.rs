@@ -32,9 +32,6 @@ pub mod instruction;
 pub mod opcode;
 pub mod vm;
 
-#[cfg(test)]
-mod vm_tests;
-
 pub use compiler::{BytecodeChunk, Compiler};
 pub use instruction::{Instruction, InstructionFormat};
 pub use opcode::OpCode;
