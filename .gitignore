@@ -102,3 +102,8 @@ dependency_cleanup_analysis.md
 # PMAT
 .pmat/backup/
 .pmat-qa/
+
+# PMAT
+.pmat/context.idx/
+.pmat/workspace.idx/
+.pmat/deps-cache.json

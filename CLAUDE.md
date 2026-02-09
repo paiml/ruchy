@@ -19,6 +19,29 @@
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
 **Extreme TDD means - TDD augmented by mutation + property + fuzz testing + pmat complexity, satd, tdg, entropy**
 
+## Code Search Policy
+
+**NEVER use grep/rg/glob for code search. ALWAYS prefer `pmat query`.**
+
+`pmat query` returns quality-annotated, semantically ranked results with TDG grades, complexity, fault patterns, and call graphs. Raw grep returns lines.
+
+| Task | Command |
+|------|---------|
+| Find functions by intent | `pmat query "error handling" --limit 10` |
+| Find high-quality examples | `pmat query "serialize" --min-grade A` |
+| Find simple implementations | `pmat query "cache" --max-complexity 10` |
+| Find with fault patterns | `pmat query "unwrap" --faults --exclude-tests` |
+| Include source code | `pmat query "tokenize" --include-source` |
+| Regex search (like rg -e) | `pmat query --regex "fn\s+handle_\w+" --limit 10` |
+| Literal string search (like rg -F) | `pmat query --literal "unwrap()" --limit 10` |
+| Coverage gap analysis | `pmat query --coverage-gaps --limit 30 --exclude-tests` |
+| Find volatile hot code | `pmat query "cache" --churn` |
+| Find code clones | `pmat query "serialize" --duplicates` |
+
+**When grep IS acceptable**: Searching non-code files (TOML, YAML, Markdown), quick debugging one-offs.
+
+**When pmat query is REQUIRED**: Understanding functions, finding code to refactor, cross-project discovery, any search where quality context matters.
+
 ## 🚨 CRITICAL: ALWAYS USE RUCHYDBG FIRST (Mandatory Debugging Protocol)
 
 **SACRED RULE**: NEVER manually debug parser/transpiler bugs without using `ruchydbg` FIRST.
@@ -172,7 +195,7 @@ Ruchy supports the **exact same concurrency as Rust**:
 - ✅ **Ownership**: Same borrow checker rules as Rust
 
 **Implementation Enforcement**:
-- Pre-commit hook: `grep -r "unsafe {" generated_code/ && exit 1`
+- Pre-commit hook: `pmat query --literal "unsafe {" --files-with-matches --exclude-tests` to detect violations
 - Code review: REJECT any PR with unsafe in transpiled output
 - Testing: Verify all tests pass without unsafe code
 

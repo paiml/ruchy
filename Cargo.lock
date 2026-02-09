@@ -176,46 +176,6 @@ checksum = "a23eb6b1614318a8071c9b2521f36b424b2c83db5eb3a0fead4a6c0809af6e61"
 
 [[package]]
 name = "aprender"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "918c5660d9274eafc97ebd08befa3506964e8641985a90fe4c217a692bca27d4"
-dependencies = [
- "bincode 1.3.3",
- "getrandom 0.2.16",
- "memmap2",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
- "rayon",
- "rmp-serde",
- "serde",
- "serde_json",
- "trueno 0.8.1",
-]
-
-[[package]]
-name = "aprender"
-version = "0.16.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0465726d912d2d3bfab09b25325f8330d8837c79f642fd80f6e38dbc94fe33eb"
-dependencies = [
- "bincode 1.3.3",
- "dirs 6.0.0",
- "ed25519-dalek",
- "getrandom 0.2.16",
- "half",
- "hf-hub",
- "memmap2",
- "rand 0.8.5",
- "rand_chacha 0.3.1",
- "rayon",
- "rmp-serde",
- "serde",
- "serde_json",
- "trueno 0.8.1",
-]
-
-[[package]]
-name = "aprender"
 version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3c85734a8105872bdc276d1271b93eadf2954e5d9016d92e7c8421292f0a5f6"
@@ -235,7 +195,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "trueno 0.14.4",
+ "trueno",
  "ureq",
 ]
 
@@ -2527,47 +2487,12 @@ checksum = "c34f04666d835ff5d62e058c3995147c06f42fe86ff053337632bca83e42702d"
 
 [[package]]
 name = "entrenar"
-version = "0.2.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f21e346a0b532f7ce5374074af4d006c3d55cb01150d964bbe49118604d809f"
-dependencies = [
- "alimentar",
- "aprender 0.15.0",
- "bytemuck",
- "chrono",
- "clap",
- "clap_complete",
- "dirs 5.0.1",
- "ed25519-dalek",
- "hex",
- "hf-hub",
- "memmap2",
- "ndarray",
- "rand 0.9.2",
- "regex",
- "safetensors",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "thiserror 2.0.17",
- "tokio",
- "toml 0.8.23",
- "trueno 0.8.1",
- "trueno-rag",
- "trueno-viz",
- "uuid",
- "zip",
-]
-
-[[package]]
-name = "entrenar"
 version = "0.5.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f4efb3e7351d039302c3d21a8bc68c523d3fd7ca7a24515f2c0526e3a6c6ea2c"
 dependencies = [
  "alimentar",
- "aprender 0.25.1",
+ "aprender",
  "arrow 57.2.0",
  "bytemuck",
  "chrono",
@@ -2591,7 +2516,7 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "toml 0.8.23",
- "trueno 0.14.4",
+ "trueno",
  "trueno-gpu",
  "trueno-rag",
  "trueno-viz",
@@ -6261,31 +6186,6 @@ dependencies = [
 
 [[package]]
 name = "presentar"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ada0143af33712eb59be72f6ea6075f4bcd9a886a78ac550e7d2a730948a86f"
-dependencies = [
- "bincode 1.3.3",
- "bytemuck",
- "console_error_panic_hook",
- "getrandom 0.2.16",
- "js-sys",
- "presentar-core 0.1.2",
- "presentar-layout 0.1.2",
- "presentar-widgets 0.1.2",
- "presentar-yaml 0.1.2",
- "rmp-serde",
- "serde",
- "serde_json",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "wgpu 24.0.5",
- "zstd",
-]
-
-[[package]]
-name = "presentar"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d5760f48410a7f4c681e4468e2372448695e68291f1557c038a76d3e6fc4cba"
@@ -6295,10 +6195,10 @@ dependencies = [
  "console_error_panic_hook",
  "getrandom 0.2.16",
  "js-sys",
- "presentar-core 0.3.3",
- "presentar-layout 0.3.1",
- "presentar-widgets 0.3.1",
- "presentar-yaml 0.3.1",
+ "presentar-core",
+ "presentar-layout",
+ "presentar-widgets",
+ "presentar-yaml",
  "rmp-serde",
  "serde",
  "serde_json",
@@ -6307,17 +6207,6 @@ dependencies = [
  "web-sys",
  "wgpu 24.0.5",
  "zstd",
-]
-
-[[package]]
-name = "presentar-core"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "122e92f18cec777144c2de54be9d7241d64e3fa82c00922bbeb539f8f8ad8487"
-dependencies = [
- "serde",
- "serde_json",
- "trueno 0.7.4",
 ]
 
 [[package]]
@@ -6329,17 +6218,7 @@ dependencies = [
  "jugar-probar 1.0.2",
  "serde",
  "serde_json",
- "trueno 0.14.4",
-]
-
-[[package]]
-name = "presentar-layout"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd0698641afe2a4c282363a1c33f288522098151aeb5bf6a8461c2a5e42636eb"
-dependencies = [
- "presentar-core 0.1.2",
- "serde",
+ "trueno",
 ]
 
 [[package]]
@@ -6348,7 +6227,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51fd3bd874445454a9f26fb83d6ed2efa60e91e501f0065029e88772eff3a7c7"
 dependencies = [
- "presentar-core 0.3.3",
+ "presentar-core",
  "serde",
 ]
 
@@ -6361,21 +6240,10 @@ dependencies = [
  "bitvec",
  "compact_str 0.8.1",
  "crossterm 0.28.1",
- "presentar-core 0.3.3",
+ "presentar-core",
  "thiserror 2.0.17",
  "unicode-segmentation",
  "unicode-width 0.2.0",
-]
-
-[[package]]
-name = "presentar-widgets"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3059804771a12805c8dcd75fb47e2cada190a78d825386636d9dfb83d16fd3c9"
-dependencies = [
- "presentar-core 0.1.2",
- "presentar-yaml 0.1.2",
- "serde",
 ]
 
 [[package]]
@@ -6384,20 +6252,9 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "98be06d2492294a47183523a0203e1df7d24ee2180e230795ef6a853b4af8d1d"
 dependencies = [
- "presentar-core 0.3.3",
- "presentar-yaml 0.3.1",
+ "presentar-core",
+ "presentar-yaml",
  "serde",
-]
-
-[[package]]
-name = "presentar-yaml"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f72ed8a04c80ce838d5dc355dde35ad6cf35bb04720974b2e35366edbf49cca"
-dependencies = [
- "presentar-core 0.1.2",
- "serde",
- "serde_yaml",
 ]
 
 [[package]]
@@ -6406,7 +6263,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "54058a7a80031cf42ff02b7f1d5cff422f131f0ff151eb730787ab9a79b0c11f"
 dependencies = [
- "presentar-core 0.3.3",
+ "presentar-core",
  "serde",
  "serde_yaml",
 ]
@@ -6924,7 +6781,7 @@ dependencies = [
  "tokio-stream",
  "tower 0.4.13",
  "tracing",
- "trueno 0.14.4",
+ "trueno",
  "trueno-gpu",
  "uuid",
 ]
@@ -7182,67 +7039,11 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "4.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9b348c383a7cf4742bb6b5709696625369488674078ad7b5326b7ce2b036f932"
-dependencies = [
- "alimentar",
- "anyhow",
- "aprender 0.16.0",
- "chrono",
- "clap",
- "colored",
- "console_error_panic_hook",
- "entrenar 0.2.7",
- "env_logger 0.11.8",
- "getrandom 0.2.16",
- "glob",
- "html5ever",
- "js-sys",
- "lazy_static",
- "local-ip-address",
- "log",
- "logos",
- "markup5ever_rcdom",
- "md5",
- "nix 0.29.0",
- "num_cpus",
- "presentar 0.1.2",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rand 0.8.5",
- "rayon",
- "regex",
- "semver",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "signal-hook",
- "smallvec",
- "syn",
- "tempfile",
- "thiserror 2.0.17",
- "toml 0.9.8",
- "tracing",
- "trueno 0.8.1",
- "trueno-viz",
- "uuid",
- "walkdir",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-encoder 0.207.0",
- "web-sys",
-]
-
-[[package]]
-name = "ruchy"
 version = "4.2.0"
 dependencies = [
  "alimentar",
  "anyhow",
- "aprender 0.25.1",
+ "aprender",
  "arbitrary",
  "arrow 54.3.1",
  "arrow-array 54.3.1",
@@ -7262,7 +7063,7 @@ dependencies = [
  "cranelift-module",
  "cranelift-native 0.125.4",
  "criterion",
- "entrenar 0.5.8",
+ "entrenar",
  "env_logger 0.11.8",
  "getrandom 0.2.16",
  "glob",
@@ -7283,7 +7084,7 @@ dependencies = [
  "pmcp",
  "polars",
  "predicates",
- "presentar 0.3.1",
+ "presentar",
  "prettyplease",
  "proc-macro2",
  "proptest",
@@ -7317,7 +7118,7 @@ dependencies = [
  "tower-lsp",
  "tracing",
  "tracing-subscriber",
- "trueno 0.14.4",
+ "trueno",
  "trueno-viz",
  "uuid",
  "walkdir",
@@ -7331,13 +7132,69 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruchy"
+version = "4.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6779d5f62aa3a3279381fbc679e1b82a25e508537f6767e89f233a1794d53bf7"
+dependencies = [
+ "alimentar",
+ "anyhow",
+ "aprender",
+ "chrono",
+ "clap",
+ "colored",
+ "console_error_panic_hook",
+ "entrenar",
+ "env_logger 0.11.8",
+ "getrandom 0.2.16",
+ "glob",
+ "html5ever",
+ "js-sys",
+ "lazy_static",
+ "local-ip-address",
+ "log",
+ "logos",
+ "markup5ever_rcdom",
+ "md5",
+ "nix 0.29.0",
+ "num_cpus",
+ "presentar",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "rand 0.8.5",
+ "rayon",
+ "regex",
+ "semver",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "sha2",
+ "signal-hook",
+ "smallvec",
+ "syn",
+ "tempfile",
+ "thiserror 2.0.17",
+ "toml 0.9.8",
+ "tracing",
+ "trueno",
+ "trueno-viz",
+ "uuid",
+ "walkdir",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "wasm-encoder 0.207.0",
+ "web-sys",
+]
+
+[[package]]
 name = "ruchy-wasm"
-version = "4.0.1"
+version = "4.2.0"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "jugar-probar 0.2.0",
- "ruchy 4.0.1",
+ "ruchy 4.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
@@ -8734,24 +8591,6 @@ dependencies = [
 
 [[package]]
 name = "trueno"
-version = "0.7.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7aebc0cbf927eb1b4fe90ae21770681c1421f3d72e90d91ab1c4dfedfc125e1"
-dependencies = [
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "trueno"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74c75705b4166e5bbfdf986abe7051af798832d66c0f4c3581bae4686b0c4e25"
-dependencies = [
- "thiserror 2.0.17",
-]
-
-[[package]]
-name = "trueno"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "35d2c230ebde5da651c4dc89c32bfe0d277f4e36750a5849d2e69af50b646211"
@@ -8793,7 +8632,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
- "trueno 0.14.4",
+ "trueno",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
@@ -8820,7 +8659,7 @@ dependencies = [
  "serde_json",
  "thiserror 2.0.17",
  "tokio",
- "trueno 0.14.4",
+ "trueno",
  "trueno-db",
  "uuid",
 ]
@@ -8835,7 +8674,7 @@ dependencies = [
  "libc",
  "png 0.17.16",
  "thiserror 2.0.17",
- "trueno 0.14.4",
+ "trueno",
 ]
 
 [[package]]
