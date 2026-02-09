@@ -34,7 +34,7 @@ impl Transpiler {
                 let json_str = self.transpile_expr(&args[0])?;
                 Ok(Some(quote! {
                     serde_json::from_str::<serde_json::Value>(&#json_str)
-                        .expect("JSON parse error")
+                        .unwrap_or(serde_json::Value::Null)
                 }))
             }
             "json_stringify" => {
@@ -69,8 +69,9 @@ impl Transpiler {
                 let path = self.transpile_expr(&args[0])?;
                 Ok(Some(quote! {
                     {
-                        let content = std::fs::read_to_string(#path).expect("Failed to read file");
-                        serde_json::from_str::<serde_json::Value>(&content).expect("JSON parse error")
+                        let content = std::fs::read_to_string(#path).unwrap_or_default();
+                        serde_json::from_str::<serde_json::Value>(&content)
+                            .unwrap_or(serde_json::Value::Null)
                     }
                 }))
             }
@@ -82,9 +83,11 @@ impl Transpiler {
                 let value = self.transpile_expr(&args[1])?;
                 Ok(Some(quote! {
                     {
-                        let json_str = serde_json::to_string_pretty(&#value).expect("JSON stringify error");
-                        std::fs::write(#path, json_str).expect("Failed to write file");
-                        true
+                        if let Ok(json_str) = serde_json::to_string_pretty(&#value) {
+                            std::fs::write(#path, json_str).is_ok()
+                        } else {
+                            false
+                        }
                     }
                 }))
             }
