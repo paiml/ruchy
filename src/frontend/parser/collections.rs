@@ -461,6 +461,23 @@ fn async_error_token_to_key(token: &Token) -> Option<String> {
 
 /// Refactored `token_to_object_key` using Extract Method pattern
 /// Complexity reduced from 50 to 8 by extracting helper functions
+fn try_keyword_as_object_key(token: &Token) -> Option<String> {
+    type KeywordMapper = fn(&Token) -> Option<String>;
+    let mappers: &[KeywordMapper] = &[
+        control_flow_token_to_key,
+        declaration_token_to_key,
+        type_token_to_key,
+        module_token_to_key,
+        async_error_token_to_key,
+    ];
+    for mapper in mappers {
+        if let Some(key) = mapper(token) {
+            return Some(key);
+        }
+    }
+    None
+}
+
 fn token_to_object_key(token: &Token) -> Result<String> {
     match token {
         Token::Identifier(name) => Ok(name.clone()),
@@ -468,27 +485,8 @@ fn token_to_object_key(token: &Token) -> Result<String> {
         // PARSER-082: Allow atoms as object keys (for IaC-style configuration)
         Token::Atom(s) => Ok(format!(":{s}")),
         // Allow reserved words as object keys - delegated to helper functions
-        // Note: Token::Command removed (PARSER-089) - "command" now handled as Identifier
-        // Note: Token::State removed (DEFECT-PARSER-001) - "state" now handled as Identifier
-        _ => {
-            // Try each category of keywords
-            if let Some(key) = control_flow_token_to_key(token) {
-                return Ok(key);
-            }
-            if let Some(key) = declaration_token_to_key(token) {
-                return Ok(key);
-            }
-            if let Some(key) = type_token_to_key(token) {
-                return Ok(key);
-            }
-            if let Some(key) = module_token_to_key(token) {
-                return Ok(key);
-            }
-            if let Some(key) = async_error_token_to_key(token) {
-                return Ok(key);
-            }
-            bail!("Expected identifier or string key in object literal")
-        }
+        _ => try_keyword_as_object_key(token)
+            .ok_or_else(|| anyhow::anyhow!("Expected identifier or string key in object literal")),
     }
 }
 /// Parse the body of an object literal after the opening brace
@@ -1243,52 +1241,75 @@ fn try_parse_comprehension(state: &mut ParserState, start_span: Span) -> Result<
 
 /// Quick lookahead to determine if this might be a comprehension
 /// Looks for patterns: x for, x: y for, etc.
+/// Classify a token during comprehension lookahead scanning
+enum ComprehensionLookahead {
+    FoundFor,
+    NotComprehension,
+    OpenBracket,
+    CloseBracket { at_top_level: bool },
+    Continue,
+    End,
+}
+
+fn classify_comprehension_token(
+    token: Option<&(Token, Span)>,
+    nesting_depth: usize,
+    token_count: usize,
+) -> ComprehensionLookahead {
+    match token {
+        Some((Token::For, _)) if nesting_depth == 0 => {
+            if token_count == 0 {
+                ComprehensionLookahead::NotComprehension
+            } else {
+                ComprehensionLookahead::FoundFor
+            }
+        }
+        Some((Token::LeftBrace | Token::LeftParen | Token::LeftBracket, _)) => {
+            ComprehensionLookahead::OpenBracket
+        }
+        Some((Token::RightBrace | Token::RightParen | Token::RightBracket, _)) => {
+            ComprehensionLookahead::CloseBracket {
+                at_top_level: nesting_depth == 0,
+            }
+        }
+        Some((Token::Semicolon | Token::Let | Token::Var, _)) if nesting_depth == 0 => {
+            ComprehensionLookahead::NotComprehension
+        }
+        Some(_) => ComprehensionLookahead::Continue,
+        None => ComprehensionLookahead::End,
+    }
+}
+
 fn looks_like_comprehension(state: &mut ParserState) -> bool {
     let saved_pos = state.tokens.position();
     let mut token_count = 0;
     let mut found_for = false;
-    let mut nesting_depth = 0;
+    let mut nesting_depth: usize = 0;
 
-    // Look ahead more tokens to account for complex expressions like method calls
-    // Increased from 6 to 20 to handle cases like "word.len() for word in ..."
     while token_count < 20 && !found_for {
-        match state.tokens.peek() {
-            Some((Token::For, _)) if nesting_depth == 0 => {
-                // DEFECT-CONSECUTIVE-FOR FIX: If 'for' is the first token, it's not a comprehension
-                // Comprehensions require an expression before 'for': {x for x in list}
-                // If we see 'for' first, it's a for loop statement: {for x in list { ... }}
-                if token_count == 0 {
-                    break; // Not a comprehension - 'for' is first token
-                }
-                // Only consider 'for' at the same nesting level
+        match classify_comprehension_token(state.tokens.peek(), nesting_depth, token_count) {
+            ComprehensionLookahead::FoundFor => {
                 found_for = true;
                 break;
             }
-            Some((Token::LeftBrace | Token::LeftParen | Token::LeftBracket, _)) => {
-                // Entering nested context
+            ComprehensionLookahead::NotComprehension | ComprehensionLookahead::End => break,
+            ComprehensionLookahead::OpenBracket => {
                 nesting_depth += 1;
                 state.tokens.advance();
                 token_count += 1;
             }
-            Some((Token::RightBrace | Token::RightParen | Token::RightBracket, _)) => {
-                if nesting_depth > 0 {
-                    nesting_depth -= 1;
-                    state.tokens.advance();
-                    token_count += 1;
-                } else {
-                    // End of our block
+            ComprehensionLookahead::CloseBracket { at_top_level } => {
+                if at_top_level {
                     break;
                 }
-            }
-            Some((Token::Semicolon | Token::Let | Token::Var, _)) if nesting_depth == 0 => {
-                // These tokens indicate we're in a statement context, not a comprehension
-                break;
-            }
-            Some(_) => {
+                nesting_depth -= 1;
                 state.tokens.advance();
                 token_count += 1;
             }
-            None => break,
+            ComprehensionLookahead::Continue => {
+                state.tokens.advance();
+                token_count += 1;
+            }
         }
     }
 
@@ -1482,816 +1503,93 @@ fn parse_result_err_pattern(state: &mut ParserState) -> Result<String> {
 }
 
 /// Try to parse a set literal: {expr, expr, ...}
+/// Result of checking whether a token starts a statement (not a set element)
+fn is_statement_start_token(token: Option<&(Token, Span)>) -> bool {
+    matches!(
+        token,
+        Some((Token::Let | Token::If | Token::For | Token::While | Token::Return, _))
+    )
+}
+
+/// After parsing one set element expression, classify what follows
+enum SetElementSuffix {
+    Comma,
+    TrailingComma,
+    End,
+    NotSet(&'static str),
+}
+
+fn classify_set_element_suffix(state: &mut ParserState) -> SetElementSuffix {
+    match state.tokens.peek() {
+        Some((Token::Comma, _)) => {
+            state.tokens.advance();
+            if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
+                SetElementSuffix::TrailingComma
+            } else {
+                SetElementSuffix::Comma
+            }
+        }
+        Some((Token::RightBrace, _)) => SetElementSuffix::End,
+        Some((Token::Semicolon, _)) => SetElementSuffix::NotSet("contains semicolon"),
+        Some((Token::For, _)) => SetElementSuffix::NotSet("looks like comprehension"),
+        _ => SetElementSuffix::NotSet("unexpected token after expression"),
+    }
+}
+
 fn try_parse_set_literal(state: &mut ParserState, start_span: Span) -> Result<Expr> {
-    // Save position for backtracking
     let saved_position = state.tokens.position();
 
-    // Check for empty set {}
     if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
         state.tokens.advance();
         return Ok(Expr::new(ExprKind::Set(Vec::new()), start_span));
     }
 
-    // Try to parse comma-separated expressions
     let mut elements = Vec::new();
 
     loop {
-        // Check if we've reached the end
         if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
             break;
         }
 
-        // Try to parse an expression, but stop at certain keywords that indicate
-        // this is not a set literal
-        if let Some((Token::Let | Token::If | Token::For | Token::While | Token::Return, _)) =
-            state.tokens.peek()
-        {
-            // This looks like a block, not a set literal
+        if is_statement_start_token(state.tokens.peek()) {
             state.tokens.set_position(saved_position);
             bail!("Not a set literal - contains statements");
         }
 
-        // Parse the expression
         let expr = if let Ok(expr) = super::parse_expr_recursive(state) {
             expr
         } else {
-            // Failed to parse expression, this is not a set literal
             state.tokens.set_position(saved_position);
             bail!("Not a set literal - failed to parse expression");
         };
 
-        // Check what comes after the expression
-        match state.tokens.peek() {
-            Some((Token::Comma, _)) => {
-                elements.push(expr);
-                state.tokens.advance(); // consume comma
-
-                // Check for trailing comma before }
-                if matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-                    break;
-                }
-            }
-            Some((Token::RightBrace, _)) => {
-                // Last element
+        match classify_set_element_suffix(state) {
+            SetElementSuffix::Comma => elements.push(expr),
+            SetElementSuffix::TrailingComma | SetElementSuffix::End => {
                 elements.push(expr);
                 break;
             }
-            Some((Token::Semicolon, _)) => {
-                // Semicolon indicates this is a block, not a set
+            SetElementSuffix::NotSet(reason) => {
                 state.tokens.set_position(saved_position);
-                bail!("Not a set literal - contains semicolon");
-            }
-            Some((Token::For, _)) => {
-                // This might be a set comprehension, let the comprehension parser handle it
-                state.tokens.set_position(saved_position);
-                bail!("Not a set literal - looks like comprehension");
-            }
-            _ => {
-                // Unexpected token, not a valid set literal
-                state.tokens.set_position(saved_position);
-                bail!("Not a set literal - unexpected token after expression");
+                bail!("Not a set literal - {reason}");
             }
         }
     }
 
-    // Must have at least one element for a set literal
-    // (empty {} is allowed but handled earlier)
     if elements.is_empty() {
         state.tokens.set_position(saved_position);
         bail!("Not a set literal - no elements");
     }
 
-    // Consume the closing brace
     state.tokens.expect(&Token::RightBrace)?;
-
     Ok(Expr::new(ExprKind::Set(elements), start_span))
 }
 
-#[cfg(test)]
-mod tests {
-
-    use crate::frontend::parser::Parser;
-
-    #[test]
-    fn test_parse_empty_list() {
-        let mut parser = Parser::new("[]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse empty list");
-    }
-
-    #[test]
-    fn test_parse_simple_list() {
-        let mut parser = Parser::new("[1, 2, 3]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse simple list");
-    }
-
-    #[test]
-    fn test_parse_nested_list() {
-        let mut parser = Parser::new("[[1, 2], [3, 4]]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse nested list");
-    }
-
-    #[test]
-    fn test_parse_list_with_mixed_types() {
-        let mut parser = Parser::new("[1, \"hello\", true, 3.15]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse list with mixed types");
-    }
-
-    #[test]
-    fn test_parse_empty_block() {
-        let mut parser = Parser::new("{}");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse empty block");
-    }
-
-    #[test]
-    fn test_parse_block_with_statements() {
-        let mut parser = Parser::new("{ let x = 5; x + 1 }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse block with statements");
-    }
-
-    #[test]
-    fn test_parse_nested_blocks() {
-        let mut parser = Parser::new("{ { 42 } }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse nested blocks");
-    }
-
-    #[test]
-
-    fn test_parse_object_literal_empty() {
-        let mut parser = Parser::new("{}");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse empty object literal");
-    }
-
-    #[test]
-    fn test_parse_object_literal_with_fields() {
-        let mut parser = Parser::new("{name: \"Alice\", age: 30}");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse object literal with fields");
-    }
-
-    #[test]
-    fn test_parse_object_literal_quoted_keys() {
-        let mut parser = Parser::new("{\"key\": \"value\"}");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse object with quoted keys");
-    }
-
-    #[test]
-    fn test_parse_list_comprehension_simple() {
-        let mut parser = Parser::new("[x * 2 for x in range(10)]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse simple list comprehension");
-    }
-
-    #[test]
-    fn test_parse_list_comprehension_with_filter() {
-        let mut parser = Parser::new("[x for x in range(10) if x % 2 == 0]");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Failed to parse list comprehension with filter"
-        );
-    }
-
-    #[test]
-    #[ignore = "DataFrame macro not yet implemented"]
-    fn test_parse_dataframe_empty() {
-        let mut parser = Parser::new("df![]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse empty dataframe");
-    }
-
-    #[test]
-    #[ignore = "DataFrame macro not yet implemented"]
-    fn test_parse_dataframe_with_columns() {
-        let mut parser = Parser::new("df![[1, 4], [2, 5], [3, 6]]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse dataframe with columns");
-    }
-
-    #[test]
-    #[ignore = "DataFrame macro not yet implemented"]
-    fn test_parse_dataframe_with_rows() {
-        let mut parser = Parser::new("df![[1, 2, 3], [4, 5, 6]]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse dataframe with rows");
-    }
-
-    #[test]
-    #[ignore = "DataFrame macro not yet implemented"]
-    fn test_parse_dataframe_macro() {
-        let mut parser = Parser::new("df![[1, 2, 3], [4, 5, 6]]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse dataframe macro");
-    }
-
-    #[test]
-    fn test_parse_block_with_multiple_expressions() {
-        let mut parser = Parser::new("{ 1; 2; 3 }");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Failed to parse block with multiple expressions"
-        );
-    }
-
-    #[test]
-    fn test_parse_block_with_let_binding() {
-        let mut parser = Parser::new("{ let x = 10; x }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse block with let binding");
-    }
-
-    #[test]
-    fn test_parse_let_expression() {
-        let mut parser = Parser::new("let x = 5 in x + 1");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse let expression");
-    }
-
-    #[test]
-    fn test_parse_object_with_nested_objects() {
-        let mut parser = Parser::new("{outer: {inner: 42}}");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse nested objects");
-    }
-
-    #[test]
-    fn test_parse_list_with_trailing_comma() {
-        let mut parser = Parser::new("[1, 2, 3,]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse list with trailing comma");
-    }
-
-    #[test]
-    fn test_parse_object_with_trailing_comma() {
-        let mut parser = Parser::new("{a: 1, b: 2,}");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse object with trailing comma");
-    }
-
-    #[test]
-    fn test_parse_complex_nested_structure() {
-        let mut parser = Parser::new("[{a: [1, 2]}, {b: [3, 4]}]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse complex nested structure");
-    }
-
-    #[test]
-    fn test_parse_block_returns_last_expression() {
-        let mut parser = Parser::new("{ 1; 2; 3 }");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Failed to parse block that returns last expression"
-        );
-    }
-
-    #[test]
-    fn test_parse_list_with_expressions() {
-        let mut parser = Parser::new("[1 + 2, 3 * 4, 5 - 6]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse list with expressions");
-    }
-
-    #[test]
-    fn test_parse_object_with_computed_values() {
-        let mut parser = Parser::new("{sum: 1 + 2, product: 3 * 4}");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Failed to parse object with computed values"
-        );
-    }
-
-    #[test]
-    #[ignore = "DataFrame macro not yet implemented"]
-    fn test_parse_dataframe_semicolon_rows() {
-        let mut parser = Parser::new("df![[1, 2], [3, 4], [5, 6]]");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Failed to parse dataframe with semicolon-separated rows"
-        );
-    }
-
-    #[test]
-    fn test_parse_empty_list_comprehension() {
-        let mut parser = Parser::new("[x for x in []]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse empty list comprehension");
-    }
-
-    #[test]
-    fn test_parse_nested_list_comprehension() {
-        let mut parser = Parser::new("[[x * y for x in range(3)] for y in range(3)]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse nested list comprehension");
-    }
-
-    #[test]
-    fn test_parse_object_shorthand_properties() {
-        let mut parser = Parser::new("{x: x, y: y, z: z}");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Failed to parse object with shorthand properties"
-        );
-    }
-
-    // Sprint 8 Phase 3: Mutation test gap coverage for collections.rs
-    // Target: 9 MISSED → 0 MISSED (baseline-driven targeting)
-
-    #[test]
-    fn test_looks_like_comprehension_with_for() {
-        // Test gap: Line 1168 - delete ! mutation (negation must be tested)
-        // This verifies the ! operator is necessary (not redundant)
-        let mut parser = Parser::new("[x for x in range(10)]");
-        let result = parser.parse();
-        assert!(result.is_ok(), "List comprehension with 'for' should parse");
-    }
-
-    #[test]
-    fn test_parse_constructor_pattern_returns_actual_string() {
-        // Test gap: Line 1326 - function stub replacement Ok(String::new())
-        // This verifies function returns actual pattern, not empty stub
-        let mut parser = Parser::new("match x { Point(a, b) => a + b }");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Constructor pattern should parse with actual data"
-        );
-    }
-
-    #[test]
-    fn test_declaration_token_var_match_arm() {
-        // Test gap: Line 322 - delete match arm Token::Var
-        let mut parser = Parser::new("var x = 42");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Should parse 'var' declaration token");
-    }
-
-    #[test]
-    fn test_declaration_token_pub_match_arm() {
-        // Test gap: Line 325 - delete match arm Token::Pub
-        let mut parser = Parser::new("pub fn foo() {}");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Should parse 'pub' declaration token");
-    }
-
-    #[test]
-    fn test_add_non_empty_row_negation() {
-        // Test gap: Line 1047 - delete ! in add_non_empty_row
-        // This tests the ! (not) operator in row emptiness check
-        // Note: Tests the negation logic, not full DataFrame parsing
-        let mut parser = Parser::new("[1, 2, 3]");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Non-empty row array should parse (validates ! operator logic)"
-        );
-    }
-
-    #[test]
-    fn test_try_parse_set_literal_right_brace_match_arm() {
-        // Test gap: Line 1442 - delete match arm Some((Token::RightBrace, _))
-        // This tests the RightBrace detection in set literal parsing
-        let mut parser = Parser::new("{1, 2, 3}");
-        let result = parser.parse();
-        // Note: This may parse as block or object, not set - the mutation tests
-        // the RightBrace match arm exists in try_parse_set_literal
-        assert!(result.is_ok(), "Expression with RightBrace should parse");
-    }
-
-    #[test]
-    fn test_try_parse_set_literal_semicolon_detection() {
-        // Test gap: Line 1447 - delete match arm Some((Token::Semicolon, _))
-        // This tests semicolon detection to distinguish sets from blocks
-        let mut parser = Parser::new("{let x = 1; x}");
-        let result = parser.parse();
-        // Semicolon indicates block, not set - mutation tests this distinction
-        assert!(result.is_ok(), "Block with semicolon should parse");
-    }
-
-    #[test]
-    fn test_is_dataframe_legacy_syntax_token_returns_bool() {
-        // Test gap: Line 941 - stub replacement with 'true'
-        // This verifies function returns actual boolean logic, not stub
-        // Note: Tests the boolean return logic exists, not full DataFrame parsing
-        let mut parser = Parser::new("{column: [1, 2, 3]}");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Object with array values should parse (validates boolean logic)"
-        );
-    }
-
-    #[test]
-    fn test_parse_all_dataframe_rows_returns_actual_data() {
-        // Test gap: Line 991 - stub replacement Ok(vec![vec![]])
-        // This verifies function returns actual row data, not empty stub
-        // Note: Tests the row parsing logic exists, not full DataFrame parsing
-        let mut parser = Parser::new("[[1, 2], [3, 4]]");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Nested arrays should parse (validates row data logic)"
-        );
-    }
-
-    // PARSER-082: Atom as map key tests
-    #[test]
-    fn test_parser_082_atom_map_key_simple() {
-        let mut parser = Parser::new("{ :host => \"localhost\" }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Atom as map key should parse");
-    }
-
-    #[test]
-    fn test_parser_082_atom_map_key_multiple() {
-        let mut parser = Parser::new("{ :host => \"localhost\", :port => 8080 }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Multiple atom keys should parse");
-    }
-
-    #[test]
-    fn test_parser_082_atom_map_key_with_colon() {
-        let mut parser = Parser::new("{ :status: :ok }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Atom key with colon separator should parse");
-    }
-
-    #[test]
-    fn test_parser_082_atom_map_key_mixed() {
-        let mut parser = Parser::new("{ :name => \"test\", count: 42 }");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Mixed atom and identifier keys should parse"
-        );
-    }
-}
 
 #[cfg(test)]
-mod mutation_tests {
-    use super::*;
+#[path = "collections_tests.rs"]
+mod tests;
 
-    #[test]
-    fn test_looks_like_comprehension_negation() {
-        // MISSED: delete ! in looks_like_comprehension (line 1168)
-
-        use crate::Parser;
-
-        // Test array comprehension (should have 'for' keyword)
-        let mut parser = Parser::new("[x for x in range(10)]");
-        let result = parser.parse();
-        assert!(
-            result.is_ok(),
-            "Array comprehension should parse (tests ! in while condition)"
-        );
-
-        // Test regular array (no 'for' keyword)
-        let mut parser2 = Parser::new("[1, 2, 3, 4, 5]");
-        let result2 = parser2.parse();
-        assert!(result2.is_ok(), "Regular array should parse");
-    }
-
-    #[test]
-    fn test_parse_constructor_pattern_not_stub() {
-        // MISSED: replace parse_constructor_pattern -> Result<String> with Ok(String::new())
-
-        use crate::Parser;
-
-        // Test enum pattern with constructor
-        let mut parser = Parser::new("match value { Some(x) => x, None => 0 }");
-        let result = parser.parse();
-
-        // If parse_constructor_pattern returned empty string stub, pattern matching would fail
-        assert!(
-            result.is_ok(),
-            "Enum constructor pattern should parse correctly"
-        );
-    }
-
-    #[test]
-    fn test_declaration_token_to_key_var_match_arm() {
-        // MISSED: delete match arm Token::Var in declaration_token_to_key (line 322)
-
-        // Direct unit test of the declaration_token_to_key function
-        let result = declaration_token_to_key(&Token::Var);
-        assert!(result.is_some(), "Token::Var should map to a key");
-        assert_eq!(
-            result.unwrap(),
-            "var",
-            "Token::Var should map to 'var' string"
-        );
-    }
-
-    #[test]
-    fn test_add_non_empty_row_negation() {
-        // MISSED: delete ! in add_non_empty_row (line 1047)
-
-        use crate::Parser;
-
-        // Test nested arrays which exercises the row collection logic
-        // The add_non_empty_row function filters out empty rows using !row.is_empty()
-        let mut parser = Parser::new("[[1, 2], [3, 4]]");
-        let result = parser.parse();
-
-        // If ! is deleted, only empty rows would be added
-        // With ! present, non-empty rows are added correctly
-        assert!(
-            result.is_ok(),
-            "Nested arrays should parse (tests ! in add_non_empty_row)"
-        );
-    }
-
-    // COVERAGE: Additional helper function tests
-    #[test]
-    fn test_control_flow_token_to_key() {
-        assert_eq!(
-            control_flow_token_to_key(&Token::If),
-            Some("if".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::Else),
-            Some("else".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::Match),
-            Some("match".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::While),
-            Some("while".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::For),
-            Some("for".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::Loop),
-            Some("loop".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::Break),
-            Some("break".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::Continue),
-            Some("continue".to_string())
-        );
-        assert_eq!(
-            control_flow_token_to_key(&Token::Return),
-            Some("return".to_string())
-        );
-        assert_eq!(control_flow_token_to_key(&Token::Plus), None);
-    }
-
-    #[test]
-    fn test_declaration_token_to_key_all() {
-        assert_eq!(
-            declaration_token_to_key(&Token::Let),
-            Some("let".to_string())
-        );
-        assert_eq!(
-            declaration_token_to_key(&Token::Var),
-            Some("var".to_string())
-        );
-        assert_eq!(
-            declaration_token_to_key(&Token::Const),
-            Some("const".to_string())
-        );
-        assert_eq!(
-            declaration_token_to_key(&Token::Static),
-            Some("static".to_string())
-        );
-        assert_eq!(
-            declaration_token_to_key(&Token::Pub),
-            Some("pub".to_string())
-        );
-        assert_eq!(
-            declaration_token_to_key(&Token::Mut),
-            Some("mut".to_string())
-        );
-        assert_eq!(
-            declaration_token_to_key(&Token::Fun),
-            Some("fun".to_string())
-        );
-        assert_eq!(declaration_token_to_key(&Token::Fn), Some("fn".to_string()));
-        assert_eq!(declaration_token_to_key(&Token::Plus), None);
-    }
-
-    #[test]
-    fn test_type_token_to_key() {
-        assert_eq!(type_token_to_key(&Token::Type), Some("type".to_string()));
-        assert_eq!(
-            type_token_to_key(&Token::Struct),
-            Some("struct".to_string())
-        );
-        assert_eq!(type_token_to_key(&Token::Enum), Some("enum".to_string()));
-        assert_eq!(type_token_to_key(&Token::Impl), Some("impl".to_string()));
-        assert_eq!(type_token_to_key(&Token::Trait), Some("trait".to_string()));
-        assert_eq!(type_token_to_key(&Token::Plus), None);
-    }
-
-    #[test]
-    fn test_module_token_to_key() {
-        assert_eq!(
-            module_token_to_key(&Token::Module),
-            Some("module".to_string())
-        );
-        assert_eq!(
-            module_token_to_key(&Token::Import),
-            Some("import".to_string())
-        );
-        assert_eq!(
-            module_token_to_key(&Token::Export),
-            Some("export".to_string())
-        );
-        assert_eq!(module_token_to_key(&Token::Use), Some("use".to_string()));
-        assert_eq!(module_token_to_key(&Token::As), Some("as".to_string()));
-        assert_eq!(module_token_to_key(&Token::From), Some("from".to_string()));
-        assert_eq!(module_token_to_key(&Token::Self_), Some("self".to_string()));
-        assert_eq!(
-            module_token_to_key(&Token::Super),
-            Some("super".to_string())
-        );
-        assert_eq!(
-            module_token_to_key(&Token::Crate),
-            Some("crate".to_string())
-        );
-        assert_eq!(module_token_to_key(&Token::In), Some("in".to_string()));
-        assert_eq!(
-            module_token_to_key(&Token::Where),
-            Some("where".to_string())
-        );
-        assert_eq!(module_token_to_key(&Token::Plus), None);
-    }
-
-    #[test]
-    fn test_async_error_token_to_key() {
-        assert_eq!(
-            async_error_token_to_key(&Token::Async),
-            Some("async".to_string())
-        );
-        assert_eq!(
-            async_error_token_to_key(&Token::Await),
-            Some("await".to_string())
-        );
-        assert_eq!(
-            async_error_token_to_key(&Token::Try),
-            Some("try".to_string())
-        );
-        assert_eq!(
-            async_error_token_to_key(&Token::Catch),
-            Some("catch".to_string())
-        );
-        assert_eq!(
-            async_error_token_to_key(&Token::Throw),
-            Some("throw".to_string())
-        );
-        assert_eq!(async_error_token_to_key(&Token::Plus), None);
-    }
-
-    #[test]
-    fn test_can_be_object_key() {
-        use crate::frontend::lexer::Token;
-
-        // Identifier should be valid
-        assert!(can_be_object_key(&Token::Identifier("name".to_string())));
-
-        // String should be valid
-        assert!(can_be_object_key(&Token::String("key".to_string())));
-
-        // Control flow keywords should be valid
-        assert!(can_be_object_key(&Token::If));
-        assert!(can_be_object_key(&Token::While));
-
-        // Operators should not be valid
-        assert!(!can_be_object_key(&Token::Plus));
-        assert!(!can_be_object_key(&Token::LeftParen));
-    }
-
-    #[test]
-    fn test_parse_block_empty() {
-        use crate::Parser;
-        let mut parser = Parser::new("{}");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_block_single_expr() {
-        use crate::Parser;
-        let mut parser = Parser::new("{ 42 }");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_block_multiple_exprs() {
-        use crate::Parser;
-        let mut parser = Parser::new("{ let x = 1; let y = 2; x + y }");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_array_empty() {
-        use crate::Parser;
-        let mut parser = Parser::new("[]");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_array_single() {
-        use crate::Parser;
-        let mut parser = Parser::new("[1]");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_array_multiple() {
-        use crate::Parser;
-        let mut parser = Parser::new("[1, 2, 3, 4, 5]");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_array_nested() {
-        use crate::Parser;
-        let mut parser = Parser::new("[[1, 2], [3, 4], [5, 6]]");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_map_constructor() {
-        use crate::Parser;
-        let mut parser = Parser::new("HashMap()");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_object_with_string_key() {
-        use crate::Parser;
-        let mut parser = Parser::new("{ \"key\": 42 }");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_set_braces() {
-        use crate::Parser;
-        // Set literal syntax uses braces with comma-separated values
-        let mut parser = Parser::new("{1, 2, 3}");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_tuple_single() {
-        use crate::Parser;
-        let mut parser = Parser::new("(1,)");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_tuple_multiple() {
-        use crate::Parser;
-        let mut parser = Parser::new("(1, 2, 3)");
-        let result = parser.parse();
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_parse_object_keyword_keys() {
-        use crate::Parser;
-
-        // Test with various keyword keys
-        let mut parser = Parser::new("{ if: 1, for: 2, let: 3 }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Object with keyword keys should parse");
-    }
-
-    #[test]
-    fn test_parse_object_spread() {
-        use crate::Parser;
-        let mut parser = Parser::new("{ ...other, x: 1 }");
-        let result = parser.parse();
-        assert!(result.is_ok(), "Object spread should parse");
-    }
-}
+#[cfg(test)]
+#[path = "collections_mutation_tests.rs"]
+mod mutation_tests;
