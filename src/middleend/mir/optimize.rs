@@ -532,7 +532,7 @@ pub fn optimize_program(program: &mut Program) {
 #[allow(clippy::unwrap_used)]
 mod tests {
     use super::*;
-    use crate::middleend::mir::{BasicBlock, FieldIdx, LocalDecl, Type};
+    use crate::middleend::mir::{AggregateKind, BasicBlock, CastKind, FieldIdx, LocalDecl, Mutability, Type};
 
     /// Helper function to create a simple Function for testing
     fn create_test_function(name: &str, params: Vec<Local>, return_ty: Type) -> Function {
@@ -1619,6 +1619,296 @@ mod tests {
         dce.run(&mut func);
 
         assert_eq!(func.blocks.len(), 2, "Both blocks should be live");
+    }
+
+    // =====================================================================
+    // Coverage tests for mark_rvalue_live (16 uncov, 27.3%)
+    // Targeting: Ref, Aggregate, Call, Cast, UnaryOp branches
+    // =====================================================================
+
+    #[test]
+    fn test_mark_rvalue_live_ref() {
+        // Rvalue::Ref should mark the referenced place as live
+        let mut func = create_test_function("test", vec![], Type::Unit);
+
+        let local0 = Local(0);
+        let local1 = Local(1);
+        func.locals.push(create_local_decl(local0, Type::I32, Some("x")));
+        func.locals.push(create_local_decl(local1, Type::I32, Some("ref_x")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(local0),
+                    Rvalue::Use(Operand::Constant(Constant::Int(42, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(local1),
+                    Rvalue::Ref(Mutability::Immutable, Place::Local(local0)),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(local1)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        // Both locals should be preserved because local1 (ref to local0) is returned
+        assert_eq!(func.locals.len(), 2, "Ref rvalue should mark referenced local live");
+    }
+
+    #[test]
+    fn test_mark_rvalue_live_ref_mutable() {
+        let mut func = create_test_function("test", vec![], Type::Unit);
+
+        let local0 = Local(0);
+        let local1 = Local(1);
+        func.locals.push(create_local_decl(local0, Type::I32, Some("x")));
+        func.locals.push(create_local_decl(local1, Type::I32, Some("mut_ref_x")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(local0),
+                    Rvalue::Use(Operand::Constant(Constant::Int(10, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(local1),
+                    Rvalue::Ref(Mutability::Mutable, Place::Local(local0)),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(local1)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.locals.len(), 2, "Mutable ref should mark referenced local live");
+    }
+
+    #[test]
+    fn test_mark_rvalue_live_aggregate() {
+        // Rvalue::Aggregate should mark all operand locals as live
+        let mut func = create_test_function("test", vec![], Type::Unit);
+
+        let local0 = Local(0);
+        let local1 = Local(1);
+        let local2 = Local(2);
+        func.locals.push(create_local_decl(local0, Type::I32, Some("a")));
+        func.locals.push(create_local_decl(local1, Type::I32, Some("b")));
+        func.locals.push(create_local_decl(local2, Type::I32, Some("tuple")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(local0),
+                    Rvalue::Use(Operand::Constant(Constant::Int(1, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(local1),
+                    Rvalue::Use(Operand::Constant(Constant::Int(2, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(local2),
+                    Rvalue::Aggregate(
+                        AggregateKind::Tuple,
+                        vec![
+                            Operand::Copy(Place::Local(local0)),
+                            Operand::Copy(Place::Local(local1)),
+                        ],
+                    ),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(local2)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.locals.len(), 3, "Aggregate should mark all operand locals live");
+    }
+
+    #[test]
+    fn test_mark_rvalue_live_call() {
+        // Rvalue::Call should mark func and all arg locals as live
+        let mut func = create_test_function("test", vec![], Type::I32);
+
+        let func_local = Local(0);
+        let arg_local = Local(1);
+        let result_local = Local(2);
+        func.locals.push(create_local_decl(func_local, Type::I32, Some("f")));
+        func.locals.push(create_local_decl(arg_local, Type::I32, Some("arg")));
+        func.locals.push(create_local_decl(result_local, Type::I32, Some("result")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(arg_local),
+                    Rvalue::Use(Operand::Constant(Constant::Int(5, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(result_local),
+                    Rvalue::Call(
+                        Operand::Copy(Place::Local(func_local)),
+                        vec![Operand::Copy(Place::Local(arg_local))],
+                    ),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(result_local)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.locals.len(), 3, "Call should mark func and args live");
+    }
+
+    #[test]
+    fn test_mark_rvalue_live_cast() {
+        // Rvalue::Cast should mark the cast operand as live
+        let mut func = create_test_function("test", vec![], Type::F64);
+
+        let int_local = Local(0);
+        let float_local = Local(1);
+        func.locals.push(create_local_decl(int_local, Type::I32, Some("n")));
+        func.locals.push(create_local_decl(float_local, Type::F64, Some("f")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(int_local),
+                    Rvalue::Use(Operand::Constant(Constant::Int(42, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(float_local),
+                    Rvalue::Cast(CastKind::Numeric, Operand::Copy(Place::Local(int_local)), Type::F64),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(float_local)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.locals.len(), 2, "Cast should mark the source operand live");
+    }
+
+    #[test]
+    fn test_mark_rvalue_live_unary_op() {
+        // Rvalue::UnaryOp should mark the operand as live
+        let mut func = create_test_function("test", vec![], Type::I32);
+
+        let local0 = Local(0);
+        let local1 = Local(1);
+        func.locals.push(create_local_decl(local0, Type::I32, Some("x")));
+        func.locals.push(create_local_decl(local1, Type::I32, Some("neg_x")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(local0),
+                    Rvalue::Use(Operand::Constant(Constant::Int(10, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(local1),
+                    Rvalue::UnaryOp(UnOp::Neg, Operand::Copy(Place::Local(local0))),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(local1)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.locals.len(), 2, "UnaryOp should mark operand live");
+    }
+
+    #[test]
+    fn test_mark_rvalue_live_aggregate_empty() {
+        // Rvalue::Aggregate with empty operands
+        let mut func = create_test_function("test", vec![], Type::Unit);
+
+        let result_local = Local(0);
+        func.locals.push(create_local_decl(result_local, Type::Unit, Some("empty_tuple")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(result_local),
+                    Rvalue::Aggregate(AggregateKind::Tuple, vec![]),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(result_local)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.locals.len(), 1, "Empty aggregate should still preserve result local");
+    }
+
+    #[test]
+    fn test_mark_rvalue_live_call_multiple_args() {
+        let mut func = create_test_function("test", vec![], Type::I32);
+
+        let arg0 = Local(0);
+        let arg1 = Local(1);
+        let arg2 = Local(2);
+        let result = Local(3);
+        func.locals.push(create_local_decl(arg0, Type::I32, Some("a")));
+        func.locals.push(create_local_decl(arg1, Type::I32, Some("b")));
+        func.locals.push(create_local_decl(arg2, Type::I32, Some("c")));
+        func.locals.push(create_local_decl(result, Type::I32, Some("r")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(arg0),
+                    Rvalue::Use(Operand::Constant(Constant::Int(1, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(arg1),
+                    Rvalue::Use(Operand::Constant(Constant::Int(2, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(arg2),
+                    Rvalue::Use(Operand::Constant(Constant::Int(3, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(result),
+                    Rvalue::Call(
+                        Operand::Constant(Constant::Int(0, Type::I32)), // func as constant
+                        vec![
+                            Operand::Copy(Place::Local(arg0)),
+                            Operand::Copy(Place::Local(arg1)),
+                            Operand::Move(Place::Local(arg2)),
+                        ],
+                    ),
+                ),
+            ],
+            Terminator::Return(Some(Operand::Copy(Place::Local(result)))),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.locals.len(), 4, "Call with multiple args should mark all args live");
     }
 }
 #[cfg(test)]

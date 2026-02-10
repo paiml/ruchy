@@ -1076,3 +1076,584 @@
             MonoType::Named(ref n) if n == "DataFrame"
         ));
     }
+
+    // ============================================================================
+    // Coverage tests for infer_dataframe_macro (15 uncov, 0%)
+    // ============================================================================
+
+    #[test]
+    fn test_infer_dataframe_macro_single_column() {
+        let mut ctx = make_ctx();
+        // Bind the variable name with List type to match the assigned value
+        ctx.env.bind("age", TypeScheme::mono(MonoType::List(Box::new(MonoType::Int))));
+        // df! macro: df!(age = [25, 30, 35])
+        // The macro takes Assign expressions as arguments
+        let args = vec![
+            Expr::new(
+                ExprKind::Assign {
+                    target: Box::new(Expr::new(
+                        ExprKind::Identifier("age".to_string()),
+                        make_span(),
+                    )),
+                    value: Box::new(Expr::new(
+                        ExprKind::List(vec![
+                            Expr::new(ExprKind::Literal(Literal::Integer(25, None)), make_span()),
+                            Expr::new(ExprKind::Literal(Literal::Integer(30, None)), make_span()),
+                            Expr::new(ExprKind::Literal(Literal::Integer(35, None)), make_span()),
+                        ]),
+                        make_span(),
+                    )),
+                },
+                make_span(),
+            ),
+        ];
+        let macro_expr = Expr::new(
+            ExprKind::Macro {
+                name: "df".to_string(),
+                args,
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&macro_expr);
+        assert!(result.is_ok(), "df! macro with single column should infer: {:?}", result.err());
+        if let Ok(MonoType::DataFrame(columns)) = &result {
+            assert_eq!(columns.len(), 1, "Should have one column");
+            assert_eq!(columns[0].0, "age", "Column name should be 'age'");
+            assert_eq!(columns[0].1, MonoType::Int, "Column type should be Int");
+        } else {
+            panic!("Expected DataFrame type, got: {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_infer_dataframe_macro_multiple_columns() {
+        let mut ctx = make_ctx();
+        ctx.env.bind("name", TypeScheme::mono(MonoType::List(Box::new(MonoType::String))));
+        ctx.env.bind("score", TypeScheme::mono(MonoType::List(Box::new(MonoType::Float))));
+        let args = vec![
+            Expr::new(
+                ExprKind::Assign {
+                    target: Box::new(Expr::new(
+                        ExprKind::Identifier("name".to_string()),
+                        make_span(),
+                    )),
+                    value: Box::new(Expr::new(
+                        ExprKind::List(vec![
+                            Expr::new(ExprKind::Literal(Literal::String("Alice".to_string())), make_span()),
+                            Expr::new(ExprKind::Literal(Literal::String("Bob".to_string())), make_span()),
+                        ]),
+                        make_span(),
+                    )),
+                },
+                make_span(),
+            ),
+            Expr::new(
+                ExprKind::Assign {
+                    target: Box::new(Expr::new(
+                        ExprKind::Identifier("score".to_string()),
+                        make_span(),
+                    )),
+                    value: Box::new(Expr::new(
+                        ExprKind::List(vec![
+                            Expr::new(ExprKind::Literal(Literal::Float(95.5)), make_span()),
+                            Expr::new(ExprKind::Literal(Literal::Float(88.0)), make_span()),
+                        ]),
+                        make_span(),
+                    )),
+                },
+                make_span(),
+            ),
+        ];
+        let macro_expr = Expr::new(
+            ExprKind::Macro {
+                name: "df".to_string(),
+                args,
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&macro_expr);
+        assert!(result.is_ok(), "df! macro with multiple columns should infer: {:?}", result.err());
+        if let Ok(MonoType::DataFrame(columns)) = &result {
+            assert_eq!(columns.len(), 2);
+            assert_eq!(columns[0].0, "name");
+            assert_eq!(columns[1].0, "score");
+        }
+    }
+
+    #[test]
+    fn test_infer_dataframe_macro_scalar_value_column() {
+        let mut ctx = make_ctx();
+        ctx.env.bind("count", TypeScheme::mono(MonoType::Int));
+        // df!(count = 42) - single scalar value, not a list
+        let args = vec![
+            Expr::new(
+                ExprKind::Assign {
+                    target: Box::new(Expr::new(
+                        ExprKind::Identifier("count".to_string()),
+                        make_span(),
+                    )),
+                    value: Box::new(Expr::new(
+                        ExprKind::Literal(Literal::Integer(42, None)),
+                        make_span(),
+                    )),
+                },
+                make_span(),
+            ),
+        ];
+        let macro_expr = Expr::new(
+            ExprKind::Macro {
+                name: "df".to_string(),
+                args,
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&macro_expr);
+        assert!(result.is_ok(), "df! macro with scalar column should infer: {:?}", result.err());
+        if let Ok(MonoType::DataFrame(columns)) = &result {
+            assert_eq!(columns.len(), 1);
+            assert_eq!(columns[0].0, "count");
+            // Scalar values become the column type directly
+            assert_eq!(columns[0].1, MonoType::Int);
+        }
+    }
+
+    #[test]
+    fn test_infer_dataframe_macro_empty() {
+        let mut ctx = make_ctx();
+        // df!() with no arguments
+        let macro_expr = Expr::new(
+            ExprKind::Macro {
+                name: "df".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&macro_expr);
+        assert!(result.is_ok(), "Empty df! macro should produce empty DataFrame");
+        if let Ok(MonoType::DataFrame(columns)) = &result {
+            assert!(columns.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_infer_dataframe_macro_non_assign_arg_skipped() {
+        let mut ctx = make_ctx();
+        // df!(42) - non-assignment arg should be skipped
+        let args = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(42, None)), make_span()),
+        ];
+        let macro_expr = Expr::new(
+            ExprKind::Macro {
+                name: "df".to_string(),
+                args,
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&macro_expr);
+        assert!(result.is_ok(), "Non-assign args should be skipped");
+        if let Ok(MonoType::DataFrame(columns)) = &result {
+            assert!(columns.is_empty(), "Non-assign arg should produce empty DataFrame");
+        }
+    }
+
+    // ============================================================================
+    // Coverage tests for infer_dataframe_method (16 uncov, 0%)
+    // ============================================================================
+
+    #[test]
+    fn test_infer_dataframe_method_filter() {
+        let mut ctx = make_ctx();
+        let df_columns = vec![("age".to_string(), MonoType::Int)];
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(df_columns.clone())),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "filter".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "filter on DataFrame should infer: {:?}", result.err());
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_groupby() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("name".to_string(), MonoType::String)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "groupby".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "groupby on DataFrame should infer");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_select() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("col".to_string(), MonoType::Int)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "select".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "select on DataFrame should infer");
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_agg() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("val".to_string(), MonoType::Float)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "agg".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "agg on DataFrame should infer");
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_mean() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("val".to_string(), MonoType::Float)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "mean".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "mean on DataFrame should return Float");
+        assert_eq!(result.unwrap(), MonoType::Float);
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_sum() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("val".to_string(), MonoType::Int)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "sum".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "sum on DataFrame should return Float");
+        assert_eq!(result.unwrap(), MonoType::Float);
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_count() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("id".to_string(), MonoType::Int)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "count".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "count on DataFrame should return Float");
+        assert_eq!(result.unwrap(), MonoType::Float);
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_std() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("val".to_string(), MonoType::Float)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "std".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "std on DataFrame should return Float");
+        assert_eq!(result.unwrap(), MonoType::Float);
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_on_named_dataframe() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::Named("DataFrame".to_string())),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "filter".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "filter on Named DataFrame should infer");
+        assert!(matches!(result.unwrap(), MonoType::Named(ref n) if n == "DataFrame"));
+    }
+
+    #[test]
+    fn test_infer_dataframe_method_unknown_method_falls_to_generic() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("val".to_string(), MonoType::Int)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "unknown_method".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        // Unknown methods fall through to infer_generic_method
+        assert!(result.is_ok(), "Unknown method should fallback to generic: {:?}", result.err());
+    }
+
+    // ============================================================================
+    // Coverage tests for infer_column_selection (16 uncov, 0%)
+    // ============================================================================
+
+    #[test]
+    fn test_infer_column_selection_known_column() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![
+                ("age".to_string(), MonoType::Int),
+                ("name".to_string(), MonoType::String),
+            ])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "col".to_string(),
+                args: vec![
+                    Expr::new(ExprKind::Literal(Literal::String("age".to_string())), make_span()),
+                ],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "col('age') should infer Series(Int): {:?}", result.err());
+        if let Ok(MonoType::Series(inner)) = &result {
+            assert_eq!(**inner, MonoType::Int, "Column 'age' should be Series(Int)");
+        } else {
+            panic!("Expected Series type, got: {:?}", result);
+        }
+    }
+
+    #[test]
+    fn test_infer_column_selection_unknown_column() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![
+                ("age".to_string(), MonoType::Int),
+            ])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "col".to_string(),
+                args: vec![
+                    Expr::new(ExprKind::Literal(Literal::String("nonexistent".to_string())), make_span()),
+                ],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "col('nonexistent') should produce Series with fresh type var");
+        assert!(matches!(result.unwrap(), MonoType::Series(_)));
+    }
+
+    #[test]
+    fn test_infer_column_selection_no_args() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("val".to_string(), MonoType::Float)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "col".to_string(),
+                args: vec![],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "col() with no args should produce Series with fresh var");
+        assert!(matches!(result.unwrap(), MonoType::Series(_)));
+    }
+
+    #[test]
+    fn test_infer_column_selection_non_string_arg() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![("val".to_string(), MonoType::Int)])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "col".to_string(),
+                args: vec![
+                    Expr::new(ExprKind::Literal(Literal::Integer(0, None)), make_span()),
+                ],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "col(0) with non-string arg should produce Series with fresh var");
+        assert!(matches!(result.unwrap(), MonoType::Series(_)));
+    }
+
+    #[test]
+    fn test_infer_column_selection_on_non_dataframe() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "x",
+            TypeScheme::mono(MonoType::Named("Series".to_string())),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    make_span(),
+                )),
+                method: "col".to_string(),
+                args: vec![
+                    Expr::new(ExprKind::Literal(Literal::String("val".to_string())), make_span()),
+                ],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        // Named "Series" dispatches to infer_generic_method for "col" since
+        // it's not DataFrame or Series in MonoType enum variant form
+        // The generic method handler should produce a result
+        assert!(result.is_ok(), "col on non-DataFrame should still produce result: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_infer_column_selection_second_column() {
+        let mut ctx = make_ctx();
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::DataFrame(vec![
+                ("x".to_string(), MonoType::Int),
+                ("y".to_string(), MonoType::Float),
+                ("z".to_string(), MonoType::String),
+            ])),
+        );
+        let expr = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(Expr::new(
+                    ExprKind::Identifier("df".to_string()),
+                    make_span(),
+                )),
+                method: "col".to_string(),
+                args: vec![
+                    Expr::new(ExprKind::Literal(Literal::String("y".to_string())), make_span()),
+                ],
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "col('y') should return Series(Float)");
+        if let Ok(MonoType::Series(inner)) = &result {
+            assert_eq!(**inner, MonoType::Float, "Column 'y' should be Series(Float)");
+        }
+    }

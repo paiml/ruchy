@@ -6,3 +6,5 @@
     mod part2;
     #[path = "vm_tests_part3.rs"]
     mod part3;
+    #[path = "vm_tests_part4.rs"]
+    mod part4;

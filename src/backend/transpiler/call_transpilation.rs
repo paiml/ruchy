@@ -787,4 +787,136 @@ mod tests {
         assert!(result.is_ok());
         assert!(result.unwrap().to_string().contains("filter"));
     }
+
+    // ========================================================================
+    // try_transpile_std_time_call tests
+    // ========================================================================
+
+    #[test]
+    fn test_std_time_now_millis_valid() {
+        let transpiler = make_transpiler();
+        // Build std.time.now_millis() AST: FieldAccess(FieldAccess(Identifier("std"), "time"), "now_millis")
+        let std_ident = make_expr(ExprKind::Identifier("std".to_string()));
+        let std_time = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_ident),
+            field: "time".to_string(),
+        });
+        let std_time_now_millis = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_time),
+            field: "now_millis".to_string(),
+        });
+
+        let result = transpiler
+            .try_transpile_std_time_call(&std_time_now_millis, &[])
+            .unwrap();
+        assert!(result.is_some());
+        let tokens = result.unwrap().to_string();
+        assert!(
+            tokens.contains("SystemTime"),
+            "Should generate SystemTime code: {tokens}"
+        );
+        assert!(
+            tokens.contains("UNIX_EPOCH"),
+            "Should reference UNIX_EPOCH: {tokens}"
+        );
+        assert!(
+            tokens.contains("as_millis"),
+            "Should call as_millis: {tokens}"
+        );
+    }
+
+    #[test]
+    fn test_std_time_now_millis_with_args_fails() {
+        let transpiler = make_transpiler();
+        let std_ident = make_expr(ExprKind::Identifier("std".to_string()));
+        let std_time = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_ident),
+            field: "time".to_string(),
+        });
+        let std_time_now_millis = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_time),
+            field: "now_millis".to_string(),
+        });
+
+        // Passing arguments should fail
+        let args = vec![int_expr(42)];
+        let result = transpiler.try_transpile_std_time_call(&std_time_now_millis, &args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects no arguments"));
+    }
+
+    #[test]
+    fn test_std_time_non_now_millis_returns_none() {
+        let transpiler = make_transpiler();
+        let std_ident = make_expr(ExprKind::Identifier("std".to_string()));
+        let std_time = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_ident),
+            field: "time".to_string(),
+        });
+        // Different method name
+        let std_time_other = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_time),
+            field: "other_method".to_string(),
+        });
+
+        let result = transpiler
+            .try_transpile_std_time_call(&std_time_other, &[])
+            .unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_std_time_wrong_module_returns_none() {
+        let transpiler = make_transpiler();
+        let std_ident = make_expr(ExprKind::Identifier("std".to_string()));
+        // Wrong module name
+        let std_io = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_ident),
+            field: "io".to_string(),
+        });
+        let std_io_now_millis = make_expr(ExprKind::FieldAccess {
+            object: Box::new(std_io),
+            field: "now_millis".to_string(),
+        });
+
+        let result = transpiler
+            .try_transpile_std_time_call(&std_io_now_millis, &[])
+            .unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_std_time_wrong_root_returns_none() {
+        let transpiler = make_transpiler();
+        // Wrong root name
+        let other_ident = make_expr(ExprKind::Identifier("other".to_string()));
+        let other_time = make_expr(ExprKind::FieldAccess {
+            object: Box::new(other_ident),
+            field: "time".to_string(),
+        });
+        let other_time_now_millis = make_expr(ExprKind::FieldAccess {
+            object: Box::new(other_time),
+            field: "now_millis".to_string(),
+        });
+
+        let result = transpiler
+            .try_transpile_std_time_call(&other_time_now_millis, &[])
+            .unwrap();
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_std_time_non_field_access_returns_none() {
+        let transpiler = make_transpiler();
+        // Not a field access at all
+        let simple_ident = ident_expr("now_millis");
+
+        let result = transpiler
+            .try_transpile_std_time_call(&simple_ident, &[])
+            .unwrap();
+        assert!(result.is_none());
+    }
 }

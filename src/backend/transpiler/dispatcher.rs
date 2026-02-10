@@ -1195,4 +1195,391 @@ mod tests {
             .to_string();
         assert!(tokens.contains("while") && tokens.contains("let"));
     }
+
+    // ========================================================================
+    // transpile_data_only_expr coverage tests
+    // ========================================================================
+
+    #[test]
+    fn test_transpile_data_only_expr_list() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::List(vec![
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(2, None)),
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
+        assert!(tokens.contains("vec") || tokens.contains("1") || tokens.contains("2"));
+    }
+
+    #[test]
+    fn test_transpile_data_only_expr_set() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Set(vec![
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(20, None)),
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_data_only_expr_tuple() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Tuple(vec![
+                Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(Literal::String("hello".to_string())),
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+        let tokens = result
+            .expect("operation should succeed in test")
+            .to_string();
+        assert!(tokens.contains("1"));
+    }
+
+    #[test]
+    fn test_transpile_data_only_expr_range_inclusive() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Range {
+                start: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0, None)),
+                    Span::default(),
+                )),
+                end: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+                inclusive: true,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_data_only_expr_range_exclusive() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Range {
+                start: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0, None)),
+                    Span::default(),
+                )),
+                end: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+                inclusive: false,
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_data_only_expr_array_init() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::ArrayInit {
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0, None)),
+                    Span::default(),
+                )),
+                size: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(10, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_data_only_expr_set_single_misparsed_block() {
+        let transpiler = Transpiler::new();
+        // Single element set that looks like a misparsed block (identifier, not literal)
+        let expr = Expr::new(
+            ExprKind::Set(vec![Expr::new(
+                ExprKind::Identifier("result".to_string()),
+                Span::default(),
+            )]),
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_data_only_expr_dataframe() {
+        use crate::frontend::ast::DataFrameColumn;
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::DataFrame {
+                columns: vec![DataFrameColumn {
+                    name: "col1".to_string(),
+                    values: vec![Expr::new(
+                        ExprKind::Literal(Literal::Integer(1, None)),
+                        Span::default(),
+                    )],
+                }],
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_data_only_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    // ========================================================================
+    // transpile_misc_expr coverage tests
+    // ========================================================================
+
+    #[test]
+    fn test_transpile_misc_expr_let_pattern() {
+        use crate::frontend::ast::Pattern;
+        let transpiler = Transpiler::new();
+        let expr = Expr {
+            kind: ExprKind::LetPattern {
+                pattern: Pattern::Tuple(vec![
+                    Pattern::Identifier("a".to_string()),
+                    Pattern::Identifier("b".to_string()),
+                ]),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Identifier("pair".to_string()),
+                    Span::default(),
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("a".to_string()),
+                    Span::default(),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
+        assert!(output.contains("let"));
+    }
+
+    #[test]
+    fn test_transpile_misc_expr_let_pattern_else() {
+        use crate::frontend::ast::Pattern;
+        let transpiler = Transpiler::new();
+        let expr = Expr {
+            kind: ExprKind::LetPattern {
+                pattern: Pattern::Identifier("x".to_string()),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Identifier("maybe_val".to_string()),
+                    Span::default(),
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::default(),
+                )),
+                is_mutable: false,
+                else_block: Some(Box::new(Expr::new(
+                    ExprKind::Block(vec![]),
+                    Span::default(),
+                ))),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_misc_expr_pipeline() {
+        use crate::frontend::ast::PipelineStage;
+        let transpiler = Transpiler::new();
+        let expr = Expr {
+            kind: ExprKind::Pipeline {
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("data".to_string()),
+                    Span::default(),
+                )),
+                stages: vec![PipelineStage {
+                    op: Box::new(Expr::new(
+                        ExprKind::Identifier("process".to_string()),
+                        Span::default(),
+                    )),
+                    span: Span::default(),
+                }],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_misc_expr_lazy() {
+        let transpiler = Transpiler::new();
+        let expr = Expr {
+            kind: ExprKind::Lazy {
+                expr: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
+        assert!(output.contains("42"));
+    }
+
+    #[test]
+    fn test_transpile_misc_expr_type_alias() {
+        use crate::frontend::ast::{Type, TypeKind};
+        let transpiler = Transpiler::new();
+        let expr = Expr {
+            kind: ExprKind::TypeAlias {
+                name: "MyInt".to_string(),
+                target_type: Type {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                },
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
+        assert!(output.contains("type"));
+    }
+
+    #[test]
+    fn test_transpile_misc_expr_unsupported() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        );
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unsupported expression kind"));
+    }
+
+    #[test]
+    fn test_transpile_misc_expr_let_const() {
+        use crate::frontend::ast::Attribute;
+        let transpiler = Transpiler::new();
+        let expr = Expr {
+            kind: ExprKind::Let {
+                name: "MAX_SIZE".to_string(),
+                type_annotation: None,
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(100, None)),
+                    Span::default(),
+                )),
+                body: Box::new(Expr::new(
+                    ExprKind::Identifier("MAX_SIZE".to_string()),
+                    Span::default(),
+                )),
+                is_mutable: false,
+                else_block: None,
+            },
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "const".to_string(),
+                args: vec![],
+                span: Span::default(),
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_transpile_misc_expr_import_all_pub_alias() {
+        use crate::frontend::ast::Attribute;
+        let transpiler = Transpiler::new();
+        let expr = Expr {
+            kind: ExprKind::ImportAll {
+                module: "std::io".to_string(),
+                alias: "io_mod".to_string(),
+            },
+            span: Span::default(),
+            attributes: vec![Attribute {
+                name: "pub".to_string(),
+                args: vec![],
+                span: Span::default(),
+            }],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_misc_expr(&expr);
+        assert!(result.is_ok());
+        let output = result
+            .expect("operation should succeed in test")
+            .to_string();
+        assert!(output.contains("pub"));
+    }
 }

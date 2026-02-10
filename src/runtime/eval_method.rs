@@ -1297,3 +1297,179 @@ mod round_133_tests {
         }
     }
 }
+
+// ============================================================================
+// Coverage tests for eval_method_call (17 uncov lines, 0% coverage)
+// ============================================================================
+#[cfg(test)]
+mod eval_method_call_tests {
+    use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    fn make_expr(kind: ExprKind) -> Expr {
+        Expr::new(kind, Span::default())
+    }
+
+    #[test]
+    fn test_eval_method_call_string_len() {
+        let receiver = make_expr(ExprKind::Literal(Literal::String("hello".to_string())));
+        let args: Vec<Expr> = vec![];
+
+        let mut eval_fn = |expr: &Expr| -> Result<Value, InterpreterError> {
+            match &expr.kind {
+                ExprKind::Literal(Literal::String(s)) => Ok(Value::from_string(s.clone())),
+                _ => Ok(Value::Nil),
+            }
+        };
+
+        let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {
+            panic!("should not be called for string receiver");
+        };
+
+        let result = eval_method_call(&receiver, "len", &args, &mut eval_fn, &mut df_filter)
+            .expect("string len should succeed");
+        assert_eq!(result, Value::Integer(5));
+    }
+
+    #[test]
+    fn test_eval_method_call_integer_abs() {
+        let receiver = make_expr(ExprKind::Literal(Literal::Integer(-42, None)));
+        let args: Vec<Expr> = vec![];
+
+        let mut eval_fn = |expr: &Expr| -> Result<Value, InterpreterError> {
+            match &expr.kind {
+                ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
+                _ => Ok(Value::Nil),
+            }
+        };
+
+        let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {
+            panic!("should not be called for integer receiver");
+        };
+
+        let result = eval_method_call(&receiver, "abs", &args, &mut eval_fn, &mut df_filter)
+            .expect("integer abs should succeed");
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_method_call_float_sqrt() {
+        let receiver = make_expr(ExprKind::Literal(Literal::Float(9.0)));
+        let args: Vec<Expr> = vec![];
+
+        let mut eval_fn = |expr: &Expr| -> Result<Value, InterpreterError> {
+            match &expr.kind {
+                ExprKind::Literal(Literal::Float(f)) => Ok(Value::Float(*f)),
+                _ => Ok(Value::Nil),
+            }
+        };
+
+        let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {
+            panic!("should not be called for float receiver");
+        };
+
+        let result = eval_method_call(&receiver, "sqrt", &args, &mut eval_fn, &mut df_filter)
+            .expect("float sqrt should succeed");
+        assert_eq!(result, Value::Float(3.0));
+    }
+
+    #[test]
+    fn test_eval_method_call_with_args() {
+        let receiver = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
+        let args = vec![make_expr(ExprKind::Literal(Literal::Integer(3, None)))];
+
+        let mut eval_fn = |expr: &Expr| -> Result<Value, InterpreterError> {
+            match &expr.kind {
+                ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
+                _ => Ok(Value::Nil),
+            }
+        };
+
+        let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {
+            panic!("should not be called for integer receiver");
+        };
+
+        let result = eval_method_call(&receiver, "pow", &args, &mut eval_fn, &mut df_filter)
+            .expect("integer pow should succeed");
+        assert_eq!(result, Value::Integer(8));
+    }
+
+    #[test]
+    fn test_eval_method_call_receiver_eval_error() {
+        let receiver = make_expr(ExprKind::Identifier("undefined".to_string()));
+        let args: Vec<Expr> = vec![];
+
+        let mut eval_fn = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Err(InterpreterError::RuntimeError("undefined variable".to_string()))
+        };
+
+        let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {
+            panic!("should not be called when receiver eval fails");
+        };
+
+        let result = eval_method_call(&receiver, "len", &args, &mut eval_fn, &mut df_filter);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_method_call_dataframe_filter_dispatches() {
+        // When receiver is DataFrame and method is "filter", it should call df_filter
+        let receiver = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
+        let args = vec![make_expr(ExprKind::Literal(Literal::Bool(true)))];
+
+        let columns = vec![DataFrameColumn {
+            name: "a".to_string(),
+            values: vec![Value::Integer(1), Value::Integer(2)],
+        }];
+
+        let mut eval_fn = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::DataFrame {
+                columns: columns.clone(),
+            })
+        };
+
+        let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {
+            Ok(Value::DataFrame {
+                columns: vec![DataFrameColumn {
+                    name: "a".to_string(),
+                    values: vec![Value::Integer(1)],
+                }],
+            })
+        };
+
+        let result = eval_method_call(&receiver, "filter", &args, &mut eval_fn, &mut df_filter)
+            .expect("dataframe filter should succeed");
+        match result {
+            Value::DataFrame { columns } => {
+                assert_eq!(columns.len(), 1);
+                assert_eq!(columns[0].values.len(), 1);
+            }
+            _ => panic!("Expected DataFrame"),
+        }
+    }
+
+    #[test]
+    fn test_eval_method_call_arg_eval_error() {
+        let receiver = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
+        let args = vec![make_expr(ExprKind::Identifier("bad_arg".to_string()))];
+
+        let mut call_count = 0;
+        let mut eval_fn = |expr: &Expr| -> Result<Value, InterpreterError> {
+            call_count += 1;
+            if call_count == 1 {
+                // Receiver evaluates fine
+                Ok(Value::Integer(2))
+            } else {
+                // Arg evaluation fails
+                Err(InterpreterError::RuntimeError("arg eval error".to_string()))
+            }
+        };
+
+        let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {
+            panic!("should not be called");
+        };
+
+        let result = eval_method_call(&receiver, "pow", &args, &mut eval_fn, &mut df_filter);
+        assert!(result.is_err());
+    }
+}

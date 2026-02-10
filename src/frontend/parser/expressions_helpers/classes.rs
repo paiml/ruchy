@@ -1940,4 +1940,72 @@ mod tests {
         let result = parse(code);
         assert!(result.is_ok(), "Decorator with key=value in class: {:?}", result.err());
     }
+
+    // ============================================================
+    // Coverage tests for parse_property_accessors (17 uncov, 0%)
+    // and parse_property_setter (17 uncov, 0%)
+    // ============================================================
+
+    #[test]
+    fn test_property_with_getter_only() {
+        let code = "class MyClass { property value: i32 { get => 42 } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Property with getter only should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_property_with_setter_only() {
+        let code = "class MyClass { property value: i32 { set(v) => self.x = v } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Property with setter only should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_property_with_getter_and_setter() {
+        let code = "class MyClass { property value: i32 { get => self.x, set(v) => self.x = v } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Property with getter and setter should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_property_with_setter_and_getter_reversed() {
+        let code = "class MyClass { property value: i32 { set(v) => self.x = v, get => self.x } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Property with setter first then getter should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_property_getter_returns_expression() {
+        let code = "class Circle { property area: f64 { get => 3.14 * self.r * self.r } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Property getter with expression should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_property_setter_with_param() {
+        let code = "class Box { property width: f64 { set(w) => self.w = w } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Property setter with param should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_with_multiple_properties() {
+        let code = r#"class Point {
+            property x: f64 { get => self._x, set(v) => self._x = v }
+            property y: f64 { get => self._y }
+        }"#;
+        let result = parse(code);
+        assert!(result.is_ok(), "Class with multiple properties should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_property_with_method_and_field() {
+        let code = r#"class MyClass {
+            name: String
+            property length: i32 { get => 0 }
+            fun greet(&self) -> String { self.name }
+        }"#;
+        let result = parse(code);
+        assert!(result.is_ok(), "Class with field, property and method should parse: {:?}", result.err());
+    }
 }

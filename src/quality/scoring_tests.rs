@@ -775,3 +775,337 @@
         assert_eq!(original.value, cloned.value);
         assert_eq!(original.grade, cloned.grade);
     }
+
+    // ============================================================================
+    // analyze_error_handling_recursive coverage tests
+    // ============================================================================
+
+    #[test]
+    fn test_analyze_error_handling_recursive_match_with_two_arms() {
+        use crate::frontend::ast::{Expr, ExprKind, MatchArm, Pattern, Span};
+
+        let match_expr = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("result".to_string()),
+                    Span::default(),
+                )),
+                arms: vec![
+                    MatchArm {
+                        pattern: Pattern::Identifier("ok".to_string()),
+                        guard: None,
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                            Span::default(),
+                        )),
+                        span: Span::default(),
+                    },
+                    MatchArm {
+                        pattern: Pattern::Identifier("err".to_string()),
+                        guard: None,
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(0, None)),
+                            Span::default(),
+                        )),
+                        span: Span::default(),
+                    },
+                ],
+            },
+            Span::default(),
+        );
+
+        let mut total_fallible_ops = 0;
+        let mut handled_ops = 0;
+        analyze_error_handling_recursive(&match_expr, &mut total_fallible_ops, &mut handled_ops);
+
+        // Match with 2+ arms counts as a handled fallible op
+        assert_eq!(total_fallible_ops, 1);
+        assert_eq!(handled_ops, 1);
+    }
+
+    #[test]
+    fn test_analyze_error_handling_recursive_block() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let block_expr = Expr::new(
+            ExprKind::Block(vec![
+                Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                    Span::default(),
+                ),
+                Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)),
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+
+        let mut total = 0;
+        let mut handled = 0;
+        analyze_error_handling_recursive(&block_expr, &mut total, &mut handled);
+
+        // Literals don't count as fallible ops
+        assert_eq!(total, 0);
+        assert_eq!(handled, 0);
+    }
+
+    #[test]
+    fn test_analyze_error_handling_recursive_function_body() {
+        use crate::frontend::ast::{Expr, ExprKind, MatchArm, Pattern, Span, Type};
+
+        let body = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::default(),
+                )),
+                arms: vec![
+                    MatchArm {
+                        pattern: Pattern::Wildcard,
+                        guard: None,
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(0, None)),
+                            Span::default(),
+                        )),
+                        span: Span::default(),
+                    },
+                    MatchArm {
+                        pattern: Pattern::Wildcard,
+                        guard: None,
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                            Span::default(),
+                        )),
+                        span: Span::default(),
+                    },
+                ],
+            },
+            Span::default(),
+        );
+
+        let func_expr = Expr::new(
+            ExprKind::Function {
+                name: "test_fn".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(body),
+                is_async: false,
+                return_type: Some(Type { kind: crate::frontend::ast::TypeKind::Named("i32".to_string()), span: Span::default() }),
+                is_pub: false,
+            },
+            Span::default(),
+        );
+
+        let mut total = 0;
+        let mut handled = 0;
+        analyze_error_handling_recursive(&func_expr, &mut total, &mut handled);
+
+        assert_eq!(total, 1);
+        assert_eq!(handled, 1);
+    }
+
+    #[test]
+    fn test_analyze_error_handling_recursive_single_arm_match() {
+        use crate::frontend::ast::{Expr, ExprKind, MatchArm, Pattern, Span};
+
+        // Single arm match should NOT count as handled error handling
+        let match_expr = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::default(),
+                )),
+                arms: vec![MatchArm {
+                    pattern: Pattern::Wildcard,
+                    guard: None,
+                    body: Box::new(Expr::new(
+                        ExprKind::Literal(crate::frontend::ast::Literal::Integer(0, None)),
+                        Span::default(),
+                    )),
+                    span: Span::default(),
+                }],
+            },
+            Span::default(),
+        );
+
+        let mut total = 0;
+        let mut handled = 0;
+        analyze_error_handling_recursive(&match_expr, &mut total, &mut handled);
+
+        // Single arm: does not count as error handling
+        assert_eq!(total, 0);
+        assert_eq!(handled, 0);
+    }
+
+    #[test]
+    fn test_analyze_error_handling_recursive_non_matching_expr() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        // Simple identifier - no error handling
+        let expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        );
+
+        let mut total = 0;
+        let mut handled = 0;
+        analyze_error_handling_recursive(&expr, &mut total, &mut handled);
+
+        assert_eq!(total, 0);
+        assert_eq!(handled, 0);
+    }
+
+    // ============================================================================
+    // analyze_null_safety_recursive coverage tests
+    // ============================================================================
+
+    #[test]
+    fn test_analyze_null_safety_recursive_some_expr() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let some_expr = Expr::new(
+            ExprKind::Some {
+                value: Box::new(Expr::new(
+                    ExprKind::Literal(crate::frontend::ast::Literal::Integer(42, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+
+        let mut option_uses = 0;
+        let mut unsafe_accesses = 0;
+        analyze_null_safety_recursive(&some_expr, &mut option_uses, &mut unsafe_accesses);
+
+        assert_eq!(option_uses, 1);
+        assert_eq!(unsafe_accesses, 0);
+    }
+
+    #[test]
+    fn test_analyze_null_safety_recursive_none_expr() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let none_expr = Expr::new(ExprKind::None, Span::default());
+
+        let mut option_uses = 0;
+        let mut unsafe_accesses = 0;
+        analyze_null_safety_recursive(&none_expr, &mut option_uses, &mut unsafe_accesses);
+
+        assert_eq!(option_uses, 1);
+        assert_eq!(unsafe_accesses, 0);
+    }
+
+    #[test]
+    fn test_analyze_null_safety_recursive_match_with_arms() {
+        use crate::frontend::ast::{Expr, ExprKind, MatchArm, Pattern, Span};
+
+        let match_expr = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("opt".to_string()),
+                    Span::default(),
+                )),
+                arms: vec![
+                    MatchArm {
+                        pattern: Pattern::Identifier("some_val".to_string()),
+                        guard: None,
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                            Span::default(),
+                        )),
+                        span: Span::default(),
+                    },
+                    MatchArm {
+                        pattern: Pattern::Wildcard,
+                        guard: None,
+                        body: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(0, None)),
+                            Span::default(),
+                        )),
+                        span: Span::default(),
+                    },
+                ],
+            },
+            Span::default(),
+        );
+
+        let mut option_uses = 0;
+        let mut unsafe_accesses = 0;
+        analyze_null_safety_recursive(&match_expr, &mut option_uses, &mut unsafe_accesses);
+
+        // Match with 2+ arms counts as option use
+        assert_eq!(option_uses, 1);
+        assert_eq!(unsafe_accesses, 0);
+    }
+
+    #[test]
+    fn test_analyze_null_safety_recursive_block() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let block_expr = Expr::new(
+            ExprKind::Block(vec![
+                Expr::new(ExprKind::None, Span::default()),
+                Expr::new(
+                    ExprKind::Some {
+                        value: Box::new(Expr::new(
+                            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+                            Span::default(),
+                        )),
+                    },
+                    Span::default(),
+                ),
+            ]),
+            Span::default(),
+        );
+
+        let mut option_uses = 0;
+        let mut unsafe_accesses = 0;
+        analyze_null_safety_recursive(&block_expr, &mut option_uses, &mut unsafe_accesses);
+
+        assert_eq!(option_uses, 2); // None + Some
+        assert_eq!(unsafe_accesses, 0);
+    }
+
+    #[test]
+    fn test_analyze_null_safety_recursive_function_body() {
+        use crate::frontend::ast::{Expr, ExprKind, Span, Type};
+
+        let body = Expr::new(ExprKind::None, Span::default());
+        let func_expr = Expr::new(
+            ExprKind::Function {
+                name: "get_value".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(body),
+                is_async: false,
+                return_type: Some(Type { kind: crate::frontend::ast::TypeKind::Named("Option".to_string()), span: Span::default() }),
+                is_pub: false,
+            },
+            Span::default(),
+        );
+
+        let mut option_uses = 0;
+        let mut unsafe_accesses = 0;
+        analyze_null_safety_recursive(&func_expr, &mut option_uses, &mut unsafe_accesses);
+
+        assert_eq!(option_uses, 1); // None in body
+        assert_eq!(unsafe_accesses, 0);
+    }
+
+    #[test]
+    fn test_analyze_null_safety_recursive_non_matching_expr() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let ident_expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::default(),
+        );
+
+        let mut option_uses = 0;
+        let mut unsafe_accesses = 0;
+        analyze_null_safety_recursive(&ident_expr, &mut option_uses, &mut unsafe_accesses);
+
+        assert_eq!(option_uses, 0);
+        assert_eq!(unsafe_accesses, 0);
+    }

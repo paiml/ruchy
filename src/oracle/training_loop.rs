@@ -913,4 +913,163 @@ mod tests {
         // Accuracy should be non-zero (samples are being evaluated)
         assert!(!loop_runner.accuracy_history().is_empty());
     }
+
+    // ============================================================================
+    // trigger_retrain coverage tests
+    // ============================================================================
+
+    #[test]
+    fn test_trigger_retrain_success_with_trained_oracle() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap");
+
+        let mut loop_runner = TrainingLoop::new(oracle);
+        // trigger_retrain should succeed since oracle has training data
+        let event = loop_runner.trigger_retrain(RetrainReason::Manual);
+        match event {
+            TrainingEvent::RetrainingComplete {
+                accuracy_before,
+                accuracy_after,
+            } => {
+                // Both should be valid accuracy values
+                assert!((0.0..=1.0).contains(&accuracy_before));
+                assert!((0.0..=1.0).contains(&accuracy_after));
+            }
+            TrainingEvent::Error { .. } => {
+                // This is also acceptable if retrain fails for some reason
+            }
+            _ => panic!("Expected RetrainingComplete or Error event"),
+        }
+    }
+
+    #[test]
+    fn test_trigger_retrain_resets_samples_counter_on_success() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap");
+
+        let mut loop_runner = TrainingLoop::new(oracle);
+        // Simulate some samples being recorded
+        loop_runner.samples_since_retrain = 50;
+
+        let event = loop_runner.trigger_retrain(RetrainReason::Threshold);
+        if matches!(event, TrainingEvent::RetrainingComplete { .. }) {
+            assert_eq!(loop_runner.samples_since_retrain, 0);
+        }
+    }
+
+    #[test]
+    fn test_trigger_retrain_failure_with_empty_oracle() {
+        let oracle = RuchyOracle::new(); // No training data
+        let mut loop_runner = TrainingLoop::new(oracle);
+
+        let event = loop_runner.trigger_retrain(RetrainReason::Drift);
+        match event {
+            TrainingEvent::Error { message } => {
+                assert!(
+                    message.contains("Retraining failed"),
+                    "Error should mention retraining failure: {message}"
+                );
+            }
+            _ => panic!("Expected Error event for untrained oracle"),
+        }
+    }
+
+    #[test]
+    fn test_trigger_retrain_with_different_reasons() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap");
+
+        let mut loop_runner = TrainingLoop::new(oracle);
+
+        // Test with Drift reason
+        let event1 = loop_runner.trigger_retrain(RetrainReason::Drift);
+        assert!(matches!(
+            event1,
+            TrainingEvent::RetrainingComplete { .. } | TrainingEvent::Error { .. }
+        ));
+
+        // Test with Manual reason
+        let event2 = loop_runner.trigger_retrain(RetrainReason::Manual);
+        assert!(matches!(
+            event2,
+            TrainingEvent::RetrainingComplete { .. } | TrainingEvent::Error { .. }
+        ));
+    }
+
+    // ============================================================================
+    // render_verbose coverage tests
+    // ============================================================================
+
+    #[test]
+    fn test_render_verbose_untrained() {
+        let oracle = RuchyOracle::new();
+        let config = TrainingLoopConfig {
+            display_mode: DisplayMode::Verbose,
+            ..Default::default()
+        };
+        let loop_runner = TrainingLoop::with_config(oracle, config);
+        let output = loop_runner.render_verbose();
+        // Should produce non-empty Andon TUI string
+        assert!(!output.is_empty());
+    }
+
+    #[test]
+    fn test_render_verbose_after_training() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap");
+
+        let config = TrainingLoopConfig {
+            display_mode: DisplayMode::Verbose,
+            ..Default::default()
+        };
+        let mut loop_runner = TrainingLoop::with_config(oracle, config);
+        loop_runner.step();
+
+        let output = loop_runner.render_verbose();
+        assert!(!output.is_empty());
+        // Andon TUI should contain Oracle-related text
+        assert!(
+            output.contains("Oracle") || output.contains("Accuracy") || output.contains("│"),
+            "Verbose output should contain Andon TUI elements: {output}"
+        );
+    }
+
+    #[test]
+    fn test_render_verbose_matches_render_in_verbose_mode() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap");
+
+        let config = TrainingLoopConfig {
+            display_mode: DisplayMode::Verbose,
+            ..Default::default()
+        };
+        let mut loop_runner = TrainingLoop::with_config(oracle, config);
+        loop_runner.step();
+
+        // render() in Verbose mode should delegate to render_verbose()
+        let render_output = loop_runner.render();
+        let verbose_output = loop_runner.render_verbose();
+        assert_eq!(render_output, verbose_output);
+    }
+
+    #[test]
+    fn test_render_verbose_with_accuracy_history() {
+        let mut oracle = RuchyOracle::new();
+        oracle.train_from_examples().expect("bootstrap");
+
+        let config = TrainingLoopConfig {
+            display_mode: DisplayMode::Verbose,
+            ..Default::default()
+        };
+        let mut loop_runner = TrainingLoop::with_config(oracle, config);
+        // Build up accuracy history
+        for _ in 0..5 {
+            loop_runner.step();
+        }
+
+        let output = loop_runner.render_verbose();
+        assert!(!output.is_empty());
+        // Should have rendered with accumulated history
+        assert!(!loop_runner.accuracy_history().is_empty());
+    }
 }

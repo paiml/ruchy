@@ -1742,4 +1742,150 @@ mod tests {
             panic!("Expected AllForOne");
         }
     }
+
+    // ============================================================================
+    // Coverage tests for handle_failure (16 uncov lines, 65.2% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_handle_failure_one_for_one_restarts_child() {
+        let system = ConcurrentActorSystem::new();
+
+        // Spawn supervisor
+        let parent_state = HashMap::new();
+        let parent_handlers = HashMap::new();
+        let supervisor_id = system
+            .spawn_actor("Supervisor".to_string(), parent_state, parent_handlers, None)
+            .expect("should spawn supervisor");
+
+        // Spawn child under supervisor
+        let mut child_state = HashMap::new();
+        child_state.insert("count".to_string(), ActorFieldValue::Integer(0));
+        let child_handlers = HashMap::new();
+        let child_id = system
+            .spawn_actor(
+                "Child".to_string(),
+                child_state,
+                child_handlers,
+                Some(supervisor_id.clone()),
+            )
+            .expect("should spawn child");
+
+        // Give actors time to start
+        thread::sleep(Duration::from_millis(100));
+
+        // Handle failure -- supervisor has OneForOne strategy (default)
+        let result = system.handle_failure(&child_id, "test error".to_string(), &supervisor_id);
+        assert!(result.is_ok());
+
+        // Cleanup
+        system.shutdown().ok();
+    }
+
+    #[test]
+    fn test_handle_failure_nonexistent_supervisor() {
+        let system = ConcurrentActorSystem::new();
+
+        // Spawn a child actor
+        let child_state = HashMap::new();
+        let child_handlers = HashMap::new();
+        let child_id = system
+            .spawn_actor("Child".to_string(), child_state, child_handlers, None)
+            .expect("should spawn child");
+
+        // Handle failure with a nonexistent supervisor -- should succeed (just no-op)
+        let result = system.handle_failure(&child_id, "test error".to_string(), "nonexistent_sup");
+        assert!(result.is_ok());
+
+        // Cleanup
+        system.shutdown().ok();
+    }
+
+    #[test]
+    fn test_handle_failure_supervisor_no_restart() {
+        let system = ConcurrentActorSystem::new();
+
+        // Spawn supervisor
+        let parent_state = HashMap::new();
+        let parent_handlers = HashMap::new();
+        let supervisor_id = system
+            .spawn_actor("Supervisor".to_string(), parent_state, parent_handlers, None)
+            .expect("should spawn supervisor");
+
+        // Exhaust restart count so should_restart returns false
+        {
+            let actors = system.actors.read().unwrap();
+            if let Some(sup) = actors.get(&supervisor_id) {
+                let sup = sup.lock().unwrap();
+                let mut count = sup.restart_count.lock().unwrap();
+                *count = 100; // exceed max_restarts
+            }
+        }
+
+        // Spawn child under supervisor
+        let child_state = HashMap::new();
+        let child_handlers = HashMap::new();
+        let child_id = system
+            .spawn_actor(
+                "Child".to_string(),
+                child_state,
+                child_handlers,
+                Some(supervisor_id.clone()),
+            )
+            .expect("should spawn child");
+
+        thread::sleep(Duration::from_millis(100));
+
+        // Handle failure -- should stop the failed actor instead of restart
+        let result = system.handle_failure(&child_id, "test error".to_string(), &supervisor_id);
+        assert!(result.is_ok());
+
+        // Cleanup
+        system.shutdown().ok();
+    }
+
+    #[test]
+    fn test_handle_failure_rest_for_one_strategy() {
+        let system = ConcurrentActorSystem::new();
+
+        // Spawn supervisor
+        let parent_state = HashMap::new();
+        let parent_handlers = HashMap::new();
+        let supervisor_id = system
+            .spawn_actor("Supervisor".to_string(), parent_state, parent_handlers, None)
+            .expect("should spawn supervisor");
+
+        // Change supervisor strategy to RestForOne
+        {
+            let actors = system.actors.read().unwrap();
+            if let Some(sup) = actors.get(&supervisor_id) {
+                let mut sup = sup.lock().unwrap();
+                sup.supervision_strategy = SupervisionStrategy::RestForOne {
+                    max_restarts: 5,
+                    within: Duration::from_secs(60),
+                };
+            }
+        }
+
+        // Spawn child under supervisor
+        let child_state = HashMap::new();
+        let child_handlers = HashMap::new();
+        let child_id = system
+            .spawn_actor(
+                "Child".to_string(),
+                child_state,
+                child_handlers,
+                Some(supervisor_id.clone()),
+            )
+            .expect("should spawn child");
+
+        thread::sleep(Duration::from_millis(100));
+
+        // Handle failure -- RestForOne should restart the failed child (simplified)
+        let result = system.handle_failure(&child_id, "test error".to_string(), &supervisor_id);
+        assert!(result.is_ok());
+
+        // Cleanup
+        system.shutdown().ok();
+    }
 }

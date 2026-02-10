@@ -1227,3 +1227,148 @@
             Ordering::Greater
         );
     }
+
+    // ============================================================================
+    // Coverage tests for eval_dataframe_get (17 uncov lines, 51.4% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_dataframe_get_basic() {
+        let columns = vec![
+            DataFrameColumn {
+                name: "name".to_string(),
+                values: vec![
+                    Value::from_string("Alice".to_string()),
+                    Value::from_string("Bob".to_string()),
+                ],
+            },
+            DataFrameColumn {
+                name: "age".to_string(),
+                values: vec![Value::Integer(30), Value::Integer(25)],
+            },
+        ];
+        let args = vec![
+            Value::from_string("age".to_string()),
+            Value::Integer(1),
+        ];
+        let result = eval_dataframe_get(&columns, &args).expect("get should succeed");
+        assert_eq!(result, Value::Integer(25));
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_first_row() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(42), Value::Integer(99)],
+        }];
+        let args = vec![
+            Value::from_string("x".to_string()),
+            Value::Integer(0),
+        ];
+        let result = eval_dataframe_get(&columns, &args).expect("get first row should succeed");
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_wrong_arg_count() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        // Too few args
+        let args = vec![Value::from_string("x".to_string())];
+        let result = eval_dataframe_get(&columns, &args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_non_string_column_name() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![Value::Integer(0), Value::Integer(0)];
+        let result = eval_dataframe_get(&columns, &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("string (column name)"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_non_integer_row_index() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![
+            Value::from_string("x".to_string()),
+            Value::from_string("zero".to_string()),
+        ];
+        let result = eval_dataframe_get(&columns, &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("integer (row index)"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_negative_row_index() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![
+            Value::from_string("x".to_string()),
+            Value::Integer(-1),
+        ];
+        let result = eval_dataframe_get(&columns, &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("non-negative"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_column_not_found() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![
+            Value::from_string("missing".to_string()),
+            Value::Integer(0),
+        ];
+        let result = eval_dataframe_get(&columns, &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("not found"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_row_out_of_bounds() {
+        let columns = vec![DataFrameColumn {
+            name: "x".to_string(),
+            values: vec![Value::Integer(1)],
+        }];
+        let args = vec![
+            Value::from_string("x".to_string()),
+            Value::Integer(5),
+        ];
+        let result = eval_dataframe_get(&columns, &args);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn test_eval_dataframe_get_string_value() {
+        let columns = vec![DataFrameColumn {
+            name: "city".to_string(),
+            values: vec![
+                Value::from_string("NYC".to_string()),
+                Value::from_string("LA".to_string()),
+            ],
+        }];
+        let args = vec![
+            Value::from_string("city".to_string()),
+            Value::Integer(1),
+        ];
+        let result = eval_dataframe_get(&columns, &args).expect("get string should succeed");
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "LA"),
+            _ => panic!("Expected String value"),
+        }
+    }

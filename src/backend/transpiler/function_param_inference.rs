@@ -467,6 +467,260 @@ mod tests {
     }
 
     // ========================================================================
+    // Coverage: find_nested_array_access_impl (17 uncov, 62.2%)
+    // Targeting: Let, LetPattern, While, Binary, Assign, CompoundAssign,
+    //            If with else_branch, and default `_` branch
+    // ========================================================================
+
+    #[test]
+    fn test_nested_array_in_let_value() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            type_annotation: None,
+            value: Box::new(nested_access),
+            body: Box::new(ident_expr("x")),
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_let_body() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            type_annotation: None,
+            value: Box::new(int_expr(0)),
+            body: Box::new(nested_access),
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_let_no_match() {
+        let transpiler = make_transpiler();
+        let body = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            type_annotation: None,
+            value: Box::new(int_expr(0)),
+            body: Box::new(int_expr(1)),
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(!transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_while_condition() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("grid")),
+                index: Box::new(ident_expr("i")),
+            })),
+            index: Box::new(ident_expr("j")),
+        });
+        let body = make_expr(ExprKind::While {
+            label: None,
+            condition: Box::new(nested_access),
+            body: Box::new(int_expr(0)),
+        });
+        assert!(transpiler.is_nested_array_param_impl("grid", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_while_body() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("grid")),
+                index: Box::new(ident_expr("i")),
+            })),
+            index: Box::new(ident_expr("j")),
+        });
+        let body = make_expr(ExprKind::While {
+            label: None,
+            condition: Box::new(make_expr(ExprKind::Literal(Literal::Bool(true)))),
+            body: Box::new(nested_access),
+        });
+        assert!(transpiler.is_nested_array_param_impl("grid", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_binary_left() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(nested_access),
+            right: Box::new(int_expr(1)),
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_binary_right() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(int_expr(1)),
+            right: Box::new(nested_access),
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_assign_target() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(ident_expr("i")),
+            })),
+            index: Box::new(ident_expr("j")),
+        });
+        let body = make_expr(ExprKind::Assign {
+            target: Box::new(nested_access),
+            value: Box::new(int_expr(42)),
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_assign_value() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::Assign {
+            target: Box::new(ident_expr("x")),
+            value: Box::new(nested_access),
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_compound_assign() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::CompoundAssign {
+            target: Box::new(ident_expr("sum")),
+            op: crate::frontend::ast::BinaryOp::Add,
+            value: Box::new(nested_access),
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_if_else_branch() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("grid")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(0)),
+        });
+        let body = make_expr(ExprKind::If {
+            condition: Box::new(make_expr(ExprKind::Literal(Literal::Bool(false)))),
+            then_branch: Box::new(int_expr(0)),
+            else_branch: Some(Box::new(nested_access)),
+        });
+        assert!(transpiler.is_nested_array_param_impl("grid", &body));
+    }
+
+    #[test]
+    fn test_nested_array_default_branch_returns_false() {
+        let transpiler = make_transpiler();
+        // A simple literal doesn't match any nested access pattern
+        let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        assert!(!transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_let_pattern_value() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::LetPattern {
+            pattern: crate::frontend::ast::Pattern::Identifier("x".to_string()),
+            type_annotation: None,
+            value: Box::new(nested_access),
+            body: Box::new(ident_expr("x")),
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    #[test]
+    fn test_nested_array_in_let_pattern_body() {
+        let transpiler = make_transpiler();
+        let nested_access = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::IndexAccess {
+                object: Box::new(ident_expr("m")),
+                index: Box::new(int_expr(0)),
+            })),
+            index: Box::new(int_expr(1)),
+        });
+        let body = make_expr(ExprKind::LetPattern {
+            pattern: crate::frontend::ast::Pattern::Identifier("x".to_string()),
+            type_annotation: None,
+            value: Box::new(int_expr(0)),
+            body: Box::new(nested_access),
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(transpiler.is_nested_array_param_impl("m", &body));
+    }
+
+    // ========================================================================
     // generate_param_tokens_impl tests
     // ========================================================================
 

@@ -1336,6 +1336,105 @@ mod tests {
         }
         Ok(())
     }
+
+    // ========================================================================
+    // resolve_simple_import coverage tests
+    // ========================================================================
+
+    #[test]
+    fn test_resolve_simple_import_non_file_import() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        // std::io is NOT a file import (contains ::)
+        let result = resolver.resolve_simple_import(
+            Span { start: 0, end: 10 },
+            "std::io",
+            Some(&["Read".to_string()]),
+        )?;
+        // Should return the import expression unchanged
+        if let ExprKind::Import { module, items } = result.kind {
+            assert_eq!(module, "std::io");
+            assert_eq!(items, Some(vec!["Read".to_string()]));
+        } else {
+            panic!("Expected Import expression, got {:?}", result.kind);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_resolve_simple_import_non_file_no_items() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        let result = resolver.resolve_simple_import(
+            Span { start: 0, end: 10 },
+            "std::collections",
+            None,
+        )?;
+        if let ExprKind::Import { module, items } = result.kind {
+            assert_eq!(module, "std::collections");
+            assert!(items.is_none());
+        } else {
+            panic!("Expected Import expression");
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_resolve_simple_import_file_import_missing_file() {
+        let mut resolver = ModuleResolver::new();
+        // Clear search paths to ensure no file can be found
+        resolver.module_loader.search_paths.clear();
+        // "math" is a file import (no ::), but file doesn't exist
+        let result = resolver.resolve_simple_import(
+            Span { start: 0, end: 4 },
+            "math",
+            None,
+        );
+        // Should error because the file doesn't exist
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_resolve_simple_import_file_import_success() -> Result<()> {
+        let temp_dir = TempDir::new()?;
+        let mut resolver = ModuleResolver::new();
+        resolver.module_loader.search_paths.clear();
+        resolver.add_search_path(temp_dir.path());
+
+        create_test_module(&temp_dir, "mylib", "fun helper() { 42 }")?;
+
+        let result = resolver.resolve_simple_import(
+            Span { start: 0, end: 5 },
+            "mylib",
+            None,
+        )?;
+        // Should resolve to a Module expression
+        if let ExprKind::Module { name, .. } = result.kind {
+            assert_eq!(name, "mylib");
+        } else {
+            panic!("Expected Module expression, got {:?}", result.kind);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_resolve_simple_import_with_items() -> Result<()> {
+        let mut resolver = ModuleResolver::new();
+        // Non-file import with multiple items
+        let result = resolver.resolve_simple_import(
+            Span { start: 0, end: 15 },
+            "std::collections",
+            Some(&["HashMap".to_string(), "HashSet".to_string()]),
+        )?;
+        if let ExprKind::Import { module, items } = result.kind {
+            assert_eq!(module, "std::collections");
+            assert_eq!(
+                items,
+                Some(vec!["HashMap".to_string(), "HashSet".to_string()])
+            );
+        } else {
+            panic!("Expected Import expression");
+        }
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_module_resolver {
