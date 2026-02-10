@@ -366,3 +366,93 @@
             "Mixed atom and identifier keys should parse"
         );
     }
+
+    // ============================================================
+    // Coverage tests for parse_tuple_pattern (collections.rs:1393)
+    // This is the comprehension variable version that returns String.
+    // Reached via list comprehension with tuple patterns.
+    // ============================================================
+
+    #[test]
+    fn test_comprehension_tuple_pattern_two_vars() {
+        // [x for (a, b) in pairs] -- exercises parse_tuple_pattern returning "(a, b)"
+        let mut parser = Parser::new("[a for (a, b) in pairs]");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Comprehension with tuple pattern should parse: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_comprehension_tuple_pattern_three_vars() {
+        // [x for (a, b, c) in triples]
+        let mut parser = Parser::new("[a for (a, b, c) in triples]");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Comprehension with 3-element tuple pattern should parse: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_comprehension_some_pattern() {
+        // [x for Some(x) in options] -- exercises parse_option_some_pattern
+        let mut parser = Parser::new("[x for Some(x) in options]");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Comprehension with Some pattern should parse: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_comprehension_constructor_pattern() {
+        // [v for Point(v) in points] -- exercises parse_constructor_pattern
+        let mut parser = Parser::new("[v for Point(v) in points]");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Comprehension with constructor pattern should parse: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_comprehension_none_pattern() {
+        // [0 for None in options] -- exercises parse_option_none_pattern
+        let mut parser = Parser::new("[0 for None in options]");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Comprehension with None pattern should parse: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_comprehension_ok_pattern() {
+        // [v for Ok(v) in results] -- exercises parse_result_ok_pattern
+        let mut parser = Parser::new("[v for Ok(v) in results]");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Comprehension with Ok pattern should parse: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn test_comprehension_err_pattern() {
+        // [e for Err(e) in results] -- exercises parse_result_err_pattern
+        let mut parser = Parser::new("[e for Err(e) in results]");
+        let result = parser.parse();
+        assert!(
+            result.is_ok(),
+            "Comprehension with Err pattern should parse: {:?}",
+            result.err()
+        );
+    }

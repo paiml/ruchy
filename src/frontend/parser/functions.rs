@@ -1374,4 +1374,142 @@ mod tests {
             "Should handle trailing lambda syntax"
         );
     }
+
+    // ============================================================
+    // Coverage tests for parse_optional_method_call (functions.rs:433)
+    // Exercises `?.` optional chaining with method calls and field access.
+    // ============================================================
+
+    #[test]
+    fn test_optional_method_call_identifier() {
+        // obj?.method() -- exercises Token::Identifier branch
+        let mut parser = Parser::new("obj?.method()");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Optional method call should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_optional_field_access() {
+        // obj?.field -- exercises Token::Identifier branch (field access, not call)
+        let mut parser = Parser::new("obj?.field");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Optional field access should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_optional_method_call_send() {
+        // send/ask are reserved actor keywords — parser may reject as optional method
+        let mut parser = Parser::new("actor?.send(msg)");
+        let _result = parser.parse();
+        // May parse or error — coverage exercises the Token::Send branch in optional chain
+    }
+
+    #[test]
+    fn test_optional_method_call_ask() {
+        // send/ask are reserved actor keywords — parser may reject as optional method
+        let mut parser = Parser::new("actor?.ask(query)");
+        let _result = parser.parse();
+        // May parse or error — coverage exercises the Token::Ask branch in optional chain
+    }
+
+    #[test]
+    fn test_optional_tuple_index_access() {
+        // tuple?.0 -- exercises Token::Integer branch for optional tuple access
+        let mut parser = Parser::new("tuple?.0");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Optional tuple index access should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_optional_tuple_index_access_second() {
+        // tuple?.1 -- exercises Token::Integer branch, different index
+        let mut parser = Parser::new("tuple?.1");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Optional tuple index 1 should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_optional_chaining_multiple() {
+        // a?.b?.c -- exercises chained optional access
+        let mut parser = Parser::new("a?.b?.c");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Multiple optional chaining should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_optional_method_call_with_args() {
+        // obj?.compute(1, 2, 3) -- exercises optional method call with arguments
+        let mut parser = Parser::new("obj?.compute(1, 2, 3)");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Optional method call with args should parse: {:?}", result.err());
+    }
+
+    // ============================================================
+    // Coverage tests for extract_select_columns (functions.rs:655)
+    // This is a private function -- test directly via unit test.
+    // ============================================================
+
+    #[test]
+    fn test_extract_select_columns_identifiers() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        let args = vec![
+            Expr::new(ExprKind::Identifier("age".to_string()), Span::default()),
+            Expr::new(ExprKind::Identifier("name".to_string()), Span::default()),
+        ];
+        let cols = super::extract_select_columns(args);
+        assert_eq!(cols, vec!["age".to_string(), "name".to_string()]);
+    }
+
+    #[test]
+    fn test_extract_select_columns_string_literals() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let args = vec![
+            Expr::new(ExprKind::Literal(Literal::String("age".to_string())), Span::default()),
+            Expr::new(ExprKind::Literal(Literal::String("name".to_string())), Span::default()),
+        ];
+        let cols = super::extract_select_columns(args);
+        assert_eq!(cols, vec!["age".to_string(), "name".to_string()]);
+    }
+
+    #[test]
+    fn test_extract_select_columns_list_of_strings() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let items = vec![
+            Expr::new(ExprKind::Literal(Literal::String("col1".to_string())), Span::default()),
+            Expr::new(ExprKind::Literal(Literal::String("col2".to_string())), Span::default()),
+        ];
+        let args = vec![
+            Expr::new(ExprKind::List(items), Span::default()),
+        ];
+        let cols = super::extract_select_columns(args);
+        assert_eq!(cols, vec!["col1".to_string(), "col2".to_string()]);
+    }
+
+    #[test]
+    fn test_extract_select_columns_mixed() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        let args = vec![
+            Expr::new(ExprKind::Identifier("age".to_string()), Span::default()),
+            Expr::new(ExprKind::Literal(Literal::String("name".to_string())), Span::default()),
+        ];
+        let cols = super::extract_select_columns(args);
+        assert_eq!(cols, vec!["age".to_string(), "name".to_string()]);
+    }
+
+    #[test]
+    fn test_extract_select_columns_unknown_expr() {
+        use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+        // Non-identifier/string/list expressions should be ignored
+        let args = vec![
+            Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default()),
+        ];
+        let cols = super::extract_select_columns(args);
+        assert!(cols.is_empty(), "Integer literal should not produce columns");
+    }
+
+    #[test]
+    fn test_extract_select_columns_empty() {
+        let cols = super::extract_select_columns(vec![]);
+        assert!(cols.is_empty(), "Empty args should produce empty columns");
+    }
 }

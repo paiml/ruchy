@@ -1532,3 +1532,7 @@ mod formatter_tests_r164;
 #[cfg(test)]
 #[path = "formatter_coverage_tests.rs"]
 mod formatter_coverage_tests;
+
+#[cfg(test)]
+#[path = "formatter_expr_coverage_tests.rs"]
+mod formatter_expr_coverage_tests;
