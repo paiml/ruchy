@@ -855,10 +855,12 @@ impl OnlineLearner {
 }
 
 // Re-export from entrenar (§3.1, §3.2, §3.4 of spec)
+#[cfg(feature = "training")]
 pub use entrenar::citl::{
     CITLConfig, DecisionCITL, DecisionPatternStore, DecisionTrace, ErrorCorrelation,
     FixPattern as CitlFixPattern, FixSuggestion as CitlFixSuggestion, SuspiciousDecision,
 };
+#[cfg(feature = "training")]
 pub use entrenar::distill::{DistillationLoss, EnsembleDistiller, ProgressiveDistiller};
 
 // Code2Vec embeddings (§3.5 of spec)

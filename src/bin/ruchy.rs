@@ -1256,7 +1256,7 @@ fn handle_oracle_train(
     verbose: bool,
     auto_train: bool,
     max_iterations: usize,
-    oracle_store: &std::thread::LocalKey<std::cell::RefCell<Option<ruchy::oracle::RuchyOracle>>>,
+    oracle_store: &'static std::thread::LocalKey<std::cell::RefCell<Option<ruchy::oracle::RuchyOracle>>>,
 ) -> Result<()> {
     use ruchy::oracle::RuchyOracle;
     let mut oracle = RuchyOracle::new();

@@ -95,8 +95,7 @@ pub use aprender::format::gguf::{
     GgufValueType, GGUF_DEFAULT_ALIGNMENT, GGUF_MAGIC, GGUF_VERSION,
 };
 
-// Re-export HuggingFace Hub integration (spec §12.6)
-pub use aprender::hf_hub::{HfHubClient, HfHubError, PushOptions};
+// HuggingFace Hub integration available via `aprender` with `hf-hub-integration` feature
 
 // Re-export Ed25519 signing for model provenance (spec §12.3, §13.4)
 pub use aprender::format::{
@@ -280,32 +279,7 @@ mod tests {
         assert_eq!(GGUF_DEFAULT_ALIGNMENT, 32);
     }
 
-    // ============================================================================
-    // HuggingFace Hub Re-export Tests (Spec §12.6)
-    // ============================================================================
-
-    #[test]
-    fn test_hf_hub_client_reexport() {
-        // Verify HfHubClient is accessible via re-export
-        let client = HfHubClient::with_token("test_token");
-        assert!(client.is_authenticated());
-    }
-
-    #[test]
-    fn test_push_options_reexport() {
-        // Verify PushOptions is accessible
-        let opts = PushOptions::default()
-            .with_commit_message("Test commit")
-            .with_filename("model.apr");
-        assert_eq!(opts.filename, "model.apr");
-    }
-
-    #[test]
-    fn test_hf_hub_error_reexport() {
-        // Verify HfHubError is accessible
-        let err = HfHubError::MissingToken;
-        assert!(err.to_string().contains("HF_TOKEN"));
-    }
+    // HuggingFace Hub tests require `hf-hub-integration` feature on aprender
 
     // ============================================================================
     // Ed25519 Signing Re-export Tests (Spec §12.3, §13.4)

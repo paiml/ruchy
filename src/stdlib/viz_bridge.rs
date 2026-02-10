@@ -19,40 +19,48 @@
 //! - [32] Satyanarayan et al. (2017). "Vega-Lite: A Grammar of Interactive Graphics"
 //! - [35] Wickham (2010). "A Layered Grammar of Graphics"
 
-// Re-export public types from trueno_viz
-pub use trueno_viz::plots::{BoxPlot, Heatmap, Histogram, LineChart, ScatterPlot};
-pub use trueno_viz::scale::Scale;
+#[cfg(feature = "visualization")]
+mod inner {
+    // Re-export public types from trueno_viz
+    pub use trueno_viz::plots::{BoxPlot, Heatmap, Histogram, LineChart, ScatterPlot};
+    pub use trueno_viz::scale::Scale;
 
-// Re-export geometry for point creation
-pub use trueno_viz::geometry::Point;
+    // Re-export geometry for point creation
+    pub use trueno_viz::geometry::Point;
 
-// Re-export output encoders for chart embedding
-pub use trueno_viz::output::{
-    HtmlExporter, PngEncoder, SvgElement, SvgEncoder, TerminalEncoder, TerminalMode, TextAnchor,
-};
+    // Re-export output encoders for chart embedding
+    pub use trueno_viz::output::{
+        HtmlExporter, PngEncoder, SvgElement, SvgEncoder, TerminalEncoder, TerminalMode,
+        TextAnchor,
+    };
 
-/// Create a Point from x/y coordinates.
-#[must_use]
-pub fn point(x: f32, y: f32) -> Point {
-    Point::new(x, y)
+    /// Create a Point from x/y coordinates.
+    #[must_use]
+    pub fn point(x: f32, y: f32) -> Point {
+        Point::new(x, y)
+    }
+
+    /// Convert f64 coordinates to a Point (f32).
+    #[must_use]
+    pub fn point_f64(x: f64, y: f64) -> Point {
+        Point::new(x as f32, y as f32)
+    }
+
+    /// Create a vector of Points from parallel x/y slices.
+    #[must_use]
+    pub fn points_from_slices(x: &[f64], y: &[f64]) -> Vec<Point> {
+        x.iter()
+            .zip(y.iter())
+            .map(|(&px, &py)| Point::new(px as f32, py as f32))
+            .collect()
+    }
 }
 
-/// Convert f64 coordinates to a Point (f32).
-#[must_use]
-pub fn point_f64(x: f64, y: f64) -> Point {
-    Point::new(x as f32, y as f32)
-}
-
-/// Create a vector of Points from parallel x/y slices.
-#[must_use]
-pub fn points_from_slices(x: &[f64], y: &[f64]) -> Vec<Point> {
-    x.iter()
-        .zip(y.iter())
-        .map(|(&px, &py)| Point::new(px as f32, py as f32))
-        .collect()
-}
+#[cfg(feature = "visualization")]
+pub use inner::*;
 
 #[cfg(test)]
+#[cfg(feature = "visualization")]
 mod tests {
     use super::*;
 
@@ -82,6 +90,7 @@ mod tests {
 }
 
 #[cfg(test)]
+#[cfg(feature = "visualization")]
 mod property_tests {
     use super::*;
     use proptest::prelude::*;
@@ -113,6 +122,7 @@ mod property_tests {
 // ===== EXTREME TDD Round 154 - Viz Bridge Tests =====
 
 #[cfg(test)]
+#[cfg(feature = "visualization")]
 mod extreme_tdd_tests {
     use super::*;
 

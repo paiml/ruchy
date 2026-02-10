@@ -15,87 +15,96 @@
 //! - [9] Apache Arrow Project (2024). "Apache Arrow"
 //! - [46] Zero-copy Arrow data loading
 
-// Re-export core types from alimentar
-pub use alimentar::{ArrowDataset, CsvOptions, DataLoader, Dataset, JsonOptions};
-pub use alimentar::{Error as AlimentarError, Result as AlimentarResult};
+#[cfg(feature = "data-loading")]
+mod inner {
+    // Re-export core types from alimentar
+    pub use alimentar::{ArrowDataset, CsvOptions, DataLoader, Dataset, JsonOptions};
+    pub use alimentar::{Error as AlimentarError, Result as AlimentarResult};
 
-// Re-export Arrow types for interop
-pub use alimentar::{RecordBatch, Schema, SchemaRef};
+    // Re-export Arrow types for interop
+    pub use alimentar::{RecordBatch, Schema, SchemaRef};
 
-// Re-export transforms
-pub use alimentar::transform::{
-    Cast, Chain, Drop, FillNull, FillStrategy, Filter, Map, NormMethod, Normalize, Rename, Select,
-    Skip, Sort, SortOrder, Take, Transform, Unique,
-};
+    // Re-export transforms
+    pub use alimentar::transform::{
+        Cast, Chain, Drop, FillNull, FillStrategy, Filter, Map, NormMethod, Normalize, Rename,
+        Select, Skip, Sort, SortOrder, Take, Transform, Unique,
+    };
 
-// Re-export quality checks
-pub use alimentar::{ColumnQuality, QualityChecker, QualityIssue, QualityProfile, QualityReport};
+    // Re-export quality checks
+    pub use alimentar::{
+        ColumnQuality, QualityChecker, QualityIssue, QualityProfile, QualityReport,
+    };
 
-// Re-export drift detection
-pub use alimentar::{ColumnDrift, DriftDetector, DriftReport, DriftSeverity, DriftTest};
+    // Re-export drift detection
+    pub use alimentar::{ColumnDrift, DriftDetector, DriftReport, DriftSeverity, DriftTest};
 
-// Re-export split utilities
-pub use alimentar::DatasetSplit;
+    // Re-export split utilities
+    pub use alimentar::DatasetSplit;
 
-// Re-export federated learning splits
-pub use alimentar::{
-    FederatedSplitCoordinator, FederatedSplitStrategy, GlobalSplitReport, NodeSplitInstruction,
-    NodeSplitManifest, NodeSummary, SplitQualityIssue,
-};
+    // Re-export federated learning splits
+    pub use alimentar::{
+        FederatedSplitCoordinator, FederatedSplitStrategy, GlobalSplitReport,
+        NodeSplitInstruction, NodeSplitManifest, NodeSummary, SplitQualityIssue,
+    };
 
-/// Convenience wrapper to load a Parquet file as an `ArrowDataset`.
-///
-/// # Errors
-/// Returns error if file cannot be read or parsed.
-///
-/// # Examples
-/// ```ignore
-/// use ruchy::stdlib::alimentar_bridge::load_parquet;
-///
-/// let dataset = load_parquet("data/train.parquet")?;
-/// println!("Loaded {} rows", dataset.len());
-/// ```
-pub fn load_parquet(path: &str) -> AlimentarResult<ArrowDataset> {
-    ArrowDataset::from_parquet(path)
+    /// Convenience wrapper to load a Parquet file as an `ArrowDataset`.
+    ///
+    /// # Errors
+    /// Returns error if file cannot be read or parsed.
+    ///
+    /// # Examples
+    /// ```ignore
+    /// use ruchy::stdlib::alimentar_bridge::load_parquet;
+    ///
+    /// let dataset = load_parquet("data/train.parquet")?;
+    /// println!("Loaded {} rows", dataset.len());
+    /// ```
+    pub fn load_parquet(path: &str) -> AlimentarResult<ArrowDataset> {
+        ArrowDataset::from_parquet(path)
+    }
+
+    /// Convenience wrapper to load a CSV file as an `ArrowDataset`.
+    ///
+    /// # Errors
+    /// Returns error if file cannot be read or parsed.
+    pub fn load_csv(path: &str) -> AlimentarResult<ArrowDataset> {
+        ArrowDataset::from_csv(path)
+    }
+
+    /// Convenience wrapper to load a JSON file as an `ArrowDataset`.
+    ///
+    /// # Errors
+    /// Returns error if file cannot be read or parsed.
+    pub fn load_json(path: &str) -> AlimentarResult<ArrowDataset> {
+        ArrowDataset::from_json(path)
+    }
+
+    /// Create a `DataLoader` with common defaults.
+    ///
+    /// Default configuration:
+    /// - Batch size: 32
+    /// - Shuffle: true
+    /// - Drop last incomplete batch: false
+    #[must_use]
+    pub fn create_loader(dataset: ArrowDataset) -> DataLoader<ArrowDataset> {
+        DataLoader::new(dataset).batch_size(32).shuffle(true)
+    }
+
+    /// Create a `DataLoader` with custom batch size.
+    #[must_use]
+    pub fn create_loader_with_batch_size(
+        dataset: ArrowDataset,
+        batch_size: usize,
+    ) -> DataLoader<ArrowDataset> {
+        DataLoader::new(dataset).batch_size(batch_size)
+    }
 }
 
-/// Convenience wrapper to load a CSV file as an `ArrowDataset`.
-///
-/// # Errors
-/// Returns error if file cannot be read or parsed.
-pub fn load_csv(path: &str) -> AlimentarResult<ArrowDataset> {
-    ArrowDataset::from_csv(path)
-}
-
-/// Convenience wrapper to load a JSON file as an `ArrowDataset`.
-///
-/// # Errors
-/// Returns error if file cannot be read or parsed.
-pub fn load_json(path: &str) -> AlimentarResult<ArrowDataset> {
-    ArrowDataset::from_json(path)
-}
-
-/// Create a `DataLoader` with common defaults.
-///
-/// Default configuration:
-/// - Batch size: 32
-/// - Shuffle: true
-/// - Drop last incomplete batch: false
-#[must_use]
-pub fn create_loader(dataset: ArrowDataset) -> DataLoader<ArrowDataset> {
-    DataLoader::new(dataset).batch_size(32).shuffle(true)
-}
-
-/// Create a `DataLoader` with custom batch size.
-#[must_use]
-pub fn create_loader_with_batch_size(
-    dataset: ArrowDataset,
-    batch_size: usize,
-) -> DataLoader<ArrowDataset> {
-    DataLoader::new(dataset).batch_size(batch_size)
-}
+#[cfg(feature = "data-loading")]
+pub use inner::*;
 
 #[cfg(test)]
+#[cfg(feature = "data-loading")]
 mod tests {
     use super::*;
     use std::io::Write;
@@ -205,6 +214,7 @@ mod tests {
 }
 
 #[cfg(test)]
+#[cfg(feature = "data-loading")]
 mod property_tests {
     use proptest::prelude::*;
 
