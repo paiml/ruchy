@@ -1758,4 +1758,186 @@ mod tests {
         let result = parse(code);
         assert!(result.is_ok(), "Multiple operators should parse");
     }
+
+    // ============================================================
+    // Coverage tests for parse_decorator_argument (classes.rs:446)
+    // and parse_decorator_value (classes.rs:419)
+    // parse_decorator_argument is called from parse_decorator_args,
+    // which is invoked by parse_decorator for decorators INSIDE
+    // class bodies (Token::At path in parse_decorator).
+    // Top-level @decorators use parse_label_as_decorator instead.
+    // ============================================================
+
+    // Direct unit tests for parse_decorator_argument and parse_decorator_value
+    use super::{parse_decorator_argument, parse_decorator_value};
+    use crate::frontend::parser::ParserState;
+
+    #[test]
+    fn test_decorator_argument_direct_string() {
+        // parse_decorator_argument: String branch
+        let mut state = ParserState::new(r#""hello""#);
+        let result = parse_decorator_argument(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "hello");
+    }
+
+    #[test]
+    fn test_decorator_argument_direct_identifier_only() {
+        // parse_decorator_argument: Identifier branch, no = follows
+        let mut state = ParserState::new("myarg");
+        let result = parse_decorator_argument(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "myarg");
+    }
+
+    #[test]
+    fn test_decorator_argument_direct_key_value_string() {
+        // parse_decorator_argument: Identifier + = + String value
+        let mut state = ParserState::new(r#"key="value""#);
+        let result = parse_decorator_argument(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), r#"key=value"#);
+    }
+
+    #[test]
+    fn test_decorator_argument_direct_key_value_integer() {
+        // parse_decorator_argument: Identifier + = + Integer value
+        let mut state = ParserState::new("count=42");
+        let result = parse_decorator_argument(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "count=42");
+    }
+
+    #[test]
+    fn test_decorator_argument_direct_key_value_float() {
+        // parse_decorator_argument: Identifier + = + Float value
+        let mut state = ParserState::new("ratio=3.14");
+        let result = parse_decorator_argument(&mut state);
+        assert!(result.is_ok());
+        let val = result.unwrap();
+        assert!(val.starts_with("ratio="), "Got: {val}");
+    }
+
+    #[test]
+    fn test_decorator_argument_direct_key_value_bool_true_is_lexed_as_bool() {
+        // "true"/"false" are lexed as Token::Bool, not Token::Identifier,
+        // so the Identifier guard in parse_decorator_value is unreachable.
+        // After key=, the parser sees Token::Bool which doesn't match any branch.
+        let mut state = ParserState::new("debug=true");
+        let result = parse_decorator_argument(&mut state);
+        // This exercises the key= path in parse_decorator_argument,
+        // then hits parse_decorator_value error branch (Bool not handled)
+        assert!(result.is_err(), "Bool token not handled by parse_decorator_value");
+    }
+
+    #[test]
+    fn test_decorator_argument_direct_key_value_with_string_as_value() {
+        // Use string value after = instead of bool
+        let mut state = ParserState::new(r#"verbose="false""#);
+        let result = parse_decorator_argument(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "verbose=false");
+    }
+
+    #[test]
+    fn test_decorator_argument_direct_error_invalid_token() {
+        // parse_decorator_argument: error branch (not String or Identifier)
+        let mut state = ParserState::new("42");
+        let result = parse_decorator_argument(&mut state);
+        assert!(result.is_err(), "Should fail on numeric token");
+    }
+
+    #[test]
+    fn test_decorator_value_direct_integer() {
+        let mut state = ParserState::new("42");
+        let result = parse_decorator_value(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "42");
+    }
+
+    #[test]
+    fn test_decorator_value_direct_float() {
+        let mut state = ParserState::new("3.14");
+        let result = parse_decorator_value(&mut state);
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_decorator_value_direct_string() {
+        let mut state = ParserState::new(r#""hello""#);
+        let result = parse_decorator_value(&mut state);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), "hello");
+    }
+
+    #[test]
+    fn test_decorator_value_direct_bool_true_not_handled() {
+        // "true" is lexed as Token::Bool(true), not Token::Identifier("true"),
+        // so parse_decorator_value's Identifier guard is unreachable.
+        let mut state = ParserState::new("true");
+        let result = parse_decorator_value(&mut state);
+        // This exercises the error/fallthrough branch
+        assert!(result.is_err(), "Bool token not in parse_decorator_value match arms");
+    }
+
+    #[test]
+    fn test_decorator_value_direct_bool_false_not_handled() {
+        let mut state = ParserState::new("false");
+        let result = parse_decorator_value(&mut state);
+        assert!(result.is_err(), "Bool token not in parse_decorator_value match arms");
+    }
+
+    #[test]
+    fn test_decorator_value_direct_error() {
+        // Not a valid value token
+        let mut state = ParserState::new("(");
+        let result = parse_decorator_value(&mut state);
+        assert!(result.is_err());
+    }
+
+    // Integration tests for decorators (via full parse)
+
+    #[test]
+    fn test_decorator_on_class_method_inside_body() {
+        // This path goes through parse_decorator -> parse_decorator_args
+        // -> parse_decorator_argument (the classes.rs code path)
+        let code = "class MyClass { @inline fun method(&self) -> i32 { 42 } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Decorator on method: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_decorator_no_args_on_class() {
+        let code = "@test class MyClass { }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Decorator no args: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_decorator_empty_parens_on_class() {
+        let code = "@test() class MyClass { }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Decorator empty parens: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_multiple_decorators_on_class() {
+        let code = "@serialize @debug class MyClass { }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Multiple decorators: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_decorator_with_string_on_class_method() {
+        let code = r#"class C { @test("example") fun m(&self) { 42 } }"#;
+        let result = parse(code);
+        assert!(result.is_ok(), "Decorator with string arg in class: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_decorator_with_key_value_on_class_method() {
+        let code = r#"class C { @config(max=100) fun m(&self) { 42 } }"#;
+        let result = parse(code);
+        assert!(result.is_ok(), "Decorator with key=value in class: {:?}", result.err());
+    }
 }

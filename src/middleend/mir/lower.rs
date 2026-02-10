@@ -585,6 +585,178 @@ mod tests {
         assert!(program.functions.contains_key("main"));
         Ok(())
     }
+
+    // ========================================================================
+    // Coverage: ast_to_mir_type — all TypeKind branches (35 uncov, 18.6% cov)
+    // Test indirectly via typed function parameters
+    // ========================================================================
+
+    #[test]
+    fn test_lower_function_with_bool_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: bool) -> bool { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let func = &program.functions["f"];
+        assert_eq!(func.params.len(), 1);
+        assert_eq!(func.locals[func.params[0].0].ty, Type::Bool);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_i8_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: i8) -> i8 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let func = &program.functions["f"];
+        assert_eq!(func.locals[func.params[0].0].ty, Type::I8);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_i16_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: i16) -> i16 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::I16);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_u8_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: u8) -> u8 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U8);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_u16_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: u16) -> u16 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U16);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_u32_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: u32) -> u32 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U32);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_u64_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: u64) -> u64 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U64);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_i128_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: i128) -> i128 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::I128);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_u128_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: u128) -> u128 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U128);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_f32_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: f32) -> f32 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::F32);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_f64_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: f64) -> f64 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::F64);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_string_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: String) -> String { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::String);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_unit_return() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: i32) -> () { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let func = &program.functions["f"];
+        assert_eq!(func.return_ty, Type::Unit);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_vec_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(xs: Vec<i32>) -> i32 { 0 }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let func = &program.functions["f"];
+        assert!(matches!(func.locals[func.params[0].0].ty, Type::Vec(_)));
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_user_type() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: MyStruct) -> i32 { 0 }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let func = &program.functions["f"];
+        assert!(matches!(&func.locals[func.params[0].0].ty, Type::UserType(n) if n == "MyStruct"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_function_with_tuple_param() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: (i32, String)) -> i32 { 0 }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let func = &program.functions["f"];
+        assert!(matches!(&func.locals[func.params[0].0].ty, Type::Tuple(ts) if ts.len() == 2));
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_lower {

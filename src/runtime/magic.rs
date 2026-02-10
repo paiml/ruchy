@@ -1170,6 +1170,164 @@ mod tests {
         let debug_str = format!("{result:?}");
         assert!(debug_str.contains("Silent"));
     }
+
+    // ==================== WhosMagic execute_line tests ====================
+
+    #[test]
+    fn test_whos_magic_empty_workspace() {
+        let whos = WhosMagic;
+        let mut repl = create_mock_repl();
+
+        let result = whos.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert_eq!(output, "No variables in workspace");
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_whos_magic_with_bindings() {
+        let whos = WhosMagic;
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("x".to_string(), Value::Integer(42));
+        repl.get_bindings_mut()
+            .insert("name".to_string(), Value::from_string("hello".to_string()));
+
+        let result = whos.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Variable"));
+            assert!(output.contains("Type"));
+            assert!(output.contains("Value"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_whos_magic_with_various_types() {
+        let whos = WhosMagic;
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("i".to_string(), Value::Integer(1));
+        repl.get_bindings_mut()
+            .insert("f".to_string(), Value::Float(3.14));
+        repl.get_bindings_mut()
+            .insert("b".to_string(), Value::Bool(true));
+        repl.get_bindings_mut()
+            .insert("n".to_string(), Value::Nil);
+
+        let result = whos.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("--------"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_whos_magic_long_value_truncated() {
+        let whos = WhosMagic;
+        let mut repl = create_mock_repl();
+        let long_string = "a".repeat(100);
+        repl.get_bindings_mut()
+            .insert("s".to_string(), Value::from_string(long_string));
+
+        let result = whos.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            // Values longer than 40 chars should be truncated with "..."
+            assert!(output.contains("...") || output.contains("Variable"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    // ==================== ClearMagic execute_line tests ====================
+
+    #[test]
+    fn test_clear_magic_empty_args() {
+        let clear = ClearMagic;
+        let mut repl = create_mock_repl();
+
+        let result = clear.execute_line(&mut repl, "");
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Usage"));
+    }
+
+    #[test]
+    fn test_clear_magic_pattern_match() {
+        let clear = ClearMagic;
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("test_x".to_string(), Value::Integer(1));
+        repl.get_bindings_mut()
+            .insert("test_y".to_string(), Value::Integer(2));
+        repl.get_bindings_mut()
+            .insert("other".to_string(), Value::Integer(3));
+
+        let result = clear.execute_line(&mut repl, "test").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Cleared 2 variables"));
+        } else {
+            panic!("Expected Text result");
+        }
+        assert!(repl.get_bindings().contains_key("other"));
+        assert!(!repl.get_bindings().contains_key("test_x"));
+    }
+
+    #[test]
+    fn test_clear_magic_wildcard() {
+        let clear = ClearMagic;
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("a".to_string(), Value::Integer(1));
+        repl.get_bindings_mut()
+            .insert("b".to_string(), Value::Integer(2));
+
+        let result = clear.execute_line(&mut repl, "*").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Cleared 2 variables"));
+        } else {
+            panic!("Expected Text result");
+        }
+        assert!(repl.get_bindings().is_empty());
+    }
+
+    #[test]
+    fn test_clear_magic_no_matches() {
+        let clear = ClearMagic;
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("x".to_string(), Value::Integer(1));
+
+        let result = clear.execute_line(&mut repl, "zzz").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Cleared 0 variables"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    // ==================== ResetMagic execute_line tests ====================
+
+    #[test]
+    fn test_reset_magic_execute() {
+        let reset = ResetMagic;
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("x".to_string(), Value::Integer(1));
+        repl.get_bindings_mut()
+            .insert("y".to_string(), Value::Integer(2));
+
+        let result = reset.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert_eq!(output, "Workspace reset");
+        } else {
+            panic!("Expected Text result");
+        }
+        assert!(repl.get_bindings().is_empty());
+    }
 }
 #[cfg(test)]
 mod property_tests_magic {

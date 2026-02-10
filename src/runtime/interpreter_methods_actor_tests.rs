@@ -1605,3 +1605,184 @@
         // Non-object message falls through to default behavior
         assert!(result.is_ok() || result.is_err());
     }
+
+    // ==================== ask with handler match (coverage) ====================
+
+    #[test]
+    fn test_actor_ask_with_handler_closure_cov() {
+        let mut interp = make_interpreter();
+
+        let handler_body = make_expr(ExprKind::Literal(Literal::Integer(99, None)));
+        let handler_closure = make_closure(
+            vec![("name".to_string(), None)],
+            handler_body,
+        );
+
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("Greet".to_string()),
+        );
+        handler_obj.insert("handler".to_string(), handler_closure);
+
+        let handler_value = Value::Object(Arc::new(handler_obj));
+        let mut instance = HashMap::new();
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler_value])),
+        );
+
+        let msg = make_message("Greet", vec![Value::from_string("Alice".to_string())]);
+
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
+        assert_eq!(result, Value::Integer(99));
+    }
+
+    #[test]
+    fn test_actor_ask_no_matching_handler_cov() {
+        let mut interp = make_interpreter();
+
+        let handler_body = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
+        let handler_closure = make_closure(vec![], handler_body);
+
+        let mut handler_obj = HashMap::new();
+        handler_obj.insert(
+            "message_type".to_string(),
+            Value::from_string("OtherMsg".to_string()),
+        );
+        handler_obj.insert("handler".to_string(), handler_closure);
+
+        let handler_value = Value::Object(Arc::new(handler_obj));
+        let mut instance = HashMap::new();
+        instance.insert(
+            "__handlers".to_string(),
+            Value::Array(Arc::from(vec![handler_value])),
+        );
+
+        let msg = make_message("Greet", vec![]);
+
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg])
+            .unwrap();
+        assert_eq!(result, Value::from_string("Received: Greet".to_string()));
+    }
+
+    #[test]
+    fn test_actor_ask_obj_not_message_type_cov() {
+        let mut interp = make_interpreter();
+        let instance = HashMap::new();
+
+        let mut msg_obj = HashMap::new();
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("NotMessage".to_string()),
+        );
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()])
+            .unwrap();
+        assert_eq!(result, msg);
+    }
+
+    #[test]
+    fn test_actor_ask_obj_no_type_field_cov() {
+        let mut interp = make_interpreter();
+        let instance = HashMap::new();
+
+        let msg_obj = HashMap::new();
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp
+            .eval_actor_instance_method(&instance, "TestActor", "ask", &[msg.clone()])
+            .unwrap();
+        assert_eq!(result, msg);
+    }
+
+    // ==================== send with async actor ID (coverage) ====================
+
+    #[test]
+    fn test_actor_send_simple_to_async_cov() {
+        let mut interp = make_interpreter();
+        let mut instance = HashMap::new();
+        instance.insert(
+            "__actor_id".to_string(),
+            Value::from_string("nonexistent_actor_cov_1".to_string()),
+        );
+
+        let result = interp.eval_actor_instance_method(
+            &instance,
+            "TestActor",
+            "send",
+            &[Value::Integer(42)],
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_actor_send_message_obj_to_async_cov() {
+        let mut interp = make_interpreter();
+        let mut instance = HashMap::new();
+        instance.insert(
+            "__actor_id".to_string(),
+            Value::from_string("nonexistent_actor_cov_2".to_string()),
+        );
+
+        let msg = make_message("Ping", vec![Value::from_string("data".to_string())]);
+
+        let result = interp.eval_actor_instance_method(
+            &instance,
+            "TestActor",
+            "send",
+            &[msg],
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_actor_send_obj_no_type_to_async_cov() {
+        let mut interp = make_interpreter();
+        let mut instance = HashMap::new();
+        instance.insert(
+            "__actor_id".to_string(),
+            Value::from_string("nonexistent_cov_3".to_string()),
+        );
+
+        let msg_obj = HashMap::new();
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp.eval_actor_instance_method(
+            &instance,
+            "TestActor",
+            "send",
+            &[msg],
+        );
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_actor_send_obj_not_message_type_to_async_cov() {
+        let mut interp = make_interpreter();
+        let mut instance = HashMap::new();
+        instance.insert(
+            "__actor_id".to_string(),
+            Value::from_string("nonexistent_cov_4".to_string()),
+        );
+
+        let mut msg_obj = HashMap::new();
+        msg_obj.insert(
+            "__type".to_string(),
+            Value::from_string("Other".to_string()),
+        );
+        let msg = Value::Object(Arc::new(msg_obj));
+
+        let result = interp.eval_actor_instance_method(
+            &instance,
+            "TestActor",
+            "send",
+            &[msg],
+        );
+        assert!(result.is_err());
+    }

@@ -1083,4 +1083,221 @@ mod tests {
         assert!(result.ast.is_some());
         // Recovery parser should recover from invalid syntax
     }
+
+    // ========================================================================
+    // Coverage: ParseError::fmt — all branches (23 uncov, 0% cov)
+    // ========================================================================
+
+    #[test]
+    fn test_parse_error_fmt_basic() {
+        let err = ParseError::new("unexpected token".to_string(), Span::new(0, 5));
+        let s = format!("{err}");
+        assert!(s.contains("unexpected token"), "Got: {s}");
+        assert!(s.contains("at line"), "Should have location: {s}");
+    }
+
+    #[test]
+    fn test_parse_error_fmt_with_context() {
+        let err = ParseError {
+            message: "bad syntax".to_string(),
+            span: Span::new(10, 20),
+            recovery_hint: None,
+            expected: vec![],
+            found: None,
+            severity: ErrorSeverity::Error,
+            error_code: ErrorCode::InvalidSyntax,
+            context: vec!["function body".to_string(), "if expression".to_string()],
+        };
+        let s = format!("{err}");
+        assert!(s.contains("In function body -> if expression"), "Got: {s}");
+    }
+
+    #[test]
+    fn test_parse_error_fmt_with_expected_and_found() {
+        let err = ParseError {
+            message: "expected semicolon".to_string(),
+            span: Span::new(0, 1),
+            recovery_hint: None,
+            expected: vec![Token::Semicolon],
+            found: Some(Token::RightBrace),
+            severity: ErrorSeverity::Warning,
+            error_code: ErrorCode::MissingToken,
+            context: vec![],
+        };
+        let s = format!("{err}");
+        assert!(s.contains("expected:"), "Should show expected: {s}");
+        assert!(s.contains("found:"), "Should show found: {s}");
+    }
+
+    #[test]
+    fn test_parse_error_fmt_with_expected_no_found() {
+        let err = ParseError {
+            message: "missing paren".to_string(),
+            span: Span::new(0, 1),
+            recovery_hint: None,
+            expected: vec![Token::RightParen],
+            found: None,
+            severity: ErrorSeverity::Error,
+            error_code: ErrorCode::MissingToken,
+            context: vec![],
+        };
+        let s = format!("{err}");
+        assert!(s.contains("expected:"), "Should show expected: {s}");
+        assert!(!s.contains("found:"), "Should NOT show found: {s}");
+    }
+
+    #[test]
+    fn test_parse_error_fmt_with_hint() {
+        let err = ParseError {
+            message: "type error".to_string(),
+            span: Span::new(0, 1),
+            recovery_hint: Some("Did you mean `i32`?".to_string()),
+            expected: vec![],
+            found: None,
+            severity: ErrorSeverity::Info,
+            error_code: ErrorCode::TypeMismatch,
+            context: vec![],
+        };
+        let s = format!("{err}");
+        assert!(s.contains("Did you mean"), "Should show hint: {s}");
+    }
+
+    #[test]
+    fn test_parse_error_fmt_all_fields() {
+        let err = ParseError {
+            message: "full error".to_string(),
+            span: Span::new(5, 10),
+            recovery_hint: Some("try this fix".to_string()),
+            expected: vec![Token::Semicolon, Token::RightBrace],
+            found: Some(Token::Identifier("x".to_string())),
+            severity: ErrorSeverity::Error,
+            error_code: ErrorCode::UnexpectedToken,
+            context: vec!["module".to_string()],
+        };
+        let s = format!("{err}");
+        assert!(s.contains("In module"), "Context: {s}");
+        assert!(s.contains("full error"), "Message: {s}");
+        assert!(s.contains("expected:"), "Expected: {s}");
+        assert!(s.contains("found:"), "Found: {s}");
+        assert!(s.contains("try this fix"), "Hint: {s}");
+    }
+
+    // ========================================================================
+    // Coverage: parse_with_recovery — more branches (16 uncov, 33.3% cov)
+    // ========================================================================
+
+    #[test]
+    fn test_recovery_empty_input_coverage() {
+        let mut parser = RecoveryParser::new("");
+        let result = parser.parse_with_recovery();
+        // Empty input should still produce some result
+        let _ = result;
+    }
+
+    #[test]
+    fn test_recovery_only_operators() {
+        let mut parser = RecoveryParser::new("+ + - * /");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some() || !result.errors.is_empty());
+    }
+
+    #[test]
+    fn test_recovery_unclosed_string() {
+        let mut parser = RecoveryParser::new("let x = \"hello");
+        let result = parser.parse_with_recovery();
+        // Should recover from unclosed string
+        let _ = result;
+    }
+
+    #[test]
+    fn test_recovery_multiple_semicolons() {
+        let mut parser = RecoveryParser::new(";;;");
+        let result = parser.parse_with_recovery();
+        let _ = result;
+    }
+
+    #[test]
+    fn test_recovery_deeply_nested_parens() {
+        let mut parser = RecoveryParser::new("(((1 + 2))");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+    }
+
+    #[test]
+    fn test_recovery_function_missing_body() {
+        let mut parser = RecoveryParser::new("fun f(x)");
+        let result = parser.parse_with_recovery();
+        // Should partially parse
+        assert!(result.ast.is_some() || !result.errors.is_empty());
+    }
+
+    #[test]
+    fn test_recovery_match_incomplete() {
+        let mut parser = RecoveryParser::new("match x { 1 =>");
+        let result = parser.parse_with_recovery();
+        let _ = result;
+    }
+
+    // ============================================================
+    // Additional tests for parse_with_recovery branch coverage
+    // Targeting: Err(_) if !self.errors.is_empty() (ghost node)
+    // and: Err(e) with self.errors.is_empty() (fatal)
+    // ============================================================
+
+    #[test]
+    fn test_recovery_produces_ghost_node_on_partial_failure() {
+        // Input that will fail but produce errors during recovery
+        let mut parser = RecoveryParser::new("let @#$ = ;");
+        let result = parser.parse_with_recovery();
+        // Either we get an AST (possibly ghost) or errors
+        assert!(result.ast.is_some() || !result.errors.is_empty());
+        if result.ast.is_some() && !result.errors.is_empty() {
+            assert!(result.partial_ast, "Should be partial AST");
+        }
+    }
+
+    #[test]
+    fn test_recovery_fatal_error_produces_none_or_error() {
+        // Try to trigger completely fatal parse with no prior errors
+        let mut parser = RecoveryParser::new("$");
+        let result = parser.parse_with_recovery();
+        // Should either produce None ast or have errors
+        if result.ast.is_none() {
+            assert!(!result.errors.is_empty(), "Should have errors when ast is None");
+            assert!(!result.partial_ast, "partial_ast should be false for fatal");
+        }
+    }
+
+    #[test]
+    fn test_parse_error_display_trait() {
+        // Verify Display is the Error::fmt source
+        let err = ParseError::new("test error".to_string(), Span::new(0, 0));
+        let s = err.to_string();
+        assert!(s.contains("test error"));
+    }
+
+    #[test]
+    fn test_parse_error_error_trait() {
+        // Verify std::error::Error is implemented
+        let err = ParseError::new("source".to_string(), Span::new(0, 0));
+        let err_ref: &dyn std::error::Error = &err;
+        assert!(err_ref.source().is_none());
+    }
+
+    #[test]
+    fn test_recovery_only_closing_delimiters() {
+        // Only closing delimiters - should trigger error paths
+        let mut parser = RecoveryParser::new(") } ]");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some() || !result.errors.is_empty());
+    }
+
+    #[test]
+    fn test_recovery_complex_nested_error() {
+        // Complex malformed expression
+        let mut parser = RecoveryParser::new("if { while ( for");
+        let result = parser.parse_with_recovery();
+        // Should attempt recovery
+        assert!(!result.errors.is_empty());
+    }
 }

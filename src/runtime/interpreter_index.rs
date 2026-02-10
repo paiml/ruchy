@@ -1652,4 +1652,69 @@ mod tests {
         let result = interp.eval_qualified_name("Widget", "new").unwrap();
         assert_eq!(result, Value::Integer(999));
     }
+
+    // ==================== eval_qualified_name branch coverage ====================
+
+    #[test]
+    fn test_qualified_name_new_with_unknown_type_marker() {
+        let mut interp = Interpreter::new();
+        // Object with __type that is NOT Class/Struct/Actor
+        let mut obj = std::collections::HashMap::new();
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("SomeOtherType".to_string()),
+        );
+        interp.set_variable("FooBar", Value::Object(Arc::new(obj)));
+
+        let result = interp.eval_qualified_name("FooBar", "new");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown qualified name: FooBar::new"));
+    }
+
+    #[test]
+    fn test_qualified_name_new_with_non_object_var() {
+        let mut interp = Interpreter::new();
+        interp.set_variable("SimpleVal", Value::Integer(42));
+
+        let result = interp.eval_qualified_name("SimpleVal", "new");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown qualified name: SimpleVal::new"));
+    }
+
+    #[test]
+    fn test_qualified_name_new_with_empty_object() {
+        let mut interp = Interpreter::new();
+        let obj = std::collections::HashMap::new();
+        interp.set_variable("EmptyObj", Value::Object(Arc::new(obj)));
+
+        let result = interp.eval_qualified_name("EmptyObj", "new");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_qualified_name_non_new_method_found() {
+        let mut interp = Interpreter::new();
+        // Store a qualified method that is not "new"
+        interp.set_variable("MyModule::helper", Value::Integer(123));
+
+        let result = interp.eval_qualified_name("MyModule", "helper").unwrap();
+        assert_eq!(result, Value::Integer(123));
+    }
+
+    #[test]
+    fn test_qualified_name_non_new_method_not_found() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("NoModule", "missing_method");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown qualified name: NoModule::missing_method"));
+    }
 }

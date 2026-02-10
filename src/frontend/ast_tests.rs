@@ -1949,3 +1949,195 @@
             _ => panic!("Expected Atom"),
         }
     }
+
+    // ========================================================================
+    // Coverage: Pattern::primary_name — all variants (24 uncov, 35.1% cov)
+    // ========================================================================
+
+    #[test]
+    fn test_primary_name_identifier() {
+        let pat = Pattern::Identifier("foo".to_string());
+        assert_eq!(pat.primary_name(), "foo");
+    }
+
+    #[test]
+    fn test_primary_name_qualified_name() {
+        let pat = Pattern::QualifiedName(vec!["std".to_string(), "io".to_string()]);
+        assert_eq!(pat.primary_name(), "std::io");
+    }
+
+    #[test]
+    fn test_primary_name_tuple_non_empty() {
+        let pat = Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ]);
+        assert_eq!(pat.primary_name(), "a");
+    }
+
+    #[test]
+    fn test_primary_name_tuple_empty() {
+        let pat = Pattern::Tuple(vec![]);
+        assert_eq!(pat.primary_name(), "_tuple");
+    }
+
+    #[test]
+    fn test_primary_name_list_non_empty() {
+        let pat = Pattern::List(vec![Pattern::Identifier("x".to_string())]);
+        assert_eq!(pat.primary_name(), "x");
+    }
+
+    #[test]
+    fn test_primary_name_list_empty() {
+        let pat = Pattern::List(vec![]);
+        assert_eq!(pat.primary_name(), "_list");
+    }
+
+    #[test]
+    fn test_primary_name_struct_with_name() {
+        let pat = Pattern::Struct {
+            name: "Point".to_string(),
+            fields: vec![],
+            has_rest: false,
+        };
+        assert_eq!(pat.primary_name(), "Point");
+    }
+
+    #[test]
+    fn test_primary_name_struct_anonymous_with_fields() {
+        let pat = Pattern::Struct {
+            name: String::new(),
+            fields: vec![StructPatternField {
+                name: "x".to_string(),
+                pattern: None,
+            }],
+            has_rest: false,
+        };
+        assert_eq!(pat.primary_name(), "x");
+    }
+
+    #[test]
+    fn test_primary_name_struct_anonymous_no_fields() {
+        let pat = Pattern::Struct {
+            name: String::new(),
+            fields: vec![],
+            has_rest: false,
+        };
+        assert_eq!(pat.primary_name(), "_struct");
+    }
+
+    #[test]
+    fn test_primary_name_tuple_variant_with_patterns() {
+        let pat = Pattern::TupleVariant {
+            path: vec!["Option".to_string(), "Some".to_string()],
+            patterns: vec![Pattern::Identifier("val".to_string())],
+        };
+        assert_eq!(pat.primary_name(), "val");
+    }
+
+    #[test]
+    fn test_primary_name_tuple_variant_empty_patterns() {
+        let pat = Pattern::TupleVariant {
+            path: vec!["Color".to_string(), "Red".to_string()],
+            patterns: vec![],
+        };
+        assert_eq!(pat.primary_name(), "Color::Red");
+    }
+
+    #[test]
+    fn test_primary_name_ok() {
+        let pat = Pattern::Ok(Box::new(Pattern::Identifier("v".to_string())));
+        assert_eq!(pat.primary_name(), "v");
+    }
+
+    #[test]
+    fn test_primary_name_err() {
+        let pat = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+        assert_eq!(pat.primary_name(), "e");
+    }
+
+    #[test]
+    fn test_primary_name_some() {
+        let pat = Pattern::Some(Box::new(Pattern::Identifier("s".to_string())));
+        assert_eq!(pat.primary_name(), "s");
+    }
+
+    #[test]
+    fn test_primary_name_none() {
+        assert_eq!(Pattern::None.primary_name(), "_none");
+    }
+
+    #[test]
+    fn test_primary_name_or_pattern() {
+        let pat = Pattern::Or(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ]);
+        assert_eq!(pat.primary_name(), "a");
+    }
+
+    #[test]
+    fn test_primary_name_or_empty() {
+        let pat = Pattern::Or(vec![]);
+        assert_eq!(pat.primary_name(), "_or");
+    }
+
+    #[test]
+    fn test_primary_name_wildcard() {
+        assert_eq!(Pattern::Wildcard.primary_name(), "_");
+    }
+
+    #[test]
+    fn test_primary_name_rest() {
+        assert_eq!(Pattern::Rest.primary_name(), "_rest");
+    }
+
+    #[test]
+    fn test_primary_name_rest_named() {
+        let pat = Pattern::RestNamed("rest".to_string());
+        assert_eq!(pat.primary_name(), "rest");
+    }
+
+    #[test]
+    fn test_primary_name_at_binding() {
+        let pat = Pattern::AtBinding {
+            name: "all".to_string(),
+            pattern: Box::new(Pattern::Wildcard),
+        };
+        assert_eq!(pat.primary_name(), "all");
+    }
+
+    #[test]
+    fn test_primary_name_with_default() {
+        let pat = Pattern::WithDefault {
+            pattern: Box::new(Pattern::Identifier("x".to_string())),
+            default: Box::new(Expr::new(
+                ExprKind::Literal(Literal::Integer(0, None)),
+                Span::default(),
+            )),
+        };
+        assert_eq!(pat.primary_name(), "x");
+    }
+
+    #[test]
+    fn test_primary_name_mut() {
+        let pat = Pattern::Mut(Box::new(Pattern::Identifier("y".to_string())));
+        assert_eq!(pat.primary_name(), "y");
+    }
+
+    #[test]
+    fn test_primary_name_literal() {
+        let pat = Pattern::Literal(Literal::Integer(42, None));
+        let name = pat.primary_name();
+        assert!(name.starts_with("_literal_"), "Got: {name}");
+    }
+
+    #[test]
+    fn test_primary_name_range() {
+        let pat = Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+            inclusive: true,
+        };
+        assert_eq!(pat.primary_name(), "_range");
+    }

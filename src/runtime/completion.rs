@@ -969,6 +969,84 @@ mod tests {
         // Use new() for non-empty builtins
         assert!(completer.cache.is_empty());
     }
+
+    // ==================== get_line_start_completions tests ====================
+
+    #[test]
+    fn test_line_start_completions_let_prefix() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions("le");
+        assert!(candidates.iter().any(|c| c.text == "let"));
+        assert!(candidates
+            .iter()
+            .all(|c| c.kind == CompletionKind::Keyword || c.kind == CompletionKind::Command));
+    }
+
+    #[test]
+    fn test_line_start_completions_fn_prefix() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions("fn");
+        assert!(candidates.iter().any(|c| c.text == "fn"));
+    }
+
+    #[test]
+    fn test_line_start_completions_colon_prefix() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions(":");
+        // Should include command completions like :help, :quit, etc.
+        assert!(candidates.iter().any(|c| c.kind == CompletionKind::Command));
+        assert!(candidates.iter().any(|c| c.text.starts_with(':')));
+    }
+
+    #[test]
+    fn test_line_start_completions_no_match() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions("zzz_nonexistent");
+        assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn test_line_start_completions_empty_prefix() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions("");
+        // Empty prefix matches everything - should include both keywords and commands
+        assert!(!candidates.is_empty());
+        let has_keywords = candidates.iter().any(|c| c.kind == CompletionKind::Keyword);
+        let has_commands = candidates.iter().any(|c| c.kind == CompletionKind::Command);
+        assert!(has_keywords);
+        assert!(has_commands);
+    }
+
+    #[test]
+    fn test_line_start_completions_keyword_docs() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions("if");
+        let if_candidate = candidates.iter().find(|c| c.text == "if");
+        assert!(if_candidate.is_some());
+        let doc = if_candidate.unwrap().doc.as_ref().unwrap();
+        assert!(doc.contains("Keyword"));
+    }
+
+    #[test]
+    fn test_line_start_completions_command_docs() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions(":he");
+        let help_candidate = candidates.iter().find(|c| c.text == ":help");
+        assert!(help_candidate.is_some());
+        let doc = help_candidate.unwrap().doc.as_ref().unwrap();
+        assert!(!doc.is_empty());
+    }
+
+    #[test]
+    fn test_line_start_completions_priority() {
+        let engine = CompletionEngine::new();
+        let candidates = engine.get_line_start_completions("le");
+        for c in &candidates {
+            if c.kind == CompletionKind::Keyword {
+                assert_eq!(c.priority, CompletionKind::Keyword.priority());
+            }
+        }
+    }
 }
 // TDG-compliant RuchyCompleter implementation (complexity ≤10 per method)
 /// Main completion struct for rustyline integration

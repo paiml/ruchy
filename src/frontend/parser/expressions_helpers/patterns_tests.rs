@@ -1553,3 +1553,243 @@ fn test_parse_var_with_type_annotation_coverage() {
     let result = Parser::new(code).parse();
     assert!(result.is_ok(), "var x: i32 should parse: {:?}", result.err());
 }
+
+// ============================================================
+// Coverage tests for parse_let_pattern (patterns.rs:118)
+// Targeting all branches in the match on state.tokens.peek()
+// ============================================================
+
+#[test]
+fn test_let_pattern_some_without_parens_errors() {
+    // Some not followed by parens should error
+    let code = "let Some = value";
+    let result = Parser::new(code).parse();
+    assert!(result.is_err(), "Some without parens should fail");
+}
+
+#[test]
+fn test_let_pattern_ok_without_parens_errors() {
+    // Ok not followed by parens should error
+    let code = "let Ok = value";
+    let result = Parser::new(code).parse();
+    assert!(result.is_err(), "Ok without parens should fail");
+}
+
+#[test]
+fn test_let_pattern_err_without_parens_errors() {
+    // Err not followed by parens should error
+    let code = "let Err = value";
+    let result = Parser::new(code).parse();
+    assert!(result.is_err(), "Err without parens should fail");
+}
+
+#[test]
+fn test_let_pattern_none() {
+    let code = "let None = opt";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "None pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_identifier_with_struct_destructure() {
+    // Identifier followed by { } is struct pattern
+    let code = "let Config { debug, verbose } = config";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Struct pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_identifier_variant_with_parens() {
+    // Identifier followed by ( ) is variant pattern
+    let code = "let MyVariant(x) = val";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Variant pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_dataframe_token() {
+    // DataFrame token as variable name
+    let code = "let df = create_dataframe()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "df pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_default_token() {
+    // Default token as variable name
+    let code = "let default = get_config()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "default pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_final_token() {
+    // Final token as variable name
+    let code = "let final = get_value()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "final pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_underscore() {
+    // Underscore as wildcard pattern
+    let code = "let _ = compute()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Wildcard pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_tuple() {
+    // Tuple destructuring pattern
+    let code = "let (a, b, c) = triple";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Tuple pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_list() {
+    // List destructuring pattern
+    let code = "let [first, second] = items";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "List pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_struct_brace() {
+    // Struct destructuring pattern with { }
+    let code = "let { name, age } = person";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Struct brace pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_error_invalid_token() {
+    // Invalid token after let should error
+    let code = "let 42 = value";
+    let result = Parser::new(code).parse();
+    assert!(result.is_err(), "Number after let should fail");
+}
+
+#[test]
+fn test_let_mut_pattern_error_invalid_token() {
+    // Invalid token after let mut should error
+    let code = "let mut 42 = value";
+    let result = Parser::new(code).parse();
+    assert!(result.is_err(), "Number after let mut should fail");
+}
+
+#[test]
+fn test_let_pattern_some_with_multiple_args() {
+    // Some with multiple args in tuple destructure
+    let code = "let Some((a, b)) = maybe_pair";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Some with nested tuple should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_ok_with_value() {
+    let code = "let Ok(value) = result";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Ok(value) pattern should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_let_pattern_err_with_error() {
+    let code = "let Err(e) = result";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Err(e) pattern should parse: {:?}", result.err());
+}
+
+// ============================================================
+// Direct unit tests for create_var_expression (patterns.rs:360)
+// This function is defined in patterns.rs but not called through
+// the public API (variable_declarations.rs has its own copy).
+// We test it directly to cover all branches.
+// ============================================================
+
+#[test]
+fn test_create_var_expression_identifier_pattern() {
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    let pattern = Pattern::Identifier("x".to_string());
+    let value = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Integer(42, None)),
+        Span::new(0, 2),
+    ));
+    let result = create_var_expression(pattern, None, value, Span::new(0, 10));
+    assert!(result.is_ok());
+    let expr = result.unwrap();
+    match &expr.kind {
+        ExprKind::Let {
+            name,
+            is_mutable,
+            type_annotation,
+            else_block,
+            ..
+        } => {
+            assert_eq!(name, "x");
+            assert!(is_mutable);
+            assert!(type_annotation.is_none());
+            assert!(else_block.is_none());
+        }
+        other => panic!("Expected Let, got {:?}", other),
+    }
+}
+
+#[test]
+fn test_create_var_expression_tuple_pattern() {
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
+
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ]);
+    let value = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Integer(1, None)),
+        Span::new(0, 1),
+    ));
+    let result = create_var_expression(pattern, None, value, Span::new(0, 10));
+    assert!(result.is_ok());
+    let expr = result.unwrap();
+    match &expr.kind {
+        ExprKind::LetPattern {
+            pattern,
+            is_mutable,
+            type_annotation,
+            else_block,
+            ..
+        } => {
+            assert!(matches!(pattern, Pattern::Tuple(_)));
+            assert!(is_mutable);
+            assert!(type_annotation.is_none());
+            assert!(else_block.is_none());
+        }
+        other => panic!("Expected LetPattern, got {:?}", other),
+    }
+}
+
+#[test]
+fn test_create_var_expression_with_type_annotation() {
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span, Type, TypeKind};
+
+    let pattern = Pattern::Identifier("count".to_string());
+    let value = Box::new(Expr::new(
+        ExprKind::Literal(Literal::Integer(0, None)),
+        Span::new(0, 1),
+    ));
+    let ty = Some(Type {
+        kind: TypeKind::Named("i32".to_string()),
+        span: Span::new(0, 3),
+    });
+    let result = create_var_expression(pattern, ty, value, Span::new(0, 15));
+    assert!(result.is_ok());
+    let expr = result.unwrap();
+    match &expr.kind {
+        ExprKind::Let {
+            type_annotation, ..
+        } => {
+            assert!(type_annotation.is_some());
+        }
+        other => panic!("Expected Let with type, got {:?}", other),
+    }
+}

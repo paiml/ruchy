@@ -2027,3 +2027,168 @@ mod property_tests_assessment {
         }
     }
 }
+
+#[cfg(test)]
+mod coverage_tests_assessment {
+    use super::*;
+
+    // ==================== extract_structure tests ====================
+
+    #[test]
+    fn test_extract_structure_fn_keyword() {
+        let detector = PlagiarismDetector::new();
+        let result = detector.extract_structure("fn main() {}");
+        assert_eq!(result, "FN");
+    }
+
+    #[test]
+    fn test_extract_structure_fun_keyword() {
+        let detector = PlagiarismDetector::new();
+        let result = detector.extract_structure("fun add(a, b) { a + b }");
+        assert_eq!(result, "FN");
+    }
+
+    #[test]
+    fn test_extract_structure_if_keyword() {
+        let detector = PlagiarismDetector::new();
+        let result = detector.extract_structure("if x > 0 { x }");
+        assert_eq!(result, "IF");
+    }
+
+    #[test]
+    fn test_extract_structure_for_loop() {
+        let detector = PlagiarismDetector::new();
+        let result = detector.extract_structure("for i in 0..10 { println(i) }");
+        assert_eq!(result, "LOOP");
+    }
+
+    #[test]
+    fn test_extract_structure_while_loop() {
+        let detector = PlagiarismDetector::new();
+        let result = detector.extract_structure("while x > 0 { x -= 1 }");
+        assert_eq!(result, "LOOP");
+    }
+
+    #[test]
+    fn test_extract_structure_match_keyword() {
+        let detector = PlagiarismDetector::new();
+        let result = detector.extract_structure("match x { 1 => a, _ => b }");
+        assert_eq!(result, "MATCH");
+    }
+
+    #[test]
+    fn test_extract_structure_combined() {
+        let detector = PlagiarismDetector::new();
+        let result =
+            detector.extract_structure("fn main() { if x { for i in items { match i {} } } }");
+        assert_eq!(result, "FN-IF-LOOP-MATCH");
+    }
+
+    #[test]
+    fn test_extract_structure_no_patterns() {
+        let detector = PlagiarismDetector::new();
+        let result = detector.extract_structure("let x = 42");
+        assert_eq!(result, "");
+    }
+
+    // ==================== compute_similarity tests ====================
+
+    #[test]
+    fn test_compute_similarity_identical() {
+        let detector = PlagiarismDetector::new();
+        let fp = AstFingerprint {
+            hash: "abc123".to_string(),
+            structure: vec!["FN".to_string(), "IF".to_string()],
+            complexity: 2,
+        };
+        let similarity = detector.compute_similarity(&fp, &fp);
+        assert!((similarity - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_compute_similarity_different_hashes_same_structure() {
+        let detector = PlagiarismDetector::new();
+        let fp1 = AstFingerprint {
+            hash: "abc".to_string(),
+            structure: vec!["FN".to_string(), "IF".to_string()],
+            complexity: 2,
+        };
+        let fp2 = AstFingerprint {
+            hash: "def".to_string(),
+            structure: vec!["FN".to_string(), "IF".to_string()],
+            complexity: 2,
+        };
+        let similarity = detector.compute_similarity(&fp1, &fp2);
+        assert!((similarity - 1.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_compute_similarity_partially_different() {
+        let detector = PlagiarismDetector::new();
+        let fp1 = AstFingerprint {
+            hash: "abc".to_string(),
+            structure: vec!["FN".to_string(), "IF".to_string()],
+            complexity: 2,
+        };
+        let fp2 = AstFingerprint {
+            hash: "def".to_string(),
+            structure: vec!["FN".to_string(), "LOOP".to_string()],
+            complexity: 2,
+        };
+        let similarity = detector.compute_similarity(&fp1, &fp2);
+        assert!((similarity - 0.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_compute_similarity_completely_different() {
+        let detector = PlagiarismDetector::new();
+        let fp1 = AstFingerprint {
+            hash: "abc".to_string(),
+            structure: vec!["FN".to_string()],
+            complexity: 1,
+        };
+        let fp2 = AstFingerprint {
+            hash: "def".to_string(),
+            structure: vec!["LOOP".to_string()],
+            complexity: 1,
+        };
+        let similarity = detector.compute_similarity(&fp1, &fp2);
+        assert!((similarity - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_compute_similarity_empty_structures() {
+        let detector = PlagiarismDetector::new();
+        let fp1 = AstFingerprint {
+            hash: "abc".to_string(),
+            structure: vec![],
+            complexity: 0,
+        };
+        let fp2 = AstFingerprint {
+            hash: "def".to_string(),
+            structure: vec![],
+            complexity: 0,
+        };
+        let similarity = detector.compute_similarity(&fp1, &fp2);
+        assert!((similarity - 0.0).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_compute_similarity_different_lengths() {
+        let detector = PlagiarismDetector::new();
+        let fp1 = AstFingerprint {
+            hash: "abc".to_string(),
+            structure: vec!["FN".to_string(), "IF".to_string(), "LOOP".to_string()],
+            complexity: 3,
+        };
+        let fp2 = AstFingerprint {
+            hash: "def".to_string(),
+            structure: vec!["FN".to_string()],
+            complexity: 1,
+        };
+        // zip stops at shorter, common = 1 ("FN" matches), total = max(3, 1) = 3
+        let similarity = detector.compute_similarity(&fp1, &fp2);
+        let expected = 1.0 / 3.0;
+        assert!((similarity - expected).abs() < 0.01);
+    }
+}
