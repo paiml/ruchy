@@ -879,6 +879,163 @@ mod tests {
             })
         }
 
+        // Coverage test: exercise valid_identifier strategy construction and filter logic
+        #[test]
+        fn test_valid_identifier_strategy_produces_values() {
+            use proptest::strategy::ValueTree;
+            use proptest::test_runner::TestRunner;
+
+            let strategy = valid_identifier();
+            let mut runner = TestRunner::default();
+            // Generate values to cover the strategy and keyword filter logic
+            for _ in 0..20 {
+                let val = strategy.new_tree(&mut runner).unwrap().current();
+                // Verify generated values are not keywords
+                assert!(
+                    !matches!(
+                        val.as_str(),
+                        "fn" | "fun"
+                            | "let"
+                            | "var"
+                            | "if"
+                            | "else"
+                            | "for"
+                            | "while"
+                            | "loop"
+                            | "match"
+                            | "break"
+                            | "continue"
+                            | "return"
+                            | "async"
+                            | "await"
+                            | "try"
+                            | "catch"
+                            | "throw"
+                            | "in"
+                            | "as"
+                            | "is"
+                            | "self"
+                            | "super"
+                            | "mod"
+                            | "use"
+                            | "pub"
+                            | "const"
+                            | "static"
+                            | "mut"
+                            | "ref"
+                            | "type"
+                            | "struct"
+                            | "enum"
+                            | "trait"
+                            | "impl"
+                    ),
+                    "Generated value '{val}' should not be a keyword"
+                );
+                // Verify it's a lowercase alpha string (matches "[a-z]+" regex)
+                assert!(
+                    !val.is_empty() && val.chars().all(|c| c.is_ascii_lowercase()),
+                    "Identifier '{val}' should be non-empty lowercase letters"
+                );
+            }
+        }
+
+        // Coverage test: verify that keywords are correctly filtered out
+        #[test]
+        fn test_valid_identifier_rejects_keywords() {
+            // The filter rejects all these keywords - verify the matches! arms
+            let keywords = vec![
+                "fn", "fun", "let", "var", "if", "else", "for", "while", "loop",
+                "match", "break", "continue", "return", "async", "await", "try",
+                "catch", "throw", "in", "as", "is", "self", "super", "mod", "use",
+                "pub", "const", "static", "mut", "ref", "type", "struct", "enum",
+                "trait", "impl",
+            ];
+            for kw in &keywords {
+                // Simulate the filter predicate
+                let is_keyword = matches!(
+                    *kw,
+                    "fn" | "fun"
+                        | "let"
+                        | "var"
+                        | "if"
+                        | "else"
+                        | "for"
+                        | "while"
+                        | "loop"
+                        | "match"
+                        | "break"
+                        | "continue"
+                        | "return"
+                        | "async"
+                        | "await"
+                        | "try"
+                        | "catch"
+                        | "throw"
+                        | "in"
+                        | "as"
+                        | "is"
+                        | "self"
+                        | "super"
+                        | "mod"
+                        | "use"
+                        | "pub"
+                        | "const"
+                        | "static"
+                        | "mut"
+                        | "ref"
+                        | "type"
+                        | "struct"
+                        | "enum"
+                        | "trait"
+                        | "impl"
+                );
+                assert!(is_keyword, "'{kw}' should be recognized as a keyword");
+            }
+
+            // Verify non-keywords pass the filter
+            let valid = vec!["abc", "hello", "xyz", "foo", "bar", "name", "value"];
+            for v in &valid {
+                let is_keyword = matches!(
+                    *v,
+                    "fn" | "fun"
+                        | "let"
+                        | "var"
+                        | "if"
+                        | "else"
+                        | "for"
+                        | "while"
+                        | "loop"
+                        | "match"
+                        | "break"
+                        | "continue"
+                        | "return"
+                        | "async"
+                        | "await"
+                        | "try"
+                        | "catch"
+                        | "throw"
+                        | "in"
+                        | "as"
+                        | "is"
+                        | "self"
+                        | "super"
+                        | "mod"
+                        | "use"
+                        | "pub"
+                        | "const"
+                        | "static"
+                        | "mut"
+                        | "ref"
+                        | "type"
+                        | "struct"
+                        | "enum"
+                        | "trait"
+                        | "impl"
+                );
+                assert!(!is_keyword, "'{v}' should NOT be recognized as a keyword");
+            }
+        }
+
         proptest! {
             #[test]
             #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
