@@ -416,3 +416,102 @@ pub(crate) fn try_eval_json_function(name: &str, args: &[Value]) -> Result<Optio
     }
     Ok(None)
 }
+
+#[cfg(test)]
+mod tests_json_ops {
+    use super::*;
+    use std::collections::HashMap;
+    use std::sync::Arc;
+
+    // ==================== eval_json_write tests ====================
+
+    #[test]
+    fn test_json_write_success() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("ruchy_test_json_write.json");
+        let path_str = path.to_string_lossy().to_string();
+
+        // Clean up any leftover file
+        let _ = std::fs::remove_file(&path);
+
+        let mut obj = HashMap::new();
+        obj.insert("key".to_string(), Value::from_string("value".to_string()));
+        obj.insert("num".to_string(), Value::Integer(42));
+
+        let args = vec![
+            Value::from_string(path_str.clone()),
+            Value::Object(Arc::new(obj)),
+        ];
+
+        let result = eval_json_write(&args).unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        // Verify file contents
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("\"key\""));
+        assert!(content.contains("\"value\""));
+        assert!(content.contains("42"));
+
+        // Clean up
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_json_write_non_string_path() {
+        let args = vec![Value::Integer(42), Value::Bool(true)];
+        let result = eval_json_write(&args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects first argument to be string"));
+    }
+
+    #[test]
+    fn test_json_write_wrong_arg_count() {
+        let args = vec![Value::from_string("path.json".to_string())];
+        let result = eval_json_write(&args);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_json_write_invalid_path() {
+        let args = vec![
+            Value::from_string("/nonexistent/dir/file.json".to_string()),
+            Value::Integer(42),
+        ];
+        let result = eval_json_write(&args);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to write file"));
+    }
+
+    #[test]
+    fn test_json_write_nested_object() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("ruchy_test_json_write_nested.json");
+        let path_str = path.to_string_lossy().to_string();
+        let _ = std::fs::remove_file(&path);
+
+        let mut inner = HashMap::new();
+        inner.insert("nested".to_string(), Value::Bool(true));
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
+
+        let args = vec![
+            Value::from_string(path_str),
+            Value::Object(Arc::new(outer)),
+        ];
+
+        let result = eval_json_write(&args).unwrap();
+        assert_eq!(result, Value::Bool(true));
+
+        let content = std::fs::read_to_string(&path).unwrap();
+        assert!(content.contains("\"nested\""));
+        assert!(content.contains("true"));
+
+        let _ = std::fs::remove_file(&path);
+    }
+}

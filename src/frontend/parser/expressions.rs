@@ -1796,4 +1796,128 @@ mod tests {
             }
         }
     }
+
+    // ============================================================
+    // Coverage tests for parse_label_as_decorator (expressions.rs:229)
+    // The lexer emits @identifier as Token::Label("@identifier").
+    // When not followed by Colon, it's treated as a decorator.
+    // ============================================================
+
+    #[test]
+    fn test_label_as_decorator_on_function() {
+        // @inline fun f() { 42 }
+        // Lexer emits Label("@inline"), then tokens for fun...
+        let expr = parse("@inline fun f() { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+            assert!(
+                exprs[0].attributes.iter().any(|a| a.name == "inline"),
+                "Should have 'inline' attribute"
+            );
+        }
+    }
+
+    #[test]
+    fn test_label_as_decorator_with_args_on_function() {
+        // @test("example") fun f() { 42 }
+        let expr = parse("@test(\"example\") fun f() { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+            let attr = exprs[0].attributes.iter().find(|a| a.name == "test");
+            assert!(attr.is_some(), "Should have 'test' attribute");
+            if let Some(a) = attr {
+                assert_eq!(a.args.len(), 1, "Should have one arg");
+            }
+        }
+    }
+
+    #[test]
+    fn test_label_as_decorator_on_class() {
+        // @serialize class Foo { }
+        // This should set both attributes and class decorators
+        let expr = parse("@serialize class Foo { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Class { decorators, .. } = &exprs[0].kind {
+                assert!(
+                    decorators.iter().any(|d| d.name == "serialize"),
+                    "Class should have 'serialize' decorator"
+                );
+            } else {
+                panic!("Expected Class expression");
+            }
+        }
+    }
+
+    #[test]
+    fn test_label_as_decorator_multiple_on_function() {
+        // @inline @test fun f() { 42 }
+        // Two consecutive Label tokens as decorators
+        let expr = parse("@inline @test fun f() { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(matches!(&exprs[0].kind, ExprKind::Function { .. }));
+            assert!(
+                exprs[0].attributes.len() >= 2,
+                "Should have at least 2 attributes, got {}",
+                exprs[0].attributes.len()
+            );
+        }
+    }
+
+    #[test]
+    fn test_label_as_decorator_with_multiple_args() {
+        // @test("a", "b", "c") fun f() { 42 }
+        let expr = parse("@test(\"a\", \"b\", \"c\") fun f() { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            let attr = exprs[0].attributes.iter().find(|a| a.name == "test");
+            assert!(attr.is_some());
+            if let Some(a) = attr {
+                assert_eq!(a.args.len(), 3, "Should have 3 args");
+            }
+        }
+    }
+
+    #[test]
+    fn test_label_as_decorator_no_at_prefix() {
+        // Test stripping @ prefix behavior - the decorator name
+        // should not include the @ prefix
+        let expr = parse("@myattr fun f() { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                exprs[0].attributes.iter().any(|a| a.name == "myattr"),
+                "Attribute name should be 'myattr' without @"
+            );
+            assert!(
+                !exprs[0].attributes.iter().any(|a| a.name == "@myattr"),
+                "Attribute name should NOT include @"
+            );
+        }
+    }
+
+    #[test]
+    fn test_label_as_decorator_on_class_with_args() {
+        // @derive("Debug", "Clone") class Foo { }
+        let expr = parse("@derive(\"Debug\", \"Clone\") class Foo { }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            if let ExprKind::Class { decorators, .. } = &exprs[0].kind {
+                assert!(
+                    decorators.iter().any(|d| d.name == "derive"),
+                    "Class should have 'derive' decorator"
+                );
+                let dec = decorators.iter().find(|d| d.name == "derive").unwrap();
+                assert_eq!(dec.args.len(), 2, "derive should have 2 args");
+            } else {
+                panic!("Expected Class expression");
+            }
+        }
+    }
+
+    #[test]
+    fn test_label_as_decorator_identifier_arg() {
+        // @cfg(test) fun f() { 42 }
+        let expr = parse("@cfg(test) fun f() { 42 }").unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            let attr = exprs[0].attributes.iter().find(|a| a.name == "cfg");
+            assert!(attr.is_some());
+        }
+    }
 }

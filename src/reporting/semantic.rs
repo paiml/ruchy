@@ -887,4 +887,32 @@ mod tests {
         assert!(output.contains("SEMANTIC TAG"));
         assert!(output.contains("async"));
     }
+
+    // ========================================================================
+    // Coverage: SemanticTag::name — all variants (16 uncov, 30.4% cov)
+    // ========================================================================
+
+    #[test]
+    fn test_semantic_tag_name_all_variants() {
+        assert_eq!(SemanticTag::Async.name(), "async");
+        assert_eq!(SemanticTag::Generics.name(), "generics");
+        assert_eq!(SemanticTag::Closures.name(), "closures");
+        assert_eq!(SemanticTag::Traits.name(), "traits");
+        assert_eq!(SemanticTag::Lifetimes.name(), "lifetimes");
+        assert_eq!(SemanticTag::ErrorHandling.name(), "error_handling");
+        assert_eq!(SemanticTag::Macros.name(), "macros");
+        assert_eq!(SemanticTag::Collections.name(), "collections");
+        assert_eq!(SemanticTag::Iterators.name(), "iterators");
+        assert_eq!(SemanticTag::PatternMatch.name(), "pattern_match");
+        assert_eq!(SemanticTag::Concurrency.name(), "concurrency");
+        assert_eq!(SemanticTag::Ffi.name(), "ffi");
+        assert_eq!(SemanticTag::StdLib.name(), "stdlib");
+        assert_eq!(SemanticTag::Io.name(), "io");
+        assert_eq!(SemanticTag::Strings.name(), "strings");
+        assert_eq!(SemanticTag::Numerics.name(), "numerics");
+        assert_eq!(SemanticTag::ControlFlow.name(), "control_flow");
+        assert_eq!(SemanticTag::DataTypes.name(), "data_types");
+        assert_eq!(SemanticTag::Modules.name(), "modules");
+        assert_eq!(SemanticTag::Testing.name(), "testing");
+    }
 }

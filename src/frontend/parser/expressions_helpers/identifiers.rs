@@ -903,6 +903,66 @@ mod tests {
                 })
         }
 
+        // Coverage test: exercise valid_identifier strategy construction
+        #[test]
+        fn test_valid_identifier_strategy_produces_values() {
+            use proptest::strategy::ValueTree;
+            use proptest::test_runner::TestRunner;
+
+            let strategy = valid_identifier();
+            let mut runner = TestRunner::default();
+            // Generate a few values to cover the strategy and filter logic
+            for _ in 0..10 {
+                let val = strategy.new_tree(&mut runner).unwrap().current();
+                // Verify all generated values are valid identifiers (not keywords)
+                assert!(
+                    !matches!(
+                        val.as_str(),
+                        "fn" | "fun"
+                            | "let"
+                            | "var"
+                            | "if"
+                            | "else"
+                            | "for"
+                            | "while"
+                            | "loop"
+                            | "match"
+                            | "break"
+                            | "continue"
+                            | "return"
+                            | "async"
+                            | "await"
+                            | "try"
+                            | "catch"
+                            | "throw"
+                            | "in"
+                            | "as"
+                            | "is"
+                            | "self"
+                            | "super"
+                            | "mod"
+                            | "use"
+                            | "pub"
+                            | "const"
+                            | "static"
+                            | "mut"
+                            | "ref"
+                            | "type"
+                            | "struct"
+                            | "enum"
+                            | "trait"
+                            | "impl"
+                    ),
+                    "Generated value '{val}' should not be a keyword"
+                );
+                // Verify it matches the identifier regex pattern
+                assert!(
+                    val.chars().next().map_or(false, |c| c.is_alphabetic() || c == '_'),
+                    "Identifier '{val}' should start with letter or underscore"
+                );
+            }
+        }
+
         proptest! {
             #[test]
             #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored

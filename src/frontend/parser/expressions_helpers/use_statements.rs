@@ -1207,6 +1207,146 @@ mod tests {
         }
     }
 
+    // ============================================================
+    // Direct tests for parse_path_extension_import (use_statements.rs:290)
+    // Exercises the path where grouped import item has :: followed
+    // by identifiers (not a { group)
+    // ============================================================
+
+    use super::parse_path_extension_import;
+
+    #[test]
+    fn test_parse_path_extension_single_segment() {
+        // After consuming "collections::" we see "HashMap"
+        let mut state = ParserState::new("HashMap");
+        let base_path = &["std".to_string()];
+        let result = parse_path_extension_import(
+            &mut state,
+            base_path,
+            "collections".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        assert_eq!(exprs.len(), 1);
+        match &exprs[0].kind {
+            ExprKind::Import { module, items } => {
+                assert_eq!(module, "std::collections::HashMap");
+                assert!(items.is_none());
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_path_extension_multi_segment() {
+        // Multiple path segments: "sub::item"
+        let mut state = ParserState::new("sub::item");
+        let base_path = &["base".to_string()];
+        let result = parse_path_extension_import(
+            &mut state,
+            base_path,
+            "mod1".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        match &exprs[0].kind {
+            ExprKind::Import { module, items } => {
+                assert_eq!(module, "base::mod1::sub::item");
+                assert!(items.is_none());
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_path_extension_no_further_segments() {
+        // No identifiers after initial segment
+        let mut state = ParserState::new("");
+        let base_path = &["crate".to_string()];
+        let result = parse_path_extension_import(
+            &mut state,
+            base_path,
+            "utils".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        match &exprs[0].kind {
+            ExprKind::Import { module, items } => {
+                assert_eq!(module, "crate::utils");
+                assert!(items.is_none());
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_path_extension_three_segments() {
+        // Three additional segments: a::b::c
+        let mut state = ParserState::new("a::b::c");
+        let base_path: &[String] = &[];
+        let result = parse_path_extension_import(
+            &mut state,
+            base_path,
+            "root".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        match &exprs[0].kind {
+            ExprKind::Import { module, .. } => {
+                assert_eq!(module, "root::a::b::c");
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_path_extension_segment_without_colons() {
+        // Single segment without trailing ::
+        let mut state = ParserState::new("item");
+        let base_path = &["a".to_string(), "b".to_string()];
+        let result = parse_path_extension_import(
+            &mut state,
+            base_path,
+            "c".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        match &exprs[0].kind {
+            ExprKind::Import { module, .. } => {
+                assert_eq!(module, "a::b::c::item");
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    // Also test parse_grouped_import_item path extension branch
+    // via the grouped import path
+    #[test]
+    fn test_parse_grouped_import_item_path_extension() {
+        // "sub::deep" - identifier followed by :: then another identifier
+        let mut state = ParserState::new("sub::deep");
+        let base_path = &["std".to_string()];
+        let result = parse_grouped_import_item(
+            &mut state,
+            base_path,
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        assert_eq!(exprs.len(), 1);
+        match &exprs[0].kind {
+            ExprKind::Import { module, .. } => {
+                assert_eq!(module, "std::sub::deep");
+            }
+            _ => panic!("Expected Import, got {:?}", exprs[0].kind),
+        }
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
