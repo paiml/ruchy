@@ -1337,6 +1337,289 @@ mod tests {
             "All functions should be optimized"
         );
     }
+
+    // =====================================================================
+    // Coverage: mark_terminator_live — Switch, Call, Unreachable
+    // =====================================================================
+
+    #[test]
+    fn test_dce_handles_switch_terminator() {
+        let mut func = create_test_function("test", vec![], Type::I32);
+
+        let disc_local = Local(0);
+        func.locals
+            .push(create_local_decl(disc_local, Type::I32, Some("disc")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![Statement::Assign(
+                Place::Local(disc_local),
+                Rvalue::Use(Operand::Constant(Constant::Int(1, Type::I32))),
+            )],
+            Terminator::Switch {
+                discriminant: Operand::Copy(Place::Local(disc_local)),
+                targets: vec![
+                    (Constant::Int(0, Type::I32), BlockId(1)),
+                    (Constant::Int(1, Type::I32), BlockId(2)),
+                ],
+                default: Some(BlockId(3)),
+            },
+        );
+
+        let block1 = create_basic_block(
+            BlockId(1),
+            vec![],
+            Terminator::Return(Some(Operand::Constant(Constant::Int(10, Type::I32)))),
+        );
+        let block2 = create_basic_block(
+            BlockId(2),
+            vec![],
+            Terminator::Return(Some(Operand::Constant(Constant::Int(20, Type::I32)))),
+        );
+        let block3 = create_basic_block(
+            BlockId(3),
+            vec![],
+            Terminator::Return(Some(Operand::Constant(Constant::Int(30, Type::I32)))),
+        );
+
+        func.blocks.push(entry_block);
+        func.blocks.push(block1);
+        func.blocks.push(block2);
+        func.blocks.push(block3);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(
+            func.blocks.len(),
+            4,
+            "All switch target blocks should be preserved"
+        );
+        assert!(dce.live_locals.contains(&disc_local), "Discriminant local should be live");
+    }
+
+    #[test]
+    fn test_dce_handles_switch_without_default() {
+        let mut func = create_test_function("test", vec![], Type::I32);
+
+        let disc_local = Local(0);
+        func.locals
+            .push(create_local_decl(disc_local, Type::I32, Some("disc")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![Statement::Assign(
+                Place::Local(disc_local),
+                Rvalue::Use(Operand::Constant(Constant::Int(0, Type::I32))),
+            )],
+            Terminator::Switch {
+                discriminant: Operand::Copy(Place::Local(disc_local)),
+                targets: vec![(Constant::Int(0, Type::I32), BlockId(1))],
+                default: None,
+            },
+        );
+
+        let target_block = create_basic_block(
+            BlockId(1),
+            vec![],
+            Terminator::Return(Some(Operand::Constant(Constant::Int(42, Type::I32)))),
+        );
+
+        func.blocks.push(entry_block);
+        func.blocks.push(target_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(
+            func.blocks.len(),
+            2,
+            "Switch target block should be reachable"
+        );
+    }
+
+    #[test]
+    fn test_dce_handles_call_terminator() {
+        let mut func = create_test_function("test", vec![], Type::I32);
+
+        let func_local = Local(0);
+        let arg_local = Local(1);
+        let dest_local = Local(2);
+
+        func.locals
+            .push(create_local_decl(func_local, Type::I32, Some("func")));
+        func.locals
+            .push(create_local_decl(arg_local, Type::I32, Some("arg")));
+        func.locals
+            .push(create_local_decl(dest_local, Type::I32, Some("dest")));
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![
+                Statement::Assign(
+                    Place::Local(func_local),
+                    Rvalue::Use(Operand::Constant(Constant::Int(0, Type::I32))),
+                ),
+                Statement::Assign(
+                    Place::Local(arg_local),
+                    Rvalue::Use(Operand::Constant(Constant::Int(5, Type::I32))),
+                ),
+            ],
+            Terminator::Call {
+                func: Operand::Copy(Place::Local(func_local)),
+                args: vec![Operand::Copy(Place::Local(arg_local))],
+                destination: Some((Place::Local(dest_local), BlockId(1))),
+            },
+        );
+
+        let continuation = create_basic_block(
+            BlockId(1),
+            vec![],
+            Terminator::Return(Some(Operand::Copy(Place::Local(dest_local)))),
+        );
+
+        func.blocks.push(entry_block);
+        func.blocks.push(continuation);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(
+            func.blocks.len(),
+            2,
+            "Call continuation block should be reachable"
+        );
+        assert!(dce.live_locals.contains(&func_local), "Call func should be live");
+        assert!(dce.live_locals.contains(&arg_local), "Call arg should be live");
+        assert!(dce.live_locals.contains(&dest_local), "Call dest should be live");
+    }
+
+    #[test]
+    fn test_dce_handles_call_terminator_no_destination() {
+        let mut func = create_test_function("test", vec![], Type::Unit);
+
+        let func_local = Local(0);
+        func.locals
+            .push(create_local_decl(func_local, Type::I32, Some("func")));
+
+        // Block 1 is unreachable because Call with no destination does not chain
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![],
+            Terminator::Call {
+                func: Operand::Copy(Place::Local(func_local)),
+                args: vec![],
+                destination: None,
+            },
+        );
+
+        let unreachable_block = create_basic_block(
+            BlockId(1),
+            vec![],
+            Terminator::Return(None),
+        );
+
+        func.blocks.push(entry_block);
+        func.blocks.push(unreachable_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(
+            func.blocks.len(),
+            1,
+            "Block after Call with no destination is unreachable"
+        );
+    }
+
+    #[test]
+    fn test_dce_handles_unreachable_terminator() {
+        let mut func = create_test_function("test", vec![], Type::Unit);
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![],
+            Terminator::Unreachable,
+        );
+
+        // Block 1 is unreachable - nothing references it
+        let dead_block = create_basic_block(
+            BlockId(1),
+            vec![],
+            Terminator::Return(None),
+        );
+
+        func.blocks.push(entry_block);
+        func.blocks.push(dead_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(
+            func.blocks.len(),
+            1,
+            "Block after Unreachable is dead code"
+        );
+        assert_eq!(func.blocks[0].id, BlockId(0));
+    }
+
+    #[test]
+    fn test_dce_return_with_none_marks_no_operand() {
+        let mut func = create_test_function("test", vec![], Type::Unit);
+
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![],
+            Terminator::Return(None),
+        );
+        func.blocks.push(entry_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert!(dce.live_locals.is_empty(), "Return(None) should not mark any local live");
+    }
+
+    #[test]
+    fn test_dce_switch_with_multiple_targets_to_same_block() {
+        let mut func = create_test_function("test", vec![], Type::I32);
+
+        let disc_local = Local(0);
+        func.locals
+            .push(create_local_decl(disc_local, Type::I32, Some("disc")));
+
+        // Multiple cases pointing to the same block
+        let entry_block = create_basic_block(
+            BlockId(0),
+            vec![Statement::Assign(
+                Place::Local(disc_local),
+                Rvalue::Use(Operand::Constant(Constant::Int(0, Type::I32))),
+            )],
+            Terminator::Switch {
+                discriminant: Operand::Copy(Place::Local(disc_local)),
+                targets: vec![
+                    (Constant::Int(0, Type::I32), BlockId(1)),
+                    (Constant::Int(1, Type::I32), BlockId(1)), // Same target
+                    (Constant::Int(2, Type::I32), BlockId(1)), // Same target
+                ],
+                default: Some(BlockId(1)),
+            },
+        );
+
+        let target_block = create_basic_block(
+            BlockId(1),
+            vec![],
+            Terminator::Return(Some(Operand::Constant(Constant::Int(99, Type::I32)))),
+        );
+
+        func.blocks.push(entry_block);
+        func.blocks.push(target_block);
+
+        let mut dce = DeadCodeElimination::new();
+        dce.run(&mut func);
+
+        assert_eq!(func.blocks.len(), 2, "Both blocks should be live");
+    }
 }
 #[cfg(test)]
 mod property_tests_optimize {

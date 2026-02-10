@@ -1309,6 +1309,176 @@ mod tests {
         }
     }
 
+    // ==================== HistoryMagic execute_line coverage ====================
+
+    #[test]
+    fn test_history_magic_default_range() {
+        let history = HistoryMagic;
+        let mut repl = create_mock_repl();
+        let result = history.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Last 10 commands"));
+            assert!(output.contains("<command 1>"));
+            assert!(output.contains("<command 10>"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_history_magic_custom_range() {
+        let history = HistoryMagic;
+        let mut repl = create_mock_repl();
+        let result = history.execute_line(&mut repl, "3").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Last 3 commands"));
+            assert!(output.contains("<command 3>"));
+            assert!(!output.contains("<command 4>"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_history_magic_invalid_range() {
+        let history = HistoryMagic;
+        let mut repl = create_mock_repl();
+        let result = history.execute_line(&mut repl, "abc").unwrap();
+        if let MagicResult::Text(output) = result {
+            // Falls back to 10
+            assert!(output.contains("Last 10 commands"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    // ==================== SaveMagic execute_line coverage ====================
+
+    #[test]
+    fn test_save_magic_to_file() {
+        let save = SaveMagic;
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("x".to_string(), Value::Integer(42));
+
+        let tmp = std::env::temp_dir().join("ruchy_test_save_magic.json");
+        let _ = std::fs::remove_file(&tmp);
+        let result = save
+            .execute_line(&mut repl, tmp.to_str().unwrap())
+            .unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Saved workspace"));
+        } else {
+            panic!("Expected Text result");
+        }
+        assert!(tmp.exists());
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    // ==================== LoadMagic execute_line coverage ====================
+
+    #[test]
+    fn test_load_magic_existing_file() {
+        let load = LoadMagic;
+        let mut repl = create_mock_repl();
+
+        let tmp = std::env::temp_dir().join("ruchy_test_load_magic.json");
+        std::fs::write(&tmp, "{}").unwrap();
+        let result = load
+            .execute_line(&mut repl, tmp.to_str().unwrap())
+            .unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Loaded workspace"));
+        } else {
+            panic!("Expected Text result");
+        }
+        let _ = std::fs::remove_file(&tmp);
+    }
+
+    #[test]
+    fn test_load_magic_nonexistent_file() {
+        let load = LoadMagic;
+        let mut repl = create_mock_repl();
+        let result = load.execute_line(&mut repl, "/tmp/nonexistent_ruchy_test_xyz.json");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to read file"));
+    }
+
+    // ==================== PwdMagic execute_line coverage ====================
+
+    #[test]
+    fn test_pwd_magic_execute() {
+        let pwd = PwdMagic;
+        let mut repl = create_mock_repl();
+        let result = pwd.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            // Should return some directory path
+            assert!(!output.is_empty());
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    // ==================== LsMagic execute_line coverage ====================
+
+    #[test]
+    fn test_ls_magic_current_dir() {
+        let ls = LsMagic;
+        let mut repl = create_mock_repl();
+        let result = ls.execute_line(&mut repl, "").unwrap();
+        if let MagicResult::Text(output) = result {
+            // Should list files in current dir
+            assert!(!output.is_empty());
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_ls_magic_specific_dir() {
+        let ls = LsMagic;
+        let mut repl = create_mock_repl();
+        let result = ls.execute_line(&mut repl, "/tmp").unwrap();
+        if let MagicResult::Text(_output) = result {
+            // Should list files in /tmp without error
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_ls_magic_nonexistent_dir() {
+        let ls = LsMagic;
+        let mut repl = create_mock_repl();
+        let result = ls.execute_line(&mut repl, "/nonexistent_dir_xyz");
+        assert!(result.is_err());
+    }
+
+    // ==================== CdMagic execute_line coverage ====================
+
+    #[test]
+    fn test_cd_magic_to_tmp() {
+        let cd = CdMagic;
+        let mut repl = create_mock_repl();
+        let result = cd.execute_line(&mut repl, "/tmp").unwrap();
+        if let MagicResult::Text(output) = result {
+            assert!(output.contains("Changed to:"));
+        } else {
+            panic!("Expected Text result");
+        }
+    }
+
+    #[test]
+    fn test_cd_magic_nonexistent() {
+        let cd = CdMagic;
+        let mut repl = create_mock_repl();
+        let result = cd.execute_line(&mut repl, "/nonexistent_dir_xyz");
+        assert!(result.is_err());
+    }
+
     // ==================== ResetMagic execute_line tests ====================
 
     #[test]

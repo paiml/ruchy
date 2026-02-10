@@ -393,3 +393,1055 @@ fn test_infer_element_type_binary_modulo() {
     let ty = emitter.infer_element_type(&expr);
     assert_eq!(ty, WasmType::F32);
 }
+
+// ============================================================================
+// COVERAGE: Tests for uncovered functions in emitter.rs
+// Targets: lower_match, lower_field_access, lower_assign, store_pattern_values,
+//          lower_string_interpolation, lower_call, register_pattern_symbols
+// ============================================================================
+
+fn span() -> Span {
+    Span { start: 0, end: 1 }
+}
+
+fn int_expr(n: i64) -> Expr {
+    Expr::new(ExprKind::Literal(Literal::Integer(n, None)), span())
+}
+
+fn float_expr(f: f64) -> Expr {
+    Expr::new(ExprKind::Literal(Literal::Float(f)), span())
+}
+
+fn ident_expr(name: &str) -> Expr {
+    Expr::new(ExprKind::Identifier(name.to_string()), span())
+}
+
+fn string_expr(s: &str) -> Expr {
+    Expr::new(ExprKind::Literal(Literal::String(s.to_string())), span())
+}
+
+fn unit_expr() -> Expr {
+    Expr::new(ExprKind::Literal(Literal::Unit), span())
+}
+
+// --- register_pattern_symbols tests ---
+
+#[test]
+fn test_register_pattern_symbols_identifier() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Identifier("x".to_string());
+    emitter.register_pattern_symbols(&pattern);
+    let sym = emitter.symbols.borrow();
+    assert!(sym.lookup("x").is_some());
+    assert_eq!(sym.lookup_type("x"), Some(WasmType::I32));
+}
+
+#[test]
+fn test_register_pattern_symbols_tuple() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ]);
+    emitter.register_pattern_symbols(&pattern);
+    let sym = emitter.symbols.borrow();
+    assert!(sym.lookup("a").is_some());
+    assert!(sym.lookup("b").is_some());
+}
+
+#[test]
+fn test_register_pattern_symbols_wildcard() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Wildcard;
+    emitter.register_pattern_symbols(&pattern);
+    assert_eq!(emitter.symbols.borrow().local_count(), 0);
+}
+
+#[test]
+fn test_register_pattern_symbols_nested_tuple() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("x".to_string()),
+        Pattern::Tuple(vec![
+            Pattern::Identifier("y".to_string()),
+            Pattern::Identifier("z".to_string()),
+        ]),
+    ]);
+    emitter.register_pattern_symbols(&pattern);
+    let sym = emitter.symbols.borrow();
+    assert!(sym.lookup("x").is_some());
+    assert!(sym.lookup("y").is_some());
+    assert!(sym.lookup("z").is_some());
+    assert_eq!(sym.local_count(), 3);
+}
+
+#[test]
+fn test_register_pattern_symbols_other_pattern() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Literal(Literal::Integer(42, None));
+    emitter.register_pattern_symbols(&pattern);
+    assert_eq!(emitter.symbols.borrow().local_count(), 0);
+}
+
+#[test]
+fn test_register_pattern_symbols_tuple_with_wildcard() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Wildcard,
+        Pattern::Identifier("c".to_string()),
+    ]);
+    emitter.register_pattern_symbols(&pattern);
+    let sym = emitter.symbols.borrow();
+    assert!(sym.lookup("a").is_some());
+    assert!(sym.lookup("c").is_some());
+    assert_eq!(sym.local_count(), 2);
+}
+
+// --- store_pattern_values tests ---
+
+#[test]
+fn test_store_pattern_values_identifier() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
+    let pattern = Pattern::Identifier("x".to_string());
+    let mut instructions = vec![];
+    let result = emitter.store_pattern_values(&pattern, &mut instructions);
+    assert!(result.is_ok());
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_store_pattern_values_wildcard() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Wildcard;
+    let mut instructions = vec![];
+    let result = emitter.store_pattern_values(&pattern, &mut instructions);
+    assert!(result.is_ok());
+    assert_eq!(instructions.len(), 1);
+}
+
+#[test]
+fn test_store_pattern_values_tuple() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("a".to_string(), WasmType::I32);
+    emitter.symbols.borrow_mut().insert("b".to_string(), WasmType::I32);
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ]);
+    let mut instructions = vec![];
+    let result = emitter.store_pattern_values(&pattern, &mut instructions);
+    assert!(result.is_ok());
+    assert!(instructions.len() >= 4);
+}
+
+#[test]
+fn test_store_pattern_values_tuple_single_element() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("x".to_string()),
+    ]);
+    let mut instructions = vec![];
+    let result = emitter.store_pattern_values(&pattern, &mut instructions);
+    assert!(result.is_ok());
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_store_pattern_values_unsupported_pattern() {
+    let emitter = WasmEmitter::new();
+    let pattern = Pattern::Struct {
+        name: "Point".to_string(),
+        fields: vec![],
+        has_rest: false,
+    };
+    let mut instructions = vec![];
+    let result = emitter.store_pattern_values(&pattern, &mut instructions);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("not yet supported"));
+}
+
+#[test]
+fn test_store_pattern_values_nested_tuple() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("a".to_string(), WasmType::I32);
+    emitter.symbols.borrow_mut().insert("b".to_string(), WasmType::I32);
+    emitter.symbols.borrow_mut().insert("c".to_string(), WasmType::I32);
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Tuple(vec![
+            Pattern::Identifier("b".to_string()),
+            Pattern::Identifier("c".to_string()),
+        ]),
+    ]);
+    let mut instructions = vec![];
+    let result = emitter.store_pattern_values(&pattern, &mut instructions);
+    assert!(result.is_ok());
+    assert!(instructions.len() >= 6);
+}
+
+// --- lower_call tests ---
+
+#[test]
+fn test_lower_call_println_integer() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("println");
+    let args = vec![int_expr(42)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 2);
+}
+
+#[test]
+fn test_lower_call_println_float() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("println");
+    let args = vec![float_expr(3.14)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 2);
+}
+
+#[test]
+fn test_lower_call_println_string_then_value() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("println");
+    let args = vec![string_expr("value: {}"), int_expr(42)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_lower_call_println_only_string() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("println");
+    let args = vec![string_expr("hello world")];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_call_println_no_args() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("println");
+    let args: Vec<Expr> = vec![];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_call_print_builtin() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("print");
+    let args = vec![int_expr(10)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_call_eprintln_builtin() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("eprintln");
+    let args = vec![int_expr(10)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_call_eprint_builtin() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("eprint");
+    let args = vec![float_expr(2.5)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_call_user_function() {
+    let emitter = WasmEmitter::new();
+    emitter
+        .functions
+        .borrow_mut()
+        .insert("add".to_string(), (2, false));
+    let func = ident_expr("add");
+    let args = vec![int_expr(1), int_expr(2)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 3);
+}
+
+#[test]
+fn test_lower_call_unknown_function() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("unknown_func");
+    let args = vec![int_expr(1)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("Unknown function"));
+}
+
+#[test]
+fn test_lower_call_non_identifier_function() {
+    let emitter = WasmEmitter::new();
+    let func = int_expr(42);
+    let args = vec![int_expr(1)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("must use identifiers"));
+}
+
+#[test]
+fn test_lower_call_println_skip_string_interpolation() {
+    let emitter = WasmEmitter::new();
+    let func = ident_expr("println");
+    let interp_arg = Expr::new(
+        ExprKind::StringInterpolation {
+            parts: vec![StringPart::Text("hello".to_string())],
+        },
+        span(),
+    );
+    let args = vec![interp_arg, int_expr(42)];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_call_user_function_no_args() {
+    let emitter = WasmEmitter::new();
+    emitter
+        .functions
+        .borrow_mut()
+        .insert("no_args".to_string(), (3, true));
+    let func = ident_expr("no_args");
+    let args: Vec<Expr> = vec![];
+    let result = emitter.lower_call(&func, &args);
+    assert!(result.is_ok());
+}
+
+// --- lower_field_access tests ---
+
+#[test]
+fn test_lower_field_access_tuple_i32() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    emitter.tuple_types.borrow_mut().insert(
+        "t".to_string(),
+        vec![WasmType::I32, WasmType::I32],
+    );
+    let object = ident_expr("t");
+    let result = emitter.lower_field_access(&object, "0");
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_lower_field_access_tuple_f32() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    emitter.tuple_types.borrow_mut().insert(
+        "t".to_string(),
+        vec![WasmType::I32, WasmType::F32],
+    );
+    let object = ident_expr("t");
+    let result = emitter.lower_field_access(&object, "1");
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_lower_field_access_tuple_no_type_info() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    let object = ident_expr("t");
+    let result = emitter.lower_field_access(&object, "0");
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_field_access_tuple_non_identifier_object() {
+    let emitter = WasmEmitter::new();
+    let object = int_expr(100);
+    let result = emitter.lower_field_access(&object, "0");
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_field_access_struct_field() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .structs
+        .borrow_mut()
+        .insert("Point".to_string(), vec!["x".to_string(), "y".to_string()]);
+    let object = ident_expr("p");
+    let result = emitter.lower_field_access(&object, "x");
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_field_access_struct_second_field() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .structs
+        .borrow_mut()
+        .insert("Point".to_string(), vec!["x".to_string(), "y".to_string()]);
+    let object = ident_expr("p");
+    let result = emitter.lower_field_access(&object, "y");
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_field_access_unknown_struct_field() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .structs
+        .borrow_mut()
+        .insert("Point".to_string(), vec!["x".to_string(), "y".to_string()]);
+    let object = ident_expr("p");
+    let result = emitter.lower_field_access(&object, "z");
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_field_access_no_struct_registered() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    let object = ident_expr("p");
+    let result = emitter.lower_field_access(&object, "name");
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_field_access_tuple_index_out_of_range() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    emitter.tuple_types.borrow_mut().insert(
+        "t".to_string(),
+        vec![WasmType::I32],
+    );
+    let object = ident_expr("t");
+    let result = emitter.lower_field_access(&object, "5");
+    assert!(result.is_ok());
+}
+
+// --- lower_assign tests ---
+
+#[test]
+fn test_lower_assign_identifier() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
+    let target = ident_expr("x");
+    let value = int_expr(42);
+    let result = emitter.lower_assign(&target, &value);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_lower_assign_field_access_tuple() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    let target = Expr::new(
+        ExprKind::FieldAccess {
+            object: Box::new(ident_expr("t")),
+            field: "0".to_string(),
+        },
+        span(),
+    );
+    let value = int_expr(99);
+    let result = emitter.lower_assign(&target, &value);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_lower_assign_field_access_struct() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .structs
+        .borrow_mut()
+        .insert("Point".to_string(), vec!["x".to_string(), "y".to_string()]);
+    let target = Expr::new(
+        ExprKind::FieldAccess {
+            object: Box::new(ident_expr("p")),
+            field: "y".to_string(),
+        },
+        span(),
+    );
+    let value = int_expr(10);
+    let result = emitter.lower_assign(&target, &value);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_assign_field_access_unknown_field() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .structs
+        .borrow_mut()
+        .insert("Point".to_string(), vec!["x".to_string(), "y".to_string()]);
+    let target = Expr::new(
+        ExprKind::FieldAccess {
+            object: Box::new(ident_expr("p")),
+            field: "unknown".to_string(),
+        },
+        span(),
+    );
+    let value = int_expr(5);
+    let result = emitter.lower_assign(&target, &value);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_assign_index_access() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("arr".to_string(), WasmType::I32);
+    let target = Expr::new(
+        ExprKind::IndexAccess {
+            object: Box::new(ident_expr("arr")),
+            index: Box::new(int_expr(2)),
+        },
+        span(),
+    );
+    let value = int_expr(100);
+    let result = emitter.lower_assign(&target, &value);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 5);
+}
+
+#[test]
+fn test_lower_assign_unsupported_target() {
+    let emitter = WasmEmitter::new();
+    let target = int_expr(42);
+    let value = int_expr(10);
+    let result = emitter.lower_assign(&target, &value);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("not supported"));
+}
+
+#[test]
+fn test_lower_assign_via_lower_expression() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
+    let assign_expr = Expr::new(
+        ExprKind::Assign {
+            target: Box::new(ident_expr("x")),
+            value: Box::new(int_expr(55)),
+        },
+        span(),
+    );
+    let result = emitter.lower_expression(&assign_expr);
+    assert!(result.is_ok());
+}
+
+// --- lower_string_interpolation tests ---
+
+#[test]
+fn test_lower_string_interpolation_all_text() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![
+        StringPart::Text("hello ".to_string()),
+        StringPart::Text("world".to_string()),
+    ];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_string_interpolation_single_text() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![StringPart::Text("hello".to_string())];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_string_interpolation_single_expr() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![StringPart::Expr(Box::new(int_expr(42)))];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_lower_string_interpolation_text_and_expr() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![
+        StringPart::Text("value: ".to_string()),
+        StringPart::Expr(Box::new(int_expr(42))),
+    ];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_string_interpolation_expr_with_format() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![
+        StringPart::Text("pi = ".to_string()),
+        StringPart::ExprWithFormat {
+            expr: Box::new(float_expr(3.14)),
+            format_spec: ".2".to_string(),
+        },
+    ];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_string_interpolation_empty_text_parts() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![
+        StringPart::Text(String::new()),
+        StringPart::Text(String::new()),
+    ];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_string_interpolation_multi_text_parts() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![
+        StringPart::Text("a".to_string()),
+        StringPart::Text("b".to_string()),
+        StringPart::Text("c".to_string()),
+    ];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_string_interpolation_via_lower_expression() {
+    let emitter = WasmEmitter::new();
+    let expr = Expr::new(
+        ExprKind::StringInterpolation {
+            parts: vec![
+                StringPart::Text("count: ".to_string()),
+                StringPart::Expr(Box::new(int_expr(10))),
+            ],
+        },
+        span(),
+    );
+    let result = emitter.lower_expression(&expr);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_string_interpolation_text_only_concatenation() {
+    let emitter = WasmEmitter::new();
+    let parts = vec![
+        StringPart::Text("Hello, ".to_string()),
+        StringPart::Text("World!".to_string()),
+    ];
+    let result = emitter.lower_string_interpolation(&parts);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+// --- lower_match tests ---
+
+#[test]
+fn test_lower_match_empty_arms() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms: Vec<crate::frontend::ast::MatchArm> = vec![];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert_eq!(instructions.len(), 1);
+}
+
+#[test]
+fn test_lower_match_wildcard_only() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![crate::frontend::ast::MatchArm {
+        pattern: Pattern::Wildcard,
+        guard: None,
+        body: Box::new(int_expr(42)),
+        span: span(),
+    }];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(!instructions.is_empty());
+}
+
+#[test]
+fn test_lower_match_literal_single_arm() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![crate::frontend::ast::MatchArm {
+        pattern: Pattern::Literal(Literal::Integer(1, None)),
+        guard: None,
+        body: Box::new(int_expr(10)),
+        span: span(),
+    }];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_match_literal_with_wildcard() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Literal(Literal::Integer(1, None)),
+            guard: None,
+            body: Box::new(int_expr(10)),
+            span: span(),
+        },
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Wildcard,
+            guard: None,
+            body: Box::new(int_expr(0)),
+            span: span(),
+        },
+    ];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 3);
+}
+
+#[test]
+fn test_lower_match_multiple_literal_arms() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(2);
+    let arms = vec![
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Literal(Literal::Integer(1, None)),
+            guard: None,
+            body: Box::new(int_expr(10)),
+            span: span(),
+        },
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Literal(Literal::Integer(2, None)),
+            guard: None,
+            body: Box::new(int_expr(20)),
+            span: span(),
+        },
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Wildcard,
+            guard: None,
+            body: Box::new(int_expr(0)),
+            span: span(),
+        },
+    ];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 5);
+}
+
+#[test]
+fn test_lower_match_or_pattern() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(3);
+    let arms = vec![
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Or(vec![
+                Pattern::Literal(Literal::Integer(1, None)),
+                Pattern::Literal(Literal::Integer(2, None)),
+            ]),
+            guard: None,
+            body: Box::new(int_expr(100)),
+            span: span(),
+        },
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Wildcard,
+            guard: None,
+            body: Box::new(int_expr(0)),
+            span: span(),
+        },
+    ];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 5);
+}
+
+#[test]
+fn test_lower_match_or_pattern_last_arm() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![crate::frontend::ast::MatchArm {
+        pattern: Pattern::Or(vec![
+            Pattern::Literal(Literal::Integer(1, None)),
+            Pattern::Literal(Literal::Integer(2, None)),
+        ]),
+        guard: None,
+        body: Box::new(int_expr(99)),
+        span: span(),
+    }];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_match_tuple_pattern() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![crate::frontend::ast::MatchArm {
+        pattern: Pattern::Tuple(vec![
+            Pattern::Identifier("a".to_string()),
+            Pattern::Identifier("b".to_string()),
+        ]),
+        guard: None,
+        body: Box::new(int_expr(42)),
+        span: span(),
+    }];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_match_tuple_pattern_not_last() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Tuple(vec![
+                Pattern::Identifier("a".to_string()),
+            ]),
+            guard: None,
+            body: Box::new(int_expr(10)),
+            span: span(),
+        },
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Wildcard,
+            guard: None,
+            body: Box::new(int_expr(0)),
+            span: span(),
+        },
+    ];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_match_identifier_pattern() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![crate::frontend::ast::MatchArm {
+        pattern: Pattern::Identifier("x".to_string()),
+        guard: None,
+        body: Box::new(int_expr(42)),
+        span: span(),
+    }];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_match_unsupported_pattern() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![crate::frontend::ast::MatchArm {
+        pattern: Pattern::Range {
+            start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+            end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+            inclusive: true,
+        },
+        guard: None,
+        body: Box::new(int_expr(42)),
+        span: span(),
+    }];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("not yet supported"));
+}
+
+#[test]
+fn test_lower_match_via_lower_expression() {
+    let emitter = WasmEmitter::new();
+    let match_ast = Expr::new(
+        ExprKind::Match {
+            expr: Box::new(int_expr(1)),
+            arms: vec![
+                crate::frontend::ast::MatchArm {
+                    pattern: Pattern::Literal(Literal::Integer(1, None)),
+                    guard: None,
+                    body: Box::new(int_expr(10)),
+                    span: span(),
+                },
+                crate::frontend::ast::MatchArm {
+                    pattern: Pattern::Wildcard,
+                    guard: None,
+                    body: Box::new(int_expr(0)),
+                    span: span(),
+                },
+            ],
+        },
+        span(),
+    );
+    let result = emitter.lower_expression(&match_ast);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_match_or_pattern_non_literal_error() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(1);
+    let arms = vec![
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Or(vec![
+                Pattern::Identifier("x".to_string()),
+            ]),
+            guard: None,
+            body: Box::new(int_expr(100)),
+            span: span(),
+        },
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Wildcard,
+            guard: None,
+            body: Box::new(int_expr(0)),
+            span: span(),
+        },
+    ];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_err());
+    assert!(result.unwrap_err().contains("Non-literal patterns in OR"));
+}
+
+#[test]
+fn test_lower_match_three_or_patterns() {
+    let emitter = WasmEmitter::new();
+    let match_expr = int_expr(5);
+    let arms = vec![
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Or(vec![
+                Pattern::Literal(Literal::Integer(1, None)),
+                Pattern::Literal(Literal::Integer(2, None)),
+                Pattern::Literal(Literal::Integer(3, None)),
+            ]),
+            guard: None,
+            body: Box::new(int_expr(100)),
+            span: span(),
+        },
+        crate::frontend::ast::MatchArm {
+            pattern: Pattern::Wildcard,
+            guard: None,
+            body: Box::new(int_expr(0)),
+            span: span(),
+        },
+    ];
+    let result = emitter.lower_match(&match_expr, &arms);
+    assert!(result.is_ok());
+    let instructions = result.unwrap();
+    assert!(instructions.len() >= 8);
+}
+
+// --- Integration tests via lower_expression ---
+
+#[test]
+fn test_lower_expression_field_access() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    let field_access = Expr::new(
+        ExprKind::FieldAccess {
+            object: Box::new(ident_expr("t")),
+            field: "0".to_string(),
+        },
+        span(),
+    );
+    let result = emitter.lower_expression(&field_access);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_expression_assign_index() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("arr".to_string(), WasmType::I32);
+    let assign = Expr::new(
+        ExprKind::Assign {
+            target: Box::new(Expr::new(
+                ExprKind::IndexAccess {
+                    object: Box::new(ident_expr("arr")),
+                    index: Box::new(int_expr(0)),
+                },
+                span(),
+            )),
+            value: Box::new(int_expr(42)),
+        },
+        span(),
+    );
+    let result = emitter.lower_expression(&assign);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_expression_let_pattern_tuple() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("a".to_string(), WasmType::I32);
+    emitter.symbols.borrow_mut().insert("b".to_string(), WasmType::I32);
+    let let_pattern = Expr::new(
+        ExprKind::LetPattern {
+            pattern: Pattern::Tuple(vec![
+                Pattern::Identifier("a".to_string()),
+                Pattern::Identifier("b".to_string()),
+            ]),
+            type_annotation: None,
+            value: Box::new(Expr::new(
+                ExprKind::Tuple(vec![int_expr(1), int_expr(2)]),
+                span(),
+            )),
+            body: Box::new(unit_expr()),
+            is_mutable: false,
+            else_block: None,
+        },
+        span(),
+    );
+    let result = emitter.lower_expression(&let_pattern);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_expression_string_interpolation_single_text() {
+    let emitter = WasmEmitter::new();
+    let expr = Expr::new(
+        ExprKind::StringInterpolation {
+            parts: vec![StringPart::Text("just text".to_string())],
+        },
+        span(),
+    );
+    let result = emitter.lower_expression(&expr);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_lower_assign_field_access_no_structs() {
+    let emitter = WasmEmitter::new();
+    emitter.symbols.borrow_mut().insert("obj".to_string(), WasmType::I32);
+    let target = Expr::new(
+        ExprKind::FieldAccess {
+            object: Box::new(ident_expr("obj")),
+            field: "field_name".to_string(),
+        },
+        span(),
+    );
+    let value = int_expr(7);
+    let result = emitter.lower_assign(&target, &value);
+    assert!(result.is_ok());
+}
