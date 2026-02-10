@@ -1035,4 +1035,146 @@ mod tests {
         // Should have nested flat_maps
         assert!(code.matches("flat_map").count() >= 2);
     }
+
+    // ========================================================================
+    // transpile_pattern_list_comprehension tests
+    // ========================================================================
+
+    #[test]
+    fn test_pattern_comprehension_some_no_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("val");
+        let iter = list_expr(vec![int_expr(1), int_expr(2)]);
+        // Some(val) pattern -- inner_var extracts "val" from between parens
+        let result =
+            transpiler.transpile_list_comprehension(&expr, "Some(val)", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(
+            code.contains("filter_map"),
+            "Pattern comprehension should use filter_map"
+        );
+        assert!(code.contains("collect"));
+    }
+
+    #[test]
+    fn test_pattern_comprehension_some_with_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("val");
+        let iter = list_expr(vec![int_expr(1), int_expr(2)]);
+        let filter = binary_expr(
+            ident_expr("val"),
+            crate::frontend::ast::BinaryOp::Less,
+            int_expr(10),
+        );
+        let result =
+            transpiler.transpile_list_comprehension(&expr, "Some(val)", &iter, Some(&filter));
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter_map"));
+        assert!(code.contains("filter"), "Should have filter for condition");
+    }
+
+    #[test]
+    fn test_pattern_comprehension_ok_no_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("v");
+        let iter = list_expr(vec![int_expr(1)]);
+        let result = transpiler.transpile_list_comprehension(&expr, "Ok(v)", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter_map"));
+        assert!(code.contains("collect"));
+    }
+
+    #[test]
+    fn test_pattern_comprehension_ok_with_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("v");
+        let iter = list_expr(vec![int_expr(1)]);
+        let filter = binary_expr(
+            ident_expr("v"),
+            crate::frontend::ast::BinaryOp::Greater,
+            int_expr(0),
+        );
+        let result =
+            transpiler.transpile_list_comprehension(&expr, "Ok(v)", &iter, Some(&filter));
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter_map"));
+        assert!(code.contains("filter"));
+    }
+
+    #[test]
+    fn test_pattern_comprehension_err_no_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("e");
+        let iter = list_expr(vec![int_expr(1)]);
+        let result = transpiler.transpile_list_comprehension(&expr, "Err(e)", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter_map"));
+    }
+
+    #[test]
+    fn test_pattern_comprehension_custom_variant() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = list_expr(vec![int_expr(1)]);
+        // Custom variant pattern like MyEnum(x)
+        let result =
+            transpiler.transpile_list_comprehension(&expr, "MyEnum(x)", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter_map"));
+    }
+
+    #[test]
+    fn test_pattern_comprehension_custom_variant_with_filter() {
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = list_expr(vec![int_expr(1)]);
+        let filter = binary_expr(
+            ident_expr("x"),
+            crate::frontend::ast::BinaryOp::Greater,
+            int_expr(5),
+        );
+        let result =
+            transpiler.transpile_list_comprehension(&expr, "MyEnum(x)", &iter, Some(&filter));
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter_map"));
+        assert!(code.contains("filter"));
+    }
+
+    #[test]
+    fn test_pattern_comprehension_complex_map_expr() {
+        // Test that the map expression is correctly applied after filter_map
+        let transpiler = Transpiler::new();
+        let expr = binary_expr(
+            ident_expr("val"),
+            crate::frontend::ast::BinaryOp::Multiply,
+            int_expr(2),
+        );
+        let iter = list_expr(vec![int_expr(1), int_expr(2)]);
+        let result =
+            transpiler.transpile_list_comprehension(&expr, "Some(val)", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("filter_map"));
+        assert!(code.contains("map"));
+    }
+
+    #[test]
+    fn test_simple_var_not_pattern_path() {
+        // Without parentheses, should NOT go through pattern path
+        let transpiler = Transpiler::new();
+        let expr = ident_expr("x");
+        let iter = range_expr(0, 10);
+        let result = transpiler.transpile_list_comprehension(&expr, "x", &iter, None);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("map"));
+        assert!(!code.contains("filter_map"));
+    }
 }

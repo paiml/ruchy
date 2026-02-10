@@ -1,3 +1,4 @@
+#![cfg(feature = "notebook")]
 #![allow(missing_docs)]
 // DEFECT-WASM-TUPLE-TYPES: WASM tuple compilation should handle mixed types
 //

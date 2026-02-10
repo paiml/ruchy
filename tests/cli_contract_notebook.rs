@@ -1,3 +1,4 @@
+#![cfg(feature = "notebook")]
 #![allow(missing_docs)]
 //! CLI Contract Tests: `ruchy notebook`
 //!

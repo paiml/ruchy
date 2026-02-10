@@ -1,3 +1,4 @@
+#![cfg(feature = "http-client")]
 #![allow(missing_docs)]
 //! STD-002: HTTP Client Module Tests (ruchy/std/http)
 //!

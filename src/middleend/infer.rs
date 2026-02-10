@@ -1785,3 +1785,8 @@ mod tests;
 #[cfg(test)]
 #[path = "infer_prop_tests.rs"]
 mod property_tests_infer;
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used)]
+#[path = "infer_coverage_tests.rs"]
+mod coverage_tests;
