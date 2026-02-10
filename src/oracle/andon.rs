@@ -3,7 +3,7 @@
 //! Implements the Andon board visualization for Oracle training status.
 //! Based on Toyota Production System visual signaling principles.
 //!
-//! Uses trueno-viz for visualization rendering.
+//! Uses trueno-viz for visualization rendering when the `visualization` feature is enabled.
 //!
 //! # Toyota Way Principles
 //! - **Jidoka** (自働化): Stop-the-line signal when drift detected
@@ -16,6 +16,7 @@
 //! - Spec: docs/specifications/dynamic-mlops-training-ruchy-oracle-spec.md §13.3
 
 use super::DriftStatus;
+#[cfg(feature = "visualization")]
 use trueno_viz::widgets::{Sparkline as VizSparkline, TrendDirection as VizTrendDirection};
 
 /// Andon status (Toyota Way visual signaling)
@@ -87,10 +88,10 @@ impl AndonStatus {
 /// Sparkline characters for accuracy trend visualization (Kaizen principle)
 const SPARKLINE_CHARS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
 
-/// Render a sparkline from accuracy history using trueno-viz
+/// Render a sparkline from accuracy history
 ///
-/// Uses trueno-viz `Sparkline` widget for trend calculation,
-/// then renders to Unicode block characters for terminal display.
+/// When the `visualization` feature is enabled, uses trueno-viz `Sparkline` widget
+/// for trend calculation. Otherwise, renders directly from the raw values.
 ///
 /// # Arguments
 /// * `history` - Historical accuracy values (0.0-1.0)
@@ -104,8 +105,11 @@ pub fn render_sparkline(history: &[f64], width: usize) -> String {
         return "─".repeat(width);
     }
 
-    // Use trueno-viz Sparkline for trend analysis
-    let _viz_sparkline = VizSparkline::new(history).with_trend_indicator();
+    // Use trueno-viz Sparkline for trend analysis when available
+    #[cfg(feature = "visualization")]
+    {
+        let _viz_sparkline = VizSparkline::new(history).with_trend_indicator();
+    }
 
     // Render to Unicode block characters
     let min = history.iter().copied().fold(f64::INFINITY, f64::min);
@@ -122,14 +126,36 @@ pub fn render_sparkline(history: &[f64], width: usize) -> String {
         .collect()
 }
 
-/// Get trend direction using trueno-viz
+/// Get trend direction
+///
+/// When the `visualization` feature is enabled, uses trueno-viz for trend calculation.
+/// Otherwise, uses a simple slope-based heuristic.
 #[must_use]
 pub fn get_trend_direction(history: &[f64]) -> &'static str {
-    let sparkline = VizSparkline::new(history);
-    match sparkline.trend() {
-        VizTrendDirection::Rising => "↑",
-        VizTrendDirection::Falling => "↓",
-        VizTrendDirection::Stable => "→",
+    #[cfg(feature = "visualization")]
+    {
+        let sparkline = VizSparkline::new(history);
+        match sparkline.trend() {
+            VizTrendDirection::Rising => "↑",
+            VizTrendDirection::Falling => "↓",
+            VizTrendDirection::Stable => "→",
+        }
+    }
+    #[cfg(not(feature = "visualization"))]
+    {
+        if history.len() < 2 {
+            return "→";
+        }
+        let first = history[0];
+        let last = history[history.len() - 1];
+        let diff = last - first;
+        if diff > 0.01 {
+            "↑"
+        } else if diff < -0.01 {
+            "↓"
+        } else {
+            "→"
+        }
     }
 }
 

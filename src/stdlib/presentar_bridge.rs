@@ -12,19 +12,26 @@
 //! # References
 //! - [33] Google LLC (2018). "Flutter: Beautiful native apps in record time"
 
-// Re-export core types from presentar
-pub use presentar::layout;
-pub use presentar::widgets;
-pub use presentar::yaml;
+// When the `widgets` feature is enabled, re-export presentar types
+#[cfg(feature = "widgets")]
+mod inner {
+    // Re-export core types from presentar
+    pub use presentar::layout;
+    pub use presentar::widgets;
+    pub use presentar::yaml;
 
-// Re-export browser components
-pub use presentar::browser::{BrowserRouter, RouteMatch, RouteMatcher};
+    // Re-export browser components
+    pub use presentar::browser::{BrowserRouter, RouteMatch, RouteMatcher};
 
-// Re-export notebook runtime for reactive cell execution
-pub use presentar::browser::{Cell, CellGraph, CellId, CellOutput, NotebookRuntime};
+    // Re-export notebook runtime for reactive cell execution
+    pub use presentar::browser::{Cell, CellGraph, CellId, CellOutput, NotebookRuntime};
 
-// Re-export WebGPU types for visualization
-pub use presentar::{commands_to_instances, GpuInstance, GpuUniforms, GpuVertex};
+    // Re-export WebGPU types for visualization
+    pub use presentar::{commands_to_instances, GpuInstance, GpuUniforms, GpuVertex};
+}
+
+#[cfg(feature = "widgets")]
+pub use inner::*;
 
 /// Widget color type for styling
 #[derive(Debug, Clone, Copy, PartialEq)]

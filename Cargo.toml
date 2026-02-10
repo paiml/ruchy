@@ -219,6 +219,8 @@ keywords = ["language", "compiler", "transpiler", "rust", "scripting"]
 categories = ["compilers", "development-tools", "parser-implementations"]
 exclude = ["src/bin/ruchy-coverage.rs", "src/bin/ruchy-lsp.rs", "coverage/", "node_modules/", "docs/specifications/", "tests/tdd_*", "scripts/"]
 
+autobins = false
+
 [[bin]]
 name = "ruchy"
 path = "src/bin/ruchy.rs"
@@ -235,7 +237,15 @@ workspace = true
 
 [features]
 default = ["batteries-included"]
-batteries-included = ["notebook", "wasm-compile", "http-client", "markdown", "repl", "watch-mode"]
+batteries-included = ["wasm-compile", "markdown", "repl", "watch-mode"]
+# Full feature set including all sovereign stack deps and heavy optional features
+full = ["batteries-included", "sovereign-stack", "notebook", "http-client"]
+# Sovereign AI Stack extensions (opt-in to reduce dep count per CB-081)
+sovereign-stack = ["training", "data-loading", "widgets", "visualization"]
+training = ["dep:entrenar"]
+data-loading = ["dep:alimentar"]
+widgets = ["dep:presentar"]
+visualization = ["dep:trueno-viz"]
 minimal = []  # Users can use --no-default-features --features minimal for core only
 # DataFrame via trueno-db (default - uses Trueno SIMD backend)
 dataframe = ["polars", "arrow", "arrow-array", "arrow-buffer", "arrow-schema"]
@@ -257,15 +267,15 @@ watch-mode = ["dep:notify"]
 [dependencies]
 rand = "0.8"
 
-# Sovereign AI Stack Core (REQUIRED) - trueno-aprender-stdlib-core-language-spec.md v2.0
-# Six Pillars of Batteries-Included Data Science:
-trueno = "0.14.4"        # Pillar 1: SIMD compute engine
-alimentar = "0.2.5"      # Pillar 2: Data loading, transforms, drift detection
-# Removed: trueno-db = "0.3" (unused per cargo-machete)
-aprender = { version = "0.25.1", features = ["format-quantize", "format-signing", "hf-hub-integration"] }  # Pillar 4: ML + quantization + signing + HF Hub
-entrenar = { version = "0.5.8", features = ["citl"] }  # CITL, distillation, Tarantula fault localization, audit logging (inference module always available)
-trueno-viz = "0.1.23"    # Pillar 5: GPU/WASM visualization
-presentar = "0.3.1"      # Pillar 6: WASM-first notebook widgets
+# Sovereign AI Stack Core - trueno-aprender-stdlib-core-language-spec.md v2.0
+# trueno and aprender are always required; others are feature-gated (CB-081 dep reduction)
+trueno = { version = "0.14.4", default-features = false }  # Pillar 1: CPU SIMD only (no wgpu)
+aprender = { version = "0.25.1", default-features = false, features = ["format-quantize", "format-signing"] }  # Pillar 4: ML + quantization + signing
+# Optional sovereign stack extensions (enabled via `sovereign-stack` feature)
+alimentar = { version = "0.2.5", optional = true }      # Pillar 2: Data loading
+entrenar = { version = "0.5.8", features = ["citl"], optional = true }  # CITL, training
+trueno-viz = { version = "0.1.23", optional = true }    # Pillar 5: Visualization
+presentar = { version = "0.3.1", optional = true }      # Pillar 6: Notebook widgets
 wasm-encoder = "0.207.0"
 glob = "0.3"
 walkdir = "2.5"  # STDLIB-005: Directory traversal
