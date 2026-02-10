@@ -1658,4 +1658,255 @@ mod tests {
             .to_string()
             .contains("not yet supported"));
     }
+
+    // ============================================================================
+    // Coverage tests for eval_assign uncovered branches (18 uncov, 66.7%)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_assign_object_mut_field() {
+        let mut interp = make_interpreter();
+
+        // Create an ObjectMut with a field
+        let mut obj = HashMap::new();
+        obj.insert("x".to_string(), Value::Integer(0));
+        let obj_mut = Value::ObjectMut(Arc::new(std::sync::Mutex::new(obj)));
+        interp.set_variable("point", obj_mut);
+
+        // point.x = 42
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("point".to_string()))),
+            field: "x".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+
+        let result = interp.eval_assign(&target, &value).unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_assign_class_field() {
+        let mut interp = make_interpreter();
+
+        // Create a Class value
+        let mut fields = HashMap::new();
+        fields.insert("x".to_string(), Value::Integer(0));
+        let class_val = Value::Class {
+            class_name: "Point".to_string(),
+            fields: Arc::new(std::sync::RwLock::new(fields)),
+            methods: Arc::new(HashMap::new()),
+        };
+        interp.set_variable("point", class_val);
+
+        // point.x = 42
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("point".to_string()))),
+            field: "x".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+
+        let result = interp.eval_assign(&target, &value).unwrap();
+        assert_eq!(result, Value::Integer(42));
+
+        // Verify the field was updated
+        let updated = interp.lookup_variable("point").unwrap();
+        if let Value::Class { fields, .. } = updated {
+            let f = fields.read().unwrap();
+            assert_eq!(f.get("x"), Some(&Value::Integer(42)));
+        } else {
+            panic!("Expected Class");
+        }
+    }
+
+    #[test]
+    fn test_eval_assign_field_on_non_object() {
+        let mut interp = make_interpreter();
+
+        // Set a plain integer variable
+        interp.set_variable("x", Value::Integer(42));
+
+        // Try x.field = 10 -- should fail (non-object)
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("x".to_string()))),
+            field: "field".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(10, None)));
+
+        let result = interp.eval_assign(&target, &value);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot access field"));
+    }
+
+    #[test]
+    fn test_eval_assign_complex_field_target() {
+        let mut interp = make_interpreter();
+
+        // Set up nested object
+        let mut inner = HashMap::new();
+        inner.insert("z".to_string(), Value::Integer(0));
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
+        interp.set_variable("obj", Value::Object(Arc::new(outer)));
+
+        // obj.inner.z = 5  -- complex target (object is a FieldAccess, not Identifier)
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::FieldAccess {
+                object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
+                field: "inner".to_string(),
+            })),
+            field: "z".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
+
+        let result = interp.eval_assign(&target, &value);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Complex assignment targets not yet supported"));
+    }
+
+    #[test]
+    fn test_eval_assign_index_access() {
+        let mut interp = make_interpreter();
+
+        // arr = [1, 2, 3]
+        interp.set_variable(
+            "arr",
+            Value::Array(Arc::from(vec![
+                Value::Integer(1),
+                Value::Integer(2),
+                Value::Integer(3),
+            ])),
+        );
+
+        // arr[0] = 99
+        let target = make_expr(ExprKind::IndexAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("arr".to_string()))),
+            index: Box::new(make_expr(ExprKind::Literal(Literal::Integer(0, None)))),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(99, None)));
+
+        let result = interp.eval_assign(&target, &value).unwrap();
+        assert_eq!(result, Value::Integer(99));
+    }
+
+    // ============================================================================
+    // Coverage tests for eval_compound_assign uncovered branches (17 uncov, 64.6%)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_compound_assign_struct_field() {
+        let mut interp = make_interpreter();
+
+        let mut fields = HashMap::new();
+        fields.insert("count".to_string(), Value::Integer(5));
+        interp.set_variable(
+            "counter",
+            Value::Struct {
+                name: "Counter".to_string(),
+                fields: Arc::new(fields),
+            },
+        );
+
+        // counter.count += 1
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("counter".to_string()))),
+            field: "count".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+
+        let result = interp
+            .eval_compound_assign(&target, AstBinaryOp::Add, &value)
+            .unwrap();
+        assert_eq!(result, Value::Integer(6));
+
+        // Verify updated
+        let updated = interp.lookup_variable("counter").unwrap();
+        if let Value::Struct { fields, .. } = updated {
+            assert_eq!(fields.get("count"), Some(&Value::Integer(6)));
+        } else {
+            panic!("Expected Struct");
+        }
+    }
+
+    #[test]
+    fn test_eval_compound_assign_field_non_object_error() {
+        let mut interp = make_interpreter();
+
+        // Set a plain integer
+        interp.set_variable("x", Value::Integer(10));
+
+        // x.field += 1  -- should fail
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("x".to_string()))),
+            field: "field".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+
+        let result = interp.eval_compound_assign(&target, AstBinaryOp::Add, &value);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_compound_assign_complex_field_access_error() {
+        let mut interp = make_interpreter();
+
+        // Set up nested object
+        let mut inner = HashMap::new();
+        inner.insert("z".to_string(), Value::Integer(5));
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
+        interp.set_variable("obj", Value::Object(Arc::new(outer)));
+
+        // obj.inner.z += 1  -- complex field access not supported
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::FieldAccess {
+                object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
+                field: "inner".to_string(),
+            })),
+            field: "z".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+
+        let result = interp.eval_compound_assign(&target, AstBinaryOp::Add, &value);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Complex field access not supported"));
+    }
+
+    #[test]
+    fn test_eval_compound_assign_multiply_float() {
+        let mut interp = make_interpreter();
+        interp.set_variable("x", Value::Float(2.5));
+
+        // x *= 2.0
+        let target = make_expr(ExprKind::Identifier("x".to_string()));
+        let value = make_expr(ExprKind::Literal(Literal::Float(2.0)));
+
+        let result = interp
+            .eval_compound_assign(&target, AstBinaryOp::Multiply, &value)
+            .unwrap();
+        assert_eq!(result, Value::Float(5.0));
+    }
+
+    #[test]
+    fn test_eval_compound_assign_divide() {
+        let mut interp = make_interpreter();
+        interp.set_variable("x", Value::Integer(10));
+
+        // x /= 2
+        let target = make_expr(ExprKind::Identifier("x".to_string()));
+        let value = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
+
+        let result = interp
+            .eval_compound_assign(&target, AstBinaryOp::Divide, &value)
+            .unwrap();
+        assert_eq!(result, Value::Integer(5));
+    }
 }

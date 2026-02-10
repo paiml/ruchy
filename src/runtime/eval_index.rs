@@ -1201,4 +1201,177 @@ mod tests {
         assert_eq!(index_object_mut(&cell, "a").unwrap(), Value::Integer(1));
         assert_eq!(index_object_mut(&cell, "b").unwrap(), Value::Integer(2));
     }
+
+    // ============================================================================
+    // Coverage tests for slice_array (17 uncov lines, 66.7% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_slice_array_basic() {
+        let arr = vec![
+            Value::Integer(10),
+            Value::Integer(20),
+            Value::Integer(30),
+            Value::Integer(40),
+            Value::Integer(50),
+        ];
+        let result = slice_array(&arr, &Value::Integer(1), &Value::Integer(4), false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 3);
+            assert_eq!(sliced[0], Value::Integer(20));
+            assert_eq!(sliced[1], Value::Integer(30));
+            assert_eq!(sliced[2], Value::Integer(40));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_from_start() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Nil, &Value::Integer(2), false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+            assert_eq!(sliced[0], Value::Integer(1));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_to_end() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Integer(1), &Value::Nil, false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+            assert_eq!(sliced[0], Value::Integer(2));
+            assert_eq!(sliced[1], Value::Integer(3));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_full() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Nil, &Value::Nil, false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 3);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_inclusive() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Integer(0), &Value::Integer(1), true).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2); // [0..=1] includes both 0 and 1
+            assert_eq!(sliced[0], Value::Integer(1));
+            assert_eq!(sliced[1], Value::Integer(2));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_negative_start() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Integer(-2), &Value::Nil, false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+            assert_eq!(sliced[0], Value::Integer(2));
+            assert_eq!(sliced[1], Value::Integer(3));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_negative_end() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Integer(0), &Value::Integer(-1), false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+            assert_eq!(sliced[0], Value::Integer(1));
+            assert_eq!(sliced[1], Value::Integer(2));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_negative_start_out_of_bounds() {
+        let arr = vec![Value::Integer(1)];
+        let result = slice_array(&arr, &Value::Integer(-10), &Value::Nil, false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn test_slice_array_negative_end_out_of_bounds() {
+        let arr = vec![Value::Integer(1)];
+        let result = slice_array(&arr, &Value::Integer(0), &Value::Integer(-10), false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn test_slice_array_invalid_start_type() {
+        let arr = vec![Value::Integer(1)];
+        let result = slice_array(&arr, &Value::Bool(true), &Value::Integer(1), false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Range start must be"));
+    }
+
+    #[test]
+    fn test_slice_array_invalid_end_type() {
+        let arr = vec![Value::Integer(1)];
+        let result = slice_array(&arr, &Value::Integer(0), &Value::Bool(false), false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Range end must be"));
+    }
+
+    #[test]
+    fn test_slice_array_invalid_range_start_gt_end() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Integer(3), &Value::Integer(1), false);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Invalid range"));
+    }
+
+    #[test]
+    fn test_slice_array_end_clamped_to_len() {
+        // End index > len should be clamped
+        let arr = vec![Value::Integer(1), Value::Integer(2)];
+        let result = slice_array(&arr, &Value::Integer(0), &Value::Integer(10), false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_empty() {
+        let arr: Vec<Value> = vec![];
+        let result = slice_array(&arr, &Value::Nil, &Value::Nil, false).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_slice_array_negative_inclusive() {
+        let arr = vec![Value::Integer(1), Value::Integer(2), Value::Integer(3)];
+        let result = slice_array(&arr, &Value::Integer(-3), &Value::Integer(-1), true).unwrap();
+        if let Value::Array(sliced) = result {
+            assert_eq!(sliced.len(), 3); // [-3..=-1] inclusive
+        } else {
+            panic!("Expected Array");
+        }
+    }
 }

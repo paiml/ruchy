@@ -761,4 +761,234 @@ mod tests {
         // WASM module should have reasonable minimum size
         assert!(bytes.len() >= 8, "WASM module should have header + section");
     }
+
+    // =====================================================================
+    // compile() coverage tests - Function and Block branches
+    // =====================================================================
+
+    #[test]
+    fn test_compile_function_no_params() {
+        use crate::frontend::ast::Type as AstType;
+        use crate::frontend::ast::TypeKind;
+
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Function {
+                name: "add".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(make_int(42)),
+                is_async: false,
+                return_type: Some(AstType {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                }),
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile function: {:?}", result.err());
+        let module = result.unwrap();
+        assert!(module.has_export("add"), "Should export 'add' function");
+        assert!(module.validate().is_ok(), "Should produce valid WASM");
+    }
+
+    #[test]
+    fn test_compile_function_with_params() {
+        use crate::frontend::ast::{Param, Pattern, Type as AstType, TypeKind};
+
+        let compiler = WasmCompiler::new();
+        let ast = Expr {
+            kind: ExprKind::Function {
+                name: "add_two".to_string(),
+                type_params: vec![],
+                params: vec![
+                    Param {
+                        pattern: Pattern::Identifier("a".to_string()),
+                        ty: AstType {
+                            kind: TypeKind::Named("i32".to_string()),
+                            span: Span::default(),
+                        },
+                        span: Span::default(),
+                        is_mutable: false,
+                        default_value: None,
+                    },
+                    Param {
+                        pattern: Pattern::Identifier("b".to_string()),
+                        ty: AstType {
+                            kind: TypeKind::Named("i32".to_string()),
+                            span: Span::default(),
+                        },
+                        span: Span::default(),
+                        is_mutable: false,
+                        default_value: None,
+                    },
+                ],
+                body: Box::new(make_binary(make_int(1), BinaryOp::Add, make_int(2))),
+                is_async: false,
+                return_type: Some(AstType {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                }),
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile function with params");
+        let module = result.unwrap();
+        assert!(module.has_export("add_two"));
+        assert!(module.validate().is_ok());
+    }
+
+    #[test]
+    fn test_compile_function_with_return() {
+        use crate::frontend::ast::{Type as AstType, TypeKind};
+
+        let compiler = WasmCompiler::new();
+        let return_expr = Expr {
+            kind: ExprKind::Return {
+                value: Some(Box::new(make_int(99))),
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let ast = Expr {
+            kind: ExprKind::Function {
+                name: "get_val".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(return_expr),
+                is_async: false,
+                return_type: Some(AstType {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                }),
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile function with return");
+        let module = result.unwrap();
+        assert!(module.has_export("get_val"));
+    }
+
+    #[test]
+    fn test_compile_block_with_functions() {
+        use crate::frontend::ast::{Type as AstType, TypeKind};
+
+        let compiler = WasmCompiler::new();
+        let func1 = Expr {
+            kind: ExprKind::Function {
+                name: "func_a".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(make_int(1)),
+                is_async: false,
+                return_type: Some(AstType {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                }),
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let func2 = Expr {
+            kind: ExprKind::Function {
+                name: "func_b".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(make_int(2)),
+                is_async: false,
+                return_type: Some(AstType {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                }),
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let ast = Expr {
+            kind: ExprKind::Block(vec![func1, func2]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok(), "Should compile block with functions");
+        let module = result.unwrap();
+        // Block with functions should track exports
+        assert!(module.has_export("func_a"));
+        assert!(module.has_export("func_b"));
+    }
+
+    #[test]
+    fn test_compile_block_with_non_function() {
+        let compiler = WasmCompiler::new();
+        // Block containing a non-function expression
+        let ast = Expr {
+            kind: ExprKind::Block(vec![make_int(42), make_int(99)]),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+        let module = result.unwrap();
+        // Non-function block should have no exports
+        assert!(!module.has_export("main"));
+    }
+
+    #[test]
+    fn test_compile_function_without_return_appends_i32_const() {
+        use crate::frontend::ast::{Type as AstType, TypeKind};
+
+        let compiler = WasmCompiler::new();
+        // Function body is an integer literal (NOT a return), so the compiler
+        // should append I32Const(0) after the body
+        let ast = Expr {
+            kind: ExprKind::Function {
+                name: "no_ret".to_string(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(make_int(7)),
+                is_async: false,
+                return_type: Some(AstType {
+                    kind: TypeKind::Named("i32".to_string()),
+                    span: Span::default(),
+                }),
+                is_pub: true,
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = compiler.compile(&ast);
+        assert!(result.is_ok());
+        let module = result.unwrap();
+        assert!(module.validate().is_ok());
+        assert!(module.has_export("no_ret"));
+    }
 }

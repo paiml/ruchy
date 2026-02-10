@@ -1191,4 +1191,73 @@ mod tests {
         // Sample at index 16: variant 16 % 10 = 6
         assert!(samples[16].message.contains("(variant 6)"));
     }
+
+    // ============================================================================
+    // predict_with_knn coverage tests
+    // ============================================================================
+
+    #[test]
+    fn test_predict_with_knn_empty_training_data_falls_back_to_rules() {
+        // When training_features is empty, predict_with_knn should fallback to rule-based
+        let oracle = RuchyOracle::new();
+        let features = ErrorFeatures::extract("mismatched types", Some("E0308"));
+        let (category, confidence) = oracle.predict_with_knn(&features);
+        // Rule-based should identify type mismatch from keywords
+        // The result depends on predict_with_rules behavior
+        assert!(confidence > 0.0);
+        assert!(confidence <= 1.0);
+        // Category should be valid
+        let _ = category.to_index();
+    }
+
+    #[test]
+    fn test_predict_with_knn_with_training_data() {
+        let mut oracle = RuchyOracle::new();
+        // Manually add training data
+        oracle.record_error("mismatched types: expected i32", ErrorCategory::TypeMismatch);
+        oracle.record_error("borrow of moved value", ErrorCategory::BorrowChecker);
+        oracle.record_error("lifetime does not live long enough", ErrorCategory::LifetimeError);
+
+        // Now predict with k-NN (oracle has training features but no trained RF model)
+        let features = ErrorFeatures::extract("mismatched types: expected String", None);
+        let (category, confidence) = oracle.predict_with_knn(&features);
+
+        // Should find nearest neighbor in training data
+        assert!(confidence > 0.0);
+        assert!(confidence <= 1.0);
+        // Should be TypeMismatch since that's the closest training sample
+        assert_eq!(category, ErrorCategory::TypeMismatch);
+    }
+
+    #[test]
+    fn test_predict_with_knn_confidence_inversely_proportional_to_distance() {
+        let mut oracle = RuchyOracle::new();
+        // Add a single training sample
+        oracle.record_error("mismatched types: expected i32 found String", ErrorCategory::TypeMismatch);
+
+        // Query with very similar text should have high confidence
+        let features_close = ErrorFeatures::extract("mismatched types: expected i32 found String", None);
+        let (_, confidence_close) = oracle.predict_with_knn(&features_close);
+
+        // Query with very different text should have lower confidence
+        let features_far = ErrorFeatures::extract("completely unrelated error message about nothing", None);
+        let (_, confidence_far) = oracle.predict_with_knn(&features_far);
+
+        assert!(confidence_close >= confidence_far,
+            "Closer match should have higher confidence: close={confidence_close}, far={confidence_far}");
+    }
+
+    #[test]
+    fn test_predict_with_knn_selects_nearest_neighbor() {
+        let mut oracle = RuchyOracle::new();
+        // Add training data for multiple categories
+        oracle.record_error("borrow of moved value: x", ErrorCategory::BorrowChecker);
+        oracle.record_error("cannot borrow x as mutable", ErrorCategory::BorrowChecker);
+        oracle.record_error("type mismatch expected i32", ErrorCategory::TypeMismatch);
+
+        // Query about borrowing should match BorrowChecker samples
+        let features = ErrorFeatures::extract("borrow of moved value: y", None);
+        let (category, _) = oracle.predict_with_knn(&features);
+        assert_eq!(category, ErrorCategory::BorrowChecker);
+    }
 }

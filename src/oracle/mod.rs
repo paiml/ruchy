@@ -1711,4 +1711,74 @@ mod tests {
         assert!(categories.contains(&ErrorCategory::LifetimeError));
         assert_eq!(categories.len(), 3, "Should have exactly 3 categories");
     }
+
+    // ============================================================================
+    // record_success coverage tests (OnlineLearner)
+    // ============================================================================
+
+    #[test]
+    fn test_record_success_when_disabled_does_nothing() {
+        let mut learner = OnlineLearner::new();
+        learner.set_enabled(false);
+
+        let error = CompilationError::new("mismatched types").with_code("E0308");
+        learner.record_success(&error, ErrorCategory::TypeMismatch, 0.99);
+
+        // Should not record anything since learner is disabled
+        assert_eq!(learner.hotfix().stats().samples_accumulated, 0);
+    }
+
+    #[test]
+    fn test_record_success_when_enabled_records_prediction() {
+        let mut learner = OnlineLearner::new();
+        assert!(learner.is_enabled());
+
+        let error = CompilationError::new("mismatched types").with_code("E0308");
+        // High confidence above default hotfix_confidence (0.95)
+        learner.record_success(&error, ErrorCategory::TypeMismatch, 0.99);
+
+        // Should record the fix (high confidence >= 0.95 threshold)
+        assert_eq!(learner.hotfix().stats().samples_accumulated, 1);
+    }
+
+    #[test]
+    fn test_record_success_low_confidence_no_corpus_addition() {
+        let mut learner = OnlineLearner::new();
+
+        let error = CompilationError::new("some error").with_code("E0000");
+        // Low confidence below hotfix_confidence threshold (0.95)
+        learner.record_success(&error, ErrorCategory::Other, 0.5);
+
+        // Should NOT add to corpus (confidence too low)
+        assert_eq!(learner.hotfix().stats().samples_accumulated, 0);
+    }
+
+    #[test]
+    fn test_record_success_with_custom_config_threshold() {
+        let config = OnlineLearningConfig {
+            hotfix_confidence: 0.80,
+            ..Default::default()
+        };
+        let mut learner = OnlineLearner::with_config(config);
+
+        let error = CompilationError::new("borrow error").with_code("E0382");
+        // Confidence 0.85 is above custom threshold of 0.80
+        learner.record_success(&error, ErrorCategory::BorrowChecker, 0.85);
+
+        // Should record to corpus since 0.85 >= 0.80
+        assert_eq!(learner.hotfix().stats().samples_accumulated, 1);
+    }
+
+    #[test]
+    fn test_record_success_exactly_at_threshold() {
+        let mut learner = OnlineLearner::new();
+        // Default threshold is 0.95
+
+        let error = CompilationError::new("lifetime error").with_code("E0597");
+        // Confidence exactly at threshold
+        learner.record_success(&error, ErrorCategory::LifetimeError, 0.95);
+
+        // Should add to corpus (>= threshold)
+        assert_eq!(learner.hotfix().stats().samples_accumulated, 1);
+    }
 }

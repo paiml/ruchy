@@ -465,3 +465,189 @@
                 .expect("negative range iteration should succeed");
         assert_eq!(result, Value::Integer(-1));
     }
+
+    // ============================================================================
+    // Coverage tests for eval_let_expr (17 uncov lines, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_let_expr_basic_binding() {
+        let value_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 0),
+        );
+        let body_expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 0),
+        );
+
+        let mut eval_expr = |expr: &Expr| -> Result<Value, InterpreterError> {
+            match &expr.kind {
+                ExprKind::Literal(Literal::Integer(n, _)) => Ok(Value::Integer(*n)),
+                ExprKind::Identifier(_) => Ok(Value::Integer(99)),
+                _ => Ok(Value::Nil),
+            }
+        };
+
+        let mut with_variable =
+            |name: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                assert_eq!(name, "x");
+                assert_eq!(val, Value::Integer(42));
+                Ok(val)
+            };
+
+        let result = eval_let_expr("x", &value_expr, &body_expr, &mut eval_expr, &mut with_variable)
+            .expect("eval_let_expr should succeed");
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_let_expr_string_binding() {
+        let value_expr = Expr::new(
+            ExprKind::Literal(Literal::String("hello".to_string())),
+            Span::new(0, 0),
+        );
+        let body_expr = Expr::new(
+            ExprKind::Identifier("s".to_string()),
+            Span::new(0, 0),
+        );
+
+        let mut eval_expr = |expr: &Expr| -> Result<Value, InterpreterError> {
+            match &expr.kind {
+                ExprKind::Literal(Literal::String(s)) => Ok(Value::from_string(s.clone())),
+                _ => Ok(Value::Nil),
+            }
+        };
+
+        let mut with_variable =
+            |name: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                assert_eq!(name, "s");
+                Ok(val)
+            };
+
+        let result = eval_let_expr("s", &value_expr, &body_expr, &mut eval_expr, &mut with_variable)
+            .expect("eval_let_expr with string should succeed");
+        match result {
+            Value::String(s) => assert_eq!(s.as_ref(), "hello"),
+            _ => panic!("Expected string value"),
+        }
+    }
+
+    #[test]
+    fn test_eval_let_expr_value_eval_error() {
+        let value_expr = Expr::new(
+            ExprKind::Identifier("undefined_var".to_string()),
+            Span::new(0, 0),
+        );
+        let body_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::new(0, 0),
+        );
+
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Err(InterpreterError::RuntimeError("variable not found".to_string()))
+        };
+
+        let mut with_variable =
+            |_name: &str,
+             _val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                panic!("should not be called when eval fails");
+            };
+
+        let result = eval_let_expr("x", &value_expr, &body_expr, &mut eval_expr, &mut with_variable);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_let_expr_with_variable_callback_error() {
+        let value_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::new(0, 0),
+        );
+        let body_expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 0),
+        );
+
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(42))
+        };
+
+        let mut with_variable =
+            |_name: &str,
+             _val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                Err(InterpreterError::RuntimeError("binding error".to_string()))
+            };
+
+        let result = eval_let_expr("x", &value_expr, &body_expr, &mut eval_expr, &mut with_variable);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_eval_let_expr_nil_value() {
+        let value_expr = Expr::new(
+            ExprKind::Literal(Literal::Null),
+            Span::new(0, 0),
+        );
+        let body_expr = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 0),
+        );
+
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        let mut with_variable =
+            |name: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                assert_eq!(name, "x");
+                assert_eq!(val, Value::Nil);
+                Ok(val)
+            };
+
+        let result = eval_let_expr("x", &value_expr, &body_expr, &mut eval_expr, &mut with_variable)
+            .expect("eval_let_expr with nil should succeed");
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_let_expr_with_variable_uses_eval() {
+        // Test that with_variable can use the eval closure
+        let value_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(10, None)),
+            Span::new(0, 0),
+        );
+        let body_expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(20, None)),
+            Span::new(0, 0),
+        );
+
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Integer(10))
+        };
+
+        let mut with_variable =
+            |_name: &str,
+             val: Value,
+             eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                // Use eval closure within with_variable
+                let body = Expr::new(
+                    ExprKind::Literal(Literal::Integer(99, None)),
+                    Span::new(0, 0),
+                );
+                let _ = eval(&body);
+                Ok(val)
+            };
+
+        let result = eval_let_expr("x", &value_expr, &body_expr, &mut eval_expr, &mut with_variable)
+            .expect("eval_let_expr should succeed");
+        assert_eq!(result, Value::Integer(10));
+    }

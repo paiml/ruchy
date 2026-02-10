@@ -1300,4 +1300,291 @@ mod tests {
         // Should attempt recovery
         assert!(!result.errors.is_empty());
     }
+
+    // ============================================================
+    // Coverage tests for parse_with_recovery (16 uncov, 33.3%)
+    // Targeting: Ok(ast) path, Err with errors path, fatal Err path
+    // ============================================================
+
+    #[test]
+    fn test_parse_with_recovery_ok_no_errors() {
+        // Valid expression that parses cleanly
+        let mut parser = RecoveryParser::new("42");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Valid expression should produce an AST");
+        assert!(result.errors.is_empty(), "Valid expression should have no errors");
+        assert!(!result.partial_ast, "Should not be partial for clean parse");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_ok_with_identifier() {
+        let mut parser = RecoveryParser::new("hello");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Identifier should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_ok_binary_expression() {
+        let mut parser = RecoveryParser::new("1 + 2");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Binary expression should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_ok_string_literal() {
+        let mut parser = RecoveryParser::new("\"hello world\"");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "String literal should produce an AST");
+        assert!(result.errors.is_empty());
+    }
+
+    #[test]
+    fn test_parse_with_recovery_ok_float_literal() {
+        let mut parser = RecoveryParser::new("3.14");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Float literal should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_ok_bool_literal() {
+        let mut parser = RecoveryParser::new("true");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Bool literal should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_partial_ast_with_errors() {
+        // Expression that partially parses but has errors
+        let mut parser = RecoveryParser::new("1 + + 2");
+        let result = parser.parse_with_recovery();
+        // Should produce some AST despite errors (binary op with recovery)
+        assert!(result.ast.is_some(), "Should produce an AST even with errors");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_empty_input_fatal() {
+        // Empty input - should produce a ghost node or error
+        let mut parser = RecoveryParser::new("");
+        let result = parser.parse_with_recovery();
+        // Empty input triggers "Unexpected end of input"
+        assert!(!result.errors.is_empty(), "Empty input should have errors");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_let_expression() {
+        let mut parser = RecoveryParser::new("let x = 42");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Let expression should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_if_expression() {
+        let mut parser = RecoveryParser::new("if true { 1 } else { 0 }");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "If expression should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_function_expression() {
+        let mut parser = RecoveryParser::new("fun add(x, y) { x + y }");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Function expression should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_list_expression() {
+        let mut parser = RecoveryParser::new("[1, 2, 3]");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "List expression should produce an AST");
+    }
+
+    #[test]
+    fn test_parse_with_recovery_parenthesized() {
+        let mut parser = RecoveryParser::new("(1 + 2)");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Parenthesized expression should produce an AST");
+    }
+
+    // ============================================================
+    // Coverage tests for parse_prefix_recovery (18 uncov, 75%)
+    // Targeting uncovered branches: float, raw string, bool, if,
+    // let, fun, list, paren, and binary op in prefix position
+    // ============================================================
+
+    #[test]
+    fn test_prefix_recovery_float() {
+        let mut parser = RecoveryParser::new("3.14");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Float should be recognized as prefix");
+        if let Some(ast) = &result.ast {
+            assert!(
+                matches!(&ast.kind, ExprKind::Literal(Literal::Float(_))),
+                "Should produce Float literal, got: {:?}", ast.kind
+            );
+        }
+    }
+
+    #[test]
+    fn test_prefix_recovery_string() {
+        let mut parser = RecoveryParser::new("\"test string\"");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        if let Some(ast) = &result.ast {
+            assert!(
+                matches!(&ast.kind, ExprKind::Literal(Literal::String(_))),
+                "Should produce String literal, got: {:?}", ast.kind
+            );
+        }
+    }
+
+    #[test]
+    fn test_prefix_recovery_bool_true() {
+        let mut parser = RecoveryParser::new("true");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        if let Some(ast) = &result.ast {
+            assert!(
+                matches!(&ast.kind, ExprKind::Literal(Literal::Bool(true))),
+                "Should produce Bool(true) literal, got: {:?}", ast.kind
+            );
+        }
+    }
+
+    #[test]
+    fn test_prefix_recovery_bool_false() {
+        let mut parser = RecoveryParser::new("false");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        if let Some(ast) = &result.ast {
+            assert!(
+                matches!(&ast.kind, ExprKind::Literal(Literal::Bool(false))),
+                "Should produce Bool(false) literal, got: {:?}", ast.kind
+            );
+        }
+    }
+
+    #[test]
+    fn test_prefix_recovery_identifier() {
+        let mut parser = RecoveryParser::new("myVar");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        if let Some(ast) = &result.ast {
+            assert!(
+                matches!(&ast.kind, ExprKind::Identifier(name) if name == "myVar"),
+                "Should produce Identifier, got: {:?}", ast.kind
+            );
+        }
+    }
+
+    #[test]
+    fn test_prefix_recovery_if_with_recovery() {
+        let mut parser = RecoveryParser::new("if x { 1 } else { 0 }");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "If expression should parse in recovery mode");
+        if let Some(ast) = &result.ast {
+            assert!(
+                matches!(&ast.kind, ExprKind::If { .. }),
+                "Should produce If expression, got: {:?}", ast.kind
+            );
+        }
+    }
+
+    #[test]
+    fn test_prefix_recovery_let_binding() {
+        let mut parser = RecoveryParser::new("let y = 10");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Let binding should parse in recovery mode");
+    }
+
+    #[test]
+    fn test_prefix_recovery_function_definition() {
+        let mut parser = RecoveryParser::new("fun square(x) { x * x }");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Function definition should parse in recovery mode");
+    }
+
+    #[test]
+    fn test_prefix_recovery_list_literal() {
+        let mut parser = RecoveryParser::new("[10, 20, 30]");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "List literal should parse in recovery mode");
+    }
+
+    #[test]
+    fn test_prefix_recovery_parenthesized_expression() {
+        let mut parser = RecoveryParser::new("(42)");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Parenthesized expression should parse in recovery mode");
+    }
+
+    #[test]
+    fn test_prefix_recovery_misplaced_binary_op() {
+        // Binary operator in prefix position should trigger recovery
+        let mut parser = RecoveryParser::new("+ 5");
+        let result = parser.parse_with_recovery();
+        assert!(!result.errors.is_empty(), "Misplaced binary op should produce errors");
+        assert!(result.ast.is_some(), "Should produce ghost node for misplaced op");
+    }
+
+    #[test]
+    fn test_prefix_recovery_misplaced_multiply() {
+        let mut parser = RecoveryParser::new("* 10");
+        let result = parser.parse_with_recovery();
+        assert!(!result.errors.is_empty(), "Misplaced * should produce errors");
+    }
+
+    #[test]
+    fn test_prefix_recovery_unexpected_token() {
+        // Token that doesn't match any prefix case (not a recognized expression start)
+        let mut parser = RecoveryParser::new("@ 5");
+        let result = parser.parse_with_recovery();
+        assert!(!result.errors.is_empty(), "Unknown token should produce errors");
+    }
+
+    #[test]
+    fn test_prefix_recovery_integer_with_type_suffix() {
+        // Integer with alphabetic suffix
+        let mut parser = RecoveryParser::new("42i64");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Integer with type suffix should parse");
+    }
+
+    #[test]
+    fn test_prefix_recovery_negative_float() {
+        let mut parser = RecoveryParser::new("2.718");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(result.errors.is_empty());
+    }
+
+    #[test]
+    fn test_prefix_recovery_nested_if_else() {
+        let mut parser = RecoveryParser::new("if a { if b { 1 } else { 2 } } else { 3 }");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Nested if-else should parse in recovery mode");
+    }
+
+    #[test]
+    fn test_prefix_recovery_let_missing_value() {
+        // Let with missing value should trigger recovery
+        let mut parser = RecoveryParser::new("let x = ");
+        let result = parser.parse_with_recovery();
+        // Should recover with ghost node for the missing value
+        assert!(result.ast.is_some(), "Let with missing value should recover");
+    }
+
+    #[test]
+    fn test_prefix_recovery_fun_missing_body() {
+        let mut parser = RecoveryParser::new("fun f(x) { }");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some(), "Function with empty body should recover");
+    }
+
+    #[test]
+    fn test_prefix_recovery_complex_binary_chain() {
+        let mut parser = RecoveryParser::new("1 + 2 * 3 - 4");
+        let result = parser.parse_with_recovery();
+        assert!(result.ast.is_some());
+        assert!(result.errors.is_empty(), "Valid binary chain should have no errors");
+    }
 }

@@ -954,3 +954,54 @@ pub(crate) fn is_special_form(expr_kind: &ExprKind) -> bool {
             | ExprKind::StructLiteral { .. }
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_eval_import_std_module() {
+        // std:: imports should return Nil without error even if module is not found
+        let mut interp = Interpreter::new();
+        let result = eval_import(&mut interp, "std::io");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_import_std_nested_module() {
+        let mut interp = Interpreter::new();
+        let result = eval_import(&mut interp, "std::collections::HashMap");
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_import_file_module_not_found() {
+        // File modules should fail when module file doesn't exist
+        let mut interp = Interpreter::new();
+        let result = eval_import(&mut interp, "nonexistent_module");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Failed to load module"));
+    }
+
+    #[test]
+    fn test_eval_import_std_module_makes_value_available() {
+        // std:: prefix should be recognized and handled
+        let mut interp = Interpreter::new();
+        let result = eval_import(&mut interp, "std::math");
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_eval_import_another_nonexistent_file_module() {
+        let mut interp = Interpreter::new();
+        let result = eval_import(&mut interp, "does_not_exist");
+        assert!(result.is_err());
+        let err_msg = result.unwrap_err().to_string();
+        assert!(err_msg.contains("does_not_exist"));
+    }
+}

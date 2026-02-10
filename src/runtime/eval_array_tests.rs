@@ -269,3 +269,249 @@
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("union()"));
     }
+
+    // ============================================================================
+    // Coverage tests for eval_array_intersection (17 uncov lines, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_array_intersection_basic() {
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ]);
+        let other = Value::Array(Arc::from(vec![
+            Value::Integer(3),
+            Value::Integer(4),
+            Value::Integer(5),
+            Value::Integer(6),
+        ]));
+        let result = eval_array_intersection(&arr, &other).expect("intersection should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 2);
+            assert_eq!(result_arr[0], Value::Integer(3));
+            assert_eq!(result_arr[1], Value::Integer(4));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_intersection_no_common() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)]));
+        let result = eval_array_intersection(&arr, &other).expect("intersection should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_intersection_all_common() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = eval_array_intersection(&arr, &other).expect("intersection should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_intersection_empty_first() {
+        let arr: Arc<[Value]> = Arc::from(vec![]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let result = eval_array_intersection(&arr, &other).expect("intersection should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_intersection_empty_second() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1)]);
+        let other = Value::Array(Arc::from(vec![]));
+        let result = eval_array_intersection(&arr, &other).expect("intersection should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_intersection_duplicates_in_first() {
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(1),
+            Value::Integer(2),
+        ]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)]));
+        let result = eval_array_intersection(&arr, &other).expect("intersection should succeed");
+        if let Value::Array(result_arr) = result {
+            // Deduplication: only unique elements
+            assert_eq!(result_arr.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_intersection_non_array_arg_error() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1)]);
+        let other = Value::Integer(42);
+        let result = eval_array_intersection(&arr, &other);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("intersection()"));
+    }
+
+    #[test]
+    fn test_eval_array_intersection_with_strings() {
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+            Value::from_string("c".to_string()),
+        ]);
+        let other = Value::Array(Arc::from(vec![
+            Value::from_string("b".to_string()),
+            Value::from_string("d".to_string()),
+        ]));
+        let result = eval_array_intersection(&arr, &other).expect("intersection should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 1);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    // ============================================================================
+    // Coverage tests for eval_array_difference (17 uncov lines, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_array_difference_basic() {
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+            Value::Integer(4),
+        ]);
+        let other = Value::Array(Arc::from(vec![
+            Value::Integer(3),
+            Value::Integer(4),
+            Value::Integer(5),
+            Value::Integer(6),
+        ]));
+        let result = eval_array_difference(&arr, &other).expect("difference should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 2);
+            assert_eq!(result_arr[0], Value::Integer(1));
+            assert_eq!(result_arr[1], Value::Integer(2));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_difference_no_overlap() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)]));
+        let result = eval_array_difference(&arr, &other).expect("difference should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_difference_all_removed() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(2),
+            Value::Integer(3),
+        ]));
+        let result = eval_array_difference(&arr, &other).expect("difference should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_difference_empty_first() {
+        let arr: Arc<[Value]> = Arc::from(vec![]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(1)]));
+        let result = eval_array_difference(&arr, &other).expect("difference should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 0);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_difference_empty_second() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1), Value::Integer(2)]);
+        let other = Value::Array(Arc::from(vec![]));
+        let result = eval_array_difference(&arr, &other).expect("difference should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_difference_duplicates_in_first() {
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::Integer(1),
+            Value::Integer(1),
+            Value::Integer(2),
+        ]);
+        let other = Value::Array(Arc::from(vec![Value::Integer(3)]));
+        let result = eval_array_difference(&arr, &other).expect("difference should succeed");
+        if let Value::Array(result_arr) = result {
+            // Deduplication: only unique elements retained
+            assert_eq!(result_arr.len(), 2);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_array_difference_non_array_arg_error() {
+        let arr: Arc<[Value]> = Arc::from(vec![Value::Integer(1)]);
+        let other = Value::from_string("not an array".to_string());
+        let result = eval_array_difference(&arr, &other);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("difference()"));
+    }
+
+    #[test]
+    fn test_eval_array_difference_with_strings() {
+        let arr: Arc<[Value]> = Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+            Value::from_string("c".to_string()),
+        ]);
+        let other = Value::Array(Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("c".to_string()),
+        ]));
+        let result = eval_array_difference(&arr, &other).expect("difference should succeed");
+        if let Value::Array(result_arr) = result {
+            assert_eq!(result_arr.len(), 1);
+        } else {
+            panic!("Expected Array");
+        }
+    }

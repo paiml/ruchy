@@ -827,6 +827,67 @@ mod tests {
         assert!(result.is_ok(), "Async with if should parse");
     }
 
+    // ============================================================
+    // Coverage tests for parse_async_arrow_lambda (17 uncov, 0%)
+    // Syntax: async x -> body (Token::Arrow = "->")
+    // ============================================================
+
+    #[test]
+    fn test_async_arrow_lambda_simple() {
+        // async x -> expr uses -> (Arrow) not => (FatArrow)
+        let code = "async x -> x + 1";
+        let result = parse(code);
+        assert!(result.is_ok(), "Async arrow lambda with -> should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_async_arrow_lambda_produces_async_lambda_kind() {
+        let code = "async x -> x";
+        let expr = parse(code).unwrap();
+        if let Some(exprs) = get_block_exprs(&expr) {
+            assert!(
+                matches!(&exprs[0].kind, ExprKind::AsyncLambda { .. }),
+                "Async arrow lambda should produce AsyncLambda ExprKind, got: {:?}",
+                &exprs[0].kind
+            );
+        }
+    }
+
+    #[test]
+    fn test_async_arrow_lambda_arithmetic_body() {
+        let code = "async n -> n * 2 + 1";
+        let result = parse(code);
+        assert!(result.is_ok(), "Async arrow lambda with arithmetic should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_async_arrow_lambda_with_binary_body() {
+        let code = "async val -> val + 10";
+        let result = parse(code);
+        assert!(result.is_ok(), "Async arrow lambda with binary body should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_async_arrow_lambda_method_call_body() {
+        let code = "async s -> s.len()";
+        let result = parse(code);
+        assert!(result.is_ok(), "Async arrow lambda with method call should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_async_arrow_lambda_single_char_param() {
+        let code = "async a -> a";
+        let result = parse(code);
+        assert!(result.is_ok(), "Async arrow lambda with single char param should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_async_arrow_lambda_long_param() {
+        let code = "async response -> response";
+        let result = parse(code);
+        assert!(result.is_ok(), "Async arrow lambda with long param name should parse: {:?}", result.err());
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {
