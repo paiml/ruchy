@@ -1543,4 +1543,172 @@ mod tests {
         assert_eq!(prov.count_by_source(SampleSource::Examples), 3);
         assert_eq!(prov.count_by_source(SampleSource::Production), 0);
     }
+
+    // ============================================================================
+    // Coverage: generate_synthetic_samples via CorpusCollector::collect()
+    // ============================================================================
+
+    #[test]
+    fn test_corpus_collector_collect_generates_samples() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        // Dedup reduces 170 raw samples to unique feature vectors (approx 8-9)
+        assert!(corpus.len() > 0, "Should generate at least some samples");
+        assert!(corpus.len() <= 170, "Should not exceed raw count");
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_has_type_mismatch_samples() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        let type_mismatch_count = corpus
+            .samples
+            .iter()
+            .filter(|s| s.category == ErrorCategory::TypeMismatch)
+            .count();
+        // 5 unique type mismatch messages, dedup keeps unique feature vectors
+        assert!(type_mismatch_count >= 1, "Should have at least 1 type mismatch sample");
+        assert!(type_mismatch_count <= 5, "At most 5 unique type mismatch messages");
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_has_borrow_checker_samples() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        let borrow_count = corpus
+            .samples
+            .iter()
+            .filter(|s| s.category == ErrorCategory::BorrowChecker)
+            .count();
+        assert!(borrow_count >= 1, "Should have at least 1 borrow sample");
+        assert!(borrow_count <= 2, "At most 2 unique borrow messages");
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_has_lifetime_samples() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        let lifetime_count = corpus
+            .samples
+            .iter()
+            .filter(|s| s.category == ErrorCategory::LifetimeError)
+            .count();
+        assert!(lifetime_count >= 1, "Should have at least 1 lifetime sample");
+        assert!(lifetime_count <= 2, "At most 2 unique lifetime messages");
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_difficulty_levels() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        // Type mismatch samples have difficulty 0.25
+        let type_sample = corpus
+            .samples
+            .iter()
+            .find(|s| s.category == ErrorCategory::TypeMismatch)
+            .expect("Should have type mismatch sample");
+        assert!((type_sample.difficulty - 0.25).abs() < f32::EPSILON);
+        // Borrow checker samples have difficulty 0.5
+        let borrow_sample = corpus
+            .samples
+            .iter()
+            .find(|s| s.category == ErrorCategory::BorrowChecker)
+            .expect("Should have borrow sample");
+        assert!((borrow_sample.difficulty - 0.5).abs() < f32::EPSILON);
+        // Lifetime samples have difficulty 0.75
+        let lifetime_sample = corpus
+            .samples
+            .iter()
+            .find(|s| s.category == ErrorCategory::LifetimeError)
+            .expect("Should have lifetime sample");
+        assert!((lifetime_sample.difficulty - 0.75).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_all_synthetic_source() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        assert!(
+            corpus
+                .samples
+                .iter()
+                .all(|s| s.source == SampleSource::Synthetic),
+            "All generated samples should be synthetic"
+        );
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_has_error_codes() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        // All samples should have error codes
+        assert!(
+            corpus.samples.iter().all(|s| s.error_code.is_some()),
+            "All samples should have error codes"
+        );
+        // Check specific error codes exist
+        let codes: std::collections::HashSet<_> = corpus
+            .samples
+            .iter()
+            .filter_map(|s| s.error_code.as_deref())
+            .collect();
+        assert!(codes.contains("E0308"), "Should have E0308 (type mismatch)");
+        assert!(codes.contains("E0382"), "Should have E0382 (moved value)");
+        assert!(codes.contains("E0502"), "Should have E0502 (mutable borrow)");
+        assert!(codes.contains("E0597"), "Should have E0597 (lifetime)");
+        assert!(codes.contains("E0621"), "Should have E0621 (lifetime)");
+    }
+
+    #[test]
+    fn test_corpus_collector_with_production_flag() {
+        let collector = CorpusCollector::new().with_production(true);
+        let corpus = collector.collect();
+        // Production flag doesn't change synthetic sample count (dedup applies)
+        assert!(corpus.len() > 0);
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_message_content() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        // Type mismatch messages should contain "mismatched types"
+        let type_msgs: Vec<_> = corpus
+            .samples
+            .iter()
+            .filter(|s| s.category == ErrorCategory::TypeMismatch)
+            .map(|s| s.message.as_str())
+            .collect();
+        assert!(
+            type_msgs
+                .iter()
+                .all(|m| m.contains("mismatched types")),
+            "Type mismatch messages should contain 'mismatched types'"
+        );
+        // Borrow messages should contain "borrow"
+        let borrow_msgs: Vec<_> = corpus
+            .samples
+            .iter()
+            .filter(|s| s.category == ErrorCategory::BorrowChecker)
+            .map(|s| s.message.as_str())
+            .collect();
+        assert!(
+            borrow_msgs.iter().all(|m| m.contains("borrow")),
+            "Borrow messages should contain 'borrow'"
+        );
+    }
+
+    #[test]
+    fn test_corpus_collector_collect_three_categories() {
+        let collector = CorpusCollector::new();
+        let corpus = collector.collect();
+        let categories: std::collections::HashSet<_> = corpus
+            .samples
+            .iter()
+            .map(|s| s.category)
+            .collect();
+        assert!(categories.contains(&ErrorCategory::TypeMismatch));
+        assert!(categories.contains(&ErrorCategory::BorrowChecker));
+        assert!(categories.contains(&ErrorCategory::LifetimeError));
+        assert_eq!(categories.len(), 3, "Should have exactly 3 categories");
+    }
 }

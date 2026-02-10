@@ -1240,4 +1240,83 @@ mod tests {
         assert!(code.contains("__ruchy_main"));
         assert!(code.contains("println"), "Body should be transpiled");
     }
+
+    // ========================================================================
+    // Coverage: transpile_block_with_functions (22 uncov, 0% coverage)
+    // ========================================================================
+
+    #[test]
+    fn test_block_with_functions_has_main_no_polars_no_hashmap() {
+        let transpiler = Transpiler::new();
+        let main_fn = func_expr("main", int_expr(0));
+        let exprs = vec![main_fn];
+        let result = transpiler.transpile_block_with_functions(&exprs, false, false);
+        assert!(result.is_ok(), "Should transpile block with main function");
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"), "Should contain main function");
+        assert!(!code.contains("polars"), "Should not contain polars import");
+        assert!(!code.contains("HashMap"), "Should not contain HashMap import");
+    }
+
+    #[test]
+    fn test_block_with_functions_has_main_with_polars() {
+        let transpiler = Transpiler::new();
+        let main_fn = func_expr("main", int_expr(0));
+        let exprs = vec![main_fn];
+        let result = transpiler.transpile_block_with_functions(&exprs, true, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+        assert!(code.contains("polars"), "Should contain polars import");
+        assert!(!code.contains("HashMap"));
+    }
+
+    #[test]
+    fn test_block_with_functions_has_main_with_hashmap() {
+        let transpiler = Transpiler::new();
+        let main_fn = func_expr("main", int_expr(0));
+        let exprs = vec![main_fn];
+        let result = transpiler.transpile_block_with_functions(&exprs, false, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+        assert!(!code.contains("polars"));
+        assert!(code.contains("HashMap"), "Should contain HashMap import");
+    }
+
+    #[test]
+    fn test_block_with_functions_has_main_with_both() {
+        let transpiler = Transpiler::new();
+        let main_fn = func_expr("main", int_expr(0));
+        let exprs = vec![main_fn];
+        let result = transpiler.transpile_block_with_functions(&exprs, true, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+        assert!(code.contains("polars"), "Should contain polars import");
+        assert!(code.contains("HashMap"), "Should contain HashMap import");
+    }
+
+    #[test]
+    fn test_block_with_functions_no_main_falls_through() {
+        let transpiler = Transpiler::new();
+        // Block with no main function - should use result printing approach
+        let exprs = vec![int_expr(42)];
+        let result = transpiler.transpile_block_with_functions(&exprs, false, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"), "Should wrap in main");
+    }
+
+    #[test]
+    fn test_block_with_functions_main_plus_helper() {
+        let transpiler = Transpiler::new();
+        let helper_fn = func_expr("helper", int_expr(99));
+        let main_fn = func_expr("main", int_expr(0));
+        let exprs = vec![helper_fn, main_fn];
+        let result = transpiler.transpile_block_with_functions(&exprs, false, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+    }
 }

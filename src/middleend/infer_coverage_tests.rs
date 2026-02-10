@@ -2,7 +2,7 @@
     use crate::frontend::ast::{
         BinaryOp, Expr, ExprKind, Literal, Pattern, Span, StructPatternField, Type, TypeKind,
     };
-    use crate::middleend::types::{MonoType, TyVarGenerator};
+    use crate::middleend::types::{MonoType, TyVarGenerator, TypeScheme};
 
     // ============================================================================
     // Coverage tests for infer_pattern (55 uncov lines, 39.6% coverage)
@@ -842,4 +842,237 @@
         let result = InferenceContext::ast_type_to_mono_static(&ty)
             .expect("Refined type should extract base type");
         assert_eq!(result, MonoType::Int);
+    }
+
+    // ============================================================================
+    // Coverage: infer_dataframe_operation (27 uncov, 0% coverage)
+    // ============================================================================
+
+    fn make_df_source() -> Expr {
+        use crate::frontend::ast::DataFrameColumn;
+        Expr::new(
+            ExprKind::DataFrame {
+                columns: vec![
+                    DataFrameColumn {
+                        name: "age".to_string(),
+                        values: vec![Expr::new(
+                            ExprKind::Literal(Literal::Integer(25, None)),
+                            make_span(),
+                        )],
+                    },
+                    DataFrameColumn {
+                        name: "name".to_string(),
+                        values: vec![Expr::new(
+                            ExprKind::Literal(Literal::String("Alice".to_string())),
+                            make_span(),
+                        )],
+                    },
+                ],
+            },
+            make_span(),
+        )
+    }
+
+    fn make_df_operation_expr(
+        source: Expr,
+        operation: crate::frontend::ast::DataFrameOp,
+    ) -> Expr {
+        Expr::new(
+            ExprKind::DataFrameOperation {
+                source: Box::new(source),
+                operation,
+            },
+            make_span(),
+        )
+    }
+
+    #[test]
+    fn test_infer_dataframe_filter() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let filter_cond = Expr::new(
+            ExprKind::Literal(Literal::Bool(true)),
+            make_span(),
+        );
+        let expr = make_df_operation_expr(source, DataFrameOp::Filter(Box::new(filter_cond)));
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Filter should preserve DataFrame type");
+        let ty = result.unwrap();
+        assert!(
+            matches!(ty, MonoType::DataFrame(_)),
+            "Filter result should be DataFrame"
+        );
+    }
+
+    #[test]
+    fn test_infer_dataframe_select() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(
+            source,
+            DataFrameOp::Select(vec!["age".to_string()]),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Select should succeed");
+        if let Ok(MonoType::DataFrame(cols)) = result {
+            assert_eq!(cols.len(), 1, "Select one column should yield one column");
+            assert_eq!(cols[0].0, "age");
+        } else {
+            panic!("Expected DataFrame type from select");
+        }
+    }
+
+    #[test]
+    fn test_infer_dataframe_select_nonexistent_column() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(
+            source,
+            DataFrameOp::Select(vec!["nonexistent".to_string()]),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Select nonexistent column still succeeds with empty DataFrame");
+        if let Ok(MonoType::DataFrame(cols)) = result {
+            assert_eq!(cols.len(), 0, "Nonexistent column yields empty DataFrame");
+        }
+    }
+
+    #[test]
+    fn test_infer_dataframe_groupby() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(
+            source,
+            DataFrameOp::GroupBy(vec!["age".to_string()]),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "GroupBy should preserve DataFrame type");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_aggregate() {
+        use crate::frontend::ast::{AggregateOp, DataFrameOp};
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(
+            source,
+            DataFrameOp::Aggregate(vec![AggregateOp::Sum("age".to_string())]),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Aggregate should preserve DataFrame type");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_join() {
+        use crate::frontend::ast::{DataFrameOp, JoinType};
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let other = make_df_source();
+        let expr = make_df_operation_expr(
+            source,
+            DataFrameOp::Join {
+                other: Box::new(other),
+                on: vec!["age".to_string()],
+                how: JoinType::Inner,
+            },
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Join should succeed");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_sort() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(
+            source,
+            DataFrameOp::Sort(vec!["age".to_string()]),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Sort should preserve DataFrame type");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_limit() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(source, DataFrameOp::Limit(10));
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Limit should preserve DataFrame type");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_head() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(source, DataFrameOp::Head(5));
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Head should preserve DataFrame type");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_tail() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        let source = make_df_source();
+        let expr = make_df_operation_expr(source, DataFrameOp::Tail(5));
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Tail should preserve DataFrame type");
+        assert!(matches!(result.unwrap(), MonoType::DataFrame(_)));
+    }
+
+    #[test]
+    fn test_infer_dataframe_operation_on_non_dataframe() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        // Source is an integer, not a DataFrame
+        let source = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            make_span(),
+        );
+        let expr = make_df_operation_expr(source, DataFrameOp::Limit(10));
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_err(), "DataFrame op on non-DataFrame should fail");
+    }
+
+    #[test]
+    fn test_infer_dataframe_operation_on_named_dataframe() {
+        use crate::frontend::ast::DataFrameOp;
+        let mut ctx = make_ctx();
+        // Create a let binding with type DataFrame
+        let df_var = Expr::new(
+            ExprKind::Identifier("df".to_string()),
+            make_span(),
+        );
+        // Bind df to a DataFrame type via let
+        ctx.env.bind(
+            "df",
+            TypeScheme::mono(MonoType::Named("DataFrame".to_string())),
+        );
+        let expr = Expr::new(
+            ExprKind::DataFrameOperation {
+                source: Box::new(df_var),
+                operation: DataFrameOp::Limit(5),
+            },
+            make_span(),
+        );
+        let result = ctx.infer_expr(&expr);
+        assert!(result.is_ok(), "Named DataFrame fallback should work");
+        assert!(matches!(
+            result.unwrap(),
+            MonoType::Named(ref n) if n == "DataFrame"
+        ));
     }

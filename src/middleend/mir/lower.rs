@@ -757,6 +757,128 @@ mod tests {
         assert!(matches!(&func.locals[func.params[0].0].ty, Type::Tuple(ts) if ts.len() == 2));
         Ok(())
     }
+
+    // ========================================================================
+    // Coverage: lower_expr_to_operand — Unary, Let, Call, Block, fallback
+    // ========================================================================
+
+    #[test]
+    fn test_lower_unary_negate_expr() -> Result<()> {
+        let mut parser = Parser::new("-42");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let main_func = &program.functions["main"];
+        // Should have blocks with unary op
+        assert!(!main_func.blocks.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_unary_not_expr() -> Result<()> {
+        let mut parser = Parser::new("!true");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert!(program.functions.contains_key("main"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_let_binding_with_body() -> Result<()> {
+        let mut parser = Parser::new("let x = 10 in x + 1");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let main_func = &program.functions["main"];
+        // Should have assignment for x and binary op for x + 1
+        assert!(!main_func.blocks.is_empty());
+        // Should have a local for x
+        assert!(
+            main_func.locals.iter().any(|l| l.name.as_deref() == Some("x")),
+            "Should have a local named 'x'"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_call_expr() -> Result<()> {
+        // Pass a function parameter and call it - parameter is bound as a local
+        let mut parser = Parser::new("fun apply(f: i32, x: i32) -> i32 { f(x) }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert!(program.functions.contains_key("apply"));
+        let func = &program.functions["apply"];
+        // Should have multiple blocks due to call terminator
+        assert!(func.blocks.len() >= 2, "Call should create continuation block");
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_empty_block_expr() -> Result<()> {
+        let mut parser = Parser::new("{ }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert!(program.functions.contains_key("main"));
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_multi_expr_block() -> Result<()> {
+        let mut parser = Parser::new("{ 1; 2; 3 + 4 }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let main_func = &program.functions["main"];
+        assert!(!main_func.blocks.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_if_no_else() -> Result<()> {
+        let mut parser = Parser::new("if true { 42 }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let main_func = &program.functions["main"];
+        // Without else, should still create then/else/merge blocks
+        assert!(main_func.blocks.len() >= 3);
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_nested_binary_exprs() -> Result<()> {
+        let mut parser = Parser::new("1 + 2 * 3");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let main_func = &program.functions["main"];
+        assert!(!main_func.blocks.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_identifier_in_function() -> Result<()> {
+        let mut parser = Parser::new("fun f(x: i32) -> i32 { x }");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        let func = &program.functions["f"];
+        assert!(!func.blocks.is_empty());
+        Ok(())
+    }
+
+    #[test]
+    fn test_lower_string_literal() -> Result<()> {
+        let mut parser = Parser::new("\"hello world\"");
+        let ast = parser.parse()?;
+        let mut ctx = LoweringContext::new();
+        let program = ctx.lower_expr(&ast)?;
+        assert!(program.functions.contains_key("main"));
+        Ok(())
+    }
 }
 #[cfg(test)]
 mod property_tests_lower {

@@ -611,4 +611,241 @@ mod tests {
                 && result_str.contains("..")
         );
     }
+
+    // ========================================================================
+    // Coverage: transpile_field_access — uncovered branches
+    // ========================================================================
+
+    // Test: Numeric field access (tuple field) - top-level check
+    #[test]
+    fn test_transpile_field_access_numeric_field() {
+        let transpiler = test_transpiler();
+        let obj = ident_expr("tup");
+        let result = transpiler.transpile_field_access(&obj, "0");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("tup") && code.contains('0'));
+    }
+
+    // Test: ObjectLiteral field access - uses .get()
+    #[test]
+    fn test_transpile_field_access_object_literal() {
+        let transpiler = test_transpiler();
+        let obj = Expr {
+            kind: ExprKind::ObjectLiteral {
+                fields: vec![crate::frontend::ast::ObjectField::KeyValue {
+                    key: "name".to_string(),
+                    value: string_expr("Alice"),
+                }],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_field_access(&obj, "name");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("get"), "ObjectLiteral access should use .get()");
+    }
+
+    // Test: FieldAccess on FieldAccess - nested numeric tuple
+    #[test]
+    fn test_transpile_field_access_nested_numeric() {
+        let transpiler = test_transpiler();
+        let inner = ident_expr("nested");
+        let nested = field_access_expr(inner, "data");
+        let result = transpiler.transpile_field_access(&nested, "0");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains('0'), "Should contain numeric index");
+    }
+
+    // Test: FieldAccess on FieldAccess - field starting with digit (non-numeric)
+    // This tests the error path in the nested FieldAccess branch
+    #[test]
+    fn test_transpile_field_access_nested_digit_start() {
+        let transpiler = test_transpiler();
+        let inner = ident_expr("obj");
+        let nested = field_access_expr(inner, "field");
+        let result = transpiler.transpile_field_access(&nested, "3abc");
+        assert!(result.is_err(), "Field starting with digit should be an error");
+    }
+
+    // Test: FieldAccess on FieldAccess - known method like "success"
+    #[test]
+    fn test_transpile_field_access_nested_known_method() {
+        let transpiler = test_transpiler();
+        let inner = ident_expr("status");
+        let nested = field_access_expr(inner, "exit");
+        let result = transpiler.transpile_field_access(&nested, "success");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("success"), "Should contain method name");
+        // Known methods get ()
+        assert!(code.contains("()"), "Known methods should have ()");
+    }
+
+    // Test: FieldAccess on FieldAccess - variable chain
+    #[test]
+    fn test_transpile_field_access_nested_variable_chain() {
+        let transpiler = test_transpiler();
+        let inner = ident_expr("event");
+        let nested = field_access_expr(inner, "request");
+        let result = transpiler.transpile_field_access(&nested, "id");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        // event is a variable (lowercase, no underscore with module prefix)
+        // so it should use . syntax (variable chain)
+        assert!(
+            code.contains("id"),
+            "Should contain field name"
+        );
+    }
+
+    // Test: FieldAccess on FieldAccess - module path
+    #[test]
+    fn test_transpile_field_access_nested_module_path() {
+        let transpiler = test_transpiler();
+        let inner = ident_expr("std");
+        let nested = field_access_expr(inner, "time");
+        let result = transpiler.transpile_field_access(&nested, "Duration");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("Duration"));
+    }
+
+    // Test: Identifier with :: (module path)
+    #[test]
+    fn test_transpile_field_access_identifier_with_colons() {
+        let transpiler = test_transpiler();
+        let obj = Expr {
+            kind: ExprKind::Identifier("std::collections".to_string()),
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_field_access(&obj, "HashMap");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashMap"), "Should contain the field");
+    }
+
+    // Test: Identifier "std" - uses :: syntax
+    #[test]
+    fn test_transpile_field_access_std_fs_module() {
+        let transpiler = test_transpiler();
+        let obj = ident_expr("std");
+        let result = transpiler.transpile_field_access(&obj, "fs");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("std") && code.contains("fs"));
+    }
+
+    // Test: Identifier matching module_names
+    #[test]
+    fn test_transpile_field_access_known_module() {
+        let transpiler = test_transpiler_with_modules(vec!["helper"]);
+        let obj = ident_expr("helper");
+        let result = transpiler.transpile_field_access(&obj, "get_message");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("helper") && code.contains("get_message"));
+    }
+
+    // Test: PascalCase identifier - type, uses :: for associated functions
+    #[test]
+    fn test_transpile_field_access_pascal_case_type() {
+        let transpiler = test_transpiler();
+        let obj = ident_expr("String");
+        let result = transpiler.transpile_field_access(&obj, "from");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("String") && code.contains("from"));
+    }
+
+    // Test: Module-like identifier (e.g., http_client)
+    #[test]
+    fn test_transpile_field_access_module_like() {
+        let transpiler = test_transpiler();
+        let obj = ident_expr("aws_lambda");
+        let result = transpiler.transpile_field_access(&obj, "handler");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("aws_lambda") && code.contains("handler"));
+    }
+
+    // Test: Fallback _ branch - numeric tuple field on non-special object
+    #[test]
+    fn test_transpile_field_access_fallback_numeric() {
+        let transpiler = test_transpiler();
+        // Use a Call expression, which falls into _ match arm
+        let obj = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(ident_expr("get_tuple")),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_field_access(&obj, "0");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains('0'), "Should have numeric index");
+    }
+
+    // Test: Fallback _ branch - known method (e.g., "is_empty")
+    #[test]
+    fn test_transpile_field_access_fallback_known_method() {
+        let transpiler = test_transpiler();
+        let obj = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(ident_expr("get_vec")),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_field_access(&obj, "is_empty");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("is_empty"), "Should contain method name");
+        assert!(code.contains("()"), "Known method should have ()");
+    }
+
+    // Test: Fallback _ branch - regular struct field
+    #[test]
+    fn test_transpile_field_access_fallback_regular_field() {
+        let transpiler = test_transpiler();
+        let obj = Expr {
+            kind: ExprKind::Call {
+                func: Box::new(ident_expr("get_person")),
+                args: vec![],
+            },
+            span: Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        };
+        let result = transpiler.transpile_field_access(&obj, "name");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("name"), "Should contain field name");
+    }
+
+    // Test: Lowercase identifier variable - uses . syntax
+    #[test]
+    fn test_transpile_field_access_variable() {
+        let transpiler = test_transpiler();
+        let obj = ident_expr("person");
+        let result = transpiler.transpile_field_access(&obj, "name");
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("person") && code.contains("name"));
+    }
 }

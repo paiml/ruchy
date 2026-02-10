@@ -591,4 +591,253 @@ mod tests {
         // The test validates the function runs without error
         assert!(result.is_none() || result.is_some());
     }
+
+    // ========================================================================
+    // Coverage: infer_param_type_with_index (22 uncov, 65.1% coverage)
+    // ========================================================================
+
+    #[test]
+    fn test_infer_param_with_index_call_site_f64() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("calc".to_string(), vec!["f64".to_string()]);
+        let param = make_param("x");
+        let body = int_expr(0);
+        let result = transpiler.infer_param_type_with_index(&param, &body, "calc", Some(0));
+        assert_eq!(result.to_string(), "f64");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_f32() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("calc".to_string(), vec!["f32".to_string()]);
+        let param = make_param("x");
+        let body = int_expr(0);
+        let result = transpiler.infer_param_type_with_index(&param, &body, "calc", Some(0));
+        assert_eq!(result.to_string(), "f32");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_i64() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("calc".to_string(), vec!["i64".to_string()]);
+        let param = make_param("x");
+        let body = int_expr(0);
+        let result = transpiler.infer_param_type_with_index(&param, &body, "calc", Some(0));
+        assert_eq!(result.to_string(), "i64");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_i32() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("calc".to_string(), vec!["i32".to_string()]);
+        let param = make_param("x");
+        let body = int_expr(0);
+        let result = transpiler.infer_param_type_with_index(&param, &body, "calc", Some(0));
+        assert_eq!(result.to_string(), "i32");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_string() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("greet".to_string(), vec!["String".to_string()]);
+        let param = make_param("name");
+        let body = int_expr(0);
+        let result = transpiler.infer_param_type_with_index(&param, &body, "greet", Some(0));
+        assert_eq!(result.to_string(), "String");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_bool() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("check".to_string(), vec!["bool".to_string()]);
+        let param = make_param("flag");
+        let body = int_expr(0);
+        let result = transpiler.infer_param_type_with_index(&param, &body, "check", Some(0));
+        assert_eq!(result.to_string(), "bool");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_vec() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("process".to_string(), vec!["Vec<i32>".to_string()]);
+        let param = make_param("items");
+        let body = int_expr(0);
+        let result = transpiler.infer_param_type_with_index(&param, &body, "process", Some(0));
+        let result_str = result.to_string();
+        assert!(
+            result_str.contains("Vec") && result_str.contains("i32"),
+            "Should infer Vec<i32>, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_unknown_type_falls_through() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("process".to_string(), vec!["CustomType".to_string()]);
+        let param = make_param("x");
+        // Body uses x numerically
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(ident_expr("x")),
+            right: Box::new(int_expr(1)),
+        });
+        let result = transpiler.infer_param_type_with_index(&param, &body, "process", Some(0));
+        // CustomType falls through to body-based inference, x used numerically -> i32
+        assert_eq!(result.to_string(), "i32");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_call_site_underscore_falls_through() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("process".to_string(), vec!["_".to_string()]);
+        let param = make_param("x");
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(ident_expr("x")),
+            right: Box::new(int_expr(1)),
+        });
+        let result = transpiler.infer_param_type_with_index(&param, &body, "process", Some(0));
+        assert_eq!(result.to_string(), "i32", "Underscore type should fall through to body-based inference");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_no_param_index() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("calc".to_string(), vec!["f64".to_string()]);
+        let param = make_param("x");
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(ident_expr("x")),
+            right: Box::new(int_expr(1)),
+        });
+        // No param_index, so call-site types are not consulted
+        let result = transpiler.infer_param_type_with_index(&param, &body, "calc", None);
+        assert_eq!(result.to_string(), "i32", "Without index, falls through to body-based inference");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_no_call_site_types() {
+        let transpiler = make_transpiler();
+        // No call_site_arg_types entry for "foo"
+        let param = make_param("x");
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(ident_expr("x")),
+            right: Box::new(int_expr(1)),
+        });
+        let result = transpiler.infer_param_type_with_index(&param, &body, "foo", Some(0));
+        assert_eq!(result.to_string(), "i32");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_out_of_bounds() {
+        let transpiler = make_transpiler();
+        transpiler
+            .call_site_arg_types
+            .borrow_mut()
+            .insert("calc".to_string(), vec!["f64".to_string()]);
+        let param = make_param("y");
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(ident_expr("y")),
+            right: Box::new(int_expr(1)),
+        });
+        // param_index 5 is out of bounds for the 1-element vec
+        let result = transpiler.infer_param_type_with_index(&param, &body, "calc", Some(5));
+        assert_eq!(result.to_string(), "i32", "Out of bounds index falls through");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_function_param() {
+        let transpiler = make_transpiler();
+        let param = make_param("callback");
+        // callback(42) - used as a function
+        let body = make_expr(ExprKind::Call {
+            func: Box::new(ident_expr("callback")),
+            args: vec![int_expr(42)],
+        });
+        let result = transpiler.infer_param_type_with_index(&param, &body, "apply", None);
+        let result_str = result.to_string();
+        assert!(
+            result_str.contains("Fn"),
+            "Callback param should be inferred as function type, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn test_infer_param_with_index_string_concat() {
+        let transpiler = make_transpiler();
+        let param = make_param("name");
+        // "Hello, " + name
+        let body = make_expr(ExprKind::Binary {
+            op: crate::frontend::ast::BinaryOp::Add,
+            left: Box::new(make_expr(ExprKind::Literal(Literal::String(
+                "Hello, ".to_string(),
+            )))),
+            right: Box::new(ident_expr("name")),
+        });
+        let result = transpiler.infer_param_type_with_index(&param, &body, "greet", None);
+        assert_eq!(result.to_string(), "& str", "String concat param should be &str");
+    }
+
+    #[test]
+    fn test_infer_param_with_index_len_usage() {
+        let transpiler = make_transpiler();
+        let param = make_param("items");
+        // len(items) - function call style
+        let body = make_expr(ExprKind::Call {
+            func: Box::new(ident_expr("len")),
+            args: vec![ident_expr("items")],
+        });
+        let result = transpiler.infer_param_type_with_index(&param, &body, "count", None);
+        let result_str = result.to_string();
+        assert!(
+            result_str.contains("Vec"),
+            "Param used with len() should be inferred as Vec, got: {result_str}"
+        );
+    }
+
+    #[test]
+    fn test_infer_param_with_index_second_param() {
+        let transpiler = make_transpiler();
+        transpiler.call_site_arg_types.borrow_mut().insert(
+            "add".to_string(),
+            vec!["i32".to_string(), "f64".to_string()],
+        );
+        let param = make_param("y");
+        let body = int_expr(0);
+        // Second parameter (index 1) should get f64
+        let result = transpiler.infer_param_type_with_index(&param, &body, "add", Some(1));
+        assert_eq!(result.to_string(), "f64");
+    }
 }
