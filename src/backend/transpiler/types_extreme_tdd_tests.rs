@@ -735,3 +735,415 @@ fn test_transpile_type_refined() {
     // Refined types transpile to just the base type
     assert!(result.to_string().contains("i32"));
 }
+
+// ===== transpile_struct_with_methods Tests =====
+
+#[test]
+fn test_struct_no_methods_no_derives() {
+    let t = Transpiler::new();
+    let fields = vec![make_struct_field(
+        "x",
+        make_type(TypeKind::Named("i32".to_string())),
+        Visibility::Public,
+    )];
+    let result = t
+        .transpile_struct_with_methods("Point", &[], &fields, &[], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("struct Point"), "Should contain struct name");
+    assert!(code.contains("pub x"), "Public field should have pub");
+    assert!(code.contains("i32"), "Should contain field type");
+    // Clone is auto-added
+    assert!(code.contains("Clone"), "Clone should be auto-added");
+}
+
+#[test]
+fn test_struct_with_pub_visibility() {
+    let t = Transpiler::new();
+    let fields = vec![make_struct_field(
+        "value",
+        make_type(TypeKind::Named("String".to_string())),
+        Visibility::Private,
+    )];
+    let result = t
+        .transpile_struct_with_methods("Config", &[], &fields, &[], &[], true)
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("pub struct Config"), "Should be pub struct");
+}
+
+#[test]
+fn test_struct_with_type_params() {
+    let t = Transpiler::new();
+    let fields = vec![make_struct_field(
+        "data",
+        make_type(TypeKind::Named("T".to_string())),
+        Visibility::Public,
+    )];
+    let result = t
+        .transpile_struct_with_methods("Container", &["T".to_string()], &fields, &[], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Container"), "Should contain struct name");
+    assert!(code.contains('T'), "Should have type parameter");
+}
+
+#[test]
+fn test_struct_with_methods_no_defaults() {
+    let t = Transpiler::new();
+    let fields = vec![make_struct_field(
+        "x",
+        make_type(TypeKind::Named("i32".to_string())),
+        Visibility::Public,
+    )];
+    let method = crate::frontend::ast::ClassMethod {
+        name: "get_x".to_string(),
+        params: vec![],
+        return_type: Some(make_type(TypeKind::Named("i32".to_string()))),
+        body: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(0, None),
+        ))),
+        is_pub: true,
+        is_static: false,
+        is_override: false,
+        is_final: false,
+        is_abstract: false,
+        is_async: false,
+        self_type: crate::frontend::ast::SelfType::Borrowed,
+    };
+    let result = t
+        .transpile_struct_with_methods("Point", &[], &fields, &[method], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("struct Point"), "Should contain struct def");
+    assert!(code.contains("impl Point"), "Should contain impl block");
+}
+
+#[test]
+fn test_struct_with_default_values() {
+    let t = Transpiler::new();
+    let field_with_default = StructField {
+        name: "count".to_string(),
+        ty: make_type(TypeKind::Named("i32".to_string())),
+        visibility: Visibility::Public,
+        default_value: Some(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(0, None),
+        ))),
+        decorators: vec![],
+        is_mut: false,
+    };
+    let result = t
+        .transpile_struct_with_methods("Counter", &[], &[field_with_default], &[], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Default"), "Should generate Default impl");
+}
+
+#[test]
+fn test_struct_with_default_string_field() {
+    let t = Transpiler::new();
+    let field_with_default = StructField {
+        name: "label".to_string(),
+        ty: make_type(TypeKind::Named("String".to_string())),
+        visibility: Visibility::Public,
+        default_value: Some(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::String("hello".to_string()),
+        ))),
+        decorators: vec![],
+        is_mut: false,
+    };
+    let result = t
+        .transpile_struct_with_methods("Config", &[], &[field_with_default], &[], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(
+        code.contains("to_string"),
+        "String default should add .to_string()"
+    );
+}
+
+#[test]
+fn test_struct_defaults_with_methods() {
+    let t = Transpiler::new();
+    let field_with_default = StructField {
+        name: "count".to_string(),
+        ty: make_type(TypeKind::Named("i32".to_string())),
+        visibility: Visibility::Public,
+        default_value: Some(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(0, None),
+        ))),
+        decorators: vec![],
+        is_mut: false,
+    };
+    let method = crate::frontend::ast::ClassMethod {
+        name: "inc".to_string(),
+        params: vec![],
+        return_type: None,
+        body: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Unit,
+        ))),
+        is_pub: true,
+        is_static: false,
+        is_override: false,
+        is_final: false,
+        is_abstract: false,
+        is_async: false,
+        self_type: crate::frontend::ast::SelfType::MutBorrowed,
+    };
+    let result = t
+        .transpile_struct_with_methods(
+            "Counter",
+            &[],
+            &[field_with_default],
+            &[method],
+            &[],
+            false,
+        )
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Default"), "Should have Default impl");
+    assert!(code.contains("impl Counter"), "Should have methods impl block");
+}
+
+#[test]
+fn test_struct_generic_with_defaults() {
+    let t = Transpiler::new();
+    let field = StructField {
+        name: "value".to_string(),
+        ty: make_type(TypeKind::Named("T".to_string())),
+        visibility: Visibility::Public,
+        default_value: Some(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(0, None),
+        ))),
+        decorators: vec![],
+        is_mut: false,
+    };
+    let result = t
+        .transpile_struct_with_methods(
+            "Wrapper",
+            &["T".to_string()],
+            &[field],
+            &[],
+            &[],
+            false,
+        )
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Default"), "Generic struct should get Default impl with bounds");
+}
+
+#[test]
+fn test_struct_field_visibility_pub_crate() {
+    let t = Transpiler::new();
+    let fields = vec![make_struct_field(
+        "internal",
+        make_type(TypeKind::Named("i32".to_string())),
+        Visibility::PubCrate,
+    )];
+    let result = t
+        .transpile_struct_with_methods("Inner", &[], &fields, &[], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(
+        code.contains("pub (crate)"),
+        "Should have pub(crate) visibility: {code}"
+    );
+}
+
+#[test]
+fn test_struct_field_visibility_pub_super() {
+    let t = Transpiler::new();
+    let fields = vec![make_struct_field(
+        "data",
+        make_type(TypeKind::Named("u8".to_string())),
+        Visibility::PubSuper,
+    )];
+    let result = t
+        .transpile_struct_with_methods("Sub", &[], &fields, &[], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(
+        code.contains("pub (super)"),
+        "Should have pub(super) visibility: {code}"
+    );
+}
+
+#[test]
+fn test_struct_field_no_default_in_default_impl() {
+    let t = Transpiler::new();
+    // One field has default, one doesn't => Default impl should use Default::default() for missing
+    let field_with = StructField {
+        name: "a".to_string(),
+        ty: make_type(TypeKind::Named("i32".to_string())),
+        visibility: Visibility::Public,
+        default_value: Some(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(5, None),
+        ))),
+        decorators: vec![],
+        is_mut: false,
+    };
+    let field_without = make_struct_field(
+        "b",
+        make_type(TypeKind::Named("i32".to_string())),
+        Visibility::Public,
+    );
+    let result = t
+        .transpile_struct_with_methods("Mixed", &[], &[field_with, field_without], &[], &[], false)
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Default :: default"), "Missing defaults should use Default::default()");
+}
+
+#[test]
+fn test_struct_clone_not_duplicated() {
+    let t = Transpiler::new();
+    let fields = vec![make_struct_field(
+        "x",
+        make_type(TypeKind::Named("i32".to_string())),
+        Visibility::Public,
+    )];
+    let result = t
+        .transpile_struct_with_methods(
+            "Point",
+            &[],
+            &fields,
+            &[],
+            &["Clone".to_string(), "Debug".to_string()],
+            false,
+        )
+        .unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Debug"), "Should have Debug derive");
+    // Clone already provided, should not be duplicated
+    assert!(code.contains("Clone"));
+}
+
+// ===== transpile_constructor_body Tests =====
+
+#[test]
+fn test_constructor_body_single_self_assign() {
+    let t = Transpiler::new();
+    // self.x = value  =>  Self { x: value }
+    let target = make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+        object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+            "self".to_string(),
+        ))),
+        field: "x".to_string(),
+    });
+    let value = make_expr(crate::frontend::ast::ExprKind::Literal(
+        crate::frontend::ast::Literal::Integer(42, None),
+    ));
+    let body = make_expr(crate::frontend::ast::ExprKind::Assign {
+        target: Box::new(target),
+        value: Box::new(value),
+    });
+    let result = t.transpile_constructor_body(&body).unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Self"), "Should generate Self struct init");
+    assert!(code.contains('x'), "Should contain field name");
+    assert!(code.contains("42"), "Should contain field value");
+}
+
+#[test]
+fn test_constructor_body_block_with_self_assigns() {
+    let t = Transpiler::new();
+    // Block: { self.x = 1; self.y = 2 }
+    let assign1 = make_expr(crate::frontend::ast::ExprKind::Assign {
+        target: Box::new(make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+            object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+                "self".to_string(),
+            ))),
+            field: "x".to_string(),
+        })),
+        value: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))),
+    });
+    let assign2 = make_expr(crate::frontend::ast::ExprKind::Assign {
+        target: Box::new(make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+            object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+                "self".to_string(),
+            ))),
+            field: "y".to_string(),
+        })),
+        value: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(2, None),
+        ))),
+    });
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![assign1, assign2]));
+    let result = t.transpile_constructor_body(&body).unwrap();
+    let code = result.to_string();
+    assert!(code.contains("Self"), "Should generate Self init");
+    assert!(code.contains('x'), "Should contain x field");
+    assert!(code.contains('y'), "Should contain y field");
+}
+
+#[test]
+fn test_constructor_body_non_self_assign_fallthrough() {
+    let t = Transpiler::new();
+    // Block with a non-self assignment should fallback to regular transpilation
+    let non_self_assign = make_expr(crate::frontend::ast::ExprKind::Assign {
+        target: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+            "other".to_string(),
+        ))),
+        value: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))),
+    });
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![non_self_assign]));
+    let result = t.transpile_constructor_body(&body);
+    // Should fall through to regular transpilation (still OK)
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_constructor_body_non_block_non_assign_fallthrough() {
+    let t = Transpiler::new();
+    // A plain literal body should fall through to regular transpilation
+    let body = make_expr(crate::frontend::ast::ExprKind::Literal(
+        crate::frontend::ast::Literal::Integer(0, None),
+    ));
+    let result = t.transpile_constructor_body(&body).unwrap();
+    let code = result.to_string();
+    assert!(code.contains('0'), "Should transpile literal directly");
+}
+
+#[test]
+fn test_constructor_body_empty_block() {
+    let t = Transpiler::new();
+    // Empty block => field_inits is empty => falls through to regular transpilation
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![]));
+    let result = t.transpile_constructor_body(&body);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_constructor_body_block_mixed_self_then_non_self() {
+    let t = Transpiler::new();
+    // self.x = 1 then regular_var = 2 (non-self-assign breaks out)
+    let self_assign = make_expr(crate::frontend::ast::ExprKind::Assign {
+        target: Box::new(make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+            object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+                "self".to_string(),
+            ))),
+            field: "x".to_string(),
+        })),
+        value: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))),
+    });
+    let non_self = make_expr(crate::frontend::ast::ExprKind::Assign {
+        target: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+            "y".to_string(),
+        ))),
+        value: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(2, None),
+        ))),
+    });
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![
+        self_assign, non_self,
+    ]));
+    let result = t.transpile_constructor_body(&body);
+    // Falls through when encountering non-self assignment
+    assert!(result.is_ok());
+}

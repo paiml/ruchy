@@ -793,4 +793,207 @@ mod tests {
             .unwrap();
         assert!(result.to_string().contains("[test]"));
     }
+
+    // ========================================================================
+    // expr_references_any_impl tests
+    // ========================================================================
+
+    fn binary_expr(left: Expr, op: crate::frontend::ast::BinaryOp, right: Expr) -> Expr {
+        make_expr(ExprKind::Binary {
+            left: Box::new(left),
+            op,
+            right: Box::new(right),
+        })
+    }
+
+    fn block_expr(exprs: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::Block(exprs))
+    }
+
+    fn if_expr(condition: Expr, then_b: Expr, else_b: Option<Expr>) -> Expr {
+        make_expr(ExprKind::If {
+            condition: Box::new(condition),
+            then_branch: Box::new(then_b),
+            else_branch: else_b.map(Box::new),
+        })
+    }
+
+    fn call_expr(func_name: &str, args: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::Call {
+            func: Box::new(ident_expr(func_name)),
+            args,
+        })
+    }
+
+    fn method_call_expr(receiver: Expr, method: &str, args: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::MethodCall {
+            receiver: Box::new(receiver),
+            method: method.to_string(),
+            args,
+        })
+    }
+
+    fn assign_expr(target: Expr, value: Expr) -> Expr {
+        make_expr(ExprKind::Assign {
+            target: Box::new(target),
+            value: Box::new(value),
+        })
+    }
+
+    fn list_expr(elements: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::List(elements))
+    }
+
+    fn tuple_expr(elements: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::Tuple(elements))
+    }
+
+    fn set_expr(elements: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::Set(elements))
+    }
+
+    #[test]
+    fn test_references_any_identifier_match() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        assert!(Transpiler::expr_references_any_impl(&ident_expr("x"), &names));
+    }
+
+    #[test]
+    fn test_references_any_identifier_no_match() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        assert!(!Transpiler::expr_references_any_impl(&ident_expr("y"), &names));
+    }
+
+    #[test]
+    fn test_references_any_assign_target() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = assign_expr(ident_expr("x"), int_expr(1));
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_assign_value() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = assign_expr(ident_expr("y"), ident_expr("x"));
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_binary_left() {
+        let names: HashSet<String> = ["a".to_string()].into();
+        let expr = binary_expr(
+            ident_expr("a"),
+            crate::frontend::ast::BinaryOp::Add,
+            int_expr(1),
+        );
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_binary_right() {
+        let names: HashSet<String> = ["b".to_string()].into();
+        let expr = binary_expr(
+            int_expr(1),
+            crate::frontend::ast::BinaryOp::Add,
+            ident_expr("b"),
+        );
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_block() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = block_expr(vec![int_expr(1), ident_expr("x")]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_block_no_match() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = block_expr(vec![int_expr(1), int_expr(2)]);
+        assert!(!Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_if_condition() {
+        let names: HashSet<String> = ["flag".to_string()].into();
+        let expr = if_expr(ident_expr("flag"), int_expr(1), None);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_if_then() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = if_expr(int_expr(1), ident_expr("x"), None);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_if_else() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = if_expr(int_expr(1), int_expr(2), Some(ident_expr("x")));
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_if_no_match() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = if_expr(int_expr(1), int_expr(2), Some(int_expr(3)));
+        assert!(!Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_call_func() {
+        let names: HashSet<String> = ["f".to_string()].into();
+        let expr = call_expr("f", vec![]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_call_arg() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = call_expr("f", vec![ident_expr("x")]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_method_call_receiver() {
+        let names: HashSet<String> = ["obj".to_string()].into();
+        let expr = method_call_expr(ident_expr("obj"), "do_thing", vec![]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_method_call_arg() {
+        let names: HashSet<String> = ["val".to_string()].into();
+        let expr = method_call_expr(int_expr(1), "push", vec![ident_expr("val")]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_list() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        let expr = list_expr(vec![int_expr(1), ident_expr("x")]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_tuple() {
+        let names: HashSet<String> = ["y".to_string()].into();
+        let expr = tuple_expr(vec![ident_expr("y"), int_expr(2)]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_set() {
+        let names: HashSet<String> = ["z".to_string()].into();
+        let expr = set_expr(vec![ident_expr("z")]);
+        assert!(Transpiler::expr_references_any_impl(&expr, &names));
+    }
+
+    #[test]
+    fn test_references_any_literal_no_match() {
+        let names: HashSet<String> = ["x".to_string()].into();
+        assert!(!Transpiler::expr_references_any_impl(&int_expr(42), &names));
+    }
 }

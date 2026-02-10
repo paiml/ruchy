@@ -212,6 +212,290 @@ mod tests {
         assert_eq!(get_builtin_param_type("json_parse", 0), Some("&str"));
         assert_eq!(get_builtin_param_type("unknown", 0), None);
     }
+
+    // ========================================================================
+    // contains_numeric_operations tests (unit-level, AST-constructed)
+    // ========================================================================
+
+    fn make_expr(kind: ExprKind) -> crate::frontend::ast::Expr {
+        crate::frontend::ast::Expr {
+            kind,
+            span: crate::frontend::ast::Span::default(),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    fn int_lit(n: i64) -> crate::frontend::ast::Expr {
+        make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+            n, None,
+        )))
+    }
+
+    fn ident(name: &str) -> crate::frontend::ast::Expr {
+        make_expr(ExprKind::Identifier(name.to_string()))
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_add() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::Add,
+            right: Box::new(int_lit(2)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_subtract() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(5)),
+            op: BinaryOp::Subtract,
+            right: Box::new(int_lit(3)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_multiply() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(2)),
+            op: BinaryOp::Multiply,
+            right: Box::new(int_lit(3)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_divide() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(10)),
+            op: BinaryOp::Divide,
+            right: Box::new(int_lit(2)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_modulo() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(10)),
+            op: BinaryOp::Modulo,
+            right: Box::new(int_lit(3)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_comparison_less() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::Less,
+            right: Box::new(int_lit(2)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_comparison_greater() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::Greater,
+            right: Box::new(int_lit(2)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_comparison_less_equal() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::LessEqual,
+            right: Box::new(int_lit(2)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_binary_comparison_greater_equal() {
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::GreaterEqual,
+            right: Box::new(int_lit(2)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_non_numeric_binary() {
+        // Equal is NOT a numeric op
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::Equal,
+            right: Box::new(int_lit(1)),
+        });
+        assert!(!contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_nested_in_left_binary() {
+        // Nested: (1 + 2) == 3 - left side has numeric add
+        let inner = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::Add,
+            right: Box::new(int_lit(2)),
+        });
+        let expr = make_expr(ExprKind::Binary {
+            left: Box::new(inner),
+            op: BinaryOp::Equal,
+            right: Box::new(int_lit(3)),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_block_contains_numeric() {
+        let expr = make_expr(ExprKind::Block(vec![make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::Add,
+            right: Box::new(int_lit(2)),
+        })]));
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_block_no_numeric() {
+        let expr = make_expr(ExprKind::Block(vec![int_lit(42)]));
+        assert!(!contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_if_then_branch() {
+        let expr = make_expr(ExprKind::If {
+            condition: Box::new(ident("flag")),
+            then_branch: Box::new(make_expr(ExprKind::Binary {
+                left: Box::new(int_lit(1)),
+                op: BinaryOp::Add,
+                right: Box::new(int_lit(2)),
+            })),
+            else_branch: None,
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_if_else_branch() {
+        let expr = make_expr(ExprKind::If {
+            condition: Box::new(ident("flag")),
+            then_branch: Box::new(int_lit(0)),
+            else_branch: Some(Box::new(make_expr(ExprKind::Binary {
+                left: Box::new(int_lit(3)),
+                op: BinaryOp::Multiply,
+                right: Box::new(int_lit(4)),
+            }))),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_if_no_numeric() {
+        let expr = make_expr(ExprKind::If {
+            condition: Box::new(ident("flag")),
+            then_branch: Box::new(int_lit(0)),
+            else_branch: Some(Box::new(int_lit(1))),
+        });
+        assert!(!contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_let_value() {
+        let expr = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            value: Box::new(make_expr(ExprKind::Binary {
+                left: Box::new(int_lit(1)),
+                op: BinaryOp::Add,
+                right: Box::new(int_lit(2)),
+            })),
+            body: Box::new(int_lit(0)),
+            type_annotation: None,
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_let_body() {
+        let expr = make_expr(ExprKind::Let {
+            name: "x".to_string(),
+            value: Box::new(int_lit(0)),
+            body: Box::new(make_expr(ExprKind::Binary {
+                left: Box::new(int_lit(1)),
+                op: BinaryOp::Subtract,
+                right: Box::new(int_lit(2)),
+            })),
+            type_annotation: None,
+            is_mutable: false,
+            else_block: None,
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_call_args() {
+        let numeric_arg = make_expr(ExprKind::Binary {
+            left: Box::new(int_lit(1)),
+            op: BinaryOp::Add,
+            right: Box::new(int_lit(2)),
+        });
+        let expr = make_expr(ExprKind::Call {
+            func: Box::new(ident("f")),
+            args: vec![numeric_arg],
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_call_no_numeric_args() {
+        let expr = make_expr(ExprKind::Call {
+            func: Box::new(ident("f")),
+            args: vec![int_lit(1)],
+        });
+        assert!(!contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_lambda_body() {
+        let expr = make_expr(ExprKind::Lambda {
+            params: vec![],
+            body: Box::new(make_expr(ExprKind::Binary {
+                left: Box::new(int_lit(1)),
+                op: BinaryOp::Add,
+                right: Box::new(int_lit(2)),
+            })),
+        });
+        assert!(contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_lambda_no_numeric() {
+        let expr = make_expr(ExprKind::Lambda {
+            params: vec![],
+            body: Box::new(int_lit(42)),
+        });
+        assert!(!contains_numeric_operations(&expr));
+    }
+
+    #[test]
+    fn test_numeric_ops_literal_alone() {
+        assert!(!contains_numeric_operations(&int_lit(42)));
+    }
+
+    #[test]
+    fn test_numeric_ops_identifier_alone() {
+        assert!(!contains_numeric_operations(&ident("x")));
+    }
 }
 
 #[cfg(test)]

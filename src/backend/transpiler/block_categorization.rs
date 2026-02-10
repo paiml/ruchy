@@ -964,4 +964,176 @@ mod tests {
         assert!(has_main);
         assert!(main_expr.is_some());
     }
+
+    // ========================================================================
+    // generate_global_declarations tests
+    // ========================================================================
+
+    fn typed_let_expr(
+        name: &str,
+        value: Expr,
+        is_mutable: bool,
+        type_ann: Option<crate::frontend::ast::Type>,
+    ) -> Expr {
+        make_expr(ExprKind::Let {
+            name: name.to_string(),
+            value: Box::new(value),
+            body: Box::new(int_expr(0)),
+            type_annotation: type_ann,
+            is_mutable,
+            else_block: None,
+        })
+    }
+
+    fn make_type_ann(name: &str) -> crate::frontend::ast::Type {
+        crate::frontend::ast::Type {
+            kind: crate::frontend::ast::TypeKind::Named(name.to_string()),
+            span: crate::frontend::ast::Span::default(),
+        }
+    }
+
+    #[test]
+    fn test_generate_global_const_declaration() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![typed_let_expr(
+            "MAX",
+            int_expr(100),
+            false,
+            Some(make_type_ann("i32")),
+        )];
+        let global_var_names = std::collections::HashSet::new();
+        let mut const_var_names = std::collections::HashSet::new();
+        const_var_names.insert("MAX".to_string());
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert_eq!(result.len(), 1, "Should generate one const declaration");
+        let code = result[0].to_string();
+        assert!(code.contains("const"), "Should be a const declaration");
+        assert!(code.contains("MAX"), "Should contain const name");
+        assert!(code.contains("i32"), "Should contain explicit type");
+    }
+
+    #[test]
+    fn test_generate_global_const_inferred_type() {
+        let transpiler = Transpiler::new();
+        // No type annotation - type should be inferred from literal
+        let exprs = vec![typed_let_expr("PI", float_expr(3.14), false, None)];
+        let global_var_names = std::collections::HashSet::new();
+        let mut const_var_names = std::collections::HashSet::new();
+        const_var_names.insert("PI".to_string());
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert_eq!(result.len(), 1);
+        let code = result[0].to_string();
+        assert!(code.contains("const"), "Should generate const");
+        assert!(code.contains("PI"), "Should have name PI");
+    }
+
+    #[test]
+    fn test_generate_global_mutable_declaration() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![typed_let_expr(
+            "counter",
+            int_expr(0),
+            true,
+            Some(make_type_ann("i32")),
+        )];
+        let mut global_var_names = std::collections::HashSet::new();
+        global_var_names.insert("counter".to_string());
+        let const_var_names = std::collections::HashSet::new();
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert_eq!(result.len(), 1, "Should generate one mutable global");
+        let code = result[0].to_string();
+        assert!(code.contains("static"), "Should be static");
+        assert!(code.contains("LazyLock"), "Should use LazyLock");
+        assert!(code.contains("Mutex"), "Should use Mutex");
+        assert!(code.contains("counter"), "Should contain variable name");
+    }
+
+    #[test]
+    fn test_generate_global_mutable_inferred_type() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![typed_let_expr(
+            "count",
+            string_expr("hello"),
+            true,
+            None,
+        )];
+        let mut global_var_names = std::collections::HashSet::new();
+        global_var_names.insert("count".to_string());
+        let const_var_names = std::collections::HashSet::new();
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert_eq!(result.len(), 1);
+        let code = result[0].to_string();
+        assert!(code.contains("LazyLock"), "Should use LazyLock pattern");
+    }
+
+    #[test]
+    fn test_generate_global_empty_sets() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![let_expr("x", int_expr(1), false)];
+        let global_var_names = std::collections::HashSet::new();
+        let const_var_names = std::collections::HashSet::new();
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert!(
+            result.is_empty(),
+            "Empty name sets should produce no globals"
+        );
+    }
+
+    #[test]
+    fn test_generate_global_both_const_and_mutable() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![
+            typed_let_expr("MAX", int_expr(100), false, Some(make_type_ann("i32"))),
+            typed_let_expr("count", int_expr(0), true, Some(make_type_ann("i32"))),
+        ];
+        let mut global_var_names = std::collections::HashSet::new();
+        global_var_names.insert("count".to_string());
+        let mut const_var_names = std::collections::HashSet::new();
+        const_var_names.insert("MAX".to_string());
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert_eq!(result.len(), 2, "Should generate both const and mutable");
+    }
+
+    #[test]
+    fn test_generate_global_non_matching_expr_skipped() {
+        let transpiler = Transpiler::new();
+        // An expression that is not a Let should be skipped
+        let exprs = vec![call_expr("println", vec![string_expr("hi")])];
+        let mut const_var_names = std::collections::HashSet::new();
+        const_var_names.insert("X".to_string());
+        let global_var_names = std::collections::HashSet::new();
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert!(result.is_empty(), "Non-let exprs should be skipped");
+    }
+
+    #[test]
+    fn test_generate_global_immutable_let_not_in_global_names() {
+        let transpiler = Transpiler::new();
+        // Let is immutable, so it won't match in global_var_names (which requires is_mutable)
+        let exprs = vec![typed_let_expr("x", int_expr(1), false, Some(make_type_ann("i32")))];
+        let mut global_var_names = std::collections::HashSet::new();
+        global_var_names.insert("x".to_string());
+        let const_var_names = std::collections::HashSet::new();
+        let result = transpiler
+            .generate_global_declarations(&exprs, &global_var_names, &const_var_names)
+            .unwrap();
+        assert!(
+            result.is_empty(),
+            "Immutable let should not generate mutable global"
+        );
+    }
 }
