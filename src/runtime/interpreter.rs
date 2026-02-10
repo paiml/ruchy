@@ -311,174 +311,45 @@ impl Interpreter {
     }
 
     /// Helper: Check if expression is a type definition
-    /// Complexity: 2
     pub(crate) fn is_type_definition(expr_kind: &ExprKind) -> bool {
-        matches!(
-            expr_kind,
-            ExprKind::Actor { .. }
-                | ExprKind::Effect { .. }
-                | ExprKind::Handle { .. }
-                | ExprKind::Enum { .. }
-                | ExprKind::Struct { .. }
-                | ExprKind::TupleStruct { .. }
-                | ExprKind::Class { .. }
-                | ExprKind::Impl { .. }
-        )
+        crate::runtime::interpreter_misc_eval::is_type_definition(expr_kind)
     }
 
     /// Helper: Check if expression is an actor operation
-    /// Complexity: 2
     pub(crate) fn is_actor_operation(expr_kind: &ExprKind) -> bool {
-        matches!(
-            expr_kind,
-            ExprKind::Spawn { .. } | ExprKind::ActorSend { .. } | ExprKind::ActorQuery { .. }
-        )
+        crate::runtime::interpreter_misc_eval::is_actor_operation(expr_kind)
     }
 
     /// Helper: Check if expression is a special form
-    /// Complexity: 2
     pub(crate) fn is_special_form(expr_kind: &ExprKind) -> bool {
-        matches!(
-            expr_kind,
-            ExprKind::None
-                | ExprKind::Some { .. }
-                | ExprKind::Set(_)
-                | ExprKind::LetPattern { .. }
-                | ExprKind::StringInterpolation { .. }
-                | ExprKind::QualifiedName { .. }
-                | ExprKind::ObjectLiteral { .. }
-                | ExprKind::StructLiteral { .. }
-        )
+        crate::runtime::interpreter_misc_eval::is_special_form(expr_kind)
     }
 
     /// Evaluate type definition expressions (Actor, Struct, Class, Impl)
-    /// Complexity: 6
+    /// Delegates to `interpreter_misc_eval` module.
     pub(crate) fn eval_type_definition(
         &mut self,
         expr_kind: &ExprKind,
     ) -> Result<Value, InterpreterError> {
-        match expr_kind {
-            ExprKind::Actor {
-                name,
-                state,
-                handlers,
-            } => self.eval_actor_definition(name, state, handlers),
-            // SPEC-001-I: Effect declarations return Nil (no runtime implementation)
-            ExprKind::Effect { .. } => Ok(Value::Nil),
-            // SPEC-001-J: Effect handlers evaluate expression and return nil
-            ExprKind::Handle { expr, .. } => {
-                self.eval_expr(expr)?;
-                Ok(Value::Nil)
-            }
-            ExprKind::Enum {
-                name,
-                type_params,
-                variants,
-                is_pub,
-            } => self.eval_enum_definition(name, type_params, variants, *is_pub),
-            ExprKind::Struct {
-                name,
-                type_params,
-                fields,
-                methods,
-                derives: _,
-                is_pub,
-            } => self.eval_struct_definition(name, type_params, fields, methods, *is_pub),
-            ExprKind::TupleStruct { .. } => {
-                // Tuple structs are transpilation feature, return Nil at runtime
-                Ok(Value::Nil)
-            }
-            ExprKind::Class {
-                name,
-                type_params,
-                superclass,
-                traits,
-                fields,
-                constructors,
-                methods,
-                constants,
-                properties: _,
-                derives,
-                is_pub,
-                is_sealed: _,
-                is_abstract: _,
-                decorators: _,
-            } => self.eval_class_definition(
-                name,
-                type_params,
-                superclass.as_ref(),
-                traits,
-                fields,
-                constructors,
-                methods,
-                constants,
-                derives,
-                *is_pub,
-            ),
-            ExprKind::Impl {
-                trait_name: _,
-                for_type,
-                methods,
-                ..
-            } => self.eval_impl_block(for_type, methods),
-            _ => unreachable!("eval_type_definition called with non-type-definition"),
-        }
+        crate::runtime::interpreter_misc_eval::eval_type_definition(self, expr_kind)
     }
 
     /// Evaluate actor operation expressions (Spawn, `ActorSend`, `ActorQuery`)
-    /// Complexity: 4
+    /// Delegates to `interpreter_misc_eval` module.
     pub(crate) fn eval_actor_operation(
         &mut self,
         expr_kind: &ExprKind,
     ) -> Result<Value, InterpreterError> {
-        match expr_kind {
-            ExprKind::Spawn { actor } => self.eval_spawn_actor(actor),
-            ExprKind::ActorSend { actor, message } => self.eval_actor_send(actor, message),
-            ExprKind::ActorQuery { actor, message } => self.eval_actor_query(actor, message),
-            _ => unreachable!("eval_actor_operation called with non-actor-operation"),
-        }
+        crate::runtime::interpreter_misc_eval::eval_actor_operation(self, expr_kind)
     }
 
     /// Evaluate special form expressions (None, Some, Set, patterns, literals)
-    /// Complexity: 9
+    /// Delegates to `interpreter_misc_eval` module.
     pub(crate) fn eval_special_form(
         &mut self,
         expr_kind: &ExprKind,
     ) -> Result<Value, InterpreterError> {
-        match expr_kind {
-            ExprKind::None => Ok(Value::EnumVariant {
-                enum_name: "Option".to_string(),
-                variant_name: "None".to_string(),
-                data: None,
-            }),
-            ExprKind::Some { value } => Ok(Value::EnumVariant {
-                enum_name: "Option".to_string(),
-                variant_name: "Some".to_string(),
-                data: Some(vec![self.eval_expr(value)?]),
-            }),
-            ExprKind::Set(statements) => {
-                let mut result = Value::Nil;
-                for stmt in statements {
-                    result = self.eval_expr(stmt)?;
-                }
-                Ok(result)
-            }
-            ExprKind::LetPattern {
-                pattern,
-                value,
-                body,
-                ..
-            } => self.eval_let_pattern(pattern, value, body),
-            ExprKind::StringInterpolation { parts } => self.eval_string_interpolation(parts),
-            ExprKind::QualifiedName { module, name } => self.eval_qualified_name(module, name),
-            ExprKind::ObjectLiteral { fields } => self.eval_object_literal(fields),
-            ExprKind::StructLiteral {
-                name,
-                fields,
-                base: _,
-            } => self.eval_struct_literal(name, fields),
-            _ => unreachable!("eval_special_form called with non-special-form"),
-        }
+        crate::runtime::interpreter_misc_eval::eval_special_form(self, expr_kind)
     }
 
     /// Helper: Resolve module path through nested objects in global environment
@@ -509,622 +380,22 @@ impl Interpreter {
     pub(crate) fn format_string_with_values(format_str: &str, values: &[Value]) -> String {
         crate::runtime::value_format::format_string_with_values(format_str, values)
     }
-
-    /// Evaluate miscellaneous expressions
-    /// Complexity: 7 (was 5, added import handling)
+    /// Evaluate miscellaneous expressions.
+    /// Delegates to `interpreter_misc_eval` module.
     pub(crate) fn eval_misc_expr(
         &mut self,
         expr_kind: &ExprKind,
     ) -> Result<Value, InterpreterError> {
-        if Self::is_type_definition(expr_kind) {
-            return self.eval_type_definition(expr_kind);
-        }
-        if Self::is_actor_operation(expr_kind) {
-            return self.eval_actor_operation(expr_kind);
-        }
-        if Self::is_special_form(expr_kind) {
-            return self.eval_special_form(expr_kind);
-        }
-
-        // Handle import statements (GitHub Issue #59)
-        // Issue #82: Implement basic module resolution for use statements
-        match expr_kind {
-            ExprKind::ImportAll { module, alias } => {
-                // Use helper to resolve module path through nested objects
-                let parts: Vec<&str> = module.split("::").collect();
-
-                // Import the symbol into current environment with the appropriate name
-                if let Some(value) = self.resolve_module_path(module) {
-                    // Determine the name to use: alias if provided, otherwise last part of path
-                    let import_name = if alias == "*" {
-                        // Wildcard import - not yet implemented
-                        return Ok(Value::Nil);
-                    } else if !alias.is_empty() && alias != "*" {
-                        alias.clone()
-                    } else {
-                        (*parts.last().unwrap_or(&"")).to_string()
-                    };
-
-                    // Add to global environment (first element of env_stack)
-                    // This makes imports available across all scopes
-                    if let Some(global_env_ref) = self.env_stack.first() {
-                        global_env_ref.borrow_mut().insert(import_name, value); // ISSUE-119: Mutable borrow
-                    }
-                }
-
-                Ok(Value::Nil)
-            }
-            ExprKind::Import { module, items: _ } => {
-                // Issue #89: Distinguish between stdlib imports and file module imports
-                // - stdlib imports (std::*): Already available in global environment, no file to load
-                // - file modules (mylib): Load from mylib.ruchy file
-                //
-                // Example: `use std::env;` → Import env module into current scope
-                // Example: `use mylib;` → Load mylib.ruchy file
-
-                // Check if this is a stdlib import
-                if module.starts_with("std::") {
-                    // Issue #96: stdlib imports must make the module available in current scope
-                    // Use helper to resolve module path through nested objects
-                    let parts: Vec<&str> = module.split("::").collect();
-
-                    // Import the module into current environment
-                    if let Some(value) = self.resolve_module_path(module) {
-                        let import_name = (*parts.last().unwrap_or(&"")).to_string();
-
-                        // Add to global environment
-                        if let Some(global_env_ref) = self.env_stack.first() {
-                            global_env_ref.borrow_mut().insert(import_name, value);
-                        }
-                    }
-
-                    return Ok(Value::Nil);
-                }
-
-                // Issue #88: Load file module from file system and execute it
-                // Example: `use mylib;` loads mylib.ruchy
-                let parsed_module = self.module_loader.load_module(module).map_err(|e| {
-                    InterpreterError::RuntimeError(format!(
-                        "Failed to load module '{}': {}",
-                        module, e
-                    ))
-                })?;
-
-                // Create a new environment scope for the module
-                // ISSUE-119: Wrap in Rc<RefCell> for shared mutable access
-                let module_env_ref = Rc::new(RefCell::new(HashMap::new()));
-
-                // Evaluate the module AST to execute its definitions
-                // We need to push a new environment, evaluate, then pop
-                self.env_stack.push(Rc::clone(&module_env_ref));
-                let eval_result = self.eval_expr(&parsed_module.ast);
-                self.env_stack.pop();
-
-                // Check for evaluation errors
-                eval_result?;
-
-                // Create a module namespace object containing all exported symbols
-                // Borrow the module environment to read its contents
-                let mut module_object = std::collections::HashMap::new();
-                for (name, value) in module_env_ref.borrow().iter() {
-                    module_object.insert(name.clone(), value.clone());
-                }
-
-                // Add the module object to global environment
-                // This allows `mylib::add` to work via field access
-                if let Some(global_env_ref) = self.env_stack.first() {
-                    global_env_ref
-                        .borrow_mut()
-                        .insert(module.clone(), Value::Object(module_object.into()));
-                    // ISSUE-119: Mutable borrow
-                }
-
-                Ok(Value::Nil)
-            }
-            ExprKind::ImportDefault { .. } => {
-                // LIMITATION: ImportDefault not yet implemented - returns Nil for now
-                // See ISSUE-106 for module resolution tracking
-                Ok(Value::Nil)
-            }
-            // Handle vec! macro (GitHub Issue #62)
-            ExprKind::Macro { name, args } => {
-                if name == "vec" {
-                    // vec![...] expands to an array with evaluated arguments
-                    let mut elements = Vec::new();
-                    for arg in args {
-                        let value = self.eval_expr(arg)?;
-                        elements.push(value);
-                    }
-                    Ok(Value::Array(elements.into()))
-                } else if name == "println" {
-                    // println!() macro: Evaluate arguments, print with newline
-                    // PARSER-085: Supports format strings like println!("x: {}", value)
-                    if args.is_empty() {
-                        println!();
-                    } else if args.len() == 1 {
-                        // Single argument: print directly
-                        let value = self.eval_expr(&args[0])?;
-                        println!("{}", value);
-                    } else {
-                        // Multiple arguments: use format! logic (Issue #82, #83)
-                        let format_val = self.eval_expr(&args[0])?;
-                        let format_str = match format_val {
-                            Value::String(ref s) => s.as_ref().to_string(),
-                            _ => format_val.to_string(),
-                        };
-
-                        let mut values = Vec::new();
-                        for arg in &args[1..] {
-                            values.push(self.eval_expr(arg)?);
-                        }
-
-                        // Use helper for format string replacement
-                        let result = Self::format_string_with_values(&format_str, &values);
-                        println!("{}", result);
-                    }
-                    Ok(Value::Nil)
-                } else if name == "format" {
-                    // format!() macro: Format string with placeholders (Issue #83)
-                    if args.is_empty() {
-                        return Err(InterpreterError::RuntimeError(
-                            "format!() requires at least one argument".to_string(),
-                        ));
-                    }
-
-                    // Evaluate format string
-                    let format_val = self.eval_expr(&args[0])?;
-                    let format_str = format_val.to_string();
-
-                    // Evaluate remaining arguments
-                    let mut values = Vec::new();
-                    for arg in &args[1..] {
-                        values.push(self.eval_expr(arg)?);
-                    }
-
-                    // Replace {} and {:?} placeholders with values
-                    let mut result = String::new();
-                    let mut chars = format_str.chars().peekable();
-                    let mut value_index = 0;
-
-                    while let Some(ch) = chars.next() {
-                        if ch == '{' {
-                            // Check for {:?} debug format
-                            if chars.peek() == Some(&':') {
-                                chars.next(); // consume ':'
-                                if chars.peek() == Some(&'?') {
-                                    chars.next(); // consume '?'
-                                    if chars.peek() == Some(&'}') {
-                                        chars.next(); // consume '}'
-                                        if value_index < values.len() {
-                                            result.push_str(&format!("{:?}", values[value_index]));
-                                            value_index += 1;
-                                        } else {
-                                            result.push_str("{:?}"); // preserve placeholder
-                                        }
-                                    } else {
-                                        result.push_str("{:?"); // not a complete placeholder
-                                    }
-                                } else {
-                                    result.push_str("{:"); // not {:?}
-                                }
-                            } else if chars.peek() == Some(&'}') {
-                                chars.next(); // consume '}'
-                                if value_index < values.len() {
-                                    result.push_str(&values[value_index].to_string());
-                                    value_index += 1;
-                                } else {
-                                    result.push_str("{}"); // preserve placeholder if no value
-                                }
-                            } else {
-                                result.push(ch);
-                            }
-                        } else {
-                            result.push(ch);
-                        }
-                    }
-
-                    Ok(Value::from_string(result))
-                } else {
-                    // Other macros not yet implemented
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Macro '{}!' not yet implemented",
-                        name
-                    )))
-                }
-            }
-            // RUNTIME-001: Handle MacroInvocation (FORMATTER-088 changed parser output)
-            // MacroInvocation is the correct AST variant for macro CALLS (not definitions)
-            // Delegate to same logic as Macro for backward compatibility (GitHub Issue #74)
-            ExprKind::MacroInvocation { name, args } => {
-                if name == "vec" {
-                    let mut elements = Vec::new();
-                    for arg in args {
-                        let value = self.eval_expr(arg)?;
-                        elements.push(value);
-                    }
-                    Ok(Value::Array(elements.into()))
-                } else if name == "println" {
-                    // println!() macro: Evaluate arguments, print with newline
-                    // PARSER-085: Supports format strings like println!("x: {}", value)
-                    if args.is_empty() {
-                        println!();
-                    } else if args.len() == 1 {
-                        // Single argument: print directly
-                        let value = self.eval_expr(&args[0])?;
-                        println!("{}", value);
-                    } else {
-                        // Multiple arguments: use format! logic (Issue #82, #83)
-                        let format_val = self.eval_expr(&args[0])?;
-                        let format_str = match format_val {
-                            Value::String(ref s) => s.as_ref().to_string(),
-                            _ => format_val.to_string(),
-                        };
-
-                        let mut values = Vec::new();
-                        for arg in &args[1..] {
-                            values.push(self.eval_expr(arg)?);
-                        }
-
-                        // Use helper for format string replacement
-                        let result = Self::format_string_with_values(&format_str, &values);
-                        println!("{}", result);
-                    }
-                    Ok(Value::Nil)
-                } else if name == "format" {
-                    // format!() macro: Format string with placeholders (Issue #83)
-                    if args.is_empty() {
-                        return Err(InterpreterError::RuntimeError(
-                            "format!() requires at least one argument".to_string(),
-                        ));
-                    }
-
-                    // Evaluate format string
-                    let format_val = self.eval_expr(&args[0])?;
-                    let format_str = format_val.to_string();
-
-                    // Evaluate remaining arguments
-                    let mut values = Vec::new();
-                    for arg in &args[1..] {
-                        values.push(self.eval_expr(arg)?);
-                    }
-
-                    // Replace {} and {:?} placeholders with values
-                    let mut result = String::new();
-                    let mut chars = format_str.chars().peekable();
-                    let mut value_index = 0;
-
-                    while let Some(ch) = chars.next() {
-                        if ch == '{' {
-                            // Check for {:?} debug format
-                            if chars.peek() == Some(&':') {
-                                chars.next(); // consume ':'
-                                if chars.peek() == Some(&'?') {
-                                    chars.next(); // consume '?'
-                                    if chars.peek() == Some(&'}') {
-                                        chars.next(); // consume '}'
-                                        if value_index < values.len() {
-                                            result.push_str(&format!("{:?}", values[value_index]));
-                                            value_index += 1;
-                                        } else {
-                                            result.push_str("{:?}"); // preserve placeholder
-                                        }
-                                    } else {
-                                        result.push_str("{:?"); // not a complete placeholder
-                                    }
-                                } else {
-                                    result.push_str("{:"); // not {:?}
-                                }
-                            } else if chars.peek() == Some(&'}') {
-                                chars.next(); // consume '}'
-                                if value_index < values.len() {
-                                    result.push_str(&values[value_index].to_string());
-                                    value_index += 1;
-                                } else {
-                                    result.push_str("{}"); // preserve placeholder if no value
-                                }
-                            } else {
-                                result.push(ch);
-                            }
-                        } else {
-                            result.push(ch);
-                        }
-                    }
-
-                    Ok(Value::from_string(result))
-                } else {
-                    Err(InterpreterError::RuntimeError(format!(
-                        "Macro '{}!' not yet implemented",
-                        name
-                    )))
-                }
-            }
-            ExprKind::Try { expr } => {
-                // Issue #97: Try operator (?) for Result unwrapping/propagation
-                // Evaluates expr, expects Result enum (Ok/Err variants)
-                // - If Ok(value), unwrap and return value
-                // - If Err(error), propagate by returning Err variant
-                let result_value = self.eval_expr(expr)?;
-
-                match &result_value {
-                    // Case 1: Direct EnumVariant construction
-                    Value::EnumVariant {
-                        enum_name,
-                        variant_name,
-                        data,
-                    } if enum_name == "Result" => {
-                        match variant_name.as_str() {
-                            "Ok" => {
-                                // Unwrap Ok value: extract first element from data
-                                if let Some(values) = data {
-                                    if let Some(value) = values.first() {
-                                        Ok(value.clone())
-                                    } else {
-                                        Err(InterpreterError::RuntimeError(
-                                            "Try operator: Ok variant has no data".to_string(),
-                                        ))
-                                    }
-                                } else {
-                                    Err(InterpreterError::RuntimeError(
-                                        "Try operator: Ok variant has no data".to_string(),
-                                    ))
-                                }
-                            }
-                            "Err" => {
-                                // Propagate Err: early return from containing function
-                                // Use the same mechanism as 'return' statements
-                                Err(InterpreterError::Return(Value::EnumVariant {
-                                    enum_name: enum_name.clone(),
-                                    variant_name: variant_name.clone(),
-                                    data: data.clone(),
-                                }))
-                            }
-                            _ => Err(InterpreterError::RuntimeError(format!(
-                                "Try operator: unexpected Result variant '{}'",
-                                variant_name
-                            ))),
-                        }
-                    }
-                    // Case 2: Object representation (function return values)
-                    // Result is represented as Object with __type="Message", type="Ok"/"Err"
-                    Value::Object(obj)
-                        if obj.get("__type").and_then(|v| {
-                            if let Value::String(s) = v {
-                                Some(s.as_ref())
-                            } else {
-                                None
-                            }
-                        }) == Some("Message") =>
-                    {
-                        // Extract the "type" field (Ok or Err)
-                        if let Some(Value::String(variant)) = obj.get("type") {
-                            match variant.as_ref() {
-                                "Ok" => {
-                                    // Unwrap Ok: extract first element from "data" array
-                                    if let Some(Value::Array(data_arr)) = obj.get("data") {
-                                        if let Some(value) = data_arr.first() {
-                                            Ok(value.clone())
-                                        } else {
-                                            Err(InterpreterError::RuntimeError(
-                                                "Try operator: Ok has empty data".to_string(),
-                                            ))
-                                        }
-                                    } else {
-                                        Err(InterpreterError::RuntimeError(
-                                            "Try operator: Ok missing data field".to_string(),
-                                        ))
-                                    }
-                                }
-                                "Err" => {
-                                    // Propagate Err: early return from containing function
-                                    // Use the same mechanism as 'return' statements
-                                    Err(InterpreterError::Return(result_value))
-                                }
-                                _ => Err(InterpreterError::RuntimeError(format!(
-                                    "Try operator: unexpected type '{}'",
-                                    variant
-                                ))),
-                            }
-                        } else {
-                            Err(InterpreterError::RuntimeError(
-                                "Try operator: Message object missing 'type' field".to_string(),
-                            ))
-                        }
-                    }
-                    _ => Err(InterpreterError::RuntimeError(format!(
-                        "Try operator expects Result enum, got: {:?}",
-                        result_value
-                    ))),
-                }
-            }
-            // SPEC-001-C: Pipeline operator evaluation (|> not >>)
-            // Evaluates: initial_expr |> func1 |> func2 |> ...
-            // Example: 5 |> double |> add_one → add_one(double(5)) → 11
-            // PIPELINE-001 FIX: Also supports method calls: "hello" |> upper → "hello".upper()
-            // PIPELINE-001 FIX v2: Use dispatch_method_call for proper Value handling
-            ExprKind::Pipeline { expr, stages } => {
-                // Start with the initial expression value
-                let mut current_value = self.eval_expr(expr)?;
-
-                // Apply each pipeline stage in sequence
-                for stage in stages {
-                    // PIPELINE-001: Check if stage is an identifier that could be a method
-                    if let ExprKind::Identifier(method_name) = &stage.op.kind {
-                        // First, try to look up as a user-defined function (Closure)
-                        // Don't use builtins like __builtin_join__ - those are methods
-                        let is_user_function = self
-                            .lookup_variable(method_name)
-                            .map(|v| matches!(v, Value::Closure { .. }))
-                            .unwrap_or(false);
-
-                        if is_user_function {
-                            // It's a user-defined function - call it with current_value as argument
-                            let func_val = self.lookup_variable(method_name)?;
-                            current_value = self.call_function(func_val, &[current_value])?;
-                        } else {
-                            // Not a user function - try calling as a method on current_value
-                            // This enables: "hello" |> upper → "hello".upper()
-                            current_value =
-                                self.dispatch_method_call(&current_value, method_name, &[], true)?;
-                        }
-                    } else if let ExprKind::Call { func, args } = &stage.op.kind {
-                        // It's a call expression like filter(x => x > 0)
-                        // Check if func is an identifier we should treat as a method
-                        if let ExprKind::Identifier(method_name) = &func.kind {
-                            // Check if it's a user-defined function (Closure)
-                            let is_user_function = self
-                                .lookup_variable(method_name)
-                                .map(|v| matches!(v, Value::Closure { .. }))
-                                .unwrap_or(false);
-
-                            if is_user_function {
-                                // It's a user function call - prepend current_value to args
-                                let func_val = self.lookup_variable(method_name)?;
-                                let arg_values: Result<Vec<_>, _> =
-                                    args.iter().map(|arg| self.eval_expr(arg)).collect();
-                                let mut all_args = vec![current_value];
-                                all_args.extend(arg_values?);
-                                current_value = self.call_function(func_val, &all_args)?;
-                            } else {
-                                // It's a method call with args: arr |> filter(pred) → arr.filter(pred)
-                                let arg_values: Result<Vec<_>, _> =
-                                    args.iter().map(|arg| self.eval_expr(arg)).collect();
-                                current_value = self.dispatch_method_call(
-                                    &current_value,
-                                    method_name,
-                                    &arg_values?,
-                                    args.is_empty(),
-                                )?;
-                            }
-                        } else {
-                            // Complex function expression - evaluate and call with current_value as first arg
-                            let func_val = self.eval_expr(func)?;
-                            let arg_values: Result<Vec<_>, _> =
-                                args.iter().map(|arg| self.eval_expr(arg)).collect();
-                            let mut all_args = vec![current_value];
-                            all_args.extend(arg_values?);
-                            current_value = self.call_function(func_val, &all_args)?;
-                        }
-                    } else {
-                        // Other expression types - evaluate as function and call with current_value
-                        let func_val = self.eval_expr(&stage.op)?;
-                        current_value = self.call_function(func_val, &[current_value])?;
-                    }
-                }
-
-                Ok(current_value)
-            }
-            // SPEC-001-D: Lazy evaluation - defers computation until value is accessed
-            // For interpreter, we eagerly evaluate (no lazy caching mechanism yet)
-            // Transpiler will use Once<T> for true lazy behavior
-            ExprKind::Lazy { expr } => {
-                // Minimal implementation: just evaluate the expression
-                // Future: Add lazy value wrapper with memoization
-                self.eval_expr(expr)
-            }
-            // SPEC-001-E: Async block - simplified synchronous evaluation
-            // For true async support, would need tokio runtime integration
-            // Current: Evaluates block immediately (no Future/await)
-            ExprKind::AsyncBlock { body } => {
-                // Simplified: Just evaluate the block synchronously
-                // Future: Wrap in Future and integrate with async runtime
-                self.eval_expr(body)
-            }
-            // ISSUE-106: Module expression - creates a namespace with exported functions
-            ExprKind::Module { name, body } => self.eval_module_expr(name, body),
-            // ISSUE-106: ModuleDeclaration should be resolved before evaluation
-            // If we reach here, module resolution wasn't performed
-            ExprKind::ModuleDeclaration { name } => Err(InterpreterError::RuntimeError(format!(
-                "Module '{}' not resolved. Use `ruchy compile` or ensure module file exists.",
-                name
-            ))),
-            // If-let expression: if let pattern = expr { then } else { else }
-            ExprKind::IfLet {
-                pattern,
-                expr,
-                then_branch,
-                else_branch,
-            } => {
-                let value = self.eval_expr(expr)?;
-                if let Some(bindings) = self.try_pattern_match(pattern, &value)? {
-                    // Pattern matched - bind variables and execute then_branch
-                    self.push_scope();
-                    for (name, val) in bindings {
-                        self.env_set(name, val);
-                    }
-                    let result = self.eval_expr(then_branch);
-                    self.pop_scope();
-                    result
-                } else if let Some(else_expr) = else_branch {
-                    // Pattern didn't match - execute else branch
-                    self.eval_expr(else_expr)
-                } else {
-                    // No match and no else branch - return nil
-                    Ok(Value::Nil)
-                }
-            }
-            // While-let expression: while let pattern = expr { body }
-            ExprKind::WhileLet {
-                label: _,
-                pattern,
-                expr,
-                body,
-            } => {
-                let mut last_value = Value::Nil;
-                loop {
-                    let value = self.eval_expr(expr)?;
-                    if let Some(bindings) = self.try_pattern_match(pattern, &value)? {
-                        // Pattern matched - bind variables and execute body
-                        self.push_scope();
-                        for (name, val) in bindings {
-                            self.env_set(name, val);
-                        }
-                        match self.eval_expr(body) {
-                            Ok(v) => last_value = v,
-                            Err(InterpreterError::Break(_, v)) => {
-                                self.pop_scope();
-                                return Ok(v);
-                            }
-                            Err(InterpreterError::Continue(_)) => {
-                                self.pop_scope();
-                                continue;
-                            }
-                            Err(e) => {
-                                self.pop_scope();
-                                return Err(e);
-                            }
-                        }
-                        self.pop_scope();
-                    } else {
-                        // Pattern didn't match - exit loop
-                        break;
-                    }
-                }
-                Ok(last_value)
-            }
-            // List comprehension: [expr for x in iter if cond]
-            ExprKind::ListComprehension { element, clauses } => {
-                self.eval_list_comprehension(element, clauses)
-            }
-            _ => {
-                // Fallback for unimplemented expressions
-                Err(InterpreterError::RuntimeError(format!(
-                    "Expression type not yet implemented: {expr_kind:?}"
-                )))
-            }
-        }
+        crate::runtime::interpreter_misc_eval::eval_misc_expr(self, expr_kind)
     }
 
     /// Evaluate list comprehension: [expr for x in iter if cond]
-    /// Supports multiple clauses (nested loops) and optional conditions
-    /// Complexity: 8 (nested iteration with conditions)
     pub(crate) fn eval_list_comprehension(
         &mut self,
         element: &Expr,
         clauses: &[ComprehensionClause],
     ) -> Result<Value, InterpreterError> {
-        let mut results = Vec::new();
-        self.eval_comprehension_clauses(&mut results, element, clauses, 0)?;
-        Ok(Value::Array(Arc::from(results)))
+        crate::runtime::interpreter_misc_eval::eval_list_comprehension(self, element, clauses)
     }
 
     /// Recursively process comprehension clauses
@@ -1135,49 +406,7 @@ impl Interpreter {
         clauses: &[ComprehensionClause],
         clause_idx: usize,
     ) -> Result<(), InterpreterError> {
-        if clause_idx >= clauses.len() {
-            // All clauses processed, evaluate and collect element
-            results.push(self.eval_expr(element)?);
-            return Ok(());
-        }
-
-        let clause = &clauses[clause_idx];
-        let iterable = self.eval_expr(&clause.iterable)?;
-
-        self.push_scope();
-        match iterable {
-            Value::Array(ref arr) => {
-                for item in arr.iter() {
-                    self.env_set(clause.variable.clone(), item.clone());
-                    if !self.check_comprehension_condition(clause.condition.as_deref())? {
-                        continue;
-                    }
-                    self.eval_comprehension_clauses(results, element, clauses, clause_idx + 1)?;
-                }
-            }
-            Value::Range {
-                ref start,
-                ref end,
-                inclusive,
-            } => {
-                let (start_val, end_val) = self.extract_range_bounds(start, end)?;
-                for i in self.create_range_iterator(start_val, end_val, inclusive) {
-                    self.env_set(clause.variable.clone(), Value::Integer(i));
-                    if !self.check_comprehension_condition(clause.condition.as_deref())? {
-                        continue;
-                    }
-                    self.eval_comprehension_clauses(results, element, clauses, clause_idx + 1)?;
-                }
-            }
-            _ => {
-                self.pop_scope();
-                return Err(InterpreterError::TypeError(
-                    "List comprehension requires an iterable".to_string(),
-                ));
-            }
-        }
-        self.pop_scope();
-        Ok(())
+        crate::runtime::interpreter_misc_eval::eval_comprehension_clauses(self, results, element, clauses, clause_idx)
     }
 
     /// Helper: Check comprehension condition
@@ -1185,96 +414,30 @@ impl Interpreter {
         &mut self,
         condition: Option<&Expr>,
     ) -> Result<bool, InterpreterError> {
-        if let Some(cond) = condition {
-            let cond_val = self.eval_expr(cond)?;
-            Ok(cond_val.is_truthy())
-        } else {
-            Ok(true)
-        }
+        crate::runtime::interpreter_misc_eval::check_comprehension_condition(self, condition)
     }
 
     /// Helper: Evaluate spawn actor expression with proper nesting handling
-    /// Complexity: 10 (extracted from inline code)
     pub(crate) fn eval_spawn_actor(&mut self, actor: &Expr) -> Result<Value, InterpreterError> {
-        // Handle: spawn ActorName (no args)
-        if let ExprKind::Identifier(name) = &actor.kind {
-            if let Ok(def_value) = self.lookup_variable(name) {
-                if let Value::Object(ref obj) = def_value {
-                    if let Some(Value::String(type_str)) = obj.get("__type") {
-                        if type_str.as_ref() == "Actor" {
-                            let constructor_marker =
-                                Value::from_string(format!("__actor_constructor__:{}", name));
-                            return self.call_function(constructor_marker, &[]);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Handle: spawn ActorName(args...)
-        if let ExprKind::Call { func, args } = &actor.kind {
-            if let ExprKind::Identifier(name) = &func.kind {
-                if let Ok(def_value) = self.lookup_variable(name) {
-                    if let Value::Object(ref obj) = def_value {
-                        if let Some(Value::String(type_str)) = obj.get("__type") {
-                            if type_str.as_ref() == "Actor" {
-                                let constructor_marker =
-                                    Value::from_string(format!("__actor_constructor__:{}", name));
-                                let arg_vals: Result<Vec<Value>, _> =
-                                    args.iter().map(|arg| self.eval_expr(arg)).collect();
-                                let arg_vals = arg_vals?;
-                                return self.call_function(constructor_marker, &arg_vals);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Default: evaluate the actor expression normally
-        let actor_value = self.eval_expr(actor)?;
-        Ok(actor_value)
+        crate::runtime::interpreter_misc_eval::eval_spawn_actor(self, actor)
     }
 
     /// Helper: Evaluate actor send expression (fire-and-forget)
-    /// Complexity: 4
     pub(crate) fn eval_actor_send(
         &mut self,
         actor: &Expr,
         message: &Expr,
     ) -> Result<Value, InterpreterError> {
-        let actor_value = self.eval_expr(actor)?;
-        let message_value = self.eval_message_expr(message)?;
-
-        if let Value::ObjectMut(cell_rc) = actor_value {
-            self.process_actor_message_sync_mut(&cell_rc, &message_value)?;
-            Ok(Value::Nil)
-        } else {
-            Err(InterpreterError::RuntimeError(format!(
-                "ActorSend requires an actor instance, got {}",
-                actor_value.type_name()
-            )))
-        }
+        crate::runtime::interpreter_misc_eval::eval_actor_send(self, actor, message)
     }
 
     /// Helper: Evaluate actor query expression (ask pattern)
-    /// Complexity: 4
     pub(crate) fn eval_actor_query(
         &mut self,
         actor: &Expr,
         message: &Expr,
     ) -> Result<Value, InterpreterError> {
-        let actor_value = self.eval_expr(actor)?;
-        let message_value = self.eval_message_expr(message)?;
-
-        if let Value::ObjectMut(cell_rc) = actor_value {
-            self.process_actor_message_sync_mut(&cell_rc, &message_value)
-        } else {
-            Err(InterpreterError::RuntimeError(format!(
-                "ActorQuery requires an actor instance, got {}",
-                actor_value.type_name()
-            )))
-        }
+        crate::runtime::interpreter_misc_eval::eval_actor_query(self, actor, message)
     }
 
     // Actor message extraction delegated to eval_actor module
@@ -1283,6 +446,11 @@ impl Interpreter {
         message: &Value,
     ) -> Result<(String, Vec<Value>), InterpreterError> {
         crate::runtime::eval_actor::extract_message_type_and_data(message)
+    }
+
+    /// Provide mutable access to the module loader (for interpreter_misc_eval)
+    pub(crate) fn module_loader_mut(&mut self) -> &mut crate::backend::module_loader::ModuleLoader {
+        &mut self.module_loader
     }
 
     pub(crate) fn is_control_flow_expr(expr_kind: &ExprKind) -> bool {
