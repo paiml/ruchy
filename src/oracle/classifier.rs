@@ -1014,4 +1014,181 @@ mod tests {
         oracle.record_result(ErrorCategory::TypeMismatch, ErrorCategory::TypeMismatch);
         // No panic = success
     }
+
+    // ============================================================================
+    // generate_synthetic_samples tests
+    // ============================================================================
+
+    use crate::oracle::SampleSource;
+
+    #[test]
+    fn test_generate_synthetic_samples_returns_exact_count() {
+        let samples = RuchyOracle::generate_synthetic_samples(32);
+        assert_eq!(samples.len(), 32);
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_zero_count() {
+        let samples = RuchyOracle::generate_synthetic_samples(0);
+        assert!(samples.is_empty());
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_one() {
+        let samples = RuchyOracle::generate_synthetic_samples(1);
+        assert_eq!(samples.len(), 1);
+        // First template is TypeMismatch (E0308)
+        assert_eq!(samples[0].category, ErrorCategory::TypeMismatch);
+        assert!(samples[0].message.contains("mismatched types"));
+        assert_eq!(samples[0].source, SampleSource::Synthetic);
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_covers_all_categories() {
+        // There are 16 templates, so requesting 16 covers all categories
+        let samples = RuchyOracle::generate_synthetic_samples(16);
+        assert_eq!(samples.len(), 16);
+
+        let mut categories = std::collections::HashSet::new();
+        for sample in &samples {
+            categories.insert(sample.category);
+        }
+
+        // All 8 error categories should be present
+        assert!(categories.contains(&ErrorCategory::TypeMismatch));
+        assert!(categories.contains(&ErrorCategory::BorrowChecker));
+        assert!(categories.contains(&ErrorCategory::LifetimeError));
+        assert!(categories.contains(&ErrorCategory::TraitBound));
+        assert!(categories.contains(&ErrorCategory::MissingImport));
+        assert!(categories.contains(&ErrorCategory::MutabilityError));
+        assert!(categories.contains(&ErrorCategory::SyntaxError));
+        assert!(categories.contains(&ErrorCategory::Other));
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_messages_have_variants() {
+        let samples = RuchyOracle::generate_synthetic_samples(32);
+        // Messages should contain "(variant N)" variation suffix
+        for sample in &samples {
+            assert!(
+                sample.message.contains("(variant "),
+                "Message should contain variant: {}",
+                sample.message
+            );
+        }
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_error_codes() {
+        let samples = RuchyOracle::generate_synthetic_samples(16);
+
+        // First two templates are TypeMismatch with codes E0308 and E0271
+        assert_eq!(samples[0].error_code, Some("E0308".to_string()));
+        assert_eq!(samples[1].error_code, Some("E0271".to_string()));
+
+        // Templates 14 and 15 are Other with empty error codes (None)
+        assert_eq!(samples[14].error_code, None);
+        assert_eq!(samples[15].error_code, None);
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_all_synthetic_source() {
+        let samples = RuchyOracle::generate_synthetic_samples(48);
+        for sample in &samples {
+            assert_eq!(
+                sample.source,
+                SampleSource::Synthetic,
+                "All synthetic samples should have Synthetic source"
+            );
+        }
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_cycles_templates() {
+        // With 16 templates, requesting 48 should cycle through templates 3 times
+        let samples = RuchyOracle::generate_synthetic_samples(48);
+        assert_eq!(samples.len(), 48);
+
+        // First and 17th samples should have the same category (TypeMismatch)
+        // because templates cycle every 16
+        assert_eq!(samples[0].category, samples[16].category);
+        assert_eq!(samples[0].category, samples[32].category);
+
+        // per_template = 48/16 = 3, so variant = i % 3
+        // index 0: variant 0, index 16: variant 1, index 32: variant 2
+        assert!(samples[0].message.contains("(variant 0)"));
+        assert!(samples[16].message.contains("(variant 1)"));
+        assert!(samples[32].message.contains("(variant 2)"));
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_empty_code_becomes_none() {
+        // Templates at index 14 and 15 have empty error codes
+        let samples = RuchyOracle::generate_synthetic_samples(16);
+
+        // "error: unknown error" template (index 14) has empty code -> None
+        assert_eq!(samples[14].error_code, None);
+        assert_eq!(samples[14].category, ErrorCategory::Other);
+        assert!(samples[14].message.contains("unknown error"));
+
+        // "error: internal compiler error" template (index 15) has empty code -> None
+        assert_eq!(samples[15].error_code, None);
+        assert_eq!(samples[15].category, ErrorCategory::Other);
+        assert!(samples[15].message.contains("internal compiler error"));
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_non_empty_code_becomes_some() {
+        let samples = RuchyOracle::generate_synthetic_samples(16);
+
+        // First template has code "E0308"
+        assert_eq!(samples[0].error_code, Some("E0308".to_string()));
+
+        // BorrowChecker template at index 2 has code "E0382"
+        assert_eq!(samples[2].error_code, Some("E0382".to_string()));
+
+        // LifetimeError template at index 4 has code "E0597"
+        assert_eq!(samples[4].error_code, Some("E0597".to_string()));
+
+        // TraitBound template at index 6 has code "E0277"
+        assert_eq!(samples[6].error_code, Some("E0277".to_string()));
+
+        // MissingImport template at index 8 has code "E0433"
+        assert_eq!(samples[8].error_code, Some("E0433".to_string()));
+
+        // MutabilityError template at index 10 has code "E0596"
+        assert_eq!(samples[10].error_code, Some("E0596".to_string()));
+
+        // SyntaxError template at index 12 has code "E0658"
+        assert_eq!(samples[12].error_code, Some("E0658".to_string()));
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_small_count_per_template_zero() {
+        // When count < templates.len() (16), per_template = 0 and max(1) is used
+        let samples = RuchyOracle::generate_synthetic_samples(3);
+        assert_eq!(samples.len(), 3);
+        // per_template = 3/16 = 0, so max(1) = 1, variant = i % 1 = 0
+        for sample in &samples {
+            assert!(
+                sample.message.contains("(variant 0)"),
+                "With small count, all variants should be 0: {}",
+                sample.message
+            );
+        }
+    }
+
+    #[test]
+    fn test_generate_synthetic_samples_large_count() {
+        // Stress test with a larger count
+        let samples = RuchyOracle::generate_synthetic_samples(160);
+        assert_eq!(samples.len(), 160);
+
+        // per_template = 160/16 = 10
+        // Variant numbering: i % 10 for each sample
+        // First sample: variant 0 % 10 = 0
+        assert!(samples[0].message.contains("(variant 0)"));
+        // Sample at index 16: variant 16 % 10 = 6
+        assert!(samples[16].message.contains("(variant 6)"));
+    }
 }
