@@ -1147,3 +1147,208 @@ fn test_constructor_body_block_mixed_self_then_non_self() {
     // Falls through when encountering non-self assignment
     assert!(result.is_ok());
 }
+
+// ===== transpile_property_test tests =====
+
+#[test]
+fn test_transpile_property_test_basic_function() {
+    let t = Transpiler::new();
+    let param = make_param(
+        "x",
+        make_type(crate::frontend::ast::TypeKind::Named("i32".to_string())),
+    );
+    let func = make_expr(crate::frontend::ast::ExprKind::Function {
+        name: "check_positive".to_string(),
+        type_params: vec![],
+        params: vec![param],
+        return_type: None,
+        body: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Bool(true),
+        ))),
+        is_async: false,
+        is_pub: false,
+    });
+    let attr = crate::frontend::ast::Attribute {
+        name: "property_test".to_string(),
+        args: vec![],
+        span: crate::frontend::ast::Span::new(0, 0),
+    };
+    let result = t.transpile_property_test(&func, &attr);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    assert!(code.contains("proptest"));
+    assert!(code.contains("check_positive"));
+    assert!(code.contains("i32"));
+}
+
+#[test]
+fn test_transpile_property_test_multiple_params() {
+    let t = Transpiler::new();
+    let param1 = make_param(
+        "a",
+        make_type(crate::frontend::ast::TypeKind::Named("i32".to_string())),
+    );
+    let param2 = make_param(
+        "b",
+        make_type(crate::frontend::ast::TypeKind::Named("f64".to_string())),
+    );
+    let func = make_expr(crate::frontend::ast::ExprKind::Function {
+        name: "test_add".to_string(),
+        type_params: vec![],
+        params: vec![param1, param2],
+        return_type: None,
+        body: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Bool(true),
+        ))),
+        is_async: false,
+        is_pub: false,
+    });
+    let attr = crate::frontend::ast::Attribute {
+        name: "property_test".to_string(),
+        args: vec![],
+        span: crate::frontend::ast::Span::new(0, 0),
+    };
+    let result = t.transpile_property_test(&func, &attr);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    assert!(code.contains("test_add"));
+    assert!(code.contains("i32"));
+    assert!(code.contains("f64"));
+}
+
+#[test]
+fn test_transpile_property_test_non_function_error() {
+    let t = Transpiler::new();
+    let non_func = make_expr(crate::frontend::ast::ExprKind::Literal(
+        crate::frontend::ast::Literal::Integer(42, None),
+    ));
+    let attr = crate::frontend::ast::Attribute {
+        name: "property_test".to_string(),
+        args: vec![],
+        span: crate::frontend::ast::Span::new(0, 0),
+    };
+    let result = t.transpile_property_test(&non_func, &attr);
+    assert!(result.is_err());
+    let err_msg = result.unwrap_err().to_string();
+    assert!(err_msg.contains("Property test attribute can only be applied to functions"));
+}
+
+#[test]
+fn test_transpile_property_test_no_params() {
+    let t = Transpiler::new();
+    let func = make_expr(crate::frontend::ast::ExprKind::Function {
+        name: "check_invariant".to_string(),
+        type_params: vec![],
+        params: vec![],
+        return_type: None,
+        body: Box::new(make_expr(crate::frontend::ast::ExprKind::Literal(
+            crate::frontend::ast::Literal::Bool(true),
+        ))),
+        is_async: false,
+        is_pub: false,
+    });
+    let attr = crate::frontend::ast::Attribute {
+        name: "property_test".to_string(),
+        args: vec![],
+        span: crate::frontend::ast::Span::new(0, 0),
+    };
+    let result = t.transpile_property_test(&func, &attr);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    assert!(code.contains("proptest"));
+    assert!(code.contains("check_invariant"));
+}
+
+// ===== transpile_body_with_auto_clone tests =====
+
+#[test]
+fn test_transpile_body_with_auto_clone_self_field() {
+    let t = Transpiler::new();
+    // self.name → self.name.clone()
+    let body = make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+        object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+            "self".to_string(),
+        ))),
+        field: "name".to_string(),
+    });
+    let result = t.transpile_body_with_auto_clone(&body);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    assert!(code.contains("self . name . clone ()"), "Should auto-clone self.field: {code}");
+}
+
+#[test]
+fn test_transpile_body_with_auto_clone_non_self_field() {
+    let t = Transpiler::new();
+    // other.name → transpile_expr (no auto-clone)
+    let body = make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+        object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+            "other".to_string(),
+        ))),
+        field: "name".to_string(),
+    });
+    let result = t.transpile_body_with_auto_clone(&body);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    // Should NOT have .clone() auto-added (falls through to transpile_expr)
+    assert!(code.contains("name"));
+}
+
+#[test]
+fn test_transpile_body_with_auto_clone_block_with_self_last() {
+    let t = Transpiler::new();
+    // Block where last expr is self.field → auto-clone on last expr
+    let first = make_expr(crate::frontend::ast::ExprKind::Literal(
+        crate::frontend::ast::Literal::Integer(1, None),
+    ));
+    let last = make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+        object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+            "self".to_string(),
+        ))),
+        field: "value".to_string(),
+    });
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![first, last]));
+    let result = t.transpile_body_with_auto_clone(&body);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    assert!(code.contains("clone"), "Last expr in block should be auto-cloned: {code}");
+}
+
+#[test]
+fn test_transpile_body_with_auto_clone_non_field_expr() {
+    let t = Transpiler::new();
+    // Simple literal → falls through to transpile_expr
+    let body = make_expr(crate::frontend::ast::ExprKind::Literal(
+        crate::frontend::ast::Literal::Integer(42, None),
+    ));
+    let result = t.transpile_body_with_auto_clone(&body);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    assert!(code.contains("42"));
+}
+
+#[test]
+fn test_transpile_body_with_auto_clone_empty_block() {
+    let t = Transpiler::new();
+    // Empty block → falls through to default branch (transpile_expr)
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![]));
+    let result = t.transpile_body_with_auto_clone(&body);
+    assert!(result.is_ok());
+}
+
+#[test]
+fn test_transpile_body_with_auto_clone_single_elem_block() {
+    let t = Transpiler::new();
+    // Block with single self.field → auto-clone applied
+    let elem = make_expr(crate::frontend::ast::ExprKind::FieldAccess {
+        object: Box::new(make_expr(crate::frontend::ast::ExprKind::Identifier(
+            "self".to_string(),
+        ))),
+        field: "data".to_string(),
+    });
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![elem]));
+    let result = t.transpile_body_with_auto_clone(&body);
+    assert!(result.is_ok());
+    let code = result.unwrap().to_string();
+    assert!(code.contains("clone"), "Single-elem block with self.field should auto-clone: {code}");
+}

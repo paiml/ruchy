@@ -1112,4 +1112,88 @@ mod tests {
         assert!(tokens.contains("custom_macro"));
         assert!(tokens.contains("single_arg"));
     }
+
+    // ========================================================================
+    // transpile_string_interpolation_for_print tests
+    // ========================================================================
+
+    // Test: text-only parts (no expressions) — takes the else branch (literal format string)
+    #[test]
+    fn test_string_interpolation_for_print_text_only() {
+        use crate::frontend::ast::StringPart;
+        let transpiler = Transpiler::new();
+        let parts = vec![StringPart::Text("Hello world".to_string())];
+        let result = transpiler.transpile_string_interpolation_for_print(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Hello world"));
+    }
+
+    // Test: multiple text parts concatenated (no expressions)
+    #[test]
+    fn test_string_interpolation_for_print_multiple_text_parts() {
+        use crate::frontend::ast::StringPart;
+        let transpiler = Transpiler::new();
+        let parts = vec![
+            StringPart::Text("Hello ".to_string()),
+            StringPart::Text("world".to_string()),
+        ];
+        let result = transpiler.transpile_string_interpolation_for_print(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("Hello world"));
+    }
+
+    // Test: with expression (takes the has_expressions branch → delegates to transpile_string_interpolation)
+    #[test]
+    fn test_string_interpolation_for_print_with_expr() {
+        use crate::frontend::ast::StringPart;
+        let transpiler = Transpiler::new();
+        let parts = vec![
+            StringPart::Text("Hello ".to_string()),
+            StringPart::Expr(Box::new(Expr::new(
+                ExprKind::Identifier("name".to_string()),
+                Span::default(),
+            ))),
+        ];
+        let result = transpiler.transpile_string_interpolation_for_print(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        // Should delegate to transpile_string_interpolation which uses format!
+        assert!(tokens.contains("format"));
+    }
+
+    // Test: with ExprWithFormat (also takes the has_expressions branch)
+    #[test]
+    fn test_string_interpolation_for_print_with_expr_format() {
+        use crate::frontend::ast::StringPart;
+        let transpiler = Transpiler::new();
+        let parts = vec![
+            StringPart::Text("Value: ".to_string()),
+            StringPart::ExprWithFormat {
+                expr: Box::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::default(),
+                )),
+                format_spec: ":.2".to_string(),
+            },
+        ];
+        let result = transpiler.transpile_string_interpolation_for_print(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        assert!(tokens.contains("format"));
+    }
+
+    // Test: empty parts (text-only branch with empty vec)
+    #[test]
+    fn test_string_interpolation_for_print_empty() {
+        use crate::frontend::ast::StringPart;
+        let transpiler = Transpiler::new();
+        let parts: Vec<StringPart> = vec![];
+        let result = transpiler.transpile_string_interpolation_for_print(&parts);
+        assert!(result.is_ok());
+        let tokens = result.unwrap().to_string();
+        // Empty parts -> no expressions -> collects empty string
+        assert!(tokens.contains("\"\""));
+    }
 }
