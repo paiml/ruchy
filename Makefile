@@ -519,14 +519,8 @@ clean-coverage:
 	@$(MAKE) coverage
 	@echo "✅ Fresh coverage report generated"
 
-# COVERAGE EXCLUSIONS (13 patterns, under 20% budget per CB-125-B)
-# Modules excluded from coverage metrics (still tested via integration tests).
-#
-# External-dependency bridges:
-# - stdlib/alimentar_bridge.rs, presentar_bridge.rs: Wrap external crates
-#
-# Testing infrastructure:
-# - transpiler/reference_interpreter.rs, canonical_ast.rs: Differential testing oracle
+# COVERAGE EXCLUSIONS (9 patterns, within CB-125-A ≤10 budget)
+# Modules excluded from coverage metrics (binary entry points + infrastructure).
 #
 # WASM modules with external dependencies:
 # - wasm/deployment.rs, shared_session.rs, wit.rs, portability.rs
@@ -536,7 +530,7 @@ clean-coverage:
 #
 # Infrastructure code:
 # - proving/*.rs, bench/*.rs, bin/*.rs
-COVERAGE_EXCLUDE := --ignore-filename-regex='stdlib/(alimentar_bridge|presentar_bridge)\.rs|transpiler/(reference_interpreter|canonical_ast)\.rs|wasm/(deployment|shared_session|wit|portability)\.rs|runtime/(transaction|replay.*)\.rs|proving/.*\.rs|bench/.*\.rs|bin/.*\.rs'
+COVERAGE_EXCLUDE := --ignore-filename-regex='wasm/(deployment|shared_session|wit|portability)\.rs|runtime/(transaction|replay.*)\.rs|proving/.*\.rs|bench/.*\.rs|bin/.*\.rs'
 
 # Generate fast test coverage (excludes rustc compilation tests)
 # 51 tests marked #[ignore = "expensive: invokes rustc"] are skipped
