@@ -553,4 +553,98 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse actor with await");
     }
+
+    // ============================================================
+    // Coverage tests for parse_fun_handler (actors.rs:109)
+    // Exercises fun method definitions inside actor bodies.
+    // ============================================================
+
+    #[test]
+    fn test_parse_actor_with_fun_handler_simple() {
+        use crate::frontend::parser::Parser;
+        let code = r#"
+            actor Counter {
+                count: i32
+
+                fun increment() {
+                    42
+                }
+            }
+        "#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Actor with fun handler should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_actor_with_fun_handler_params() {
+        use crate::frontend::parser::Parser;
+        let code = r#"
+            actor Adder {
+                total: i32
+
+                fun add(value: i32) {
+                    value
+                }
+            }
+        "#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Actor with fun handler with params should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_actor_with_fun_handler_return_type() {
+        use crate::frontend::parser::Parser;
+        let code = r#"
+            actor Calculator {
+                result: i32
+
+                fun compute(a: i32, b: i32) -> i32 {
+                    a + b
+                }
+            }
+        "#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Actor with fun handler with return type should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_actor_with_multiple_fun_handlers() {
+        use crate::frontend::parser::Parser;
+        let code = r#"
+            actor Math {
+                value: f64
+
+                fun add(x: f64) {
+                    x
+                }
+
+                fun multiply(x: f64) {
+                    x
+                }
+            }
+        "#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Actor with multiple fun handlers should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_actor_with_fun_handler_no_params() {
+        use crate::frontend::parser::Parser;
+        let code = r#"
+            actor Greeter {
+                name: String
+
+                fun greet() {
+                    "hello"
+                }
+            }
+        "#;
+        let mut parser = Parser::new(code);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Actor with no-param fun handler should parse: {:?}", result.err());
+    }
 }

@@ -1717,4 +1717,206 @@ mod tests {
             .to_string()
             .contains("Unknown qualified name: NoModule::missing_method"));
     }
+
+    // ============================================================
+    // Coverage tests for eval_field_access (interpreter_index.rs:166)
+    // ============================================================
+
+    #[test]
+    fn test_eval_field_access_enum_variant() {
+        // Exercises the Enum variant construction path (lines 176-191)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let mut interp = Interpreter::new();
+
+        // Create an enum-type object
+        let mut enum_obj = std::collections::HashMap::new();
+        enum_obj.insert("__type".to_string(), Value::from_string("Enum".to_string()));
+        enum_obj.insert("__name".to_string(), Value::from_string("Color".to_string()));
+        interp.set_variable("Color", Value::Object(Arc::new(enum_obj)));
+
+        // Access Color::Red (field access on enum -> variant construction)
+        let object_expr = Expr::new(ExprKind::Identifier("Color".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "Red");
+        assert!(result.is_ok(), "Enum variant access should succeed: {:?}", result.err());
+        if let Ok(Value::EnumVariant { enum_name, variant_name, data }) = result {
+            assert_eq!(enum_name, "Color");
+            assert_eq!(variant_name, "Red");
+            assert!(data.is_none(), "Unit variant should have no data");
+        } else {
+            panic!("Expected EnumVariant value");
+        }
+    }
+
+    #[test]
+    fn test_eval_field_access_struct() {
+        // Exercises the Value::Struct field access path (lines 195-205)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let mut interp = Interpreter::new();
+
+        let mut fields = std::collections::HashMap::new();
+        fields.insert("x".to_string(), Value::Integer(10));
+        fields.insert("y".to_string(), Value::Integer(20));
+        interp.set_variable("point", Value::Struct {
+            name: "Point".to_string(),
+            fields: Arc::new(fields),
+        });
+
+        let object_expr = Expr::new(ExprKind::Identifier("point".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "x");
+        assert!(result.is_ok(), "Struct field access should succeed");
+        assert_eq!(result.unwrap(), Value::Integer(10));
+    }
+
+    #[test]
+    fn test_eval_field_access_struct_missing_field() {
+        // Exercises the Struct field not found error (lines 200-204)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let mut interp = Interpreter::new();
+
+        let fields = std::collections::HashMap::new();
+        interp.set_variable("empty_struct", Value::Struct {
+            name: "Empty".to_string(),
+            fields: Arc::new(fields),
+        });
+
+        let object_expr = Expr::new(ExprKind::Identifier("empty_struct".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "nonexistent");
+        assert!(result.is_err(), "Missing struct field should error");
+        assert!(result.unwrap_err().to_string().contains("not found in struct"));
+    }
+
+    #[test]
+    fn test_eval_field_access_class() {
+        // Exercises the Value::Class field access path (lines 206-220)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        use std::sync::RwLock;
+
+        let mut interp = Interpreter::new();
+
+        let mut fields = std::collections::HashMap::new();
+        fields.insert("name".to_string(), Value::from_string("Alice".to_string()));
+        interp.set_variable("person", Value::Class {
+            class_name: "Person".to_string(),
+            fields: Arc::new(RwLock::new(fields)),
+            methods: Arc::new(std::collections::HashMap::new()),
+        });
+
+        let object_expr = Expr::new(ExprKind::Identifier("person".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "name");
+        assert!(result.is_ok(), "Class field access should succeed");
+        assert_eq!(result.unwrap(), Value::from_string("Alice".to_string()));
+    }
+
+    #[test]
+    fn test_eval_field_access_class_missing_field() {
+        // Exercises the Class field not found error (lines 215-219)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        use std::sync::RwLock;
+
+        let mut interp = Interpreter::new();
+
+        let fields = std::collections::HashMap::new();
+        interp.set_variable("empty_person", Value::Class {
+            class_name: "Person".to_string(),
+            fields: Arc::new(RwLock::new(fields)),
+            methods: Arc::new(std::collections::HashMap::new()),
+        });
+
+        let object_expr = Expr::new(ExprKind::Identifier("empty_person".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "nonexistent");
+        assert!(result.is_err(), "Missing class field should error");
+        assert!(result.unwrap_err().to_string().contains("not found in class"));
+    }
+
+    #[test]
+    fn test_eval_field_access_tuple() {
+        // Exercises the Value::Tuple field access path (lines 221-224)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let mut interp = Interpreter::new();
+
+        interp.set_variable("tup", Value::Tuple(Arc::from(vec![
+            Value::Integer(10),
+            Value::Integer(20),
+            Value::Integer(30),
+        ])));
+
+        let object_expr = Expr::new(ExprKind::Identifier("tup".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "0");
+        assert!(result.is_ok(), "Tuple field access should succeed");
+        assert_eq!(result.unwrap(), Value::Integer(10));
+    }
+
+    #[test]
+    fn test_eval_field_access_tuple_second_element() {
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let mut interp = Interpreter::new();
+
+        interp.set_variable("tup2", Value::Tuple(Arc::from(vec![
+            Value::from_string("a".to_string()),
+            Value::from_string("b".to_string()),
+        ])));
+
+        let object_expr = Expr::new(ExprKind::Identifier("tup2".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "1");
+        assert!(result.is_ok(), "Tuple second element access should succeed");
+        assert_eq!(result.unwrap(), Value::from_string("b".to_string()));
+    }
+
+    #[test]
+    fn test_eval_field_access_non_object_error() {
+        // Exercises the error branch for non-object types (lines 229-233)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let mut interp = Interpreter::new();
+
+        interp.set_variable("num", Value::Integer(42));
+
+        let object_expr = Expr::new(ExprKind::Identifier("num".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "field");
+        assert!(result.is_err(), "Field access on integer should error");
+        assert!(result.unwrap_err().to_string().contains("Cannot access field"));
+    }
+
+    #[test]
+    fn test_eval_field_access_dataframe_column() {
+        // Exercises the DataFrame column access path (lines 225-228)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+
+        let mut interp = Interpreter::new();
+
+        let columns = vec![
+            crate::runtime::value::DataFrameColumn {
+                name: "age".to_string(),
+                values: vec![Value::Integer(25), Value::Integer(30)],
+            },
+        ];
+        interp.set_variable("df_val", Value::DataFrame { columns });
+
+        let object_expr = Expr::new(ExprKind::Identifier("df_val".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "age");
+        assert!(result.is_ok(), "DataFrame column access should succeed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_eval_field_access_objectmut() {
+        // Exercises the ObjectMut field access path (line 194)
+        use crate::frontend::ast::{Expr, ExprKind, Span};
+        use std::sync::Mutex;
+
+        let mut interp = Interpreter::new();
+
+        let mut obj = std::collections::HashMap::new();
+        obj.insert("value".to_string(), Value::Integer(42));
+        interp.set_variable("mut_obj", Value::ObjectMut(Arc::new(Mutex::new(obj))));
+
+        let object_expr = Expr::new(ExprKind::Identifier("mut_obj".to_string()), Span::default());
+        let result = interp.eval_field_access(&object_expr, "value");
+        assert!(result.is_ok(), "ObjectMut field access should succeed");
+        assert_eq!(result.unwrap(), Value::Integer(42));
+    }
 }
