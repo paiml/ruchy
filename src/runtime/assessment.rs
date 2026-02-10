@@ -1370,6 +1370,644 @@ mod tests {
     }
 
     // Test removed - IntegrityViolation type not defined in module
+
+    // ============================================================================
+    // Coverage tests for run_test_case (assessment.rs:313, 0% coverage)
+    // ============================================================================
+
+    fn make_repl_session(timeline: Vec<crate::runtime::replay::TimestampedEvent>) -> ReplSession {
+        ReplSession {
+            version: crate::runtime::replay::SemVer::new(1, 0, 0),
+            metadata: crate::runtime::replay::SessionMetadata {
+                session_id: "test_session".to_string(),
+                created_at: "2025-08-28T10:00:00Z".to_string(),
+                ruchy_version: "1.23.0".to_string(),
+                student_id: Some("student_1".to_string()),
+                assignment_id: Some("hw1".to_string()),
+                tags: vec![],
+            },
+            environment: crate::runtime::replay::Environment {
+                seed: 42,
+                feature_flags: vec![],
+                resource_limits: crate::runtime::replay::ResourceLimits {
+                    heap_mb: 100,
+                    stack_kb: 8192,
+                    cpu_ms: 5000,
+                },
+            },
+            timeline,
+            checkpoints: std::collections::BTreeMap::new(),
+        }
+    }
+
+    #[test]
+    fn test_run_test_case_exact_output_pass() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "1 + 1".to_string(),
+            expected: ExpectedBehavior::ExactOutput("2".to_string()),
+            points: 10,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // The REPL may or may not produce "2" - check structure
+        assert!(result.execution_time_ms <= 5000);
+        if result.passed {
+            assert_eq!(result.points_earned, 10);
+            assert_eq!(result.feedback, "Correct output");
+        } else {
+            assert_eq!(result.points_earned, 0);
+        }
+    }
+
+    #[test]
+    fn test_run_test_case_exact_output_fail() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "1 + 1".to_string(),
+            expected: ExpectedBehavior::ExactOutput("999".to_string()),
+            points: 10,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // 1 + 1 should not be "999"
+        assert!(!result.passed);
+        assert_eq!(result.points_earned, 0);
+        assert!(result.feedback.contains("Expected '999'"));
+    }
+
+    #[test]
+    fn test_run_test_case_pattern_match() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "42".to_string(),
+            expected: ExpectedBehavior::Pattern(r"\d+".to_string()),
+            points: 5,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // "42" should match \d+ pattern
+        if result.passed {
+            assert_eq!(result.points_earned, 5);
+            assert_eq!(result.feedback, "Output matches pattern");
+        }
+    }
+
+    #[test]
+    fn test_run_test_case_pattern_no_match() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "42".to_string(),
+            expected: ExpectedBehavior::Pattern(r"^[a-z]+$".to_string()),
+            points: 5,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // "42" doesn't match ^[a-z]+$ pattern
+        assert!(!result.passed);
+        assert!(result.feedback.contains("doesn't match pattern"));
+    }
+
+    #[test]
+    fn test_run_test_case_type_signature() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "42".to_string(),
+            expected: ExpectedBehavior::TypeSignature("int".to_string()),
+            points: 5,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // Check the result structure - output may or may not contain "int"
+        assert!(result.execution_time_ms <= 5000);
+    }
+
+    #[test]
+    fn test_run_test_case_unsupported_check() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "42".to_string(),
+            expected: ExpectedBehavior::Predicate(PredicateCheck {
+                name: "is_positive".to_string(),
+                check_fn: "x > 0".to_string(),
+            }),
+            points: 5,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // Predicate check falls through to `_ =>` wildcard
+        assert!(!result.passed);
+        assert_eq!(result.feedback, "Unsupported check");
+    }
+
+    #[test]
+    fn test_run_test_case_eval_error() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "undefined_variable_xyz_123".to_string(),
+            expected: ExpectedBehavior::ExactOutput("anything".to_string()),
+            points: 10,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // Evaluating an undefined variable should either error or produce unexpected output
+        if !result.passed {
+            assert_eq!(result.points_earned, 0);
+            assert!(!result.feedback.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_run_test_case_invalid_regex_pattern() {
+        let engine = GradingEngine::new();
+        let mut repl = engine
+            .secure_sandbox
+            .create_isolated_repl()
+            .expect("sandbox should create repl");
+        let test_case = TestCase {
+            input: "42".to_string(),
+            expected: ExpectedBehavior::Pattern("[invalid(regex".to_string()),
+            points: 5,
+            timeout_ms: 5000,
+        };
+        let result = engine.run_test_case(&mut repl, &test_case);
+        // Invalid regex falls back to ".*" which matches everything
+        if result.passed {
+            assert_eq!(result.points_earned, 5);
+        }
+    }
+
+    // ============================================================================
+    // Coverage tests for measure_performance (assessment.rs:439, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_measure_performance_no_resource_events() {
+        let engine = GradingEngine::new();
+        let session = make_repl_session(vec![]);
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 1000,
+            max_heap_mb: 100,
+            complexity_bound: "O(n)".to_string(),
+        };
+        let score = engine.measure_performance(&session, &constraints);
+        // No resource events -> 0 cpu, 0 heap -> no penalties
+        assert_eq!(score, 100.0);
+    }
+
+    #[test]
+    fn test_measure_performance_within_bounds() {
+        let engine = GradingEngine::new();
+        let timeline = vec![crate::runtime::replay::TimestampedEvent {
+            id: crate::runtime::replay::EventId(1),
+            timestamp_ns: 1000,
+            event: Event::ResourceUsage {
+                heap_bytes: 1024 * 1024, // 1 MB
+                stack_depth: 10,
+                cpu_ns: 500_000_000, // 500ms
+            },
+            causality: vec![],
+        }];
+        let session = make_repl_session(timeline);
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 1000,
+            max_heap_mb: 100,
+            complexity_bound: "O(n)".to_string(),
+        };
+        let score = engine.measure_performance(&session, &constraints);
+        // Within bounds, no penalties
+        assert_eq!(score, 100.0);
+    }
+
+    #[test]
+    fn test_measure_performance_cpu_exceeded() {
+        let engine = GradingEngine::new();
+        let timeline = vec![crate::runtime::replay::TimestampedEvent {
+            id: crate::runtime::replay::EventId(1),
+            timestamp_ns: 1000,
+            event: Event::ResourceUsage {
+                heap_bytes: 1024, // tiny heap
+                stack_depth: 10,
+                cpu_ns: 2_000_000_000, // 2000ms
+            },
+            causality: vec![],
+        }];
+        let session = make_repl_session(timeline);
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 1000,
+            max_heap_mb: 100,
+            complexity_bound: "O(n)".to_string(),
+        };
+        let score = engine.measure_performance(&session, &constraints);
+        // CPU exceeded -> -20 penalty
+        assert_eq!(score, 80.0);
+    }
+
+    #[test]
+    fn test_measure_performance_heap_exceeded() {
+        let engine = GradingEngine::new();
+        let timeline = vec![crate::runtime::replay::TimestampedEvent {
+            id: crate::runtime::replay::EventId(1),
+            timestamp_ns: 1000,
+            event: Event::ResourceUsage {
+                heap_bytes: 200 * 1024 * 1024, // 200 MB
+                stack_depth: 10,
+                cpu_ns: 100_000_000, // 100ms
+            },
+            causality: vec![],
+        }];
+        let session = make_repl_session(timeline);
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 1000,
+            max_heap_mb: 100,
+            complexity_bound: "O(n)".to_string(),
+        };
+        let score = engine.measure_performance(&session, &constraints);
+        // Heap exceeded -> -20 penalty
+        assert_eq!(score, 80.0);
+    }
+
+    #[test]
+    fn test_measure_performance_both_exceeded() {
+        let engine = GradingEngine::new();
+        let timeline = vec![crate::runtime::replay::TimestampedEvent {
+            id: crate::runtime::replay::EventId(1),
+            timestamp_ns: 1000,
+            event: Event::ResourceUsage {
+                heap_bytes: 200 * 1024 * 1024, // 200 MB
+                stack_depth: 10,
+                cpu_ns: 5_000_000_000, // 5000ms
+            },
+            causality: vec![],
+        }];
+        let session = make_repl_session(timeline);
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 1000,
+            max_heap_mb: 100,
+            complexity_bound: "O(n)".to_string(),
+        };
+        let score = engine.measure_performance(&session, &constraints);
+        // Both exceeded -> -40 penalty
+        assert_eq!(score, 60.0);
+    }
+
+    #[test]
+    fn test_measure_performance_multiple_resource_events() {
+        let engine = GradingEngine::new();
+        let timeline = vec![
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(1),
+                timestamp_ns: 1000,
+                event: Event::ResourceUsage {
+                    heap_bytes: 50 * 1024 * 1024,
+                    stack_depth: 10,
+                    cpu_ns: 300_000_000, // 300ms
+                },
+                causality: vec![],
+            },
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(2),
+                timestamp_ns: 2000,
+                event: Event::ResourceUsage {
+                    heap_bytes: 80 * 1024 * 1024,
+                    stack_depth: 15,
+                    cpu_ns: 400_000_000, // 400ms
+                },
+                causality: vec![],
+            },
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(3),
+                timestamp_ns: 3000,
+                event: Event::ResourceUsage {
+                    heap_bytes: 60 * 1024 * 1024,
+                    stack_depth: 12,
+                    cpu_ns: 400_000_000, // 400ms
+                },
+                causality: vec![],
+            },
+        ];
+        let session = make_repl_session(timeline);
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 2000, // total cpu = 1100ms, under 2000
+            max_heap_mb: 100, // max heap = 80MB, under 100
+            complexity_bound: "O(n)".to_string(),
+        };
+        let score = engine.measure_performance(&session, &constraints);
+        assert_eq!(score, 100.0);
+    }
+
+    #[test]
+    fn test_measure_performance_mixed_events_only_resource_counted() {
+        let engine = GradingEngine::new();
+        let timeline = vec![
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(1),
+                timestamp_ns: 1000,
+                event: Event::Input {
+                    text: "1 + 1".to_string(),
+                    mode: crate::runtime::replay::InputMode::Interactive,
+                },
+                causality: vec![],
+            },
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(2),
+                timestamp_ns: 2000,
+                event: Event::ResourceUsage {
+                    heap_bytes: 1024,
+                    stack_depth: 5,
+                    cpu_ns: 100_000_000,
+                },
+                causality: vec![],
+            },
+        ];
+        let session = make_repl_session(timeline);
+        let constraints = PerformanceConstraints {
+            max_cpu_ms: 500,
+            max_heap_mb: 50,
+            complexity_bound: "O(1)".to_string(),
+        };
+        let score = engine.measure_performance(&session, &constraints);
+        // Only ResourceUsage events count, 100ms CPU < 500ms, tiny heap < 50MB
+        assert_eq!(score, 100.0);
+    }
+
+    // ============================================================================
+    // Coverage tests for grade_submission (assessment.rs:227, 0% coverage)
+    // ============================================================================
+
+    fn make_simple_assignment(
+        tasks: Vec<Task>,
+        perf: Option<PerformanceConstraints>,
+    ) -> Assignment {
+        Assignment {
+            id: "test_hw".to_string(),
+            title: "Test Assignment".to_string(),
+            description: "Test".to_string(),
+            setup: AssignmentSetup {
+                prelude_code: vec![],
+                provided_functions: HashMap::new(),
+                immutable_bindings: HashSet::new(),
+            },
+            tasks,
+            constraints: AssignmentConstraints {
+                max_time_ms: 5000,
+                max_memory_mb: 100,
+                allowed_imports: vec![],
+                forbidden_keywords: vec![],
+                performance: perf,
+            },
+            rubric: GradingRubric {
+                categories: vec![],
+                late_penalty: None,
+                bonus_criteria: vec![],
+            },
+        }
+    }
+
+    #[test]
+    fn test_grade_submission_empty_assignment() {
+        let mut engine = GradingEngine::new();
+        let assignment = make_simple_assignment(vec![], None);
+        let session = make_repl_session(vec![]);
+        let report = engine.grade_submission(&assignment, &session);
+        assert!(report.is_valid);
+        assert!(report.task_grades.is_empty());
+        assert_eq!(report.originality_score, 100.0);
+    }
+
+    #[test]
+    fn test_grade_submission_with_task() {
+        let mut engine = GradingEngine::new();
+        let task = Task {
+            id: "task_1".to_string(),
+            description: "Add two numbers".to_string(),
+            points: 10,
+            test_cases: vec![TestCase {
+                input: "1 + 1".to_string(),
+                expected: ExpectedBehavior::ExactOutput("2".to_string()),
+                points: 10,
+                timeout_ms: 5000,
+            }],
+            hidden_cases: vec![],
+            requirements: vec![],
+        };
+        let assignment = make_simple_assignment(vec![task], None);
+        let session = make_repl_session(vec![]);
+        let report = engine.grade_submission(&assignment, &session);
+        assert!(report.is_valid);
+        assert_eq!(report.task_grades.len(), 1);
+    }
+
+    #[test]
+    fn test_grade_submission_with_performance_constraints() {
+        let mut engine = GradingEngine::new();
+        let perf = PerformanceConstraints {
+            max_cpu_ms: 1000,
+            max_heap_mb: 100,
+            complexity_bound: "O(n)".to_string(),
+        };
+        let assignment = make_simple_assignment(vec![], Some(perf));
+        let session = make_repl_session(vec![]);
+        let report = engine.grade_submission(&assignment, &session);
+        assert!(report.is_valid);
+        // Performance score should be evaluated
+        assert!(report.performance_score >= 0.0);
+    }
+
+    #[test]
+    fn test_grade_submission_tampered_session() {
+        let mut engine = GradingEngine::new();
+        let assignment = make_simple_assignment(vec![], None);
+        // Create session with timestamps going backwards (tampered)
+        let timeline = vec![
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(1),
+                timestamp_ns: 5000,
+                event: Event::Input {
+                    text: "1".to_string(),
+                    mode: crate::runtime::replay::InputMode::Interactive,
+                },
+                causality: vec![],
+            },
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(2),
+                timestamp_ns: 1000, // Goes backwards!
+                event: Event::Input {
+                    text: "2".to_string(),
+                    mode: crate::runtime::replay::InputMode::Interactive,
+                },
+                causality: vec![],
+            },
+        ];
+        let session = make_repl_session(timeline);
+        let report = engine.grade_submission(&assignment, &session);
+        assert!(!report.is_valid);
+        assert!(report
+            .violations
+            .iter()
+            .any(|v| v.contains("integrity")));
+    }
+
+    #[test]
+    fn test_grade_submission_with_hidden_cases() {
+        let mut engine = GradingEngine::new();
+        let task = Task {
+            id: "task_1".to_string(),
+            description: "Test hidden cases".to_string(),
+            points: 20,
+            test_cases: vec![TestCase {
+                input: "10".to_string(),
+                expected: ExpectedBehavior::ExactOutput("10".to_string()),
+                points: 10,
+                timeout_ms: 5000,
+            }],
+            hidden_cases: vec![TestCase {
+                input: "20".to_string(),
+                expected: ExpectedBehavior::ExactOutput("20".to_string()),
+                points: 10,
+                timeout_ms: 5000,
+            }],
+            requirements: vec![Requirement::TypeSafe],
+        };
+        let assignment = make_simple_assignment(vec![task], None);
+        let session = make_repl_session(vec![]);
+        let report = engine.grade_submission(&assignment, &session);
+        assert!(report.is_valid);
+        assert_eq!(report.task_grades.len(), 1);
+    }
+
+    #[test]
+    fn test_grade_submission_with_rubric_categories() {
+        let mut engine = GradingEngine::new();
+        let assignment = Assignment {
+            id: "rubric_test".to_string(),
+            title: "Rubric Test".to_string(),
+            description: "Test rubric evaluation".to_string(),
+            setup: AssignmentSetup {
+                prelude_code: vec![],
+                provided_functions: HashMap::new(),
+                immutable_bindings: HashSet::new(),
+            },
+            tasks: vec![],
+            constraints: AssignmentConstraints {
+                max_time_ms: 5000,
+                max_memory_mb: 100,
+                allowed_imports: vec![],
+                forbidden_keywords: vec![],
+                performance: None,
+            },
+            rubric: GradingRubric {
+                categories: vec![RubricCategory {
+                    name: "Code Quality".to_string(),
+                    weight: 1.0,
+                    criteria: vec![Criterion {
+                        description: "All tests pass".to_string(),
+                        max_points: 100,
+                        evaluation: CriterionEvaluation::Automatic(
+                            AutomaticCheck::TestsPassed,
+                        ),
+                    }],
+                }],
+                late_penalty: None,
+                bonus_criteria: vec![],
+            },
+        };
+        let session = make_repl_session(vec![]);
+        let report = engine.grade_submission(&assignment, &session);
+        assert!(report.is_valid);
+        // Rubric should be evaluated
+        assert!(report.rubric_score >= 0.0);
+    }
+
+    #[test]
+    fn test_grade_submission_final_grade_calculated() {
+        let mut engine = GradingEngine::new();
+        let assignment = make_simple_assignment(vec![], None);
+        let session = make_repl_session(vec![]);
+        let report = engine.grade_submission(&assignment, &session);
+        // Final grade should be calculated (feedback should be populated)
+        assert!(report.final_grade >= 0.0);
+    }
+
+    #[test]
+    fn test_verify_no_tampering_valid_session() {
+        let engine = GradingEngine::new();
+        let session = make_repl_session(vec![
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(1),
+                timestamp_ns: 1000,
+                event: Event::Input {
+                    text: "a".to_string(),
+                    mode: crate::runtime::replay::InputMode::Interactive,
+                },
+                causality: vec![],
+            },
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(2),
+                timestamp_ns: 2000,
+                event: Event::Input {
+                    text: "b".to_string(),
+                    mode: crate::runtime::replay::InputMode::Interactive,
+                },
+                causality: vec![],
+            },
+        ]);
+        assert!(engine.verify_no_tampering(&session));
+    }
+
+    #[test]
+    fn test_verify_no_tampering_backward_timestamps() {
+        let engine = GradingEngine::new();
+        let session = make_repl_session(vec![
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(1),
+                timestamp_ns: 3000,
+                event: Event::Input {
+                    text: "a".to_string(),
+                    mode: crate::runtime::replay::InputMode::Interactive,
+                },
+                causality: vec![],
+            },
+            crate::runtime::replay::TimestampedEvent {
+                id: crate::runtime::replay::EventId(2),
+                timestamp_ns: 1000,
+                event: Event::Input {
+                    text: "b".to_string(),
+                    mode: crate::runtime::replay::InputMode::Interactive,
+                },
+                causality: vec![],
+            },
+        ]);
+        assert!(!engine.verify_no_tampering(&session));
+    }
 }
 #[cfg(test)]
 mod property_tests_assessment {

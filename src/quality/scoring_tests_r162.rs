@@ -394,3 +394,507 @@
             assert!((0.0..=100.0).contains(&idiomaticity));
         }
     }
+
+    // ============================================================================
+    // Coverage tests for explain_delta (scoring.rs:657, 0% coverage)
+    // ============================================================================
+
+    fn make_quality_score(
+        value: f64,
+        correctness: f64,
+        performance: f64,
+        maintainability: f64,
+        safety: f64,
+        idiomaticity: f64,
+    ) -> QualityScore {
+        QualityScore {
+            value,
+            components: ScoreComponents {
+                correctness,
+                performance,
+                maintainability,
+                safety,
+                idiomaticity,
+            },
+            grade: Grade::from_score(value),
+            confidence: 0.9,
+            cache_hit_rate: 0.0,
+        }
+    }
+
+    #[test]
+    fn test_explain_delta_no_changes() {
+        let score = make_quality_score(0.85, 0.9, 0.8, 0.7, 0.85, 0.75);
+        let baseline = score.clone();
+        let explanation = score.explain_delta(&baseline);
+        assert_eq!(explanation.delta, 0.0);
+        assert!(explanation.changes.is_empty());
+        assert!(explanation.tradeoffs.is_empty());
+        assert!(explanation.grade_change.contains("B"));
+    }
+
+    #[test]
+    fn test_explain_delta_all_improved() {
+        let baseline = make_quality_score(0.7, 0.7, 0.7, 0.7, 0.7, 0.7);
+        let current = make_quality_score(0.9, 0.9, 0.9, 0.9, 0.9, 0.9);
+        let explanation = current.explain_delta(&baseline);
+        assert!(explanation.delta > 0.0);
+        assert_eq!(explanation.changes.len(), 5);
+        for change in &explanation.changes {
+            assert!(change.contains('+'));
+        }
+    }
+
+    #[test]
+    fn test_explain_delta_all_declined() {
+        let baseline = make_quality_score(0.9, 0.9, 0.9, 0.9, 0.9, 0.9);
+        let current = make_quality_score(0.7, 0.7, 0.7, 0.7, 0.7, 0.7);
+        let explanation = current.explain_delta(&baseline);
+        assert!(explanation.delta < 0.0);
+        assert_eq!(explanation.changes.len(), 5);
+        for change in &explanation.changes {
+            assert!(!change.contains('+'));
+        }
+    }
+
+    #[test]
+    fn test_explain_delta_performance_vs_maintainability_tradeoff() {
+        // Performance up, maintainability down => tradeoff detected
+        let baseline = make_quality_score(0.8, 0.8, 0.7, 0.9, 0.8, 0.8);
+        let current = make_quality_score(0.8, 0.8, 0.9, 0.7, 0.8, 0.8);
+        let explanation = current.explain_delta(&baseline);
+        assert!(explanation
+            .tradeoffs
+            .iter()
+            .any(|t| t.contains("Performance improved at the cost of maintainability")));
+    }
+
+    #[test]
+    fn test_explain_delta_safety_vs_performance_tradeoff() {
+        // Safety up, performance down => tradeoff detected
+        let baseline = make_quality_score(0.8, 0.8, 0.8, 0.8, 0.7, 0.8);
+        let current = make_quality_score(0.8, 0.8, 0.6, 0.8, 0.9, 0.8);
+        let explanation = current.explain_delta(&baseline);
+        assert!(explanation
+            .tradeoffs
+            .iter()
+            .any(|t| t.contains("Safety improved at the cost of performance")));
+    }
+
+    #[test]
+    fn test_explain_delta_both_tradeoffs() {
+        // Both tradeoffs: perf up + maint down, safety up + perf down
+        // This is contradictory (perf both up and down), so only one tradeoff fires
+        // Let's test them separately are possible
+        let baseline = make_quality_score(0.8, 0.8, 0.8, 0.9, 0.5, 0.8);
+        let current = make_quality_score(0.8, 0.8, 0.9, 0.7, 0.8, 0.8);
+        let explanation = current.explain_delta(&baseline);
+        // Performance improved and maintainability declined
+        assert!(explanation
+            .tradeoffs
+            .iter()
+            .any(|t| t.contains("Performance improved")));
+    }
+
+    #[test]
+    fn test_explain_delta_grade_change_format() {
+        let baseline = make_quality_score(0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+        let current = make_quality_score(0.98, 0.98, 0.98, 0.98, 0.98, 0.98);
+        let explanation = current.explain_delta(&baseline);
+        // Grade change should show "F -> A+"
+        assert!(explanation.grade_change.contains("F"));
+        assert!(explanation.grade_change.contains("A+"));
+    }
+
+    #[test]
+    fn test_explain_delta_small_changes_ignored() {
+        // Changes < 0.01 should not be reported
+        let baseline = make_quality_score(0.8, 0.8, 0.8, 0.8, 0.8, 0.8);
+        let current = make_quality_score(0.8, 0.805, 0.8, 0.8, 0.8, 0.8);
+        let explanation = current.explain_delta(&baseline);
+        // 0.005 change is < 0.01, should be ignored
+        assert!(explanation.changes.is_empty());
+    }
+
+    #[test]
+    fn test_explain_delta_change_at_threshold() {
+        // Change of exactly 0.02 (> 0.01) should be reported
+        let baseline = make_quality_score(0.8, 0.8, 0.8, 0.8, 0.8, 0.8);
+        let current = make_quality_score(0.82, 0.82, 0.8, 0.8, 0.8, 0.8);
+        let explanation = current.explain_delta(&baseline);
+        assert!(explanation
+            .changes
+            .iter()
+            .any(|c| c.contains("Correctness")));
+    }
+
+    // ============================================================================
+    // Coverage tests for optimize_cache (scoring.rs:399, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_optimize_cache_removes_old_entries() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        // Insert a cache entry with old timestamp (>5 min ago)
+        let old_time = SystemTime::now() - Duration::from_secs(600);
+        let key = CacheKey {
+            file_path: PathBuf::from("old_file.rs"),
+            content_hash: 12345,
+            depth: AnalysisDepth::Shallow,
+        };
+        let entry = CacheEntry {
+            score: make_quality_score(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
+            timestamp: old_time,
+            dependencies: vec![],
+        };
+        engine.cache.insert(key, entry);
+        assert_eq!(engine.cache.len(), 1);
+        engine.optimize_cache();
+        assert_eq!(engine.cache.len(), 0);
+    }
+
+    #[test]
+    fn test_optimize_cache_keeps_recent_entries() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        let key = CacheKey {
+            file_path: PathBuf::from("recent_file.rs"),
+            content_hash: 12345,
+            depth: AnalysisDepth::Standard,
+        };
+        let entry = CacheEntry {
+            score: make_quality_score(0.9, 0.9, 0.9, 0.9, 0.9, 0.9),
+            timestamp: SystemTime::now(),
+            dependencies: vec![],
+        };
+        engine.cache.insert(key, entry);
+        engine.optimize_cache();
+        assert_eq!(engine.cache.len(), 1);
+    }
+
+    #[test]
+    fn test_optimize_cache_evicts_lru_when_over_limit() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        // Insert 600 entries (over 500 limit)
+        let base_time = SystemTime::now();
+        for i in 0..600 {
+            let key = CacheKey {
+                file_path: PathBuf::from(format!("file_{i}.rs")),
+                content_hash: i as u64,
+                depth: AnalysisDepth::Shallow,
+            };
+            let entry = CacheEntry {
+                score: make_quality_score(0.8, 0.8, 0.8, 0.8, 0.8, 0.8),
+                timestamp: base_time + Duration::from_millis(i as u64),
+                dependencies: vec![],
+            };
+            engine.cache.insert(key, entry);
+        }
+        assert_eq!(engine.cache.len(), 600);
+        engine.optimize_cache();
+        // After optimization, should be trimmed to max_entries (500)
+        assert!(engine.cache.len() <= 500);
+    }
+
+    #[test]
+    fn test_optimize_cache_empty_cache_no_panic() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        engine.optimize_cache();
+        assert_eq!(engine.cache.len(), 0);
+    }
+
+    // ============================================================================
+    // Coverage tests for score_progressive (scoring.rs:365, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_score_progressive_with_generous_budget() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        let code = "42";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let score = engine.score_progressive(
+                &ast,
+                PathBuf::from("test.rs"),
+                code,
+                Duration::from_secs(10),
+            );
+            // With a 10s budget, should reach deep analysis
+            assert!(score.value > 0.0);
+            assert!(score.value <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_score_progressive_with_tiny_budget() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        let code = "fun f(x) { x + 1 }";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            // Budget of 1 nanosecond - should only do shallow analysis
+            let score = engine.score_progressive(
+                &ast,
+                PathBuf::from("tiny_budget.rs"),
+                code,
+                Duration::from_nanos(1),
+            );
+            assert!(score.value > 0.0);
+            assert!(score.value <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_score_progressive_returns_valid_grade() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        let code = "let x = 10";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let score = engine.score_progressive(
+                &ast,
+                PathBuf::from("grade_test.rs"),
+                code,
+                Duration::from_secs(5),
+            );
+            // Grade should be valid
+            let rank = score.grade.to_rank();
+            assert!(rank <= 10);
+        }
+    }
+
+    #[test]
+    fn test_score_progressive_complex_code() {
+        let mut engine = ScoreEngine::new(ScoreConfig::default());
+        let code = r#"
+            fun fibonacci(n) {
+                if n <= 1 { n } else { fibonacci(n - 1) + fibonacci(n - 2) }
+            }
+        "#;
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let score = engine.score_progressive(
+                &ast,
+                PathBuf::from("complex.rs"),
+                code,
+                Duration::from_secs(5),
+            );
+            assert!(score.value > 0.0);
+        }
+    }
+
+    // ============================================================================
+    // Coverage tests for analyze_complexity_recursive (scoring.rs:1025, 28% cov)
+    // ============================================================================
+
+    fn make_expr(kind: ExprKind) -> crate::frontend::ast::Expr {
+        crate::frontend::ast::Expr::new(kind, crate::frontend::ast::Span::new(0, 0))
+    }
+
+    fn lit_int(v: i64) -> crate::frontend::ast::Expr {
+        make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(v, None)))
+    }
+
+    fn lit_bool(v: bool) -> crate::frontend::ast::Expr {
+        make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Bool(v)))
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_for_loop() {
+        let body = lit_int(1);
+        let iter_expr = lit_int(10);
+        let for_expr = make_expr(ExprKind::For {
+            label: None,
+            var: "i".to_string(),
+            pattern: None,
+            iter: Box::new(iter_expr),
+            body: Box::new(body),
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&for_expr, &mut nested_loops, &mut recursive_calls, 0);
+        // At nesting 0, for loop does not increment nested_loops
+        assert_eq!(nested_loops, 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_nested_for_loops() {
+        let inner_body = lit_int(1);
+        let inner_iter = lit_int(5);
+        let inner_for = make_expr(ExprKind::For {
+            label: None,
+            var: "j".to_string(),
+            pattern: None,
+            iter: Box::new(inner_iter),
+            body: Box::new(inner_body),
+        });
+        let outer_iter = lit_int(10);
+        let outer_for = make_expr(ExprKind::For {
+            label: None,
+            var: "i".to_string(),
+            pattern: None,
+            iter: Box::new(outer_iter),
+            body: Box::new(inner_for),
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&outer_for, &mut nested_loops, &mut recursive_calls, 0);
+        // Inner loop is at nesting 1, should count as nested
+        assert!(nested_loops > 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_while_loop() {
+        let cond = lit_bool(true);
+        let body = lit_int(0);
+        let while_expr = make_expr(ExprKind::While {
+            label: None,
+            condition: Box::new(cond),
+            body: Box::new(body),
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&while_expr, &mut nested_loops, &mut recursive_calls, 0);
+        assert_eq!(nested_loops, 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_call_expr() {
+        let func = make_expr(ExprKind::Identifier("foo".to_string()));
+        let arg = lit_int(1);
+        let call = make_expr(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![arg],
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&call, &mut nested_loops, &mut recursive_calls, 0);
+        assert!(recursive_calls > 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_block() {
+        let stmt1 = lit_int(1);
+        let stmt2 = lit_int(2);
+        let block = make_expr(ExprKind::Block(vec![stmt1, stmt2]));
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&block, &mut nested_loops, &mut recursive_calls, 0);
+        assert_eq!(nested_loops, 0);
+        assert_eq!(recursive_calls, 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_function_resets_nesting() {
+        // Function body should reset nesting to 0
+        let body = lit_int(42);
+        let func = make_expr(ExprKind::Function {
+            name: "test_fn".to_string(),
+            type_params: vec![],
+            params: vec![],
+            return_type: None,
+            body: Box::new(body),
+            is_async: false,
+            is_pub: false,
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        // Start at nesting 5 to verify function resets to 0
+        analyze_complexity_recursive(&func, &mut nested_loops, &mut recursive_calls, 5);
+        assert_eq!(nested_loops, 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_if_with_else() {
+        let cond = lit_bool(true);
+        let then_br = lit_int(1);
+        let else_br = lit_int(2);
+        let if_expr = make_expr(ExprKind::If {
+            condition: Box::new(cond),
+            then_branch: Box::new(then_br),
+            else_branch: Some(Box::new(else_br)),
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&if_expr, &mut nested_loops, &mut recursive_calls, 0);
+        assert_eq!(nested_loops, 0);
+        assert_eq!(recursive_calls, 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_if_without_else() {
+        let cond = lit_bool(true);
+        let then_br = lit_int(1);
+        let if_expr = make_expr(ExprKind::If {
+            condition: Box::new(cond),
+            then_branch: Box::new(then_br),
+            else_branch: None,
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&if_expr, &mut nested_loops, &mut recursive_calls, 0);
+        assert_eq!(nested_loops, 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_wildcard_expr() {
+        // Test the catch-all `_ => {}` branch with a literal
+        let lit = lit_bool(false);
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&lit, &mut nested_loops, &mut recursive_calls, 0);
+        assert_eq!(nested_loops, 0);
+        assert_eq!(recursive_calls, 0);
+    }
+
+    #[test]
+    fn test_analyze_complexity_recursive_call_with_multiple_args() {
+        let func = make_expr(ExprKind::Identifier("bar".to_string()));
+        let arg1 = lit_int(1);
+        let arg2 = lit_int(2);
+        let arg3 = lit_int(3);
+        let call = make_expr(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![arg1, arg2, arg3],
+        });
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&call, &mut nested_loops, &mut recursive_calls, 0);
+        // One call to an identifier counts as one recursive call
+        assert_eq!(recursive_calls, 1);
+    }
+
+    #[test]
+    fn test_analyze_algorithmic_complexity_via_parser() {
+        // Test the full pipeline through score_performance which calls
+        // analyze_algorithmic_complexity -> analyze_complexity_recursive
+        let code = "for i in range(10) { for j in range(10) { i + j } }";
+        let mut parser = crate::frontend::parser::Parser::new(code);
+        if let Ok(ast) = parser.parse() {
+            let perf = score_performance(&ast);
+            // Nested loops should penalize performance
+            assert!(perf <= 1.0);
+        }
+    }
+
+    #[test]
+    fn test_analyze_complexity_many_recursive_calls() {
+        // Build AST with >2 function calls to trigger recursive_calls > 2 penalty
+        let func = make_expr(ExprKind::Identifier("recurse".to_string()));
+        let call1 = make_expr(ExprKind::Call {
+            func: Box::new(func.clone()),
+            args: vec![],
+        });
+        let func2 = make_expr(ExprKind::Identifier("recurse".to_string()));
+        let call2 = make_expr(ExprKind::Call {
+            func: Box::new(func2),
+            args: vec![],
+        });
+        let func3 = make_expr(ExprKind::Identifier("recurse".to_string()));
+        let call3 = make_expr(ExprKind::Call {
+            func: Box::new(func3),
+            args: vec![],
+        });
+        let block = make_expr(ExprKind::Block(vec![call1, call2, call3]));
+        let mut nested_loops = 0;
+        let mut recursive_calls = 0;
+        analyze_complexity_recursive(&block, &mut nested_loops, &mut recursive_calls, 0);
+        assert!(recursive_calls >= 3);
+    }

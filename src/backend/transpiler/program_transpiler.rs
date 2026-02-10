@@ -1119,4 +1119,125 @@ mod tests {
         assert!(code.contains("fn helper"));
         assert!(code.contains("fn main"));
     }
+
+    // ========================================================================
+    // transpile_main_as_renamed_function tests
+    // ========================================================================
+
+    #[test]
+    fn test_main_renamed_basic() {
+        let transpiler = Transpiler::new();
+        let main_expr = func_expr("main", int_expr(0));
+        let result = transpiler
+            .transpile_main_as_renamed_function(&main_expr)
+            .unwrap();
+        let code = result.to_string();
+        assert!(
+            code.contains("__ruchy_main"),
+            "Should rename to __ruchy_main: {code}"
+        );
+        assert!(
+            !code.contains("fn main"),
+            "Should NOT contain fn main: {code}"
+        );
+    }
+
+    #[test]
+    fn test_main_renamed_with_return_type() {
+        let transpiler = Transpiler::new();
+        let main_expr = make_expr(ExprKind::Function {
+            name: "main".to_string(),
+            type_params: vec![],
+            params: vec![],
+            return_type: Some(crate::frontend::ast::Type {
+                kind: crate::frontend::ast::TypeKind::Named("i32".to_string()),
+                span: crate::frontend::ast::Span::default(),
+            }),
+            body: Box::new(int_expr(0)),
+            is_async: false,
+            is_pub: false,
+        });
+        let result = transpiler
+            .transpile_main_as_renamed_function(&main_expr)
+            .unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__ruchy_main"), "Should rename");
+        assert!(code.contains("i32"), "Should have return type");
+    }
+
+    #[test]
+    fn test_main_renamed_async() {
+        let transpiler = Transpiler::new();
+        let main_expr = make_expr(ExprKind::Function {
+            name: "main".to_string(),
+            type_params: vec![],
+            params: vec![],
+            return_type: None,
+            body: Box::new(int_expr(0)),
+            is_async: true,
+            is_pub: false,
+        });
+        let result = transpiler
+            .transpile_main_as_renamed_function(&main_expr)
+            .unwrap();
+        let code = result.to_string();
+        assert!(code.contains("async"), "Should have async keyword");
+        assert!(code.contains("__ruchy_main"), "Should rename");
+    }
+
+    #[test]
+    fn test_main_renamed_with_params() {
+        let transpiler = Transpiler::new();
+        let param = crate::frontend::ast::Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("args".to_string()),
+            ty: crate::frontend::ast::Type {
+                kind: crate::frontend::ast::TypeKind::Named("Vec".to_string()),
+                span: crate::frontend::ast::Span::default(),
+            },
+            span: crate::frontend::ast::Span::default(),
+            is_mutable: false,
+            default_value: None,
+        };
+        let main_expr = make_expr(ExprKind::Function {
+            name: "main".to_string(),
+            type_params: vec![],
+            params: vec![param],
+            return_type: None,
+            body: Box::new(int_expr(0)),
+            is_async: false,
+            is_pub: false,
+        });
+        let result = transpiler
+            .transpile_main_as_renamed_function(&main_expr)
+            .unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__ruchy_main"), "Should rename");
+        assert!(code.contains("args"), "Should have parameter");
+    }
+
+    #[test]
+    fn test_main_renamed_non_function_fails() {
+        let transpiler = Transpiler::new();
+        let non_func = int_expr(42);
+        let result = transpiler.transpile_main_as_renamed_function(&non_func);
+        assert!(result.is_err(), "Non-function should fail");
+    }
+
+    #[test]
+    fn test_main_renamed_with_body_content() {
+        let transpiler = Transpiler::new();
+        let body = block_expr(vec![
+            make_expr(ExprKind::Call {
+                func: Box::new(ident_expr("println")),
+                args: vec![string_expr("hello")],
+            }),
+        ]);
+        let main_expr = func_expr("main", body);
+        let result = transpiler
+            .transpile_main_as_renamed_function(&main_expr)
+            .unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__ruchy_main"));
+        assert!(code.contains("println"), "Body should be transpiled");
+    }
 }

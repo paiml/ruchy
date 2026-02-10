@@ -284,3 +284,184 @@
             panic!("Expected array result");
         }
     }
+
+    // ============================================================================
+    // Coverage tests for eval_range_iteration (34 uncov lines, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_range_iteration_exclusive() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(3)),
+            inclusive: false,
+        };
+        let body_expr = make_expr_int(1);
+        let mut collected = Vec::new();
+
+        let mut with_variable =
+            |_var: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                collected.push(val.clone());
+                Ok(val)
+            };
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        let result =
+            eval_range_iteration(&range, "i", &mut with_variable, &mut eval_expr)
+                .expect("exclusive range iteration should succeed");
+        // Last value is Integer(2)
+        assert_eq!(result, Value::Integer(2));
+    }
+
+    #[test]
+    fn test_eval_range_iteration_inclusive() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(1)),
+            end: Box::new(Value::Integer(3)),
+            inclusive: true,
+        };
+        let mut count = 0;
+
+        let mut with_variable =
+            |_var: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                count += 1;
+                Ok(val)
+            };
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        let result =
+            eval_range_iteration(&range, "i", &mut with_variable, &mut eval_expr)
+                .expect("inclusive range iteration should succeed");
+        assert_eq!(result, Value::Integer(3));
+    }
+
+    #[test]
+    fn test_eval_range_iteration_empty_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(5)),
+            end: Box::new(Value::Integer(5)),
+            inclusive: false,
+        };
+
+        let mut with_variable =
+            |_var: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                Ok(val)
+            };
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        let result =
+            eval_range_iteration(&range, "i", &mut with_variable, &mut eval_expr)
+                .expect("empty range iteration should succeed");
+        // No iterations so last_val stays Nil
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_range_iteration_non_range_error() {
+        let not_a_range = Value::Integer(42);
+
+        let mut with_variable =
+            |_var: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                Ok(val)
+            };
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        let result =
+            eval_range_iteration(&not_a_range, "i", &mut with_variable, &mut eval_expr);
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("Expected range"));
+    }
+
+    #[test]
+    fn test_eval_range_iteration_break_stops_early() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(10)),
+            inclusive: false,
+        };
+        let mut iteration_count = 0;
+
+        let mut with_variable =
+            |_var: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                iteration_count += 1;
+                if let Value::Integer(i) = &val {
+                    if *i >= 3 {
+                        return Err(InterpreterError::Break(None, Value::Integer(99)));
+                    }
+                }
+                Ok(val)
+            };
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        // Note: execute_iteration_step catches Break and returns should_continue = false
+        let _result =
+            eval_range_iteration(&range, "i", &mut with_variable, &mut eval_expr);
+    }
+
+    #[test]
+    fn test_eval_range_iteration_single_element_inclusive() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(7)),
+            end: Box::new(Value::Integer(7)),
+            inclusive: true,
+        };
+
+        let mut with_variable =
+            |_var: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                Ok(val)
+            };
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        let result =
+            eval_range_iteration(&range, "i", &mut with_variable, &mut eval_expr)
+                .expect("single element inclusive range should succeed");
+        assert_eq!(result, Value::Integer(7));
+    }
+
+    #[test]
+    fn test_eval_range_iteration_negative_range() {
+        let range = Value::Range {
+            start: Box::new(Value::Integer(-3)),
+            end: Box::new(Value::Integer(0)),
+            inclusive: false,
+        };
+
+        let mut with_variable =
+            |_var: &str,
+             val: Value,
+             _eval: &mut dyn FnMut(&Expr) -> Result<Value, InterpreterError>| {
+                Ok(val)
+            };
+        let mut eval_expr = |_expr: &Expr| -> Result<Value, InterpreterError> {
+            Ok(Value::Nil)
+        };
+
+        let result =
+            eval_range_iteration(&range, "i", &mut with_variable, &mut eval_expr)
+                .expect("negative range iteration should succeed");
+        assert_eq!(result, Value::Integer(-1));
+    }

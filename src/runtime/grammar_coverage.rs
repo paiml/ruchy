@@ -782,4 +782,550 @@ mod tests {
         assert!(matrix.ast_variants.is_empty());
         assert!(matrix.uncovered.is_empty());
     }
+
+    // =========================================================================
+    // Coverage: record_ast_variants — all remaining ExprKind branches
+    // =========================================================================
+
+    fn span() -> Span {
+        Span { start: 0, end: 1 }
+    }
+    fn lit_expr() -> Expr {
+        Expr::new(ExprKind::Literal(Literal::Integer(1, None)), span())
+    }
+
+    #[test]
+    fn test_ast_variant_method_call() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(lit_expr()),
+                method: "len".into(),
+                args: vec![],
+            },
+            span(),
+        );
+        m.record("mc", "x.len()", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("MethodCall"));
+    }
+
+    #[test]
+    fn test_ast_variant_match() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Match {
+                expr: Box::new(lit_expr()),
+                arms: vec![],
+            },
+            span(),
+        );
+        m.record("match", "match x {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Match"));
+    }
+
+    #[test]
+    fn test_ast_variant_function() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Function {
+                name: "f".into(),
+                type_params: vec![],
+                params: vec![],
+                body: Box::new(lit_expr()),
+                return_type: None,
+                is_async: false,
+                is_pub: false,
+            },
+            span(),
+        );
+        m.record("fn", "fun f() { 1 }", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Function"));
+    }
+
+    #[test]
+    fn test_ast_variant_lambda() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Lambda {
+                params: vec![],
+                body: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("lambda", "|| 1", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Lambda"));
+    }
+
+    #[test]
+    fn test_ast_variant_throw() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Throw {
+                expr: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("throw", "throw 1", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Throw"));
+    }
+
+    #[test]
+    fn test_ast_variant_ok() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Ok {
+                value: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("ok", "Ok(1)", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Ok"));
+    }
+
+    #[test]
+    fn test_ast_variant_err() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Err {
+                error: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("err", "Err(1)", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Err"));
+    }
+
+    #[test]
+    fn test_ast_variant_while() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::While {
+                label: None,
+                condition: Box::new(lit_expr()),
+                body: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("while", "while true { 1 }", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("While"));
+    }
+
+    #[test]
+    fn test_ast_variant_for() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::For {
+                label: None,
+                var: "i".into(),
+                pattern: None,
+                iter: Box::new(lit_expr()),
+                body: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("for", "for i in x {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("For"));
+    }
+
+    #[test]
+    fn test_ast_variant_struct() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Struct {
+                name: "S".into(),
+                type_params: vec![],
+                fields: vec![],
+                methods: vec![],
+                derives: vec![],
+                is_pub: false,
+            },
+            span(),
+        );
+        m.record("struct", "struct S {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Struct"));
+    }
+
+    #[test]
+    fn test_ast_variant_tuple_struct() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::TupleStruct {
+                name: "T".into(),
+                type_params: vec![],
+                fields: vec![],
+                derives: vec![],
+                is_pub: false,
+            },
+            span(),
+        );
+        m.record("ts", "struct T()", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("TupleStruct"));
+    }
+
+    #[test]
+    fn test_ast_variant_struct_literal() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::StructLiteral {
+                name: "S".into(),
+                fields: vec![],
+                base: None,
+            },
+            span(),
+        );
+        m.record("sl", "S {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("StructLiteral"));
+    }
+
+    #[test]
+    fn test_ast_variant_object_literal() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(ExprKind::ObjectLiteral { fields: vec![] }, span());
+        m.record("obj", "{ }", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("ObjectLiteral"));
+    }
+
+    #[test]
+    fn test_ast_variant_field_access() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(lit_expr()),
+                field: "x".into(),
+            },
+            span(),
+        );
+        m.record("fa", "a.x", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("FieldAccess"));
+    }
+
+    #[test]
+    fn test_ast_variant_trait() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Trait {
+                name: "T".into(),
+                type_params: vec![],
+                associated_types: vec![],
+                methods: vec![],
+                is_pub: false,
+            },
+            span(),
+        );
+        m.record("trait", "trait T {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Trait"));
+    }
+
+    #[test]
+    fn test_ast_variant_impl() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Impl {
+                type_params: vec![],
+                trait_name: None,
+                for_type: "S".into(),
+                methods: vec![],
+                is_pub: false,
+            },
+            span(),
+        );
+        m.record("impl", "impl S {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Impl"));
+    }
+
+    #[test]
+    fn test_ast_variant_extension() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Extension {
+                target_type: "S".into(),
+                methods: vec![],
+            },
+            span(),
+        );
+        m.record("ext", "extend S {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Extension"));
+    }
+
+    #[test]
+    fn test_ast_variant_await() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Await {
+                expr: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("await", "await x", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Await"));
+    }
+
+    #[test]
+    fn test_ast_variant_list_comprehension() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::ListComprehension {
+                element: Box::new(lit_expr()),
+                clauses: vec![],
+            },
+            span(),
+        );
+        m.record("lc", "[x for x in y]", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("ListComprehension"));
+    }
+
+    #[test]
+    fn test_ast_variant_string_interpolation() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::StringInterpolation { parts: vec![] },
+            span(),
+        );
+        m.record("si", "\"${x}\"", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("StringInterpolation"));
+    }
+
+    #[test]
+    fn test_ast_variant_qualified_name() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::QualifiedName {
+                module: "std".into(),
+                name: "println".into(),
+            },
+            span(),
+        );
+        m.record("qn", "std::println", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("QualifiedName"));
+    }
+
+    #[test]
+    fn test_ast_variant_send() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Send {
+                actor: Box::new(lit_expr()),
+                message: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("send", "x <- 1", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Send"));
+    }
+
+    #[test]
+    fn test_ast_variant_ask() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Ask {
+                actor: Box::new(lit_expr()),
+                message: Box::new(lit_expr()),
+                timeout: None,
+            },
+            span(),
+        );
+        m.record("ask", "ask x 1", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Ask"));
+    }
+
+    #[test]
+    fn test_ast_variant_command() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Command {
+                program: "ls".into(),
+                args: vec![],
+                env: vec![],
+                working_dir: None,
+            },
+            span(),
+        );
+        m.record("cmd", "!ls", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Command"));
+    }
+
+    #[test]
+    fn test_ast_variant_macro() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Macro {
+                name: "println".into(),
+                args: vec![],
+            },
+            span(),
+        );
+        m.record("macro", "println!()", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Macro"));
+    }
+
+    #[test]
+    fn test_ast_variant_actor() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Actor {
+                name: "A".into(),
+                state: vec![],
+                handlers: vec![],
+            },
+            span(),
+        );
+        m.record("actor", "actor A {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Actor"));
+    }
+
+    #[test]
+    fn test_ast_variant_dataframe() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::DataFrame { columns: vec![] },
+            span(),
+        );
+        m.record("df", "df()", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("DataFrame"));
+    }
+
+    #[test]
+    fn test_ast_variant_dataframe_operation() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::DataFrameOperation {
+                source: Box::new(lit_expr()),
+                operation: crate::frontend::ast::DataFrameOp::Head(5),
+            },
+            span(),
+        );
+        m.record("dfo", "df.head(5)", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("DataFrameOperation"));
+    }
+
+    #[test]
+    fn test_ast_variant_pipeline() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Pipeline {
+                expr: Box::new(lit_expr()),
+                stages: vec![],
+            },
+            span(),
+        );
+        m.record("pipe", "x |> y", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Pipeline"));
+    }
+
+    #[test]
+    fn test_ast_variant_import() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Import {
+                module: "std".into(),
+                items: None,
+            },
+            span(),
+        );
+        m.record("import", "use std", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Import"));
+    }
+
+    #[test]
+    fn test_ast_variant_export() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Export {
+                expr: Box::new(lit_expr()),
+                is_default: false,
+            },
+            span(),
+        );
+        m.record("export", "export x", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Export"));
+    }
+
+    #[test]
+    fn test_ast_variant_module() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Module {
+                name: "m".into(),
+                body: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("mod", "mod m {}", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Module"));
+    }
+
+    #[test]
+    fn test_ast_variant_range() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Range {
+                start: Box::new(lit_expr()),
+                end: Box::new(lit_expr()),
+                inclusive: false,
+            },
+            span(),
+        );
+        m.record("range", "1..10", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Range"));
+    }
+
+    #[test]
+    fn test_ast_variant_break() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(ExprKind::Break { label: None, value: None }, span());
+        m.record("break", "break", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Break"));
+    }
+
+    #[test]
+    fn test_ast_variant_continue() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(ExprKind::Continue { label: None }, span());
+        m.record("continue", "continue", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Continue"));
+    }
+
+    #[test]
+    fn test_ast_variant_assign() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::Assign {
+                target: Box::new(Expr::new(ExprKind::Identifier("x".into()), span())),
+                value: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("assign", "x = 1", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Assign"));
+    }
+
+    #[test]
+    fn test_ast_variant_compound_assign() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::CompoundAssign {
+                target: Box::new(Expr::new(ExprKind::Identifier("x".into()), span())),
+                op: BinaryOp::Add,
+                value: Box::new(lit_expr()),
+            },
+            span(),
+        );
+        m.record("ca", "x += 1", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("CompoundAssign"));
+    }
+
+    #[test]
+    fn test_ast_variant_other_catch_all() {
+        let mut m = GrammarCoverageMatrix::new();
+        let e = Expr::new(
+            ExprKind::TryCatch {
+                try_block: Box::new(lit_expr()),
+                catch_clauses: vec![],
+                finally_block: None,
+            },
+            span(),
+        );
+        m.record("try", "try { 1 }", Ok(e), Duration::from_millis(1));
+        assert!(m.ast_variants.contains("Other"));
+    }
 }

@@ -1450,4 +1450,212 @@ mod tests {
             .to_string()
             .contains("Invalid compound assignment target"));
     }
+
+    // ============================================================================
+    // Coverage tests for eval_index_assign (26 uncov lines, 66.2% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_index_assign_simple_array() {
+        let mut interp = make_interpreter();
+        interp.set_variable(
+            "arr",
+            Value::Array(Arc::from(vec![
+                Value::Integer(10),
+                Value::Integer(20),
+                Value::Integer(30),
+            ])),
+        );
+
+        let object = make_expr(ExprKind::Identifier("arr".to_string()));
+        let index = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+
+        let result = interp
+            .eval_index_assign(&object, &index, Value::Integer(99))
+            .expect("simple index assign should succeed");
+        assert_eq!(result, Value::Integer(99));
+
+        // Verify the array was updated
+        let arr = interp.lookup_variable("arr").unwrap();
+        if let Value::Array(v) = arr {
+            assert_eq!(v[1], Value::Integer(99));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_index_assign_out_of_bounds_v2() {
+        let mut interp = make_interpreter();
+        interp.set_variable(
+            "arr",
+            Value::Array(Arc::from(vec![Value::Integer(1)])),
+        );
+
+        let object = make_expr(ExprKind::Identifier("arr".to_string()));
+        let index = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
+
+        let result = interp.eval_index_assign(&object, &index, Value::Integer(99));
+        assert!(result.is_err());
+        assert!(result.unwrap_err().to_string().contains("out of bounds"));
+    }
+
+    #[test]
+    fn test_eval_index_assign_non_integer_index_v2() {
+        let mut interp = make_interpreter();
+        interp.set_variable(
+            "arr",
+            Value::Array(Arc::from(vec![Value::Integer(1)])),
+        );
+
+        let object = make_expr(ExprKind::Identifier("arr".to_string()));
+        let index = make_expr(ExprKind::Literal(Literal::String("bad".to_string())));
+
+        let result = interp.eval_index_assign(&object, &index, Value::Integer(99));
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("index must be an integer"));
+    }
+
+    #[test]
+    fn test_eval_index_assign_non_array_target() {
+        let mut interp = make_interpreter();
+        interp.set_variable("x", Value::Integer(42));
+
+        let object = make_expr(ExprKind::Identifier("x".to_string()));
+        let index = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
+
+        let result = interp.eval_index_assign(&object, &index, Value::Integer(99));
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot index non-array"));
+    }
+
+    #[test]
+    fn test_eval_index_assign_nested_matrix() {
+        let mut interp = make_interpreter();
+        let matrix = Value::Array(Arc::from(vec![
+            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+            Value::Array(Arc::from(vec![Value::Integer(3), Value::Integer(4)])),
+        ]));
+        interp.set_variable("matrix", matrix);
+
+        // matrix[0][1] = 99
+        let inner_obj = Box::new(make_expr(ExprKind::Identifier("matrix".to_string())));
+        let inner_idx = Box::new(make_expr(ExprKind::Literal(Literal::Integer(0, None))));
+        let outer_access = make_expr(ExprKind::IndexAccess {
+            object: inner_obj,
+            index: inner_idx,
+        });
+        let outer_idx = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
+
+        let result = interp
+            .eval_index_assign(&outer_access, &outer_idx, Value::Integer(99))
+            .expect("nested index assign should succeed");
+        assert_eq!(result, Value::Integer(99));
+
+        // Verify
+        let mat = interp.lookup_variable("matrix").unwrap();
+        if let Value::Array(outer) = mat {
+            if let Value::Array(inner) = &outer[0] {
+                assert_eq!(inner[1], Value::Integer(99));
+            } else {
+                panic!("Expected inner Array");
+            }
+        } else {
+            panic!("Expected outer Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_index_assign_nested_outer_oob() {
+        let mut interp = make_interpreter();
+        let matrix = Value::Array(Arc::from(vec![Value::Array(Arc::from(vec![
+            Value::Integer(1),
+        ]))]));
+        interp.set_variable("matrix", matrix);
+
+        // matrix[5][0] = 99
+        let inner_obj = Box::new(make_expr(ExprKind::Identifier("matrix".to_string())));
+        let inner_idx = Box::new(make_expr(ExprKind::Literal(Literal::Integer(5, None))));
+        let outer_access = make_expr(ExprKind::IndexAccess {
+            object: inner_obj,
+            index: inner_idx,
+        });
+        let outer_idx = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
+
+        let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Outer index"));
+    }
+
+    #[test]
+    fn test_eval_index_assign_nested_inner_oob() {
+        let mut interp = make_interpreter();
+        let matrix = Value::Array(Arc::from(vec![Value::Array(Arc::from(vec![
+            Value::Integer(1),
+        ]))]));
+        interp.set_variable("matrix", matrix);
+
+        // matrix[0][5] = 99
+        let inner_obj = Box::new(make_expr(ExprKind::Identifier("matrix".to_string())));
+        let inner_idx = Box::new(make_expr(ExprKind::Literal(Literal::Integer(0, None))));
+        let outer_access = make_expr(ExprKind::IndexAccess {
+            object: inner_obj,
+            index: inner_idx,
+        });
+        let outer_idx = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
+
+        let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Inner index"));
+    }
+
+    #[test]
+    fn test_eval_index_assign_nested_non_array_inner() {
+        let mut interp = make_interpreter();
+        // matrix[0] is not an array
+        let matrix = Value::Array(Arc::from(vec![Value::Integer(42)]));
+        interp.set_variable("matrix", matrix);
+
+        let inner_obj = Box::new(make_expr(ExprKind::Identifier("matrix".to_string())));
+        let inner_idx = Box::new(make_expr(ExprKind::Literal(Literal::Integer(0, None))));
+        let outer_access = make_expr(ExprKind::IndexAccess {
+            object: inner_obj,
+            index: inner_idx,
+        });
+        let outer_idx = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
+
+        let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot index non-array"));
+    }
+
+    #[test]
+    fn test_eval_index_assign_unsupported_target() {
+        let mut interp = make_interpreter();
+        // Use a literal as the assignment target (not Identifier or IndexAccess)
+        let object = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
+        let index = make_expr(ExprKind::Literal(Literal::Integer(0, None)));
+
+        let result = interp.eval_index_assign(&object, &index, Value::Integer(99));
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not yet supported"));
+    }
 }

@@ -1495,4 +1495,161 @@ mod tests {
         assert!(result.is_ok());
         assert!(result.unwrap().is_none());
     }
+
+    // ============================================================================
+    // Coverage tests for eval_qualified_name (30 uncov lines, 53.1% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_qualified_name_hashmap_new() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("HashMap", "new").unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__builtin_hashmap__".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_string_new() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("String", "new").unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__builtin_String_new__".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_string_from() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("String", "from").unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__builtin_String_from__".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_string_from_utf8() {
+        let interp = Interpreter::new();
+        let result = interp
+            .eval_qualified_name("String", "from_utf8")
+            .unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__builtin_String_from_utf8__".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_command_new() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("Command", "new").unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__builtin_command_new__".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_class_constructor() {
+        let mut interp = Interpreter::new();
+
+        // Define a class in the environment
+        let mut class_info = HashMap::new();
+        class_info.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
+
+        let result = interp.eval_qualified_name("MyClass", "new").unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__class_constructor__:MyClass".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_struct_constructor() {
+        let mut interp = Interpreter::new();
+
+        let mut struct_info = HashMap::new();
+        struct_info.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+        interp.set_variable("Point", Value::Object(Arc::new(struct_info)));
+
+        let result = interp.eval_qualified_name("Point", "new").unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__struct_constructor__:Point".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_actor_constructor() {
+        let mut interp = Interpreter::new();
+
+        let mut actor_info = HashMap::new();
+        actor_info.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
+        interp.set_variable("Counter", Value::Object(Arc::new(actor_info)));
+
+        let result = interp.eval_qualified_name("Counter", "new").unwrap();
+        assert_eq!(
+            result,
+            Value::from_string("__actor_constructor__:Counter".to_string())
+        );
+    }
+
+    #[test]
+    fn test_eval_qualified_name_unknown_new() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("Unknown", "new");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown qualified name"));
+    }
+
+    #[test]
+    fn test_eval_qualified_name_impl_method() {
+        let mut interp = Interpreter::new();
+        interp.set_variable(
+            "Logger::new_with_options",
+            Value::Integer(42),
+        );
+
+        let result = interp
+            .eval_qualified_name("Logger", "new_with_options")
+            .unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_qualified_name_unknown_method() {
+        let interp = Interpreter::new();
+        let result = interp.eval_qualified_name("Foo", "bar");
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown qualified name: Foo::bar"));
+    }
+
+    #[test]
+    fn test_eval_qualified_name_user_defined_new() {
+        let mut interp = Interpreter::new();
+        // Register a user-defined "new" method with qualified name
+        interp.set_variable("Widget::new", Value::Integer(999));
+
+        let result = interp.eval_qualified_name("Widget", "new").unwrap();
+        assert_eq!(result, Value::Integer(999));
+    }
 }

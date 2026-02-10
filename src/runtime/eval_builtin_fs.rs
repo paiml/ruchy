@@ -686,3 +686,138 @@ pub(crate) fn try_eval_fs_function(name: &str, args: &[Value]) -> Result<Option<
     }
     try_eval_stdlib003(name, args)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Write;
+
+    // ============================================================================
+    // Coverage tests for search_file_for_matches (21 uncov lines, 0% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_search_file_for_matches_basic() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("ruchy_test_search_basic.txt");
+        {
+            let mut f = std::fs::File::create(&path).expect("create temp file");
+            writeln!(f, "hello world").expect("write line 1");
+            writeln!(f, "foo bar").expect("write line 2");
+            writeln!(f, "hello again").expect("write line 3");
+        }
+
+        let re = regex::Regex::new("hello").expect("valid regex");
+        let mut results = Vec::new();
+        search_file_for_matches(&path, &re, &mut results);
+
+        assert_eq!(results.len(), 2);
+
+        // Check first match
+        if let Value::Object(obj) = &results[0] {
+            assert_eq!(
+                obj.get("line_num"),
+                Some(&Value::Integer(1))
+            );
+            assert_eq!(
+                obj.get("line"),
+                Some(&Value::String("hello world".to_string().into()))
+            );
+            // Path should be present
+            assert!(obj.get("path").is_some());
+        } else {
+            panic!("Expected Object result");
+        }
+
+        // Check second match
+        if let Value::Object(obj) = &results[1] {
+            assert_eq!(
+                obj.get("line_num"),
+                Some(&Value::Integer(3))
+            );
+        } else {
+            panic!("Expected Object result");
+        }
+
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_search_file_for_matches_no_matches() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("ruchy_test_search_no_match.txt");
+        {
+            let mut f = std::fs::File::create(&path).expect("create temp file");
+            writeln!(f, "abc").expect("write");
+            writeln!(f, "def").expect("write");
+        }
+
+        let re = regex::Regex::new("xyz").expect("valid regex");
+        let mut results = Vec::new();
+        search_file_for_matches(&path, &re, &mut results);
+
+        assert!(results.is_empty());
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_search_file_for_matches_nonexistent_file() {
+        let path = std::path::Path::new("/tmp/ruchy_nonexistent_file_for_test_12345.txt");
+        let re = regex::Regex::new("hello").expect("valid regex");
+        let mut results = Vec::new();
+        search_file_for_matches(path, &re, &mut results);
+
+        // Should silently return with no results
+        assert!(results.is_empty());
+    }
+
+    #[test]
+    fn test_search_file_for_matches_regex_pattern() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("ruchy_test_search_regex.txt");
+        {
+            let mut f = std::fs::File::create(&path).expect("create temp file");
+            writeln!(f, "error: something went wrong").expect("write");
+            writeln!(f, "warning: be careful").expect("write");
+            writeln!(f, "error: another issue").expect("write");
+            writeln!(f, "info: all good").expect("write");
+        }
+
+        let re = regex::Regex::new(r"^error:").expect("valid regex");
+        let mut results = Vec::new();
+        search_file_for_matches(&path, &re, &mut results);
+
+        assert_eq!(results.len(), 2);
+        let _ = std::fs::remove_file(&path);
+    }
+
+    #[test]
+    fn test_search_file_for_matches_all_lines_match() {
+        let dir = std::env::temp_dir();
+        let path = dir.join("ruchy_test_search_all.txt");
+        {
+            let mut f = std::fs::File::create(&path).expect("create temp file");
+            writeln!(f, "test line 1").expect("write");
+            writeln!(f, "test line 2").expect("write");
+            writeln!(f, "test line 3").expect("write");
+        }
+
+        let re = regex::Regex::new("test").expect("valid regex");
+        let mut results = Vec::new();
+        search_file_for_matches(&path, &re, &mut results);
+
+        assert_eq!(results.len(), 3);
+
+        // Verify line numbers are 1-indexed
+        for (i, result) in results.iter().enumerate() {
+            if let Value::Object(obj) = result {
+                assert_eq!(
+                    obj.get("line_num"),
+                    Some(&Value::Integer((i + 1) as i64))
+                );
+            }
+        }
+
+        let _ = std::fs::remove_file(&path);
+    }
+}

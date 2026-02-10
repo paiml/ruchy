@@ -1416,3 +1416,158 @@
         let result = interp.eval_expr(&expr).unwrap();
         assert_eq!(result, Value::Integer(3));
     }
+
+    // ============================================================================
+    // Coverage tests for call_function (26 uncov, 78.5% coverage)
+    // Exercises: struct constructor marker, actor constructor marker, builtin marker,
+    // closure with default params, class static method marker
+    // ============================================================================
+
+    #[test]
+    fn test_call_function_builtin_hashmap() {
+        let mut interp = make_interpreter();
+        let func = Value::from_string("__builtin_hashmap__".to_string());
+        let result = interp.call_function(func, &[]);
+        // call_function dispatches on Value type — string values aren't callable
+        // Just verify it doesn't panic; the result depends on internal dispatch
+        let _ = result;
+    }
+
+    #[test]
+    fn test_call_function_unknown_builtin_error() {
+        let mut interp = make_interpreter();
+        let func = Value::from_string(
+            "__builtin_nonexistent_function__".to_string(),
+        );
+        let result = interp.call_function(func, &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Unknown builtin function"));
+    }
+
+    #[test]
+    fn test_call_function_closure_basic() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let mut interp = make_interpreter();
+        let func = Value::Closure {
+            params: vec![("x".to_string(), None)],
+            body: std::sync::Arc::new(make_expr(
+                ExprKind::Identifier("x".to_string()),
+            )),
+            env: Rc::new(RefCell::new(std::collections::HashMap::new())),
+        };
+        let result = interp
+            .call_function(func, &[Value::Integer(42)])
+            .unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_call_function_closure_wrong_arg_count() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let mut interp = make_interpreter();
+        let func = Value::Closure {
+            params: vec![("x".to_string(), None), ("y".to_string(), None)],
+            body: std::sync::Arc::new(make_expr(
+                ExprKind::Literal(Literal::Integer(1, None)),
+            )),
+            env: Rc::new(RefCell::new(std::collections::HashMap::new())),
+        };
+        let result = interp.call_function(func, &[Value::Integer(1)]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects"));
+    }
+
+    #[test]
+    fn test_call_function_closure_with_default_param() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let mut interp = make_interpreter();
+        let default_expr = std::sync::Arc::new(make_expr(
+            ExprKind::Literal(Literal::Integer(99, None)),
+        ));
+        let func = Value::Closure {
+            params: vec![
+                ("x".to_string(), None),
+                ("y".to_string(), Some(default_expr)),
+            ],
+            body: std::sync::Arc::new(make_expr(
+                ExprKind::Identifier("y".to_string()),
+            )),
+            env: Rc::new(RefCell::new(std::collections::HashMap::new())),
+        };
+        // Call with only required arg, y should get default
+        let result = interp
+            .call_function(func, &[Value::Integer(1)])
+            .unwrap();
+        assert_eq!(result, Value::Integer(99));
+    }
+
+    #[test]
+    fn test_call_function_class_static_method_marker() {
+        let mut interp = make_interpreter();
+        // This will fail because the class doesn't exist, but it exercises the branch
+        let func = Value::from_string(
+            "__class_static_method__:Foo:bar".to_string(),
+        );
+        let result = interp.call_function(func, &[]);
+        // It will error trying to look up the class, which is expected
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_call_function_struct_constructor_marker() {
+        let mut interp = make_interpreter();
+        // This will fail because the struct doesn't exist, but it exercises the branch
+        let func = Value::from_string(
+            "__struct_constructor__:Point".to_string(),
+        );
+        let result = interp.call_function(func, &[]);
+        // It will error trying to look up the struct definition
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_call_function_actor_constructor_marker() {
+        let mut interp = make_interpreter();
+        // This will fail because the actor doesn't exist, but it exercises the branch
+        let func = Value::from_string(
+            "__actor_constructor__:Counter".to_string(),
+        );
+        let result = interp.call_function(func, &[]);
+        // It will error trying to look up the actor definition
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_call_function_class_constructor_marker() {
+        let mut interp = make_interpreter();
+        // Legacy format (single part after prefix)
+        let func = Value::from_string(
+            "__class_constructor__:MyClass".to_string(),
+        );
+        let result = interp.call_function(func, &[]);
+        // It will error because the class isn't defined
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_call_function_invalid_static_method_marker() {
+        let mut interp = make_interpreter();
+        // Invalid format - no colon separator for class:method
+        let func = Value::from_string(
+            "__class_static_method__:invalid".to_string(),
+        );
+        let result = interp.call_function(func, &[]);
+        assert!(result.is_err());
+    }

@@ -1359,4 +1359,188 @@ mod tests {
         assert_eq!(buffer.len(), 4);
         assert_eq!(provenance.sources.len(), 2);
     }
+
+    // ============================================================================
+    // Coverage: CorpusMergerWithProvenance::merge_with_seed
+    // ============================================================================
+
+    #[test]
+    fn test_merger_with_provenance_empty() {
+        let merger = CorpusMergerWithProvenance::new();
+        let (corpus, provenance) = merger.merge_with_seed(99).unwrap();
+        assert_eq!(corpus.len(), 0);
+        assert!(corpus.is_empty());
+        assert_eq!(provenance.total_before_dedup, 0);
+        assert_eq!(provenance.total_after_dedup, 0);
+        assert!(provenance.merged_at.is_some());
+        assert!(provenance.sources.is_empty());
+    }
+
+    #[test]
+    fn test_merger_with_provenance_single_source() {
+        let mut merger = CorpusMergerWithProvenance::new();
+        let samples = vec![
+            Sample::new("type mismatch", Some("E0308".into()), ErrorCategory::TypeMismatch),
+            Sample::new("missing field", Some("E0063".into()), ErrorCategory::MissingImport),
+        ];
+        merger.add_source("synthetic", samples, SampleSource::Synthetic);
+        assert_eq!(merger.source_count(), 1);
+
+        let (corpus, provenance) = merger.merge_with_seed(42).unwrap();
+        assert_eq!(corpus.len(), 2);
+        assert_eq!(provenance.total_before_dedup, 2);
+        assert_eq!(provenance.total_after_dedup, 2);
+        assert_eq!(provenance.sources.len(), 1);
+        assert_eq!(provenance.sources[0].0, "synthetic");
+        assert_eq!(provenance.sources[0].1, 2);
+    }
+
+    #[test]
+    fn test_merger_with_provenance_multiple_sources() {
+        let mut merger = CorpusMergerWithProvenance::new();
+        let synthetic = vec![
+            Sample::new("err 1", None, ErrorCategory::TypeMismatch),
+            Sample::new("err 2", None, ErrorCategory::BorrowChecker),
+        ];
+        let examples = vec![Sample::new(
+            "err 3",
+            None,
+            ErrorCategory::MissingImport,
+        )];
+        merger.add_source("synthetic", synthetic, SampleSource::Synthetic);
+        merger.add_source("examples", examples, SampleSource::Examples);
+
+        let (corpus, provenance) = merger.merge_with_seed(123).unwrap();
+        assert_eq!(corpus.len(), 3);
+        assert_eq!(provenance.sources.len(), 2);
+        assert_eq!(provenance.total_before_dedup, 3);
+    }
+
+    #[test]
+    fn test_merger_with_provenance_deterministic() {
+        let mut merger = CorpusMergerWithProvenance::new();
+        let samples = vec![
+            Sample::new("a", None, ErrorCategory::TypeMismatch),
+            Sample::new("b", None, ErrorCategory::BorrowChecker),
+            Sample::new("c", None, ErrorCategory::MissingImport),
+        ];
+        merger.add_source("test", samples, SampleSource::Ruchy);
+
+        let (c1, _) = merger.merge_with_seed(42).unwrap();
+        let (c2, _) = merger.merge_with_seed(42).unwrap();
+
+        let msgs1: Vec<_> = c1.samples().iter().map(|s| &s.message).collect();
+        let msgs2: Vec<_> = c2.samples().iter().map(|s| &s.message).collect();
+        assert_eq!(msgs1, msgs2, "Same seed should produce same order");
+    }
+
+    #[test]
+    fn test_merger_with_provenance_different_seeds() {
+        let mut merger = CorpusMergerWithProvenance::new();
+        // Use diverse error messages to avoid feature-vector dedup collisions
+        let messages = vec![
+            ("expected type `i32`, found `String`", ErrorCategory::TypeMismatch),
+            ("cannot borrow `x` as mutable", ErrorCategory::BorrowChecker),
+            ("lifetime `'a` does not live long enough", ErrorCategory::LifetimeError),
+            ("the trait `Display` is not implemented", ErrorCategory::TraitBound),
+            ("unresolved import `std::io::missing`", ErrorCategory::MissingImport),
+            ("cannot assign twice to immutable variable", ErrorCategory::MutabilityError),
+            ("expected `;`, found `}`", ErrorCategory::SyntaxError),
+            ("mismatched types: expected `bool`", ErrorCategory::TypeMismatch),
+            ("cannot borrow `self` as mutable", ErrorCategory::BorrowChecker),
+            ("unknown start of token: `@`", ErrorCategory::SyntaxError),
+        ];
+        let samples: Vec<_> = messages
+            .into_iter()
+            .map(|(msg, cat)| Sample::new(msg, None, cat))
+            .collect();
+        merger.add_source("test", samples, SampleSource::Synthetic);
+
+        let (c1, _) = merger.merge_with_seed(1).unwrap();
+        let (c2, _) = merger.merge_with_seed(2).unwrap();
+
+        // Verify samples were actually added (not deduped away)
+        assert!(c1.len() >= 2, "Should have multiple samples, got {}", c1.len());
+        let msgs1: Vec<_> = c1.samples().iter().map(|s| &s.message).collect();
+        let msgs2: Vec<_> = c2.samples().iter().map(|s| &s.message).collect();
+        // With 10+ diverse samples, different seeds should produce different orders
+        assert_ne!(msgs1, msgs2, "Different seeds should produce different orders");
+    }
+
+    #[test]
+    fn test_merger_merge_default_seed() {
+        let mut merger = CorpusMergerWithProvenance::new();
+        merger.add_source(
+            "s",
+            vec![Sample::new("x", None, ErrorCategory::TypeMismatch)],
+            SampleSource::Synthetic,
+        );
+        let (corpus, _) = merger.merge().unwrap();
+        assert_eq!(corpus.len(), 1);
+    }
+
+    #[test]
+    fn test_corpus_shuffle_with_seed() {
+        let mut corpus = Corpus::new();
+        // Use diverse error messages to avoid feature-vector dedup collisions
+        let messages = [
+            ("expected type `i32`, found `String`", ErrorCategory::TypeMismatch),
+            ("cannot borrow `x` as mutable", ErrorCategory::BorrowChecker),
+            ("lifetime `'a` does not live long enough", ErrorCategory::LifetimeError),
+            ("the trait `Display` is not implemented", ErrorCategory::TraitBound),
+            ("unresolved import `std::io::missing`", ErrorCategory::MissingImport),
+            ("cannot assign twice to immutable variable", ErrorCategory::MutabilityError),
+            ("expected `;`, found `}`", ErrorCategory::SyntaxError),
+            ("mismatched types: expected `bool`", ErrorCategory::TypeMismatch),
+            ("cannot borrow `self` as mutable", ErrorCategory::BorrowChecker),
+            ("unknown start of token: `@`", ErrorCategory::SyntaxError),
+            ("pattern `_` not covered", ErrorCategory::TypeMismatch),
+            ("method not found in `Vec<i32>`", ErrorCategory::TypeMismatch),
+            ("expected `()`, found `i32`", ErrorCategory::TypeMismatch),
+            ("conflicting implementations of trait", ErrorCategory::TraitBound),
+            ("use of moved value: `x`", ErrorCategory::BorrowChecker),
+        ];
+        for (msg, cat) in &messages {
+            corpus.add(Sample::new(*msg, None, *cat));
+        }
+        assert!(corpus.len() >= 2, "Should have multiple samples, got {}", corpus.len());
+        let before: Vec<_> = corpus.samples().iter().map(|s| s.message.clone()).collect();
+        corpus.shuffle_with_seed(99);
+        let after: Vec<_> = corpus.samples().iter().map(|s| s.message.clone()).collect();
+        assert_ne!(before, after, "Shuffle should reorder samples");
+        assert_eq!(before.len(), after.len());
+    }
+
+    #[test]
+    fn test_corpus_shuffle_with_seed_single() {
+        let mut corpus = Corpus::new();
+        corpus.add(Sample::new("only", None, ErrorCategory::TypeMismatch));
+        corpus.shuffle_with_seed(42);
+        assert_eq!(corpus.len(), 1);
+    }
+
+    #[test]
+    fn test_corpus_shuffle_with_seed_empty() {
+        let mut corpus = Corpus::new();
+        corpus.shuffle_with_seed(42);
+        assert_eq!(corpus.len(), 0);
+    }
+
+    #[test]
+    fn test_ruchy_corpus_provenance_count_by_source() {
+        // SampleSource::to_string() returns lowercase names
+        let prov = RuchyCorpusProvenance {
+            sources: vec![
+                ("synthetic".to_string(), 5),
+                ("examples".to_string(), 3),
+                ("synthetic".to_string(), 2),
+            ],
+            total_before_dedup: 10,
+            total_after_dedup: 8,
+            merged_at: Some("2025-01-01".into()),
+        };
+        assert_eq!(prov.count_by_source(SampleSource::Synthetic), 7);
+        assert_eq!(prov.count_by_source(SampleSource::Examples), 3);
+        assert_eq!(prov.count_by_source(SampleSource::Production), 0);
+    }
 }

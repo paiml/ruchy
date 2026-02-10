@@ -467,6 +467,7 @@ impl Interpreter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
     use std::sync::Mutex;
 
     fn make_interpreter() -> Interpreter {
@@ -1273,5 +1274,309 @@ mod tests {
         let result = interp.eval_struct_instance_method_mut(&obj_rc, "MyStruct", "get_value", &[]);
         assert!(result.is_ok());
         assert_eq!(result.unwrap(), Value::Integer(42));
+    }
+
+    // ============================================================================
+    // Coverage tests for eval_actor_instance_method_mut (33 uncov, 71.8%)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_actor_instance_method_mut_send_empty_args() {
+        let mut interp = make_interpreter();
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        let result =
+            interp.eval_actor_instance_method_mut(&obj_rc, "TestActor", "send", &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("send() requires a message argument"));
+    }
+
+    #[test]
+    fn test_eval_actor_instance_method_mut_stop() {
+        let mut interp = make_interpreter();
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        // "stop" delegates to non-mut version
+        let result = interp
+            .eval_actor_instance_method_mut(&obj_rc, "TestActor", "stop", &[])
+            .unwrap();
+        assert_eq!(result, Value::Bool(true));
+    }
+
+    #[test]
+    fn test_eval_actor_instance_method_mut_ask_empty() {
+        let mut interp = make_interpreter();
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        // "ask" delegates to non-mut version
+        let result =
+            interp.eval_actor_instance_method_mut(&obj_rc, "TestActor", "ask", &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("ask() requires a message argument"));
+    }
+
+    // ============================================================================
+    // Coverage tests for eval_class_instance_method_mut (32 uncov, 42.9%)
+    // ============================================================================
+
+    #[test]
+    fn test_eval_class_instance_method_mut_not_a_class() {
+        let mut interp = make_interpreter();
+        interp.set_variable("NotAClass", Value::Integer(42));
+
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        let result = interp.eval_class_instance_method_mut(
+            &obj_rc,
+            "NotAClass",
+            "method",
+            &[],
+        );
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("is not a class"));
+    }
+
+    #[test]
+    fn test_eval_class_instance_method_mut_method_not_found() {
+        let mut interp = make_interpreter();
+
+        // Define a class with methods map but without the requested method
+        let mut methods = HashMap::new();
+        // No "missing_method" defined
+        let mut class_info = HashMap::new();
+        class_info.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_info.insert(
+            "__methods".to_string(),
+            Value::Object(Arc::new(methods)),
+        );
+        interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
+
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        let result = interp.eval_class_instance_method_mut(
+            &obj_rc,
+            "MyClass",
+            "missing_method",
+            &[],
+        );
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("has no method named"));
+    }
+
+    #[test]
+    fn test_eval_class_instance_method_mut_static_method_error() {
+        let mut interp = make_interpreter();
+
+        // Define class with a static method
+        let mut method_meta = HashMap::new();
+        method_meta.insert("is_static".to_string(), Value::Bool(true));
+        method_meta.insert(
+            "closure".to_string(),
+            Value::Closure {
+                params: vec![],
+                body: Arc::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::new(0, 0),
+                )),
+                env: Rc::new(RefCell::new(HashMap::new())),
+            },
+        );
+
+        let mut methods = HashMap::new();
+        methods.insert(
+            "my_static".to_string(),
+            Value::Object(Arc::new(method_meta)),
+        );
+
+        let mut class_info = HashMap::new();
+        class_info.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_info.insert(
+            "__methods".to_string(),
+            Value::Object(Arc::new(methods)),
+        );
+        interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
+
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        let result = interp.eval_class_instance_method_mut(
+            &obj_rc,
+            "MyClass",
+            "my_static",
+            &[],
+        );
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot call static method"));
+    }
+
+    #[test]
+    fn test_eval_class_instance_method_mut_wrong_arg_count() {
+        let mut interp = make_interpreter();
+
+        // Method with 1 parameter
+        let mut method_meta = HashMap::new();
+        method_meta.insert(
+            "closure".to_string(),
+            Value::Closure {
+                params: vec![("arg1".to_string(), None)],
+                body: Arc::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(1, None)),
+                    Span::new(0, 0),
+                )),
+                env: Rc::new(RefCell::new(HashMap::new())),
+            },
+        );
+
+        let mut methods = HashMap::new();
+        methods.insert(
+            "greet".to_string(),
+            Value::Object(Arc::new(method_meta)),
+        );
+
+        let mut class_info = HashMap::new();
+        class_info.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_info.insert(
+            "__methods".to_string(),
+            Value::Object(Arc::new(methods)),
+        );
+        interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
+
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        // Call with 0 args when 1 is expected
+        let result = interp.eval_class_instance_method_mut(
+            &obj_rc,
+            "MyClass",
+            "greet",
+            &[],
+        );
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("expects 1 arguments, got 0"));
+    }
+
+    #[test]
+    fn test_eval_class_instance_method_mut_success() {
+        let mut interp = make_interpreter();
+
+        // Method with no params, returns 42
+        let mut method_meta = HashMap::new();
+        method_meta.insert(
+            "closure".to_string(),
+            Value::Closure {
+                params: vec![],
+                body: Arc::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(42, None)),
+                    Span::new(0, 0),
+                )),
+                env: Rc::new(RefCell::new(HashMap::new())),
+            },
+        );
+
+        let mut methods = HashMap::new();
+        methods.insert(
+            "get_value".to_string(),
+            Value::Object(Arc::new(method_meta)),
+        );
+
+        let mut class_info = HashMap::new();
+        class_info.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_info.insert(
+            "__methods".to_string(),
+            Value::Object(Arc::new(methods)),
+        );
+        interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
+
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        let result = interp
+            .eval_class_instance_method_mut(&obj_rc, "MyClass", "get_value", &[])
+            .unwrap();
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_eval_class_instance_method_mut_with_arg() {
+        let mut interp = make_interpreter();
+
+        // Method that takes 1 param and returns it
+        let mut method_meta = HashMap::new();
+        method_meta.insert(
+            "closure".to_string(),
+            Value::Closure {
+                params: vec![("x".to_string(), None)],
+                body: Arc::new(Expr::new(
+                    ExprKind::Identifier("x".to_string()),
+                    Span::new(0, 0),
+                )),
+                env: Rc::new(RefCell::new(HashMap::new())),
+            },
+        );
+
+        let mut methods = HashMap::new();
+        methods.insert(
+            "echo".to_string(),
+            Value::Object(Arc::new(method_meta)),
+        );
+
+        let mut class_info = HashMap::new();
+        class_info.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_info.insert(
+            "__methods".to_string(),
+            Value::Object(Arc::new(methods)),
+        );
+        interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
+
+        let obj = HashMap::new();
+        let obj_rc = Arc::new(Mutex::new(obj));
+
+        let result = interp
+            .eval_class_instance_method_mut(
+                &obj_rc,
+                "MyClass",
+                "echo",
+                &[Value::Integer(77)],
+            )
+            .unwrap();
+        assert_eq!(result, Value::Integer(77));
     }
 }

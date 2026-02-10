@@ -1218,4 +1218,95 @@ mod tests {
         let result = parse_type(&mut state);
         assert!(result.is_ok());
     }
+
+    // ========================================================================
+    // collect_nested_generic tests
+    // ========================================================================
+
+    #[test]
+    fn test_collect_nested_generic_simple() {
+        // Simulate parsing inside HashMap<String, i32> after the first '<' is consumed
+        let mut state = ParserState::new("String, i32>");
+        // We need to be past the opening '<', so we directly call collect_nested_generic
+        // which expects depth=1 and reads until matching '>'
+        let result = collect_nested_generic(&mut state);
+        assert!(result.contains("String"), "Should contain String: {result}");
+        assert!(result.contains("i32"), "Should contain i32: {result}");
+    }
+
+    #[test]
+    fn test_collect_nested_generic_nested() {
+        // Vec<Vec<i32> > - space before outer '>' so tokenizer doesn't merge '>>'
+        let mut state = ParserState::new("Vec<i32> >");
+        let result = collect_nested_generic(&mut state);
+        assert!(result.contains("Vec"), "Should contain Vec: {result}");
+        assert!(result.contains('<'), "Should contain nested '<': {result}");
+        assert!(result.contains("i32"), "Should contain i32: {result}");
+        assert!(result.contains('>'), "Should contain nested '>': {result}");
+    }
+
+    #[test]
+    fn test_collect_nested_generic_with_comma() {
+        let mut state = ParserState::new("K, V>");
+        let result = collect_nested_generic(&mut state);
+        assert!(result.contains('K'), "Should contain K: {result}");
+        assert!(result.contains("V"), "Should contain V: {result}");
+        assert!(result.contains(", "), "Should contain comma separator: {result}");
+    }
+
+    #[test]
+    fn test_collect_nested_generic_with_equals() {
+        // Generic with default: T = i32>
+        let mut state = ParserState::new("T=i32>");
+        let result = collect_nested_generic(&mut state);
+        assert!(result.contains('T'), "Should contain T: {result}");
+        assert!(result.contains('='), "Should contain equals sign: {result}");
+        assert!(result.contains("i32"), "Should contain i32: {result}");
+    }
+
+    #[test]
+    fn test_collect_nested_generic_deeply_nested() {
+        // HashMap<String, Vec<i32> > after first '<'
+        // Spaces between '>' chars to avoid '>>' tokenization
+        let mut state = ParserState::new("String, Vec<i32> >");
+        let result = collect_nested_generic(&mut state);
+        assert!(result.contains("String"), "Should contain String: {result}");
+        assert!(result.contains("Vec"), "Should contain Vec: {result}");
+        assert!(result.contains("i32"), "Should contain i32: {result}");
+        // Verify nesting is handled (inner '<' and '>')
+        assert!(result.contains('<'), "Should contain '<': {result}");
+        assert!(result.contains('>'), "Should contain '>': {result}");
+    }
+
+    #[test]
+    fn test_collect_nested_generic_empty() {
+        // Just '>' (empty generic params)
+        let mut state = ParserState::new(">");
+        let result = collect_nested_generic(&mut state);
+        assert!(result.is_empty(), "Empty generic should return empty string");
+    }
+
+    #[test]
+    fn test_collect_nested_generic_unknown_tokens() {
+        // Tokens that are not identifier/comma/less/greater/equal are advanced but not appended meaningfully
+        let mut state = ParserState::new("42>");
+        let result = collect_nested_generic(&mut state);
+        // Numeric literal token is advanced but not added to result string
+        assert!(!result.contains("error"));
+    }
+
+    // Also test via parse_type which exercises collect_nested_generic indirectly
+    #[test]
+    fn test_parse_type_hashmap_string_vec_i32() {
+        let mut state = ParserState::new("HashMap<String, Vec<i32>>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok(), "HashMap<String, Vec<i32>> should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_parse_type_triple_nested() {
+        let mut state = ParserState::new("Option<Vec<HashMap<String, i32>>>");
+        let result = parse_type(&mut state);
+        assert!(result.is_ok(), "Triple nested generic should parse");
+    }
 }

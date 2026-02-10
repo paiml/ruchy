@@ -1517,4 +1517,439 @@ mod tests {
         );
         assert!(Transpiler::expr_references_var(&expr, "counter"));
     }
+
+    // ========================================================================
+    // transpile_expr_for_guard tests
+    // ========================================================================
+
+    #[test]
+    fn test_guard_identifier_matching_var() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        assert!(
+            result.to_string().contains("__guard"),
+            "Should replace matching var with *__guard"
+        );
+    }
+
+    #[test]
+    fn test_guard_identifier_non_matching_var() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(ExprKind::Identifier("y".to_string()), Span::default());
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        // Non-matching identifier falls through to standard transpilation
+        assert!(!result.to_string().contains("__guard"));
+    }
+
+    #[test]
+    fn test_guard_binary_add() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"), "Left side should use guard deref");
+        assert!(code.contains('+'), "Should contain add operator");
+    }
+
+    #[test]
+    fn test_guard_binary_subtract() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Subtract,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"));
+        assert!(code.contains('-'));
+    }
+
+    #[test]
+    fn test_guard_binary_multiply() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(3, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Multiply,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        assert!(result.to_string().contains("__guard"));
+    }
+
+    #[test]
+    fn test_guard_binary_divide() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(4, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Divide,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        assert!(result.to_string().contains("__guard"));
+    }
+
+    #[test]
+    fn test_guard_binary_modulo() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(5, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Modulo,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"));
+        assert!(code.contains('%'));
+    }
+
+    #[test]
+    fn test_guard_binary_equal() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Equal,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"));
+        assert!(code.contains("=="));
+    }
+
+    #[test]
+    fn test_guard_binary_not_equal() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(0, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::NotEqual,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        assert!(result.to_string().contains("!="));
+    }
+
+    #[test]
+    fn test_guard_binary_comparison_ops() {
+        let transpiler = Transpiler::new();
+        for (op, expected_str) in [
+            (BinaryOp::Less, "<"),
+            (BinaryOp::LessEqual, "<="),
+            (BinaryOp::Greater, ">"),
+            (BinaryOp::GreaterEqual, ">="),
+        ] {
+            let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+            let right = Expr::new(
+                ExprKind::Literal(Literal::Integer(10, None)),
+                Span::default(),
+            );
+            let expr = Expr::new(
+                ExprKind::Binary {
+                    left: Box::new(left),
+                    op,
+                    right: Box::new(right),
+                },
+                Span::default(),
+            );
+            let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+            let code = result.to_string();
+            assert!(
+                code.contains(expected_str),
+                "Op {expected_str} not found in: {code}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_guard_binary_logical_ops() {
+        let transpiler = Transpiler::new();
+        for (op, expected_str) in [(BinaryOp::And, "&&"), (BinaryOp::Or, "||")] {
+            let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+            let right = Expr::new(
+                ExprKind::Literal(Literal::Bool(true)),
+                Span::default(),
+            );
+            let expr = Expr::new(
+                ExprKind::Binary {
+                    left: Box::new(left),
+                    op,
+                    right: Box::new(right),
+                },
+                Span::default(),
+            );
+            let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+            let code = result.to_string();
+            assert!(
+                code.contains(expected_str),
+                "Op {expected_str} not found in: {code}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_guard_binary_bitwise_ops() {
+        let transpiler = Transpiler::new();
+        for (op, expected_str) in [
+            (BinaryOp::BitwiseAnd, "&"),
+            (BinaryOp::BitwiseOr, "|"),
+            (BinaryOp::BitwiseXor, "^"),
+            (BinaryOp::LeftShift, "<<"),
+            (BinaryOp::RightShift, ">>"),
+        ] {
+            let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+            let right = Expr::new(
+                ExprKind::Literal(Literal::Integer(1, None)),
+                Span::default(),
+            );
+            let expr = Expr::new(
+                ExprKind::Binary {
+                    left: Box::new(left),
+                    op,
+                    right: Box::new(right),
+                },
+                Span::default(),
+            );
+            let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+            let code = result.to_string();
+            assert!(
+                code.contains(expected_str),
+                "Op {expected_str} not found in: {code}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_guard_binary_power() {
+        let transpiler = Transpiler::new();
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Power,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("pow"), "Power op should use .pow");
+    }
+
+    #[test]
+    fn test_guard_binary_nested_wraps_parens() {
+        let transpiler = Transpiler::new();
+        // (x + 1) * 2 - the left side is a Binary, so should get wrapped in parens
+        let inner_left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let inner_right = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let left = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(inner_left),
+                op: BinaryOp::Add,
+                right: Box::new(inner_right),
+            },
+            Span::default(),
+        );
+        let right = Expr::new(
+            ExprKind::Literal(Literal::Integer(2, None)),
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Multiply,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        // Left side is Binary, should be wrapped in parens
+        assert!(code.contains("__guard"));
+    }
+
+    #[test]
+    fn test_guard_vec_concat_pattern() {
+        let transpiler = Transpiler::new();
+        // x + [item] should use concat pattern
+        let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let item = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let right = Expr::new(ExprKind::List(vec![item]), Span::default());
+        let expr = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(left),
+                op: BinaryOp::Add,
+                right: Box::new(right),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("concat"), "Vec + List should use concat");
+        assert!(code.contains("as_slice"), "Should call as_slice on left");
+    }
+
+    #[test]
+    fn test_guard_unary_not() {
+        let transpiler = Transpiler::new();
+        let operand = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Not,
+                operand: Box::new(operand),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"), "Should replace x with guard deref");
+        assert!(code.contains('!'), "Should contain NOT operator");
+    }
+
+    #[test]
+    fn test_guard_unary_negate() {
+        let transpiler = Transpiler::new();
+        let operand = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Negate,
+                operand: Box::new(operand),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"));
+        assert!(code.contains('-'));
+    }
+
+    #[test]
+    fn test_guard_unary_reference() {
+        let transpiler = Transpiler::new();
+        let operand = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Reference,
+                operand: Box::new(operand),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"));
+    }
+
+    #[test]
+    fn test_guard_unary_mut_reference() {
+        let transpiler = Transpiler::new();
+        let operand = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::MutableReference,
+                operand: Box::new(operand),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("mut"));
+    }
+
+    #[test]
+    fn test_guard_unary_deref() {
+        let transpiler = Transpiler::new();
+        let operand = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+        let expr = Expr::new(
+            ExprKind::Unary {
+                op: UnaryOp::Deref,
+                operand: Box::new(operand),
+            },
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("__guard"));
+    }
+
+    #[test]
+    fn test_guard_fallthrough_literal() {
+        let transpiler = Transpiler::new();
+        let expr = Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        );
+        let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
+        let code = result.to_string();
+        assert!(code.contains("42"), "Literal should pass through unchanged");
+    }
 }

@@ -1419,3 +1419,137 @@ fn test_create_let_expression_mut_produces_let_pattern() {
     .unwrap();
     assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
 }
+
+// ========================================================================
+// parse_let_pattern coverage tests
+// ========================================================================
+
+#[test]
+fn test_parse_let_some_pattern_coverage() {
+    let code = "let Some(val) = maybe";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "let Some(val) should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_parse_let_ok_pattern_coverage() {
+    let code = "let Ok(v) = result_val";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "let Ok(v) should parse");
+}
+
+#[test]
+fn test_parse_let_err_pattern_coverage() {
+    let code = "let Err(e) = result_val";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "let Err(e) should parse");
+}
+
+#[test]
+fn test_parse_let_none_pattern_coverage() {
+    let code = "let None = opt";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "let None should parse");
+}
+
+#[test]
+fn test_parse_let_df_keyword_coverage() {
+    let code = "let df = data";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "DataFrame keyword as variable name should parse");
+}
+
+#[test]
+fn test_parse_let_default_keyword_coverage() {
+    let code = "let default = config";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "default keyword as variable name should parse");
+}
+
+#[test]
+fn test_parse_let_final_keyword_coverage() {
+    let code = "let final = value";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "final keyword as variable name should parse");
+}
+
+#[test]
+fn test_parse_let_underscore_wildcard_coverage() {
+    let code = "let _ = compute()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "underscore pattern should parse");
+}
+
+#[test]
+fn test_parse_let_tuple_destructure_coverage() {
+    let code = "let (a, b, c) = (1, 2, 3)";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "tuple pattern should parse");
+}
+
+#[test]
+fn test_parse_let_list_destructure_coverage() {
+    let code = "let [first, second] = items";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "list pattern should parse");
+}
+
+#[test]
+fn test_parse_let_struct_brace_pattern_coverage() {
+    let code = "let {name, age} = person";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "brace struct pattern should parse");
+}
+
+#[test]
+fn test_parse_let_variant_tuple_pattern_coverage() {
+    let code = "let Color(r, g, b) = pixel";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "variant tuple pattern should parse");
+}
+
+#[test]
+fn test_parse_let_named_struct_destructure_coverage() {
+    let code = "let Point { x, y } = origin";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "named struct pattern should parse");
+}
+
+#[test]
+fn test_parse_let_mut_coverage() {
+    let code = "let mut x = 42";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "let mut identifier should parse");
+}
+
+// ========================================================================
+// create_var_expression coverage tests
+// ========================================================================
+
+#[test]
+fn test_parse_var_identifier_coverage() {
+    let code = "var x = 42";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "var x = 42 should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_parse_var_tuple_destructuring_coverage() {
+    let code = "var (a, b) = (1, 2)";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "var (a, b) should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_parse_var_list_destructuring_coverage() {
+    let code = "var [x, y] = items";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "var [x, y] should parse: {:?}", result.err());
+}
+
+#[test]
+fn test_parse_var_with_type_annotation_coverage() {
+    let code = "var x: i32 = 42";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "var x: i32 should parse: {:?}", result.err());
+}

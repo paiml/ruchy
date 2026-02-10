@@ -1669,4 +1669,93 @@ mod tests {
         let result = parse("class Dual { new() { } init() { } }");
         assert!(result.is_ok(), "Both constructors should parse");
     }
+
+    // ========================================================================
+    // parse_operator_method tests (operator overloading)
+    // ========================================================================
+
+    #[test]
+    fn test_class_operator_add() {
+        let result = parse("class Vec2 { x: f64  y: f64  operator+(self, other: Vec2) -> Vec2 { Vec2 { x: 0.0, y: 0.0 } } }");
+        assert!(result.is_ok(), "operator+ should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_sub() {
+        let result = parse("class Vec2 { x: f64  operator-(self, other: Vec2) -> Vec2 { Vec2 { x: 0.0, y: 0.0 } } }");
+        assert!(result.is_ok(), "operator- should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_mul() {
+        let result = parse("class Vec2 { x: f64  operator*(self, scalar: f64) -> Vec2 { Vec2 { x: 0.0, y: 0.0 } } }");
+        assert!(result.is_ok(), "operator* should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_div() {
+        let result = parse("class Vec2 { x: f64  operator/(self, scalar: f64) -> Vec2 { Vec2 { x: 0.0, y: 0.0 } } }");
+        assert!(result.is_ok(), "operator/ should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_eq() {
+        let result = parse("class Vec2 { x: f64  operator==(self, other: Vec2) -> bool { true } }");
+        assert!(result.is_ok(), "operator== should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_ne() {
+        let result = parse("class Vec2 { x: f64  operator!=(self, other: Vec2) -> bool { false } }");
+        assert!(result.is_ok(), "operator!= should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_lt() {
+        let result = parse("class Num { v: i32  operator<(self, other: Num) -> bool { true } }");
+        assert!(result.is_ok(), "operator< should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_gt() {
+        let result = parse("class Num { v: i32  operator>(self, other: Num) -> bool { false } }");
+        assert!(result.is_ok(), "operator> should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_le() {
+        let result = parse("class Num { v: i32  operator<=(self, other: Num) -> bool { true } }");
+        assert!(result.is_ok(), "operator<= should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_ge() {
+        let result = parse("class Num { v: i32  operator>=(self, other: Num) -> bool { false } }");
+        assert!(result.is_ok(), "operator>= should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_rem() {
+        let result = parse("class Num { v: i32  operator%(self, other: Num) -> Num { Num { v: 0 } } }");
+        assert!(result.is_ok(), "operator% should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_index() {
+        let result = parse("class Grid { data: Vec<i32>  operator[](self, idx: i32) -> i32 { 0 } }");
+        assert!(result.is_ok(), "operator[] should parse: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_class_operator_no_return_type() {
+        let result = parse("class Vec2 { x: f64  operator+(self, other: Vec2) { 0 } }");
+        assert!(result.is_ok(), "operator+ without return type should parse");
+    }
+
+    #[test]
+    fn test_class_multiple_operators() {
+        let code = "class Vec2 { x: f64  y: f64  operator+(self, other: Vec2) -> Vec2 { Vec2 { x: 0.0, y: 0.0 } }  operator-(self, other: Vec2) -> Vec2 { Vec2 { x: 0.0, y: 0.0 } } }";
+        let result = parse(code);
+        assert!(result.is_ok(), "Multiple operators should parse");
+    }
 }

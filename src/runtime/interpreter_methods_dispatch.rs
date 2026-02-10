@@ -1147,4 +1147,101 @@ mod tests {
         let result = interp.eval_method_call(&receiver, "get_x", &[]).unwrap();
         assert_eq!(result, Value::Integer(99));
     }
+
+    // ============================================================================
+    // Coverage tests for eval_method_call (29 uncov, 79.1% coverage)
+    // Exercises: push on identifier, pop on identifier, namespace dispatch,
+    // field access push/pop on ObjectMut
+    // ============================================================================
+
+    #[test]
+    fn test_eval_method_call_push_on_array_identifier() {
+        use crate::frontend::ast::Literal;
+
+        let mut interp = make_interpreter();
+        interp.set_variable(
+            "items",
+            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+        );
+
+        let receiver = make_expr(ExprKind::Identifier("items".to_string()));
+        let arg = make_expr(ExprKind::Literal(Literal::Integer(3, None)));
+
+        let result = interp
+            .eval_method_call(&receiver, "push", &[arg])
+            .unwrap();
+        assert_eq!(result, Value::Nil);
+
+        // Verify array was updated
+        let arr = interp.lookup_variable("items").unwrap();
+        if let Value::Array(v) = arr {
+            assert_eq!(v.len(), 3);
+            assert_eq!(v[2], Value::Integer(3));
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_method_call_pop_on_array_identifier() {
+        let mut interp = make_interpreter();
+        interp.set_variable(
+            "items",
+            Value::Array(Arc::from(vec![Value::Integer(1), Value::Integer(2)])),
+        );
+
+        let receiver = make_expr(ExprKind::Identifier("items".to_string()));
+
+        let result = interp
+            .eval_method_call(&receiver, "pop", &[])
+            .unwrap();
+        assert_eq!(result, Value::Integer(2));
+
+        // Verify array was updated
+        let arr = interp.lookup_variable("items").unwrap();
+        if let Value::Array(v) = arr {
+            assert_eq!(v.len(), 1);
+        } else {
+            panic!("Expected Array");
+        }
+    }
+
+    #[test]
+    fn test_eval_method_call_pop_on_empty_array() {
+        let mut interp = make_interpreter();
+        interp.set_variable("items", Value::Array(Arc::from(vec![])));
+
+        let receiver = make_expr(ExprKind::Identifier("items".to_string()));
+        let result = interp
+            .eval_method_call(&receiver, "pop", &[])
+            .unwrap();
+        assert_eq!(result, Value::Nil);
+    }
+
+    #[test]
+    fn test_eval_method_call_field_access_push() {
+        use crate::frontend::ast::Literal;
+        use std::sync::Mutex;
+
+        let mut interp = make_interpreter();
+
+        // Create an ObjectMut with an array field
+        let mut obj = HashMap::new();
+        obj.insert(
+            "messages".to_string(),
+            Value::Array(Arc::from(vec![Value::Integer(1)])),
+        );
+        interp.set_variable("self_obj", Value::ObjectMut(Arc::new(Mutex::new(obj))));
+
+        let field_access = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("self_obj".to_string()))),
+            field: "messages".to_string(),
+        });
+        let arg = make_expr(ExprKind::Literal(Literal::Integer(2, None)));
+
+        let result = interp
+            .eval_method_call(&field_access, "push", &[arg])
+            .unwrap();
+        assert_eq!(result, Value::Nil);
+    }
 }
