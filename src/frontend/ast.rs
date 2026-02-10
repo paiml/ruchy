@@ -1542,3 +1542,8 @@ impl fmt::Display for UnaryOp {
 #[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
 #[path = "ast_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::panic, clippy::expect_used)]
+#[path = "ast_tests_part2.rs"]
+mod tests_part2;
