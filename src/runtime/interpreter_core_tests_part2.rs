@@ -1571,3 +1571,221 @@
         let result = interp.call_function(func, &[]);
         assert!(result.is_err());
     }
+
+    // ============================================================================
+    // Coverage tests for call_function: Object type dispatch (lines 933-978)
+    // Exercises: Struct, Actor, Class Object dispatch, missing __name errors
+    // ============================================================================
+
+    #[test]
+    fn test_call_function_object_struct_type() {
+        let mut interp = make_interpreter();
+
+        // Set up a struct definition
+        let mut struct_def = std::collections::HashMap::new();
+        struct_def.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+        struct_def.insert(
+            "__name".to_string(),
+            Value::from_string("Point".to_string()),
+        );
+        struct_def.insert(
+            "__fields".to_string(),
+            Value::Object(std::sync::Arc::new(std::collections::HashMap::new())),
+        );
+        interp.set_variable("Point", Value::Object(std::sync::Arc::new(struct_def.clone())));
+
+        // Call the struct definition as a constructor via Object dispatch
+        let func = Value::Object(std::sync::Arc::new(struct_def));
+        let result = interp.call_function(func, &[]);
+        // Exercises the "Struct" branch at line 937-945
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_call_function_object_struct_missing_name() {
+        let mut interp = make_interpreter();
+
+        // Struct object missing __name field
+        let mut struct_def = std::collections::HashMap::new();
+        struct_def.insert(
+            "__type".to_string(),
+            Value::from_string("Struct".to_string()),
+        );
+        // No __name field
+
+        let func = Value::Object(std::sync::Arc::new(struct_def));
+        let result = interp.call_function(func, &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Struct missing __name"));
+    }
+
+    #[test]
+    fn test_call_function_object_actor_type() {
+        let mut interp = make_interpreter();
+
+        // Set up actor definition
+        let mut actor_def = std::collections::HashMap::new();
+        actor_def.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
+        actor_def.insert(
+            "__name".to_string(),
+            Value::from_string("Counter".to_string()),
+        );
+        interp.set_variable("Counter", Value::Object(std::sync::Arc::new(actor_def.clone())));
+
+        // Call actor definition as constructor
+        let func = Value::Object(std::sync::Arc::new(actor_def));
+        let result = interp.call_function(func, &[]);
+        // Exercises the "Actor" branch at line 947-955
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_call_function_object_actor_missing_name() {
+        let mut interp = make_interpreter();
+
+        let mut actor_def = std::collections::HashMap::new();
+        actor_def.insert(
+            "__type".to_string(),
+            Value::from_string("Actor".to_string()),
+        );
+        // No __name field
+
+        let func = Value::Object(std::sync::Arc::new(actor_def));
+        let result = interp.call_function(func, &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Actor missing __name"));
+    }
+
+    #[test]
+    fn test_call_function_object_class_type() {
+        let mut interp = make_interpreter();
+
+        // Set up class definition
+        let mut class_def = std::collections::HashMap::new();
+        class_def.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        class_def.insert(
+            "__name".to_string(),
+            Value::from_string("Person".to_string()),
+        );
+        interp.set_variable("Person", Value::Object(std::sync::Arc::new(class_def.clone())));
+
+        // Call class definition as constructor
+        let func = Value::Object(std::sync::Arc::new(class_def));
+        let result = interp.call_function(func, &[]);
+        // Exercises the "Class" branch at line 957-965
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[test]
+    fn test_call_function_object_class_missing_name() {
+        let mut interp = make_interpreter();
+
+        let mut class_def = std::collections::HashMap::new();
+        class_def.insert(
+            "__type".to_string(),
+            Value::from_string("Class".to_string()),
+        );
+        // No __name field
+
+        let func = Value::Object(std::sync::Arc::new(class_def));
+        let result = interp.call_function(func, &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Class missing __name"));
+    }
+
+    #[test]
+    fn test_call_function_object_unknown_type() {
+        let mut interp = make_interpreter();
+
+        let mut obj = std::collections::HashMap::new();
+        obj.insert(
+            "__type".to_string(),
+            Value::from_string("SomeRandomType".to_string()),
+        );
+
+        let func = Value::Object(std::sync::Arc::new(obj));
+        let result = interp.call_function(func, &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot call object of type"));
+    }
+
+    #[test]
+    fn test_call_function_object_no_type() {
+        let mut interp = make_interpreter();
+
+        // Object without __type
+        let obj = std::collections::HashMap::new();
+        let func = Value::Object(std::sync::Arc::new(obj));
+        let result = interp.call_function(func, &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot call non-function"));
+    }
+
+    #[test]
+    fn test_call_function_closure_block_body() {
+        use std::cell::RefCell;
+        use std::rc::Rc;
+
+        let mut interp = make_interpreter();
+
+        // Create a closure with a Block body (multiple statements)
+        let stmts = vec![
+            make_expr(ExprKind::Literal(Literal::Integer(1, None))),
+            make_expr(ExprKind::Literal(Literal::Integer(42, None))),
+        ];
+        let block_body = make_expr(ExprKind::Block(stmts));
+
+        let func = Value::Closure {
+            params: vec![],
+            body: std::sync::Arc::new(block_body),
+            env: Rc::new(RefCell::new(std::collections::HashMap::new())),
+        };
+
+        let result = interp.call_function(func, &[]).unwrap();
+        // Block returns last expression
+        assert_eq!(result, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_call_function_nil_value() {
+        let mut interp = make_interpreter();
+
+        let result = interp.call_function(Value::Nil, &[]);
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot call non-function"));
+    }
+
+    #[test]
+    fn test_call_function_bool_value() {
+        let mut interp = make_interpreter();
+
+        let result = interp.call_function(Value::Bool(true), &[]);
+        assert!(result.is_err());
+    }

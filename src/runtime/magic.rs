@@ -1499,6 +1499,185 @@ mod tests {
         assert!(repl.get_bindings().is_empty());
     }
 }
+// ============================================================================
+// Coverage tests for execute_line dispatch through MagicRegistry
+// Exercises: TimeMagic, ResetMagic, WhosMagic, DebugMagic, ProfileMagic,
+// HistoryMagic, ClearMagic via registry.execute()
+// ============================================================================
+#[cfg(test)]
+mod registry_execute_coverage_tests {
+    use super::*;
+
+    fn create_mock_repl() -> Repl {
+        Repl::new(std::env::temp_dir()).unwrap()
+    }
+
+    #[test]
+    fn test_registry_execute_time_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        // %time with a valid expression
+        let result = registry.execute(&mut repl, "%time 1 + 2");
+        assert!(result.is_ok(), "TimeMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Timed { output, duration }) = result {
+            assert!(!output.is_empty());
+            assert!(duration.as_nanos() > 0);
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_timeit_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        // %timeit with -n flag for small runs
+        let result = registry.execute(&mut repl, "%timeit -n 3 1 + 1");
+        assert!(result.is_ok(), "TimeitMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Text(output)) = result {
+            assert!(output.contains("loops"));
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_reset_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        // Add some bindings first
+        repl.get_bindings_mut()
+            .insert("x".to_string(), Value::Integer(42));
+        repl.get_bindings_mut()
+            .insert("y".to_string(), Value::Float(3.14));
+
+        assert!(!repl.get_bindings().is_empty());
+
+        let result = registry.execute(&mut repl, "%reset");
+        assert!(result.is_ok(), "ResetMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Text(output)) = result {
+            assert_eq!(output, "Workspace reset");
+        }
+        assert!(repl.get_bindings().is_empty());
+    }
+
+    #[test]
+    fn test_registry_execute_whos_magic_empty() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%whos");
+        assert!(result.is_ok(), "WhosMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Text(output)) = result {
+            assert_eq!(output, "No variables in workspace");
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_whos_magic_with_vars() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("counter".to_string(), Value::Integer(10));
+
+        let result = registry.execute(&mut repl, "%whos");
+        assert!(result.is_ok(), "WhosMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Text(output)) = result {
+            assert!(output.contains("Variable"));
+            assert!(output.contains("counter"));
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_debug_magic_no_error() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%debug");
+        assert!(result.is_ok(), "DebugMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Text(output)) = result {
+            assert!(output.contains("No recent error"));
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_profile_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%profile 1 + 1");
+        assert!(result.is_ok(), "ProfileMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Profile(data)) = result {
+            assert!(data.total_time.as_nanos() > 0);
+            assert!(!data.function_times.is_empty());
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_history_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%history 5");
+        assert!(result.is_ok(), "HistoryMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Text(output)) = result {
+            assert!(output.contains("Last 5 commands"));
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_clear_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+        repl.get_bindings_mut()
+            .insert("temp_x".to_string(), Value::Integer(1));
+        repl.get_bindings_mut()
+            .insert("temp_y".to_string(), Value::Integer(2));
+
+        let result = registry.execute(&mut repl, "%clear temp");
+        assert!(result.is_ok(), "ClearMagic should succeed: {:?}", result.err());
+        if let Ok(MagicResult::Text(output)) = result {
+            assert!(output.contains("Cleared 2 variables"));
+        }
+    }
+
+    #[test]
+    fn test_registry_execute_cell_magic_time() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        // Cell magic (double %) delegates to execute_cell which defaults to execute_line
+        let result = registry.execute(&mut repl, "%%time 1 + 1");
+        assert!(result.is_ok(), "Cell TimeMagic should succeed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_registry_execute_ls_magic() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%ls /tmp");
+        assert!(result.is_ok(), "LsMagic should succeed: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_registry_execute_profile_empty_args() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%profile");
+        assert!(result.is_err(), "ProfileMagic with no args should fail");
+    }
+
+    #[test]
+    fn test_registry_execute_time_empty_args() {
+        let mut registry = MagicRegistry::new();
+        let mut repl = create_mock_repl();
+
+        let result = registry.execute(&mut repl, "%time");
+        assert!(result.is_err(), "TimeMagic with no args should fail");
+    }
+}
+
 #[cfg(test)]
 mod property_tests_magic {
     use proptest::proptest;

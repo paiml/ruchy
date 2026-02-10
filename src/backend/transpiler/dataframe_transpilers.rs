@@ -340,4 +340,249 @@ mod tests {
         let result = transpiler.transpile(&ast);
         assert!(result.is_ok());
     }
+
+    // ========================================================================
+    // extract_dataframe_columns_impl direct unit tests
+    // ========================================================================
+
+    fn make_expr_direct(kind: ExprKind) -> Expr {
+        Expr {
+            kind,
+            span: crate::frontend::ast::Span::new(0, 0),
+            attributes: vec![],
+            leading_comments: vec![],
+            trailing_comment: None,
+        }
+    }
+
+    #[test]
+    fn test_extract_columns_dataframe_new_identifier() {
+        // DataFrame::new() expressed as Identifier("DataFrame::new") with empty call
+        let func = make_expr_direct(ExprKind::Identifier("DataFrame::new".to_string()));
+        let call = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&call);
+        assert!(result.is_some());
+        let (cols, _base) = result.unwrap();
+        assert!(cols.is_empty(), "DataFrame::new() alone should have no columns");
+    }
+
+    #[test]
+    fn test_extract_columns_dataframe_new_qualified() {
+        // DataFrame::new() expressed as QualifiedName
+        let func = make_expr_direct(ExprKind::QualifiedName {
+            module: "DataFrame".to_string(),
+            name: "new".to_string(),
+        });
+        let call = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&call);
+        assert!(result.is_some());
+        let (cols, _base) = result.unwrap();
+        assert!(cols.is_empty());
+    }
+
+    #[test]
+    fn test_extract_columns_non_dataframe_call() {
+        // foo() — not a DataFrame call
+        let func = make_expr_direct(ExprKind::Identifier("foo".to_string()));
+        let call = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&call);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_columns_call_with_args() {
+        // DataFrame::new(some_arg) — has args, so doesn't match
+        let func = make_expr_direct(ExprKind::Identifier("DataFrame::new".to_string()));
+        let call = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![make_expr_direct(ExprKind::Literal(
+                crate::frontend::ast::Literal::Integer(1, None),
+            ))],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&call);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_columns_single_column_on_dataframe_new() {
+        // DataFrame::new().column("a", [1])
+        let func = make_expr_direct(ExprKind::Identifier("DataFrame::new".to_string()));
+        let df_new = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let col_name = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("a".to_string()),
+        ));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+        )]));
+        let with_col = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(df_new),
+            method: "column".to_string(),
+            args: vec![col_name, col_data],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&with_col);
+        assert!(result.is_some());
+        let (cols, _base) = result.unwrap();
+        assert_eq!(cols.len(), 1);
+    }
+
+    #[test]
+    fn test_extract_columns_chained_columns() {
+        // DataFrame::new().column("a", [1]).column("b", [2])
+        let func = make_expr_direct(ExprKind::Identifier("DataFrame::new".to_string()));
+        let df_new = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let col1_name = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("a".to_string()),
+        ));
+        let col1_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+        )]));
+        let with_col1 = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(df_new),
+            method: "column".to_string(),
+            args: vec![col1_name, col1_data],
+        });
+        let col2_name = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("b".to_string()),
+        ));
+        let col2_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)),
+        )]));
+        let with_col2 = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(with_col1),
+            method: "column".to_string(),
+            args: vec![col2_name, col2_data],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&with_col2);
+        assert!(result.is_some());
+        let (cols, _base) = result.unwrap();
+        assert_eq!(cols.len(), 2);
+    }
+
+    #[test]
+    fn test_extract_columns_column_on_non_dataframe() {
+        // foo().column("a", [1]) — receiver is not DataFrame::new()
+        let func = make_expr_direct(ExprKind::Identifier("foo".to_string()));
+        let call = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let col_name = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("a".to_string()),
+        ));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+        )]));
+        let with_col = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(call),
+            method: "column".to_string(),
+            args: vec![col_name, col_data],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&with_col);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_columns_method_not_column() {
+        // DataFrame::new().filter("a", [1]) — method is "filter" not "column"
+        let func = make_expr_direct(ExprKind::Identifier("DataFrame::new".to_string()));
+        let df_new = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let arg1 = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("a".to_string()),
+        ));
+        let arg2 = make_expr_direct(ExprKind::List(vec![make_expr_direct(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+        )]));
+        let with_filter = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(df_new),
+            method: "filter".to_string(),
+            args: vec![arg1, arg2],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&with_filter);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_columns_column_wrong_arg_count() {
+        // DataFrame::new().column("a") — only 1 arg, needs 2
+        let func = make_expr_direct(ExprKind::Identifier("DataFrame::new".to_string()));
+        let df_new = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let col_name = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("a".to_string()),
+        ));
+        let with_col = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(df_new),
+            method: "column".to_string(),
+            args: vec![col_name],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&with_col);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_extract_columns_qualified_name_in_column_chain() {
+        // Using QualifiedName form: DataFrame.new().column("x", [1])
+        let func = make_expr_direct(ExprKind::QualifiedName {
+            module: "DataFrame".to_string(),
+            name: "new".to_string(),
+        });
+        let df_new = make_expr_direct(ExprKind::Call {
+            func: Box::new(func),
+            args: vec![],
+        });
+        let col_name = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("x".to_string()),
+        ));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+        )]));
+        let with_col = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(df_new),
+            method: "column".to_string(),
+            args: vec![col_name, col_data],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&with_col);
+        assert!(result.is_some());
+        let (cols, _base) = result.unwrap();
+        assert_eq!(cols.len(), 1);
+    }
+
+    #[test]
+    fn test_extract_columns_column_on_non_call_receiver() {
+        // x.column("a", [1]) — receiver is an identifier, not a Call
+        let receiver = make_expr_direct(ExprKind::Identifier("x".to_string()));
+        let col_name = make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::String("a".to_string()),
+        ));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
+            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
+        )]));
+        let with_col = make_expr_direct(ExprKind::MethodCall {
+            receiver: Box::new(receiver),
+            method: "column".to_string(),
+            args: vec![col_name, col_data],
+        });
+        let result = Transpiler::extract_dataframe_columns_impl(&with_col);
+        assert!(result.is_none());
+    }
 }

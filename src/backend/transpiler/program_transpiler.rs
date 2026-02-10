@@ -1319,4 +1319,99 @@ mod tests {
         let code = result.unwrap().to_string();
         assert!(code.contains("fn main"));
     }
+
+    // ========================================================================
+    // wrap_statement_in_main tests
+    // ========================================================================
+
+    #[test]
+    fn test_wrap_statement_in_main_simple() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![int_expr(42)];
+        let result = transpiler.wrap_statement_in_main(&exprs, false, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"), "Should wrap in main");
+        assert!(code.contains("42"));
+    }
+
+    #[test]
+    fn test_wrap_statement_in_main_with_polars() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![int_expr(1)];
+        let result = transpiler.wrap_statement_in_main(&exprs, true, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("polars"), "Should contain polars import");
+        assert!(!code.contains("HashMap"), "Should not contain HashMap");
+    }
+
+    #[test]
+    fn test_wrap_statement_in_main_with_hashmap() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![int_expr(1)];
+        let result = transpiler.wrap_statement_in_main(&exprs, false, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("HashMap"), "Should contain HashMap import");
+        assert!(!code.contains("polars"), "Should not contain polars");
+    }
+
+    #[test]
+    fn test_wrap_statement_in_main_with_both_flags() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![int_expr(1)];
+        let result = transpiler.wrap_statement_in_main(&exprs, true, true);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("polars"), "Should contain polars import");
+        assert!(code.contains("HashMap"), "Should contain HashMap import");
+    }
+
+    #[test]
+    fn test_wrap_statement_in_main_multiple_exprs() {
+        let transpiler = Transpiler::new();
+        let exprs = vec![int_expr(1), int_expr(2), int_expr(3)];
+        let result = transpiler.wrap_statement_in_main(&exprs, false, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+        assert!(code.contains('1'));
+        assert!(code.contains('2'));
+        assert!(code.contains('3'));
+    }
+
+    #[test]
+    fn test_wrap_statement_in_main_expr_ending_with_brace() {
+        let transpiler = Transpiler::new();
+        // A block expression ends with '}' when transpiled
+        let block = block_expr(vec![int_expr(42)]);
+        let exprs = vec![block];
+        let result = transpiler.wrap_statement_in_main(&exprs, false, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+    }
+
+    #[test]
+    fn test_wrap_statement_in_main_empty_exprs() {
+        let transpiler = Transpiler::new();
+        let exprs: Vec<Expr> = vec![];
+        let result = transpiler.wrap_statement_in_main(&exprs, false, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+    }
+
+    #[test]
+    fn test_wrap_statement_in_main_string_expr_adds_semicolon() {
+        let transpiler = Transpiler::new();
+        // String literal transpiles to something that doesn't end with ';' or '}'
+        let exprs = vec![string_expr("hello")];
+        let result = transpiler.wrap_statement_in_main(&exprs, false, false);
+        assert!(result.is_ok());
+        let code = result.unwrap().to_string();
+        assert!(code.contains("fn main"));
+        assert!(code.contains("hello"));
+    }
 }
