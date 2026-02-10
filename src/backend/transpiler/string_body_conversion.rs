@@ -481,4 +481,124 @@ mod tests {
         let body = int_expr(0);
         assert!(!transpiler.check_mutability("x", false, &body));
     }
+
+    // ========================================================================
+    // convert_let_body_to_string tests
+    // ========================================================================
+
+    #[test]
+    fn test_convert_let_body_simple_immutable() {
+        let transpiler = make_transpiler();
+        let value = int_expr(42);
+        let body = ident_expr("x");
+        let result = transpiler
+            .convert_let_body_to_string("x", None, &value, &body, false)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("let"));
+        assert!(result_str.contains("x"));
+        assert!(result_str.contains("42"));
+        assert!(result_str.contains("to_string"));
+    }
+
+    #[test]
+    fn test_convert_let_body_mutable() {
+        let transpiler = make_transpiler();
+        let value = int_expr(10);
+        let body = ident_expr("y");
+        let result = transpiler
+            .convert_let_body_to_string("y", None, &value, &body, true)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("mut"));
+        assert!(result_str.contains("y"));
+        assert!(result_str.contains("to_string"));
+    }
+
+    #[test]
+    fn test_convert_let_body_with_type_annotation() {
+        let transpiler = make_transpiler();
+        let value = int_expr(99);
+        let body = ident_expr("z");
+        let type_ann = make_type("i32");
+        let result = transpiler
+            .convert_let_body_to_string("z", Some(&type_ann), &value, &body, false)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("z"));
+        assert!(result_str.contains("i32"));
+        assert!(result_str.contains("to_string"));
+    }
+
+    #[test]
+    fn test_convert_let_body_with_string_value() {
+        let transpiler = make_transpiler();
+        let value = string_expr("hello");
+        let body = ident_expr("s");
+        let result = transpiler
+            .convert_let_body_to_string("s", None, &value, &body, false)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("hello"));
+        assert!(result_str.contains("to_string"));
+    }
+
+    #[test]
+    fn test_convert_let_body_with_string_type() {
+        let transpiler = make_transpiler();
+        let value = string_expr("world");
+        let body = ident_expr("s");
+        let type_ann = make_type("String");
+        let result = transpiler
+            .convert_let_body_to_string("s", Some(&type_ann), &value, &body, false)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("String"));
+        assert!(result_str.contains("to_string"));
+    }
+
+    #[test]
+    fn test_convert_let_body_mutable_with_type() {
+        let transpiler = make_transpiler();
+        let value = int_expr(0);
+        let body = ident_expr("count");
+        let type_ann = make_type("usize");
+        let result = transpiler
+            .convert_let_body_to_string("count", Some(&type_ann), &value, &body, true)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("mut"));
+        assert!(result_str.contains("count"));
+        assert!(result_str.contains("usize"));
+    }
+
+    #[test]
+    fn test_convert_let_body_complex_body_expression() {
+        let transpiler = make_transpiler();
+        let value = int_expr(5);
+        let body = make_expr(ExprKind::Binary {
+            left: Box::new(ident_expr("n")),
+            op: crate::frontend::ast::BinaryOp::Multiply,
+            right: Box::new(int_expr(2)),
+        });
+        let result = transpiler
+            .convert_let_body_to_string("n", None, &value, &body, false)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("n"));
+        assert!(result_str.contains("to_string"));
+    }
+
+    #[test]
+    fn test_convert_let_body_identifier_value() {
+        let transpiler = make_transpiler();
+        let value = ident_expr("other_var");
+        let body = ident_expr("x");
+        let result = transpiler
+            .convert_let_body_to_string("x", None, &value, &body, false)
+            .unwrap();
+        let result_str = result.to_string();
+        assert!(result_str.contains("other_var"));
+        assert!(result_str.contains("to_string"));
+    }
 }

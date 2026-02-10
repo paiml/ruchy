@@ -1009,6 +1009,204 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    // ============================================================
+    // Direct tests for parse_simple_import_with_alias
+    // ============================================================
+
+    use super::{parse_grouped_import_item, parse_simple_import_with_alias};
+    use crate::frontend::ast::Span;
+    use crate::frontend::parser::ParserState;
+
+    #[test]
+    fn test_parse_simple_import_no_alias() {
+        let mut state = ParserState::new("");
+        let base_path = &["std".to_string(), "collections".to_string()];
+        let result = parse_simple_import_with_alias(
+            &mut state,
+            base_path,
+            "HashMap".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        assert_eq!(exprs.len(), 1);
+        match &exprs[0].kind {
+            ExprKind::Import { module, items } => {
+                assert_eq!(module, "std::collections::HashMap");
+                assert!(items.is_none());
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_simple_import_with_alias_keyword() {
+        let mut state = ParserState::new("as Map");
+        let base_path = &["std".to_string(), "collections".to_string()];
+        let result = parse_simple_import_with_alias(
+            &mut state,
+            base_path,
+            "HashMap".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        assert_eq!(exprs.len(), 1);
+        match &exprs[0].kind {
+            ExprKind::ImportAll { module, alias } => {
+                assert_eq!(module, "std::collections::HashMap");
+                assert_eq!(alias, "Map");
+            }
+            _ => panic!("Expected ImportAll ExprKind, got {:?}", exprs[0].kind),
+        }
+    }
+
+    #[test]
+    fn test_parse_simple_import_alias_missing_name() {
+        let mut state = ParserState::new("as 42");
+        let base_path = &["mod".to_string()];
+        let result = parse_simple_import_with_alias(
+            &mut state,
+            base_path,
+            "Item".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_err(), "Should error when alias name missing");
+    }
+
+    #[test]
+    fn test_parse_simple_import_empty_base_path() {
+        let mut state = ParserState::new("");
+        let base_path: &[String] = &[];
+        let result = parse_simple_import_with_alias(
+            &mut state,
+            base_path,
+            "mymodule".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        match &exprs[0].kind {
+            ExprKind::Import { module, .. } => {
+                assert_eq!(module, "mymodule");
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_simple_import_single_base_path() {
+        let mut state = ParserState::new("");
+        let base_path = &["crate".to_string()];
+        let result = parse_simple_import_with_alias(
+            &mut state,
+            base_path,
+            "utils".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        match &exprs[0].kind {
+            ExprKind::Import { module, .. } => {
+                assert_eq!(module, "crate::utils");
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_simple_import_deep_path_with_alias() {
+        let mut state = ParserState::new("as Short");
+        let base_path = &[
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+        ];
+        let result = parse_simple_import_with_alias(
+            &mut state,
+            base_path,
+            "LongName".to_string(),
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        match &exprs[0].kind {
+            ExprKind::ImportAll { module, alias } => {
+                assert_eq!(module, "a::b::c::d::LongName");
+                assert_eq!(alias, "Short");
+            }
+            _ => panic!("Expected ImportAll ExprKind"),
+        }
+    }
+
+    // ============================================================
+    // Direct tests for parse_grouped_import_item
+    // ============================================================
+
+    #[test]
+    fn test_parse_grouped_import_item_simple() {
+        let mut state = ParserState::new("HashMap");
+        let base_path = &["std".to_string(), "collections".to_string()];
+        let result = parse_grouped_import_item(
+            &mut state,
+            base_path,
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        assert_eq!(exprs.len(), 1);
+        match &exprs[0].kind {
+            ExprKind::Import { module, .. } => {
+                assert_eq!(module, "std::collections::HashMap");
+            }
+            _ => panic!("Expected Import ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_grouped_import_item_with_alias() {
+        let mut state = ParserState::new("HashMap as Map");
+        let base_path = &["std".to_string(), "collections".to_string()];
+        let result = parse_grouped_import_item(
+            &mut state,
+            base_path,
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        assert_eq!(exprs.len(), 1);
+        match &exprs[0].kind {
+            ExprKind::ImportAll { module, alias } => {
+                assert_eq!(module, "std::collections::HashMap");
+                assert_eq!(alias, "Map");
+            }
+            _ => panic!("Expected ImportAll ExprKind"),
+        }
+    }
+
+    #[test]
+    fn test_parse_grouped_import_item_nested_group() {
+        let mut state = ParserState::new("collections::{HashMap, BTreeMap}");
+        let base_path = &["std".to_string()];
+        let result = parse_grouped_import_item(
+            &mut state,
+            base_path,
+            Span { start: 0, end: 0 },
+        );
+        assert!(result.is_ok());
+        let exprs = result.unwrap();
+        assert_eq!(exprs.len(), 1);
+        match &exprs[0].kind {
+            ExprKind::Import { module, items } => {
+                assert_eq!(module, "std::collections");
+                assert!(items.is_some());
+                assert_eq!(items.as_ref().unwrap().len(), 2);
+            }
+            _ => panic!("Expected Import ExprKind with items"),
+        }
+    }
+
     // Property tests
     #[cfg(test)]
     mod property_tests {

@@ -744,4 +744,180 @@ mod tests {
         assert!(!result.success);
         assert!(!result.errors.is_empty());
     }
+
+    // ============================================================================
+    // Coverage tests for parse_cargo_json_errors (42 uncov lines, 17.6% coverage)
+    // ============================================================================
+
+    #[test]
+    fn test_parse_cargo_json_errors_empty_input() {
+        let errors = parse_cargo_json_errors("", "");
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_non_json_input() {
+        let errors = parse_cargo_json_errors("not json at all", "also not json");
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_json_without_message() {
+        let json = r#"{"reason":"compiler-artifact","target":{"name":"test"}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_full_error_with_spans() {
+        let json = r#"{"message":{"message":"mismatched types","code":{"code":"E0308","explanation":"Expected type did not match"},"spans":[{"file_name":"src/lib.rs","line_start":10,"column_start":5,"line_end":10,"column_end":10}]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert_eq!(errors.len(), 1);
+        let err = &errors[0];
+        assert_eq!(err.code, Some("E0308".to_string()));
+        assert_eq!(err.message, "mismatched types");
+        assert_eq!(err.file, Some("src/lib.rs".to_string()));
+        assert_eq!(err.line, Some(10));
+        assert_eq!(err.column, Some(5));
+        assert!(err.is_semantic);
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_error_without_code() {
+        let json = r#"{"message":{"message":"cannot find value `x`","code":null,"spans":[{"file_name":"src/main.rs","line_start":3,"column_start":1,"line_end":3,"column_end":5}]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].code.is_none());
+        assert!(errors[0].is_semantic);
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_error_without_spans() {
+        let json = r#"{"message":{"message":"aborting due to previous error","code":null,"spans":[]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        // Empty spans array -> first() returns None -> defaults
+        assert_eq!(errors.len(), 1);
+        assert!(errors[0].file.is_none());
+        assert!(errors[0].line.is_none());
+        assert!(errors[0].column.is_none());
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_dependency_error_e0432() {
+        let json = r#"{"message":{"message":"unresolved import `foo`","code":{"code":"E0432"},"spans":[{"file_name":"src/lib.rs","line_start":1,"column_start":5,"line_end":1,"column_end":8}]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert_eq!(errors.len(), 1);
+        assert!(!errors[0].is_semantic, "E0432 should be dependency error");
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_dependency_error_e0433() {
+        let json = r#"{"message":{"message":"failed to resolve: use of undeclared crate","code":{"code":"E0433"},"spans":[{"file_name":"src/lib.rs","line_start":1,"column_start":5,"line_end":1,"column_end":8}]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert_eq!(errors.len(), 1);
+        assert!(!errors[0].is_semantic, "E0433 should be dependency error");
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_cant_find_crate() {
+        let json = r#"{"message":{"message":"can't find crate for `serde`","code":null,"spans":[]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert_eq!(errors.len(), 1);
+        assert!(
+            !errors[0].is_semantic,
+            "can't find crate should be dependency error"
+        );
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_unresolved_import_message() {
+        let json = r#"{"message":{"message":"unresolved import `tokio::net`","code":null,"spans":[]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert_eq!(errors.len(), 1);
+        assert!(!errors[0].is_semantic);
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_could_not_find() {
+        let json = r#"{"message":{"message":"could not find `foo` in `bar`","code":null,"spans":[]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        assert_eq!(errors.len(), 1);
+        assert!(!errors[0].is_semantic);
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_multiple_errors() {
+        let line1 = r#"{"message":{"message":"mismatched types","code":{"code":"E0308"},"spans":[{"file_name":"src/lib.rs","line_start":5,"column_start":1,"line_end":5,"column_end":10}]}}"#;
+        let line2 = r#"{"message":{"message":"unused variable","code":{"code":"E0599"},"spans":[{"file_name":"src/lib.rs","line_start":10,"column_start":5,"line_end":10,"column_end":15}]}}"#;
+        let stdout = format!("{line1}\n{line2}");
+        let errors = parse_cargo_json_errors(&stdout, "");
+        assert_eq!(errors.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_from_stderr() {
+        let json = r#"{"message":{"message":"type mismatch","code":{"code":"E0308"},"spans":[{"file_name":"src/main.rs","line_start":1,"column_start":1,"line_end":1,"column_end":5}]}}"#;
+        let errors = parse_cargo_json_errors("", json);
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].message, "type mismatch");
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_mixed_stdout_stderr() {
+        let stdout_json = r#"{"message":{"message":"error one","code":null,"spans":[]}}"#;
+        let stderr_json = r#"{"message":{"message":"error two","code":null,"spans":[]}}"#;
+        let errors = parse_cargo_json_errors(stdout_json, stderr_json);
+        assert_eq!(errors.len(), 2);
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_empty_message_filtered() {
+        let json = r#"{"message":{"message":"","code":null,"spans":[]}}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        // Empty messages should be filtered out
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_message_not_object() {
+        // message field is a string, not an object
+        let json = r#"{"message":"some string"}"#;
+        let errors = parse_cargo_json_errors(json, "");
+        // message.as_object() returns None, so no error parsed
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn test_parse_cargo_json_errors_mixed_valid_invalid_lines() {
+        let stdout = "some non-json output\n{\"message\":{\"message\":\"real error\",\"code\":null,\"spans\":[]}}\nanother non-json line";
+        let errors = parse_cargo_json_errors(stdout, "");
+        assert_eq!(errors.len(), 1);
+        assert_eq!(errors[0].message, "real error");
+    }
+
+    // ============================================================================
+    // Additional coverage tests for is_semantic_error
+    // ============================================================================
+
+    #[test]
+    fn test_is_semantic_error_no_code_generic_message_cov() {
+        assert!(is_semantic_error(None, "something went wrong"));
+    }
+
+    #[test]
+    fn test_is_semantic_error_e0433_is_dependency_cov() {
+        let code = "E0433".to_string();
+        assert!(!is_semantic_error(Some(&code), "failed to resolve"));
+    }
+
+    #[test]
+    fn test_is_semantic_error_could_not_find_cov() {
+        assert!(!is_semantic_error(None, "could not find `foo` in `bar`"));
+    }
+
+    #[test]
+    fn test_is_semantic_error_unresolved_import_message_cov() {
+        // Test the message-based check (not code-based)
+        assert!(!is_semantic_error(None, "unresolved import `tokio`"));
+    }
 }

@@ -1528,3 +1528,7 @@ mod property_tests_formatter;
 #[cfg(test)]
 #[path = "formatter_tests_r164.rs"]
 mod formatter_tests_r164;
+
+#[cfg(test)]
+#[path = "formatter_coverage_tests.rs"]
+mod formatter_coverage_tests;

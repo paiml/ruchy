@@ -1,6 +1,6 @@
 use super::*;
 
-
+use crate::frontend::ast::TypeKind;
 use crate::frontend::parser::Parser;
 
 #[test]
@@ -802,4 +802,620 @@ mod property_tests {
             prop_assert!(result.is_ok());
         }
     }
+}
+
+// ============================================================================
+// Direct unit tests for create_pattern_for_variant (patterns.rs:77)
+// ============================================================================
+
+#[test]
+fn test_create_pattern_for_variant_some_single() {
+    let patterns = vec![Pattern::Identifier("x".to_string())];
+    let result = create_pattern_for_variant("Some".to_string(), patterns).unwrap();
+    assert!(
+        matches!(result, Pattern::Some(_)),
+        "Some with single pattern should produce Pattern::Some"
+    );
+}
+
+#[test]
+fn test_create_pattern_for_variant_ok_single() {
+    let patterns = vec![Pattern::Identifier("val".to_string())];
+    let result = create_pattern_for_variant("Ok".to_string(), patterns).unwrap();
+    assert!(
+        matches!(result, Pattern::Ok(_)),
+        "Ok with single pattern should produce Pattern::Ok"
+    );
+}
+
+#[test]
+fn test_create_pattern_for_variant_err_single() {
+    let patterns = vec![Pattern::Identifier("e".to_string())];
+    let result = create_pattern_for_variant("Err".to_string(), patterns).unwrap();
+    assert!(
+        matches!(result, Pattern::Err(_)),
+        "Err with single pattern should produce Pattern::Err"
+    );
+}
+
+#[test]
+fn test_create_pattern_for_variant_custom_single() {
+    let patterns = vec![Pattern::Identifier("val".to_string())];
+    let result = create_pattern_for_variant("MyVariant".to_string(), patterns).unwrap();
+    match result {
+        Pattern::TupleVariant { path, patterns } => {
+            assert_eq!(path, vec!["MyVariant"]);
+            assert_eq!(patterns.len(), 1);
+        }
+        _ => panic!("Custom variant with single element should produce TupleVariant"),
+    }
+}
+
+#[test]
+fn test_create_pattern_for_variant_some_multiple() {
+    let patterns = vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ];
+    let result = create_pattern_for_variant("Some".to_string(), patterns).unwrap();
+    match result {
+        Pattern::TupleVariant { path, patterns } => {
+            assert_eq!(path, vec!["Some"]);
+            assert_eq!(patterns.len(), 2);
+        }
+        _ => panic!("Some with multiple patterns should produce TupleVariant"),
+    }
+}
+
+#[test]
+fn test_create_pattern_for_variant_ok_multiple() {
+    let patterns = vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ];
+    let result = create_pattern_for_variant("Ok".to_string(), patterns).unwrap();
+    assert!(
+        matches!(result, Pattern::TupleVariant { .. }),
+        "Ok with multiple patterns should produce TupleVariant"
+    );
+}
+
+#[test]
+fn test_create_pattern_for_variant_err_multiple() {
+    let patterns = vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ];
+    let result = create_pattern_for_variant("Err".to_string(), patterns).unwrap();
+    assert!(
+        matches!(result, Pattern::TupleVariant { .. }),
+        "Err with multiple patterns should produce TupleVariant"
+    );
+}
+
+#[test]
+fn test_create_pattern_for_variant_custom_multiple() {
+    let patterns = vec![
+        Pattern::Identifier("r".to_string()),
+        Pattern::Identifier("g".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ];
+    let result = create_pattern_for_variant("Color".to_string(), patterns).unwrap();
+    match result {
+        Pattern::TupleVariant { path, patterns } => {
+            assert_eq!(path, vec!["Color"]);
+            assert_eq!(patterns.len(), 3);
+        }
+        _ => panic!("Custom variant with multiple elements should produce TupleVariant"),
+    }
+}
+
+#[test]
+fn test_create_pattern_for_variant_empty_patterns() {
+    let patterns: Vec<Pattern> = vec![];
+    let result = create_pattern_for_variant("Empty".to_string(), patterns).unwrap();
+    match result {
+        Pattern::TupleVariant { path, patterns } => {
+            assert_eq!(path, vec!["Empty"]);
+            assert!(patterns.is_empty());
+        }
+        _ => panic!("Empty patterns should produce TupleVariant"),
+    }
+}
+
+#[test]
+fn test_create_pattern_for_variant_nested_pattern() {
+    let inner = Pattern::Tuple(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ]);
+    let patterns = vec![inner];
+    let result = create_pattern_for_variant("Some".to_string(), patterns).unwrap();
+    assert!(
+        matches!(result, Pattern::Some(_)),
+        "Some with nested tuple pattern should produce Pattern::Some"
+    );
+}
+
+// ============================================================================
+// Direct unit tests for parse_let_pattern (patterns.rs:118) via Parser
+// ============================================================================
+
+#[test]
+fn test_parse_let_pattern_custom_variant_via_parser() {
+    let code = "let Custom(x) = val else { return }";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Custom variant pattern should parse");
+}
+
+#[test]
+fn test_parse_let_pattern_struct_brace_via_parser() {
+    let code = "let Point { x, y } = point";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Struct brace pattern should parse");
+}
+
+#[test]
+fn test_parse_let_pattern_df_keyword_via_parser() {
+    let code = "let df = load()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "'df' keyword in let should parse");
+}
+
+#[test]
+fn test_parse_let_pattern_default_keyword_via_parser() {
+    let code = "let default = get_default()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "'default' keyword in let should parse");
+}
+
+#[test]
+fn test_parse_let_pattern_final_keyword_via_parser() {
+    let code = "let final = get_final()";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "'final' keyword in let should parse");
+}
+
+#[test]
+fn test_parse_let_pattern_list_destructure_via_parser() {
+    let code = "let [first, second] = arr";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "List destructure should parse");
+}
+
+#[test]
+fn test_parse_let_pattern_struct_anon_destructure_via_parser() {
+    let code = "let { name, age } = person";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "Anonymous struct destructure should parse");
+}
+
+#[test]
+fn test_parse_let_pattern_none_else_via_parser() {
+    let code = "let None = opt else { return }";
+    let result = Parser::new(code).parse();
+    assert!(result.is_ok(), "None pattern with else should parse");
+}
+
+// ============================================================================
+// Direct unit tests for create_let_expression (patterns.rs:251)
+// ============================================================================
+
+fn make_cov_test_expr(kind: ExprKind) -> Expr {
+    Expr::new(kind, Span::default())
+}
+
+fn make_cov_test_value() -> Box<Expr> {
+    Box::new(make_cov_test_expr(ExprKind::Literal(Literal::Integer(
+        42, None,
+    ))))
+}
+
+fn make_cov_test_body() -> Box<Expr> {
+    Box::new(make_cov_test_expr(ExprKind::Literal(Literal::Unit)))
+}
+
+#[test]
+fn test_create_let_expression_identifier_produces_let() {
+    let pattern = Pattern::Identifier("x".to_string());
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(
+        matches!(result.kind, ExprKind::Let { .. }),
+        "Identifier pattern should produce ExprKind::Let"
+    );
+}
+
+#[test]
+fn test_create_let_expression_identifier_with_type() {
+    let pattern = Pattern::Identifier("x".to_string());
+    let ty = Type {
+        kind: TypeKind::Named("i32".to_string()),
+        span: Span::default(),
+    };
+    let result = create_let_expression(
+        pattern,
+        Some(ty),
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    if let ExprKind::Let {
+        type_annotation, ..
+    } = &result.kind
+    {
+        assert!(type_annotation.is_some());
+    } else {
+        panic!("Expected ExprKind::Let");
+    }
+}
+
+#[test]
+fn test_create_let_expression_identifier_mutable() {
+    let pattern = Pattern::Identifier("x".to_string());
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        true,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    if let ExprKind::Let { is_mutable, .. } = &result.kind {
+        assert!(*is_mutable, "Should be mutable");
+    } else {
+        panic!("Expected ExprKind::Let");
+    }
+}
+
+#[test]
+fn test_create_let_expression_identifier_with_else() {
+    let pattern = Pattern::Identifier("x".to_string());
+    let else_block = Some(Box::new(make_cov_test_expr(ExprKind::Return {
+        value: None,
+    })));
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        else_block,
+        Span::default(),
+    )
+    .unwrap();
+    if let ExprKind::Let { else_block, .. } = &result.kind {
+        assert!(else_block.is_some(), "Should have else block");
+    } else {
+        panic!("Expected ExprKind::Let");
+    }
+}
+
+#[test]
+fn test_create_let_expression_tuple_produces_let_pattern() {
+    let pattern = Pattern::Tuple(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ]);
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_list_produces_let_pattern() {
+    let pattern = Pattern::List(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ]);
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_wildcard_produces_let_pattern() {
+    let result = create_let_expression(
+        Pattern::Wildcard,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_some_produces_let_pattern() {
+    let pattern = Pattern::Some(Box::new(Pattern::Identifier("x".to_string())));
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_ok_produces_let_pattern() {
+    let pattern = Pattern::Ok(Box::new(Pattern::Identifier("v".to_string())));
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_err_produces_let_pattern() {
+    let pattern = Pattern::Err(Box::new(Pattern::Identifier("e".to_string())));
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_none_produces_let_pattern() {
+    let result = create_let_expression(
+        Pattern::None,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_tuple_variant_produces_let_pattern() {
+    let pattern = Pattern::TupleVariant {
+        path: vec!["Color".to_string()],
+        patterns: vec![
+            Pattern::Identifier("r".to_string()),
+            Pattern::Identifier("g".to_string()),
+        ],
+    };
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_struct_produces_let_pattern() {
+    let pattern = Pattern::Struct {
+        name: "Point".to_string(),
+        fields: vec![],
+        has_rest: false,
+    };
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_or_produces_let_pattern() {
+    let pattern = Pattern::Or(vec![
+        Pattern::Identifier("a".to_string()),
+        Pattern::Identifier("b".to_string()),
+    ]);
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_range_produces_let_pattern() {
+    let pattern = Pattern::Range {
+        start: Box::new(Pattern::Literal(Literal::Integer(1, None))),
+        end: Box::new(Pattern::Literal(Literal::Integer(10, None))),
+        inclusive: true,
+    };
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_literal_produces_let_pattern() {
+    let pattern = Pattern::Literal(Literal::Integer(42, None));
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_qualified_name_produces_let_pattern() {
+    let pattern =
+        Pattern::QualifiedName(vec!["Ordering".to_string(), "Less".to_string()]);
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_rest_produces_let_pattern() {
+    let result = create_let_expression(
+        Pattern::Rest,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_rest_named_produces_let_pattern() {
+    let result = create_let_expression(
+        Pattern::RestNamed("rest".to_string()),
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_at_binding_produces_let_pattern() {
+    let pattern = Pattern::AtBinding {
+        name: "x".to_string(),
+        pattern: Box::new(Pattern::Identifier("val".to_string())),
+    };
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_with_default_produces_let_pattern() {
+    let pattern = Pattern::WithDefault {
+        pattern: Box::new(Pattern::Identifier("x".to_string())),
+        default: Box::new(make_cov_test_expr(ExprKind::Literal(Literal::Integer(
+            0, None,
+        )))),
+    };
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
+}
+
+#[test]
+fn test_create_let_expression_mut_produces_let_pattern() {
+    let pattern = Pattern::Mut(Box::new(Pattern::Identifier("x".to_string())));
+    let result = create_let_expression(
+        pattern,
+        None,
+        make_cov_test_value(),
+        make_cov_test_body(),
+        false,
+        None,
+        Span::default(),
+    )
+    .unwrap();
+    assert!(matches!(result.kind, ExprKind::LetPattern { .. }));
 }

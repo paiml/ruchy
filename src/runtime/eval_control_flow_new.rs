@@ -628,3 +628,7 @@ mod tests;
 #[cfg(test)]
 #[path = "eval_control_flow_new_r130_tests.rs"]
 mod round_130_tests;
+
+#[cfg(test)]
+#[path = "eval_control_flow_new_coverage_tests.rs"]
+mod coverage_tests;
