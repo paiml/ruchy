@@ -181,11 +181,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f3c85734a8105872bdc276d1271b93eadf2954e5d9016d92e7c8421292f0a5f6"
 dependencies = [
  "bincode 1.3.3",
- "dirs 6.0.0",
  "ed25519-dalek",
  "getrandom 0.2.17",
  "half",
- "hf-hub",
  "memmap2",
  "minijinja",
  "rand 0.8.5",
@@ -194,9 +192,7 @@ dependencies = [
  "rmp-serde",
  "serde",
  "serde_json",
- "sha2",
  "trueno",
- "ureq",
 ]
 
 [[package]]
@@ -7135,7 +7131,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "4.2.0"
+version = "4.2.1"
 dependencies = [
  "alimentar",
  "anyhow",
@@ -7228,69 +7224,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "ruchy"
-version = "4.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6779d5f62aa3a3279381fbc679e1b82a25e508537f6767e89f233a1794d53bf7"
-dependencies = [
- "alimentar",
- "anyhow",
- "aprender",
- "chrono",
- "clap",
- "colored",
- "console_error_panic_hook",
- "entrenar",
- "env_logger 0.11.8",
- "getrandom 0.2.17",
- "glob",
- "html5ever",
- "js-sys",
- "lazy_static",
- "local-ip-address",
- "log",
- "logos",
- "markup5ever_rcdom",
- "md5",
- "nix 0.29.0",
- "num_cpus",
- "presentar",
- "prettyplease",
- "proc-macro2",
- "quote",
- "rand 0.8.5",
- "rayon",
- "regex",
- "semver",
- "serde",
- "serde_json",
- "serde_yaml",
- "sha2",
- "signal-hook",
- "smallvec",
- "syn",
- "tempfile",
- "thiserror 2.0.18",
- "toml 0.9.11+spec-1.1.0",
- "tracing",
- "trueno",
- "trueno-viz",
- "uuid",
- "walkdir",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-encoder 0.207.0",
- "web-sys",
-]
-
-[[package]]
 name = "ruchy-wasm"
-version = "4.2.0"
+version = "4.2.1"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
  "jugar-probar 0.2.0",
- "ruchy 4.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ruchy",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
