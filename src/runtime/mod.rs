@@ -76,6 +76,7 @@ pub mod interpreter_index; // Index access, field access, qualified names
 #[cfg(test)]
 pub mod interpreter_inline_tests; // Extracted tests from interpreter.rs
 pub mod interpreter_methods; // Method dispatch for all value types (re-export)
+pub mod interpreter_misc_eval; // Misc expression eval: imports, macros, try, pipeline, comprehensions
 pub mod interpreter_methods_actor; // Actor/struct/object methods
 pub mod interpreter_methods_dispatch; // Core method dispatch logic
 #[cfg(not(target_arch = "wasm32"))]
@@ -100,6 +101,10 @@ pub mod compilation; // EXTREME TDD: Direct-threaded interpreter compilation
 pub mod eval_actor; // EXTREME TDD: Actor operations extracted for 100% coverage
 pub mod eval_array;
 pub mod eval_builtin;
+pub mod eval_builtin_fs;
+pub mod eval_builtin_json_ops;
+pub mod eval_builtin_path;
+pub mod eval_builtin_platform;
 pub mod eval_control_flow_new;
 pub mod eval_data_structures;
 pub mod eval_dataframe;

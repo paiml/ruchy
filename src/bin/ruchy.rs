@@ -17,6 +17,9 @@
 #![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::doc_markdown)]
 #![allow(dead_code)]
+
+mod report;
+
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 // use colored::Colorize; // Unused after refactoring
@@ -1133,7 +1136,7 @@ fn handle_command_dispatch(
             format,
             output,
             verbose,
-        }) => handle_report_command(&target, &format, output.as_deref(), verbose),
+        }) => report::handle_report_command(&target, &format, output.as_deref(), verbose),
         Some(command) => handle_advanced_command(command),
     }
 }
@@ -1162,6 +1165,129 @@ fn handle_test_dispatch(
     )
 }
 /// Handle Oracle subcommands for ML model management
+fn run_auto_train_json(
+    oracle: ruchy::oracle::RuchyOracle,
+    max_iterations: usize,
+) -> Result<()> {
+    use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
+    let config = TrainingLoopConfig {
+        max_iterations,
+        display_mode: DisplayMode::Compact,
+        ..Default::default()
+    };
+    let mut training_loop = TrainingLoop::with_config(oracle, config);
+    loop {
+        let event = training_loop.step();
+        if matches!(
+            event,
+            TrainingEvent::Converged { .. }
+                | TrainingEvent::MaxIterationsReached { .. }
+                | TrainingEvent::Error { .. }
+        ) {
+            break;
+        }
+    }
+    let final_accuracy = training_loop.oracle().metadata().training_accuracy;
+    println!(
+        "{}",
+        serde_json::json!({
+            "status": "complete",
+            "iterations": training_loop.iteration(),
+            "max_iterations": max_iterations,
+            "accuracy": final_accuracy,
+            "auto_train": true
+        })
+    );
+    Ok(())
+}
+
+fn run_auto_train_visual(
+    oracle: ruchy::oracle::RuchyOracle,
+    max_iterations: usize,
+) -> Result<()> {
+    use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
+    let config = TrainingLoopConfig {
+        max_iterations,
+        display_mode: DisplayMode::Verbose,
+        ..Default::default()
+    };
+    let mut training_loop = TrainingLoop::with_config(oracle, config);
+    println!("🔄 Starting auto-train loop (max {max_iterations} iterations)...");
+    loop {
+        let event = training_loop.step();
+        let output = training_loop.render();
+        if !output.is_empty() {
+            println!("{output}");
+        }
+        match event {
+            TrainingEvent::Converged {
+                iteration,
+                accuracy,
+            } => {
+                println!("✅ Converged at iteration {iteration} with {:.1}% accuracy", accuracy * 100.0);
+                break;
+            }
+            TrainingEvent::MaxIterationsReached { accuracy } => {
+                println!("⏹ Max iterations reached. Final accuracy: {:.1}%", accuracy * 100.0);
+                break;
+            }
+            TrainingEvent::Error { message } => {
+                eprintln!("❌ Error: {message}");
+                break;
+            }
+            TrainingEvent::RetrainingComplete {
+                accuracy_before,
+                accuracy_after,
+            } => {
+                println!("🔄 Retrained: {:.1}% → {:.1}%", accuracy_before * 100.0, accuracy_after * 100.0);
+            }
+            TrainingEvent::CurriculumAdvanced { from, to } => {
+                println!("📈 Curriculum advanced: {from:?} → {to:?}");
+            }
+            _ => {}
+        }
+    }
+    println!("Done.");
+    Ok(())
+}
+
+fn handle_oracle_train(
+    format: &str,
+    verbose: bool,
+    auto_train: bool,
+    max_iterations: usize,
+    oracle_store: &std::thread::LocalKey<std::cell::RefCell<Option<ruchy::oracle::RuchyOracle>>>,
+) -> Result<()> {
+    use ruchy::oracle::RuchyOracle;
+    let mut oracle = RuchyOracle::new();
+    oracle.train_from_examples()?;
+
+    if auto_train {
+        return if format == "json" {
+            run_auto_train_json(oracle, max_iterations)
+        } else {
+            run_auto_train_visual(oracle, max_iterations)
+        };
+    }
+
+    oracle_store.with(|o| *o.borrow_mut() = Some(oracle));
+    let samples = 30;
+    let accuracy = 0.85;
+
+    if format == "json" {
+        println!("{}", serde_json::json!({"status": "trained", "samples": samples, "accuracy": accuracy}));
+    } else {
+        println!("Training complete!");
+        println!("  Samples: {samples}");
+        if verbose {
+            println!("  Accuracy: {:.1}%", accuracy * 100.0);
+            println!("  Categories: 8");
+            println!("  Features: 73");
+        }
+    }
+    Ok(())
+}
+
 fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
     use ruchy::oracle::{ModelMetadata, ModelPaths, RuchyOracle, SerializedModel};
 
@@ -1176,147 +1302,7 @@ fn handle_oracle_subcommand(command: OracleCommands) -> Result<()> {
             verbose,
             auto_train,
             max_iterations,
-        } => {
-            let mut oracle = RuchyOracle::new();
-            oracle.train_from_examples()?;
-
-            if auto_train {
-                // Use TrainingLoop for continuous improvement (Spec §13)
-                use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
-
-                let display_mode = if verbose {
-                    DisplayMode::Verbose
-                } else {
-                    DisplayMode::Compact
-                };
-
-                let config = TrainingLoopConfig {
-                    max_iterations,
-                    display_mode,
-                    ..Default::default()
-                };
-
-                let mut training_loop = TrainingLoop::with_config(oracle, config);
-
-                // Collect live samples from examples/*.ruchy (ORACLE-002, spec §13.3 Source 3)
-                // TODO: Re-enable when transpilation is faster
-                // let live_samples = collect_examples_samples();
-                // if !live_samples.is_empty() {
-                //     if verbose {
-                //         println!("📥 Collected {} samples from examples/*.ruchy", live_samples.len());
-                //     }
-                //     training_loop.add_live_samples(live_samples);
-                // }
-
-                if format == "json" {
-                    // Run silently and output JSON at end
-                    let mut events = Vec::new();
-                    loop {
-                        let event = training_loop.step();
-                        let done = matches!(
-                            event,
-                            TrainingEvent::Converged { .. }
-                                | TrainingEvent::MaxIterationsReached { .. }
-                                | TrainingEvent::Error { .. }
-                        );
-                        events.push(format!("{:?}", event));
-                        if done {
-                            break;
-                        }
-                    }
-                    let final_accuracy = training_loop.oracle().metadata().training_accuracy;
-                    println!(
-                        "{}",
-                        serde_json::json!({
-                            "status": "complete",
-                            "iterations": training_loop.iteration(),
-                            "max_iterations": max_iterations,
-                            "accuracy": final_accuracy,
-                            "auto_train": true
-                        })
-                    );
-                } else {
-                    // Run with visual output
-                    println!(
-                        "🔄 Starting auto-train loop (max {} iterations)...",
-                        max_iterations
-                    );
-                    loop {
-                        let event = training_loop.step();
-                        let output = training_loop.render();
-                        if !output.is_empty() {
-                            println!("{}", output);
-                        }
-
-                        match event {
-                            TrainingEvent::Converged {
-                                iteration,
-                                accuracy,
-                            } => {
-                                println!(
-                                    "✅ Converged at iteration {} with {:.1}% accuracy",
-                                    iteration,
-                                    accuracy * 100.0
-                                );
-                                break;
-                            }
-                            TrainingEvent::MaxIterationsReached { accuracy } => {
-                                println!(
-                                    "⏹ Max iterations reached. Final accuracy: {:.1}%",
-                                    accuracy * 100.0
-                                );
-                                break;
-                            }
-                            TrainingEvent::Error { message } => {
-                                eprintln!("❌ Error: {}", message);
-                                break;
-                            }
-                            TrainingEvent::RetrainingComplete {
-                                accuracy_before,
-                                accuracy_after,
-                            } => {
-                                println!(
-                                    "🔄 Retrained: {:.1}% → {:.1}%",
-                                    accuracy_before * 100.0,
-                                    accuracy_after * 100.0
-                                );
-                            }
-                            TrainingEvent::CurriculumAdvanced { from, to } => {
-                                println!("📈 Curriculum advanced: {:?} → {:?}", from, to);
-                            }
-                            _ => {}
-                        }
-                    }
-                    println!("Done.");
-                }
-            } else {
-                // Store trained oracle
-                ORACLE.with(|o| *o.borrow_mut() = Some(oracle));
-
-                let samples = 30; // Bootstrap samples
-                let accuracy = 0.85; // Estimated
-
-                if format == "json" {
-                    println!(
-                        "{}",
-                        serde_json::json!({
-                            "status": "trained",
-                            "samples": samples,
-                            "accuracy": accuracy
-                        })
-                    );
-                } else {
-                    println!("Training complete!");
-                    println!("  Samples: {samples}");
-                    if verbose {
-                        println!("  Accuracy: {:.1}%", accuracy * 100.0);
-                        println!("  Categories: 8");
-                        println!("  Features: 73");
-                    }
-                }
-            }
-            Ok(())
-        }
+        } => handle_oracle_train(&format, verbose, auto_train, max_iterations, &ORACLE),
 
         OracleCommands::Save { path, force: _ } => {
             // Train if not already trained
@@ -1413,6 +1399,27 @@ fn handle_advanced_command(command: Commands) -> Result<()> {
 }
 
 /// Handle hunt command - automated defect resolution using PDCA cycle (Issue #171)
+fn hunt_analyze_files(
+    hunt: &mut ruchy::hunt_mode::HuntMode,
+    files: &[std::path::PathBuf],
+    verbose: bool,
+) {
+    for file_path in files {
+        if verbose {
+            println!("  Analyzing: {}", file_path.display());
+        }
+        match analyze_file_for_hunt(file_path) {
+            Ok(errors) => {
+                for (code, message) in errors {
+                    hunt.add_error(&code, &message, Some(&file_path.to_string_lossy()), 1.0);
+                }
+            }
+            Err(e) if verbose => eprintln!("    Error: {e}"),
+            _ => {}
+        }
+    }
+}
+
 fn handle_hunt_command(
     target: &Path,
     cycles: u32,
@@ -1452,46 +1459,14 @@ fn handle_hunt_command(
     println!("Found {} .ruchy files to analyze", ruchy_files.len());
     println!();
 
-    // Run PDCA cycles
     for cycle in 1..=cycles {
-        println!(
-            "{}",
-            format!("━━━ PDCA Cycle {}/{} ━━━", cycle, cycles).cyan()
-        );
-
-        // Analyze each file
-        for file_path in &ruchy_files {
-            if verbose {
-                println!("  Analyzing: {}", file_path.display());
-            }
-
-            // Try to transpile and capture errors
-            match analyze_file_for_hunt(file_path) {
-                Ok(errors) => {
-                    for (code, message) in errors {
-                        hunt.add_error(&code, &message, Some(&file_path.to_string_lossy()), 1.0);
-                    }
-                }
-                Err(e) => {
-                    if verbose {
-                        eprintln!("    Error: {}", e);
-                    }
-                }
-            }
-        }
-
-        // Run one PDCA cycle
+        println!("{}", format!("━━━ PDCA Cycle {cycle}/{cycles} ━━━").cyan());
+        hunt_analyze_files(&mut hunt, &ruchy_files, verbose);
         match hunt.run_cycle() {
-            Ok(outcome) => {
-                if verbose {
-                    println!("  Cycle outcome: {:?}", outcome);
-                }
-            }
-            Err(e) => {
-                eprintln!("  Cycle error: {}", e);
-            }
+            Ok(outcome) if verbose => println!("  Cycle outcome: {outcome:?}"),
+            Err(e) => eprintln!("  Cycle error: {e}"),
+            _ => {}
         }
-
         println!();
     }
 
@@ -1735,265 +1710,11 @@ Generated by Ruchy Hunt Mode (Issue #171)
     Ok(())
 }
 
-/// Handle report command - generate transpilation reports
-fn handle_report_command(
-    target: &Path,
-    format: &str,
-    output: Option<&Path>,
-    verbose: bool,
-) -> Result<()> {
-    use colored::Colorize;
-    use ruchy::reporting::formats::{
-        HumanFormatter, JsonFormatter, MarkdownFormatter, SarifFormatter,
-    };
-
-    println!("{}", "📊 Generating Transpilation Report".bold());
-    println!("   Target: {}", target.display());
-    println!("   Format: {}", format);
-    println!();
-
-    // Scan for .ruchy files
-    let ruchy_files = scan_ruchy_files(target)?;
-    if ruchy_files.is_empty() {
-        println!("{}", "⚠ No .ruchy files found".yellow());
-        return Ok(());
-    }
-
-    // Collect results
-    let mut results = Vec::new();
-    let mut success_count = 0;
-    let mut failure_count = 0;
-
-    for file_path in &ruchy_files {
-        if verbose {
-            println!("  Analyzing: {}", file_path.display());
-        }
-
-        match analyze_file_for_report(file_path) {
-            Ok(result) => {
-                if result.success {
-                    success_count += 1;
-                } else {
-                    failure_count += 1;
-                }
-                results.push(result);
-            }
-            Err(e) => {
-                failure_count += 1;
-                results.push(FileResult {
-                    path: file_path.clone(),
-                    success: false,
-                    error: Some(e.to_string()),
-                    warnings: vec![],
-                });
-            }
-        }
-    }
-
-    // Format output
-    let report_content = match format {
-        "json" => {
-            let formatter = JsonFormatter::pretty();
-            format_report_json(&results, &formatter)
-        }
-        "markdown" | "md" => {
-            let formatter = MarkdownFormatter;
-            format_report_markdown(&results, &formatter)
-        }
-        "sarif" => {
-            let formatter = SarifFormatter;
-            format_report_sarif(&results, &formatter)
-        }
-        _ => {
-            let formatter = HumanFormatter::default();
-            format_report_human(&results, &formatter)
-        }
-    };
-
-    // Output
-    if let Some(output_path) = output {
-        fs::write(output_path, &report_content)?;
-        println!(
-            "{}",
-            format!("📝 Report written to: {}", output_path.display()).green()
-        );
-    } else {
-        println!("{}", report_content);
-    }
-
-    // Summary
-    println!();
-    println!("{}", "━━━ Report Summary ━━━".bold());
-    println!("  Total Files: {}", results.len());
-    println!("  {} Successful", format!("{}", success_count).green());
-    println!("  {} Failed", format!("{}", failure_count).red());
-
-    Ok(())
-}
-
-/// Result of analyzing a single file
-struct FileResult {
-    path: PathBuf,
-    success: bool,
-    error: Option<String>,
-    warnings: Vec<String>,
-}
-
-/// Analyze a file for the report
-fn analyze_file_for_report(file_path: &Path) -> Result<FileResult> {
-    use ruchy::{Parser as RuchyParser, Transpiler};
-
-    let source = fs::read_to_string(file_path)?;
-    let mut parser = RuchyParser::new(&source);
-    let ast = match parser.parse() {
-        Ok(ast) => ast,
-        Err(e) => {
-            return Ok(FileResult {
-                path: file_path.to_path_buf(),
-                success: false,
-                error: Some(format!("Parse error: {}", e)),
-                warnings: vec![],
-            });
-        }
-    };
-
-    let mut transpiler = Transpiler::new();
-    match transpiler.transpile(&ast) {
-        Ok(_) => Ok(FileResult {
-            path: file_path.to_path_buf(),
-            success: true,
-            error: None,
-            warnings: vec![],
-        }),
-        Err(e) => Ok(FileResult {
-            path: file_path.to_path_buf(),
-            success: false,
-            error: Some(format!("Transpile error: {}", e)),
-            warnings: vec![],
-        }),
-    }
-}
-
-/// Format report as JSON
-fn format_report_json(
-    results: &[FileResult],
-    _formatter: &ruchy::reporting::formats::JsonFormatter,
-) -> String {
-    let json = serde_json::json!({
-        "total": results.len(),
-        "success": results.iter().filter(|r| r.success).count(),
-        "failed": results.iter().filter(|r| !r.success).count(),
-        "files": results.iter().map(|r| {
-            serde_json::json!({
-                "path": r.path.display().to_string(),
-                "success": r.success,
-                "error": r.error,
-                "warnings": r.warnings
-            })
-        }).collect::<Vec<_>>()
-    });
-    serde_json::to_string_pretty(&json).unwrap_or_default()
-}
-
-/// Format report as Markdown
-fn format_report_markdown(
-    results: &[FileResult],
-    _formatter: &ruchy::reporting::formats::MarkdownFormatter,
-) -> String {
-    let mut md = String::from("# Transpilation Report\n\n");
-    md.push_str("## Summary\n\n");
-    md.push_str(&format!("- **Total Files**: {}\n", results.len()));
-    md.push_str(&format!(
-        "- **Successful**: {}\n",
-        results.iter().filter(|r| r.success).count()
-    ));
-    md.push_str(&format!(
-        "- **Failed**: {}\n\n",
-        results.iter().filter(|r| !r.success).count()
-    ));
-
-    md.push_str("## Results\n\n");
-    for result in results {
-        let status = if result.success { "✅" } else { "❌" };
-        md.push_str(&format!("### {} {}\n\n", status, result.path.display()));
-        if let Some(ref error) = result.error {
-            md.push_str(&format!("**Error**: {}\n\n", error));
-        }
-    }
-    md
-}
-
-/// Format report as SARIF
-fn format_report_sarif(
-    results: &[FileResult],
-    _formatter: &ruchy::reporting::formats::SarifFormatter,
-) -> String {
-    let sarif = serde_json::json!({
-        "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
-        "version": "2.1.0",
-        "runs": [{
-            "tool": {
-                "driver": {
-                    "name": "ruchy",
-                    "version": env!("CARGO_PKG_VERSION")
-                }
-            },
-            "results": results.iter().filter(|r| !r.success).map(|r| {
-                serde_json::json!({
-                    "ruleId": "TRANSPILE001",
-                    "level": "error",
-                    "message": {
-                        "text": r.error.as_deref().unwrap_or("Unknown error")
-                    },
-                    "locations": [{
-                        "physicalLocation": {
-                            "artifactLocation": {
-                                "uri": r.path.display().to_string()
-                            }
-                        }
-                    }]
-                })
-            }).collect::<Vec<_>>()
-        }]
-    });
-    serde_json::to_string_pretty(&sarif).unwrap_or_default()
-}
-
-/// Format report as human-readable text
-fn format_report_human(
-    results: &[FileResult],
-    _formatter: &ruchy::reporting::formats::HumanFormatter,
-) -> String {
-    let mut output = String::from("Transpilation Report\n");
-    output.push_str(&"=".repeat(40));
-    output.push('\n');
-    output.push_str(&format!("\nTotal: {} files\n", results.len()));
-    output.push_str(&format!(
-        "Success: {}\n",
-        results.iter().filter(|r| r.success).count()
-    ));
-    output.push_str(&format!(
-        "Failed: {}\n\n",
-        results.iter().filter(|r| !r.success).count()
-    ));
-
-    for result in results {
-        let status = if result.success { "[OK]" } else { "[FAIL]" };
-        output.push_str(&format!("{} {}\n", status, result.path.display()));
-        if let Some(ref error) = result.error {
-            output.push_str(&format!("     Error: {}\n", error));
-        }
-    }
-    output
-}
-
 fn run_file(file: &Path) -> Result<()> {
     let source = fs::read_to_string(file)?;
-    // Use REPL to evaluate the file
     let mut repl = Repl::new(std::env::temp_dir())?;
     match repl.eval(&source) {
         Ok(result) => {
-            // Only print non-unit results
             if result != "Unit" && result != "()" {
                 println!("{result}");
             }
@@ -2005,7 +1726,7 @@ fn run_file(file: &Path) -> Result<()> {
         }
     }
 }
-/// Check syntax of a file
+
 fn check_syntax(file: &Path) -> Result<()> {
     use colored::Colorize;
     let source = fs::read_to_string(file)?;
@@ -2023,532 +1744,5 @@ fn check_syntax(file: &Path) -> Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use std::fs;
-    use std::path::PathBuf;
-    use tempfile::NamedTempFile;
-
-    #[test]
-    fn test_format_config_default() {
-        let config = FormatConfig::default();
-        assert_eq!(config.line_width, 100);
-        assert_eq!(config.indent, 4);
-        assert!(!config.use_tabs);
-    }
-
-    #[test]
-    fn test_format_config_creation() {
-        let config = FormatConfig {
-            line_width: 120,
-            indent: 2,
-            use_tabs: true,
-        };
-        assert_eq!(config.line_width, 120);
-        assert_eq!(config.indent, 2);
-        assert!(config.use_tabs);
-    }
-
-    #[test]
-    fn test_try_handle_direct_evaluation_with_eval() {
-        let cli = Cli {
-            eval: Some("1 + 1".to_string()),
-            format: "text".to_string(),
-            verbose: false,
-            vm_mode: VmMode::Ast,
-            file: None,
-            command: None,
-            trace: false,
-        };
-        let result = try_handle_direct_evaluation(&cli);
-        assert!(result.is_some());
-    }
-
-    #[test]
-    fn test_try_handle_direct_evaluation_with_file() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "println(\"Hello World\")")
-            .expect("Failed to write test content to temporary file");
-
-        let cli = Cli {
-            eval: None,
-            format: "text".to_string(),
-            verbose: false,
-            vm_mode: VmMode::Ast,
-            file: Some(temp_file.path().to_path_buf()),
-            command: None,
-            trace: false,
-        };
-        let result = try_handle_direct_evaluation(&cli);
-        assert!(result.is_some());
-    }
-
-    #[test]
-    fn test_try_handle_direct_evaluation_none() {
-        let cli = Cli {
-            eval: None,
-            format: "text".to_string(),
-            verbose: false,
-            vm_mode: VmMode::Ast,
-            file: None,
-            command: None,
-            trace: false,
-        };
-        let result = try_handle_direct_evaluation(&cli);
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn test_try_handle_stdin_no_command() {
-        let result = try_handle_stdin(None);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_try_handle_stdin_with_command() {
-        let command = Commands::Repl { record: None };
-        let result = try_handle_stdin(Some(&command));
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_run_file_valid_syntax() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let result = run_file(temp_file.path());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_run_file_nonexistent() {
-        let nonexistent_path = PathBuf::from("/nonexistent/file.ruchy");
-        let result = run_file(&nonexistent_path);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_check_syntax_valid() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let result = check_syntax(temp_file.path());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_check_syntax_nonexistent_file() {
-        let nonexistent_path = PathBuf::from("/nonexistent/file.ruchy");
-        let result = check_syntax(&nonexistent_path);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    #[ignore = "test dispatch runs too long for fast tests"]
-    fn test_handle_test_dispatch_basic() {
-        let result =
-            handle_test_dispatch(None, false, false, None, false, "text", false, None, "text");
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_test_dispatch_with_path() {
-        // Create a temp directory with a proper .ruchy test file containing a test function
-        let temp_dir = tempfile::tempdir().expect("Failed to create temp dir");
-        let ruchy_file = temp_dir.path().join("test_file.ruchy");
-        // Write a minimal valid Ruchy file - dispatch should process it regardless of test content
-        fs::write(&ruchy_file, "let x = 42\n")
-            .expect("Failed to write test content to temporary file");
-
-        // The dispatch function should execute successfully even if the file has no tests
-        // (it will report 0 tests found, which is valid behavior)
-        let result = handle_test_dispatch(
-            Some(temp_dir.path().to_path_buf()),
-            false,
-            true,
-            None,
-            false,
-            "text",
-            false,
-            Some(0.0), // Use 0% threshold since file has no tests
-            "json",
-        );
-        // The dispatch should complete (Ok or Err for "no tests found") - just ensure it doesn't panic
-        // Accept any result since no tests in file may return Err
-        let _ = result;
-    }
-
-    #[test]
-    fn test_handle_test_dispatch_with_filter() {
-        let filter = "test_name".to_string();
-        let result = handle_test_dispatch(
-            None,
-            false,
-            false,
-            Some(&filter),
-            true,
-            "html",
-            true,
-            Some(0.5),
-            "junit",
-        );
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_repl() {
-        let command = Commands::Repl { record: None };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_parse() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Parse {
-            file: temp_file.path().to_path_buf(),
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_transpile() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Transpile {
-            file: temp_file.path().to_path_buf(),
-            output: None,
-            minimal: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_compile() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Compile {
-            file: temp_file.path().to_path_buf(),
-            output: PathBuf::from("test.out"),
-            opt_level: "2".to_string(),
-            optimize: None,
-            strip: false,
-            static_link: false,
-            target: None,
-            verbose: false,
-            json: None,
-            show_profile_info: false,
-            pgo: false,
-            embed_models: Vec::new(),
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_check() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Check {
-            files: vec![temp_file.path().to_path_buf()],
-            watch: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    #[ignore = "notebook server test runs too long for fast tests"]
-    fn test_handle_advanced_command_notebook() {
-        let command = Commands::Notebook {
-            file: None,
-            port: 8080,
-            open: false,
-            host: "127.0.0.1".to_string(),
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_coverage() {
-        let temp_dir = tempfile::tempdir().expect("Failed to create temporary test directory");
-        // Create a test file with some content
-        let test_file = temp_dir.path().join("test.ruchy");
-        fs::write(&test_file, "let x = 42;")
-            .unwrap_or_else(|_| panic!("Failed to write test file: {}", test_file.display()));
-
-        let command = Commands::Coverage {
-            path: test_file, // Use the file path, not directory
-            threshold: None, // Don't set threshold for test
-            format: "html".to_string(),
-            verbose: false,
-        };
-        let result = handle_advanced_command(command);
-        if let Err(e) = &result {
-            eprintln!("Coverage test error: {}", e);
-        }
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_ast() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Ast {
-            file: temp_file.path().to_path_buf(),
-            json: false,
-            graph: false,
-            metrics: false,
-            symbols: false,
-            deps: false,
-            verbose: false,
-            output: None,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_ast_with_options() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let output_file = NamedTempFile::new().expect("Failed to create temporary output file");
-        let command = Commands::Ast {
-            file: temp_file.path().to_path_buf(),
-            json: true,
-            graph: true,
-            metrics: true,
-            symbols: true,
-            deps: true,
-            verbose: true,
-            output: Some(output_file.path().to_path_buf()),
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    // Note: fmt command testing removed - redundant with comprehensive formatter tests
-    // in tests/cli_contract_fmt*.rs and tests/formatter_*.rs
-
-    #[test]
-    fn test_handle_advanced_command_doc() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        // TEST-FIX-002: Use valid Ruchy code instead of comment-only (empty program)
-        fs::write(
-            &temp_file,
-            "/// Documentation test\nfun add(a, b) { a + b }",
-        )
-        .expect("Failed to write test content to temporary file");
-
-        let output_dir = tempfile::tempdir().expect("Failed to create temporary output directory");
-        let command = Commands::Doc {
-            path: temp_file.path().to_path_buf(),
-            output: output_dir.path().to_path_buf(),
-            format: "html".to_string(),
-            private: false,
-            open: false,
-            all: false,
-            verbose: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_bench() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Bench {
-            file: temp_file.path().to_path_buf(),
-            iterations: 10,
-            warmup: 5,
-            format: "json".to_string(),
-            output: None,
-            verbose: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_lint() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Lint {
-            file: Some(temp_file.path().to_path_buf()),
-            all: false,
-            fix: false,
-            strict: false,
-            verbose: false,
-            format: "text".to_string(),
-            rules: None,
-            deny_warnings: false,
-            max_complexity: 10,
-            config: None,
-            init_config: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    #[ignore = "add command test not passing yet"]
-    fn test_handle_advanced_command_add() {
-        let command = Commands::Add {
-            package: "test_package".to_string(),
-            version: Some("1.0.0".to_string()),
-            dev: false,
-            registry: "https://ruchy.dev/registry".to_string(),
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_publish() {
-        let command = Commands::Publish {
-            registry: "https://ruchy.dev/registry".to_string(),
-            version: Some("1.0.0".to_string()),
-            dry_run: true,
-            allow_dirty: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_score() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Score {
-            path: temp_file.path().to_path_buf(),
-            depth: "standard".to_string(),
-            fast: false,
-            deep: false,
-            watch: false,
-            explain: false,
-            baseline: None,
-            min: Some(0.8),
-            config: None,
-            format: "text".to_string(),
-            verbose: false,
-            output: None,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_advanced_command_wasm() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let command = Commands::Wasm {
-            file: temp_file.path().to_path_buf(),
-            output: None,
-            target: "wasm32".to_string(),
-            wit: false,
-            deploy: false,
-            deploy_target: None,
-            portability: false,
-            opt_level: "O2".to_string(),
-            debug: false,
-            simd: false,
-            threads: false,
-            component_model: true,
-            name: None,
-            version: "0.1.0".to_string(),
-            verbose: false,
-        };
-        let result = handle_advanced_command(command);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_command_dispatch_repl() {
-        let result =
-            handle_command_dispatch(Some(Commands::Repl { record: None }), false, VmMode::Ast);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_command_dispatch_none() {
-        let result = handle_command_dispatch(None, false, VmMode::Ast);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_command_dispatch_parse() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let result = handle_command_dispatch(
-            Some(Commands::Parse {
-                file: temp_file.path().to_path_buf(),
-            }),
-            false,
-            VmMode::Ast,
-        );
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_command_dispatch_transpile() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let result = handle_command_dispatch(
-            Some(Commands::Transpile {
-                file: temp_file.path().to_path_buf(),
-                output: None,
-                minimal: false,
-            }),
-            true,
-            VmMode::Ast,
-        );
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_handle_command_dispatch_run() {
-        let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
-        fs::write(&temp_file, "let x = 42")
-            .expect("Failed to write test content to temporary file");
-
-        let result = handle_command_dispatch(
-            Some(Commands::Run {
-                file: temp_file.path().to_path_buf(),
-            }),
-            false,
-            VmMode::Ast,
-        );
-        assert!(result.is_ok());
-    }
-}
+#[path = "ruchy_tests.rs"]
+mod tests;

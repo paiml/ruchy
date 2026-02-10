@@ -1444,7 +1444,7 @@ struct QualityMetrics {
 }
 fn analyze_function_quality(
     name: &str,
-    params: &[ruchy::frontend::ast::Parameter],
+    params: &[ruchy::frontend::ast::Param],
     body: &ruchy::frontend::ast::Expr,
     metrics: &mut QualityMetrics,
 ) {
