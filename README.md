@@ -157,6 +157,7 @@ Add to Claude Desktop config:
 - [Language Specification](docs/SPECIFICATION.md)
 - [Development Roadmap](docs/execution/roadmap.yaml)
 - [Ruchy Book](https://github.com/paiml/ruchy-book) - Comprehensive guide
+- 🤖 [Coursera Hugging Face AI Development Specialization](https://www.coursera.org/specializations/hugging-face-ai-development) - Build Production AI systems with Hugging Face in Pure Rust
 
 ## License
 
