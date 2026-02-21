@@ -536,7 +536,6 @@ impl Interpreter {
     }
 }
 
-
 #[cfg(test)]
 #[path = "interpreter_methods_actor_tests.rs"]
 mod tests;

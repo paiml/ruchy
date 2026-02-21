@@ -484,7 +484,10 @@ fn match_struct_field(
 ) -> Result<Option<Vec<(String, Value)>>, InterpreterError> {
     match &field_pattern.pattern {
         Some(pattern) => try_pattern_match(pattern, field_value, eval_literal),
-        None => Ok(Some(vec![(field_pattern.name.clone(), field_value.clone())])),
+        None => Ok(Some(vec![(
+            field_pattern.name.clone(),
+            field_value.clone(),
+        )])),
     }
 }
 
@@ -515,7 +518,6 @@ fn try_match_struct_pattern(
 
     Ok(Some(all_bindings))
 }
-
 
 #[cfg(test)]
 #[path = "eval_pattern_match_tests.rs"]

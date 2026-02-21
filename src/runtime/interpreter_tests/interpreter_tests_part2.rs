@@ -1069,4 +1069,3 @@ fn test_nested_let_with_same_name() {
     let result = interp.eval_expr(&outer).expect("should succeed");
     assert_eq!(result, Value::Integer(2));
 }
-

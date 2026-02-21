@@ -1899,7 +1899,6 @@ fn builtin_assert(args: &[Value]) -> Result<Value, InterpreterError> {
     }
 }
 
-
 #[cfg(test)]
 #[path = "builtins_tests.rs"]
 mod tests;

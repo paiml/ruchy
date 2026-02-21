@@ -1214,9 +1214,15 @@ mod tests {
     fn test_predict_with_knn_with_training_data() {
         let mut oracle = RuchyOracle::new();
         // Manually add training data
-        oracle.record_error("mismatched types: expected i32", ErrorCategory::TypeMismatch);
+        oracle.record_error(
+            "mismatched types: expected i32",
+            ErrorCategory::TypeMismatch,
+        );
         oracle.record_error("borrow of moved value", ErrorCategory::BorrowChecker);
-        oracle.record_error("lifetime does not live long enough", ErrorCategory::LifetimeError);
+        oracle.record_error(
+            "lifetime does not live long enough",
+            ErrorCategory::LifetimeError,
+        );
 
         // Now predict with k-NN (oracle has training features but no trained RF model)
         let features = ErrorFeatures::extract("mismatched types: expected String", None);
@@ -1233,14 +1239,19 @@ mod tests {
     fn test_predict_with_knn_confidence_inversely_proportional_to_distance() {
         let mut oracle = RuchyOracle::new();
         // Add a single training sample
-        oracle.record_error("mismatched types: expected i32 found String", ErrorCategory::TypeMismatch);
+        oracle.record_error(
+            "mismatched types: expected i32 found String",
+            ErrorCategory::TypeMismatch,
+        );
 
         // Query with very similar text should have high confidence
-        let features_close = ErrorFeatures::extract("mismatched types: expected i32 found String", None);
+        let features_close =
+            ErrorFeatures::extract("mismatched types: expected i32 found String", None);
         let (_, confidence_close) = oracle.predict_with_knn(&features_close);
 
         // Query with very different text should have lower confidence
-        let features_far = ErrorFeatures::extract("completely unrelated error message about nothing", None);
+        let features_far =
+            ErrorFeatures::extract("completely unrelated error message about nothing", None);
         let (_, confidence_far) = oracle.predict_with_knn(&features_far);
 
         assert!(confidence_close >= confidence_far,

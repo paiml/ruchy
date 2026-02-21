@@ -357,14 +357,10 @@ fn test_helper_functions() {
     assert!(transpiler.value_creates_vec(&vec_expr));
 
     // Test looks_like_numeric_function
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "sqrt"
-    ));
+    assert!(super::super::function_analysis::looks_like_numeric_function("sqrt"));
     assert!(super::super::function_analysis::looks_like_numeric_function("pow"));
     assert!(super::super::function_analysis::looks_like_numeric_function("abs"));
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "println"
-    ));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("println"));
 }
 
 #[test]
@@ -476,12 +472,8 @@ fn test_transpiler_helper_methods_comprehensive() {
     // Test all helper methods with various inputs
 
     // Test basic transpiler functionality
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "sqrt"
-    ));
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "println"
-    ));
+    assert!(super::super::function_analysis::looks_like_numeric_function("sqrt"));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("println"));
 
     // Test various numeric function names
     let numeric_functions = vec![
@@ -1231,7 +1223,9 @@ fn test_is_variable_mutated_immutable_access() {
         leading_comments: vec![],
         trailing_comment: None,
     };
-    assert!(!super::super::mutation_detection::is_variable_mutated("x", &ident));
+    assert!(!super::super::mutation_detection::is_variable_mutated(
+        "x", &ident
+    ));
 }
 
 // Test 115: needs_lifetime_parameter - no ref params
@@ -1344,14 +1338,18 @@ fn test_body_needs_string_conversion_string_literal() {
         ExprKind::Literal(Literal::String("hello".to_string())),
         Span::default(),
     );
-    assert!(super::super::type_analysis::body_needs_string_conversion(&body));
+    assert!(super::super::type_analysis::body_needs_string_conversion(
+        &body
+    ));
 }
 
 // Test 122: body_needs_string_conversion - identifier
 #[test]
 fn test_body_needs_string_conversion_identifier() {
     let body = Expr::new(ExprKind::Identifier("s".to_string()), Span::default());
-    assert!(super::super::type_analysis::body_needs_string_conversion(&body));
+    assert!(super::super::type_analysis::body_needs_string_conversion(
+        &body
+    ));
 }
 
 // Test 123: body_needs_string_conversion - integer literal
@@ -1361,7 +1359,9 @@ fn test_body_needs_string_conversion_integer() {
         ExprKind::Literal(Literal::Integer(42, None)),
         Span::default(),
     );
-    assert!(!super::super::type_analysis::body_needs_string_conversion(&body));
+    assert!(!super::super::type_analysis::body_needs_string_conversion(
+        &body
+    ));
 }
 
 // Test 124: transpile_iterator_methods - map
@@ -1465,9 +1465,7 @@ fn test_transpile_set_operations_union() {
 fn test_looks_like_numeric_function_true() {
     let _transpiler = Transpiler::new();
     assert!(super::super::function_analysis::looks_like_numeric_function("abs"));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "sqrt"
-    ));
+    assert!(super::super::function_analysis::looks_like_numeric_function("sqrt"));
     assert!(super::super::function_analysis::looks_like_numeric_function("pow"));
 }
 
@@ -1475,12 +1473,8 @@ fn test_looks_like_numeric_function_true() {
 #[test]
 fn test_looks_like_numeric_function_false() {
     let _transpiler = Transpiler::new();
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "print"
-    ));
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "hello"
-    ));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("print"));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("hello"));
 }
 
 // Test 132: returns_boolean - with boolean literal
@@ -1550,4 +1544,3 @@ fn test_returns_string_literal_false() {
     };
     assert!(!returns_string_literal(&body));
 }
-

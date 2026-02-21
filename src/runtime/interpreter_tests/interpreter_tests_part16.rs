@@ -1,7 +1,6 @@
 // Auto-extracted from interpreter_tests.rs - Part 16
 use super::*;
 
-
 // COVERAGE: File open function
 #[test]
 fn test_file_open_v2() {

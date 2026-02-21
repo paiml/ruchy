@@ -406,7 +406,9 @@ impl Interpreter {
         clauses: &[ComprehensionClause],
         clause_idx: usize,
     ) -> Result<(), InterpreterError> {
-        crate::runtime::interpreter_misc_eval::eval_comprehension_clauses(self, results, element, clauses, clause_idx)
+        crate::runtime::interpreter_misc_eval::eval_comprehension_clauses(
+            self, results, element, clauses, clause_idx,
+        )
     }
 
     /// Helper: Check comprehension condition

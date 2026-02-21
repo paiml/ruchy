@@ -1148,11 +1148,7 @@ mod tests {
     fn test_parse_grouped_import_item_simple() {
         let mut state = ParserState::new("HashMap");
         let base_path = &["std".to_string(), "collections".to_string()];
-        let result = parse_grouped_import_item(
-            &mut state,
-            base_path,
-            Span { start: 0, end: 0 },
-        );
+        let result = parse_grouped_import_item(&mut state, base_path, Span { start: 0, end: 0 });
         assert!(result.is_ok());
         let exprs = result.unwrap();
         assert_eq!(exprs.len(), 1);
@@ -1168,11 +1164,7 @@ mod tests {
     fn test_parse_grouped_import_item_with_alias() {
         let mut state = ParserState::new("HashMap as Map");
         let base_path = &["std".to_string(), "collections".to_string()];
-        let result = parse_grouped_import_item(
-            &mut state,
-            base_path,
-            Span { start: 0, end: 0 },
-        );
+        let result = parse_grouped_import_item(&mut state, base_path, Span { start: 0, end: 0 });
         assert!(result.is_ok());
         let exprs = result.unwrap();
         assert_eq!(exprs.len(), 1);
@@ -1189,11 +1181,7 @@ mod tests {
     fn test_parse_grouped_import_item_nested_group() {
         let mut state = ParserState::new("collections::{HashMap, BTreeMap}");
         let base_path = &["std".to_string()];
-        let result = parse_grouped_import_item(
-            &mut state,
-            base_path,
-            Span { start: 0, end: 0 },
-        );
+        let result = parse_grouped_import_item(&mut state, base_path, Span { start: 0, end: 0 });
         assert!(result.is_ok());
         let exprs = result.unwrap();
         assert_eq!(exprs.len(), 1);
@@ -1331,11 +1319,7 @@ mod tests {
         // "sub::deep" - identifier followed by :: then another identifier
         let mut state = ParserState::new("sub::deep");
         let base_path = &["std".to_string()];
-        let result = parse_grouped_import_item(
-            &mut state,
-            base_path,
-            Span { start: 0, end: 0 },
-        );
+        let result = parse_grouped_import_item(&mut state, base_path, Span { start: 0, end: 0 });
         assert!(result.is_ok());
         let exprs = result.unwrap();
         assert_eq!(exprs.len(), 1);

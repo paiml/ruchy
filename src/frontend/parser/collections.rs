@@ -1507,7 +1507,10 @@ fn parse_result_err_pattern(state: &mut ParserState) -> Result<String> {
 fn is_statement_start_token(token: Option<&(Token, Span)>) -> bool {
     matches!(
         token,
-        Some((Token::Let | Token::If | Token::For | Token::While | Token::Return, _))
+        Some((
+            Token::Let | Token::If | Token::For | Token::While | Token::Return,
+            _
+        ))
     )
 }
 
@@ -1584,7 +1587,6 @@ fn try_parse_set_literal(state: &mut ParserState, start_span: Span) -> Result<Ex
     state.tokens.expect(&Token::RightBrace)?;
     Ok(Expr::new(ExprKind::Set(elements), start_span))
 }
-
 
 #[cfg(test)]
 #[path = "collections_tests.rs"]

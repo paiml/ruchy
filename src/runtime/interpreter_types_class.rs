@@ -669,7 +669,6 @@ impl Interpreter {
     }
 }
 
-
 #[cfg(test)]
 #[path = "interpreter_types_class_tests.rs"]
 mod tests;

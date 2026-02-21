@@ -238,8 +238,7 @@ fn test_await_expr_cov2() {
 fn test_unknown_builtin_cov2() {
     let mut interp = Interpreter::new();
     // Trying to call unknown builtin should error
-    let result =
-        interp.call_function(Value::from_string("__builtin_unknown__".to_string()), &[]);
+    let result = interp.call_function(Value::from_string("__builtin_unknown__".to_string()), &[]);
     assert!(result.is_err());
 }
 
@@ -532,8 +531,7 @@ fn test_apply_binary_op() {
     let interp = Interpreter::new();
     let left = Value::Integer(10);
     let right = Value::Integer(5);
-    let result =
-        interp.apply_binary_op(&left, crate::frontend::ast::BinaryOp::Subtract, &right);
+    let result = interp.apply_binary_op(&left, crate::frontend::ast::BinaryOp::Subtract, &right);
     match result {
         Ok(Value::Integer(n)) => assert_eq!(n, 5),
         _ => {}
@@ -1172,9 +1170,8 @@ fn test_pattern_matches_wildcard() {
 #[test]
 fn test_pattern_matches_literal() {
     let mut interp = Interpreter::new();
-    let pattern = crate::frontend::ast::Pattern::Literal(
-        crate::frontend::ast::Literal::Integer(42, None),
-    );
+    let pattern =
+        crate::frontend::ast::Pattern::Literal(crate::frontend::ast::Literal::Integer(42, None));
     let result = interp.pattern_matches(&pattern, &Value::Integer(42));
     assert!(result.is_ok());
     assert!(result.unwrap());
@@ -1183,9 +1180,8 @@ fn test_pattern_matches_literal() {
 #[test]
 fn test_pattern_matches_literal_no_match() {
     let mut interp = Interpreter::new();
-    let pattern = crate::frontend::ast::Pattern::Literal(
-        crate::frontend::ast::Literal::Integer(42, None),
-    );
+    let pattern =
+        crate::frontend::ast::Pattern::Literal(crate::frontend::ast::Literal::Integer(42, None));
     let result = interp.pattern_matches(&pattern, &Value::Integer(43));
     assert!(result.is_ok());
     assert!(!result.unwrap());
@@ -1800,4 +1796,3 @@ fn test_array_index_assign() {
         _ => {}
     }
 }
-

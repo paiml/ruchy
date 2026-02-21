@@ -1385,7 +1385,11 @@ mod tests {
         // obj?.method() -- exercises Token::Identifier branch
         let mut parser = Parser::new("obj?.method()");
         let result = parser.parse();
-        assert!(result.is_ok(), "Optional method call should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Optional method call should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1393,7 +1397,11 @@ mod tests {
         // obj?.field -- exercises Token::Identifier branch (field access, not call)
         let mut parser = Parser::new("obj?.field");
         let result = parser.parse();
-        assert!(result.is_ok(), "Optional field access should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Optional field access should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1417,7 +1425,11 @@ mod tests {
         // tuple?.0 -- exercises Token::Integer branch for optional tuple access
         let mut parser = Parser::new("tuple?.0");
         let result = parser.parse();
-        assert!(result.is_ok(), "Optional tuple index access should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Optional tuple index access should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1425,7 +1437,11 @@ mod tests {
         // tuple?.1 -- exercises Token::Integer branch, different index
         let mut parser = Parser::new("tuple?.1");
         let result = parser.parse();
-        assert!(result.is_ok(), "Optional tuple index 1 should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Optional tuple index 1 should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1433,7 +1449,11 @@ mod tests {
         // a?.b?.c -- exercises chained optional access
         let mut parser = Parser::new("a?.b?.c");
         let result = parser.parse();
-        assert!(result.is_ok(), "Multiple optional chaining should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Multiple optional chaining should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1441,7 +1461,11 @@ mod tests {
         // obj?.compute(1, 2, 3) -- exercises optional method call with arguments
         let mut parser = Parser::new("obj?.compute(1, 2, 3)");
         let result = parser.parse();
-        assert!(result.is_ok(), "Optional method call with args should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Optional method call with args should parse: {:?}",
+            result.err()
+        );
     }
 
     // ============================================================
@@ -1464,8 +1488,14 @@ mod tests {
     fn test_extract_select_columns_string_literals() {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
         let args = vec![
-            Expr::new(ExprKind::Literal(Literal::String("age".to_string())), Span::default()),
-            Expr::new(ExprKind::Literal(Literal::String("name".to_string())), Span::default()),
+            Expr::new(
+                ExprKind::Literal(Literal::String("age".to_string())),
+                Span::default(),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::String("name".to_string())),
+                Span::default(),
+            ),
         ];
         let cols = super::extract_select_columns(args);
         assert_eq!(cols, vec!["age".to_string(), "name".to_string()]);
@@ -1475,12 +1505,16 @@ mod tests {
     fn test_extract_select_columns_list_of_strings() {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
         let items = vec![
-            Expr::new(ExprKind::Literal(Literal::String("col1".to_string())), Span::default()),
-            Expr::new(ExprKind::Literal(Literal::String("col2".to_string())), Span::default()),
+            Expr::new(
+                ExprKind::Literal(Literal::String("col1".to_string())),
+                Span::default(),
+            ),
+            Expr::new(
+                ExprKind::Literal(Literal::String("col2".to_string())),
+                Span::default(),
+            ),
         ];
-        let args = vec![
-            Expr::new(ExprKind::List(items), Span::default()),
-        ];
+        let args = vec![Expr::new(ExprKind::List(items), Span::default())];
         let cols = super::extract_select_columns(args);
         assert_eq!(cols, vec!["col1".to_string(), "col2".to_string()]);
     }
@@ -1490,7 +1524,10 @@ mod tests {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
         let args = vec![
             Expr::new(ExprKind::Identifier("age".to_string()), Span::default()),
-            Expr::new(ExprKind::Literal(Literal::String("name".to_string())), Span::default()),
+            Expr::new(
+                ExprKind::Literal(Literal::String("name".to_string())),
+                Span::default(),
+            ),
         ];
         let cols = super::extract_select_columns(args);
         assert_eq!(cols, vec!["age".to_string(), "name".to_string()]);
@@ -1500,11 +1537,15 @@ mod tests {
     fn test_extract_select_columns_unknown_expr() {
         use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
         // Non-identifier/string/list expressions should be ignored
-        let args = vec![
-            Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default()),
-        ];
+        let args = vec![Expr::new(
+            ExprKind::Literal(Literal::Integer(42, None)),
+            Span::default(),
+        )];
         let cols = super::extract_select_columns(args);
-        assert!(cols.is_empty(), "Integer literal should not produce columns");
+        assert!(
+            cols.is_empty(),
+            "Integer literal should not produce columns"
+        );
     }
 
     #[test]

@@ -43,8 +43,8 @@ mod inner {
 
     // Re-export federated learning splits
     pub use alimentar::{
-        FederatedSplitCoordinator, FederatedSplitStrategy, GlobalSplitReport,
-        NodeSplitInstruction, NodeSplitManifest, NodeSummary, SplitQualityIssue,
+        FederatedSplitCoordinator, FederatedSplitStrategy, GlobalSplitReport, NodeSplitInstruction,
+        NodeSplitManifest, NodeSummary, SplitQualityIssue,
     };
 
     /// Convenience wrapper to load a Parquet file as an `ArrowDataset`.

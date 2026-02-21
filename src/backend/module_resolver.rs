@@ -1363,11 +1363,8 @@ mod tests {
     #[test]
     fn test_resolve_simple_import_non_file_no_items() -> Result<()> {
         let mut resolver = ModuleResolver::new();
-        let result = resolver.resolve_simple_import(
-            Span { start: 0, end: 10 },
-            "std::collections",
-            None,
-        )?;
+        let result =
+            resolver.resolve_simple_import(Span { start: 0, end: 10 }, "std::collections", None)?;
         if let ExprKind::Import { module, items } = result.kind {
             assert_eq!(module, "std::collections");
             assert!(items.is_none());
@@ -1383,11 +1380,7 @@ mod tests {
         // Clear search paths to ensure no file can be found
         resolver.module_loader.search_paths.clear();
         // "math" is a file import (no ::), but file doesn't exist
-        let result = resolver.resolve_simple_import(
-            Span { start: 0, end: 4 },
-            "math",
-            None,
-        );
+        let result = resolver.resolve_simple_import(Span { start: 0, end: 4 }, "math", None);
         // Should error because the file doesn't exist
         assert!(result.is_err());
     }
@@ -1401,11 +1394,7 @@ mod tests {
 
         create_test_module(&temp_dir, "mylib", "fun helper() { 42 }")?;
 
-        let result = resolver.resolve_simple_import(
-            Span { start: 0, end: 5 },
-            "mylib",
-            None,
-        )?;
+        let result = resolver.resolve_simple_import(Span { start: 0, end: 5 }, "mylib", None)?;
         // Should resolve to a Module expression
         if let ExprKind::Module { name, .. } = result.kind {
             assert_eq!(name, "mylib");

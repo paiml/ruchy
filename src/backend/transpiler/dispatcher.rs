@@ -1513,10 +1513,7 @@ mod tests {
     #[test]
     fn test_transpile_misc_expr_unsupported() {
         let transpiler = Transpiler::new();
-        let expr = Expr::new(
-            ExprKind::Identifier("x".to_string()),
-            Span::default(),
-        );
+        let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_err());
         assert!(result

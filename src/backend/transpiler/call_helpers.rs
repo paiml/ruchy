@@ -118,9 +118,12 @@ impl Transpiler {
 
                     // BOOK-COMPAT-017: String literals passed to functions should convert to String
                     // Most functions with string params need String not &str
-                    if matches!(&arg.kind, crate::frontend::ast::ExprKind::Literal(
-                        crate::frontend::ast::Literal::String(_)
-                    )) {
+                    if matches!(
+                        &arg.kind,
+                        crate::frontend::ast::ExprKind::Literal(
+                            crate::frontend::ast::Literal::String(_)
+                        )
+                    ) {
                         return Ok(quote! { #base_tokens.to_string() });
                     }
 
@@ -171,7 +174,9 @@ impl Transpiler {
                 Ok(quote! { #tokens.to_vec() })
             }
             // Array literal to explicit array type [T; N]: keep as-is
-            (ExprKind::List(_), expected) if expected.starts_with('[') && expected.contains(';') => {
+            (ExprKind::List(_), expected)
+                if expected.starts_with('[') && expected.contains(';') =>
+            {
                 Ok(tokens.clone())
             }
             // String literal to &str parameter: keep as-is

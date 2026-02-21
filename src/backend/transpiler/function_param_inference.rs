@@ -978,7 +978,11 @@ mod tests {
             right: Box::new(int_expr(1)),
         });
         let result = transpiler.infer_param_type_with_index(&param, &body, "process", Some(0));
-        assert_eq!(result.to_string(), "i32", "Underscore type should fall through to body-based inference");
+        assert_eq!(
+            result.to_string(),
+            "i32",
+            "Underscore type should fall through to body-based inference"
+        );
     }
 
     #[test]
@@ -996,7 +1000,11 @@ mod tests {
         });
         // No param_index, so call-site types are not consulted
         let result = transpiler.infer_param_type_with_index(&param, &body, "calc", None);
-        assert_eq!(result.to_string(), "i32", "Without index, falls through to body-based inference");
+        assert_eq!(
+            result.to_string(),
+            "i32",
+            "Without index, falls through to body-based inference"
+        );
     }
 
     #[test]
@@ -1028,7 +1036,11 @@ mod tests {
         });
         // param_index 5 is out of bounds for the 1-element vec
         let result = transpiler.infer_param_type_with_index(&param, &body, "calc", Some(5));
-        assert_eq!(result.to_string(), "i32", "Out of bounds index falls through");
+        assert_eq!(
+            result.to_string(),
+            "i32",
+            "Out of bounds index falls through"
+        );
     }
 
     #[test]
@@ -1061,7 +1073,11 @@ mod tests {
             right: Box::new(ident_expr("name")),
         });
         let result = transpiler.infer_param_type_with_index(&param, &body, "greet", None);
-        assert_eq!(result.to_string(), "& str", "String concat param should be &str");
+        assert_eq!(
+            result.to_string(),
+            "& str",
+            "String concat param should be &str"
+        );
     }
 
     #[test]

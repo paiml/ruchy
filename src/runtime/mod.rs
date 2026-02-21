@@ -77,13 +77,13 @@ pub mod interpreter_index; // Index access, field access, qualified names
 #[cfg(test)]
 pub mod interpreter_inline_tests; // Extracted tests from interpreter.rs
 pub mod interpreter_methods; // Method dispatch for all value types (re-export)
-pub mod interpreter_misc_eval; // Misc expression eval: imports, macros, try, pipeline, comprehensions
 pub mod interpreter_methods_actor; // Actor/struct/object methods
 pub mod interpreter_methods_dispatch; // Core method dispatch logic
 #[cfg(not(target_arch = "wasm32"))]
 pub mod interpreter_methods_html; // HTML document/element methods
 pub mod interpreter_methods_instance; // Mutable object instance methods
 pub mod interpreter_methods_string; // String/array method dispatch
+pub mod interpreter_misc_eval; // Misc expression eval: imports, macros, try, pipeline, comprehensions
 pub mod interpreter_types; // EXTREME TDD Round 52: InterpreterError, CallFrame extracted
 pub mod interpreter_types_actor; // Actor definition and instantiation
 pub mod interpreter_types_class; // Class definition, instantiation, methods

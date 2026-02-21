@@ -763,10 +763,7 @@ fn analyze_pattern_completeness(ast: &crate::frontend::ast::Expr) -> f64 {
         score
     }
 }
-fn check_match_completeness(
-    arms: &[crate::frontend::ast::MatchArm],
-    complete_matches: &mut usize,
-) {
+fn check_match_completeness(arms: &[crate::frontend::ast::MatchArm], complete_matches: &mut usize) {
     let has_wildcard = arms
         .iter()
         .any(|arm| matches!(arm.pattern, crate::frontend::ast::Pattern::Wildcard));
@@ -780,10 +777,9 @@ fn analyze_pattern_completeness_recursive(
     total_matches: &mut usize,
     complete_matches: &mut usize,
 ) {
-    let recurse =
-        |e: &crate::frontend::ast::Expr, tm: &mut usize, cm: &mut usize| {
-            analyze_pattern_completeness_recursive(e, tm, cm);
-        };
+    let recurse = |e: &crate::frontend::ast::Expr, tm: &mut usize, cm: &mut usize| {
+        analyze_pattern_completeness_recursive(e, tm, cm);
+    };
 
     match &expr.kind {
         ExprKind::Match {
@@ -1613,7 +1609,6 @@ fn count_lambda_usage(
         _ => {}
     }
 }
-
 
 #[cfg(test)]
 #[path = "scoring_tests.rs"]

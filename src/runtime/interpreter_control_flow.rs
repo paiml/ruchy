@@ -1487,10 +1487,7 @@ mod tests {
     #[test]
     fn test_eval_index_assign_out_of_bounds_v2() {
         let mut interp = make_interpreter();
-        interp.set_variable(
-            "arr",
-            Value::Array(Arc::from(vec![Value::Integer(1)])),
-        );
+        interp.set_variable("arr", Value::Array(Arc::from(vec![Value::Integer(1)])));
 
         let object = make_expr(ExprKind::Identifier("arr".to_string()));
         let index = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
@@ -1503,10 +1500,7 @@ mod tests {
     #[test]
     fn test_eval_index_assign_non_integer_index_v2() {
         let mut interp = make_interpreter();
-        interp.set_variable(
-            "arr",
-            Value::Array(Arc::from(vec![Value::Integer(1)])),
-        );
+        interp.set_variable("arr", Value::Array(Arc::from(vec![Value::Integer(1)])));
 
         let object = make_expr(ExprKind::Identifier("arr".to_string()));
         let index = make_expr(ExprKind::Literal(Literal::String("bad".to_string())));
@@ -1590,10 +1584,7 @@ mod tests {
 
         let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Outer index"));
+        assert!(result.unwrap_err().to_string().contains("Outer index"));
     }
 
     #[test]
@@ -1615,10 +1606,7 @@ mod tests {
 
         let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Inner index"));
+        assert!(result.unwrap_err().to_string().contains("Inner index"));
     }
 
     #[test]

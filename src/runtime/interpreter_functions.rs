@@ -1003,7 +1003,9 @@ mod tests {
 
         // Define factorial: fun fact(n) { if n <= 1 { 1 } else { n * fact(n - 1) } }
         // Use eval_string for cleaner recursive definition
-        interp.eval_string("fun fact(n) { if n <= 1 { 1 } else { n * fact(n - 1) } }").unwrap();
+        interp
+            .eval_string("fun fact(n) { if n <= 1 { 1 } else { n * fact(n - 1) } }")
+            .unwrap();
 
         let result = interp.eval_string("fact(5)").unwrap();
         assert_eq!(result, Value::Integer(120));

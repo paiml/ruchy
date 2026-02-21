@@ -1821,4 +1821,3 @@ fn test_literal_null_cov() {
     let mut interp = Interpreter::new();
     let _result = interp.eval_string("null");
 }
-

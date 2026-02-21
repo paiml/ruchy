@@ -1853,7 +1853,6 @@ impl Default for WasmEmitter {
     }
 }
 
-
 #[cfg(test)]
 #[path = "emitter_inline_tests.rs"]
 mod tests;

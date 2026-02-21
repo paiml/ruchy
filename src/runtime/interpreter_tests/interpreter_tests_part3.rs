@@ -1420,4 +1420,3 @@ fn test_negative_modulo_r125() {
     // In Rust, -7 % 3 = -1
     assert_eq!(result, Value::Integer(-1));
 }
-

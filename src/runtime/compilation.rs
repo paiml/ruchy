@@ -669,7 +669,6 @@ where
     }
 }
 
-
 #[cfg(test)]
 #[path = "compilation_tests.rs"]
 mod tests;

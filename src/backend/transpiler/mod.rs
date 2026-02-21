@@ -232,8 +232,7 @@ pub struct Transpiler {
     ///
     /// Maps function name to a vector of inferred argument types from call sites.
     /// Used when function parameters have no explicit type to infer types from usage.
-    pub call_site_arg_types:
-        std::cell::RefCell<std::collections::HashMap<String, Vec<String>>>,
+    pub call_site_arg_types: std::cell::RefCell<std::collections::HashMap<String, Vec<String>>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -268,9 +267,7 @@ impl Clone for Transpiler {
             struct_field_types: std::cell::RefCell::new(self.struct_field_types.borrow().clone()),
             current_struct_name: std::cell::RefCell::new(self.current_struct_name.borrow().clone()),
             auto_boxed_fields: std::cell::RefCell::new(self.auto_boxed_fields.borrow().clone()),
-            call_site_arg_types: std::cell::RefCell::new(
-                self.call_site_arg_types.borrow().clone(),
-            ),
+            call_site_arg_types: std::cell::RefCell::new(self.call_site_arg_types.borrow().clone()),
         }
     }
 }

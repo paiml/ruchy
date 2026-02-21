@@ -79,9 +79,13 @@ impl Transpiler {
 
         // BOOK-COMPAT-017: Check call-site types for numeric return type
         // Check if function has float arguments - if so, infer f64 return type
-        let has_float_args = self.call_site_arg_types.borrow().get(name).is_some_and(|call_types| {
-            !call_types.is_empty() && call_types.iter().all(|t| t == "f64")
-        });
+        let has_float_args =
+            self.call_site_arg_types
+                .borrow()
+                .get(name)
+                .is_some_and(|call_types| {
+                    !call_types.is_empty() && call_types.iter().all(|t| t == "f64")
+                });
         if has_float_args && super::function_analysis::has_non_unit_expression(body) {
             return Ok(quote! { -> f64 });
         }
@@ -855,13 +859,19 @@ mod tests {
     #[test]
     fn test_references_any_identifier_match() {
         let names: HashSet<String> = ["x".to_string()].into();
-        assert!(Transpiler::expr_references_any_impl(&ident_expr("x"), &names));
+        assert!(Transpiler::expr_references_any_impl(
+            &ident_expr("x"),
+            &names
+        ));
     }
 
     #[test]
     fn test_references_any_identifier_no_match() {
         let names: HashSet<String> = ["x".to_string()].into();
-        assert!(!Transpiler::expr_references_any_impl(&ident_expr("y"), &names));
+        assert!(!Transpiler::expr_references_any_impl(
+            &ident_expr("y"),
+            &names
+        ));
     }
 
     #[test]

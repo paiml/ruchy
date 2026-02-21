@@ -1077,10 +1077,7 @@ mod tests {
     #[test]
     fn test_ast_variant_string_interpolation() {
         let mut m = GrammarCoverageMatrix::new();
-        let e = Expr::new(
-            ExprKind::StringInterpolation { parts: vec![] },
-            span(),
-        );
+        let e = Expr::new(ExprKind::StringInterpolation { parts: vec![] }, span());
         m.record("si", "\"${x}\"", Ok(e), Duration::from_millis(1));
         assert!(m.ast_variants.contains("StringInterpolation"));
     }
@@ -1176,10 +1173,7 @@ mod tests {
     #[test]
     fn test_ast_variant_dataframe() {
         let mut m = GrammarCoverageMatrix::new();
-        let e = Expr::new(
-            ExprKind::DataFrame { columns: vec![] },
-            span(),
-        );
+        let e = Expr::new(ExprKind::DataFrame { columns: vec![] }, span());
         m.record("df", "df()", Ok(e), Duration::from_millis(1));
         assert!(m.ast_variants.contains("DataFrame"));
     }
@@ -1272,7 +1266,13 @@ mod tests {
     #[test]
     fn test_ast_variant_break() {
         let mut m = GrammarCoverageMatrix::new();
-        let e = Expr::new(ExprKind::Break { label: None, value: None }, span());
+        let e = Expr::new(
+            ExprKind::Break {
+                label: None,
+                value: None,
+            },
+            span(),
+        );
         m.record("break", "break", Ok(e), Duration::from_millis(1));
         assert!(m.ast_variants.contains("Break"));
     }

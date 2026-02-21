@@ -1380,8 +1380,16 @@ mod tests {
     fn test_merger_with_provenance_single_source() {
         let mut merger = CorpusMergerWithProvenance::new();
         let samples = vec![
-            Sample::new("type mismatch", Some("E0308".into()), ErrorCategory::TypeMismatch),
-            Sample::new("missing field", Some("E0063".into()), ErrorCategory::MissingImport),
+            Sample::new(
+                "type mismatch",
+                Some("E0308".into()),
+                ErrorCategory::TypeMismatch,
+            ),
+            Sample::new(
+                "missing field",
+                Some("E0063".into()),
+                ErrorCategory::MissingImport,
+            ),
         ];
         merger.add_source("synthetic", samples, SampleSource::Synthetic);
         assert_eq!(merger.source_count(), 1);
@@ -1402,11 +1410,7 @@ mod tests {
             Sample::new("err 1", None, ErrorCategory::TypeMismatch),
             Sample::new("err 2", None, ErrorCategory::BorrowChecker),
         ];
-        let examples = vec![Sample::new(
-            "err 3",
-            None,
-            ErrorCategory::MissingImport,
-        )];
+        let examples = vec![Sample::new("err 3", None, ErrorCategory::MissingImport)];
         merger.add_source("synthetic", synthetic, SampleSource::Synthetic);
         merger.add_source("examples", examples, SampleSource::Examples);
 
@@ -1439,15 +1443,36 @@ mod tests {
         let mut merger = CorpusMergerWithProvenance::new();
         // Use diverse error messages to avoid feature-vector dedup collisions
         let messages = vec![
-            ("expected type `i32`, found `String`", ErrorCategory::TypeMismatch),
+            (
+                "expected type `i32`, found `String`",
+                ErrorCategory::TypeMismatch,
+            ),
             ("cannot borrow `x` as mutable", ErrorCategory::BorrowChecker),
-            ("lifetime `'a` does not live long enough", ErrorCategory::LifetimeError),
-            ("the trait `Display` is not implemented", ErrorCategory::TraitBound),
-            ("unresolved import `std::io::missing`", ErrorCategory::MissingImport),
-            ("cannot assign twice to immutable variable", ErrorCategory::MutabilityError),
+            (
+                "lifetime `'a` does not live long enough",
+                ErrorCategory::LifetimeError,
+            ),
+            (
+                "the trait `Display` is not implemented",
+                ErrorCategory::TraitBound,
+            ),
+            (
+                "unresolved import `std::io::missing`",
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "cannot assign twice to immutable variable",
+                ErrorCategory::MutabilityError,
+            ),
             ("expected `;`, found `}`", ErrorCategory::SyntaxError),
-            ("mismatched types: expected `bool`", ErrorCategory::TypeMismatch),
-            ("cannot borrow `self` as mutable", ErrorCategory::BorrowChecker),
+            (
+                "mismatched types: expected `bool`",
+                ErrorCategory::TypeMismatch,
+            ),
+            (
+                "cannot borrow `self` as mutable",
+                ErrorCategory::BorrowChecker,
+            ),
             ("unknown start of token: `@`", ErrorCategory::SyntaxError),
         ];
         let samples: Vec<_> = messages
@@ -1460,11 +1485,18 @@ mod tests {
         let (c2, _) = merger.merge_with_seed(2).unwrap();
 
         // Verify samples were actually added (not deduped away)
-        assert!(c1.len() >= 2, "Should have multiple samples, got {}", c1.len());
+        assert!(
+            c1.len() >= 2,
+            "Should have multiple samples, got {}",
+            c1.len()
+        );
         let msgs1: Vec<_> = c1.samples().iter().map(|s| &s.message).collect();
         let msgs2: Vec<_> = c2.samples().iter().map(|s| &s.message).collect();
         // With 10+ diverse samples, different seeds should produce different orders
-        assert_ne!(msgs1, msgs2, "Different seeds should produce different orders");
+        assert_ne!(
+            msgs1, msgs2,
+            "Different seeds should produce different orders"
+        );
     }
 
     #[test]
@@ -1484,26 +1516,57 @@ mod tests {
         let mut corpus = Corpus::new();
         // Use diverse error messages to avoid feature-vector dedup collisions
         let messages = [
-            ("expected type `i32`, found `String`", ErrorCategory::TypeMismatch),
+            (
+                "expected type `i32`, found `String`",
+                ErrorCategory::TypeMismatch,
+            ),
             ("cannot borrow `x` as mutable", ErrorCategory::BorrowChecker),
-            ("lifetime `'a` does not live long enough", ErrorCategory::LifetimeError),
-            ("the trait `Display` is not implemented", ErrorCategory::TraitBound),
-            ("unresolved import `std::io::missing`", ErrorCategory::MissingImport),
-            ("cannot assign twice to immutable variable", ErrorCategory::MutabilityError),
+            (
+                "lifetime `'a` does not live long enough",
+                ErrorCategory::LifetimeError,
+            ),
+            (
+                "the trait `Display` is not implemented",
+                ErrorCategory::TraitBound,
+            ),
+            (
+                "unresolved import `std::io::missing`",
+                ErrorCategory::MissingImport,
+            ),
+            (
+                "cannot assign twice to immutable variable",
+                ErrorCategory::MutabilityError,
+            ),
             ("expected `;`, found `}`", ErrorCategory::SyntaxError),
-            ("mismatched types: expected `bool`", ErrorCategory::TypeMismatch),
-            ("cannot borrow `self` as mutable", ErrorCategory::BorrowChecker),
+            (
+                "mismatched types: expected `bool`",
+                ErrorCategory::TypeMismatch,
+            ),
+            (
+                "cannot borrow `self` as mutable",
+                ErrorCategory::BorrowChecker,
+            ),
             ("unknown start of token: `@`", ErrorCategory::SyntaxError),
             ("pattern `_` not covered", ErrorCategory::TypeMismatch),
-            ("method not found in `Vec<i32>`", ErrorCategory::TypeMismatch),
+            (
+                "method not found in `Vec<i32>`",
+                ErrorCategory::TypeMismatch,
+            ),
             ("expected `()`, found `i32`", ErrorCategory::TypeMismatch),
-            ("conflicting implementations of trait", ErrorCategory::TraitBound),
+            (
+                "conflicting implementations of trait",
+                ErrorCategory::TraitBound,
+            ),
             ("use of moved value: `x`", ErrorCategory::BorrowChecker),
         ];
         for (msg, cat) in &messages {
             corpus.add(Sample::new(*msg, None, *cat));
         }
-        assert!(corpus.len() >= 2, "Should have multiple samples, got {}", corpus.len());
+        assert!(
+            corpus.len() >= 2,
+            "Should have multiple samples, got {}",
+            corpus.len()
+        );
         let before: Vec<_> = corpus.samples().iter().map(|s| s.message.clone()).collect();
         corpus.shuffle_with_seed(99);
         let after: Vec<_> = corpus.samples().iter().map(|s| s.message.clone()).collect();
@@ -1567,8 +1630,14 @@ mod tests {
             .filter(|s| s.category == ErrorCategory::TypeMismatch)
             .count();
         // 5 unique type mismatch messages, dedup keeps unique feature vectors
-        assert!(type_mismatch_count >= 1, "Should have at least 1 type mismatch sample");
-        assert!(type_mismatch_count <= 5, "At most 5 unique type mismatch messages");
+        assert!(
+            type_mismatch_count >= 1,
+            "Should have at least 1 type mismatch sample"
+        );
+        assert!(
+            type_mismatch_count <= 5,
+            "At most 5 unique type mismatch messages"
+        );
     }
 
     #[test]
@@ -1593,7 +1662,10 @@ mod tests {
             .iter()
             .filter(|s| s.category == ErrorCategory::LifetimeError)
             .count();
-        assert!(lifetime_count >= 1, "Should have at least 1 lifetime sample");
+        assert!(
+            lifetime_count >= 1,
+            "Should have at least 1 lifetime sample"
+        );
         assert!(lifetime_count <= 2, "At most 2 unique lifetime messages");
     }
 
@@ -1654,7 +1726,10 @@ mod tests {
             .collect();
         assert!(codes.contains("E0308"), "Should have E0308 (type mismatch)");
         assert!(codes.contains("E0382"), "Should have E0382 (moved value)");
-        assert!(codes.contains("E0502"), "Should have E0502 (mutable borrow)");
+        assert!(
+            codes.contains("E0502"),
+            "Should have E0502 (mutable borrow)"
+        );
         assert!(codes.contains("E0597"), "Should have E0597 (lifetime)");
         assert!(codes.contains("E0621"), "Should have E0621 (lifetime)");
     }
@@ -1679,9 +1754,7 @@ mod tests {
             .map(|s| s.message.as_str())
             .collect();
         assert!(
-            type_msgs
-                .iter()
-                .all(|m| m.contains("mismatched types")),
+            type_msgs.iter().all(|m| m.contains("mismatched types")),
             "Type mismatch messages should contain 'mismatched types'"
         );
         // Borrow messages should contain "borrow"
@@ -1701,11 +1774,8 @@ mod tests {
     fn test_corpus_collector_collect_three_categories() {
         let collector = CorpusCollector::new();
         let corpus = collector.collect();
-        let categories: std::collections::HashSet<_> = corpus
-            .samples
-            .iter()
-            .map(|s| s.category)
-            .collect();
+        let categories: std::collections::HashSet<_> =
+            corpus.samples.iter().map(|s| s.category).collect();
         assert!(categories.contains(&ErrorCategory::TypeMismatch));
         assert!(categories.contains(&ErrorCategory::BorrowChecker));
         assert!(categories.contains(&ErrorCategory::LifetimeError));

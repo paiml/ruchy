@@ -1251,7 +1251,10 @@ mod tests {
         let result = collect_nested_generic(&mut state);
         assert!(result.contains('K'), "Should contain K: {result}");
         assert!(result.contains("V"), "Should contain V: {result}");
-        assert!(result.contains(", "), "Should contain comma separator: {result}");
+        assert!(
+            result.contains(", "),
+            "Should contain comma separator: {result}"
+        );
     }
 
     #[test]
@@ -1283,7 +1286,10 @@ mod tests {
         // Just '>' (empty generic params)
         let mut state = ParserState::new(">");
         let result = collect_nested_generic(&mut state);
-        assert!(result.is_empty(), "Empty generic should return empty string");
+        assert!(
+            result.is_empty(),
+            "Empty generic should return empty string"
+        );
     }
 
     #[test]
@@ -1300,7 +1306,11 @@ mod tests {
     fn test_parse_type_hashmap_string_vec_i32() {
         let mut state = ParserState::new("HashMap<String, Vec<i32>>");
         let result = parse_type(&mut state);
-        assert!(result.is_ok(), "HashMap<String, Vec<i32>> should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "HashMap<String, Vec<i32>> should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]

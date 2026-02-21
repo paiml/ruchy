@@ -956,7 +956,6 @@ fn determine_self_type_from_params(params: &[Param]) -> SelfType {
     }
 }
 
-
 #[cfg(test)]
 #[path = "classes_tests.rs"]
 mod tests;

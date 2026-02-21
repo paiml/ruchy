@@ -1485,4 +1485,3 @@ fn test_very_small_float_r157() {
         _ => panic!("Expected Float"),
     }
 }
-

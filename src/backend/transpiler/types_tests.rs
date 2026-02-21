@@ -4,9 +4,7 @@
 //! This module contains comprehensive tests for type handling.
 
 use crate::backend::transpiler::Transpiler;
-use crate::frontend::ast::{
-    ClassMethod, Constructor, Param, Span, StructField, Type, TypeKind,
-};
+use crate::frontend::ast::{ClassMethod, Constructor, Param, Span, StructField, Type, TypeKind};
 use quote::{format_ident, quote};
 
 fn create_transpiler() -> Transpiler {

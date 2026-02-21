@@ -620,7 +620,6 @@ pub fn pattern_matches_simple(pattern: &Pattern, value: &Value) -> Result<bool, 
     }
 }
 
-
 #[cfg(test)]
 #[path = "eval_control_flow_new_tests.rs"]
 mod tests;

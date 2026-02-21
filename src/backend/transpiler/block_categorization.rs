@@ -1057,12 +1057,7 @@ mod tests {
     #[test]
     fn test_generate_global_mutable_inferred_type() {
         let transpiler = Transpiler::new();
-        let exprs = vec![typed_let_expr(
-            "count",
-            string_expr("hello"),
-            true,
-            None,
-        )];
+        let exprs = vec![typed_let_expr("count", string_expr("hello"), true, None)];
         let mut global_var_names = std::collections::HashSet::new();
         global_var_names.insert("count".to_string());
         let const_var_names = std::collections::HashSet::new();
@@ -1124,7 +1119,12 @@ mod tests {
     fn test_generate_global_immutable_let_not_in_global_names() {
         let transpiler = Transpiler::new();
         // Let is immutable, so it won't match in global_var_names (which requires is_mutable)
-        let exprs = vec![typed_let_expr("x", int_expr(1), false, Some(make_type_ann("i32")))];
+        let exprs = vec![typed_let_expr(
+            "x",
+            int_expr(1),
+            false,
+            Some(make_type_ann("i32")),
+        )];
         let mut global_var_names = std::collections::HashSet::new();
         global_var_names.insert("x".to_string());
         let const_var_names = std::collections::HashSet::new();

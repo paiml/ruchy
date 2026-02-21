@@ -18,7 +18,6 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::sync::Arc;
 
-
 // Re-export from sub-modules so that `use super::*` in test modules still works
 pub(crate) use crate::runtime::eval_builtin_fs::*;
 pub(crate) use crate::runtime::eval_builtin_json_ops::*;
@@ -1492,7 +1491,6 @@ fn eval_env_temp_dir(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Evaluate `fs_read()` builtin function
 /// Reads file contents and returns as string
 /// Complexity: 3 (within Toyota Way limits)
-
 
 #[cfg(test)]
 #[path = "eval_builtin_unit_tests.rs"]

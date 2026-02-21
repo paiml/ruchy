@@ -275,8 +275,7 @@ fn test_create_let_expression_literal_produces_let_pattern() {
 
 #[test]
 fn test_create_let_expression_qualified_name_produces_let_pattern() {
-    let pattern =
-        Pattern::QualifiedName(vec!["Ordering".to_string(), "Less".to_string()]);
+    let pattern = Pattern::QualifiedName(vec!["Ordering".to_string(), "Less".to_string()]);
     let result = create_let_expression(
         pattern,
         None,
@@ -384,7 +383,11 @@ fn test_create_let_expression_mut_produces_let_pattern() {
 fn test_parse_let_some_pattern_coverage() {
     let code = "let Some(val) = maybe";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let Some(val) should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let Some(val) should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -412,21 +415,30 @@ fn test_parse_let_none_pattern_coverage() {
 fn test_parse_let_df_keyword_coverage() {
     let code = "let df = data";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "DataFrame keyword as variable name should parse");
+    assert!(
+        result.is_ok(),
+        "DataFrame keyword as variable name should parse"
+    );
 }
 
 #[test]
 fn test_parse_let_default_keyword_coverage() {
     let code = "let default = config";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "default keyword as variable name should parse");
+    assert!(
+        result.is_ok(),
+        "default keyword as variable name should parse"
+    );
 }
 
 #[test]
 fn test_parse_let_final_keyword_coverage() {
     let code = "let final = value";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "final keyword as variable name should parse");
+    assert!(
+        result.is_ok(),
+        "final keyword as variable name should parse"
+    );
 }
 
 #[test]
@@ -486,28 +498,44 @@ fn test_parse_let_mut_coverage() {
 fn test_parse_var_identifier_coverage() {
     let code = "var x = 42";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "var x = 42 should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "var x = 42 should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
 fn test_parse_var_tuple_destructuring_coverage() {
     let code = "var (a, b) = (1, 2)";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "var (a, b) should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "var (a, b) should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
 fn test_parse_var_list_destructuring_coverage() {
     let code = "var [x, y] = items";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "var [x, y] should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "var [x, y] should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
 fn test_parse_var_with_type_annotation_coverage() {
     let code = "var x: i32 = 42";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "var x: i32 should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "var x: i32 should parse: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================
@@ -543,7 +571,11 @@ fn test_let_pattern_err_without_parens_errors() {
 fn test_let_pattern_none() {
     let code = "let None = opt";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "None pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "None pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -551,7 +583,11 @@ fn test_let_pattern_identifier_with_struct_destructure() {
     // Identifier followed by { } is struct pattern
     let code = "let Config { debug, verbose } = config";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Struct pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Struct pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -559,7 +595,11 @@ fn test_let_pattern_identifier_variant_with_parens() {
     // Identifier followed by ( ) is variant pattern
     let code = "let MyVariant(x) = val";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Variant pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Variant pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -567,7 +607,11 @@ fn test_let_pattern_dataframe_token() {
     // DataFrame token as variable name
     let code = "let df = create_dataframe()";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "df pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "df pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -575,7 +619,11 @@ fn test_let_pattern_default_token() {
     // Default token as variable name
     let code = "let default = get_config()";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "default pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "default pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -583,7 +631,11 @@ fn test_let_pattern_final_token() {
     // Final token as variable name
     let code = "let final = get_value()";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "final pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "final pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -591,7 +643,11 @@ fn test_let_pattern_underscore() {
     // Underscore as wildcard pattern
     let code = "let _ = compute()";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Wildcard pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Wildcard pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -599,7 +655,11 @@ fn test_let_pattern_tuple() {
     // Tuple destructuring pattern
     let code = "let (a, b, c) = triple";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Tuple pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Tuple pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -607,7 +667,11 @@ fn test_let_pattern_list() {
     // List destructuring pattern
     let code = "let [first, second] = items";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "List pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "List pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -615,7 +679,11 @@ fn test_let_pattern_struct_brace() {
     // Struct destructuring pattern with { }
     let code = "let { name, age } = person";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Struct brace pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Struct brace pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -639,21 +707,33 @@ fn test_let_pattern_some_with_multiple_args() {
     // Some with multiple args in tuple destructure
     let code = "let Some((a, b)) = maybe_pair";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Some with nested tuple should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Some with nested tuple should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
 fn test_let_pattern_ok_with_value() {
     let code = "let Ok(value) = result";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Ok(value) pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Ok(value) pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
 fn test_let_pattern_err_with_error() {
     let code = "let Err(e) = result";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Err(e) pattern should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Err(e) pattern should parse: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================
@@ -762,7 +842,11 @@ fn test_let_pattern_some_variant() {
     // let Some(x) = maybe_val -- exercises Token::Some branch in parse_let_pattern
     let code = "let Some(x) = maybe_val";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let Some(x) should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let Some(x) should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -770,7 +854,11 @@ fn test_let_pattern_ok_variant() {
     // let Ok(val) = result_val -- exercises Token::Ok branch
     let code = "let Ok(val) = result_val";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let Ok(val) should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let Ok(val) should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -778,7 +866,11 @@ fn test_let_pattern_err_variant() {
     // let Err(e) = result_val -- exercises Token::Err branch
     let code = "let Err(e) = result_val";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let Err(e) should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let Err(e) should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -794,7 +886,11 @@ fn test_let_pattern_identifier_with_variant_destructure() {
     // let Color(r, g, b) = my_color -- exercises Identifier+LeftParen branch
     let code = "let Color(r, g, b) = my_color";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let Color(r, g, b) should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let Color(r, g, b) should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -802,7 +898,11 @@ fn test_let_pattern_identifier_struct_destructure_coverage() {
     // let Point { x, y } = p -- exercises Identifier+LeftBrace branch
     let code = "let Point { x, y } = p";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let Point {{ x, y }} should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let Point {{ x, y }} should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -818,7 +918,11 @@ fn test_let_pattern_default_keyword() {
     // let default = config_value -- exercises Token::Default branch
     let code = "let default = config_value";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let default should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let default should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -842,7 +946,11 @@ fn test_let_pattern_tuple_destructure() {
     // let (a, b, c) = tuple -- exercises Token::LeftParen branch
     let code = "let (a, b, c) = tuple";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let (a, b, c) should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let (a, b, c) should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -850,7 +958,11 @@ fn test_let_pattern_list_destructure() {
     // let [first, second] = arr -- exercises Token::LeftBracket branch
     let code = "let [first, second] = arr";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let [first, second] should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let [first, second] should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -858,7 +970,11 @@ fn test_let_pattern_struct_destructure_brace() {
     // let {name, age} = obj -- exercises Token::LeftBrace branch
     let code = "let {name, age} = obj";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "let {{name, age}} should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "let {{name, age}} should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -876,7 +992,10 @@ fn test_let_pattern_error_on_bad_token() {
     let result = Parser::new(code).parse();
     // Should fail or produce an error since 42 is not a valid pattern for let
     // The behavior depends on parsing precedence; at minimum it should not panic
-    assert!(result.is_ok() || result.is_err(), "Should not panic on bad let pattern");
+    assert!(
+        result.is_ok() || result.is_err(),
+        "Should not panic on bad let pattern"
+    );
 }
 
 // ============================================================
@@ -889,7 +1008,11 @@ fn test_variant_pattern_some_single_ident() {
     // match opt { Some(x) => x, None => 0 }
     let code = "match opt { Some(x) => x, None => 0 }";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Some(x) pattern in match should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Some(x) pattern in match should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -897,7 +1020,11 @@ fn test_variant_pattern_ok_single_ident() {
     // match res { Ok(v) => v, Err(e) => 0 }
     let code = "match res { Ok(v) => v, Err(e) => 0 }";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Ok(v)/Err(e) patterns should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Ok(v)/Err(e) patterns should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -906,7 +1033,11 @@ fn test_variant_pattern_custom_multi_args() {
     // Exercises multi-element TupleVariant path
     let code = "match color { Color(r, g, b) => r + g + b, _ => 0 }";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Custom variant with multiple args should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Custom variant with multiple args should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -915,7 +1046,11 @@ fn test_variant_pattern_trailing_comma() {
     // Exercises trailing comma detection in parse_variant_pattern_with_name
     let code = "match x { Pair(a, b,) => a, _ => 0 }";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Variant with trailing comma should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Variant with trailing comma should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -924,7 +1059,11 @@ fn test_variant_pattern_empty_parens() {
     // Exercises empty pattern list in parse_variant_pattern_with_name
     let code = "match x { Empty() => 0, _ => 1 }";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Empty variant parens should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Empty variant parens should parse: {:?}",
+        result.err()
+    );
 }
 
 #[test]
@@ -933,7 +1072,11 @@ fn test_variant_pattern_nested() {
     // Exercises nested variant patterns
     let code = "match x { Some(Ok(v)) => v, _ => 0 }";
     let result = Parser::new(code).parse();
-    assert!(result.is_ok(), "Nested variant patterns should parse: {:?}", result.err());
+    assert!(
+        result.is_ok(),
+        "Nested variant patterns should parse: {:?}",
+        result.err()
+    );
 }
 
 // ============================================================
@@ -946,7 +1089,10 @@ fn test_direct_parse_let_pattern_identifier() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("x");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for identifier");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for identifier"
+    );
     assert!(matches!(pattern.unwrap(), Pattern::Identifier(n) if n == "x"));
 }
 
@@ -955,7 +1101,10 @@ fn test_direct_parse_let_pattern_some() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("Some(val)");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for Some(val)");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for Some(val)"
+    );
 }
 
 #[test]
@@ -963,7 +1112,10 @@ fn test_direct_parse_let_pattern_ok() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("Ok(v)");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for Ok(v)");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for Ok(v)"
+    );
 }
 
 #[test]
@@ -971,7 +1123,10 @@ fn test_direct_parse_let_pattern_err() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("Err(e)");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for Err(e)");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for Err(e)"
+    );
 }
 
 #[test]
@@ -979,7 +1134,10 @@ fn test_direct_parse_let_pattern_none() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("None");
     let pattern = super::parse_let_pattern(&mut state, true);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for None");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for None"
+    );
     assert!(matches!(pattern.unwrap(), Pattern::None));
 }
 
@@ -988,7 +1146,10 @@ fn test_direct_parse_let_pattern_dataframe() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("df");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for df");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for df"
+    );
     assert!(matches!(pattern.unwrap(), Pattern::Identifier(n) if n == "df"));
 }
 
@@ -997,7 +1158,10 @@ fn test_direct_parse_let_pattern_default() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("default");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for default");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for default"
+    );
     assert!(matches!(pattern.unwrap(), Pattern::Identifier(n) if n == "default"));
 }
 
@@ -1006,7 +1170,10 @@ fn test_direct_parse_let_pattern_final() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("final");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for final");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for final"
+    );
     assert!(matches!(pattern.unwrap(), Pattern::Identifier(n) if n == "final"));
 }
 
@@ -1015,7 +1182,10 @@ fn test_direct_parse_let_pattern_underscore() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("_");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for _");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for _"
+    );
     assert!(matches!(pattern.unwrap(), Pattern::Identifier(n) if n == "_"));
 }
 
@@ -1024,7 +1194,10 @@ fn test_direct_parse_let_pattern_tuple() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("(a, b)");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for (a, b)");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for (a, b)"
+    );
 }
 
 #[test]
@@ -1032,7 +1205,10 @@ fn test_direct_parse_let_pattern_list() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("[a, b]");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for [a, b]");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for [a, b]"
+    );
 }
 
 #[test]
@@ -1040,7 +1216,10 @@ fn test_direct_parse_let_pattern_struct_brace() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("{a, b}");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for {{a, b}}");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for {{a, b}}"
+    );
 }
 
 #[test]
@@ -1048,7 +1227,10 @@ fn test_direct_parse_let_pattern_named_struct() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("Point { x, y }");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for Point {{ x, y }}");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for Point {{ x, y }}"
+    );
 }
 
 #[test]
@@ -1056,7 +1238,10 @@ fn test_direct_parse_let_pattern_named_variant() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("Color(r, g, b)");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_ok(), "Direct parse_let_pattern should succeed for Color(r, g, b)");
+    assert!(
+        pattern.is_ok(),
+        "Direct parse_let_pattern should succeed for Color(r, g, b)"
+    );
 }
 
 #[test]
@@ -1064,5 +1249,8 @@ fn test_direct_parse_let_pattern_error_on_eof() {
     use crate::frontend::parser::ParserState;
     let mut state = ParserState::new("");
     let pattern = super::parse_let_pattern(&mut state, false);
-    assert!(pattern.is_err(), "Direct parse_let_pattern should fail on empty input");
+    assert!(
+        pattern.is_err(),
+        "Direct parse_let_pattern should fail on empty input"
+    );
 }

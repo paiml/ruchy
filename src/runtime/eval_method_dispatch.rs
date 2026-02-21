@@ -519,12 +519,9 @@ fn find_dataframe_column<'a>(
     columns: &'a [DataFrameColumn],
     name: &str,
 ) -> Result<&'a DataFrameColumn, InterpreterError> {
-    columns
-        .iter()
-        .find(|col| col.name == name)
-        .ok_or_else(|| {
-            InterpreterError::RuntimeError(format!("Column '{name}' not found in DataFrame"))
-        })
+    columns.iter().find(|col| col.name == name).ok_or_else(|| {
+        InterpreterError::RuntimeError(format!("Column '{name}' not found in DataFrame"))
+    })
 }
 
 fn eval_dataframe_select(

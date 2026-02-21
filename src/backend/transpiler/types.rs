@@ -1200,10 +1200,7 @@ impl Transpiler {
                 };
                 // BOOK-COMPAT-016: Check if we need auto-clone for &self method returning owned type
                 let needs_auto_clone = !self_is_mutated
-                    && method
-                        .return_type
-                        .as_ref()
-                        .is_some_and(Self::is_owned_type)
+                    && method.return_type.as_ref().is_some_and(Self::is_owned_type)
                     && Self::body_returns_self_field(&method.body);
                 // Process method body (always present in ImplMethod)
                 let body_tokens = if needs_auto_clone {
@@ -1462,7 +1459,6 @@ impl Transpiler {
         }
     }
 }
-
 
 #[cfg(test)]
 #[path = "types_extreme_tdd_tests.rs"]

@@ -568,10 +568,7 @@ impl Transpiler {
             ExprKind::Call { func, args } => {
                 // Check if this is a direct function call (not a method call)
                 if let ExprKind::Identifier(func_name) = &func.kind {
-                    let arg_types: Vec<String> = args
-                        .iter()
-                        .map(Self::infer_arg_type)
-                        .collect();
+                    let arg_types: Vec<String> = args.iter().map(Self::infer_arg_type).collect();
                     // Only store if we inferred at least one concrete type
                     if arg_types.iter().any(|t| t != "_") {
                         self.call_site_arg_types
@@ -608,7 +605,9 @@ impl Transpiler {
                     self.collect_call_site_types_from_expr(eb);
                 }
             }
-            ExprKind::While { condition, body, .. } => {
+            ExprKind::While {
+                condition, body, ..
+            } => {
                 self.collect_call_site_types_from_expr(condition);
                 self.collect_call_site_types_from_expr(body);
             }

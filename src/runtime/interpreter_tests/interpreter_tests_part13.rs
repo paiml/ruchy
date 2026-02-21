@@ -1708,4 +1708,3 @@ fn test_complex_boolean_expr_cov() {
     );
     let _ = result;
 }
-

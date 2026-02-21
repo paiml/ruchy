@@ -1226,12 +1226,10 @@ mod tests {
     #[test]
     fn test_main_renamed_with_body_content() {
         let transpiler = Transpiler::new();
-        let body = block_expr(vec![
-            make_expr(ExprKind::Call {
-                func: Box::new(ident_expr("println")),
-                args: vec![string_expr("hello")],
-            }),
-        ]);
+        let body = block_expr(vec![make_expr(ExprKind::Call {
+            func: Box::new(ident_expr("println")),
+            args: vec![string_expr("hello")],
+        })]);
         let main_expr = func_expr("main", body);
         let result = transpiler
             .transpile_main_as_renamed_function(&main_expr)
@@ -1255,7 +1253,10 @@ mod tests {
         let code = result.unwrap().to_string();
         assert!(code.contains("fn main"), "Should contain main function");
         assert!(!code.contains("polars"), "Should not contain polars import");
-        assert!(!code.contains("HashMap"), "Should not contain HashMap import");
+        assert!(
+            !code.contains("HashMap"),
+            "Should not contain HashMap import"
+        );
     }
 
     #[test]

@@ -1165,10 +1165,7 @@ fn handle_test_dispatch(
     )
 }
 /// Handle Oracle subcommands for ML model management
-fn run_auto_train_json(
-    oracle: ruchy::oracle::RuchyOracle,
-    max_iterations: usize,
-) -> Result<()> {
+fn run_auto_train_json(oracle: ruchy::oracle::RuchyOracle, max_iterations: usize) -> Result<()> {
     use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
     let config = TrainingLoopConfig {
         max_iterations,
@@ -1201,10 +1198,7 @@ fn run_auto_train_json(
     Ok(())
 }
 
-fn run_auto_train_visual(
-    oracle: ruchy::oracle::RuchyOracle,
-    max_iterations: usize,
-) -> Result<()> {
+fn run_auto_train_visual(oracle: ruchy::oracle::RuchyOracle, max_iterations: usize) -> Result<()> {
     use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
     let config = TrainingLoopConfig {
         max_iterations,
@@ -1224,11 +1218,17 @@ fn run_auto_train_visual(
                 iteration,
                 accuracy,
             } => {
-                println!("✅ Converged at iteration {iteration} with {:.1}% accuracy", accuracy * 100.0);
+                println!(
+                    "✅ Converged at iteration {iteration} with {:.1}% accuracy",
+                    accuracy * 100.0
+                );
                 break;
             }
             TrainingEvent::MaxIterationsReached { accuracy } => {
-                println!("⏹ Max iterations reached. Final accuracy: {:.1}%", accuracy * 100.0);
+                println!(
+                    "⏹ Max iterations reached. Final accuracy: {:.1}%",
+                    accuracy * 100.0
+                );
                 break;
             }
             TrainingEvent::Error { message } => {
@@ -1239,7 +1239,11 @@ fn run_auto_train_visual(
                 accuracy_before,
                 accuracy_after,
             } => {
-                println!("🔄 Retrained: {:.1}% → {:.1}%", accuracy_before * 100.0, accuracy_after * 100.0);
+                println!(
+                    "🔄 Retrained: {:.1}% → {:.1}%",
+                    accuracy_before * 100.0,
+                    accuracy_after * 100.0
+                );
             }
             TrainingEvent::CurriculumAdvanced { from, to } => {
                 println!("📈 Curriculum advanced: {from:?} → {to:?}");
@@ -1256,7 +1260,9 @@ fn handle_oracle_train(
     verbose: bool,
     auto_train: bool,
     max_iterations: usize,
-    oracle_store: &'static std::thread::LocalKey<std::cell::RefCell<Option<ruchy::oracle::RuchyOracle>>>,
+    oracle_store: &'static std::thread::LocalKey<
+        std::cell::RefCell<Option<ruchy::oracle::RuchyOracle>>,
+    >,
 ) -> Result<()> {
     use ruchy::oracle::RuchyOracle;
     let mut oracle = RuchyOracle::new();
@@ -1275,7 +1281,10 @@ fn handle_oracle_train(
     let accuracy = 0.85;
 
     if format == "json" {
-        println!("{}", serde_json::json!({"status": "trained", "samples": samples, "accuracy": accuracy}));
+        println!(
+            "{}",
+            serde_json::json!({"status": "trained", "samples": samples, "accuracy": accuracy})
+        );
     } else {
         println!("Training complete!");
         println!("  Samples: {samples}");

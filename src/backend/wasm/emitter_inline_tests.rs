@@ -2,7 +2,6 @@ use super::*;
 use crate::frontend::ast::Span;
 use crate::frontend::parser::Parser;
 
-
 #[test]
 fn test_wasm_emitter_new() {
     let emitter = WasmEmitter::new();
@@ -503,7 +502,10 @@ fn test_register_pattern_symbols_tuple_with_wildcard() {
 #[test]
 fn test_store_pattern_values_identifier() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("x".to_string(), WasmType::I32);
     let pattern = Pattern::Identifier("x".to_string());
     let mut instructions = vec![];
     let result = emitter.store_pattern_values(&pattern, &mut instructions);
@@ -524,8 +526,14 @@ fn test_store_pattern_values_wildcard() {
 #[test]
 fn test_store_pattern_values_tuple() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("a".to_string(), WasmType::I32);
-    emitter.symbols.borrow_mut().insert("b".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("a".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("b".to_string(), WasmType::I32);
     let pattern = Pattern::Tuple(vec![
         Pattern::Identifier("a".to_string()),
         Pattern::Identifier("b".to_string()),
@@ -539,10 +547,11 @@ fn test_store_pattern_values_tuple() {
 #[test]
 fn test_store_pattern_values_tuple_single_element() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
-    let pattern = Pattern::Tuple(vec![
-        Pattern::Identifier("x".to_string()),
-    ]);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("x".to_string(), WasmType::I32);
+    let pattern = Pattern::Tuple(vec![Pattern::Identifier("x".to_string())]);
     let mut instructions = vec![];
     let result = emitter.store_pattern_values(&pattern, &mut instructions);
     assert!(result.is_ok());
@@ -566,9 +575,18 @@ fn test_store_pattern_values_unsupported_pattern() {
 #[test]
 fn test_store_pattern_values_nested_tuple() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("a".to_string(), WasmType::I32);
-    emitter.symbols.borrow_mut().insert("b".to_string(), WasmType::I32);
-    emitter.symbols.borrow_mut().insert("c".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("a".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("b".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("c".to_string(), WasmType::I32);
     let pattern = Pattern::Tuple(vec![
         Pattern::Identifier("a".to_string()),
         Pattern::Tuple(vec![
@@ -730,11 +748,14 @@ fn test_lower_call_user_function_no_args() {
 #[test]
 fn test_lower_field_access_tuple_i32() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
-    emitter.tuple_types.borrow_mut().insert(
-        "t".to_string(),
-        vec![WasmType::I32, WasmType::I32],
-    );
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("t".to_string(), WasmType::I32);
+    emitter
+        .tuple_types
+        .borrow_mut()
+        .insert("t".to_string(), vec![WasmType::I32, WasmType::I32]);
     let object = ident_expr("t");
     let result = emitter.lower_field_access(&object, "0");
     assert!(result.is_ok());
@@ -745,11 +766,14 @@ fn test_lower_field_access_tuple_i32() {
 #[test]
 fn test_lower_field_access_tuple_f32() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
-    emitter.tuple_types.borrow_mut().insert(
-        "t".to_string(),
-        vec![WasmType::I32, WasmType::F32],
-    );
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("t".to_string(), WasmType::I32);
+    emitter
+        .tuple_types
+        .borrow_mut()
+        .insert("t".to_string(), vec![WasmType::I32, WasmType::F32]);
     let object = ident_expr("t");
     let result = emitter.lower_field_access(&object, "1");
     assert!(result.is_ok());
@@ -760,7 +784,10 @@ fn test_lower_field_access_tuple_f32() {
 #[test]
 fn test_lower_field_access_tuple_no_type_info() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("t".to_string(), WasmType::I32);
     let object = ident_expr("t");
     let result = emitter.lower_field_access(&object, "0");
     assert!(result.is_ok());
@@ -777,7 +804,10 @@ fn test_lower_field_access_tuple_non_identifier_object() {
 #[test]
 fn test_lower_field_access_struct_field() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("p".to_string(), WasmType::I32);
     emitter
         .structs
         .borrow_mut()
@@ -790,7 +820,10 @@ fn test_lower_field_access_struct_field() {
 #[test]
 fn test_lower_field_access_struct_second_field() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("p".to_string(), WasmType::I32);
     emitter
         .structs
         .borrow_mut()
@@ -803,7 +836,10 @@ fn test_lower_field_access_struct_second_field() {
 #[test]
 fn test_lower_field_access_unknown_struct_field() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("p".to_string(), WasmType::I32);
     emitter
         .structs
         .borrow_mut()
@@ -816,7 +852,10 @@ fn test_lower_field_access_unknown_struct_field() {
 #[test]
 fn test_lower_field_access_no_struct_registered() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("p".to_string(), WasmType::I32);
     let object = ident_expr("p");
     let result = emitter.lower_field_access(&object, "name");
     assert!(result.is_ok());
@@ -825,11 +864,14 @@ fn test_lower_field_access_no_struct_registered() {
 #[test]
 fn test_lower_field_access_tuple_index_out_of_range() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
-    emitter.tuple_types.borrow_mut().insert(
-        "t".to_string(),
-        vec![WasmType::I32],
-    );
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("t".to_string(), WasmType::I32);
+    emitter
+        .tuple_types
+        .borrow_mut()
+        .insert("t".to_string(), vec![WasmType::I32]);
     let object = ident_expr("t");
     let result = emitter.lower_field_access(&object, "5");
     assert!(result.is_ok());
@@ -840,7 +882,10 @@ fn test_lower_field_access_tuple_index_out_of_range() {
 #[test]
 fn test_lower_assign_identifier() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("x".to_string(), WasmType::I32);
     let target = ident_expr("x");
     let value = int_expr(42);
     let result = emitter.lower_assign(&target, &value);
@@ -852,7 +897,10 @@ fn test_lower_assign_identifier() {
 #[test]
 fn test_lower_assign_field_access_tuple() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("t".to_string(), WasmType::I32);
     let target = Expr::new(
         ExprKind::FieldAccess {
             object: Box::new(ident_expr("t")),
@@ -870,7 +918,10 @@ fn test_lower_assign_field_access_tuple() {
 #[test]
 fn test_lower_assign_field_access_struct() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("p".to_string(), WasmType::I32);
     emitter
         .structs
         .borrow_mut()
@@ -890,7 +941,10 @@ fn test_lower_assign_field_access_struct() {
 #[test]
 fn test_lower_assign_field_access_unknown_field() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("p".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("p".to_string(), WasmType::I32);
     emitter
         .structs
         .borrow_mut()
@@ -910,7 +964,10 @@ fn test_lower_assign_field_access_unknown_field() {
 #[test]
 fn test_lower_assign_index_access() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("arr".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("arr".to_string(), WasmType::I32);
     let target = Expr::new(
         ExprKind::IndexAccess {
             object: Box::new(ident_expr("arr")),
@@ -938,7 +995,10 @@ fn test_lower_assign_unsupported_target() {
 #[test]
 fn test_lower_assign_via_lower_expression() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("x".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("x".to_string(), WasmType::I32);
     let assign_expr = Expr::new(
         ExprKind::Assign {
             target: Box::new(ident_expr("x")),
@@ -1222,9 +1282,7 @@ fn test_lower_match_tuple_pattern_not_last() {
     let match_expr = int_expr(1);
     let arms = vec![
         crate::frontend::ast::MatchArm {
-            pattern: Pattern::Tuple(vec![
-                Pattern::Identifier("a".to_string()),
-            ]),
+            pattern: Pattern::Tuple(vec![Pattern::Identifier("a".to_string())]),
             guard: None,
             body: Box::new(int_expr(10)),
             span: span(),
@@ -1306,9 +1364,7 @@ fn test_lower_match_or_pattern_non_literal_error() {
     let match_expr = int_expr(1);
     let arms = vec![
         crate::frontend::ast::MatchArm {
-            pattern: Pattern::Or(vec![
-                Pattern::Identifier("x".to_string()),
-            ]),
+            pattern: Pattern::Or(vec![Pattern::Identifier("x".to_string())]),
             guard: None,
             body: Box::new(int_expr(100)),
             span: span(),
@@ -1358,7 +1414,10 @@ fn test_lower_match_three_or_patterns() {
 #[test]
 fn test_lower_expression_field_access() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("t".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("t".to_string(), WasmType::I32);
     let field_access = Expr::new(
         ExprKind::FieldAccess {
             object: Box::new(ident_expr("t")),
@@ -1373,7 +1432,10 @@ fn test_lower_expression_field_access() {
 #[test]
 fn test_lower_expression_assign_index() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("arr".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("arr".to_string(), WasmType::I32);
     let assign = Expr::new(
         ExprKind::Assign {
             target: Box::new(Expr::new(
@@ -1394,8 +1456,14 @@ fn test_lower_expression_assign_index() {
 #[test]
 fn test_lower_expression_let_pattern_tuple() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("a".to_string(), WasmType::I32);
-    emitter.symbols.borrow_mut().insert("b".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("a".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("b".to_string(), WasmType::I32);
     let let_pattern = Expr::new(
         ExprKind::LetPattern {
             pattern: Pattern::Tuple(vec![
@@ -1433,7 +1501,10 @@ fn test_lower_expression_string_interpolation_single_text() {
 #[test]
 fn test_lower_assign_field_access_no_structs() {
     let emitter = WasmEmitter::new();
-    emitter.symbols.borrow_mut().insert("obj".to_string(), WasmType::I32);
+    emitter
+        .symbols
+        .borrow_mut()
+        .insert("obj".to_string(), WasmType::I32);
     let target = Expr::new(
         ExprKind::FieldAccess {
             object: Box::new(ident_expr("obj")),

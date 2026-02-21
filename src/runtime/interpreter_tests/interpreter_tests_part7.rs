@@ -428,7 +428,11 @@ fn test_while_loop_with_condition() {
 #[test]
 fn test_continue_in_loop() {
     let mut interp = Interpreter::new();
-    let result = interp.eval_string(r#"{ let mut sum = 0; for i in 1..=5 { if i == 3 { continue }; sum = sum + i }; sum }"#).unwrap();
+    let result = interp
+        .eval_string(
+            r#"{ let mut sum = 0; for i in 1..=5 { if i == 3 { continue }; sum = sum + i }; sum }"#,
+        )
+        .unwrap();
     // 1 + 2 + 4 + 5 = 12 (skipping 3)
     assert_eq!(result, Value::Integer(12));
 }
@@ -1198,8 +1202,8 @@ fn test_literal_byte() {
 #[test]
 fn test_class_definition() {
     let mut interp = Interpreter::new();
-    let result = interp
-        .eval_string(r#"class Counter { count: i64, fn new() { Counter { count: 0 } } }"#);
+    let result =
+        interp.eval_string(r#"class Counter { count: i64, fn new() { Counter { count: 0 } } }"#);
     // Definition should succeed (or fail gracefully)
     assert!(result.is_ok() || result.is_err());
 }
@@ -1842,4 +1846,3 @@ fn test_string_parse_float_cov() {
         Err(_) => {}
     }
 }
-
