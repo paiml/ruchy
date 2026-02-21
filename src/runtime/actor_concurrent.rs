@@ -1755,7 +1755,12 @@ mod tests {
         let parent_state = HashMap::new();
         let parent_handlers = HashMap::new();
         let supervisor_id = system
-            .spawn_actor("Supervisor".to_string(), parent_state, parent_handlers, None)
+            .spawn_actor(
+                "Supervisor".to_string(),
+                parent_state,
+                parent_handlers,
+                None,
+            )
             .expect("should spawn supervisor");
 
         // Spawn child under supervisor
@@ -1809,7 +1814,12 @@ mod tests {
         let parent_state = HashMap::new();
         let parent_handlers = HashMap::new();
         let supervisor_id = system
-            .spawn_actor("Supervisor".to_string(), parent_state, parent_handlers, None)
+            .spawn_actor(
+                "Supervisor".to_string(),
+                parent_state,
+                parent_handlers,
+                None,
+            )
             .expect("should spawn supervisor");
 
         // Exhaust restart count so should_restart returns false
@@ -1852,7 +1862,12 @@ mod tests {
         let parent_state = HashMap::new();
         let parent_handlers = HashMap::new();
         let supervisor_id = system
-            .spawn_actor("Supervisor".to_string(), parent_state, parent_handlers, None)
+            .spawn_actor(
+                "Supervisor".to_string(),
+                parent_state,
+                parent_handlers,
+                None,
+            )
             .expect("should spawn supervisor");
 
         // Change supervisor strategy to RestForOne

@@ -616,7 +616,10 @@ pub(crate) fn eval_fs_is_file(args: &[Value]) -> Result<Value, InterpreterError>
 }
 
 /// Dispatch file system functions - Part 1
-pub(crate) fn try_eval_fs_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_fs_part1(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_fs_read__" => Ok(Some(eval_fs_read(args)?)),
         "__builtin_fs_write__" => Ok(Some(eval_fs_write(args)?)),
@@ -627,7 +630,10 @@ pub(crate) fn try_eval_fs_part1(name: &str, args: &[Value]) -> Result<Option<Val
 }
 
 /// Dispatch file system functions - Part 2
-pub(crate) fn try_eval_fs_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_fs_part2(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_fs_remove_file__" => Ok(Some(eval_fs_remove_file(args)?)),
         "__builtin_fs_remove_dir__" => Ok(Some(eval_fs_remove_dir(args)?)),
@@ -638,7 +644,10 @@ pub(crate) fn try_eval_fs_part2(name: &str, args: &[Value]) -> Result<Option<Val
 }
 
 /// Dispatch file system functions - Part 3
-pub(crate) fn try_eval_fs_part3(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_fs_part3(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_fs_metadata__" => Ok(Some(eval_fs_metadata(args)?)),
         "__builtin_fs_read_dir__" => Ok(Some(eval_fs_read_dir(args)?)),
@@ -649,7 +658,10 @@ pub(crate) fn try_eval_fs_part3(name: &str, args: &[Value]) -> Result<Option<Val
 }
 
 /// Dispatch STDLIB-003: User-friendly file I/O aliases
-pub(crate) fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_stdlib003(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_read_file__" | "read_file" => Ok(Some(eval_read_file_unwrapped(args)?)),
         "__builtin_write_file__" | "write_file" => Ok(Some(eval_fs_write(args)?)),
@@ -661,7 +673,10 @@ pub(crate) fn try_eval_stdlib003(name: &str, args: &[Value]) -> Result<Option<Va
 }
 
 /// Dispatch STDLIB-005: Multi-Threaded Directory Walking + Text Search + Hashing
-pub(crate) fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_stdlib005(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_walk__" => Ok(Some(eval_walk(args)?)),
         "__builtin_glob__" => Ok(Some(eval_glob(args)?)),
@@ -674,7 +689,10 @@ pub(crate) fn try_eval_stdlib005(name: &str, args: &[Value]) -> Result<Option<Va
 }
 
 /// Dispatcher for file system functions
-pub(crate) fn try_eval_fs_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_fs_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     if let Some(result) = try_eval_fs_part1(name, args)? {
         return Ok(Some(result));
     }
@@ -715,10 +733,7 @@ mod tests {
 
         // Check first match
         if let Value::Object(obj) = &results[0] {
-            assert_eq!(
-                obj.get("line_num"),
-                Some(&Value::Integer(1))
-            );
+            assert_eq!(obj.get("line_num"), Some(&Value::Integer(1)));
             assert_eq!(
                 obj.get("line"),
                 Some(&Value::String("hello world".to_string().into()))
@@ -731,10 +746,7 @@ mod tests {
 
         // Check second match
         if let Value::Object(obj) = &results[1] {
-            assert_eq!(
-                obj.get("line_num"),
-                Some(&Value::Integer(3))
-            );
+            assert_eq!(obj.get("line_num"), Some(&Value::Integer(3)));
         } else {
             panic!("Expected Object result");
         }
@@ -811,10 +823,7 @@ mod tests {
         // Verify line numbers are 1-indexed
         for (i, result) in results.iter().enumerate() {
             if let Value::Object(obj) = result {
-                assert_eq!(
-                    obj.get("line_num"),
-                    Some(&Value::Integer((i + 1) as i64))
-                );
+                assert_eq!(obj.get("line_num"), Some(&Value::Integer((i + 1) as i64)));
             }
         }
 

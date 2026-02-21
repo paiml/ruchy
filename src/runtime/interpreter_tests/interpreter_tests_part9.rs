@@ -21,8 +21,7 @@ fn test_array_init_with_expr() {
 #[test]
 fn test_loop_with_break() {
     let mut interp = Interpreter::new();
-    let result =
-        interp.eval_string("{ let mut x = 0; loop { x = x + 1; if x >= 3 { break x } } }");
+    let result = interp.eval_string("{ let mut x = 0; loop { x = x + 1; if x >= 3 { break x } } }");
     match result {
         Ok(Value::Integer(n)) => assert_eq!(n, 3),
         _ => {}
@@ -455,8 +454,8 @@ fn test_ternary_false_branch() {
 fn test_while_let_none() {
     let mut interp = Interpreter::new();
     // Should execute 0 times when condition doesn't match
-    let _result = interp
-        .eval_string("{ let mut sum = 0; while let Some(x) = None { sum = sum + x }; sum }");
+    let _result =
+        interp.eval_string("{ let mut sum = 0; while let Some(x) = None { sum = sum + x }; sum }");
 }
 
 // ============== Match with Guards ==============
@@ -807,8 +806,7 @@ fn test_for_loop_with_tuple_pattern() {
 #[test]
 fn test_recursive_function() {
     let mut interp = Interpreter::new();
-    let _ =
-        interp.eval_string("fn factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
+    let _ = interp.eval_string("fn factorial(n) { if n <= 1 { 1 } else { n * factorial(n - 1) } }");
     let result = interp.eval_string("factorial(5)");
     match result {
         Ok(Value::Integer(n)) => assert_eq!(n, 120),
@@ -1811,4 +1809,3 @@ fn test_call_class_as_function() {
     let _ = interp.eval_string("class Animal { fn new() { } }");
     let _result = interp.eval_string("Animal()");
 }
-

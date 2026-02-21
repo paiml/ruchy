@@ -1322,7 +1322,10 @@ mod tests {
         let arr = vec![Value::Integer(1)];
         let result = slice_array(&arr, &Value::Bool(true), &Value::Integer(1), false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Range start must be"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Range start must be"));
     }
 
     #[test]
@@ -1330,7 +1333,10 @@ mod tests {
         let arr = vec![Value::Integer(1)];
         let result = slice_array(&arr, &Value::Integer(0), &Value::Bool(false), false);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Range end must be"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Range end must be"));
     }
 
     #[test]

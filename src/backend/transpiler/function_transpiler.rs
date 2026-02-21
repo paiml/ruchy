@@ -146,7 +146,7 @@ impl Transpiler {
             )
             || matches!(&expr.kind, ExprKind::Assign { .. })
             || matches!(&expr.kind, ExprKind::Return { value: None })
-            || matches!(&expr.kind, ExprKind::Return { value: Some(_) })  // Return with value is still unit for main
+            || matches!(&expr.kind, ExprKind::Return { value: Some(_) }) // Return with value is still unit for main
     }
 
     /// BOOK-COMPAT-015: Generate main body that prints the last expression

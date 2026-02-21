@@ -1019,7 +1019,7 @@ mod tests {
         let mut gates = QualityGates::new();
         // Set metrics that will trigger violations
         gates.update_metrics(QualityMetrics {
-            test_coverage: 10.0, // Below threshold
+            test_coverage: 10.0,        // Below threshold
             cyclomatic_complexity: 100, // Above threshold
             cognitive_complexity: 100,
             satd_count: 1000, // Way above threshold

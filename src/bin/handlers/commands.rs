@@ -1735,7 +1735,6 @@ fn extract_symbols(_ast: &ruchy::frontend::ast::Expr) -> SymbolInfo {
     }
 }
 
-
 #[cfg(test)]
 #[path = "commands_tests.rs"]
 mod tests;

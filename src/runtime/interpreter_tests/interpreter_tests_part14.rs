@@ -1971,4 +1971,3 @@ fn test_io_monad_cov() {
     );
     let _ = result;
 }
-

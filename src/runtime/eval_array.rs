@@ -809,7 +809,6 @@ fn eval_array_zip(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Interprete
     }
 }
 
-
 #[cfg(test)]
 #[path = "eval_array_tests.rs"]
 mod tests;

@@ -99,7 +99,13 @@ fn demo_data_locality() {
 
     // Query data locations
     println!("  Data Location Queries:");
-    for key in &["parser_cache", "type_checker", "stdlib", "optimizer", "code_gen"] {
+    for key in &[
+        "parser_cache",
+        "type_checker",
+        "stdlib",
+        "optimizer",
+        "code_gen",
+    ] {
         let workers = tracker.get_workers_for_data(key);
         let worker_ids: Vec<_> = workers.iter().map(|w| w.0).collect();
         println!("    {} → workers {:?}", key, worker_ids);

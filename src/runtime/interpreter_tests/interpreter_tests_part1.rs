@@ -926,4 +926,3 @@ fn test_multiple_operations_same_interpreter() {
         Value::Integer(5)
     );
 }
-

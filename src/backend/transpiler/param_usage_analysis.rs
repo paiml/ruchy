@@ -15,7 +15,7 @@ pub use super::builtin_type_inference::{infer_param_type_from_builtin_usage, is_
 /// - `Some(false)` if the check explicitly failed (stop traversal, return false)
 /// - `None` to continue traversal into child nodes
 /// Collect child expressions for generic AST traversal
-fn collect_child_exprs<'a>(expr: &'a Expr) -> Vec<&'a Expr> {
+fn collect_child_exprs(expr: &Expr) -> Vec<&Expr> {
     match &expr.kind {
         ExprKind::Block(exprs) => exprs.iter().collect(),
         ExprKind::If {
@@ -41,8 +41,9 @@ fn collect_child_exprs<'a>(expr: &'a Expr) -> Vec<&'a Expr> {
             body,
             ..
         } => vec![condition.as_ref(), body.as_ref()],
-        ExprKind::Assign { target, value }
-        | ExprKind::CompoundAssign { target, value, .. } => vec![target.as_ref(), value.as_ref()],
+        ExprKind::Assign { target, value } | ExprKind::CompoundAssign { target, value, .. } => {
+            vec![target.as_ref(), value.as_ref()]
+        }
         ExprKind::Call { args, .. } => args.iter().collect(),
         ExprKind::IndexAccess { object, index } => vec![object.as_ref(), index.as_ref()],
         ExprKind::Unary { operand, .. } => vec![operand.as_ref()],
@@ -509,7 +510,6 @@ pub fn infer_param_type(param_name: &str, body: &Expr) -> Option<&'static str> {
     // No inference - keep original type
     None
 }
-
 
 #[cfg(test)]
 #[path = "param_usage_analysis_inline_tests.rs"]

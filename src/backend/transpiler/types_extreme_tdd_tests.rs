@@ -891,18 +891,14 @@ fn test_struct_defaults_with_methods() {
         self_type: crate::frontend::ast::SelfType::MutBorrowed,
     };
     let result = t
-        .transpile_struct_with_methods(
-            "Counter",
-            &[],
-            &[field_with_default],
-            &[method],
-            &[],
-            false,
-        )
+        .transpile_struct_with_methods("Counter", &[], &[field_with_default], &[method], &[], false)
         .unwrap();
     let code = result.to_string();
     assert!(code.contains("Default"), "Should have Default impl");
-    assert!(code.contains("impl Counter"), "Should have methods impl block");
+    assert!(
+        code.contains("impl Counter"),
+        "Should have methods impl block"
+    );
 }
 
 #[test]
@@ -919,17 +915,13 @@ fn test_struct_generic_with_defaults() {
         is_mut: false,
     };
     let result = t
-        .transpile_struct_with_methods(
-            "Wrapper",
-            &["T".to_string()],
-            &[field],
-            &[],
-            &[],
-            false,
-        )
+        .transpile_struct_with_methods("Wrapper", &["T".to_string()], &[field], &[], &[], false)
         .unwrap();
     let code = result.to_string();
-    assert!(code.contains("Default"), "Generic struct should get Default impl with bounds");
+    assert!(
+        code.contains("Default"),
+        "Generic struct should get Default impl with bounds"
+    );
 }
 
 #[test]
@@ -991,7 +983,10 @@ fn test_struct_field_no_default_in_default_impl() {
         .transpile_struct_with_methods("Mixed", &[], &[field_with, field_without], &[], &[], false)
         .unwrap();
     let code = result.to_string();
-    assert!(code.contains("Default :: default"), "Missing defaults should use Default::default()");
+    assert!(
+        code.contains("Default :: default"),
+        "Missing defaults should use Default::default()"
+    );
 }
 
 #[test]
@@ -1070,7 +1065,9 @@ fn test_constructor_body_block_with_self_assigns() {
             crate::frontend::ast::Literal::Integer(2, None),
         ))),
     });
-    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![assign1, assign2]));
+    let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![
+        assign1, assign2,
+    ]));
     let result = t.transpile_constructor_body(&body).unwrap();
     let code = result.to_string();
     assert!(code.contains("Self"), "Should generate Self init");
@@ -1141,7 +1138,8 @@ fn test_constructor_body_block_mixed_self_then_non_self() {
         ))),
     });
     let body = make_expr(crate::frontend::ast::ExprKind::Block(vec![
-        self_assign, non_self,
+        self_assign,
+        non_self,
     ]));
     let result = t.transpile_constructor_body(&body);
     // Falls through when encountering non-self assignment
@@ -1274,7 +1272,10 @@ fn test_transpile_body_with_auto_clone_self_field() {
     let result = t.transpile_body_with_auto_clone(&body);
     assert!(result.is_ok());
     let code = result.unwrap().to_string();
-    assert!(code.contains("self . name . clone ()"), "Should auto-clone self.field: {code}");
+    assert!(
+        code.contains("self . name . clone ()"),
+        "Should auto-clone self.field: {code}"
+    );
 }
 
 #[test]
@@ -1311,7 +1312,10 @@ fn test_transpile_body_with_auto_clone_block_with_self_last() {
     let result = t.transpile_body_with_auto_clone(&body);
     assert!(result.is_ok());
     let code = result.unwrap().to_string();
-    assert!(code.contains("clone"), "Last expr in block should be auto-cloned: {code}");
+    assert!(
+        code.contains("clone"),
+        "Last expr in block should be auto-cloned: {code}"
+    );
 }
 
 #[test]
@@ -1350,5 +1354,8 @@ fn test_transpile_body_with_auto_clone_single_elem_block() {
     let result = t.transpile_body_with_auto_clone(&body);
     assert!(result.is_ok());
     let code = result.unwrap().to_string();
-    assert!(code.contains("clone"), "Single-elem block with self.field should auto-clone: {code}");
+    assert!(
+        code.contains("clone"),
+        "Single-elem block with self.field should auto-clone: {code}"
+    );
 }

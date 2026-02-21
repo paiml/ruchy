@@ -102,7 +102,9 @@ fn test_has_non_unit_expression_true() {
         leading_comments: vec![],
         trailing_comment: None,
     };
-    assert!(super::super::function_analysis::has_non_unit_expression(&body));
+    assert!(super::super::function_analysis::has_non_unit_expression(
+        &body
+    ));
 }
 
 // Test 143: has_non_unit_expression - with unit
@@ -116,7 +118,9 @@ fn test_has_non_unit_expression_false() {
         leading_comments: vec![],
         trailing_comment: None,
     };
-    assert!(!super::super::function_analysis::has_non_unit_expression(&body));
+    assert!(!super::super::function_analysis::has_non_unit_expression(
+        &body
+    ));
 }
 
 // Test 144: is_void_expression - with unit literal

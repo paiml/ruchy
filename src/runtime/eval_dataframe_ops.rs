@@ -199,12 +199,9 @@ fn find_column_by_name<'a>(
     columns: &'a [DataFrameColumn],
     name: &str,
 ) -> Result<&'a DataFrameColumn, InterpreterError> {
-    columns
-        .iter()
-        .find(|col| col.name == name)
-        .ok_or_else(|| {
-            InterpreterError::RuntimeError(format!("Column '{name}' not found in DataFrame"))
-        })
+    columns.iter().find(|col| col.name == name).ok_or_else(|| {
+        InterpreterError::RuntimeError(format!("Column '{name}' not found in DataFrame"))
+    })
 }
 
 fn select_multiple_columns(
@@ -212,9 +209,9 @@ fn select_multiple_columns(
     col_names: &[Value],
 ) -> Result<Value, InterpreterError> {
     let mut selected = Vec::new();
-    for name_val in col_names.iter() {
+    for name_val in col_names {
         if let Value::String(column_name) = name_val {
-            selected.push(find_column_by_name(columns, &**column_name)?.clone());
+            selected.push(find_column_by_name(columns, column_name)?.clone());
         } else {
             return Err(InterpreterError::RuntimeError(
                 "DataFrame.select() array elements must be strings".to_string(),
@@ -1257,7 +1254,6 @@ fn eval_dataframe_get(
         ))
     })
 }
-
 
 #[cfg(test)]
 #[path = "eval_dataframe_ops_tests.rs"]

@@ -646,7 +646,10 @@ mod tests {
         let result = transpiler.transpile_field_access(&obj, "name");
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
-        assert!(code.contains("get"), "ObjectLiteral access should use .get()");
+        assert!(
+            code.contains("get"),
+            "ObjectLiteral access should use .get()"
+        );
     }
 
     // Test: FieldAccess on FieldAccess - nested numeric tuple
@@ -669,7 +672,10 @@ mod tests {
         let inner = ident_expr("obj");
         let nested = field_access_expr(inner, "field");
         let result = transpiler.transpile_field_access(&nested, "3abc");
-        assert!(result.is_err(), "Field starting with digit should be an error");
+        assert!(
+            result.is_err(),
+            "Field starting with digit should be an error"
+        );
     }
 
     // Test: FieldAccess on FieldAccess - known method like "success"
@@ -697,10 +703,7 @@ mod tests {
         let code = result.unwrap().to_string();
         // event is a variable (lowercase, no underscore with module prefix)
         // so it should use . syntax (variable chain)
-        assert!(
-            code.contains("id"),
-            "Should contain field name"
-        );
+        assert!(code.contains("id"), "Should contain field name");
     }
 
     // Test: FieldAccess on FieldAccess - module path

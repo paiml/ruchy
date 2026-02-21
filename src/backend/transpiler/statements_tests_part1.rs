@@ -505,7 +505,9 @@ fn test_is_variable_mutated_extended() {
         ExprKind::Block(vec![assign_expr, make_ident("other")]),
         Span::new(0, 1),
     );
-    assert!(super::super::mutation_detection::is_variable_mutated("x", &block));
+    assert!(super::super::mutation_detection::is_variable_mutated(
+        "x", &block
+    ));
     assert!(!super::super::mutation_detection::is_variable_mutated(
         "other", &block
     ));
@@ -1126,19 +1128,11 @@ fn test_looks_like_numeric_function() {
     assert!(super::super::function_analysis::looks_like_numeric_function("sin"));
     assert!(super::super::function_analysis::looks_like_numeric_function("cos"));
     assert!(super::super::function_analysis::looks_like_numeric_function("tan"));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "sqrt"
-    ));
+    assert!(super::super::function_analysis::looks_like_numeric_function("sqrt"));
     assert!(super::super::function_analysis::looks_like_numeric_function("abs"));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "floor"
-    ));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "ceil"
-    ));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "round"
-    ));
+    assert!(super::super::function_analysis::looks_like_numeric_function("floor"));
+    assert!(super::super::function_analysis::looks_like_numeric_function("ceil"));
+    assert!(super::super::function_analysis::looks_like_numeric_function("round"));
     assert!(super::super::function_analysis::looks_like_numeric_function("pow"));
     assert!(super::super::function_analysis::looks_like_numeric_function("log"));
     assert!(super::super::function_analysis::looks_like_numeric_function("exp"));
@@ -1146,15 +1140,9 @@ fn test_looks_like_numeric_function() {
     assert!(super::super::function_analysis::looks_like_numeric_function("max"));
 
     // Test non-numeric functions
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "println"
-    ));
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "assert"
-    ));
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "custom_function"
-    ));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("println"));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("assert"));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("custom_function"));
     assert!(!super::super::function_analysis::looks_like_numeric_function(""));
 }
 
@@ -1267,16 +1255,10 @@ fn test_is_variable_mutated_block() {
 fn test_looks_like_numeric_function_arithmetic() {
     let _transpiler = create_transpiler();
     assert!(super::super::function_analysis::looks_like_numeric_function("add"));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "multiply"
-    ));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "sqrt"
-    ));
+    assert!(super::super::function_analysis::looks_like_numeric_function("multiply"));
+    assert!(super::super::function_analysis::looks_like_numeric_function("sqrt"));
     assert!(super::super::function_analysis::looks_like_numeric_function("pow"));
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "concat"
-    ));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("concat"));
 }
 
 // Test 9: looks_like_numeric_function - trigonometric functions
@@ -1285,12 +1267,8 @@ fn test_looks_like_numeric_function_trig() {
     let _transpiler = create_transpiler();
     assert!(super::super::function_analysis::looks_like_numeric_function("sin"));
     assert!(super::super::function_analysis::looks_like_numeric_function("cos"));
-    assert!(super::super::function_analysis::looks_like_numeric_function(
-        "atan2"
-    ));
-    assert!(!super::super::function_analysis::looks_like_numeric_function(
-        "uppercase"
-    ));
+    assert!(super::super::function_analysis::looks_like_numeric_function("atan2"));
+    assert!(!super::super::function_analysis::looks_like_numeric_function("uppercase"));
 }
 
 // Test 10: is_void_function_call - println function
@@ -1306,7 +1284,9 @@ fn test_is_void_function_call_println() {
         },
         Span::default(),
     );
-    assert!(super::super::function_analysis::is_void_function_call(&call_expr));
+    assert!(super::super::function_analysis::is_void_function_call(
+        &call_expr
+    ));
 }
 
 // Test 11: is_void_function_call - assert function
@@ -1322,7 +1302,9 @@ fn test_is_void_function_call_assert() {
         },
         Span::default(),
     );
-    assert!(super::super::function_analysis::is_void_function_call(&call_expr));
+    assert!(super::super::function_analysis::is_void_function_call(
+        &call_expr
+    ));
 }
 
 // Test 12: is_void_expression - unit literal
@@ -1331,7 +1313,9 @@ fn test_is_void_expression_unit() {
     use crate::frontend::ast::{Expr, ExprKind, Span};
     let _transpiler = create_transpiler();
     let unit_expr = Expr::new(ExprKind::Literal(Literal::Unit), Span::default());
-    assert!(super::super::function_analysis::is_void_expression(&unit_expr));
+    assert!(super::super::function_analysis::is_void_expression(
+        &unit_expr
+    ));
 }
 
 // Test 13: is_void_expression - assignment expression
@@ -1351,7 +1335,9 @@ fn test_is_void_expression_assignment() {
         },
         Span::default(),
     );
-    assert!(super::super::function_analysis::is_void_expression(&assign_expr));
+    assert!(super::super::function_analysis::is_void_expression(
+        &assign_expr
+    ));
 }
 
 // Test 14: returns_closure - non-closure returns false
@@ -1522,4 +1508,3 @@ fn test_trueno_mean_transpiles_correctly() {
         "trueno_mean should transpile to trueno_bridge::mean, got: {rust_str}"
     );
 }
-

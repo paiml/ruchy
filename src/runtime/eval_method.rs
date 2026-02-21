@@ -1400,7 +1400,9 @@ mod eval_method_call_tests {
         let args: Vec<Expr> = vec![];
 
         let mut eval_fn = |_expr: &Expr| -> Result<Value, InterpreterError> {
-            Err(InterpreterError::RuntimeError("undefined variable".to_string()))
+            Err(InterpreterError::RuntimeError(
+                "undefined variable".to_string(),
+            ))
         };
 
         let mut df_filter = |_val: &Value, _args: &[Expr]| -> Result<Value, InterpreterError> {

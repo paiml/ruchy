@@ -30,8 +30,7 @@ mod inner {
 
     // Re-export output encoders for chart embedding
     pub use trueno_viz::output::{
-        HtmlExporter, PngEncoder, SvgElement, SvgEncoder, TerminalEncoder, TerminalMode,
-        TextAnchor,
+        HtmlExporter, PngEncoder, SvgElement, SvgEncoder, TerminalEncoder, TerminalMode, TextAnchor,
     };
 
     /// Create a Point from x/y coordinates.

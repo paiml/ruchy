@@ -123,9 +123,10 @@ fn demo_repl_worker() {
             BrickWorkerMessage::new("error", BrickWorkerMessageDirection::FromWorker)
                 .field("message", FieldType::String),
         )
-        .message(
-            BrickWorkerMessage::new("ready", BrickWorkerMessageDirection::FromWorker),
-        )
+        .message(BrickWorkerMessage::new(
+            "ready",
+            BrickWorkerMessageDirection::FromWorker,
+        ))
         .transition("init", "ready", "ready")
         .transition("ready", "eval", "evaluating")
         .transition("evaluating", "result", "ready")

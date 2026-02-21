@@ -1249,7 +1249,6 @@ fn parse_or_pattern(state: &mut ParserState, first: Pattern) -> Result<Pattern> 
     }
 }
 
-
 #[cfg(test)]
 #[path = "patterns_tests.rs"]
 mod tests;

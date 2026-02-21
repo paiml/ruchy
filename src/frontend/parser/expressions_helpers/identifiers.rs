@@ -957,7 +957,9 @@ mod tests {
                 );
                 // Verify it matches the identifier regex pattern
                 assert!(
-                    val.chars().next().map_or(false, |c| c.is_alphabetic() || c == '_'),
+                    val.chars()
+                        .next()
+                        .map_or(false, |c| c.is_alphabetic() || c == '_'),
                     "Identifier '{val}' should start with letter or underscore"
                 );
             }

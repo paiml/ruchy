@@ -90,7 +90,9 @@ pub(crate) fn value_to_json(value: &Value) -> Result<serde_json::Value, Interpre
 
 /// Convert Ruchy array to JSON array
 /// Complexity: 2 (map + collect with error handling)
-pub(crate) fn convert_ruchy_array_to_json(arr: &[Value]) -> Result<serde_json::Value, InterpreterError> {
+pub(crate) fn convert_ruchy_array_to_json(
+    arr: &[Value],
+) -> Result<serde_json::Value, InterpreterError> {
     let json_arr: Result<Vec<serde_json::Value>, _> = arr.iter().map(value_to_json).collect();
     Ok(serde_json::Value::Array(json_arr?))
 }
@@ -265,7 +267,10 @@ pub(crate) fn eval_json_get(args: &[Value]) -> Result<Value, InterpreterError> {
 }
 
 /// Get JSON value at dot-separated path
-pub(crate) fn get_json_value_at_path(json: &serde_json::Value, path: &str) -> Result<Value, InterpreterError> {
+pub(crate) fn get_json_value_at_path(
+    json: &serde_json::Value,
+    path: &str,
+) -> Result<Value, InterpreterError> {
     let parts: Vec<&str> = path.split('.').collect();
     match get_json_path_recursive(json, &parts) {
         Some(val) => eval_json_parse(&[Value::from_string(val.to_string())]),
@@ -319,7 +324,11 @@ pub(crate) fn set_json_path_from_string(
 }
 
 /// Recursively set JSON value at path
-pub(crate) fn set_json_path_recursive(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
+pub(crate) fn set_json_path_recursive(
+    json: &mut serde_json::Value,
+    path: &[&str],
+    value: serde_json::Value,
+) {
     if path.is_empty() {
         *json = value;
         return;
@@ -333,14 +342,22 @@ pub(crate) fn set_json_path_recursive(json: &mut serde_json::Value, path: &[&str
 }
 
 /// Set JSON value at single key
-pub(crate) fn set_json_single_key(json: &mut serde_json::Value, key: &str, value: serde_json::Value) {
+pub(crate) fn set_json_single_key(
+    json: &mut serde_json::Value,
+    key: &str,
+    value: serde_json::Value,
+) {
     if let serde_json::Value::Object(map) = json {
         map.insert(key.to_string(), value);
     }
 }
 
 /// Set JSON value at nested path
-pub(crate) fn set_json_nested_path(json: &mut serde_json::Value, path: &[&str], value: serde_json::Value) {
+pub(crate) fn set_json_nested_path(
+    json: &mut serde_json::Value,
+    path: &[&str],
+    value: serde_json::Value,
+) {
     if let serde_json::Value::Object(map) = json {
         if let Some(next) = map.get_mut(path[0]) {
             set_json_path_recursive(next, &path[1..], value);
@@ -349,7 +366,10 @@ pub(crate) fn set_json_nested_path(json: &mut serde_json::Value, path: &[&str], 
 }
 
 /// Dispatch JSON functions - Part 1a (parse/stringify)
-pub(crate) fn try_eval_json_part1a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_json_part1a(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_json_parse__" | "JSON_parse" | "parse_json" => Ok(Some(eval_json_parse(args)?)),
         "__builtin_json_stringify__" | "JSON_stringify" | "stringify_json" => {
@@ -361,7 +381,10 @@ pub(crate) fn try_eval_json_part1a(name: &str, args: &[Value]) -> Result<Option<
 }
 
 /// Dispatch JSON functions - Part 1b (read/write)
-pub(crate) fn try_eval_json_part1b(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_json_part1b(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_json_read__" => Ok(Some(eval_json_read(args)?)),
         "__builtin_json_write__" => Ok(Some(eval_json_write(args)?)),
@@ -370,7 +393,10 @@ pub(crate) fn try_eval_json_part1b(name: &str, args: &[Value]) -> Result<Option<
 }
 
 /// Dispatch JSON functions - Part 1 (combined)
-pub(crate) fn try_eval_json_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_json_part1(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     if let Some(result) = try_eval_json_part1a(name, args)? {
         return Ok(Some(result));
     }
@@ -378,7 +404,10 @@ pub(crate) fn try_eval_json_part1(name: &str, args: &[Value]) -> Result<Option<V
 }
 
 /// Dispatch JSON functions - Part 2a (validate/type/merge)
-pub(crate) fn try_eval_json_part2a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_json_part2a(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_json_validate__" => Ok(Some(eval_json_validate(args)?)),
         "__builtin_json_type__" => Ok(Some(eval_json_type(args)?)),
@@ -388,7 +417,10 @@ pub(crate) fn try_eval_json_part2a(name: &str, args: &[Value]) -> Result<Option<
 }
 
 /// Dispatch JSON functions - Part 2b (get/set)
-pub(crate) fn try_eval_json_part2b(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_json_part2b(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_json_get__" => Ok(Some(eval_json_get(args)?)),
         "__builtin_json_set__" => Ok(Some(eval_json_set(args)?)),
@@ -397,7 +429,10 @@ pub(crate) fn try_eval_json_part2b(name: &str, args: &[Value]) -> Result<Option<
 }
 
 /// Dispatch JSON functions - Part 2 (combined)
-pub(crate) fn try_eval_json_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_json_part2(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     if let Some(result) = try_eval_json_part2a(name, args)? {
         return Ok(Some(result));
     }
@@ -405,7 +440,10 @@ pub(crate) fn try_eval_json_part2(name: &str, args: &[Value]) -> Result<Option<V
 }
 
 /// Dispatcher for JSON functions
-pub(crate) fn try_eval_json_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_json_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] =
         &[try_eval_json_part1, try_eval_json_part2];
 
@@ -500,10 +538,7 @@ mod tests_json_ops {
         let mut outer = HashMap::new();
         outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
 
-        let args = vec![
-            Value::from_string(path_str),
-            Value::Object(Arc::new(outer)),
-        ];
+        let args = vec![Value::from_string(path_str), Value::Object(Arc::new(outer))];
 
         let result = eval_json_write(&args).unwrap();
         assert_eq!(result, Value::Bool(true));

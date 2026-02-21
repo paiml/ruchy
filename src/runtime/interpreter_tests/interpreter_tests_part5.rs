@@ -1515,12 +1515,7 @@ fn test_list_comprehension_ast_with_condition() {
             clauses: vec![ComprehensionClause {
                 variable: "x".to_string(),
                 iterable: Box::new(Expr {
-                    kind: ExprKind::List(vec![
-                        make_int(1),
-                        make_int(2),
-                        make_int(3),
-                        make_int(4),
-                    ]),
+                    kind: ExprKind::List(vec![make_int(1), make_int(2), make_int(3), make_int(4)]),
                     span: Span::default(),
                     attributes: vec![],
                     leading_comments: vec![],
@@ -1825,4 +1820,3 @@ fn test_macro_unknown_returns_error() {
     let result = interp.eval_expr(&unknown_macro);
     assert!(result.is_err());
 }
-

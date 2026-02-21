@@ -1726,10 +1726,7 @@ mod tests {
         let transpiler = Transpiler::new();
         for (op, expected_str) in [(BinaryOp::And, "&&"), (BinaryOp::Or, "||")] {
             let left = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
-            let right = Expr::new(
-                ExprKind::Literal(Literal::Bool(true)),
-                Span::default(),
-            );
+            let right = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
             let expr = Expr::new(
                 ExprKind::Binary {
                     left: Box::new(left),
@@ -1872,7 +1869,10 @@ mod tests {
         );
         let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
         let code = result.to_string();
-        assert!(code.contains("__guard"), "Should replace x with guard deref");
+        assert!(
+            code.contains("__guard"),
+            "Should replace x with guard deref"
+        );
         assert!(code.contains('!'), "Should contain NOT operator");
     }
 

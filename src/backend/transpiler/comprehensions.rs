@@ -1046,8 +1046,7 @@ mod tests {
         let expr = ident_expr("val");
         let iter = list_expr(vec![int_expr(1), int_expr(2)]);
         // Some(val) pattern -- inner_var extracts "val" from between parens
-        let result =
-            transpiler.transpile_list_comprehension(&expr, "Some(val)", &iter, None);
+        let result = transpiler.transpile_list_comprehension(&expr, "Some(val)", &iter, None);
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(
@@ -1097,8 +1096,7 @@ mod tests {
             crate::frontend::ast::BinaryOp::Greater,
             int_expr(0),
         );
-        let result =
-            transpiler.transpile_list_comprehension(&expr, "Ok(v)", &iter, Some(&filter));
+        let result = transpiler.transpile_list_comprehension(&expr, "Ok(v)", &iter, Some(&filter));
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("filter_map"));
@@ -1122,8 +1120,7 @@ mod tests {
         let expr = ident_expr("x");
         let iter = list_expr(vec![int_expr(1)]);
         // Custom variant pattern like MyEnum(x)
-        let result =
-            transpiler.transpile_list_comprehension(&expr, "MyEnum(x)", &iter, None);
+        let result = transpiler.transpile_list_comprehension(&expr, "MyEnum(x)", &iter, None);
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("filter_map"));
@@ -1157,8 +1154,7 @@ mod tests {
             int_expr(2),
         );
         let iter = list_expr(vec![int_expr(1), int_expr(2)]);
-        let result =
-            transpiler.transpile_list_comprehension(&expr, "Some(val)", &iter, None);
+        let result = transpiler.transpile_list_comprehension(&expr, "Some(val)", &iter, None);
         assert!(result.is_ok());
         let code = result.unwrap().to_string();
         assert!(code.contains("filter_map"));

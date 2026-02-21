@@ -366,7 +366,10 @@ mod tests {
         let result = Transpiler::extract_dataframe_columns_impl(&call);
         assert!(result.is_some());
         let (cols, _base) = result.unwrap();
-        assert!(cols.is_empty(), "DataFrame::new() alone should have no columns");
+        assert!(
+            cols.is_empty(),
+            "DataFrame::new() alone should have no columns"
+        );
     }
 
     #[test]
@@ -420,12 +423,12 @@ mod tests {
             func: Box::new(func),
             args: vec![],
         });
-        let col_name = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("a".to_string()),
-        ));
-        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
-        )]));
+        let col_name = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "a".to_string(),
+        )));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))]));
         let with_col = make_expr_direct(ExprKind::MethodCall {
             receiver: Box::new(df_new),
             method: "column".to_string(),
@@ -445,9 +448,9 @@ mod tests {
             func: Box::new(func),
             args: vec![],
         });
-        let col1_name = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("a".to_string()),
-        ));
+        let col1_name = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "a".to_string(),
+        )));
         let col1_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
             ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
         )]));
@@ -456,9 +459,9 @@ mod tests {
             method: "column".to_string(),
             args: vec![col1_name, col1_data],
         });
-        let col2_name = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("b".to_string()),
-        ));
+        let col2_name = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "b".to_string(),
+        )));
         let col2_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
             ExprKind::Literal(crate::frontend::ast::Literal::Integer(2, None)),
         )]));
@@ -481,12 +484,12 @@ mod tests {
             func: Box::new(func),
             args: vec![],
         });
-        let col_name = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("a".to_string()),
-        ));
-        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
-        )]));
+        let col_name = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "a".to_string(),
+        )));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))]));
         let with_col = make_expr_direct(ExprKind::MethodCall {
             receiver: Box::new(call),
             method: "column".to_string(),
@@ -504,12 +507,12 @@ mod tests {
             func: Box::new(func),
             args: vec![],
         });
-        let arg1 = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("a".to_string()),
-        ));
-        let arg2 = make_expr_direct(ExprKind::List(vec![make_expr_direct(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
-        )]));
+        let arg1 = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "a".to_string(),
+        )));
+        let arg2 = make_expr_direct(ExprKind::List(vec![make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))]));
         let with_filter = make_expr_direct(ExprKind::MethodCall {
             receiver: Box::new(df_new),
             method: "filter".to_string(),
@@ -527,9 +530,9 @@ mod tests {
             func: Box::new(func),
             args: vec![],
         });
-        let col_name = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("a".to_string()),
-        ));
+        let col_name = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "a".to_string(),
+        )));
         let with_col = make_expr_direct(ExprKind::MethodCall {
             receiver: Box::new(df_new),
             method: "column".to_string(),
@@ -550,12 +553,12 @@ mod tests {
             func: Box::new(func),
             args: vec![],
         });
-        let col_name = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("x".to_string()),
-        ));
-        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
-        )]));
+        let col_name = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "x".to_string(),
+        )));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))]));
         let with_col = make_expr_direct(ExprKind::MethodCall {
             receiver: Box::new(df_new),
             method: "column".to_string(),
@@ -571,12 +574,12 @@ mod tests {
     fn test_extract_columns_column_on_non_call_receiver() {
         // x.column("a", [1]) — receiver is an identifier, not a Call
         let receiver = make_expr_direct(ExprKind::Identifier("x".to_string()));
-        let col_name = make_expr_direct(ExprKind::Literal(
-            crate::frontend::ast::Literal::String("a".to_string()),
-        ));
-        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(
-            ExprKind::Literal(crate::frontend::ast::Literal::Integer(1, None)),
-        )]));
+        let col_name = make_expr_direct(ExprKind::Literal(crate::frontend::ast::Literal::String(
+            "a".to_string(),
+        )));
+        let col_data = make_expr_direct(ExprKind::List(vec![make_expr_direct(ExprKind::Literal(
+            crate::frontend::ast::Literal::Integer(1, None),
+        ))]));
         let with_col = make_expr_direct(ExprKind::MethodCall {
             receiver: Box::new(receiver),
             method: "column".to_string(),

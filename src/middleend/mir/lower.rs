@@ -620,7 +620,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::I16);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::I16
+        );
         Ok(())
     }
 
@@ -630,7 +633,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U8);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::U8
+        );
         Ok(())
     }
 
@@ -640,7 +646,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U16);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::U16
+        );
         Ok(())
     }
 
@@ -650,7 +659,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U32);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::U32
+        );
         Ok(())
     }
 
@@ -660,7 +672,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U64);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::U64
+        );
         Ok(())
     }
 
@@ -670,7 +685,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::I128);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::I128
+        );
         Ok(())
     }
 
@@ -680,7 +698,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::U128);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::U128
+        );
         Ok(())
     }
 
@@ -690,7 +711,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::F32);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::F32
+        );
         Ok(())
     }
 
@@ -700,7 +724,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::F64);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::F64
+        );
         Ok(())
     }
 
@@ -710,7 +737,10 @@ mod tests {
         let ast = parser.parse()?;
         let mut ctx = LoweringContext::new();
         let program = ctx.lower_expr(&ast)?;
-        assert_eq!(program.functions["f"].locals[program.functions["f"].params[0].0].ty, Type::String);
+        assert_eq!(
+            program.functions["f"].locals[program.functions["f"].params[0].0].ty,
+            Type::String
+        );
         Ok(())
     }
 
@@ -795,7 +825,10 @@ mod tests {
         assert!(!main_func.blocks.is_empty());
         // Should have a local for x
         assert!(
-            main_func.locals.iter().any(|l| l.name.as_deref() == Some("x")),
+            main_func
+                .locals
+                .iter()
+                .any(|l| l.name.as_deref() == Some("x")),
             "Should have a local named 'x'"
         );
         Ok(())
@@ -811,7 +844,10 @@ mod tests {
         assert!(program.functions.contains_key("apply"));
         let func = &program.functions["apply"];
         // Should have multiple blocks due to call terminator
-        assert!(func.blocks.len() >= 2, "Call should create continuation block");
+        assert!(
+            func.blocks.len() >= 2,
+            "Call should create continuation block"
+        );
         Ok(())
     }
 

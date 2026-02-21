@@ -8,8 +8,8 @@
 
 #[allow(unused_imports)]
 use crate::frontend::ast::{
-    BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, Param, Pattern,
-    Span, Type, TypeKind, UnaryOp,
+    BinaryOp as AstBinaryOp, ComprehensionClause, Expr, ExprKind, Literal, Param, Pattern, Span,
+    Type, TypeKind, UnaryOp,
 };
 use crate::runtime::interpreter::Interpreter;
 use crate::runtime::Value;
@@ -317,9 +317,6 @@ fn make_unit() -> Expr {
     }
 }
 
-
-
-
 // ---------- Additional Helper Functions ----------
 
 /// Helper to create lambda with parameters
@@ -374,7 +371,6 @@ fn make_call(func: Expr, args: Vec<Expr>) -> Expr {
         trailing_comment: None,
     }
 }
-
 
 #[path = "interpreter_tests_part1.rs"]
 mod part1;

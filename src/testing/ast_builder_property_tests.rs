@@ -1,7 +1,6 @@
 use super::*;
 use proptest::prelude::*;
 
-
 proptest! {
     /// Property: AstBuilder::new() never panics
     #[test]

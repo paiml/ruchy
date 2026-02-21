@@ -1286,8 +1286,7 @@ mod tests {
         let obj = HashMap::new();
         let obj_rc = Arc::new(Mutex::new(obj));
 
-        let result =
-            interp.eval_actor_instance_method_mut(&obj_rc, "TestActor", "send", &[]);
+        let result = interp.eval_actor_instance_method_mut(&obj_rc, "TestActor", "send", &[]);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -1315,8 +1314,7 @@ mod tests {
         let obj_rc = Arc::new(Mutex::new(obj));
 
         // "ask" delegates to non-mut version
-        let result =
-            interp.eval_actor_instance_method_mut(&obj_rc, "TestActor", "ask", &[]);
+        let result = interp.eval_actor_instance_method_mut(&obj_rc, "TestActor", "ask", &[]);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -1336,17 +1334,9 @@ mod tests {
         let obj = HashMap::new();
         let obj_rc = Arc::new(Mutex::new(obj));
 
-        let result = interp.eval_class_instance_method_mut(
-            &obj_rc,
-            "NotAClass",
-            "method",
-            &[],
-        );
+        let result = interp.eval_class_instance_method_mut(&obj_rc, "NotAClass", "method", &[]);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("is not a class"));
+        assert!(result.unwrap_err().to_string().contains("is not a class"));
     }
 
     #[test]
@@ -1361,21 +1351,14 @@ mod tests {
             "__type".to_string(),
             Value::from_string("Class".to_string()),
         );
-        class_info.insert(
-            "__methods".to_string(),
-            Value::Object(Arc::new(methods)),
-        );
+        class_info.insert("__methods".to_string(), Value::Object(Arc::new(methods)));
         interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
 
         let obj = HashMap::new();
         let obj_rc = Arc::new(Mutex::new(obj));
 
-        let result = interp.eval_class_instance_method_mut(
-            &obj_rc,
-            "MyClass",
-            "missing_method",
-            &[],
-        );
+        let result =
+            interp.eval_class_instance_method_mut(&obj_rc, "MyClass", "missing_method", &[]);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -1413,21 +1396,13 @@ mod tests {
             "__type".to_string(),
             Value::from_string("Class".to_string()),
         );
-        class_info.insert(
-            "__methods".to_string(),
-            Value::Object(Arc::new(methods)),
-        );
+        class_info.insert("__methods".to_string(), Value::Object(Arc::new(methods)));
         interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
 
         let obj = HashMap::new();
         let obj_rc = Arc::new(Mutex::new(obj));
 
-        let result = interp.eval_class_instance_method_mut(
-            &obj_rc,
-            "MyClass",
-            "my_static",
-            &[],
-        );
+        let result = interp.eval_class_instance_method_mut(&obj_rc, "MyClass", "my_static", &[]);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -1454,32 +1429,21 @@ mod tests {
         );
 
         let mut methods = HashMap::new();
-        methods.insert(
-            "greet".to_string(),
-            Value::Object(Arc::new(method_meta)),
-        );
+        methods.insert("greet".to_string(), Value::Object(Arc::new(method_meta)));
 
         let mut class_info = HashMap::new();
         class_info.insert(
             "__type".to_string(),
             Value::from_string("Class".to_string()),
         );
-        class_info.insert(
-            "__methods".to_string(),
-            Value::Object(Arc::new(methods)),
-        );
+        class_info.insert("__methods".to_string(), Value::Object(Arc::new(methods)));
         interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
 
         let obj = HashMap::new();
         let obj_rc = Arc::new(Mutex::new(obj));
 
         // Call with 0 args when 1 is expected
-        let result = interp.eval_class_instance_method_mut(
-            &obj_rc,
-            "MyClass",
-            "greet",
-            &[],
-        );
+        let result = interp.eval_class_instance_method_mut(&obj_rc, "MyClass", "greet", &[]);
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -1516,10 +1480,7 @@ mod tests {
             "__type".to_string(),
             Value::from_string("Class".to_string()),
         );
-        class_info.insert(
-            "__methods".to_string(),
-            Value::Object(Arc::new(methods)),
-        );
+        class_info.insert("__methods".to_string(), Value::Object(Arc::new(methods)));
         interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
 
         let obj = HashMap::new();
@@ -1550,32 +1511,21 @@ mod tests {
         );
 
         let mut methods = HashMap::new();
-        methods.insert(
-            "echo".to_string(),
-            Value::Object(Arc::new(method_meta)),
-        );
+        methods.insert("echo".to_string(), Value::Object(Arc::new(method_meta)));
 
         let mut class_info = HashMap::new();
         class_info.insert(
             "__type".to_string(),
             Value::from_string("Class".to_string()),
         );
-        class_info.insert(
-            "__methods".to_string(),
-            Value::Object(Arc::new(methods)),
-        );
+        class_info.insert("__methods".to_string(), Value::Object(Arc::new(methods)));
         interp.set_variable("MyClass", Value::Object(Arc::new(class_info)));
 
         let obj = HashMap::new();
         let obj_rc = Arc::new(Mutex::new(obj));
 
         let result = interp
-            .eval_class_instance_method_mut(
-                &obj_rc,
-                "MyClass",
-                "echo",
-                &[Value::Integer(77)],
-            )
+            .eval_class_instance_method_mut(&obj_rc, "MyClass", "echo", &[Value::Integer(77)])
             .unwrap();
         assert_eq!(result, Value::Integer(77));
     }

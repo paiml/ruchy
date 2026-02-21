@@ -1027,11 +1027,10 @@ mod tests {
         fn test_valid_identifier_rejects_keywords() {
             // The filter rejects all these keywords - verify the matches! arms
             let keywords = vec![
-                "fn", "fun", "let", "var", "if", "else", "for", "while", "loop",
-                "match", "break", "continue", "return", "async", "await", "try",
-                "catch", "throw", "in", "as", "is", "self", "super", "mod", "use",
-                "pub", "const", "static", "mut", "ref", "type", "struct", "enum",
-                "trait", "impl",
+                "fn", "fun", "let", "var", "if", "else", "for", "while", "loop", "match", "break",
+                "continue", "return", "async", "await", "try", "catch", "throw", "in", "as", "is",
+                "self", "super", "mod", "use", "pub", "const", "static", "mut", "ref", "type",
+                "struct", "enum", "trait", "impl",
             ];
             for kw in &keywords {
                 // Simulate the filter predicate

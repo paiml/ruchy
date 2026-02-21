@@ -837,7 +837,11 @@ mod tests {
         // async x -> expr uses -> (Arrow) not => (FatArrow)
         let code = "async x -> x + 1";
         let result = parse(code);
-        assert!(result.is_ok(), "Async arrow lambda with -> should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Async arrow lambda with -> should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -857,35 +861,55 @@ mod tests {
     fn test_async_arrow_lambda_arithmetic_body() {
         let code = "async n -> n * 2 + 1";
         let result = parse(code);
-        assert!(result.is_ok(), "Async arrow lambda with arithmetic should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Async arrow lambda with arithmetic should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
     fn test_async_arrow_lambda_with_binary_body() {
         let code = "async val -> val + 10";
         let result = parse(code);
-        assert!(result.is_ok(), "Async arrow lambda with binary body should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Async arrow lambda with binary body should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
     fn test_async_arrow_lambda_method_call_body() {
         let code = "async s -> s.len()";
         let result = parse(code);
-        assert!(result.is_ok(), "Async arrow lambda with method call should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Async arrow lambda with method call should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
     fn test_async_arrow_lambda_single_char_param() {
         let code = "async a -> a";
         let result = parse(code);
-        assert!(result.is_ok(), "Async arrow lambda with single char param should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Async arrow lambda with single char param should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
     fn test_async_arrow_lambda_long_param() {
         let code = "async response -> response";
         let result = parse(code);
-        assert!(result.is_ok(), "Async arrow lambda with long param name should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Async arrow lambda with long param name should parse: {:?}",
+            result.err()
+        );
     }
 
     // Property tests
@@ -1005,11 +1029,10 @@ mod tests {
         fn test_valid_identifier_rejects_keywords() {
             // The filter rejects all these keywords - verify the matches! arms
             let keywords = vec![
-                "fn", "fun", "let", "var", "if", "else", "for", "while", "loop",
-                "match", "break", "continue", "return", "async", "await", "try",
-                "catch", "throw", "in", "as", "is", "self", "super", "mod", "use",
-                "pub", "const", "static", "mut", "ref", "type", "struct", "enum",
-                "trait", "impl",
+                "fn", "fun", "let", "var", "if", "else", "for", "while", "loop", "match", "break",
+                "continue", "return", "async", "await", "try", "catch", "throw", "in", "as", "is",
+                "self", "super", "mod", "use", "pub", "const", "static", "mut", "ref", "type",
+                "struct", "enum", "trait", "impl",
             ];
             for kw in &keywords {
                 // Simulate the filter predicate

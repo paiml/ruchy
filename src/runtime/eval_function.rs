@@ -574,7 +574,6 @@ pub fn get_arity(value: &Value) -> Result<usize, InterpreterError> {
     }
 }
 
-
 #[cfg(test)]
 #[path = "eval_function_tests.rs"]
 mod tests;

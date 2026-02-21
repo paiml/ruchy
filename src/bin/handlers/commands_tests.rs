@@ -182,8 +182,8 @@ fn test_handle_stdout_mode() {
 
 #[test]
 fn test_handle_diff_mode() {
-    let temp_file = create_temp_file_with_content("original")
-        .expect("Failed to create temporary test file");
+    let temp_file =
+        create_temp_file_with_content("original").expect("Failed to create temporary test file");
     handle_diff_mode(temp_file.path(), "original", "formatted");
 }
 
@@ -346,8 +346,8 @@ fn test_add_memory_section() {
 fn test_add_comparison_section() {
     let temp_file1 =
         create_temp_file_with_content("current").expect("Failed to create temporary test file");
-    let temp_file2 = create_temp_file_with_content("baseline")
-        .expect("Failed to create temporary test file");
+    let temp_file2 =
+        create_temp_file_with_content("baseline").expect("Failed to create temporary test file");
     let mut output = String::new();
     add_comparison_section(&mut output, temp_file1.path(), temp_file2.path());
     assert!(output.contains("=== Performance Comparison ==="));

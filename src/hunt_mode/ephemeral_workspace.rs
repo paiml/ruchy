@@ -793,7 +793,8 @@ mod tests {
 
     #[test]
     fn test_parse_cargo_json_errors_error_without_spans() {
-        let json = r#"{"message":{"message":"aborting due to previous error","code":null,"spans":[]}}"#;
+        let json =
+            r#"{"message":{"message":"aborting due to previous error","code":null,"spans":[]}}"#;
         let errors = parse_cargo_json_errors(json, "");
         // Empty spans array -> first() returns None -> defaults
         assert_eq!(errors.len(), 1);
@@ -820,7 +821,8 @@ mod tests {
 
     #[test]
     fn test_parse_cargo_json_errors_cant_find_crate() {
-        let json = r#"{"message":{"message":"can't find crate for `serde`","code":null,"spans":[]}}"#;
+        let json =
+            r#"{"message":{"message":"can't find crate for `serde`","code":null,"spans":[]}}"#;
         let errors = parse_cargo_json_errors(json, "");
         assert_eq!(errors.len(), 1);
         assert!(
@@ -831,7 +833,8 @@ mod tests {
 
     #[test]
     fn test_parse_cargo_json_errors_unresolved_import_message() {
-        let json = r#"{"message":{"message":"unresolved import `tokio::net`","code":null,"spans":[]}}"#;
+        let json =
+            r#"{"message":{"message":"unresolved import `tokio::net`","code":null,"spans":[]}}"#;
         let errors = parse_cargo_json_errors(json, "");
         assert_eq!(errors.len(), 1);
         assert!(!errors[0].is_semantic);
@@ -839,7 +842,8 @@ mod tests {
 
     #[test]
     fn test_parse_cargo_json_errors_could_not_find() {
-        let json = r#"{"message":{"message":"could not find `foo` in `bar`","code":null,"spans":[]}}"#;
+        let json =
+            r#"{"message":{"message":"could not find `foo` in `bar`","code":null,"spans":[]}}"#;
         let errors = parse_cargo_json_errors(json, "");
         assert_eq!(errors.len(), 1);
         assert!(!errors[0].is_semantic);

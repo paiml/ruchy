@@ -247,7 +247,10 @@ pub(crate) fn eval_path_normalize(args: &[Value]) -> Result<Value, InterpreterEr
 }
 
 /// Dispatch path functions - Part 1 (functions 1-4)
-pub(crate) fn try_eval_path_part1(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_path_part1(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_path_join__" => Ok(Some(eval_path_join(args)?)),
         "__builtin_path_join_many__" => Ok(Some(eval_path_join_many(args)?)),
@@ -258,7 +261,10 @@ pub(crate) fn try_eval_path_part1(name: &str, args: &[Value]) -> Result<Option<V
 }
 
 /// Dispatch path functions - Part 2 (functions 5-8)
-pub(crate) fn try_eval_path_part2(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_path_part2(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_path_file_stem__" => Ok(Some(eval_path_file_stem(args)?)),
         "__builtin_path_extension__" => Ok(Some(eval_path_extension(args)?)),
@@ -269,7 +275,10 @@ pub(crate) fn try_eval_path_part2(name: &str, args: &[Value]) -> Result<Option<V
 }
 
 /// Dispatch path functions - Part 3a (functions 9-11)
-pub(crate) fn try_eval_path_part3a(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_path_part3a(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_path_canonicalize__" => Ok(Some(eval_path_canonicalize(args)?)),
         "__builtin_path_with_extension__" => Ok(Some(eval_path_with_extension(args)?)),
@@ -279,7 +288,10 @@ pub(crate) fn try_eval_path_part3a(name: &str, args: &[Value]) -> Result<Option<
 }
 
 /// Dispatch path functions - Part 3b (functions 12-13)
-pub(crate) fn try_eval_path_part3b(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_path_part3b(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_path_components__" => Ok(Some(eval_path_components(args)?)),
         "__builtin_path_normalize__" => Ok(Some(eval_path_normalize(args)?)),
@@ -289,7 +301,10 @@ pub(crate) fn try_eval_path_part3b(name: &str, args: &[Value]) -> Result<Option<
 
 /// Dispatcher for path functions
 /// Complexity: 4 (loop pattern reduces cognitive load)
-pub(crate) fn try_eval_path_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_path_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     let dispatchers: &[fn(&str, &[Value]) -> Result<Option<Value>, InterpreterError>] = &[
         try_eval_path_part1,
         try_eval_path_part2,

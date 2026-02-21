@@ -1215,8 +1215,7 @@ mod tests {
             .insert("f".to_string(), Value::Float(3.14));
         repl.get_bindings_mut()
             .insert("b".to_string(), Value::Bool(true));
-        repl.get_bindings_mut()
-            .insert("n".to_string(), Value::Nil);
+        repl.get_bindings_mut().insert("n".to_string(), Value::Nil);
 
         let result = whos.execute_line(&mut repl, "").unwrap();
         if let MagicResult::Text(output) = result {
@@ -1363,9 +1362,7 @@ mod tests {
 
         let tmp = std::env::temp_dir().join("ruchy_test_save_magic.json");
         let _ = std::fs::remove_file(&tmp);
-        let result = save
-            .execute_line(&mut repl, tmp.to_str().unwrap())
-            .unwrap();
+        let result = save.execute_line(&mut repl, tmp.to_str().unwrap()).unwrap();
         if let MagicResult::Text(output) = result {
             assert!(output.contains("Saved workspace"));
         } else {
@@ -1384,9 +1381,7 @@ mod tests {
 
         let tmp = std::env::temp_dir().join("ruchy_test_load_magic.json");
         std::fs::write(&tmp, "{}").unwrap();
-        let result = load
-            .execute_line(&mut repl, tmp.to_str().unwrap())
-            .unwrap();
+        let result = load.execute_line(&mut repl, tmp.to_str().unwrap()).unwrap();
         if let MagicResult::Text(output) = result {
             assert!(output.contains("Loaded workspace"));
         } else {
@@ -1519,7 +1514,11 @@ mod registry_execute_coverage_tests {
 
         // %time with a valid expression
         let result = registry.execute(&mut repl, "%time 1 + 2");
-        assert!(result.is_ok(), "TimeMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "TimeMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Timed { output, duration }) = result {
             assert!(!output.is_empty());
             assert!(duration.as_nanos() > 0);
@@ -1533,7 +1532,11 @@ mod registry_execute_coverage_tests {
 
         // %timeit with -n flag for small runs
         let result = registry.execute(&mut repl, "%timeit -n 3 1 + 1");
-        assert!(result.is_ok(), "TimeitMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "TimeitMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Text(output)) = result {
             assert!(output.contains("loops"));
         }
@@ -1553,7 +1556,11 @@ mod registry_execute_coverage_tests {
         assert!(!repl.get_bindings().is_empty());
 
         let result = registry.execute(&mut repl, "%reset");
-        assert!(result.is_ok(), "ResetMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "ResetMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Text(output)) = result {
             assert_eq!(output, "Workspace reset");
         }
@@ -1566,7 +1573,11 @@ mod registry_execute_coverage_tests {
         let mut repl = create_mock_repl();
 
         let result = registry.execute(&mut repl, "%whos");
-        assert!(result.is_ok(), "WhosMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "WhosMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Text(output)) = result {
             assert_eq!(output, "No variables in workspace");
         }
@@ -1580,7 +1591,11 @@ mod registry_execute_coverage_tests {
             .insert("counter".to_string(), Value::Integer(10));
 
         let result = registry.execute(&mut repl, "%whos");
-        assert!(result.is_ok(), "WhosMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "WhosMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Text(output)) = result {
             assert!(output.contains("Variable"));
             assert!(output.contains("counter"));
@@ -1593,7 +1608,11 @@ mod registry_execute_coverage_tests {
         let mut repl = create_mock_repl();
 
         let result = registry.execute(&mut repl, "%debug");
-        assert!(result.is_ok(), "DebugMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "DebugMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Text(output)) = result {
             assert!(output.contains("No recent error"));
         }
@@ -1605,7 +1624,11 @@ mod registry_execute_coverage_tests {
         let mut repl = create_mock_repl();
 
         let result = registry.execute(&mut repl, "%profile 1 + 1");
-        assert!(result.is_ok(), "ProfileMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "ProfileMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Profile(data)) = result {
             assert!(data.total_time.as_nanos() > 0);
             assert!(!data.function_times.is_empty());
@@ -1618,7 +1641,11 @@ mod registry_execute_coverage_tests {
         let mut repl = create_mock_repl();
 
         let result = registry.execute(&mut repl, "%history 5");
-        assert!(result.is_ok(), "HistoryMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "HistoryMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Text(output)) = result {
             assert!(output.contains("Last 5 commands"));
         }
@@ -1634,7 +1661,11 @@ mod registry_execute_coverage_tests {
             .insert("temp_y".to_string(), Value::Integer(2));
 
         let result = registry.execute(&mut repl, "%clear temp");
-        assert!(result.is_ok(), "ClearMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "ClearMagic should succeed: {:?}",
+            result.err()
+        );
         if let Ok(MagicResult::Text(output)) = result {
             assert!(output.contains("Cleared 2 variables"));
         }
@@ -1647,7 +1678,11 @@ mod registry_execute_coverage_tests {
 
         // Cell magic (double %) delegates to execute_cell which defaults to execute_line
         let result = registry.execute(&mut repl, "%%time 1 + 1");
-        assert!(result.is_ok(), "Cell TimeMagic should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Cell TimeMagic should succeed: {:?}",
+            result.err()
+        );
     }
 
     #[test]

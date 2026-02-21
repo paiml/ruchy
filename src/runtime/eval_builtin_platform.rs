@@ -15,7 +15,10 @@ use std::sync::Arc;
 
 /// Dispatcher for File namespace methods
 /// Complexity: 3
-pub(crate) fn try_eval_file_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_file_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "File_open" => Ok(Some(eval_file_open(args)?)),
         "__builtin_open__" => Ok(Some(eval_open(args)?)),
@@ -100,7 +103,10 @@ pub(crate) fn eval_open(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Dispatcher for HTTP builtin functions
 #[cfg(all(not(target_arch = "wasm32"), feature = "http-client"))]
-pub(crate) fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_http_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "http_get" => Ok(Some(eval_http_get(args)?)),
         "http_post" => Ok(Some(eval_http_post(args)?)),
@@ -112,7 +118,10 @@ pub(crate) fn try_eval_http_function(name: &str, args: &[Value]) -> Result<Optio
 
 /// Stub for builds without http-client feature
 #[cfg(not(all(not(target_arch = "wasm32"), feature = "http-client")))]
-pub(crate) fn try_eval_http_function(_name: &str, _args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_http_function(
+    _name: &str,
+    _args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     Ok(None)
 }
 
@@ -185,7 +194,10 @@ pub(crate) fn eval_http_delete(args: &[Value]) -> Result<Value, InterpreterError
 // ============================================================================
 
 #[cfg(not(target_arch = "wasm32"))]
-pub(crate) fn try_eval_html_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_html_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "Html_parse" => Ok(Some(eval_html_parse(args)?)),
         _ => Ok(None),
@@ -193,7 +205,10 @@ pub(crate) fn try_eval_html_function(name: &str, args: &[Value]) -> Result<Optio
 }
 
 #[cfg(target_arch = "wasm32")]
-pub(crate) fn try_eval_html_function(_name: &str, _args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_html_function(
+    _name: &str,
+    _args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     Ok(None)
 }
 
@@ -262,7 +277,10 @@ pub(crate) fn eval_command_new(args: &[Value]) -> Result<Value, InterpreterError
 // ============================================================================
 
 /// String function dispatcher
-pub(crate) fn try_eval_string_function(name: &str, args: &[Value]) -> Result<Option<Value>, InterpreterError> {
+pub(crate) fn try_eval_string_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
     match name {
         "__builtin_String_new__" => Ok(Some(eval_string_new(args)?)),
         "__builtin_String_from__" => Ok(Some(eval_string_from(args)?)),
@@ -348,11 +366,9 @@ pub(crate) fn eval_int(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::Integer(n) => Ok(Value::Integer(*n)),
         Value::Float(f) => Ok(Value::Integer(*f as i64)),
-        Value::String(s) => {
-            s.parse::<i64>().map(Value::Integer).map_err(|_| {
-                InterpreterError::RuntimeError(format!("int() cannot parse string: '{s}'"))
-            })
-        }
+        Value::String(s) => s.parse::<i64>().map(Value::Integer).map_err(|_| {
+            InterpreterError::RuntimeError(format!("int() cannot parse string: '{s}'"))
+        }),
         Value::Bool(b) => Ok(Value::Integer(i64::from(*b))),
         _ => Err(InterpreterError::RuntimeError(format!(
             "int() does not support type: {}",
@@ -367,11 +383,9 @@ pub(crate) fn eval_float(args: &[Value]) -> Result<Value, InterpreterError> {
     match &args[0] {
         Value::Float(f) => Ok(Value::Float(*f)),
         Value::Integer(n) => Ok(Value::Float(*n as f64)),
-        Value::String(s) => {
-            s.parse::<f64>().map(Value::Float).map_err(|_| {
-                InterpreterError::RuntimeError(format!("float() cannot parse string: '{s}'"))
-            })
-        }
+        Value::String(s) => s.parse::<f64>().map(Value::Float).map_err(|_| {
+            InterpreterError::RuntimeError(format!("float() cannot parse string: '{s}'"))
+        }),
         Value::Bool(b) => Ok(Value::Float(if *b { 1.0 } else { 0.0 })),
         _ => Err(InterpreterError::RuntimeError(format!(
             "float() does not support type: {}",

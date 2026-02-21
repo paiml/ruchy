@@ -822,7 +822,6 @@ fn parse_prefix_range(state: &mut ParserState, token: Token, _span: Span) -> Res
     })
 }
 
-
 #[cfg(test)]
 #[path = "expressions_tests.rs"]
 mod tests;

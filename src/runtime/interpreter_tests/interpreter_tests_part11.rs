@@ -169,8 +169,7 @@ fn test_for_loop_empty() {
 fn test_for_loop_with_break() {
     let mut interp = Interpreter::new();
     let _ = interp.eval_string("let mut sum = 0");
-    let _ =
-        interp.eval_string("for x in [1, 2, 3, 4, 5] { if x > 3 { break }; sum = sum + x }");
+    let _ = interp.eval_string("for x in [1, 2, 3, 4, 5] { if x > 3 { break }; sum = sum + x }");
     let result = interp.eval_string("sum");
     match result {
         Ok(Value::Integer(n)) => assert_eq!(n, 6), // 1+2+3
@@ -182,8 +181,8 @@ fn test_for_loop_with_break() {
 fn test_for_loop_with_continue() {
     let mut interp = Interpreter::new();
     let _ = interp.eval_string("let mut sum = 0");
-    let _ = interp
-        .eval_string("for x in [1, 2, 3, 4, 5] { if x == 3 { continue }; sum = sum + x }");
+    let _ =
+        interp.eval_string("for x in [1, 2, 3, 4, 5] { if x == 3 { continue }; sum = sum + x }");
     let result = interp.eval_string("sum");
     match result {
         Ok(Value::Integer(n)) => assert_eq!(n, 12), // 1+2+4+5
@@ -210,8 +209,7 @@ fn test_while_loop_with_continue() {
     let mut interp = Interpreter::new();
     let _ = interp.eval_string("let mut x = 0");
     let _ = interp.eval_string("let mut sum = 0");
-    let _ =
-        interp.eval_string("while x < 5 { x = x + 1; if x == 3 { continue }; sum = sum + x }");
+    let _ = interp.eval_string("while x < 5 { x = x + 1; if x == 3 { continue }; sum = sum + x }");
     let result = interp.eval_string("sum");
     match result {
         Ok(Value::Integer(n)) => assert_eq!(n, 12), // 1+2+4+5
@@ -372,9 +370,8 @@ fn test_dataframe_builder_empty() {
 #[test]
 fn test_dataframe_builder_single_column() {
     let mut interp = Interpreter::new();
-    let result = interp.eval_string(
-        r#"DataFrame::builder().column("name", ["Alice", "Bob", "Carol"]).build()"#,
-    );
+    let result = interp
+        .eval_string(r#"DataFrame::builder().column("name", ["Alice", "Bob", "Carol"]).build()"#);
     let _ = result;
 }
 
@@ -383,8 +380,8 @@ fn test_dataframe_builder_single_column() {
 #[test]
 fn test_dataframe_filter_basic() {
     let mut interp = Interpreter::new();
-    let _ = interp
-        .eval_string(r#"let df = df { age: [25, 30, 35], name: ["Alice", "Bob", "Carol"] }"#);
+    let _ =
+        interp.eval_string(r#"let df = df { age: [25, 30, 35], name: ["Alice", "Bob", "Carol"] }"#);
     let result = interp.eval_string(r#"df.filter(|row| row.age > 28)"#);
     let _ = result;
 }
@@ -587,8 +584,7 @@ fn test_dataframe_len() {
 #[test]
 fn test_dataframe_from_csv_string() {
     let mut interp = Interpreter::new();
-    let result =
-        interp.eval_string(r#"DataFrame::from_csv_string("name,age\nAlice,30\nBob,25")"#);
+    let result = interp.eval_string(r#"DataFrame::from_csv_string("name,age\nAlice,30\nBob,25")"#);
     let _ = result;
 }
 
@@ -679,8 +675,8 @@ fn test_dataframe_describe() {
 #[test]
 fn test_dataframe_filter_with_column_value() {
     let mut interp = Interpreter::new();
-    let _ = interp
-        .eval_string(r#"let df = df { name: ["Alice", "Bob", "Carol"], age: [25, 30, 35] }"#);
+    let _ =
+        interp.eval_string(r#"let df = df { name: ["Alice", "Bob", "Carol"], age: [25, 30, 35] }"#);
     let result = interp.eval_string(r#"df.filter(|row| row.age > 27)"#);
     let _ = result;
 }
@@ -728,8 +724,8 @@ fn test_dataframe_transform_string_column() {
 #[test]
 fn test_dataframe_builder_column() {
     let mut interp = Interpreter::new();
-    let result = interp
-        .eval_string(r#"DataFrame().column("x", [1, 2, 3]).column("y", [4, 5, 6]).build()"#);
+    let result =
+        interp.eval_string(r#"DataFrame().column("x", [1, 2, 3]).column("y", [4, 5, 6]).build()"#);
     let _ = result;
 }
 
@@ -1828,8 +1824,7 @@ fn test_json_pretty() {
 #[test]
 fn test_json_get() {
     let mut interp = Interpreter::new();
-    let result =
-        interp.eval_string(r#"json_get("{\"nested\": {\"value\": 42}}", "nested.value")"#);
+    let result = interp.eval_string(r#"json_get("{\"nested\": {\"value\": 42}}", "nested.value")"#);
     let _ = result;
 }
 
@@ -1860,4 +1855,3 @@ fn test_json_merge() {
     let result = interp.eval_string(r#"json_merge("{\"a\": 1}", "{\"b\": 2}")"#);
     let _ = result;
 }
-

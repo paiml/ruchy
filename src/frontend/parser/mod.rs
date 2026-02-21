@@ -538,7 +538,11 @@ fn token_as_identifier(token: &Token) -> Option<String> {
     }
 }
 
-fn try_make_qualified_name(left: &Expr, field: &str, state: &mut ParserState) -> Option<(String, String)> {
+fn try_make_qualified_name(
+    left: &Expr,
+    field: &str,
+    state: &mut ParserState,
+) -> Option<(String, String)> {
     if let ExprKind::Identifier(ref module) = left.kind {
         if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
             let is_builtin = matches!(
@@ -567,13 +571,14 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
         }
     }
 
-    let (token, span) = state
-        .tokens
-        .peek()
-        .ok_or_else(|| anyhow::anyhow!("Expected identifier after '::' but reached end of input"))?;
+    let (token, span) = state.tokens.peek().ok_or_else(|| {
+        anyhow::anyhow!("Expected identifier after '::' but reached end of input")
+    })?;
 
     let field = token_as_identifier(token).ok_or_else(|| {
-        anyhow::anyhow!("Expected identifier or keyword usable as identifier after '::' but got {token:?}")
+        anyhow::anyhow!(
+            "Expected identifier or keyword usable as identifier after '::' but got {token:?}"
+        )
     })?;
     let field_span = *span;
     state.tokens.advance();
@@ -1314,7 +1319,6 @@ fn parse_generic_macro(state: &mut ParserState, name: &str) -> Result<Option<Exp
         args,
     )))
 }
-
 
 #[cfg(test)]
 #[path = "parser_tests.rs"]

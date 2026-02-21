@@ -155,10 +155,7 @@ fn eval_import(interp: &mut Interpreter, module: &str) -> Result<Value, Interpre
         .module_loader_mut()
         .load_module(module)
         .map_err(|e| {
-            InterpreterError::RuntimeError(format!(
-                "Failed to load module '{}': {}",
-                module, e
-            ))
+            InterpreterError::RuntimeError(format!("Failed to load module '{}': {}", module, e))
         })?;
 
     // Create a new environment scope for the module
@@ -216,10 +213,7 @@ fn eval_macro_invocation(
 }
 
 /// vec![...] expands to an array with evaluated arguments
-fn eval_vec_macro(
-    interp: &mut Interpreter,
-    args: &[Expr],
-) -> Result<Value, InterpreterError> {
+fn eval_vec_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, InterpreterError> {
     let mut elements = Vec::new();
     for arg in args {
         let value = interp.eval_expr(arg)?;
@@ -230,10 +224,7 @@ fn eval_vec_macro(
 
 /// println!() macro: Evaluate arguments, print with newline
 /// PARSER-085: Supports format strings like println!("x: {}", value)
-fn eval_println_macro(
-    interp: &mut Interpreter,
-    args: &[Expr],
-) -> Result<Value, InterpreterError> {
+fn eval_println_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, InterpreterError> {
     if args.is_empty() {
         println!();
     } else if args.len() == 1 {
@@ -261,10 +252,7 @@ fn eval_println_macro(
 }
 
 /// format!() macro: Format string with placeholders (Issue #83)
-fn eval_format_macro(
-    interp: &mut Interpreter,
-    args: &[Expr],
-) -> Result<Value, InterpreterError> {
+fn eval_format_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, InterpreterError> {
     if args.is_empty() {
         return Err(InterpreterError::RuntimeError(
             "format!() requires at least one argument".to_string(),
@@ -351,13 +339,21 @@ fn format_with_placeholders(format_str: &str, values: &[Value]) -> String {
 // ============================================================================
 
 /// Issue #97: Try operator (?) for Result unwrapping/propagation
-fn extract_ok_first_value(data: Option<&Vec<Value>>, context: &str) -> Result<Value, InterpreterError> {
+fn extract_ok_first_value(
+    data: Option<&Vec<Value>>,
+    context: &str,
+) -> Result<Value, InterpreterError> {
     data.and_then(|v| v.first().cloned())
         .ok_or_else(|| InterpreterError::RuntimeError(format!("Try operator: {context}")))
 }
 
 fn try_unwrap_enum_variant(value: &Value) -> Option<Result<Value, InterpreterError>> {
-    let Value::EnumVariant { enum_name, variant_name, data } = value else {
+    let Value::EnumVariant {
+        enum_name,
+        variant_name,
+        data,
+    } = value
+    else {
         return None;
     };
     if enum_name != "Result" {
@@ -374,25 +370,39 @@ fn try_unwrap_enum_variant(value: &Value) -> Option<Result<Value, InterpreterErr
 
 fn is_message_object(obj: &std::collections::HashMap<String, Value>) -> bool {
     obj.get("__type")
-        .and_then(|v| if let Value::String(s) = v { Some(s.as_ref() == "Message") } else { None })
+        .and_then(|v| {
+            if let Value::String(s) = v {
+                Some(s.as_ref() == "Message")
+            } else {
+                None
+            }
+        })
         .unwrap_or(false)
 }
 
 fn try_unwrap_message_object(value: &Value) -> Option<Result<Value, InterpreterError>> {
-    let Value::Object(obj) = value else { return None };
+    let Value::Object(obj) = value else {
+        return None;
+    };
     if !is_message_object(obj) {
         return None;
     }
     let variant = match obj.get("type") {
         Some(Value::String(v)) => v.clone(),
-        _ => return Some(Err(InterpreterError::RuntimeError(
-            "Try operator: Message object missing 'type' field".to_string(),
-        ))),
+        _ => {
+            return Some(Err(InterpreterError::RuntimeError(
+                "Try operator: Message object missing 'type' field".to_string(),
+            )))
+        }
     };
     Some(match variant.as_ref() {
         "Ok" => {
             let data = obj.get("data").and_then(|v| {
-                if let Value::Array(arr) = v { Some(arr.to_vec()) } else { None }
+                if let Value::Array(arr) = v {
+                    Some(arr.to_vec())
+                } else {
+                    None
+                }
             });
             extract_ok_first_value(data.as_ref(), "Ok missing data field")
         }
@@ -403,10 +413,7 @@ fn try_unwrap_message_object(value: &Value) -> Option<Result<Value, InterpreterE
     })
 }
 
-fn eval_try_operator(
-    interp: &mut Interpreter,
-    expr: &Expr,
-) -> Result<Value, InterpreterError> {
+fn eval_try_operator(interp: &mut Interpreter, expr: &Expr) -> Result<Value, InterpreterError> {
     let result_value = interp.eval_expr(expr)?;
 
     if let Some(result) = try_unwrap_enum_variant(&result_value) {
@@ -498,18 +505,12 @@ fn eval_pipeline_call_stage(
             // It's a method call with args: arr |> filter(pred) -> arr.filter(pred)
             let arg_values: Result<Vec<_>, _> =
                 args.iter().map(|arg| interp.eval_expr(arg)).collect();
-            interp.dispatch_method_call(
-                &current_value,
-                method_name,
-                &arg_values?,
-                args.is_empty(),
-            )
+            interp.dispatch_method_call(&current_value, method_name, &arg_values?, args.is_empty())
         }
     } else {
         // Complex function expression - evaluate and call with current_value as first arg
         let func_val = interp.eval_expr(func)?;
-        let arg_values: Result<Vec<_>, _> =
-            args.iter().map(|arg| interp.eval_expr(arg)).collect();
+        let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| interp.eval_expr(arg)).collect();
         let mut all_args = vec![current_value];
         all_args.extend(arg_values?);
         interp.call_function(func_val, &all_args)
@@ -651,8 +652,14 @@ pub(crate) fn eval_comprehension_clauses(
         Value::Array(ref arr) => {
             for item in arr.iter() {
                 iterate_comprehension_item(
-                    interp, results, element, clauses, clause_idx,
-                    &variable, item.clone(), condition.as_deref(),
+                    interp,
+                    results,
+                    element,
+                    clauses,
+                    clause_idx,
+                    &variable,
+                    item.clone(),
+                    condition.as_deref(),
                 )?;
             }
         }
@@ -664,8 +671,14 @@ pub(crate) fn eval_comprehension_clauses(
             let (start_val, end_val) = interp.extract_range_bounds(start, end)?;
             for i in interp.create_range_iterator(start_val, end_val, inclusive) {
                 iterate_comprehension_item(
-                    interp, results, element, clauses, clause_idx,
-                    &variable, Value::Integer(i), condition.as_deref(),
+                    interp,
+                    results,
+                    element,
+                    clauses,
+                    clause_idx,
+                    &variable,
+                    Value::Integer(i),
+                    condition.as_deref(),
                 )?;
             }
         }

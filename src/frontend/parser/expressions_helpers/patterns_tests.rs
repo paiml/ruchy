@@ -501,8 +501,7 @@ fn test_match_guard_with_comparison() {
 
 #[test]
 fn test_match_nested() {
-    let result =
-        parse("match x { Some(y) => match y { 1 => true, _ => false }, None => false }");
+    let result = parse("match x { Some(y) => match y { 1 => true, _ => false }, None => false }");
     assert!(result.is_ok(), "Nested match should parse");
 }
 
@@ -1060,4 +1059,3 @@ fn test_create_let_expression_identifier_with_type() {
         panic!("Expected ExprKind::Let");
     }
 }
-

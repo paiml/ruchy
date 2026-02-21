@@ -1533,9 +1533,7 @@ mod tests {
     #[test]
     fn test_eval_qualified_name_string_from_utf8() {
         let interp = Interpreter::new();
-        let result = interp
-            .eval_qualified_name("String", "from_utf8")
-            .unwrap();
+        let result = interp.eval_qualified_name("String", "from_utf8").unwrap();
         assert_eq!(
             result,
             Value::from_string("__builtin_String_from_utf8__".to_string())
@@ -1621,10 +1619,7 @@ mod tests {
     #[test]
     fn test_eval_qualified_name_impl_method() {
         let mut interp = Interpreter::new();
-        interp.set_variable(
-            "Logger::new_with_options",
-            Value::Integer(42),
-        );
+        interp.set_variable("Logger::new_with_options", Value::Integer(42));
 
         let result = interp
             .eval_qualified_name("Logger", "new_with_options")
@@ -1732,14 +1727,26 @@ mod tests {
         // Create an enum-type object
         let mut enum_obj = std::collections::HashMap::new();
         enum_obj.insert("__type".to_string(), Value::from_string("Enum".to_string()));
-        enum_obj.insert("__name".to_string(), Value::from_string("Color".to_string()));
+        enum_obj.insert(
+            "__name".to_string(),
+            Value::from_string("Color".to_string()),
+        );
         interp.set_variable("Color", Value::Object(Arc::new(enum_obj)));
 
         // Access Color::Red (field access on enum -> variant construction)
         let object_expr = Expr::new(ExprKind::Identifier("Color".to_string()), Span::default());
         let result = interp.eval_field_access(&object_expr, "Red");
-        assert!(result.is_ok(), "Enum variant access should succeed: {:?}", result.err());
-        if let Ok(Value::EnumVariant { enum_name, variant_name, data }) = result {
+        assert!(
+            result.is_ok(),
+            "Enum variant access should succeed: {:?}",
+            result.err()
+        );
+        if let Ok(Value::EnumVariant {
+            enum_name,
+            variant_name,
+            data,
+        }) = result
+        {
             assert_eq!(enum_name, "Color");
             assert_eq!(variant_name, "Red");
             assert!(data.is_none(), "Unit variant should have no data");
@@ -1758,10 +1765,13 @@ mod tests {
         let mut fields = std::collections::HashMap::new();
         fields.insert("x".to_string(), Value::Integer(10));
         fields.insert("y".to_string(), Value::Integer(20));
-        interp.set_variable("point", Value::Struct {
-            name: "Point".to_string(),
-            fields: Arc::new(fields),
-        });
+        interp.set_variable(
+            "point",
+            Value::Struct {
+                name: "Point".to_string(),
+                fields: Arc::new(fields),
+            },
+        );
 
         let object_expr = Expr::new(ExprKind::Identifier("point".to_string()), Span::default());
         let result = interp.eval_field_access(&object_expr, "x");
@@ -1777,15 +1787,24 @@ mod tests {
         let mut interp = Interpreter::new();
 
         let fields = std::collections::HashMap::new();
-        interp.set_variable("empty_struct", Value::Struct {
-            name: "Empty".to_string(),
-            fields: Arc::new(fields),
-        });
+        interp.set_variable(
+            "empty_struct",
+            Value::Struct {
+                name: "Empty".to_string(),
+                fields: Arc::new(fields),
+            },
+        );
 
-        let object_expr = Expr::new(ExprKind::Identifier("empty_struct".to_string()), Span::default());
+        let object_expr = Expr::new(
+            ExprKind::Identifier("empty_struct".to_string()),
+            Span::default(),
+        );
         let result = interp.eval_field_access(&object_expr, "nonexistent");
         assert!(result.is_err(), "Missing struct field should error");
-        assert!(result.unwrap_err().to_string().contains("not found in struct"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in struct"));
     }
 
     #[test]
@@ -1798,11 +1817,14 @@ mod tests {
 
         let mut fields = std::collections::HashMap::new();
         fields.insert("name".to_string(), Value::from_string("Alice".to_string()));
-        interp.set_variable("person", Value::Class {
-            class_name: "Person".to_string(),
-            fields: Arc::new(RwLock::new(fields)),
-            methods: Arc::new(std::collections::HashMap::new()),
-        });
+        interp.set_variable(
+            "person",
+            Value::Class {
+                class_name: "Person".to_string(),
+                fields: Arc::new(RwLock::new(fields)),
+                methods: Arc::new(std::collections::HashMap::new()),
+            },
+        );
 
         let object_expr = Expr::new(ExprKind::Identifier("person".to_string()), Span::default());
         let result = interp.eval_field_access(&object_expr, "name");
@@ -1819,16 +1841,25 @@ mod tests {
         let mut interp = Interpreter::new();
 
         let fields = std::collections::HashMap::new();
-        interp.set_variable("empty_person", Value::Class {
-            class_name: "Person".to_string(),
-            fields: Arc::new(RwLock::new(fields)),
-            methods: Arc::new(std::collections::HashMap::new()),
-        });
+        interp.set_variable(
+            "empty_person",
+            Value::Class {
+                class_name: "Person".to_string(),
+                fields: Arc::new(RwLock::new(fields)),
+                methods: Arc::new(std::collections::HashMap::new()),
+            },
+        );
 
-        let object_expr = Expr::new(ExprKind::Identifier("empty_person".to_string()), Span::default());
+        let object_expr = Expr::new(
+            ExprKind::Identifier("empty_person".to_string()),
+            Span::default(),
+        );
         let result = interp.eval_field_access(&object_expr, "nonexistent");
         assert!(result.is_err(), "Missing class field should error");
-        assert!(result.unwrap_err().to_string().contains("not found in class"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("not found in class"));
     }
 
     #[test]
@@ -1838,11 +1869,14 @@ mod tests {
 
         let mut interp = Interpreter::new();
 
-        interp.set_variable("tup", Value::Tuple(Arc::from(vec![
-            Value::Integer(10),
-            Value::Integer(20),
-            Value::Integer(30),
-        ])));
+        interp.set_variable(
+            "tup",
+            Value::Tuple(Arc::from(vec![
+                Value::Integer(10),
+                Value::Integer(20),
+                Value::Integer(30),
+            ])),
+        );
 
         let object_expr = Expr::new(ExprKind::Identifier("tup".to_string()), Span::default());
         let result = interp.eval_field_access(&object_expr, "0");
@@ -1856,10 +1890,13 @@ mod tests {
 
         let mut interp = Interpreter::new();
 
-        interp.set_variable("tup2", Value::Tuple(Arc::from(vec![
-            Value::from_string("a".to_string()),
-            Value::from_string("b".to_string()),
-        ])));
+        interp.set_variable(
+            "tup2",
+            Value::Tuple(Arc::from(vec![
+                Value::from_string("a".to_string()),
+                Value::from_string("b".to_string()),
+            ])),
+        );
 
         let object_expr = Expr::new(ExprKind::Identifier("tup2".to_string()), Span::default());
         let result = interp.eval_field_access(&object_expr, "1");
@@ -1879,7 +1916,10 @@ mod tests {
         let object_expr = Expr::new(ExprKind::Identifier("num".to_string()), Span::default());
         let result = interp.eval_field_access(&object_expr, "field");
         assert!(result.is_err(), "Field access on integer should error");
-        assert!(result.unwrap_err().to_string().contains("Cannot access field"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Cannot access field"));
     }
 
     #[test]
@@ -1889,17 +1929,19 @@ mod tests {
 
         let mut interp = Interpreter::new();
 
-        let columns = vec![
-            crate::runtime::value::DataFrameColumn {
-                name: "age".to_string(),
-                values: vec![Value::Integer(25), Value::Integer(30)],
-            },
-        ];
+        let columns = vec![crate::runtime::value::DataFrameColumn {
+            name: "age".to_string(),
+            values: vec![Value::Integer(25), Value::Integer(30)],
+        }];
         interp.set_variable("df_val", Value::DataFrame { columns });
 
         let object_expr = Expr::new(ExprKind::Identifier("df_val".to_string()), Span::default());
         let result = interp.eval_field_access(&object_expr, "age");
-        assert!(result.is_ok(), "DataFrame column access should succeed: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "DataFrame column access should succeed: {:?}",
+            result.err()
+        );
     }
 
     #[test]

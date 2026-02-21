@@ -573,7 +573,11 @@ mod tests {
         "#;
         let mut parser = Parser::new(code);
         let result = parser.parse();
-        assert!(result.is_ok(), "Actor with fun handler should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Actor with fun handler should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -590,7 +594,11 @@ mod tests {
         "#;
         let mut parser = Parser::new(code);
         let result = parser.parse();
-        assert!(result.is_ok(), "Actor with fun handler with params should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Actor with fun handler with params should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -607,7 +615,11 @@ mod tests {
         "#;
         let mut parser = Parser::new(code);
         let result = parser.parse();
-        assert!(result.is_ok(), "Actor with fun handler with return type should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Actor with fun handler with return type should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -628,7 +640,11 @@ mod tests {
         "#;
         let mut parser = Parser::new(code);
         let result = parser.parse();
-        assert!(result.is_ok(), "Actor with multiple fun handlers should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Actor with multiple fun handlers should parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -645,6 +661,10 @@ mod tests {
         "#;
         let mut parser = Parser::new(code);
         let result = parser.parse();
-        assert!(result.is_ok(), "Actor with no-param fun handler should parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Actor with no-param fun handler should parse: {:?}",
+            result.err()
+        );
     }
 }

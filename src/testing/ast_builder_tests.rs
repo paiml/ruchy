@@ -1,7 +1,6 @@
 use super::*;
 use crate::Transpiler;
 
-
 /// Test AST builder literal methods
 #[test]
 fn test_int_literal() {

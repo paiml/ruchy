@@ -791,7 +791,11 @@ mod tests {
             trailing_comment: None,
         };
         let result = compiler.compile(&ast);
-        assert!(result.is_ok(), "Should compile function: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Should compile function: {:?}",
+            result.err()
+        );
         let module = result.unwrap();
         assert!(module.has_export("add"), "Should export 'add' function");
         assert!(module.validate().is_ok(), "Should produce valid WASM");
