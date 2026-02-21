@@ -1,4 +1,3 @@
-
 use super::*;
 // Type checks
 #[test]

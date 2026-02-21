@@ -1,4 +1,3 @@
-
 use super::*;
 use crate::frontend::parser::Parser;
 fn infer_str(input: &str) -> Result<MonoType> {

@@ -1,4 +1,3 @@
-
 use super::*;
 use crate::frontend::ast::{
     ClassConstant, ClassMethod, Constructor, Literal, Param, Pattern, SelfType, Span, StructField,
