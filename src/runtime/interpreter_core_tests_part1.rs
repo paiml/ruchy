@@ -1,4 +1,3 @@
-
 use super::*;
 // Test Interpreter::new
 #[test]

@@ -1,4 +1,3 @@
-
 use proptest::proptest;
 
 proptest! {
