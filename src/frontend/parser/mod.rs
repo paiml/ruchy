@@ -114,13 +114,10 @@ pub(crate) struct ParserState<'a> {
     /// Collection of parse errors for diagnostic reporting.
     pub errors: Vec<ErrorNode>,
     /// Arena allocator for efficient AST node allocation.
-    #[allow(dead_code)]
     pub arena: Arena,
     /// String interner for deduplicating identifiers and strings.
-    #[allow(dead_code)]
     pub interner: StringInterner,
     /// Small cache for recently parsed expressions (capacity 8)
-    #[allow(dead_code)]
     pub expr_cache: VecDeque<(usize, Expr)>,
     /// PARSER-071: Flag to indicate we're parsing a match guard expression
     /// When true, `=>` and `->` should not be treated as lambda syntax
@@ -148,12 +145,10 @@ impl<'a> ParserState<'a> {
         &self.errors
     }
     /// Get arena statistics for performance monitoring
-    #[allow(dead_code)]
     pub fn arena_stats(&self) -> (usize, usize) {
         (self.arena.total_allocated(), self.arena.num_items())
     }
     /// Get interner statistics
-    #[allow(dead_code)]
     pub fn interner_stats(&self) -> (usize, usize) {
         self.interner.stats()
     }

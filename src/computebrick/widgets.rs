@@ -70,22 +70,26 @@ impl BrailleGraph {
         }
     }
 
+    /// Set the graph color
     pub fn with_color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }
 
+    /// Set the y-axis range
     pub fn with_range(mut self, min: f64, max: f64) -> Self {
         self.min = min;
         self.max = max;
         self
     }
 
+    /// Set the graph rendering mode (line, bar, scatter, etc.)
     pub fn with_mode(mut self, mode: GraphMode) -> Self {
         self.mode = mode;
         self
     }
 
+    /// Set the graph title
     pub fn with_title(mut self, title: impl Into<String>) -> Self {
         self.title = Some(title.into());
         self
@@ -295,6 +299,7 @@ pub struct Meter {
 }
 
 impl Meter {
+    /// Create a new meter with the given current value and maximum
     pub fn new(value: f64, max: f64) -> Self {
         Self {
             value,
@@ -308,29 +313,35 @@ impl Meter {
         }
     }
 
+    /// Create a meter from a percentage value (0-100)
     pub fn percentage(pct: f64) -> Self {
         Self::new(pct, 100.0)
     }
 
+    /// Set the display label
     pub fn with_label(mut self, label: impl Into<String>) -> Self {
         self.label = label.into();
         self
     }
 
+    /// Set the fill color
     pub fn with_color(mut self, color: Color) -> Self {
         self.fill_color = color;
         self
     }
 
+    /// Set a two-color gradient for the fill
     pub fn with_gradient(mut self, start: Color, end: Color) -> Self {
         self.gradient = Some(Gradient::two(start, end));
         self
     }
 
+    /// Update the current value
     pub fn set_value(&mut self, value: f64) {
         self.value = value;
     }
 
+    /// Get the fill ratio (0.0 to 1.0)
     pub fn ratio(&self) -> f64 {
         if self.max <= 0.0 {
             0.0
@@ -417,6 +428,7 @@ pub struct Gauge {
 }
 
 impl Gauge {
+    /// Create a new gauge with the given current value and maximum
     pub fn new(value: f64, max: f64) -> Self {
         Self {
             value,
@@ -427,16 +439,19 @@ impl Gauge {
         }
     }
 
+    /// Set the display label
     pub fn with_label(mut self, label: impl Into<String>) -> Self {
         self.label = label.into();
         self
     }
 
+    /// Set the gauge color
     pub fn with_color(mut self, color: Color) -> Self {
         self.color = color;
         self
     }
 
+    /// Get the fill ratio (0.0 to 1.0)
     pub fn ratio(&self) -> f64 {
         if self.max <= 0.0 {
             0.0
@@ -492,6 +507,7 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
+    /// Create a new progress bar with current step and total steps
     pub fn new(current: u64, total: u64) -> Self {
         Self {
             current,
@@ -503,19 +519,23 @@ impl ProgressBar {
         }
     }
 
+    /// Enable or disable estimated time of completion display
     pub fn with_eta(mut self, show: bool) -> Self {
         self.show_eta = show;
         self
     }
 
+    /// Set the estimated time remaining in seconds
     pub fn set_eta(&mut self, seconds: u64) {
         self.eta_seconds = Some(seconds);
     }
 
+    /// Update the current progress value
     pub fn set_progress(&mut self, current: u64) {
         self.current = current;
     }
 
+    /// Get the completion ratio (0.0 to 1.0)
     pub fn ratio(&self) -> f64 {
         if self.total == 0 {
             0.0
@@ -573,6 +593,7 @@ pub struct Table {
 }
 
 impl Table {
+    /// Create a new table with column headers and row data
     pub fn new(headers: Vec<String>, rows: Vec<Vec<String>>) -> Self {
         let column_widths = Self::compute_column_widths(&headers, &rows);
         Self {
@@ -599,6 +620,7 @@ impl Table {
         widths
     }
 
+    /// Set the header row color
     pub fn with_header_color(mut self, color: Color) -> Self {
         self.header_color = color;
         self

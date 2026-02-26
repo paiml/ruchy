@@ -306,7 +306,6 @@ impl MinimalCodeGen {
         }
     }
     // Type generation simplified for MVP - focus on minimal working compiler
-    #[allow(dead_code)]
     fn gen_type(_ty: &crate::frontend::ast::Type) -> Result<String> {
         Ok("String".to_string()) // Simplified for self-hosting MVP
     }

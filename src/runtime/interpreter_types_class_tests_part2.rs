@@ -60,8 +60,6 @@ fn make_constructor(name: Option<&str>, params: Vec<Param>, body: Expr) -> Const
         is_pub: true,
     }
 }
-
-#[allow(dead_code)]
 fn make_method(name: &str, params: Vec<Param>, body: Expr, is_static: bool) -> ClassMethod {
     ClassMethod {
         name: name.to_string(),
@@ -81,8 +79,6 @@ fn make_method(name: &str, params: Vec<Param>, body: Expr, is_static: bool) -> C
         },
     }
 }
-
-#[allow(dead_code)]
 fn make_constant(name: &str, value: Expr) -> ClassConstant {
     ClassConstant {
         name: name.to_string(),

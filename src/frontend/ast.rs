@@ -998,6 +998,7 @@ impl Param {
     }
 }
 
+/// Visibility level for struct fields, methods, and other items
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum Visibility {
     Private,
@@ -1008,6 +1009,7 @@ pub enum Visibility {
 }
 
 impl Visibility {
+    /// Returns true if this visibility level allows external access
     pub fn is_public(&self) -> bool {
         matches!(
             self,
@@ -1016,6 +1018,7 @@ impl Visibility {
     }
 }
 
+/// A field within a struct or class definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct StructField {
     pub name: String,
@@ -1025,6 +1028,7 @@ pub struct StructField {
     pub default_value: Option<Expr>, // Default value for class fields
     pub decorators: Vec<Decorator>,  // @PrimaryKey, @Column("name"), etc.
 }
+/// A variant within an enum definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EnumVariant {
     pub name: String,
@@ -1032,17 +1036,20 @@ pub struct EnumVariant {
     pub discriminant: Option<i64>, // Explicit discriminant value for TypeScript compatibility
 }
 
+/// The kind of data an enum variant holds
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum EnumVariantKind {
     Unit,                     // Quit
     Tuple(Vec<Type>),         // Write(String)
     Struct(Vec<StructField>), // Move { x: i32, y: i32 }
 }
+/// A field in an object literal expression
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ObjectField {
     KeyValue { key: String, value: Expr },
     Spread { expr: Expr },
 }
+/// A method declaration within a trait definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TraitMethod {
     pub name: String,
@@ -1051,6 +1058,7 @@ pub struct TraitMethod {
     pub body: Option<Box<Expr>>, // None for method signatures, Some for default implementations
     pub is_pub: bool,
 }
+/// A method definition within an impl block
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ImplMethod {
     pub name: String,
@@ -1059,6 +1067,7 @@ pub struct ImplMethod {
     pub body: Box<Expr>,
     pub is_pub: bool,
 }
+/// A message handler for an actor definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ActorHandler {
     pub message_type: String,
@@ -1082,6 +1091,7 @@ pub struct EffectHandler {
     pub body: Box<Expr>,
 }
 
+/// A method definition within a class
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClassMethod {
     pub name: String,
@@ -1097,6 +1107,7 @@ pub struct ClassMethod {
     pub self_type: SelfType, // &self, &mut self, or self (move)
 }
 
+/// A constant declared within a class body
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClassConstant {
     pub name: String,
@@ -1105,6 +1116,7 @@ pub struct ClassConstant {
     pub is_pub: bool,
 }
 
+/// A computed property with optional getter and setter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClassProperty {
     pub name: String,
@@ -1114,12 +1126,14 @@ pub struct ClassProperty {
     pub is_pub: bool,
 }
 
+/// The setter portion of a computed class property
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PropertySetter {
     pub param_name: String,
     pub body: Box<Expr>,
 }
 
+/// How a method receives its self parameter
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum SelfType {
     None,        // static method
@@ -1128,6 +1142,7 @@ pub enum SelfType {
     MutBorrowed, // &mut self
 }
 
+/// A class constructor (primary or named)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Constructor {
     pub name: Option<String>, // None for primary constructor, Some(name) for named constructors
@@ -1210,6 +1225,7 @@ pub enum TypeKind {
         constraint: Box<Expr>,
     },
 }
+/// A stage in a pipeline expression (connected by |>)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct PipelineStage {
     pub op: Box<Expr>,
@@ -1430,6 +1446,7 @@ pub struct Decorator {
     pub name: String,
     pub args: Vec<String>,
 }
+/// A column definition in a DataFrame literal
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DataFrameColumn {
     pub name: String,
@@ -1465,6 +1482,7 @@ pub enum DataFrameOp {
     Head(usize),
     Tail(usize),
 }
+/// The type of join operation for DataFrame joins
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum JoinType {
     Inner,
@@ -1472,6 +1490,7 @@ pub enum JoinType {
     Right,
     Outer,
 }
+/// An item in an import statement (named, aliased, or wildcard)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum ImportItem {
     /// Import a specific name: `use std::collections::HashMap`
@@ -1487,6 +1506,7 @@ impl ImportItem {
         path.starts_with("https://") || path.starts_with("http://")
     }
 }
+/// Aggregate operations for DataFrame group-by queries
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AggregateOp {
     Sum(String),

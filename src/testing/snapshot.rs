@@ -216,7 +216,6 @@ impl SnapshotRunner {
 /// Automatic bisection to identify regression source
 #[allow(clippy::module_name_repetitions)]
 pub struct SnapshotBisector {
-    #[allow(dead_code)]
     snapshots: Vec<SnapshotTest>,
 }
 impl SnapshotBisector {

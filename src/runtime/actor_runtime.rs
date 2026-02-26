@@ -263,8 +263,9 @@ impl ActorRuntime {
 }
 
 // Global actor runtime instance
-lazy_static::lazy_static! {
-    pub static ref ACTOR_RUNTIME: ActorRuntime = ActorRuntime::new();
+pub fn actor_runtime() -> &'static ActorRuntime {
+    static RUNTIME: std::sync::OnceLock<ActorRuntime> = std::sync::OnceLock::new();
+    RUNTIME.get_or_init(ActorRuntime::new)
 }
 
 #[cfg(test)]

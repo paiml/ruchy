@@ -73,11 +73,9 @@ pub struct Interpreter {
     pub(crate) env_stack: Vec<Rc<RefCell<HashMap<std::string::String, Value>>>>,
 
     /// Call frame for function calls
-    #[allow(dead_code)]
     frames: Vec<CallFrame>,
 
     /// Execution statistics for tier transition (will be used in Phase 1)
-    #[allow(dead_code)]
     execution_counts: HashMap<usize, u32>, // Function/method ID -> execution count
 
     /// Inline caches for field/method access optimization
@@ -1606,7 +1604,6 @@ impl Interpreter {
     }
 
     /// Record type feedback for binary operations
-    #[allow(dead_code)] // Used by tests and type feedback system
     pub(crate) fn record_binary_op_feedback(
         &mut self,
         site_id: usize,
@@ -1619,7 +1616,6 @@ impl Interpreter {
     }
 
     /// Record type feedback for variable assignments
-    #[allow(dead_code)] // Used by tests and type feedback system
     pub(crate) fn record_variable_assignment_feedback(&mut self, var_name: &str, value: &Value) {
         let type_id = value.type_id();
         self.type_feedback

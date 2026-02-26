@@ -40,7 +40,6 @@ impl Transpiler {
 
     /// Old implementation kept for reference (will be removed after verification)
     /// Complexity: 5 (within Toyota Way limits)
-    #[allow(dead_code)]
     pub fn try_transpile_type_conversion_old(
         &self,
         base_name: &str,

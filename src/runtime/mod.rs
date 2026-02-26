@@ -173,7 +173,7 @@ pub use actor::{
 // Export concurrent actor system
 pub use actor_concurrent::{
     ActorState as ConcurrentActorState, ConcurrentActor, ConcurrentActorSystem, Envelope,
-    SupervisionStrategy, SystemMessage, CONCURRENT_ACTOR_SYSTEM,
+    SupervisionStrategy, SystemMessage, concurrent_actor_system,
 };
 // Export assessment components
 #[cfg(all(not(target_arch = "wasm32"), feature = "repl"))]

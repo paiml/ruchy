@@ -326,7 +326,6 @@ impl Transpiler {
     // ========================================================================
 
     /// Resolves file imports in the AST using `ModuleResolver`
-    #[allow(dead_code)]
     pub fn resolve_imports(&self, expr: &Expr) -> Result<Expr> {
         // For now, just use default search paths since we don't have file context here
         let mut resolver = ModuleResolver::new();
