@@ -159,6 +159,10 @@ Add to Claude Desktop config:
 - [Ruchy Book](https://github.com/paiml/ruchy-book) - Comprehensive guide
 - 🤖 [Coursera Hugging Face AI Development Specialization](https://www.coursera.org/specializations/hugging-face-ai-development) - Build Production AI systems with Hugging Face in Pure Rust
 
+## Contributing
+
+Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide for details.
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
