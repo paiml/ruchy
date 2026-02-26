@@ -5,7 +5,7 @@
 use anyhow::{Context, Result};
 use arrow::array::{Array, ArrayRef, BooleanArray, Float64Array, Int64Array, StringArray};
 use arrow::record_batch::RecordBatch;
-use arrow_schema::SchemaRef;
+use arrow::datatypes::SchemaRef;
 use std::sync::Arc;
 // Use explicit namespaces to avoid conflicts
 use arrow::datatypes::{DataType as ArrowDataType, Field as ArrowField, Schema as ArrowSchema};

@@ -250,16 +250,16 @@ widgets = ["dep:presentar"]
 visualization = ["dep:trueno-viz"]
 minimal = []  # Users can use --no-default-features --features minimal for core only
 # DataFrame via trueno-db (default - uses Trueno SIMD backend)
-dataframe = ["polars", "arrow", "arrow-array", "arrow-buffer", "arrow-schema"]
+dataframe = ["polars", "arrow"]
 # Legacy polars compatibility layer (spec Section 4.2 - NOT default)
-polars-compat = ["polars", "arrow", "arrow-array", "arrow-buffer", "arrow-schema"]
+polars-compat = ["polars", "arrow"]
 testing = ["proptest"]
 stub_tests = []  # Enable stub tests for incomplete features (development only)
 notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http", "wasmparser", "wasmtime"]
 mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
 wasm-compile = []  # WASM compilation is always available via wasm-encoder
 # JIT Compilation feature (JIT-001) - CRITICAL P0
-jit = ["dep:cranelift", "dep:cranelift-codegen", "dep:cranelift-frontend", "dep:cranelift-jit", "dep:cranelift-module", "dep:cranelift-native", "dep:target-lexicon"]
+jit = ["dep:cranelift", "dep:cranelift-codegen", "dep:cranelift-jit", "dep:cranelift-module", "dep:cranelift-native"]
 # Optional features for minimal builds (DEPENDENCY-CLEANUP Sprint v3.109.0)
 http-client = ["dep:reqwest"]
 markdown = ["dep:pulldown-cmark"]
@@ -282,48 +282,29 @@ wasm-encoder = "0.207.0"
 glob = "0.3"
 walkdir = "2.5"  # STDLIB-005: Directory traversal
 rayon = "1.11"  # STDLIB-005: Parallel directory walking
-md5 = "0.7"  # STDLIB-005: File hashing for duplicate detection
 anyhow = { workspace = true }
 thiserror = { workspace = true }
 serde.workspace = true
 serde_json.workspace = true
 tracing = { workspace = true }
 logos = { workspace = true }
-# Removed: pest and pest_derive (unused per cargo-machete - using logos instead)
 syn = { workspace = true }
 quote = { workspace = true }
-# Removed: im = "15.1" (unused per cargo-machete)
-# Removed: quickcheck = "1.0" (unused - workspace quickcheck in dev-deps)
-smallvec = "1.15"
 proc-macro2 = { workspace = true }
 prettyplease = { workspace = true }
 clap = { version = "4.5", features = ["derive"] }
 regex = "1.11"
-log = "0.4"
-env_logger = "0.11"
 # DataFrame support
 polars = { version = "0.50", features = ["lazy"], optional = true }
 arrow = { version = "54.0", optional = true }
-arrow-array = { version = "54.0", optional = true }
-arrow-buffer = { version = "54.0", optional = true }
-arrow-schema = { version = "54.0", optional = true }
 # WebAssembly support
 uuid = { version = "1.18", features = ["v4", "js"] }
-wasm-bindgen = "0.2"
-# Removed: serde-wasm-bindgen = "0.6" (unused per cargo-machete, available via WASM target)
-# Removed: js-sys = "0.3" (unused per cargo-machete, available via WASM target)
-# Removed: web-sys = "0.3" (unused per cargo-machete, available via WASM target)
-console_error_panic_hook = "0.1"
 # JIT Compilation (optional for minimal builds) - JIT-001 P0-CRITICAL
 cranelift = { workspace = true, optional = true }
 cranelift-codegen = { workspace = true, optional = true }
-cranelift-frontend = { workspace = true, optional = true }
 cranelift-jit = { workspace = true, optional = true }
 cranelift-module = { workspace = true, optional = true }
 cranelift-native = { workspace = true, optional = true }
-target-lexicon = { workspace = true, optional = true }
-# Hardware detection
-num_cpus = "1.17"
 # MCP Integration (optional for WASM compatibility)
 pmcp = { version = "1.3.0", features = ["full"], optional = true }
 tokio = { version = "1.47", features = ["rt", "rt-multi-thread", "io-std", "io-util", "net", "sync", "time", "macros"], optional = true }
@@ -339,26 +320,19 @@ tower-lsp = { version = "0.20", optional = true }
 axum = { version = "0.8", features = ["macros"], optional = true }
 tower = { version = "0.4", features = ["util"], optional = true }
 tower-http = { version = "0.5", features = ["cors", "fs", "set-header"], optional = true }
-# Removed: once_cell = "1.21" (unused per cargo-machete, lazy_static covers this)
-lazy_static = "1.5"
 # Compilation support
 tempfile = "3.21"
 proptest = { version = "1.7", optional = true }
 # HTTP client support (STD-002) - optional for minimal builds
 reqwest = { version = "0.12", features = ["blocking"], optional = true }
-# HTTP server support (HTTP-001)
-# Removed: mime_guess = "2.0" (unused per cargo-machete)
 # HTML parsing support (HTTP-002-C) - native implementation
 html5ever = "0.27"
-# Removed: markup5ever = "0.13" (transitive dep via markup5ever_rcdom)
 markup5ever_rcdom = "0.3"
 # Notebook support
 wasmparser = { version = "0.244.0", optional = true }
 wasmtime = { version = "41.0.1", optional = true }
 # Markdown parsing - optional for minimal builds
 pulldown-cmark = { version = "0.9", optional = true }
-semver = "1.0.27"
-serde_yaml = "0.9.34"
 
 # Platform-specific dependencies for non-WASM targets
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -377,6 +351,7 @@ signal-hook = "0.3"  # Graceful shutdown handling
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
 js-sys = "0.3"
+wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
 web-sys = "0.3"
@@ -391,6 +366,7 @@ tracing-subscriber = { workspace = true }
 quickcheck = { workspace = true }
 reqwest = { version = "0.12", features = ["json", "blocking"] }
 serde_json = "1.0"
+serde_yaml = "0.9.34"
 assert_cmd = "2.0"
 predicates = "3.1"
 rexpect = "0.5"
@@ -556,10 +532,6 @@ strip = true
 
 [package.metadata.cargo-machete]
 ignored = [
-    "arrow-array",      # Feature-gated: dataframe
-    "arrow-buffer",     # Feature-gated: dataframe
-    "cranelift-frontend", # Feature-gated: jit
-    "target-lexicon",   # Feature-gated: jit
     "insta",            # Dev dependency for snapshot testing
     "quickcheck",       # Dev dependency for property testing
     "quickcheck_macros", # Dev dependency for property testing

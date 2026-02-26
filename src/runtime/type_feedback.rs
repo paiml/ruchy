@@ -4,7 +4,6 @@
 //! Includes inline caching for field access and type specialization candidates.
 
 use crate::runtime::Value;
-use smallvec::{smallvec, SmallVec};
 use std::collections::HashMap;
 
 /// State of an inline cache for field access optimization
@@ -41,8 +40,8 @@ pub struct CacheEntry {
 pub struct InlineCache {
     /// Current cache state
     state: CacheState,
-    /// Cache entries (inline storage for 2 common entries)
-    entries: SmallVec<[CacheEntry; 2]>,
+    /// Cache entries
+    entries: Vec<CacheEntry>,
     /// Total hit count
     total_hits: u32,
     /// Total miss count
@@ -54,7 +53,7 @@ impl InlineCache {
     pub fn new() -> Self {
         Self {
             state: CacheState::Uninitialized,
-            entries: smallvec![],
+            entries: Vec::new(),
             total_hits: 0,
             total_misses: 0,
         }
@@ -156,11 +155,11 @@ impl Default for InlineCache {
 #[derive(Clone, Debug)]
 pub struct OperationFeedback {
     /// Types observed for left operand
-    pub left_types: SmallVec<[std::any::TypeId; 4]>,
+    pub left_types: Vec<std::any::TypeId>,
     /// Types observed for right operand (for binary ops)
-    pub right_types: SmallVec<[std::any::TypeId; 4]>,
+    pub right_types: Vec<std::any::TypeId>,
     /// Result types observed
-    pub result_types: SmallVec<[std::any::TypeId; 4]>,
+    pub result_types: Vec<std::any::TypeId>,
     /// Hit counts for each type combination
     pub type_counts: HashMap<(std::any::TypeId, std::any::TypeId), u32>,
     /// Total operation count
@@ -171,9 +170,9 @@ impl OperationFeedback {
     /// Create new operation feedback
     pub fn new() -> Self {
         Self {
-            left_types: smallvec![],
-            right_types: smallvec![],
-            result_types: smallvec![],
+            left_types: Vec::new(),
+            right_types: Vec::new(),
+            result_types: Vec::new(),
             type_counts: HashMap::new(),
             total_count: 0,
         }
@@ -195,7 +194,7 @@ impl Default for OperationFeedback {
 #[derive(Clone, Debug)]
 pub struct VariableTypeFeedback {
     /// Types assigned to this variable
-    pub assigned_types: SmallVec<[std::any::TypeId; 4]>,
+    pub assigned_types: Vec<std::any::TypeId>,
     /// Type transitions (`from_type` -> `to_type`)
     pub transitions: HashMap<std::any::TypeId, HashMap<std::any::TypeId, u32>>,
     /// Most common type (for specialization)
@@ -208,7 +207,7 @@ impl VariableTypeFeedback {
     /// Create new variable type feedback
     pub fn new() -> Self {
         Self {
-            assigned_types: smallvec![],
+            assigned_types: Vec::new(),
             transitions: HashMap::new(),
             dominant_type: None,
             stability_score: 1.0,
@@ -231,9 +230,9 @@ impl Default for VariableTypeFeedback {
 #[derive(Clone, Debug)]
 pub struct CallSiteFeedback {
     /// Argument type patterns observed
-    pub arg_type_patterns: SmallVec<[Vec<std::any::TypeId>; 4]>,
+    pub arg_type_patterns: Vec<Vec<std::any::TypeId>>,
     /// Return types observed
-    pub return_types: SmallVec<[std::any::TypeId; 4]>,
+    pub return_types: Vec<std::any::TypeId>,
     /// Call frequency
     pub call_count: u32,
     /// Functions called at this site (for polymorphic calls)
@@ -244,8 +243,8 @@ impl CallSiteFeedback {
     /// Create new call site feedback
     pub fn new() -> Self {
         Self {
-            arg_type_patterns: smallvec![],
-            return_types: smallvec![],
+            arg_type_patterns: Vec::new(),
+            return_types: Vec::new(),
             call_count: 0,
             called_functions: HashMap::new(),
         }

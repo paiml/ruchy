@@ -29,7 +29,6 @@ pub fn handle_publish_command(
     allow_dirty: bool,
     verbose: bool,
 ) -> Result<()> {
-    use semver::Version;
     use serde::Deserialize;
     use std::env;
 
@@ -84,11 +83,18 @@ pub fn handle_publish_command(
         bail!("Package license cannot be empty in Ruchy.toml");
     }
 
-    // Validate semver version
-    Version::parse(&manifest.package.version).context(format!(
-        "Invalid version '{}' in Ruchy.toml.\nMust be valid semver (e.g., 1.0.0, 0.2.3)",
-        manifest.package.version
-    ))?;
+    // Validate semver version (basic: MAJOR.MINOR.PATCH with optional pre-release)
+    {
+        let v = &manifest.package.version;
+        let semver_re = regex::Regex::new(r"^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([\w.]+))?(?:\+([\w.]+))?$")
+            .expect("semver regex");
+        if !semver_re.is_match(v) {
+            bail!(
+                "Invalid version '{}' in Ruchy.toml.\nMust be valid semver (e.g., 1.0.0, 0.2.3)",
+                v
+            );
+        }
+    }
 
     if verbose {
         eprintln!("Manifest validation passed");
