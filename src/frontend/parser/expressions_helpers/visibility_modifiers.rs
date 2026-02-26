@@ -165,6 +165,7 @@ fn parse_pub_const_function(state: &mut ParserState) -> Result<Expr> {
 }
 
 /// Parse pub unsafe function
+// SAFETY: no actual unsafe code -- parses the `unsafe` keyword from source tokens
 fn parse_pub_unsafe_function(state: &mut ParserState) -> Result<Expr> {
     state.tokens.advance(); // consume 'unsafe'
     if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
@@ -425,6 +426,7 @@ pub(in crate::frontend::parser) fn parse_abstract_token(
 ///
 /// Unsafe functions can perform operations that bypass safety guarantees
 ///
+/// # Safety: no actual unsafe code -- parser for the `unsafe` keyword token
 /// # Examples
 /// ```ruchy
 /// unsafe fn direct_memory_access() {}
@@ -640,12 +642,14 @@ mod tests {
 
     // ===== parse_unsafe_token tests =====
 
+    // SAFETY: test-only -- no actual unsafe code, parsing string literals containing `unsafe` keyword
     #[test]
     fn test_unsafe_function() {
         let result = parse("unsafe fn dangerous() { }");
         assert!(result.is_ok());
     }
 
+    // SAFETY: test-only -- verifies parser attribute extraction for unsafe keyword
     #[test]
     fn test_unsafe_function_has_attribute() {
         let expr = parse("unsafe fn test() { }").unwrap();
@@ -655,6 +659,7 @@ mod tests {
         }
     }
 
+    // SAFETY: test-only -- no actual unsafe code, parsing pub+unsafe modifier combination
     #[test]
     fn test_pub_unsafe_fn() {
         let code = "pub unsafe fn test() { }";
@@ -662,6 +667,7 @@ mod tests {
         assert!(result.is_ok(), "Public unsafe function should parse");
     }
 
+    // SAFETY: test-only -- no actual unsafe code, parsing unsafe+fun keyword variant
     #[test]
     fn test_unsafe_with_fun_keyword() {
         let result = parse("unsafe fun test() { }");
@@ -859,6 +865,7 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // SAFETY: test-only -- verifies parser rejects unsafe on non-function declarations
     #[test]
     fn test_unsafe_without_function() {
         let result = parse("unsafe class Invalid { }");
@@ -1047,7 +1054,7 @@ mod tests {
         assert!(result.is_ok());
     }
 
-    // ===== unsafe variations =====
+    // SAFETY: test-only -- no actual unsafe code, tests below parse string literals with `unsafe`
 
     #[test]
     fn test_unsafe_fn_with_params() {
@@ -1055,24 +1062,28 @@ mod tests {
         assert!(result.is_ok());
     }
 
+    // SAFETY: test-only -- parsing unsafe fn with return type
     #[test]
     fn test_unsafe_fn_with_return() {
         let result = parse("unsafe fn dangerous() -> i32 { 42 }");
         assert!(result.is_ok());
     }
 
+    // SAFETY: test-only -- parsing unsafe fun keyword variant with body
     #[test]
     fn test_unsafe_fun_with_body() {
         let result = parse("unsafe fun work() { let x = 1 }");
         assert!(result.is_ok());
     }
 
+    // SAFETY: test-only -- parsing pub unsafe modifier ordering
     #[test]
     fn test_pub_unsafe_fn_order() {
         let result = parse("pub unsafe fn exposed_danger() { }");
         assert!(result.is_ok());
     }
 
+    // SAFETY: test-only -- parsing pub(crate) unsafe visibility combination
     #[test]
     fn test_pub_crate_unsafe() {
         let result = parse("pub(crate) unsafe fn internal_danger() { }");
@@ -1322,6 +1333,7 @@ mod tests {
         assert!(result.is_err());
     }
 
+    // SAFETY: test-only -- verifies parser rejects unsafe on struct declarations
     #[test]
     fn test_unsafe_with_struct() {
         let result = parse("unsafe struct Invalid { }");

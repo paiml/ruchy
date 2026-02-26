@@ -34,6 +34,7 @@ pub struct CallFrame {
 // 3. The pointer is never dereferenced across thread boundaries
 // 4. CallFrame is only used in single-threaded execution contexts within each thread
 // 5. When Repl is shared across threads, each thread gets its own CallFrame instance
+// SAFETY: see above -- ip is immutable bytecode, no cross-thread dereference
 unsafe impl Send for CallFrame {}
 
 /// Interpreter execution result

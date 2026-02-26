@@ -6,3 +6,8 @@ cognitive-complexity-threshold = 30
 
 # We use wildcard imports in module definitions
 warn-on-all-wildcard-imports = false
+
+disallowed-methods = [
+    { path = "std::option::Option::unwrap", reason = "Use .expect() or ? operator" },
+    { path = "std::result::Result::unwrap", reason = "Use .expect() or ? operator" },
+]

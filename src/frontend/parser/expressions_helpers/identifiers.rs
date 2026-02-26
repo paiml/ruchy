@@ -669,6 +669,7 @@ mod tests {
         assert_eq!(token_to_keyword_string(&Token::Type), "type");
     }
 
+    // SAFETY: test-only -- no actual unsafe code, verifies Token::Unsafe keyword stringification
     #[test]
     fn test_token_to_keyword_string_unsafe() {
         assert_eq!(token_to_keyword_string(&Token::Unsafe), "unsafe");
