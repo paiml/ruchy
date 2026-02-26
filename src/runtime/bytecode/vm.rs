@@ -295,15 +295,12 @@ impl VM {
                             *i as usize
                         };
 
+                        let char_count = chars.len();
                         chars
                             .get(idx)
                             .map(|c| Value::from_string(c.to_string()))
                             .ok_or_else(|| {
-                                format!(
-                                    "Index {} out of bounds for string of length {}",
-                                    i,
-                                    chars.len()
-                                )
+                                format!("Index {i} out of bounds for string of length {char_count}")
                             })
                     }
                     _ => Err(format!(

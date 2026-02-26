@@ -263,7 +263,7 @@ impl DiffRenderer {
     pub fn reset(&mut self, output: &mut Vec<u8>) {
         self.show_cursor(output);
         output.extend_from_slice(b"\x1b[0m"); // Reset attributes
-                                              // output.extend_from_slice(b"\x1b[?1049l"); // Exit alternate screen
+        // output.extend_from_slice(b"\x1b[?1049l"); // Exit alternate screen
     }
 }
 

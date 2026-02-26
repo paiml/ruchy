@@ -723,7 +723,7 @@ fn test_builtin_fs_metadata() {
         assert!(meta.contains_key("is_file"));
         assert!(meta.contains_key("is_dir"));
         assert!(meta.contains_key("size")); // Key is "size" not "len"
-                                            // Verify the values are correct types
+        // Verify the values are correct types
         assert_eq!(
             meta.get("is_file")
                 .expect("is_file key should exist in metadata"),

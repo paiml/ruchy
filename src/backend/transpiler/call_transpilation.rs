@@ -64,14 +64,12 @@ impl Transpiler {
                         if !args.is_empty() {
                             bail!("std::time::now_millis() expects no arguments");
                         }
-                        return Ok(Some(quote! {
-                            {
-                                std::time::SystemTime::now()
-                                    .duration_since(std::time::UNIX_EPOCH)
-                                    .expect("System time before Unix epoch")
-                                    .as_millis() as i64
-                            }
-                        }));
+                        return Ok(Some(quote! { {
+                            let dur = std::time::SystemTime::now()
+                                .duration_since(std::time::UNIX_EPOCH)
+                                .expect("System time before Unix epoch");
+                            dur.as_millis() as i64
+                        } }));
                     }
                 }
             }

@@ -557,29 +557,27 @@ mod tests {
     #[test]
     fn test_high_complexity_flagged() {
         // A deeply nested expression to trigger complexity warning
-        let complex_code = "\
-if true {
-    if true {
-        if true {
-            if true {
-                if true {
-                    if true {
-                        if true {
-                            if true {
-                                if true {
-                                    if true {
-                                        if true { 1 } else { 2 }
-                                    } else { 3 }
-                                } else { 4 }
-                            } else { 5 }
-                        } else { 6 }
-                    } else { 7 }
-                } else { 8 }
-            } else { 9 }
-        } else { 10 }
-    } else { 11 }
-} else { 12 }
-";
+        let complex_code = "if true {\
+\n    if true {\
+\n        if true {\
+\n            if true {\
+\n                if true {\
+\n                    if true {\
+\n                        if true {\
+\n                            if true {\
+\n                                if true {\
+\n                                    if true {\
+\n                                        if true { 1 } else { 2 }\
+\n                                    } else { 3 }\
+\n                                } else { 4 }\
+\n                            } else { 5 }\
+\n                        } else { 6 }\
+\n                    } else { 7 }\
+\n                } else { 8 }\
+\n            } else { 9 }\
+\n        } else { 10 }\
+\n    } else { 11 }\
+\n} else { 12 }\n";
         let issues = parse_and_lint_with_rules(complex_code, "complexity");
         // Should flag high complexity
         assert!(issues.iter().any(|i| i.rule == "complexity"));

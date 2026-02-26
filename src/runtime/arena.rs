@@ -569,7 +569,7 @@ mod tests {
     #[test]
     fn test_arena_allocation() {
         let arena = Arena::new(1024 * 1024); // 1MB limit
-                                             // Allocate some values
+        // Allocate some values
         let v1 = arena.alloc(42i32).expect("operation should succeed in test");
         let v2 = arena.alloc("hello".to_string()).expect("operation should succeed in test");
         let v3 = arena.alloc(vec![1, 2, 3]).expect("operation should succeed in test");
@@ -612,7 +612,7 @@ mod tests {
     #[test]
     fn test_memory_limit() {
         let arena = Arena::new(100); // Very small limit
-                                     // This should succeed
+        // This should succeed
         arena.alloc([0u8; 50]).expect("operation should succeed in test");
         // This should fail - would exceed limit
         let result = arena.alloc([0u8; 60]);

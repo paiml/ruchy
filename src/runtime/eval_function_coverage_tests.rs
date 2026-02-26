@@ -562,7 +562,7 @@ fn test_create_partial_application_with_captured_env() {
     }) = result
     {
         assert_eq!(params.len(), 1); // One param remaining
-                                     // Check x is bound in new env
+        // Check x is bound in new env
         assert!(new_env.borrow().contains_key("x"));
         assert_eq!(new_env.borrow().get("x"), Some(&Value::Integer(5)));
         // Check captured var is preserved

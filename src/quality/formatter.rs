@@ -994,14 +994,12 @@ impl Formatter {
                         let params_str = if h.params.is_empty() {
                             String::new()
                         } else {
-                            format!(
-                                "({})",
-                                h.params
-                                    .iter()
-                                    .map(|p| format!("{p:?}"))
-                                    .collect::<Vec<_>>()
-                                    .join(", ")
-                            )
+                            let joined = h.params
+                                .iter()
+                                .map(|p| format!("{p:?}"))
+                                .collect::<Vec<_>>()
+                                .join(", ");
+                            format!("({joined})")
                         };
                         let body_str = self.format_expr(&h.body, indent);
                         format!("{}{} => {}", h.operation, params_str, body_str)

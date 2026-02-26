@@ -196,10 +196,9 @@ impl NotebookTester {
                     for (cell1, cell2) in row1.iter().zip(row2.iter()) {
                         // Try to parse as numbers for tolerance comparison
                         if let (Ok(num1), Ok(num2)) = (cell1.parse::<f64>(), cell2.parse::<f64>()) {
-                            if (num1 - num2).abs() > tolerance {
-                                return TestResult::NumericDivergence {
-                                    max_delta: (num1 - num2).abs(),
-                                };
+                            let delta = (num1 - num2).abs();
+                            if delta > tolerance {
+                                return TestResult::NumericDivergence { max_delta: delta };
                             }
                         } else if cell1 != cell2 {
                             // String comparison for non-numeric values

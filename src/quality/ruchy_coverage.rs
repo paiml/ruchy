@@ -399,12 +399,11 @@ impl RuchyCoverageCollector {
                     // Mark functions as covered based on successful execution
                     for line in &lines {
                         let trimmed = line.trim();
-                        if trimmed.starts_with("fn ") || trimmed.starts_with("fun ") {
-                            if let Some(func_name) = extract_function_name(trimmed) {
-                                coverage.covered_functions.insert(func_name.clone());
-                                self.runtime_instrumentation
-                                    .mark_function_executed(&file_str_owned, &func_name);
-                            }
+                        let is_fn = trimmed.starts_with("fn ") || trimmed.starts_with("fun ");
+                        if let Some(func_name) = is_fn.then(|| extract_function_name(trimmed)).flatten() {
+                            coverage.covered_functions.insert(func_name.clone());
+                            let instr = &mut self.runtime_instrumentation;
+                            instr.mark_function_executed(&file_str_owned, &func_name);
                         }
                     }
                 }

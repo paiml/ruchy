@@ -311,7 +311,7 @@ impl QualityGates {
         }
         // Collect clippy warnings - would need actual clippy run
         metrics.clippy_warnings = 0; // We know this is 0 from recent fixes
-                                     // Update stored metrics
+        // Update stored metrics
         self.metrics = metrics.clone();
         Ok(metrics)
     }

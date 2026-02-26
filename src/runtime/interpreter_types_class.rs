@@ -13,6 +13,15 @@ use std::collections::HashMap;
 use std::rc::Rc;
 use std::sync::Arc;
 
+/// Copy all non-metadata fields from source object map into destination.
+fn copy_non_meta_fields(src: &HashMap<String, Value>, dst: &mut HashMap<String, Value>) {
+    for (key, value) in src.iter() {
+        if !key.starts_with("__") {
+            dst.insert(key.clone(), value.clone());
+        }
+    }
+}
+
 impl Interpreter {
     /// Evaluate class definition
     ///
@@ -348,12 +357,7 @@ impl Interpreter {
                         // extract updated self from environment after constructor execution
                         let updated_self = self.lookup_variable("self")?;
                         if let Value::Object(ref updated_instance) = updated_self {
-                            // Copy all non-metadata fields from updated self back to instance
-                            for (key, value) in updated_instance.iter() {
-                                if !key.starts_with("__") {
-                                    instance.insert(key.clone(), value.clone());
-                                }
-                            }
+                            copy_non_meta_fields(updated_instance, &mut instance);
                         }
                     }
                 }
@@ -498,16 +502,10 @@ impl Interpreter {
                     // Get the method closure
                     if let Some(Value::Closure { params, body, .. }) = method_meta.get("closure") {
                         // Check if it's a static method
-                        let is_static = method_meta
-                            .get("is_static")
-                            .and_then(|v| {
-                                if let Value::Bool(b) = v {
-                                    Some(*b)
-                                } else {
-                                    None
-                                }
-                            })
-                            .unwrap_or(false);
+                        let is_static = matches!(
+                            method_meta.get("is_static"),
+                            Some(Value::Bool(true))
+                        );
 
                         if is_static {
                             return Err(InterpreterError::RuntimeError(format!(

@@ -1602,9 +1602,8 @@ impl WasmEmitter {
                                 instr.extend(self.lower_literal(lit)?);
                                 instr.push(Instruction::I32Eq);
                             } else {
-                                return Err(format!(
-                                    "Non-literal patterns in OR not yet supported: {pattern:?}"
-                                ));
+                                let msg = format!("Non-literal patterns in OR not yet supported: {pattern:?}");
+                                return Err(msg);
                             }
 
                             // OR with previous comparison (except for first)

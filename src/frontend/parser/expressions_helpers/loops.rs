@@ -196,7 +196,7 @@ fn parse_for_pattern(state: &mut ParserState) -> Result<Pattern> {
                 let mut patterns = vec![Pattern::Identifier(name)];
                 while matches!(state.tokens.peek(), Some((Token::Comma, _))) {
                     state.tokens.advance(); // consume comma
-                                            // Parse next pattern element
+                    // Parse next pattern element
                     if let Some((Token::Identifier(next_name), _)) = state.tokens.peek() {
                         let next_name = next_name.clone();
                         state.tokens.advance();

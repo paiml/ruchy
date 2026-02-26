@@ -477,20 +477,17 @@ impl PortabilityAnalyzer {
             if let Some(reqs) = self.platform_requirements.get(platform) {
                 if let Some(limit) = reqs.size_limit {
                     if info.size > limit {
+                        let desc = format!(
+                            "Component size ({} KB) exceeds {} platform limit ({} KB)",
+                            info.size / 1024, platform, limit / 1024
+                        );
+                        let fix = "Consider optimizing component size or splitting functionality";
                         issues.push(CompatibilityIssue {
                             severity: IssueSeverity::Warning,
                             category: IssueCategory::SizeConstraint,
                             affected_platforms: vec![platform.clone()],
-                            description: format!(
-                                "Component size ({} KB) exceeds {} platform limit ({} KB)",
-                                info.size / 1024,
-                                platform,
-                                limit / 1024
-                            ),
-                            fix_suggestion: Some(
-                                "Consider optimizing component size or splitting functionality"
-                                    .to_string(),
-                            ),
+                            description: desc,
+                            fix_suggestion: Some(fix.to_string()),
                         });
                     }
                 }

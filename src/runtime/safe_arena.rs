@@ -237,7 +237,7 @@ mod tests {
     #[test]
     fn test_arena_memory_limit() {
         let arena = SafeArena::new(16); // Very small limit
-                                        // First allocation should succeed
+        // First allocation should succeed
         let _val1 = arena
             .alloc([0u8; 8])
             .expect("operation should succeed in test");

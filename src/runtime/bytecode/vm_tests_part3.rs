@@ -1158,7 +1158,7 @@ fn test_vm_store_field() {
     chunk.emit(Instruction::abx(OpCode::Const, 1, 0), 1); // obj
     chunk.emit(Instruction::abx(OpCode::Const, 2, 2), 2); // 99
     chunk.emit(Instruction::abc(OpCode::StoreField, 2, 1, 1), 3); // obj.x = 99
-                                                                  // Load back the field to verify
+    // Load back the field to verify
     chunk.emit(Instruction::abc(OpCode::LoadField, 0, 1, 1), 4);
     let mut vm = VM::new();
     let result = vm.execute(&chunk);
@@ -1183,7 +1183,7 @@ fn test_vm_store_index() {
     chunk.emit(Instruction::abx(OpCode::Const, 2, 1), 2); // idx 0
     chunk.emit(Instruction::abx(OpCode::Const, 3, 2), 3); // val 99
     chunk.emit(Instruction::abc(OpCode::StoreIndex, 3, 1, 2), 4); // arr[0] = 99
-                                                                  // Load back to verify
+    // Load back to verify
     chunk.emit(Instruction::abc(OpCode::LoadIndex, 0, 1, 2), 5);
     let mut vm = VM::new();
     let result = vm.execute(&chunk);

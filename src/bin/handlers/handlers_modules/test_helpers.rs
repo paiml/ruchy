@@ -647,7 +647,7 @@ mod tests {
 
         let result = discover_files_in_directory(temp_dir.path(), Some("test"), &mut test_files);
         assert!(result.is_ok() || result.is_err()); // Tests that function doesn't panic
-                                                    // Both test.ruchy and another_test.ruchy match the filter "test"
+        // Both test.ruchy and another_test.ruchy match the filter "test"
         assert_eq!(test_files.len(), 2); // Both files contain "test"
         assert!(test_files.iter().all(|f| {
             f.file_name()

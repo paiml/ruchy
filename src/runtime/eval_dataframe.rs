@@ -1476,7 +1476,7 @@ mod round_134_tests {
         let result = eval_dataframe_groupby(&columns, &args).unwrap();
         if let Value::DataFrame { columns: cols } = result {
             assert_eq!(cols.len(), 2); // cat + val_sum
-                                       // Check the sum column
+            // Check the sum column
             let sum_col = cols.iter().find(|c| c.name == "val_sum").unwrap();
             assert_eq!(sum_col.values.len(), 1);
             assert_eq!(sum_col.values[0], Value::Integer(30));
