@@ -208,6 +208,40 @@ pub fn returns_object_literal(body: &Expr) -> bool {
     }
 }
 
+/// Check if a let-expression returns a string (mutable string var or body returns string).
+fn let_returns_string(name: &str, value: &Expr, body: &Expr, is_mutable: bool) -> bool {
+    let value_is_string = matches!(&value.kind, ExprKind::Literal(Literal::String(_)));
+    // If mutable string variable that's returned, it's likely being mutated (String)
+    if let ExprKind::Identifier(ident) = &body.kind {
+        if ident == name && value_is_string && is_mutable {
+            return true;
+        }
+    }
+    returns_string(body)
+}
+
+/// Check if the last expression of a block returns a string.
+fn block_returns_string(exprs: &[Expr]) -> bool {
+    let Some(last) = exprs.last() else {
+        return false;
+    };
+    // If last expression is an identifier, check if it was bound to a mutable string
+    if let ExprKind::Identifier(name) = &last.kind {
+        let has_mut_string = exprs.iter().any(|expr| {
+            matches!(
+                &expr.kind,
+                ExprKind::Let { name: n, value, is_mutable: true, .. }
+                if n == name
+                    && matches!(&value.kind, ExprKind::Literal(Literal::String(_)))
+            )
+        });
+        if has_mut_string {
+            return true;
+        }
+    }
+    returns_string(last)
+}
+
 /// Check if function body returns an owned String (ISSUE-114)
 /// Detects: string concatenation, string variables, string mutations
 /// Note: This is for owned String, not &'static str (use `returns_string_literal` for that)
@@ -227,34 +261,7 @@ pub fn returns_string(body: &Expr) -> bool {
         ExprKind::Return { value: Some(val) } => returns_string(val),
 
         // Block - check last expression
-        ExprKind::Block(exprs) => {
-            if let Some(last) = exprs.last() {
-                // If last expression is an identifier, check if it was bound to a mutable string
-                if let ExprKind::Identifier(name) = &last.kind {
-                    // Search for mutable Let binding with string value
-                    for expr in exprs {
-                        if let ExprKind::Let {
-                            name: let_name,
-                            value,
-                            is_mutable,
-                            ..
-                        } = &expr.kind
-                        {
-                            if let_name == name && *is_mutable {
-                                // Check if initial value is string
-                                if matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                                    return true; // Mutable string variable returned
-                                }
-                            }
-                        }
-                    }
-                }
-                // Otherwise recursively check
-                returns_string(last)
-            } else {
-                false
-            }
-        }
+        ExprKind::Block(exprs) => block_returns_string(exprs),
 
         // Let expression - check if the variable is used in string operations
         ExprKind::Let {
@@ -263,19 +270,7 @@ pub fn returns_string(body: &Expr) -> bool {
             body: let_body,
             is_mutable,
             ..
-        } => {
-            let value_is_string = matches!(&value.kind, ExprKind::Literal(Literal::String(_)));
-
-            // If mutable string variable that's returned, it's likely being mutated (String)
-            if let ExprKind::Identifier(ident) = &let_body.kind {
-                if ident == name && value_is_string && *is_mutable {
-                    return true; // mut string variables return String
-                }
-            }
-
-            // Check if the body contains string operations
-            returns_string(let_body)
-        }
+        } => let_returns_string(name, value, let_body, *is_mutable),
 
         // If expression - check both branches
         ExprKind::If {
@@ -303,31 +298,28 @@ pub fn expr_is_string(expr: &Expr) -> bool {
 
 /// Check if identifier in block was assigned a string value
 pub fn identifier_is_string(name: &str, block_exprs: &[Expr]) -> bool {
-    // Search for let binding that creates string
-    for e in block_exprs {
-        if let ExprKind::Let {
-            name: let_name,
-            value,
-            ..
-        } = &e.kind
-        {
-            if let_name == name {
-                // Check if initial value is string literal
-                if matches!(&value.kind, ExprKind::Literal(Literal::String(_))) {
-                    return true;
-                }
-            }
-        }
-        // Check for reassignment with string concatenation
-        if let ExprKind::Assign { target, value, .. } = &e.kind {
-            if let ExprKind::Identifier(ident) = &target.kind {
-                if ident == name && expr_is_string(value) {
-                    return true;
-                }
-            }
-        }
-    }
-    false
+    block_exprs
+        .iter()
+        .any(|e| is_string_let_binding(e, name) || is_string_reassignment(e, name))
+}
+
+/// Check if expression is a let binding that creates a string for the given name
+fn is_string_let_binding(expr: &Expr, name: &str) -> bool {
+    matches!(
+        &expr.kind,
+        ExprKind::Let { name: let_name, value, .. }
+        if let_name == name && matches!(&value.kind, ExprKind::Literal(Literal::String(_)))
+    )
+}
+
+/// Check if expression is an assignment of a string value to the given name
+fn is_string_reassignment(expr: &Expr, name: &str) -> bool {
+    matches!(
+        &expr.kind,
+        ExprKind::Assign { target, value, .. }
+        if matches!(&target.kind, ExprKind::Identifier(ident) if ident == name)
+            && expr_is_string(value)
+    )
 }
 
 /// Helper: Check if expression in a block creates or returns a Vec
