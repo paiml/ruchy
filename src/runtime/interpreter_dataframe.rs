@@ -443,6 +443,28 @@ impl Interpreter {
         }
     }
 
+    /// Look up a column value by name and row index.
+    fn lookup_column_value(
+        columns: &[DataFrameColumn],
+        col_name: &str,
+        row_idx: usize,
+    ) -> Result<Value, InterpreterError> {
+        for col in columns {
+            if col.name == col_name {
+                return col.values.get(row_idx).cloned().ok_or_else(|| {
+                    InterpreterError::RuntimeError(format!(
+                        "Row index {} out of bounds for column '{}'",
+                        row_idx, col_name
+                    ))
+                });
+            }
+        }
+        Err(InterpreterError::RuntimeError(format!(
+            "Column '{}' not found",
+            col_name
+        )))
+    }
+
     /// Evaluate an expression with column context (for `DataFrame` filtering)
     pub(crate) fn eval_expr_with_column_context(
         &mut self,
@@ -455,27 +477,11 @@ impl Interpreter {
             ExprKind::Call { func, args } => {
                 if let ExprKind::Identifier(name) = &func.kind {
                     if name == "col" && args.len() == 1 {
-                        // This is a col("column_name") call - resolve to actual column value
                         let col_name_expr = &args[0];
                         if let ExprKind::Literal(crate::frontend::ast::Literal::String(col_name)) =
                             &col_name_expr.kind
                         {
-                            // Find the column and return the value for this row
-                            for col in columns {
-                                if col.name == *col_name {
-                                    if let Some(value) = col.values.get(row_idx) {
-                                        return Ok(value.clone());
-                                    }
-                                    return Err(InterpreterError::RuntimeError(format!(
-                                        "Row index {} out of bounds for column '{}'",
-                                        row_idx, col_name
-                                    )));
-                                }
-                            }
-                            return Err(InterpreterError::RuntimeError(format!(
-                                "Column '{}' not found",
-                                col_name
-                            )));
+                            return Self::lookup_column_value(columns, col_name, row_idx);
                         }
                     }
                 }

@@ -11,6 +11,37 @@ use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Lifetime;
+
+/// Generate self-receiver tokens based on type kind and mutation flag.
+///
+/// Reduces nesting in match arms that emit `quote! { &mut self }` or `quote! { &self }`.
+fn self_receiver_tokens(ty: &TypeKind, mutated_fallback: bool) -> TokenStream {
+    if let TypeKind::Reference { is_mut, .. } = ty {
+        if *is_mut {
+            quote! { &mut self }
+        } else {
+            quote! { &self }
+        }
+    } else if mutated_fallback {
+        quote! { &mut self }
+    } else {
+        quote! { &self }
+    }
+}
+
+/// Generate self-receiver tokens for extend blocks (owned self as fallback).
+fn self_receiver_tokens_owned(ty: &TypeKind) -> TokenStream {
+    if let TypeKind::Reference { is_mut, .. } = ty {
+        if *is_mut {
+            quote! { &mut self }
+        } else {
+            quote! { &self }
+        }
+    } else {
+        quote! { self }
+    }
+}
+
 impl Transpiler {
     /// Transpiles type annotations
     ///
@@ -961,9 +992,9 @@ impl Transpiler {
                             .iter()
                             .map(|field| {
                                 let field_name = format_ident!("{}", field.name);
-                                let field_type = self
-                                    .transpile_type(&field.ty)
-                                    .unwrap_or_else(|_| quote! { _ });
+                                let ty = &field.ty;
+                                let t = self.transpile_type(ty);
+                                let field_type = t.unwrap_or_else(|_| quote! { _ });
                                 quote! { #field_name: #field_type }
                             })
                             .collect();
@@ -1052,25 +1083,11 @@ impl Transpiler {
                     .map(|(i, param)| {
                         if i == 0 && (param.name() == "self" || param.name() == "&self") {
                             // TRANSPILER-TRAIT-001 FIX: Handle self parameter consistently
-                            // Check the TYPE for reference/mutable reference
-                            if let TypeKind::Reference { is_mut, .. } = &param.ty.kind {
-                                if *is_mut {
-                                    quote! { &mut self }
-                                } else {
-                                    quote! { &self }
-                                }
-                            } else if param.name().starts_with('&') {
+                            if param.name().starts_with('&') {
                                 // Legacy: name-based detection (e.g., "&self" as name)
                                 quote! { &self }
                             } else {
-                                // TRANSPILER-TRAIT-001 FIX: Default to &self or &mut self based on mutation
-                                // In Ruchy, `self` without explicit type defaults to reference
-                                // This matches Python's implicit self and Rust's common patterns
-                                if self_is_mutated {
-                                    quote! { &mut self }
-                                } else {
-                                    quote! { &self }
-                                }
+                                self_receiver_tokens(&param.ty.kind, self_is_mutated)
                             }
                         } else {
                             let param_name = format_ident!("{}", param.name());
@@ -1165,23 +1182,8 @@ impl Transpiler {
                         // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
                         // Method receivers in Rust have special syntax that differs from normal parameters
                         if name == "self" {
-                            // Check if it's a reference type (in the TYPE, not the name)
-                            if let TypeKind::Reference { is_mut, .. } = &param.ty.kind {
-                                if *is_mut {
-                                    quote! { &mut self }
-                                } else {
-                                    quote! { &self }
-                                }
-                            } else {
-                                // TRANSPILER-METHOD-SELF-001 FIX: Infer &mut self or &self
-                                // based on whether self is mutated in the method body
-                                // This makes Ruchy more Python-like where self is always a reference
-                                if self_is_mutated {
-                                    quote! { &mut self }
-                                } else {
-                                    quote! { &self }
-                                }
-                            }
+                            // QUALITY-001 + TRANSPILER-METHOD-SELF-001: self receiver
+                            self_receiver_tokens(&param.ty.kind, self_is_mutated)
                         } else {
                             let param_name = format_ident!("{}", param.name());
                             let type_tokens = self
@@ -1310,7 +1312,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let target_ident = format_ident!("{}", target_type);
         let trait_name = format_ident!("{}Ext", target_type); // e.g., StringExt
-                                                              // Generate trait definition
+        // Generate trait definition
         let trait_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
@@ -1320,20 +1322,9 @@ impl Transpiler {
                     .params
                     .iter()
                     .map(|param| {
-                        let name = param.name();
-                        // QUALITY-001: Handle special Rust receiver syntax (&self, &mut self, self)
-                        // Method receivers in Rust have special syntax that differs from normal parameters
-                        if name == "self" {
-                            // Check if it's a reference type (in the TYPE, not the name)
-                            if let TypeKind::Reference { is_mut, .. } = &param.ty.kind {
-                                if *is_mut {
-                                    quote! { &mut self }
-                                } else {
-                                    quote! { &self }
-                                }
-                            } else {
-                                quote! { self }
-                            }
+                        if param.name() == "self" {
+                            // QUALITY-001: self receiver (owned fallback for extend)
+                            self_receiver_tokens_owned(&param.ty.kind)
                         } else {
                             let param_name = format_ident!("{}", param.name());
                             let type_tokens = self
