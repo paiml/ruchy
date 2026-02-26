@@ -566,3 +566,6 @@ ignored = [
     "web-sys",          # Dev dependency for WASM testing
     "getrandom",        # Required for rand in WASM
 ]
+
+[package.metadata.release]
+shared-version = true
