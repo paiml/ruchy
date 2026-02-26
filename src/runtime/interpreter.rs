@@ -595,73 +595,8 @@ impl Interpreter {
 
         // Check if this is a qualified name (e.g., "Point::new" or "Rectangle::square")
         if name.contains("::") {
-            let parts: Vec<&str> = name.split("::").collect();
-            if parts.len() == 2 {
-                let type_name = parts[0];
-                let method_name = parts[1];
-
-                // Look up the class or struct
-                for env_ref in self.env_stack.iter().rev() {
-                    if let Some(value) = env_ref.borrow().get(type_name) {
-                        // ISSUE-119: Borrow from RefCell
-                        if let Value::Object(ref info) = value {
-                            // Check if it's a class or struct
-                            if let Some(Value::String(ref type_str)) = info.get("__type") {
-                                if type_str.as_ref() == "Class" {
-                                    // Check if it's a static method
-                                    if let Some(Value::Object(ref methods)) = info.get("__methods")
-                                    {
-                                        if let Some(Value::Object(ref method_meta)) =
-                                            methods.get(method_name)
-                                        {
-                                            if let Some(Value::Bool(true)) =
-                                                method_meta.get("is_static")
-                                            {
-                                                // Return marker for static method
-                                                return Ok(Value::from_string(format!(
-                                                    "__class_static_method__:{}:{}",
-                                                    type_name, method_name
-                                                )));
-                                            }
-                                        }
-                                    }
-
-                                    // Check if it's a constructor
-                                    if let Some(Value::Object(ref constructors)) =
-                                        info.get("__constructors")
-                                    {
-                                        if constructors.contains_key(method_name) {
-                                            // Return marker for class constructor
-                                            return Ok(Value::from_string(format!(
-                                                "__class_constructor__:{}:{}",
-                                                type_name, method_name
-                                            )));
-                                        }
-                                    }
-                                } else if type_str.as_ref() == "Struct" && method_name == "new" {
-                                    // OPT-022: Check for user-defined "new" method FIRST
-                                    // Look for qualified method name (e.g., "Counter::new") in environment
-                                    for env_ref in self.env_stack.iter().rev() {
-                                        if let Some(method_value) = env_ref.borrow().get(name) {
-                                            // Found user-defined method, return it
-                                            return Ok(method_value.clone());
-                                        }
-                                    }
-                                    // No user-defined "new" method, return default constructor marker
-                                    return Ok(Value::from_string(format!(
-                                        "__struct_constructor__:{}",
-                                        type_name
-                                    )));
-                                } else if type_str.as_ref() == "Actor" && method_name == "new" {
-                                    return Ok(Value::from_string(format!(
-                                        "__actor_constructor__:{}",
-                                        type_name
-                                    )));
-                                }
-                            }
-                        }
-                    }
-                }
+            if let Some(result) = self.resolve_qualified_name(name) {
+                return Ok(result);
             }
         }
 
@@ -694,8 +629,8 @@ impl Interpreter {
     }
 
     /// Get the current (innermost) environment
+    // ISSUE-119: Returns reference to Rc<RefCell<HashMap>> instead of plain HashMap
     #[allow(clippy::expect_used)] // Environment stack invariant ensures this never panics
-                                  // ISSUE-119: Returns reference to Rc<RefCell<HashMap>> instead of plain HashMap
     pub fn current_env(&self) -> &Rc<RefCell<HashMap<String, Value>>> {
         self.env_stack
             .last()
@@ -933,42 +868,7 @@ impl Interpreter {
             Value::Object(ref obj) => {
                 // Check if this is a struct or actor definition being called as a constructor
                 if let Some(Value::String(type_str)) = obj.get("__type") {
-                    match type_str.as_ref() {
-                        "Struct" => {
-                            // Get struct name and instantiate
-                            if let Some(Value::String(name)) = obj.get("__name") {
-                                self.instantiate_struct_with_args(name.as_ref(), args)
-                            } else {
-                                Err(InterpreterError::RuntimeError(
-                                    "Struct missing __name field".to_string(),
-                                ))
-                            }
-                        }
-                        "Actor" => {
-                            // Get actor name and instantiate
-                            if let Some(Value::String(name)) = obj.get("__name") {
-                                self.instantiate_actor_with_args(name.as_ref(), args)
-                            } else {
-                                Err(InterpreterError::RuntimeError(
-                                    "Actor missing __name field".to_string(),
-                                ))
-                            }
-                        }
-                        "Class" => {
-                            // Get class name and instantiate
-                            if let Some(Value::String(name)) = obj.get("__name") {
-                                self.instantiate_class_with_args(name.as_ref(), args)
-                            } else {
-                                Err(InterpreterError::RuntimeError(
-                                    "Class missing __name field".to_string(),
-                                ))
-                            }
-                        }
-                        _ => Err(InterpreterError::TypeError(format!(
-                            "Cannot call object of type: {}",
-                            type_str
-                        ))),
-                    }
+                    self.call_typed_constructor(obj, type_str.as_ref(), args)
                 } else {
                     Err(InterpreterError::TypeError(format!(
                         "Cannot call non-function value: {}",
@@ -1149,18 +1049,8 @@ impl Interpreter {
             if let ExprKind::FieldAccess { object, field } = &expr.kind {
                 if let ExprKind::Identifier(enum_name) = &object.kind {
                     // Direct enum literal: LogLevel::Info as i32
-                    let variant_name = field;
-
-                    // Lookup enum definition in environment
-                    if let Some(Value::Object(enum_def)) = self.get_variable(enum_name) {
-                        if let Some(Value::Object(variants)) = enum_def.get("__variants") {
-                            if let Some(Value::Object(variant_info)) = variants.get(variant_name) {
-                                if let Some(Value::Integer(disc)) = variant_info.get("discriminant")
-                                {
-                                    return Ok(Value::Integer(*disc));
-                                }
-                            }
-                        }
+                    if let Some(disc) = self.lookup_enum_discriminant(enum_name, field) {
+                        return Ok(Value::Integer(disc));
                     }
                 }
             }
@@ -1913,6 +1803,120 @@ impl Interpreter {
     /// Complexity: 1 (single check)
     pub fn has_stdout(&self) -> bool {
         !self.stdout_buffer.is_empty()
+    }
+
+    /// Look up an enum variant's discriminant value.
+    fn lookup_enum_discriminant(&self, enum_name: &str, variant_name: &str) -> Option<i64> {
+        let Value::Object(enum_def) = self.get_variable(enum_name)? else {
+            return None;
+        };
+        let Some(Value::Object(variants)) = enum_def.get("__variants") else {
+            return None;
+        };
+        let Some(Value::Object(variant_info)) = variants.get(variant_name) else {
+            return None;
+        };
+        let Some(Value::Integer(disc)) = variant_info.get("discriminant") else {
+            return None;
+        };
+        Some(*disc)
+    }
+
+    /// Dispatch a constructor call for a typed object (Struct, Actor, or Class).
+    fn call_typed_constructor(
+        &mut self,
+        obj: &std::collections::HashMap<String, Value>,
+        type_str: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        let get_name = |kind: &str| -> Result<&str, InterpreterError> {
+            match obj.get("__name") {
+                Some(Value::String(name)) => Ok(name.as_ref()),
+                _ => Err(InterpreterError::RuntimeError(
+                    format!("{kind} missing __name field"),
+                )),
+            }
+        };
+
+        match type_str {
+            "Struct" => {
+                let name = get_name("Struct")?;
+                self.instantiate_struct_with_args(name, args)
+            }
+            "Actor" => {
+                let name = get_name("Actor")?;
+                self.instantiate_actor_with_args(name, args)
+            }
+            "Class" => {
+                let name = get_name("Class")?;
+                self.instantiate_class_with_args(name, args)
+            }
+            _ => Err(InterpreterError::TypeError(format!(
+                "Cannot call object of type: {type_str}"
+            ))),
+        }
+    }
+
+    /// Resolve a qualified name like "Point::new" or "Rectangle::square".
+    ///
+    /// Returns `Some(Value)` with the appropriate constructor/method marker,
+    /// or `None` if the qualified name does not match any known type.
+    fn resolve_qualified_name(&self, name: &str) -> Option<Value> {
+        let parts: Vec<&str> = name.split("::").collect();
+        if parts.len() != 2 {
+            return None;
+        }
+        let type_name = parts[0];
+        let method_name = parts[1];
+
+        for env_ref in self.env_stack.iter().rev() {
+            let env = env_ref.borrow();
+            let Some(value) = env.get(type_name) else {
+                continue;
+            };
+            let Value::Object(ref info) = value else {
+                continue;
+            };
+            let Some(Value::String(ref type_str)) = info.get("__type") else {
+                continue;
+            };
+
+            if type_str.as_ref() == "Class" {
+                // Check for static method
+                if let Some(Value::Object(ref methods)) = info.get("__methods") {
+                    if let Some(Value::Object(ref meta)) = methods.get(method_name) {
+                        if matches!(meta.get("is_static"), Some(Value::Bool(true))) {
+                            return Some(Value::from_string(format!(
+                                "__class_static_method__:{type_name}:{method_name}"
+                            )));
+                        }
+                    }
+                }
+                // Check for constructor
+                if let Some(Value::Object(ref ctors)) = info.get("__constructors") {
+                    if ctors.contains_key(method_name) {
+                        return Some(Value::from_string(format!(
+                            "__class_constructor__:{type_name}:{method_name}"
+                        )));
+                    }
+                }
+            } else if type_str.as_ref() == "Struct" && method_name == "new" {
+                // OPT-022: Check for user-defined "new" method FIRST
+                for inner_env in self.env_stack.iter().rev() {
+                    if let Some(method_value) = inner_env.borrow().get(name) {
+                        return Some(method_value.clone());
+                    }
+                }
+                return Some(Value::from_string(format!(
+                    "__struct_constructor__:{type_name}"
+                )));
+            } else if type_str.as_ref() == "Actor" && method_name == "new" {
+                return Some(Value::from_string(format!(
+                    "__actor_constructor__:{type_name}"
+                )));
+            }
+        }
+        None
     }
 }
 

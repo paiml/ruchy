@@ -517,7 +517,7 @@ fn generate_model_embedding_code(
     let mut model_statics = String::new();
     let mut model_loader_fn = String::from(
         "\n/// Get embedded model bytes by filename\n\
-         #[allow(dead_code)]\n\
+         #[allow(unused)]\n\
          pub fn get_embedded_model(name: &str) -> Option<&'static [u8]> {\n\
          match name {\n",
     );

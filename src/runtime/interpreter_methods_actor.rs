@@ -70,40 +70,8 @@ impl Interpreter {
 
                     // Extract message type and data
                     let message = &arg_values[0];
-                    let (msg_type, msg_data) = if let Value::Object(msg_obj) = message {
-                        if let Some(Value::String(type_str)) = msg_obj.get("__type") {
-                            if type_str.as_ref() == "Message" {
-                                let msg_type = msg_obj
-                                    .get("type")
-                                    .and_then(|v| {
-                                        if let Value::String(s) = v {
-                                            Some(s.to_string())
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .unwrap_or_else(|| "Unknown".to_string());
-                                let msg_data = msg_obj
-                                    .get("data")
-                                    .and_then(|v| {
-                                        if let Value::Array(arr) = v {
-                                            Some(arr.to_vec())
-                                        } else {
-                                            None
-                                        }
-                                    })
-                                    .unwrap_or_else(Vec::new);
-                                (msg_type, msg_data)
-                            } else {
-                                ("Unknown".to_string(), vec![])
-                            }
-                        } else {
-                            ("Unknown".to_string(), vec![])
-                        }
-                    } else {
-                        // Simple message value
-                        ("Message".to_string(), vec![message.clone()])
-                    };
+                    let (msg_type, msg_data) =
+                        Self::extract_send_message_parts(message);
 
                     // Convert data to strings for thread safety
                     let str_data: Vec<String> =
@@ -136,90 +104,8 @@ impl Interpreter {
                     ));
                 }
 
-                // Get the message
                 let message = &arg_values[0];
-
-                // Try to extract message type and data
-                if let Value::Object(msg_obj) = message {
-                    // Check if this is a Message object we created
-                    if let Some(Value::String(type_str)) = msg_obj.get("__type") {
-                        if type_str.as_ref() == "Message" {
-                            // Extract message type and data
-                            if let Some(Value::String(msg_type)) = msg_obj.get("type") {
-                                if let Some(Value::Array(data)) = msg_obj.get("data") {
-                                    // Look up the handler for this message type
-                                    if let Some(handlers) = instance.get("__handlers") {
-                                        if let Value::Array(handler_list) = handlers {
-                                            // Find matching handler
-                                            for handler in handler_list.iter() {
-                                                if let Value::Object(h) = handler {
-                                                    if let Some(Value::String(h_type)) =
-                                                        h.get("message_type")
-                                                    {
-                                                        if h_type.as_ref() == msg_type.as_ref() {
-                                                            // Found matching handler - execute it
-                                                            if let Some(Value::Closure {
-                                                                params,
-                                                                body,
-                                                                env,
-                                                            }) = h.get("handler")
-                                                            {
-                                                                // Push a new environment for handler execution
-                                                                let mut handler_env =
-                                                                    env.borrow().clone(); // ISSUE-119: Borrow from RefCell
-
-                                                                // Bind message parameters
-                                                                // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple
-                                                                for (
-                                                                    i,
-                                                                    (param_name, _default_value),
-                                                                ) in params.iter().enumerate()
-                                                                {
-                                                                    if let Some(value) = data.get(i)
-                                                                    {
-                                                                        handler_env.insert(
-                                                                            param_name.clone(),
-                                                                            value.clone(),
-                                                                        );
-                                                                    }
-                                                                }
-
-                                                                // Also bind 'self' to the actor instance
-                                                                handler_env.insert(
-                                                                    "self".to_string(),
-                                                                    Value::Object(Arc::new(
-                                                                        instance.clone(),
-                                                                    )),
-                                                                );
-
-                                                                // Execute handler body
-                                                                self.env_push(handler_env);
-                                                                let result =
-                                                                    self.eval_expr(body)?;
-                                                                self.env_pop();
-
-                                                                return Ok(result);
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                    // No handler found - return a default response
-                                    return Ok(Value::from_string(format!(
-                                        "Received: {}",
-                                        msg_type.as_ref()
-                                    )));
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Default: return the message itself (echo)
-                Ok(message.clone())
+                self.execute_ask_handler(instance, message)
             }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Unknown actor method: {}",
@@ -271,58 +157,36 @@ impl Interpreter {
         message: &Value,
     ) -> Result<Value, InterpreterError> {
         // Parse the message to extract type and arguments
-        // Messages come as function calls like Push(1) or SetCount(5)
         let (msg_type, msg_args) = Self::extract_message_type_and_data(message)?;
 
-        // Find the matching handler
-        if let Some(Value::Array(handlers)) = instance.get("__handlers") {
-            for handler in handlers.iter() {
-                if let Value::Object(handler_obj) = handler {
-                    if let Some(Value::String(handler_type)) = handler_obj.get("message_type") {
-                        if handler_type.as_ref() == msg_type {
-                            // Found matching handler - execute it
-                            if let Some(Value::Closure { params, body, env }) =
-                                handler_obj.get("body")
-                            {
-                                // Create a new environment for handler execution
-                                let mut handler_env = env.borrow().clone(); // ISSUE-119: Borrow from RefCell
+        // Find the matching handler closure
+        let handler_closure = Self::find_handler_closure(instance, &msg_type, "body");
+        let Some((params, body, env)) = handler_closure else {
+            return Err(InterpreterError::RuntimeError(format!(
+                "No handler found for message type: {msg_type}"
+            )));
+        };
 
-                                // Bind message parameters
-                                // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple
-                                for (i, (param_name, _default_value)) in params.iter().enumerate() {
-                                    if let Some(value) = msg_args.get(i) {
-                                        handler_env.insert(param_name.clone(), value.clone());
-                                    }
-                                }
+        // Build handler environment
+        let mut handler_env = env.borrow().clone(); // ISSUE-119
 
-                                // Bind 'self' to the actor instance
-                                // Create a mutable object for self that includes all fields
-                                let mut self_obj = HashMap::new();
-                                for (key, value) in instance {
-                                    if !key.starts_with("__") {
-                                        self_obj.insert(key.clone(), value.clone());
-                                    }
-                                }
-                                handler_env
-                                    .insert("self".to_string(), Value::Object(Arc::new(self_obj)));
+        // RUNTIME-DEFAULT-PARAMS: Bind message parameters
+        Self::bind_params(&mut handler_env, &params, &msg_args);
 
-                                // Execute the handler body
-                                self.env_stack.push(Rc::new(RefCell::new(handler_env))); // ISSUE-119: Wrap in Rc<RefCell>
-                                let result = self.eval_expr(body);
-                                self.env_stack.pop();
+        // Bind 'self' -- create an object with public fields only
+        let self_obj: HashMap<String, Value> = instance
+            .iter()
+            .filter(|(k, _)| !k.starts_with("__"))
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        handler_env.insert("self".to_string(), Value::Object(Arc::new(self_obj)));
 
-                                return result;
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        // Execute the handler body
+        self.env_stack.push(Rc::new(RefCell::new(handler_env)));
+        let result = self.eval_expr(&body);
+        self.env_stack.pop();
 
-        Err(InterpreterError::RuntimeError(format!(
-            "No handler found for message type: {}",
-            msg_type
-        )))
+        result
     }
 
     /// Process a message for a synchronous (interpreted) actor with mutable state.
@@ -341,97 +205,248 @@ impl Interpreter {
         // Parse the message to extract type and arguments
         let (msg_type, msg_args) = Self::extract_message_type_and_data(message)?;
 
-        // Find the matching handler
-        if let Some(Value::Array(handlers)) = instance.get("__handlers") {
-            for handler in handlers.iter() {
-                if let Value::Object(handler_obj) = handler {
-                    if let Some(Value::String(handler_type)) = handler_obj.get("message_type") {
-                        if handler_type.as_ref() == msg_type {
-                            // Found matching handler - execute it
-                            if let Some(Value::Closure { params, body, env }) =
-                                handler_obj.get("body")
-                            {
-                                // Clone data before dropping instance borrow
-                                let params_clone = params.clone();
-                                let body_clone = body.clone();
-                                let env_clone = env.clone();
+        // Find matching handler and extract cloned data (before releasing mutex)
+        let found = Self::find_handler_closure_with_types(&instance, &msg_type);
+        let Some((params_clone, body_clone, env_clone, param_types)) = found else {
+            return Err(InterpreterError::RuntimeError(format!(
+                "No handler found for message type: {msg_type}"
+            )));
+        };
 
-                                // Get parameter types for validation
-                                let param_types = handler_obj.get("param_types").and_then(|v| {
-                                    if let Value::Array(types) = v {
-                                        Some(types.clone())
-                                    } else {
-                                        None
-                                    }
-                                });
+        drop(instance); // Release mutex before executing handler
 
-                                drop(instance); // Release borrow before executing handler
+        // Validate parameter types before execution
+        if let Some(types) = param_types {
+            Self::validate_param_types(&msg_type, &types, &msg_args)?;
+        }
 
-                                // Validate parameter types before execution
-                                if let Some(types) = param_types {
-                                    for (i, expected_type_val) in types.iter().enumerate() {
-                                        if let Value::String(expected_type) = expected_type_val {
-                                            if let Some(actual_value) = msg_args.get(i) {
-                                                let actual_type = actual_value.type_name();
-                                                // Map Ruchy type names to runtime type names
-                                                let expected_runtime_type =
-                                                    match expected_type.as_ref() {
-                                                        "i32" | "i64" | "int" => "integer",
-                                                        "f32" | "f64" | "float" => "float",
-                                                        "String" | "string" | "str" => "string",
-                                                        "bool" => "boolean",
-                                                        _ => expected_type.as_ref(),
-                                                    };
+        // Build handler environment
+        let mut handler_env = env_clone.borrow().clone(); // ISSUE-119
+        Self::bind_params(&mut handler_env, &params_clone, &msg_args);
 
-                                                if actual_type != expected_runtime_type
-                                                    && expected_runtime_type != "Any"
-                                                {
-                                                    return Err(InterpreterError::RuntimeError(format!(
-                                                        "Type error in message {}: parameter {} expects type '{}', got '{}'",
-                                                        msg_type, i, expected_runtime_type, actual_type
-                                                    )));
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
+        // CRITICAL: Bind 'self' to ObjectMut (not immutable Object)
+        handler_env.insert(
+            "self".to_string(),
+            Value::ObjectMut(Arc::clone(cell_rc)),
+        );
 
-                                // Create a new environment for handler execution
-                                let mut handler_env = env_clone.borrow().clone(); // ISSUE-119: Borrow from RefCell
+        // Execute the handler body
+        self.env_stack.push(Rc::new(RefCell::new(handler_env)));
+        let result = self.eval_expr(&body_clone);
+        self.env_stack.pop();
 
-                                // RUNTIME-DEFAULT-PARAMS: Bind message parameters
-                                for (i, (param_name, _default_value)) in
-                                    params_clone.iter().enumerate()
-                                {
-                                    if let Some(value) = msg_args.get(i) {
-                                        handler_env.insert(param_name.clone(), value.clone());
-                                    }
-                                }
+        result
+    }
 
-                                // CRITICAL: Bind 'self' to ObjectMut (not immutable Object)
-                                // This allows mutations in the handler to persist
-                                handler_env.insert(
-                                    "self".to_string(),
-                                    Value::ObjectMut(Arc::clone(cell_rc)),
-                                );
+    /// Extract message type and data from a send-style message Value.
+    fn extract_send_message_parts(message: &Value) -> (String, Vec<Value>) {
+        let Value::Object(msg_obj) = message else {
+            return ("Message".to_string(), vec![message.clone()]);
+        };
+        let Some(Value::String(type_str)) = msg_obj.get("__type") else {
+            return ("Unknown".to_string(), vec![]);
+        };
+        if type_str.as_ref() != "Message" {
+            return ("Unknown".to_string(), vec![]);
+        }
+        let msg_type = match msg_obj.get("type") {
+            Some(Value::String(s)) => s.to_string(),
+            _ => "Unknown".to_string(),
+        };
+        let msg_data = match msg_obj.get("data") {
+            Some(Value::Array(arr)) => arr.to_vec(),
+            _ => vec![],
+        };
+        (msg_type, msg_data)
+    }
 
-                                // Execute the handler body
-                                self.env_stack.push(Rc::new(RefCell::new(handler_env))); // ISSUE-119: Wrap in Rc<RefCell>
-                                let result = self.eval_expr(&body_clone);
-                                self.env_stack.pop();
+    /// Execute the `ask` handler lookup and dispatch.
+    ///
+    /// Extracted from `eval_actor_instance_method` to reduce nesting depth.
+    fn execute_ask_handler(
+        &mut self,
+        instance: &std::collections::HashMap<String, Value>,
+        message: &Value,
+    ) -> Result<Value, InterpreterError> {
+        // Try to extract structured message fields
+        let Some((msg_type, data)) = Self::extract_ask_message(message) else {
+            return Ok(message.clone());
+        };
 
-                                return result;
-                            }
-                        }
+        // Try to find and execute a matching handler
+        if let Some(Value::Array(handler_list)) = instance.get("__handlers") {
+            for handler in handler_list.iter() {
+                let Value::Object(h) = handler else { continue };
+                let Some(Value::String(h_type)) = h.get("message_type") else {
+                    continue;
+                };
+                if h_type.as_ref() != msg_type.as_ref() {
+                    continue;
+                }
+                let Some(Value::Closure { params, body, env }) = h.get("handler") else {
+                    continue;
+                };
+
+                // Build handler environment
+                let mut handler_env = env.borrow().clone(); // ISSUE-119
+
+                // RUNTIME-DEFAULT-PARAMS: Bind message parameters
+                for (i, (param_name, _default)) in params.iter().enumerate() {
+                    if let Some(value) = data.get(i) {
+                        handler_env.insert(param_name.clone(), value.clone());
                     }
                 }
+
+                // Bind 'self' to the actor instance
+                handler_env.insert(
+                    "self".to_string(),
+                    Value::Object(Arc::new(instance.clone())),
+                );
+
+                // Execute handler body
+                self.env_push(handler_env);
+                let result = self.eval_expr(body)?;
+                self.env_pop();
+
+                return Ok(result);
             }
         }
 
-        Err(InterpreterError::RuntimeError(format!(
-            "No handler found for message type: {}",
-            msg_type
-        )))
+        // No handler found - return a default response
+        Ok(Value::from_string(format!("Received: {}", msg_type.as_ref())))
+    }
+
+    /// Extract message type and data from a structured ask message.
+    ///
+    /// Returns `None` when the message is not a structured Message object.
+    fn extract_ask_message(message: &Value) -> Option<(&Arc<str>, &Arc<[Value]>)> {
+        let Value::Object(msg_obj) = message else { return None };
+        let Some(Value::String(type_str)) = msg_obj.get("__type") else {
+            return None;
+        };
+        if type_str.as_ref() != "Message" {
+            return None;
+        }
+        let Some(Value::String(msg_type)) = msg_obj.get("type") else {
+            return None;
+        };
+        let Some(Value::Array(data)) = msg_obj.get("data") else {
+            return None;
+        };
+        Some((msg_type, data))
+    }
+
+    /// Validate parameter types against expected types from handler definition.
+    fn validate_param_types(
+        msg_type: &str,
+        types: &Arc<[Value]>,
+        msg_args: &[Value],
+    ) -> Result<(), InterpreterError> {
+        for (i, expected_type_val) in types.iter().enumerate() {
+            let Value::String(expected_type) = expected_type_val else {
+                continue;
+            };
+            let Some(actual_value) = msg_args.get(i) else {
+                continue;
+            };
+            let actual_type = actual_value.type_name();
+            let expected_runtime_type = match expected_type.as_ref() {
+                "i32" | "i64" | "int" => "integer",
+                "f32" | "f64" | "float" => "float",
+                "String" | "string" | "str" => "string",
+                "bool" => "boolean",
+                _ => expected_type.as_ref(),
+            };
+            if actual_type != expected_runtime_type && expected_runtime_type != "Any" {
+                return Err(InterpreterError::RuntimeError(format!(
+                    "Type error in message {msg_type}: parameter {i} \
+                     expects type '{expected_runtime_type}', got '{actual_type}'"
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Find a matching handler closure from the __handlers list by message type.
+    ///
+    /// `body_key` is the key within the handler object that contains the closure
+    /// (e.g., "body" for sync handlers, "handler" for ask handlers).
+    fn find_handler_closure<'a>(
+        instance: &'a std::collections::HashMap<String, Value>,
+        msg_type: &str,
+        body_key: &str,
+    ) -> Option<(
+        &'a Vec<(String, Option<Arc<crate::frontend::ast::Expr>>)>,
+        &'a Arc<crate::frontend::ast::Expr>,
+        &'a Rc<RefCell<HashMap<String, Value>>>,
+    )> {
+        let Value::Array(handlers) = instance.get("__handlers")? else {
+            return None;
+        };
+        for handler in handlers.iter() {
+            let Value::Object(handler_obj) = handler else { continue };
+            let Some(Value::String(handler_type)) = handler_obj.get("message_type") else {
+                continue;
+            };
+            if handler_type.as_ref() != msg_type {
+                continue;
+            }
+            let Some(Value::Closure { params, body, env }) = handler_obj.get(body_key) else {
+                continue;
+            };
+            return Some((params, body, env));
+        }
+        None
+    }
+
+    /// Find a handler closure and clone its data (for use with mutable actors where
+    /// the mutex guard must be dropped before handler execution).
+    ///
+    /// Also extracts optional param_types for validation.
+    #[allow(clippy::type_complexity)]
+    fn find_handler_closure_with_types(
+        instance: &std::collections::HashMap<String, Value>,
+        msg_type: &str,
+    ) -> Option<(
+        Vec<(String, Option<Arc<crate::frontend::ast::Expr>>)>,
+        Arc<crate::frontend::ast::Expr>,
+        Rc<RefCell<HashMap<String, Value>>>,
+        Option<Arc<[Value]>>,
+    )> {
+        let Value::Array(handlers) = instance.get("__handlers")? else {
+            return None;
+        };
+        for handler in handlers.iter() {
+            let Value::Object(handler_obj) = handler else { continue };
+            let Some(Value::String(handler_type)) = handler_obj.get("message_type") else {
+                continue;
+            };
+            if handler_type.as_ref() != msg_type {
+                continue;
+            }
+            let Some(Value::Closure { params, body, env }) = handler_obj.get("body") else {
+                continue;
+            };
+            let param_types = match handler_obj.get("param_types") {
+                Some(Value::Array(types)) => Some(types.clone()),
+                _ => None,
+            };
+            return Some((params.clone(), body.clone(), env.clone(), param_types));
+        }
+        None
+    }
+
+    /// Bind message parameters into a handler environment.
+    fn bind_params(
+        env: &mut HashMap<String, Value>,
+        params: &[(String, Option<Arc<crate::frontend::ast::Expr>>)],
+        args: &[Value],
+    ) {
+        for (i, (param_name, _default)) in params.iter().enumerate() {
+            if let Some(value) = args.get(i) {
+                env.insert(param_name.clone(), value.clone());
+            }
+        }
     }
 
     pub(crate) fn eval_struct_instance_method(
