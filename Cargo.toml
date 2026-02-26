@@ -8,7 +8,9 @@ resolver = "2"
 
 [workspace.lints.rust]
 unsafe_code = "warn"  # Changed from "forbid" for DEFECT-001-B CallFrame Send impl
-missing_docs = "allow"  # TODO: Add comprehensive documentation
+unsafe_op_in_unsafe_fn = "warn"
+unreachable_pub = "warn"
+missing_docs = "allow"
 
 [workspace.lints.clippy]
 # Correctness
