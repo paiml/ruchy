@@ -1072,6 +1072,7 @@ fn test_sqlite_945_pin_new_unchecked() {
     let result = execute_program(
         r"
         use std::pin::Pin;
+        // SAFETY: test-only -- pinning a literal value to verify Pin::new_unchecked parsing
         let x = unsafe { Pin::new_unchecked(&mut 42) };
     ",
     );
@@ -7561,6 +7562,7 @@ fn test_sqlite_296_c_ffi_call() {
         extern "C" {
             fun abs(x: i32) -> i32;
         }
+        // SAFETY: test-only -- calling libc abs via FFI, always safe for any i32
         unsafe { abs(-42) }
     "#,
     );
@@ -7576,6 +7578,7 @@ fn test_sqlite_297_ffi_null_pointer() {
         extern "C" {
             fun process(ptr: *const i32) -> i32;
         }
+        // SAFETY: test-only -- verifying FFI null pointer handling
         unsafe { process(std::ptr::null()) }
     "#,
     );
@@ -7617,6 +7620,7 @@ fn test_sqlite_300_ffi_ownership() {
         r"
         let boxed = Box::new(42);
         let raw = Box::into_raw(boxed);
+        // SAFETY: test-only -- raw was obtained from Box::into_raw, reclaiming ownership
         unsafe { let _ = Box::from_raw(raw); }
     ",
     );
@@ -8070,6 +8074,7 @@ fn test_sqlite_325_negative_bounds() {
 fn test_sqlite_326_inline_asm() {
     let result = execute_program(
         r#"
+        // SAFETY: test-only -- inline asm writes to a local register operand
         unsafe {
             let x: i32;
             asm!("mov {}, 42", out(reg) x);
@@ -8086,6 +8091,7 @@ fn test_sqlite_326_inline_asm() {
 fn test_sqlite_327_named_asm_operands() {
     let result = execute_program(
         r#"
+        // SAFETY: test-only -- named asm operands with valid register constraints
         unsafe {
             let result: i32;
             asm!("add {result}, {a}, {b}",
@@ -8105,6 +8111,7 @@ fn test_sqlite_327_named_asm_operands() {
 fn test_sqlite_328_asm_clobbers() {
     let result = execute_program(
         r#"
+        // SAFETY: test-only -- nop instruction with C ABI clobber declaration
         unsafe {
             asm!("nop", clobber_abi("C"));
         }
@@ -8119,6 +8126,7 @@ fn test_sqlite_328_asm_clobbers() {
 fn test_sqlite_329_asm_options() {
     let result = execute_program(
         r#"
+        // SAFETY: test-only -- nop instruction with nostack/preserves_flags options
         unsafe {
             asm!("nop", options(nostack, preserves_flags));
         }
@@ -8155,6 +8163,7 @@ fn test_sqlite_331_custom_allocator() {
         r"
         use std::alloc::{GlobalAlloc, Layout};
         struct MyAllocator;
+        // SAFETY: test-only -- delegates to System allocator, which is a valid GlobalAlloc impl
         unsafe impl GlobalAlloc for MyAllocator {
             unsafe fun alloc(&self, layout: Layout) -> *mut u8 {
                 std::alloc::System.alloc(layout)
@@ -8189,6 +8198,7 @@ fn test_sqlite_333_allocation_error() {
         r#"
         use std::alloc::{Layout, alloc};
         let layout = Layout::from_size_align(usize::MAX, 8).unwrap();
+        // SAFETY: test-only -- intentional oversized alloc to test error handling
         let ptr = unsafe { alloc(layout) };
         assert!(ptr.is_null(), "Allocation should fail gracefully");
     "#,
@@ -8372,6 +8382,7 @@ fn test_sqlite_343_pointer_cast() {
 fn test_sqlite_344_transmute() {
     let result = execute_program(
         r"
+        // SAFETY: test-only -- f32 and u32 are same size, transmute is well-defined
         unsafe {
             let x: f32 = 1.0;
             let y: u32 = std::mem::transmute(x);
@@ -8800,6 +8811,7 @@ fn test_sqlite_370_glob_reexport() {
 fn test_sqlite_371_unsafe_function() {
     let result = execute_program(
         r"
+        // SAFETY: test-only -- calling unsafe fn that has no actual side effects
         unsafe fun dangerous() {}
         unsafe { dangerous(); }
     ",
@@ -8815,6 +8827,7 @@ fn test_sqlite_372_raw_pointer_deref() {
         r"
         let x = 42;
         let ptr = &x as *const i32;
+        // SAFETY: test-only -- ptr derived from valid reference, x is still alive
         unsafe { *ptr }
     ",
     );
@@ -8828,6 +8841,7 @@ fn test_sqlite_373_mutable_static() {
     let result = execute_program(
         r"
         static mut COUNTER: i32 = 0;
+        // SAFETY: test-only -- single-threaded access to mutable static
         unsafe {
             COUNTER += 1;
         }
@@ -8847,6 +8861,7 @@ fn test_sqlite_374_union_access() {
             f: f32,
         }
         let d = Data { i: 42 };
+        // SAFETY: test-only -- reading f32 from i32-initialized union field
         unsafe { d.f }
     ",
     );
@@ -10206,6 +10221,7 @@ fn test_sqlite_460_macro_recursion() {
 fn test_sqlite_461_raw_pointer_arithmetic() {
     let result = execute_program(
         r"
+        // SAFETY: test-only -- offset(1) within bounds of a 5-element array
         unsafe {
             let arr = [1, 2, 3, 4, 5];
             let ptr = arr.as_ptr();
@@ -10238,6 +10254,7 @@ fn test_sqlite_462_union() {
 fn test_sqlite_463_asm_constraints() {
     let result = execute_program(
         r#"
+        // SAFETY: test-only -- asm writes to local register output operand
         unsafe {
             let x: u64;
             asm!("mov {}, 5", out(reg) x);
@@ -10267,6 +10284,7 @@ fn test_sqlite_464_ffi_variadic() {
 fn test_sqlite_465_unsafe_trait_impl() {
     let result = execute_program(
         r"
+        // SAFETY: test-only -- UnsafeTrait has no invariants, impl is trivially correct
         unsafe trait UnsafeTrait {}
         unsafe impl UnsafeTrait for i32 {}
     ",
@@ -11321,6 +11339,7 @@ fn test_sqlite_533_as_cast() {
 fn test_sqlite_534_transmute() {
     let result = execute_program(
         r"
+        // SAFETY: test-only -- f32 and u32 are same size, transmute is well-defined
         unsafe {
             let x: f32 = 1.0;
             let y: u32 = std::mem::transmute(x);
@@ -12050,6 +12069,7 @@ fn test_sqlite_580_custom_alloc() {
         r"
         use std::alloc::{System, GlobalAlloc};
         let layout = Layout::new::<i32>();
+        // SAFETY: test-only -- System allocator with valid layout for i32
         unsafe { System.alloc(layout) };
     ",
     );
@@ -12069,6 +12089,7 @@ fn test_sqlite_581_c_call() {
         extern "C" {
             fun abs(x: i32) -> i32;
         }
+        // SAFETY: test-only -- libc abs is safe for any i32 input
         unsafe { abs(-5); }
     "#,
     );
@@ -12125,6 +12146,7 @@ fn test_sqlite_585_raw_ptr_conv() {
         r"
         let x = 5;
         let ptr = &x as *const i32;
+        // SAFETY: test-only -- ptr derived from valid reference, x is still alive
         unsafe { *ptr };
     ",
     );
@@ -12184,6 +12206,7 @@ fn test_sqlite_589_simd() {
     let result = execute_program(
         r"
         use std::arch::x86_64::*;
+        // SAFETY: test-only -- SSE intrinsics with valid f32 operands
         unsafe {
             let a = _mm_set_ps(1.0, 2.0, 3.0, 4.0);
             let b = _mm_set_ps(5.0, 6.0, 7.0, 8.0);
@@ -12830,6 +12853,7 @@ fn test_sqlite_631_unsafe_block() {
         r"
         let x = 5;
         let ptr = &x as *const i32;
+        // SAFETY: test-only -- ptr derived from valid reference, x is still alive
         unsafe { *ptr }
     ",
     );
@@ -12842,6 +12866,7 @@ fn test_sqlite_631_unsafe_block() {
 fn test_sqlite_632_unsafe_fn() {
     let result = execute_program(
         r"
+        // SAFETY: test-only -- calling no-op unsafe fn
         unsafe fun dangerous() { }
         unsafe { dangerous(); }
     ",
@@ -12857,6 +12882,7 @@ fn test_sqlite_633_raw_ptr_ops() {
         r"
         let x = 5;
         let ptr = &x as *const i32;
+        // SAFETY: test-only -- offset(0) is always valid for a non-null pointer
         let ptr2 = unsafe { ptr.offset(0) };
     ",
     );
@@ -12870,6 +12896,7 @@ fn test_sqlite_634_mut_static() {
     let result = execute_program(
         r"
         static mut COUNTER: i32 = 0;
+        // SAFETY: test-only -- single-threaded access to mutable static
         unsafe {
             COUNTER += 1;
         }
@@ -12884,6 +12911,7 @@ fn test_sqlite_634_mut_static() {
 fn test_sqlite_635_unsafe_trait() {
     let result = execute_program(
         r"
+        // SAFETY: test-only -- UnsafeTrait has no invariants, impl is trivially correct
         unsafe trait UnsafeTrait {}
         struct MyType;
         unsafe impl UnsafeTrait for MyType {}
@@ -13525,6 +13553,7 @@ fn test_sqlite_681_extern_call() {
         extern "C" {
             fun abs(x: i32) -> i32;
         }
+        // SAFETY: test-only -- libc abs is safe for any i32 input
         let x = unsafe { abs(-42) };
     "#,
     );
@@ -14190,6 +14219,7 @@ fn test_sqlite_731_mem_alloc() {
     let result = execute_program(
         r"
         let layout = Layout::new::<i32>();
+        // SAFETY: test-only -- valid layout for i32 allocation
         let ptr = unsafe { alloc(layout) };
     ",
     );
@@ -16364,6 +16394,7 @@ fn test_sqlite_883_raw_ptr_deref() {
         r"
         let x = 42;
         let p: *const i32 = &x;
+        // SAFETY: test-only -- p derived from valid reference, x is still alive
         unsafe { let y = *p; }
     ",
     );
@@ -16378,6 +16409,7 @@ fn test_sqlite_884_ptr_offset() {
         r"
         let arr = [1, 2, 3];
         let p: *const i32 = &arr[0];
+        // SAFETY: test-only -- offset(1) within bounds of a 3-element array
         unsafe { let p2 = p.offset(1); }
     ",
     );
@@ -16460,6 +16492,7 @@ fn test_sqlite_890_marker_impl() {
     let result = execute_program(
         r"
         struct Foo;
+        // SAFETY: test-only -- Foo has no fields, trivially Send+Sync
         unsafe impl Send for Foo {}
         unsafe impl Sync for Foo {}
     ",
@@ -19249,6 +19282,7 @@ fn test_sqlite_1223_send_custom() {
     let result = execute_program(
         r"
         struct Foo;
+        // SAFETY: test-only -- Foo has no fields, trivially Send
         unsafe impl Send for Foo { }
     ",
     );
@@ -19262,6 +19296,7 @@ fn test_sqlite_1224_sync_custom() {
     let result = execute_program(
         r"
         struct Foo;
+        // SAFETY: test-only -- Foo has no fields, trivially Sync
         unsafe impl Sync for Foo { }
     ",
     );

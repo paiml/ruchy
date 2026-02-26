@@ -340,30 +340,8 @@ impl Interpreter {
                         self.env_stack.pop();
 
                         // RUNTIME-098: Check if constructor returned an explicit struct instance
-                        // If so, use that instead of manually building from fields
-                        if let Value::Object(ref returned_obj) = result {
-                            // Check if it's a struct instance with the correct class
-                            if let Some(Value::String(ref class)) = returned_obj.get("__class") {
-                                if class.as_ref() == class_name {
-                                    // Constructor explicitly returned an instance - convert to ObjectMut for mutability
-                                    let obj_map = returned_obj.as_ref().clone();
-                                    return Ok(crate::runtime::object_helpers::new_mutable_object(
-                                        obj_map,
-                                    ));
-                                }
-                            }
-                            // Also handle struct literals (without __class)
-                            if !returned_obj.contains_key("__class") {
-                                // This is a plain struct literal, add class metadata
-                                let mut obj_with_class = returned_obj.as_ref().clone();
-                                obj_with_class.insert(
-                                    "__class".to_string(),
-                                    Value::from_string(class_name.to_string()),
-                                );
-                                return Ok(crate::runtime::object_helpers::new_mutable_object(
-                                    obj_with_class,
-                                ));
-                            }
+                        if let Some(obj) = Self::try_extract_class_instance(&result, class_name) {
+                            return Ok(crate::runtime::object_helpers::new_mutable_object(obj));
                         }
 
                         // RUNTIME-098: For field-assignment constructors (self.x = value),
@@ -666,6 +644,34 @@ impl Interpreter {
                 class_name
             )))
         }
+    }
+    /// Try to extract a class instance from a constructor return value.
+    ///
+    /// Returns the object map (with `__class` set) if the result is a matching
+    /// Object with the right class, or a plain struct literal to which we add class metadata.
+    fn try_extract_class_instance(
+        result: &Value,
+        class_name: &str,
+    ) -> Option<std::collections::HashMap<String, Value>> {
+        let Value::Object(ref returned_obj) = result else {
+            return None;
+        };
+        // Check if it's a struct instance with the correct class
+        if let Some(Value::String(ref class)) = returned_obj.get("__class") {
+            if class.as_ref() == class_name {
+                return Some(returned_obj.as_ref().clone());
+            }
+        }
+        // Handle struct literals without __class -- add class metadata
+        if !returned_obj.contains_key("__class") {
+            let mut obj = returned_obj.as_ref().clone();
+            obj.insert(
+                "__class".to_string(),
+                Value::from_string(class_name.to_string()),
+            );
+            return Some(obj);
+        }
+        None
     }
 }
 

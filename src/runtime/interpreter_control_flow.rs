@@ -422,66 +422,7 @@ impl Interpreter {
                 Ok(val)
             }
             ExprKind::FieldAccess { object, field } => {
-                // Handle field assignment like: obj.field = value
-                // We need to get the object, update it, and reassign it
-                match &object.kind {
-                    ExprKind::Identifier(obj_name) => {
-                        // Get the object
-                        let obj = self.lookup_variable(obj_name)?;
-
-                        // Update the field based on object type
-                        match obj {
-                            Value::Object(ref map) => {
-                                // Immutable object: create new copy with updated field
-                                let mut new_map = (**map).clone();
-                                new_map.insert(field.clone(), val.clone());
-                                let new_obj = Value::Object(Arc::new(new_map));
-
-                                // Update the variable with the modified object
-                                self.set_variable(obj_name, new_obj);
-                                Ok(val)
-                            }
-                            Value::ObjectMut(ref cell) => {
-                                // Mutable object: update in place via RefCell
-                                cell.lock()
-                                    .expect("Mutex poisoned: object lock is corrupted")
-                                    .insert(field.clone(), val.clone());
-                                Ok(val)
-                            }
-                            Value::Class { ref fields, .. } => {
-                                // Class: update field in place via RwLock
-                                let mut fields_write = fields
-                                    .write()
-                                    .expect("RwLock poisoned: class fields lock is corrupted");
-                                fields_write.insert(field.clone(), val.clone());
-                                Ok(val)
-                            }
-                            Value::Struct {
-                                ref name,
-                                ref fields,
-                            } => {
-                                // Struct: create new copy with updated field (value semantics)
-                                let mut new_fields = (**fields).clone();
-                                new_fields.insert(field.clone(), val.clone());
-                                let new_struct = Value::Struct {
-                                    name: name.clone(),
-                                    fields: Arc::new(new_fields),
-                                };
-
-                                // Update the variable with the modified struct
-                                self.set_variable(obj_name, new_struct);
-                                Ok(val)
-                            }
-                            _ => Err(InterpreterError::RuntimeError(format!(
-                                "Cannot access field '{}' on non-object",
-                                field
-                            ))),
-                        }
-                    }
-                    _ => Err(InterpreterError::RuntimeError(
-                        "Complex assignment targets not yet supported".to_string(),
-                    )),
-                }
+                self.eval_field_assign(object, field, val)
             }
             // BUG-003: Support array index assignment (arr[i] = value)
             ExprKind::IndexAccess { object, index } => self.eval_index_assign(object, index, val),
@@ -495,6 +436,111 @@ impl Interpreter {
     ///
     /// Handles both simple (arr[0] = 99) and nested (matrix[0][1] = 99) index assignment.
     /// Complexity: 8 (≤10 target)
+    /// Assign a value into a 2D array: `arr[outer_idx][inner_idx] = val`.
+    fn assign_nested_array(
+        &mut self,
+        arr_name: &str,
+        outer_idx: usize,
+        inner_idx_val: Value,
+        val: Value,
+    ) -> Result<Value, InterpreterError> {
+        let inner_idx = match inner_idx_val {
+            Value::Integer(i) => i as usize,
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "Array index must be an integer".to_string(),
+                ))
+            }
+        };
+
+        let arr = self.lookup_variable(arr_name)?;
+        let Value::Array(ref outer_vec) = arr else {
+            return Err(InterpreterError::RuntimeError(
+                "Cannot index non-array value".to_string(),
+            ));
+        };
+
+        let mut new_outer = outer_vec.to_vec();
+        if outer_idx >= new_outer.len() {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Outer index {outer_idx} out of bounds"
+            )));
+        }
+
+        let Value::Array(ref inner_vec) = new_outer[outer_idx] else {
+            return Err(InterpreterError::RuntimeError(
+                "Cannot index non-array value".to_string(),
+            ));
+        };
+
+        let mut new_inner = inner_vec.to_vec();
+        if inner_idx >= new_inner.len() {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Inner index {inner_idx} out of bounds"
+            )));
+        }
+
+        new_inner[inner_idx] = val.clone();
+        new_outer[outer_idx] = Value::Array(Arc::from(new_inner));
+        self.set_variable(arr_name, Value::Array(Arc::from(new_outer)));
+        Ok(val)
+    }
+
+    /// Evaluate field assignment: `obj.field = value`.
+    ///
+    /// Handles Object, ObjectMut, Class, and Struct field updates.
+    fn eval_field_assign(
+        &mut self,
+        object: &Expr,
+        field: &str,
+        val: Value,
+    ) -> Result<Value, InterpreterError> {
+        let ExprKind::Identifier(obj_name) = &object.kind else {
+            return Err(InterpreterError::RuntimeError(
+                "Complex field access not supported".to_string(),
+            ));
+        };
+        let obj = self.lookup_variable(obj_name)?;
+
+        match obj {
+            Value::Object(ref map) => {
+                let mut new_map = (**map).clone();
+                new_map.insert(field.to_string(), val.clone());
+                self.set_variable(obj_name, Value::Object(Arc::new(new_map)));
+                Ok(val)
+            }
+            Value::ObjectMut(ref cell) => {
+                cell.lock()
+                    .expect("Mutex poisoned: object lock is corrupted")
+                    .insert(field.to_string(), val.clone());
+                Ok(val)
+            }
+            Value::Class { ref fields, .. } => {
+                fields
+                    .write()
+                    .expect("RwLock poisoned: class fields lock is corrupted")
+                    .insert(field.to_string(), val.clone());
+                Ok(val)
+            }
+            Value::Struct {
+                ref name,
+                ref fields,
+            } => {
+                let mut new_fields = (**fields).clone();
+                new_fields.insert(field.to_string(), val.clone());
+                let new_struct = Value::Struct {
+                    name: name.clone(),
+                    fields: Arc::new(new_fields),
+                };
+                self.set_variable(obj_name, new_struct);
+                Ok(val)
+            }
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Cannot access field '{field}' on non-object"
+            ))),
+        }
+    }
+
     pub(crate) fn eval_index_assign(
         &mut self,
         object: &Expr,
@@ -553,52 +599,8 @@ impl Interpreter {
 
                 // Get the root array name (only handle Identifier for now)
                 if let ExprKind::Identifier(arr_name) = &nested_obj.kind {
-                    let arr = self.lookup_variable(arr_name)?;
-
-                    // Get inner array and update it
-                    if let Value::Array(ref outer_vec) = arr {
-                        let mut new_outer = outer_vec.to_vec();
-                        if outer_idx < new_outer.len() {
-                            // Get inner array
-                            if let Value::Array(ref inner_vec) = new_outer[outer_idx] {
-                                let inner_idx_val = self.eval_expr(index)?;
-                                let inner_idx = match inner_idx_val {
-                                    Value::Integer(i) => i as usize,
-                                    _ => {
-                                        return Err(InterpreterError::RuntimeError(
-                                            "Array index must be an integer".to_string(),
-                                        ))
-                                    }
-                                };
-
-                                let mut new_inner = inner_vec.to_vec();
-                                if inner_idx < new_inner.len() {
-                                    new_inner[inner_idx] = val.clone();
-                                    new_outer[outer_idx] = Value::Array(Arc::from(new_inner));
-                                    self.set_variable(arr_name, Value::Array(Arc::from(new_outer)));
-                                    Ok(val)
-                                } else {
-                                    Err(InterpreterError::RuntimeError(format!(
-                                        "Inner index {} out of bounds",
-                                        inner_idx
-                                    )))
-                                }
-                            } else {
-                                Err(InterpreterError::RuntimeError(
-                                    "Cannot index non-array value".to_string(),
-                                ))
-                            }
-                        } else {
-                            Err(InterpreterError::RuntimeError(format!(
-                                "Outer index {} out of bounds",
-                                outer_idx
-                            )))
-                        }
-                    } else {
-                        Err(InterpreterError::RuntimeError(
-                            "Cannot index non-array value".to_string(),
-                        ))
-                    }
+                    let inner_idx_val = self.eval_expr(index)?;
+                    self.assign_nested_array(arr_name, outer_idx, inner_idx_val, val)
                 } else {
                     Err(InterpreterError::RuntimeError(
                         "Complex nested index assignment not yet supported".to_string(),
@@ -640,42 +642,15 @@ impl Interpreter {
                 self.set_variable(name, new_val.clone());
             }
             ExprKind::FieldAccess { object, field } => {
-                // Same pattern as regular field assignment (lines 3924-3960)
-                match &object.kind {
-                    ExprKind::Identifier(obj_name) => {
-                        let obj = self.lookup_variable(obj_name)?;
-                        match obj {
-                            Value::Object(ref map) => {
-                                let mut new_map = (**map).clone();
-                                new_map.insert(field.clone(), new_val.clone());
-                                let new_obj = Value::Object(Arc::new(new_map));
-                                self.set_variable(obj_name, new_obj);
-                            }
-                            Value::Struct { name, fields } => {
-                                let mut new_fields = fields.as_ref().clone();
-                                new_fields.insert(field.clone(), new_val.clone());
-                                let new_struct = Value::Struct {
-                                    name,
-                                    fields: Arc::new(new_fields),
-                                };
-                                self.set_variable(obj_name, new_struct);
-                            }
-                            _ => {
-                                return Err(InterpreterError::RuntimeError(format!(
-                                    "Cannot assign to field of non-object type: {:?}",
-                                    obj
-                                )))
-                            }
-                        }
-                    }
-                    _ => {
-                        return Err(InterpreterError::RuntimeError(
-                            "Complex field access not supported in compound assignment".to_string(),
-                        ))
-                    }
-                }
+                // Reuse eval_field_assign which handles all object types
+                self.eval_field_assign(object, field, new_val.clone())?;
             }
-            _ => unreachable!(),
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "Complex assignment targets not supported in compound assignment"
+                        .to_string(),
+                ))
+            }
         }
 
         Ok(new_val)
@@ -1754,7 +1729,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("Complex assignment targets not yet supported"));
+            .contains("Complex field access not supported"));
     }
 
     #[test]
