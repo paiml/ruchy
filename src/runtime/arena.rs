@@ -245,6 +245,7 @@ impl Chunk {
     fn new(size: usize) -> Result<Self> {
         let layout =
             Layout::from_size_align(size, 8).map_err(|e| anyhow!("Invalid layout: {}", e))?;
+        // SAFETY: layout is valid (checked by from_size_align above), ptr null-checked before wrap
         let ptr = unsafe {
             let ptr = alloc(layout);
             if ptr.is_null() {
@@ -276,6 +277,7 @@ impl Chunk {
             return None;
         }
         // Calculate pointer
+        // SAFETY: aligned_pos + size <= self.size checked above, ptr is valid for chunk allocation
         let ptr = unsafe { NonNull::new_unchecked(self.ptr.as_ptr().add(aligned_pos)) };
         self.pos = aligned_pos + size;
         Some(ptr)

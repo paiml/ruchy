@@ -22,6 +22,31 @@
 
 A modern, expressive programming language for data science and scientific computing, featuring a self-hosting compiler, comprehensive tooling, and enterprise-grade quality standards.
 
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Language Features](#language-features)
+- [Core Commands](#core-commands)
+- [Safety & Concurrency](#safety--concurrency)
+- [WebAssembly](#webassembly)
+- [MCP Server](#mcp-server)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+- **Self-Hosting Compiler**: Compiles Ruchy source to native binaries via Rust transpilation
+- **Interactive REPL**: Full-featured read-eval-print loop for exploratory programming
+- **Pattern Matching**: Algebraic data types with exhaustive match expressions
+- **Labeled Loops**: Named loop control with break/continue to outer scopes
+- **Async/Await**: First-class async support with tokio runtime
+- **Thread Safety**: All globals are thread-safe by default via `LazyLock<Mutex<T>>`
+- **WebAssembly**: Compile to WASM for browser and edge deployment
+- **MCP Server**: Model Context Protocol integration for Claude
+- **16,102 Tests**: Comprehensive test suite with zero clippy warnings
+
 ## Installation
 
 ```bash

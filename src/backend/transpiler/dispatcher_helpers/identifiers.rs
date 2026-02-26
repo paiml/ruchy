@@ -602,6 +602,7 @@ mod tests {
     }
 
     // Test 42: transpile_identifier - reserved keyword "unsafe"
+    // SAFETY: test-only -- no actual unsafe code, tests identifier escaping for reserved word
     #[test]
     fn test_transpile_identifier_reserved_unsafe() {
         let transpiler = test_transpiler();

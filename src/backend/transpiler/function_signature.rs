@@ -301,6 +301,7 @@ impl Transpiler {
 
         for attr in attributes {
             match attr.name.as_str() {
+                // SAFETY: no actual unsafe code -- transpiling the unsafe modifier token
                 "unsafe" => modifiers.push(quote! { unsafe }),
                 "const" => modifiers.push(quote! { const }),
                 _ => {

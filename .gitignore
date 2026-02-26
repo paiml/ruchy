@@ -22,6 +22,10 @@ a.out
 # Test artifacts - coverage reports
 coverage.html
 coverage.json
+lcov.info
+*.profraw
+coverage-detailed/
+coverage_report/
 
 # Disabled test directories (excluded from PMAT analysis)
 tests_temp_disabled_for_sprint7_mutation/
@@ -83,6 +87,7 @@ docs/notebook/book/book/
 .pmat-metrics/
 .pmat-metrics/
 benchmarks/results/
+baselines/
 coverage-improvement-report.json
 
 # Prevent future cruft
