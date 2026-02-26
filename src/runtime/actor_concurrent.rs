@@ -358,6 +358,22 @@ impl Default for ConcurrentActorSystem {
     }
 }
 
+/// Restart all child actors by their IDs.
+fn restart_children(
+    child_ids: &[String],
+    actors: &HashMap<String, Arc<Mutex<ConcurrentActor>>>,
+) -> Result<(), InterpreterError> {
+    for child_id in child_ids {
+        if let Some(child) = actors.get(child_id) {
+            let mut child_actor = child
+                .lock()
+                .expect("Mutex poisoned: actor lock is corrupted");
+            child_actor.restart(HashMap::new())?;
+        }
+    }
+    Ok(())
+}
+
 impl ConcurrentActorSystem {
     pub fn new() -> Self {
         Self::default()
@@ -464,14 +480,7 @@ impl ConcurrentActorSystem {
                                 .read()
                                 .expect("RwLock poisoned: actor read lock is corrupted");
                             if let Some(children) = tree.get(supervisor_id) {
-                                for child_id in children {
-                                    if let Some(child) = actors.get(child_id) {
-                                        let mut child_actor = child
-                                            .lock()
-                                            .expect("Mutex poisoned: actor lock is corrupted");
-                                        child_actor.restart(HashMap::new())?;
-                                    }
-                                }
+                                restart_children(children, &actors)?;
                             }
                         }
                         SupervisionStrategy::RestForOne { .. } => {

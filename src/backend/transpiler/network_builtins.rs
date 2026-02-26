@@ -125,27 +125,34 @@ impl Transpiler {
                 }
                 let obj1 = self.transpile_expr(&args[0])?;
                 let obj2 = self.transpile_expr(&args[1])?;
-                Ok(Some(quote! {
-                    {
-                        // Deep merge two JSON objects
-                        fn merge_json(a: serde_json::Value, b: serde_json::Value) -> serde_json::Value {
-                            match (a, b) {
-                                (serde_json::Value::Object(mut a_map), serde_json::Value::Object(b_map)) => {
-                                    for (k, v) in b_map {
-                                        if let Some(a_val) = a_map.get_mut(&k) {
-                                            *a_val = merge_json(a_val.clone(), v);
-                                        } else {
-                                            a_map.insert(k, v);
-                                        }
-                                    }
-                                    serde_json::Value::Object(a_map)
-                                },
-                                (_, b_val) => b_val,
+                Ok(Some(quote! { {
+                    fn merge_json_objects(
+                        a_map: &mut serde_json::Map<String, serde_json::Value>,
+                        b_map: serde_json::Map<String, serde_json::Value>,
+                    ) {
+                        for (k, v) in b_map {
+                            if let Some(a_val) = a_map.get_mut(&k) {
+                                *a_val = merge_json(a_val.clone(), v);
+                            } else {
+                                a_map.insert(k, v);
                             }
                         }
-                        merge_json(#obj1, #obj2)
                     }
-                }))
+                    fn merge_json(
+                        a: serde_json::Value,
+                        b: serde_json::Value,
+                    ) -> serde_json::Value {
+                        match (a, b) {
+                            (serde_json::Value::Object(mut a_map),
+                             serde_json::Value::Object(b_map)) => {
+                                merge_json_objects(&mut a_map, b_map);
+                                serde_json::Value::Object(a_map)
+                            },
+                            (_, b_val) => b_val,
+                        }
+                    }
+                    merge_json(#obj1, #obj2)
+                } }))
             }
             "json_get" => {
                 if args.len() != 2 {
@@ -176,29 +183,37 @@ impl Transpiler {
                 let obj = self.transpile_expr(&args[0])?;
                 let path = self.transpile_expr(&args[1])?;
                 let value = self.transpile_expr(&args[2])?;
-                Ok(Some(quote! {
-                    {
-                        fn set_json_path(obj: serde_json::Value, path: &str, value: serde_json::Value) -> serde_json::Value {
-                            let mut result = obj.clone();
-                            let parts: Vec<&str> = path.split('.').collect();
-                            if let serde_json::Value::Object(ref mut map) = result {
-                                if parts.len() == 1 {
-                                    map.insert(parts[0].to_string(), value);
-                                } else if !parts.is_empty() {
-                                    // Nested path setting
-                                    let first = parts[0];
-                                    let rest = parts[1..].join(".");
-                                    if let Some(nested) = map.get(first).cloned() {
-                                        let updated = set_json_path(nested, &rest, value);
-                                        map.insert(first.to_string(), updated);
-                                    }
-                                }
+                Ok(Some(quote! { {
+                    fn set_in_map(
+                        map: &mut serde_json::Map<String, serde_json::Value>,
+                        parts: &[&str],
+                        value: serde_json::Value,
+                    ) {
+                        if parts.len() == 1 {
+                            map.insert(parts[0].to_string(), value);
+                        } else if !parts.is_empty() {
+                            let first = parts[0];
+                            let rest = parts[1..].join(".");
+                            if let Some(nested) = map.get(first).cloned() {
+                                let updated = set_json_path(nested, &rest, value);
+                                map.insert(first.to_string(), updated);
                             }
-                            result
                         }
-                        set_json_path(#obj, &#path, serde_json::json!(#value))
                     }
-                }))
+                    fn set_json_path(
+                        obj: serde_json::Value,
+                        path: &str,
+                        value: serde_json::Value,
+                    ) -> serde_json::Value {
+                        let mut result = obj.clone();
+                        let parts: Vec<&str> = path.split('.').collect();
+                        if let serde_json::Value::Object(ref mut map) = result {
+                            set_in_map(map, &parts, value);
+                        }
+                        result
+                    }
+                    set_json_path(#obj, &#path, serde_json::json!(#value))
+                } }))
             }
             _ => Ok(None),
         }

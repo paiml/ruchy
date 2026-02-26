@@ -6,6 +6,16 @@ use crate::runtime::replay::{EvalResult, Event, InputMode, ReplSession};
 use anyhow::{Context, Result};
 use std::fs;
 use std::path::Path;
+
+/// Strip `String("...")` wrapper from a value string, returning the inner content.
+fn strip_string_wrapper(value: &str) -> &str {
+    if value.starts_with("String(\"") && value.ends_with("\")") {
+        &value[8..value.len() - 2]
+    } else {
+        value
+    }
+}
+
 /// Configuration for replay-to-test conversion
 #[derive(Debug, Clone)]
 pub struct ConversionConfig {
@@ -214,12 +224,7 @@ fn test_{test_name}() -> Result<()> {{
                         let assertion = match result {
                             EvalResult::Success { value } => {
                                 // Extract actual value from String("...") format if present
-                                let actual_value =
-                                    if value.starts_with("String(\"") && value.ends_with("\")") {
-                                        &value[8..value.len() - 2]
-                                    } else {
-                                        value.as_str()
-                                    };
+                                let actual_value = strip_string_wrapper(value);
                                 format!("    assert!(result_{i}.is_ok() && result_{i}.unwrap() == r#\"{actual_value}\"#);\n")
                             }
                             EvalResult::Error { message } => {
