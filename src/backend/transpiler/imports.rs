@@ -54,23 +54,23 @@ impl Transpiler {
                 (vec![crate::frontend::ast::ImportItem::Wildcard], true)
             }
             Some(item_names) => {
+                use crate::frontend::ast::ImportItem;
                 // Specific items to import
                 let items = item_names
                     .iter()
                     .map(|name| {
                         // Handle 'as' aliases in the item names
-                        if name.contains(" as ") {
-                            let parts: Vec<&str> = name.split(" as ").collect();
-                            if parts.len() == 2 {
-                                crate::frontend::ast::ImportItem::Aliased {
-                                    name: parts[0].to_string(),
-                                    alias: parts[1].to_string(),
-                                }
-                            } else {
-                                crate::frontend::ast::ImportItem::Named(name.clone())
+                        if !name.contains(" as ") {
+                            return ImportItem::Named(name.clone());
+                        }
+                        let parts: Vec<&str> = name.split(" as ").collect();
+                        if parts.len() == 2 {
+                            ImportItem::Aliased {
+                                name: parts[0].to_string(),
+                                alias: parts[1].to_string(),
                             }
                         } else {
-                            crate::frontend::ast::ImportItem::Named(name.clone())
+                            ImportItem::Named(name.clone())
                         }
                     })
                     .collect::<Vec<_>>();

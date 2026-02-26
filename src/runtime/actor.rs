@@ -318,33 +318,26 @@ impl ActorRuntime {
             loop {
                 match receiver.recv() {
                     Ok(ActorMessage::UserMessage(msg)) => {
-                        match behavior.receive(msg, &mut ctx) {
-                            Ok(_) => {}
-                            Err(e) => {
-                                eprintln!("Actor {name} error handling message: {e}");
-                                // Notify supervisor of failure
-                                if let Some(sup) = &ctx.supervisor {
-                                    let _ = sup.send(Message::ChildFailed(id, e.to_string()));
-                                }
+                        if let Err(e) = behavior.receive(msg, &mut ctx) {
+                            eprintln!("Actor {name} error handling message: {e}");
+                            // Notify supervisor of failure
+                            if let Some(sup) = &ctx.supervisor {
+                                let _ = sup.send(Message::ChildFailed(id, e.to_string()));
                             }
                         }
                     }
                     Ok(ActorMessage::AskMessage { message, response }) => {
-                        match behavior.receive(message, &mut ctx) {
-                            Ok(Some(reply)) => {
-                                let _ = response.send(reply);
-                            }
-                            Ok(None) => {
-                                let _ = response.send(Message::Error("No response".to_string()));
-                            }
+                        let reply = match behavior.receive(message, &mut ctx) {
+                            Ok(Some(r)) => r,
+                            Ok(None) => Message::Error("No response".into()),
                             Err(e) => {
-                                let _ = response.send(Message::Error(e.to_string()));
                                 // Notify supervisor of failure
-                                if let Some(sup) = &ctx.supervisor {
-                                    let _ = sup.send(Message::ChildFailed(id, e.to_string()));
-                                }
+                                let fail = Message::ChildFailed(id, e.to_string());
+                                ctx.supervisor.as_ref().map(|s| s.send(fail));
+                                Message::Error(e.to_string())
                             }
-                        }
+                        };
+                        let _ = response.send(reply);
                     }
                     Ok(ActorMessage::SystemShutdown) => {
                         break;

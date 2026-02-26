@@ -143,7 +143,7 @@ fn test_handle_test_command_basic() {
 fn test_print_transpilation_status() {
     // This just prints to stderr, hard to test
     // print_transpilation_status("test.ruchy", false); // Function doesn't exist
-    println!("test.ruchy: transpilation completed"); // Simple replacement for testing
-                                                     // If it doesn't panic, it passes
-                                                     // Test passes without panic;
+    // Simple replacement for testing
+    // If it doesn't panic, it passes. Test passes without panic.
+    println!("test.ruchy: transpilation completed");
 }

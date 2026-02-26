@@ -473,7 +473,7 @@ mod tests {
         assert!(result.is_err());
         let error = result.unwrap_err();
         let error_msg = format!("{error:?}"); // Use Debug formatting to get full error chain
-                                              // Check if the full error chain contains circular dependency
+        // Check if the full error chain contains circular dependency
         let found_circular_dep = error_msg.contains("Circular dependency detected")
             || error_msg.contains("circular dependency");
         assert!(

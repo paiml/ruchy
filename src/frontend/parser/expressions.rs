@@ -197,7 +197,7 @@ fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> R
         }
         Token::Lifetime(label_name) => {
             state.tokens.advance(); // consume the Lifetime token (LABELED-LOOP-FIX)
-                                    // Strip the leading quote from 'outer to get just "outer"
+            // Strip the leading quote from 'outer to get just "outer"
             let stripped_label = label_name
                 .strip_prefix('\'')
                 .unwrap_or(&label_name)
@@ -209,7 +209,7 @@ fn parse_control_prefix(state: &mut ParserState, token: Token, _span: Span) -> R
         // Check if next token (after Label) is Colon to decide
         Token::Label(label_name) => {
             state.tokens.advance(); // consume the Label token
-                                    // Peek at next token to determine: loop label vs decorator
+            // Peek at next token to determine: loop label vs decorator
             if matches!(state.tokens.peek(), Some((Token::Colon, _))) {
                 // @label: loop_keyword - this is a labeled loop
                 parse_loop_label(state, label_name)

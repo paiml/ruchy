@@ -236,7 +236,7 @@ mod tests {
     #[test]
     fn test_complexity_rule_if_statement() {
         let rule = ComplexityRule { max_complexity: 0 }; // Will use default of 10
-                                                         // Create a simple if statement
+        // Create a simple if statement
         let if_expr = make_test_expr(ExprKind::If {
             condition: Box::new(make_test_expr(ExprKind::Literal(Literal::Bool(true)))),
             then_branch: Box::new(make_test_expr(ExprKind::Literal(Literal::Integer(1, None)))),

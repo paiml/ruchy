@@ -148,12 +148,12 @@ impl Transpiler {
                 let other = &args[0];
                 let method_ident = format_ident!("{}", method);
                 Ok(quote! {
-                                    {
-                                        use std::collections::HashSet;
-                #[cfg(test)]
-                                        #obj.#method_ident(&#other).cloned().collect::<HashSet<_>>()
-                                    }
-                                })
+                    {
+                        use std::collections::HashSet;
+                        #[cfg(test)]
+                        #obj.#method_ident(&#other).cloned().collect::<HashSet<_>>()
+                    }
+                })
             }
             _ => unreachable!("Unknown HashSet method: {}", method),
         }

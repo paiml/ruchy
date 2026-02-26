@@ -207,8 +207,8 @@ fn consume_comma_if_present(state: &mut ParserState) -> bool {
 /// Returns an error if the operation fails
 pub fn parse_empty_lambda(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume ||
-                                                                                 // Lambda syntax: || expr (no => allowed)
-                                                                                 // Parse the body
+    // Lambda syntax: || expr (no => allowed)
+    // Parse the body
     let body = super::parse_expr_recursive(state)?;
     Ok(Expr::new(
         ExprKind::Lambda {

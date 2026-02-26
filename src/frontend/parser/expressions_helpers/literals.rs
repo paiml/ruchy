@@ -579,8 +579,10 @@ mod tests {
 
             #[test]
             #[ignore = "Property tests run with --ignored flag"]
-            fn prop_integer_type_suffixes(n in any::<i32>(),
-                                          suffix in prop::sample::select(vec!["i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64"])) {
+            fn prop_integer_type_suffixes(
+                n in any::<i32>(),
+                suffix in prop::sample::select(vec!["i8", "i16", "i32", "i64", "u8", "u16", "u32", "u64"]),
+            ) {
                 let code = format!("{n}{suffix}");
                 let result = Parser::new(&code).parse();
                 prop_assert!(result.is_ok(), "Integer with suffix {} should parse", suffix);

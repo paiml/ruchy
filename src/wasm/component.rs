@@ -516,9 +516,9 @@ impl ComponentBuilder {
         ];
         // Add type section
         module.extend(&[0x01, 0x04, 0x01, 0x60, 0x00, 0x00]); // Empty function type
-                                                              // Add function section
+        // Add function section
         module.extend(&[0x03, 0x02, 0x01, 0x00]); // One function
-                                                  // Add export section
+        // Add export section
         let export_name = "main";
         let name_bytes = export_name.as_bytes();
         module.push(0x07); // Export section

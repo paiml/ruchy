@@ -593,7 +593,7 @@ fn handle_object_field_separator(state: &mut ParserState) -> Result<()> {
 /// Returns an error if the operation fails
 pub fn parse_list(state: &mut ParserState) -> Result<Expr> {
     let start_span = state.tokens.advance().expect("checked by parser logic").1; // consume [
-                                                                                 // Check for empty list
+    // Check for empty list
     if matches!(state.tokens.peek(), Some((Token::RightBracket, _))) {
         state.tokens.advance(); // consume ]
         return Ok(Expr::new(ExprKind::List(Vec::new()), start_span));
