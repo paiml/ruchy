@@ -78,7 +78,9 @@ pub fn handle_serve_command(
     );
 
     // PERFORMANCE: Create optimized tokio runtime (multi-threaded, CPU-bound)
-    let num_cpus = num_cpus::get();
+    let num_cpus = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1);
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .worker_threads(num_cpus)
         .enable_all()

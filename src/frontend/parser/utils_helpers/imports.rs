@@ -9,7 +9,6 @@ use super::url_validation::validate_url_import;
 /// Parse import statement (legacy import parser)
 ///
 /// NOTE: This is the legacy import parser. New imports are parsed in expressions.rs
-#[allow(dead_code)]
 pub fn parse_import_legacy(state: &mut ParserState) -> Result<Expr> {
     // Consume the Import token first (required by new parser)
     state.tokens.expect(&Token::Import)?;

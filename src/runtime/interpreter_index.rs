@@ -309,8 +309,8 @@ impl Interpreter {
         field: &str,
     ) -> Result<Option<Value>, InterpreterError> {
         if let Some(Value::String(actor_id)) = object_map.get("__actor_id") {
-            use crate::runtime::actor_runtime::ACTOR_RUNTIME;
-            let field_value = ACTOR_RUNTIME.get_actor_field(actor_id.as_ref(), field)?;
+            use crate::runtime::actor_runtime::actor_runtime;
+            let field_value = actor_runtime().get_actor_field(actor_id.as_ref(), field)?;
             Ok(Some(field_value.to_value()))
         } else {
             Ok(None)

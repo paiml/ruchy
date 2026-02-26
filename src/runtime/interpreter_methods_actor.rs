@@ -66,7 +66,7 @@ impl Interpreter {
 
                 // Check if this is an async actor with runtime ID
                 if let Some(Value::String(actor_id)) = instance.get("__actor_id") {
-                    use crate::runtime::actor_runtime::{ActorMessage, ACTOR_RUNTIME};
+                    use crate::runtime::actor_runtime::{ActorMessage, actor_runtime};
 
                     // Extract message type and data
                     let message = &arg_values[0];
@@ -115,7 +115,7 @@ impl Interpreter {
                         data: str_data,
                     };
 
-                    ACTOR_RUNTIME.send_message(actor_id.as_ref(), actor_msg)?;
+                    actor_runtime().send_message(actor_id.as_ref(), actor_msg)?;
                     return Ok(Value::Nil);
                 }
 

@@ -194,9 +194,7 @@ impl Default for RuchyMCP {
 }
 /// A Ruchy-specific MCP tool that validates inputs against Ruchy types
 pub struct RuchyMCPTool {
-    #[allow(dead_code)]
     name: String,
-    #[allow(dead_code)]
     description: String,
     input_type: Option<MonoType>,
     output_type: Option<MonoType>,

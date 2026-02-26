@@ -213,7 +213,6 @@ impl Transpiler {
 
     /// Transpiles export statements (legacy)
     /// Complexity: 3 (within Toyota Way limits)
-    #[allow(dead_code)]
     fn transpile_export_legacy(items: &[String]) -> TokenStream {
         let item_idents: Vec<_> = items.iter().map(|s| format_ident!("{}", s)).collect();
         if items.len() == 1 {

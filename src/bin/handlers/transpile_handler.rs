@@ -30,7 +30,6 @@ pub fn handle_transpile_command(
 /// Changes .ruchy extension to .rs, or appends .rs if no .ruchy extension
 /// Returns None for stdin input ("-")
 /// Complexity: 3 (within Toyota Way limits)
-#[allow(dead_code)]
 pub fn derive_default_output_path(file: &Path) -> Option<PathBuf> {
     if file.as_os_str() == "-" {
         return None; // stdin: output to stdout

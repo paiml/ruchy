@@ -2,7 +2,6 @@
 //!
 //! This module defines operator precedence and associativity rules
 //! ensuring proper parsing of complex expressions.
-#![allow(dead_code)]
 use crate::frontend::lexer::Token;
 /// Operator associativity
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

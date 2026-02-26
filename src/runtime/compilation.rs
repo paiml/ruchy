@@ -499,7 +499,6 @@ pub fn op_load_nil(state: &mut InterpreterState, _operand: u32) -> InstructionRe
 ///
 /// # Complexity
 /// Cyclomatic complexity: 1 (within Toyota Way limits)
-#[allow(dead_code)] // Will be used when variable support is implemented
 pub fn op_load_var(_state: &mut InterpreterState, name_idx: u32) -> InstructionResult {
     // For now, just return error - variable lookup not implemented in isolated module
     InstructionResult::Error(InterpreterError::RuntimeError(format!(
@@ -548,7 +547,6 @@ pub fn op_jump_if_false(state: &mut InterpreterState, target: u32) -> Instructio
 ///
 /// # Complexity
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
-#[allow(dead_code)] // Will be used for unsupported AST nodes
 pub fn op_ast_fallback(state: &mut InterpreterState, fallback_idx: u32) -> InstructionResult {
     if let Some(Value::String(fallback_msg)) = state.constants.get(fallback_idx as usize) {
         InstructionResult::Error(InterpreterError::RuntimeError(format!(

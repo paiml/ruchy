@@ -13,7 +13,6 @@ pub struct LoweringContext {
     /// MIR builder
     builder: MirBuilder,
     /// Type environment for expressions
-    #[allow(dead_code)]
     type_env: HashMap<String, Type>,
     /// Current block being built
     current_block: Option<BlockId>,

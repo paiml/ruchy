@@ -582,7 +582,6 @@ impl PlagiarismDetector {
 // ============================================================================
 /// Secure execution environment for untrusted code
 pub struct SecureSandbox {
-    #[allow(dead_code)]
     resource_limits: ResourceLimits,
 }
 #[derive(Debug, Clone)]

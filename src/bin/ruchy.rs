@@ -16,8 +16,6 @@
 #![allow(clippy::items_after_statements)]
 #![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::doc_markdown)]
-#![allow(dead_code)]
-
 mod report;
 
 use anyhow::Result;
@@ -37,7 +35,6 @@ use handlers::{
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
 struct FormatConfig {
-    #[allow(dead_code)]
     line_width: usize,
     indent: usize,
     use_tabs: bool,
@@ -1548,7 +1545,6 @@ fn analyze_file_for_hunt(file_path: &Path) -> Result<Vec<(String, String)>> {
 /// NOTE: Currently disabled due to potential hangs in transpilation.
 /// The infrastructure is in place and tested - enable when transpilation
 /// is more robust or add per-file timeouts.
-#[allow(dead_code)]
 fn collect_examples_samples() -> Vec<ruchy::oracle::Sample> {
     use ruchy::oracle::{Sample, SampleSource};
 

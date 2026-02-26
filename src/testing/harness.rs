@@ -240,7 +240,6 @@ pub struct ValidationResult {
 struct ExecutionResult {
     compiled: bool,
     output: Option<String>,
-    #[allow(dead_code)]
     stderr: Option<String>,
 }
 #[cfg(test)]

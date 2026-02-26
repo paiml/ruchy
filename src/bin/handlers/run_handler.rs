@@ -118,7 +118,6 @@ fn log_run_start(file: &Path, verbose: bool) {
 }
 
 /// Transpile AST for execution with context (complexity: 3)
-#[allow(dead_code)]
 pub fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
     let mut transpiler = Transpiler::new();
     transpiler
@@ -128,7 +127,6 @@ pub fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
 }
 
 /// Prepare compilation artifacts (complexity: 4)
-#[allow(dead_code)]
 pub fn prepare_compilation(
     rust_code: &str,
     verbose: bool,
@@ -154,7 +152,6 @@ pub fn prepare_compilation(
 }
 
 /// Compile Rust code using rustc (complexity: 5)
-#[allow(dead_code)]
 pub fn compile_rust_code(source_path: &Path, binary_path: &Path) -> Result<()> {
     let output = std::process::Command::new("rustc")
         .arg("--edition=2018")
@@ -173,7 +170,6 @@ pub fn compile_rust_code(source_path: &Path, binary_path: &Path) -> Result<()> {
 }
 
 /// Execute compiled binary and handle output (complexity: 5)
-#[allow(dead_code)]
 pub fn execute_binary(binary_path: &Path) -> Result<()> {
     let run_output = std::process::Command::new(binary_path)
         .output()

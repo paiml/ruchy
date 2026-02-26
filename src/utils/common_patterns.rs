@@ -435,6 +435,8 @@ pub fn format_operation_error(operation: &str, error: impl std::fmt::Display) ->
 }
 
 // String manipulation utilities
+
+/// Check if a word is a reserved keyword in the Ruchy language
 pub fn is_keyword(word: &str) -> bool {
     matches!(
         word,
@@ -475,6 +477,7 @@ pub fn is_keyword(word: &str) -> bool {
     )
 }
 
+/// Escape special characters in a string for safe output
 pub fn escape_string(s: &str) -> String {
     let mut result = String::new();
     for ch in s.chars() {
@@ -491,6 +494,7 @@ pub fn escape_string(s: &str) -> String {
     result
 }
 
+/// Unescape a string containing backslash escape sequences
 pub fn unescape_string(s: &str) -> Result<String> {
     let mut result = String::new();
     let mut chars = s.chars();
@@ -515,6 +519,7 @@ pub fn unescape_string(s: &str) -> Result<String> {
     Ok(result)
 }
 
+/// Capitalize the first letter of a string, lowercasing the rest
 pub fn capitalize(s: &str) -> String {
     if s.is_empty() {
         return String::new();
@@ -536,6 +541,7 @@ pub fn capitalize(s: &str) -> String {
     }
 }
 
+/// Convert a snake_case string to camelCase
 pub fn snake_to_camel(s: &str) -> String {
     if s.starts_with('_') || s.is_empty() {
         return s.to_string();
@@ -563,6 +569,7 @@ pub fn snake_to_camel(s: &str) -> String {
     result
 }
 
+/// Convert a camelCase string to snake_case
 pub fn camel_to_snake(s: &str) -> String {
     let mut result = String::new();
     let mut prev_was_upper = false;
@@ -583,10 +590,12 @@ pub fn camel_to_snake(s: &str) -> String {
     result
 }
 
+/// Check if a string contains only ASCII digits
 pub fn is_numeric(s: &str) -> bool {
     !s.is_empty() && s.chars().all(|c| c.is_ascii_digit())
 }
 
+/// Check if a string represents a valid floating-point number
 pub fn is_float(s: &str) -> bool {
     if s.is_empty() {
         return false;
@@ -603,6 +612,7 @@ pub fn is_float(s: &str) -> bool {
         && (after.is_empty() || after.chars().all(|c| c.is_ascii_digit()))
 }
 
+/// Strip single-line comments from source code, preserving URLs
 pub fn strip_comments(s: &str) -> String {
     s.lines()
         .map(|line| {
@@ -621,6 +631,7 @@ pub fn strip_comments(s: &str) -> String {
         .join("\n")
 }
 
+/// Count the number of lines in a string
 pub fn count_lines(s: &str) -> usize {
     if s.is_empty() {
         0
@@ -633,6 +644,7 @@ pub fn count_lines(s: &str) -> usize {
     }
 }
 
+/// Indent each line of a string by the given number of spaces
 pub fn indent_string(s: &str, spaces: usize) -> String {
     let indent = " ".repeat(spaces);
     s.lines()
@@ -647,6 +659,7 @@ pub fn indent_string(s: &str, spaces: usize) -> String {
         .join("\n")
 }
 
+/// Remove leading whitespace from each line
 pub fn trim_indent(s: &str) -> String {
     s.lines()
         .map(str::trim_start)
@@ -654,12 +667,14 @@ pub fn trim_indent(s: &str) -> String {
         .join("\n")
 }
 
+/// Split a string at the given delimiter character
 pub fn split_at_delimiter(s: &str, delimiter: char) -> Vec<String> {
     s.split(delimiter)
         .map(std::string::ToString::to_string)
         .collect()
 }
 
+/// Find the longest common prefix among a set of strings
 pub fn common_prefix(strings: &[&str]) -> String {
     if strings.is_empty() {
         return String::new();
@@ -679,6 +694,7 @@ pub fn common_prefix(strings: &[&str]) -> String {
     prefix
 }
 
+/// Compute the Levenshtein edit distance between two strings
 pub fn levenshtein_distance(s1: &str, s2: &str) -> usize {
     let len1 = s1.chars().count();
     let len2 = s2.chars().count();

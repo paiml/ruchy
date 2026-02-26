@@ -65,7 +65,6 @@ pub fn handle_eval_command(expr: &str, verbose: bool, format: &str, trace: bool)
 }
 
 /// Print successful evaluation result (complexity: 2)
-#[allow(dead_code)]
 pub fn print_eval_success(result: &str, format: &str) {
     if format == "json" {
         // Manually construct JSON to ensure field order matches test expectations

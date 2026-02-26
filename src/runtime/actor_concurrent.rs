@@ -4,7 +4,6 @@
 //! - True concurrent execution using threads
 //! - Supervision trees for fault tolerance
 //! - Restart strategies and lifecycle management
-#![allow(clippy::non_std_lazy_statics)] // LazyLock requires Rust 1.80+
 
 use crate::runtime::actor_runtime::{ActorFieldValue, ActorMessage};
 use crate::runtime::InterpreterError;
@@ -516,8 +515,9 @@ impl ConcurrentActorSystem {
 }
 
 // Global concurrent actor system
-lazy_static::lazy_static! {
-    pub static ref CONCURRENT_ACTOR_SYSTEM: ConcurrentActorSystem = ConcurrentActorSystem::new();
+pub fn concurrent_actor_system() -> &'static ConcurrentActorSystem {
+    static SYSTEM: std::sync::OnceLock<ConcurrentActorSystem> = std::sync::OnceLock::new();
+    SYSTEM.get_or_init(ConcurrentActorSystem::new)
 }
 
 #[cfg(test)]
@@ -1542,7 +1542,7 @@ mod tests {
     #[test]
     fn test_global_actor_system_exists() {
         // Just verify we can access the global system
-        let actors = CONCURRENT_ACTOR_SYSTEM.actors.read().unwrap();
+        let actors = concurrent_actor_system().actors.read().unwrap();
         // Global system should be empty or have actors from other tests
         let _ = actors.len();
     }

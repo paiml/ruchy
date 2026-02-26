@@ -181,7 +181,9 @@ impl Default for ParallelTestExecutor {
 impl ParallelTestExecutor {
     pub fn new() -> Self {
         Self {
-            num_threads: num_cpus::get(),
+            num_threads: std::thread::available_parallelism()
+                .map(|n| n.get())
+                .unwrap_or(1),
         }
     }
     /// # Examples

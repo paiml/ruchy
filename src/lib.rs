@@ -31,7 +31,6 @@
 #![allow(clippy::items_after_statements)]
 #![allow(clippy::too_many_lines)]
 #![allow(clippy::type_complexity)]
-#![allow(dead_code)]
 #![allow(clippy::float_cmp)]
 #![allow(clippy::collapsible_match)]
 #![allow(clippy::cast_sign_loss)]

@@ -13,7 +13,6 @@ use super::value::Value;
 
 /// Call frame for function invocation (will be used in Phase 1)
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct CallFrame {
     /// Function being executed
     pub(crate) closure: Value,
