@@ -1664,7 +1664,7 @@ dependencies = [
  "rustc-hash 2.1.1",
  "serde",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "wasmtime-internal-math 38.0.4",
 ]
 
@@ -1691,7 +1691,7 @@ dependencies = [
  "rustc-hash 2.1.1",
  "serde",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "wasmtime-internal-math 41.0.4",
 ]
 
@@ -1779,7 +1779,7 @@ dependencies = [
  "cranelift-codegen 0.125.4",
  "log",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
 ]
 
 [[package]]
@@ -1791,7 +1791,7 @@ dependencies = [
  "cranelift-codegen 0.128.4",
  "log",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
 ]
 
 [[package]]
@@ -1821,7 +1821,7 @@ dependencies = [
  "libc",
  "log",
  "region",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "wasmtime-internal-jit-icache-coherence 38.0.4",
  "windows-sys 0.60.2",
 ]
@@ -1845,7 +1845,7 @@ checksum = "56f697bbbe135c655ea1deb7af0bae4a5c4fae2c88fdfc0fa57b34ae58c91040"
 dependencies = [
  "cranelift-codegen 0.125.4",
  "libc",
- "target-lexicon 0.13.4",
+ "target-lexicon",
 ]
 
 [[package]]
@@ -1856,7 +1856,7 @@ checksum = "ee32e36beaf80f309edb535274cfe0349e1c5cf5799ba2d9f42e828285c6b52e"
 dependencies = [
  "cranelift-codegen 0.128.4",
  "libc",
- "target-lexicon 0.13.4",
+ "target-lexicon",
 ]
 
 [[package]]
@@ -2450,16 +2450,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "env_filter"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bf3c259d255ca70051b30e2e95b5446cdb8949ac4cd22c0d7fd634d89f568e2"
-dependencies = [
- "log",
- "regex",
-]
-
-[[package]]
 name = "env_logger"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2467,19 +2457,6 @@ checksum = "a19187fea3ac7e84da7dacf48de0c45d63c6a76f9490dae389aead16c243fce3"
 dependencies = [
  "log",
  "regex",
-]
-
-[[package]]
-name = "env_logger"
-version = "0.11.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13c863f0904021b108aa8b2f55046443e6b1ebde8fd4a15c399893aae4fa069f"
-dependencies = [
- "anstream",
- "anstyle",
- "env_filter",
- "jiff",
- "log",
 ]
 
 [[package]]
@@ -3866,30 +3843,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jiff"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d89a5b5e10d5a9ad6e5d1f4bd58225f655d6fe9767575a5e8ac5a6fe64e04495"
-dependencies = [
- "jiff-static",
- "log",
- "portable-atomic",
- "portable-atomic-util",
- "serde_core",
-]
-
-[[package]]
-name = "jiff-static"
-version = "0.2.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ff7a39c8862fc1369215ccf0a8f12dd4598c7f6484704359f0351bd617034dbf"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "jni-sys"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4445,12 +4398,6 @@ dependencies = [
  "cfg-if",
  "rayon",
 ]
-
-[[package]]
-name = "md5"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
 
 [[package]]
 name = "memchr"
@@ -6306,7 +6253,7 @@ version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "588f6378e4dd99458b60ec275b4477add41ce4fa9f64dcba6f15adccb19b50d6"
 dependencies = [
- "env_logger 0.8.4",
+ "env_logger",
  "log",
  "rand 0.8.5",
 ]
@@ -6862,9 +6809,6 @@ dependencies = [
  "aprender",
  "arbitrary",
  "arrow 54.3.1",
- "arrow-array 54.3.1",
- "arrow-buffer 54.3.1",
- "arrow-schema 54.3.1",
  "assert_cmd",
  "async-trait",
  "axum",
@@ -6874,13 +6818,11 @@ dependencies = [
  "console_error_panic_hook",
  "cranelift",
  "cranelift-codegen 0.125.4",
- "cranelift-frontend 0.125.4",
  "cranelift-jit",
  "cranelift-module",
  "cranelift-native 0.125.4",
  "criterion",
  "entrenar",
- "env_logger 0.11.8",
  "getrandom 0.2.17",
  "glob",
  "html5ever",
@@ -6888,15 +6830,11 @@ dependencies = [
  "insta",
  "js-sys",
  "jugar-probar 1.0.2",
- "lazy_static",
  "local-ip-address",
- "log",
  "logos",
  "markup5ever_rcdom",
- "md5",
  "nix 0.29.0",
  "notify 8.2.0",
- "num_cpus",
  "pmcp",
  "polars",
  "predicates",
@@ -6914,16 +6852,13 @@ dependencies = [
  "reqwest",
  "rexpect",
  "rustyline",
- "semver",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
  "serde_yaml",
  "sha2",
  "signal-hook",
- "smallvec",
  "syn",
- "target-lexicon 0.12.16",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
@@ -7795,12 +7730,6 @@ checksum = "fce91f2f0ec87dff7e6bcbbeb267439aa1188703003c6055193c821487400432"
 dependencies = [
  "unicode-width 0.2.0",
 ]
-
-[[package]]
-name = "target-lexicon"
-version = "0.12.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 
 [[package]]
 name = "target-lexicon"
@@ -8994,7 +8923,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "tempfile",
  "wasm-compose",
  "wasm-encoder 0.243.0",
@@ -9036,7 +8965,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "wasm-encoder 0.243.0",
  "wasmparser 0.243.0",
  "wasmprinter",
@@ -9102,7 +9031,7 @@ dependencies = [
  "object",
  "pulley-interpreter",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "thiserror 2.0.18",
  "wasmparser 0.243.0",
  "wasmtime-environ",
@@ -9220,7 +9149,7 @@ dependencies = [
  "gimli",
  "log",
  "object",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "wasmparser 0.243.0",
  "wasmtime-environ",
  "wasmtime-internal-cranelift",
@@ -9449,7 +9378,7 @@ dependencies = [
  "gimli",
  "regalloc2",
  "smallvec",
- "target-lexicon 0.13.4",
+ "target-lexicon",
  "thiserror 2.0.18",
  "wasmparser 0.243.0",
  "wasmtime-environ",
