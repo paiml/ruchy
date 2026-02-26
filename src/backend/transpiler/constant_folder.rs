@@ -3,9 +3,7 @@
 // Minimal implementation to make RED tests pass
 // Complexity target: ≤10 per function
 
-#[cfg(test)]
-use crate::frontend::ast::Span;
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span, Type};
 use std::collections::{HashMap, HashSet};
 
 /// Fold constant expressions at compile-time
@@ -25,30 +23,7 @@ use std::collections::{HashMap, HashSet};
 /// Cyclomatic: 6 (≤10 target)
 pub fn fold_constants(expr: Expr) -> Expr {
     match expr.kind {
-        ExprKind::Binary { left, op, right } => {
-            // Recursively fold children first
-            let left_folded = fold_constants((*left).clone());
-            let right_folded = fold_constants((*right).clone());
-
-            // Try to fold if both are literals
-            if let (ExprKind::Literal(l), ExprKind::Literal(r)) =
-                (&left_folded.kind, &right_folded.kind)
-            {
-                if let Some(result) = fold_binary_op(l, op, r) {
-                    return Expr::new(ExprKind::Literal(result), expr.span);
-                }
-            }
-
-            // Return with folded children even if we can't fold this level
-            Expr::new(
-                ExprKind::Binary {
-                    left: Box::new(left_folded),
-                    op,
-                    right: Box::new(right_folded),
-                },
-                expr.span,
-            )
-        }
+        ExprKind::Binary { left, op, right } => fold_binary(left, op, right, expr.span),
         ExprKind::Let {
             name,
             type_annotation,
@@ -56,25 +31,8 @@ pub fn fold_constants(expr: Expr) -> Expr {
             body,
             is_mutable,
             else_block,
-        } => {
-            // Fold the value expression
-            let folded_value = Box::new(fold_constants((*value).clone()));
-            let folded_body = Box::new(fold_constants((*body).clone()));
-            let folded_else = else_block.map(|e| Box::new(fold_constants((*e).clone())));
-            Expr::new(
-                ExprKind::Let {
-                    name,
-                    type_annotation,
-                    value: folded_value,
-                    body: folded_body,
-                    is_mutable,
-                    else_block: folded_else,
-                },
-                expr.span,
-            )
-        }
+        } => fold_let(name, type_annotation, value, body, is_mutable, else_block, expr.span),
         ExprKind::Block(exprs) => {
-            // Fold all expressions in block
             let folded_exprs = exprs.into_iter().map(fold_constants).collect();
             Expr::new(ExprKind::Block(folded_exprs), expr.span)
         }
@@ -82,40 +40,101 @@ pub fn fold_constants(expr: Expr) -> Expr {
             condition,
             then_branch,
             else_branch,
-        } => {
-            // Fold condition and branches
-            let folded_cond = Box::new(fold_constants((*condition).clone()));
-            let folded_then = Box::new(fold_constants((*then_branch).clone()));
-            let folded_else = else_branch.map(|e| Box::new(fold_constants((*e).clone())));
-
-            // If condition is constant boolean, eliminate dead branch
-            // QA-026 FIX: Preserve scope boundaries by wrapping in Block
-            if let ExprKind::Literal(Literal::Bool(b)) = folded_cond.kind {
-                if b {
-                    // Condition is true: return then-branch wrapped in block to preserve scope
-                    // This ensures `if true { let x = 20 }` becomes `{ let x = 20 }` not just `let x = 20`
-                    return Expr::new(ExprKind::Block(vec![(*folded_then).clone()]), expr.span);
-                }
-                if let Some(else_expr) = folded_else {
-                    // Condition is false: return else-branch wrapped in block
-                    return Expr::new(ExprKind::Block(vec![(*else_expr).clone()]), expr.span);
-                }
-                // Condition is false, no else: return unit (empty block)
-                return Expr::new(ExprKind::Block(vec![]), expr.span);
-            }
-
-            // Condition not constant: return with folded children
-            Expr::new(
-                ExprKind::If {
-                    condition: folded_cond,
-                    then_branch: folded_then,
-                    else_branch: folded_else,
-                },
-                expr.span,
-            )
-        }
-        _ => expr, // Other expressions: return unchanged
+        } => fold_if(condition, then_branch, else_branch, expr.span),
+        _ => expr,
     }
+}
+
+/// Fold a binary expression, evaluating constant operands.
+fn fold_binary(left: Box<Expr>, op: BinaryOp, right: Box<Expr>, span: Span) -> Expr {
+    let left_folded = fold_constants((*left).clone());
+    let right_folded = fold_constants((*right).clone());
+
+    if let (ExprKind::Literal(l), ExprKind::Literal(r)) =
+        (&left_folded.kind, &right_folded.kind)
+    {
+        if let Some(result) = fold_binary_op(l, op, r) {
+            return Expr::new(ExprKind::Literal(result), span);
+        }
+    }
+
+    Expr::new(
+        ExprKind::Binary {
+            left: Box::new(left_folded),
+            op,
+            right: Box::new(right_folded),
+        },
+        span,
+    )
+}
+
+/// Fold a let expression, recursively folding value, body, and else block.
+#[expect(clippy::too_many_arguments)]
+fn fold_let(
+    name: String,
+    type_annotation: Option<Type>,
+    value: Box<Expr>,
+    body: Box<Expr>,
+    is_mutable: bool,
+    else_block: Option<Box<Expr>>,
+    span: Span,
+) -> Expr {
+    let folded_value = Box::new(fold_constants((*value).clone()));
+    let folded_body = Box::new(fold_constants((*body).clone()));
+    let folded_else = else_block.map(|e| Box::new(fold_constants((*e).clone())));
+    Expr::new(
+        ExprKind::Let {
+            name,
+            type_annotation,
+            value: folded_value,
+            body: folded_body,
+            is_mutable,
+            else_block: folded_else,
+        },
+        span,
+    )
+}
+
+/// Fold an if expression, eliminating dead branches when condition is constant.
+/// QA-026: Preserves scope boundaries by wrapping in Block.
+fn fold_if(
+    condition: Box<Expr>,
+    then_branch: Box<Expr>,
+    else_branch: Option<Box<Expr>>,
+    span: Span,
+) -> Expr {
+    let folded_cond = Box::new(fold_constants((*condition).clone()));
+    let folded_then = Box::new(fold_constants((*then_branch).clone()));
+    let folded_else = else_branch.map(|e| Box::new(fold_constants((*e).clone())));
+
+    if let ExprKind::Literal(Literal::Bool(b)) = folded_cond.kind {
+        return fold_const_bool_if(b, folded_then, folded_else, span);
+    }
+
+    Expr::new(
+        ExprKind::If {
+            condition: folded_cond,
+            then_branch: folded_then,
+            else_branch: folded_else,
+        },
+        span,
+    )
+}
+
+/// Eliminate dead branch when if-condition is a constant boolean.
+fn fold_const_bool_if(
+    cond_val: bool,
+    then_branch: Box<Expr>,
+    else_branch: Option<Box<Expr>>,
+    span: Span,
+) -> Expr {
+    if cond_val {
+        return Expr::new(ExprKind::Block(vec![(*then_branch).clone()]), span);
+    }
+    if let Some(else_expr) = else_branch {
+        return Expr::new(ExprKind::Block(vec![(*else_expr).clone()]), span);
+    }
+    Expr::new(ExprKind::Block(vec![]), span)
 }
 
 /// Fold binary operation on two literals
@@ -198,56 +217,30 @@ fn collect_used_functions(expr: &Expr) -> HashSet<String> {
 fn collect_used_functions_rec(expr: &Expr, used: &mut HashSet<String>) {
     match &expr.kind {
         ExprKind::Call { func, args } => {
-            // If this is a simple function call, record the name
             if let ExprKind::Identifier(func_name) = &func.kind {
                 used.insert(func_name.clone());
             }
-            // Recursively check func and args
             collect_used_functions_rec(func, used);
-            for arg in args {
-                collect_used_functions_rec(arg, used);
-            }
+            args.iter().for_each(|a| collect_used_functions_rec(a, used));
         }
         ExprKind::Block(exprs) => {
-            for e in exprs {
-                collect_used_functions_rec(e, used);
-            }
+            exprs.iter().for_each(|e| collect_used_functions_rec(e, used));
         }
-        ExprKind::Function { body, .. } => {
-            collect_used_functions_rec(body, used);
-        }
-        ExprKind::If {
-            condition,
-            then_branch,
-            else_branch,
-        } => {
+        ExprKind::Function { body, .. }
+        | ExprKind::Await { expr: body }
+        | ExprKind::AsyncBlock { body }
+        | ExprKind::Spawn { actor: body } => collect_used_functions_rec(body, used),
+        ExprKind::If { condition, then_branch, else_branch } => {
             collect_used_functions_rec(condition, used);
             collect_used_functions_rec(then_branch, used);
-            if let Some(else_expr) = else_branch {
-                collect_used_functions_rec(else_expr, used);
-            }
+            if let Some(e) = else_branch { collect_used_functions_rec(e, used); }
         }
-        ExprKind::Binary { left, right, .. } => {
+        ExprKind::Binary { left, right, .. }
+        | ExprKind::Let { value: left, body: right, .. } => {
             collect_used_functions_rec(left, used);
             collect_used_functions_rec(right, used);
         }
-        ExprKind::Let { value, body, .. } => {
-            collect_used_functions_rec(value, used);
-            collect_used_functions_rec(body, used);
-        }
-        // ASYNC-AWAIT: Handle await expressions to prevent DCE from removing async functions
-        ExprKind::Await { expr } => {
-            collect_used_functions_rec(expr, used);
-        }
-        ExprKind::AsyncBlock { body } => {
-            collect_used_functions_rec(body, used);
-        }
-        ExprKind::Spawn { actor } => {
-            collect_used_functions_rec(actor, used);
-        }
-        _ => {
-            // Other expressions: no function calls to track
-        }
+        _ => {}
     }
 }
 
@@ -274,11 +267,8 @@ fn collect_used_variables(expr: &Expr) -> HashSet<String> {
 /// Cyclomatic: 9 (≤10 target)
 fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &HashSet<String>) {
     match &expr.kind {
-        ExprKind::Identifier(name) => {
-            // Only count as variable use if it's bound (not a function name)
-            if bound.contains(name) {
-                used.insert(name.clone());
-            }
+        ExprKind::Identifier(name) if bound.contains(name) => {
+            used.insert(name.clone());
         }
         ExprKind::Let {
             name,
@@ -286,64 +276,46 @@ fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &H
             body,
             else_block,
             ..
-        } => {
-            // First scan the value (before name is bound)
-            collect_used_variables_rec(value, used, bound);
-
-            // Then scan body with name added to bound set
-            let mut new_bound = bound.clone();
-            new_bound.insert(name.clone());
-            collect_used_variables_rec(body, used, &new_bound);
-
-            // Scan else block if present
-            if let Some(else_expr) = else_block {
-                collect_used_variables_rec(else_expr, used, bound);
-            }
-        }
+        } => collect_let_vars(name, value, body, else_block.as_deref(), used, bound),
         ExprKind::Block(exprs) => {
-            for e in exprs {
-                collect_used_variables_rec(e, used, bound);
-            }
+            exprs.iter().for_each(|e| collect_used_variables_rec(e, used, bound));
         }
         ExprKind::Function { body, .. } => {
-            // Functions create new scope - don't propagate outer bindings
             collect_used_variables_rec(body, used, &HashSet::new());
         }
-        ExprKind::If {
-            condition,
-            then_branch,
-            else_branch,
-        } => {
+        ExprKind::If { condition, then_branch, else_branch } => {
             collect_used_variables_rec(condition, used, bound);
             collect_used_variables_rec(then_branch, used, bound);
-            if let Some(else_expr) = else_branch {
-                collect_used_variables_rec(else_expr, used, bound);
-            }
+            if let Some(e) = else_branch { collect_used_variables_rec(e, used, bound); }
         }
-        ExprKind::While {
-            condition, body, ..
-        } => {
+        ExprKind::While { condition, body, .. } | ExprKind::Binary { left: condition, right: body, .. } => {
             collect_used_variables_rec(condition, used, bound);
             collect_used_variables_rec(body, used, bound);
         }
-        ExprKind::Binary { left, right, .. } => {
-            collect_used_variables_rec(left, used, bound);
-            collect_used_variables_rec(right, used, bound);
-        }
         ExprKind::Call { func, args } => {
             collect_used_variables_rec(func, used, bound);
-            for arg in args {
-                collect_used_variables_rec(arg, used, bound);
-            }
+            args.iter().for_each(|a| collect_used_variables_rec(a, used, bound));
         }
-        ExprKind::Return { value } => {
-            if let Some(val) = value {
-                collect_used_variables_rec(val, used, bound);
-            }
-        }
-        _ => {
-            // Other expressions: no variable uses to track
-        }
+        ExprKind::Return { value: Some(val) } => collect_used_variables_rec(val, used, bound),
+        _ => {}
+    }
+}
+
+/// Collect used variables in a let-expression (value, body, else block).
+fn collect_let_vars(
+    name: &str,
+    value: &Expr,
+    body: &Expr,
+    else_block: Option<&Expr>,
+    used: &mut HashSet<String>,
+    bound: &HashSet<String>,
+) {
+    collect_used_variables_rec(value, used, bound);
+    let mut new_bound = bound.clone();
+    new_bound.insert(name.to_string());
+    collect_used_variables_rec(body, used, &new_bound);
+    if let Some(else_expr) = else_block {
+        collect_used_variables_rec(else_expr, used, bound);
     }
 }
 
@@ -617,143 +589,101 @@ pub fn propagate_constants(expr: Expr) -> Expr {
 /// # Complexity
 /// Cyclomatic: 9 (≤10 target)
 fn propagate_with_env(expr: Expr, env: &mut HashMap<String, Literal>) -> Expr {
-    // First, apply constant folding
     let expr = fold_constants(expr);
-
     match expr.kind {
-        // Track constant variable bindings
-        ExprKind::Let {
-            name,
-            type_annotation,
-            value,
-            body,
-            is_mutable,
-            else_block,
-        } => {
-            // Recursively propagate in value
-            let folded_value = Box::new(propagate_with_env((*value).clone(), env));
-
-            // If value is constant and variable is immutable, track it
-            // TRANSPILER-STRING-CONCAT-001 FIX: Don't propagate string literals
-            // String constants should keep their variable names for:
-            // 1. Readability in generated code
-            // 2. Correct behavior in string concatenation (a + b should use a, b)
-            // 3. Proper ownership semantics (strings are heap-allocated)
-            if !is_mutable {
-                if let ExprKind::Literal(ref lit) = folded_value.kind {
-                    // Only propagate numeric/boolean literals, not strings
-                    if !matches!(lit, Literal::String(_)) {
-                        env.insert(name.clone(), lit.clone());
-                    }
-                }
-            }
-
-            // Propagate in body with updated environment
-            let folded_body = Box::new(propagate_with_env((*body).clone(), env));
-
-            // Propagate in else block if present
-            let folded_else = else_block.map(|e| Box::new(propagate_with_env((*e).clone(), env)));
-
-            Expr::new(
-                ExprKind::Let {
-                    name,
-                    type_annotation,
-                    value: folded_value,
-                    body: folded_body,
-                    is_mutable,
-                    else_block: folded_else,
-                },
-                expr.span,
-            )
+        ExprKind::Let { name, type_annotation, value, body, is_mutable, else_block } => {
+            propagate_let(name, type_annotation, value, body, is_mutable, else_block, expr.span, env)
         }
-
-        // Substitute known variables with their constant values
         ExprKind::Identifier(ref name) => {
-            if let Some(lit) = env.get(name) {
-                // Replace variable with its constant value
-                Expr::new(ExprKind::Literal(lit.clone()), expr.span)
-            } else {
-                expr
+            match env.get(name) {
+                Some(lit) => Expr::new(ExprKind::Literal(lit.clone()), expr.span),
+                None => expr,
             }
         }
-
-        // Recursively propagate in binary expressions
         ExprKind::Binary { left, op, right } => {
-            let left_prop = propagate_with_env((*left).clone(), env);
-            let right_prop = propagate_with_env((*right).clone(), env);
-
-            // After propagation, try folding again
-            let binary_expr = Expr::new(
-                ExprKind::Binary {
-                    left: Box::new(left_prop),
-                    op,
-                    right: Box::new(right_prop),
-                },
-                expr.span,
-            );
-            fold_constants(binary_expr)
+            propagate_binary(left, op, right, expr.span, env)
         }
-
-        // Propagate in if expressions
-        // QA-026 FIX: Clone env for branches to prevent inner scope bindings from leaking
-        ExprKind::If {
-            condition,
-            then_branch,
-            else_branch,
-        } => {
-            // Condition uses outer env (no new scope)
-            let cond_prop = Box::new(propagate_with_env((*condition).clone(), env));
-            // Then/else branches get their own env copy - inner bindings don't leak out
-            let mut then_env = env.clone();
-            let then_prop = Box::new(propagate_with_env((*then_branch).clone(), &mut then_env));
-            let else_prop = else_branch.map(|e| {
-                let mut else_env = env.clone();
-                Box::new(propagate_with_env((*e).clone(), &mut else_env))
-            });
-
-            let if_expr = Expr::new(
-                ExprKind::If {
-                    condition: cond_prop,
-                    then_branch: then_prop,
-                    else_branch: else_prop,
-                },
-                expr.span,
-            );
-
-            // Try folding if condition is constant
-            fold_constants(if_expr)
+        ExprKind::If { condition, then_branch, else_branch } => {
+            propagate_if(condition, then_branch, else_branch, expr.span, env)
         }
-
-        // Propagate in blocks
-        // QA-026 FIX: Blocks create new scope - clone env to prevent leaking
         ExprKind::Block(exprs) => {
             let mut block_env = env.clone();
-            let folded_exprs = exprs
-                .into_iter()
-                .map(|e| propagate_with_env(e, &mut block_env))
-                .collect();
-            Expr::new(ExprKind::Block(folded_exprs), expr.span)
+            let folded = exprs.into_iter().map(|e| propagate_with_env(e, &mut block_env)).collect();
+            Expr::new(ExprKind::Block(folded), expr.span)
         }
-
-        // Propagate in function calls
         ExprKind::Call { func, args } => {
             let func_prop = Box::new(propagate_with_env((*func).clone(), env));
-            let args_prop = args
-                .into_iter()
-                .map(|a| propagate_with_env(a, env))
-                .collect();
-            Expr::new(
-                ExprKind::Call {
-                    func: func_prop,
-                    args: args_prop,
-                },
-                expr.span,
-            )
+            let args_prop = args.into_iter().map(|a| propagate_with_env(a, env)).collect();
+            Expr::new(ExprKind::Call { func: func_prop, args: args_prop }, expr.span)
         }
-
-        // Other expressions: return as-is
         _ => expr,
     }
+}
+
+/// Propagate constants through a let-expression binding.
+#[expect(clippy::too_many_arguments)]
+fn propagate_let(
+    name: String,
+    type_annotation: Option<Type>,
+    value: Box<Expr>,
+    body: Box<Expr>,
+    is_mutable: bool,
+    else_block: Option<Box<Expr>>,
+    span: Span,
+    env: &mut HashMap<String, Literal>,
+) -> Expr {
+    let folded_value = Box::new(propagate_with_env((*value).clone(), env));
+
+    // Track immutable non-string constant bindings
+    if !is_mutable {
+        if let ExprKind::Literal(ref lit) = folded_value.kind {
+            if !matches!(lit, Literal::String(_)) {
+                env.insert(name.clone(), lit.clone());
+            }
+        }
+    }
+
+    let folded_body = Box::new(propagate_with_env((*body).clone(), env));
+    let folded_else = else_block.map(|e| Box::new(propagate_with_env((*e).clone(), env)));
+
+    Expr::new(
+        ExprKind::Let { name, type_annotation, value: folded_value, body: folded_body, is_mutable, else_block: folded_else },
+        span,
+    )
+}
+
+/// Propagate constants through a binary expression and re-fold.
+fn propagate_binary(
+    left: Box<Expr>, op: BinaryOp, right: Box<Expr>, span: Span,
+    env: &mut HashMap<String, Literal>,
+) -> Expr {
+    let left_prop = propagate_with_env((*left).clone(), env);
+    let right_prop = propagate_with_env((*right).clone(), env);
+    fold_constants(Expr::new(
+        ExprKind::Binary { left: Box::new(left_prop), op, right: Box::new(right_prop) },
+        span,
+    ))
+}
+
+/// Propagate constants through an if expression with scoped environments.
+fn propagate_if(
+    condition: Box<Expr>,
+    then_branch: Box<Expr>,
+    else_branch: Option<Box<Expr>>,
+    span: Span,
+    env: &mut HashMap<String, Literal>,
+) -> Expr {
+    let cond_prop = Box::new(propagate_with_env((*condition).clone(), env));
+    let mut then_env = env.clone();
+    let then_prop = Box::new(propagate_with_env((*then_branch).clone(), &mut then_env));
+    let else_prop = else_branch.map(|e| {
+        let mut else_env = env.clone();
+        Box::new(propagate_with_env((*e).clone(), &mut else_env))
+    });
+    fold_constants(Expr::new(
+        ExprKind::If { condition: cond_prop, then_branch: then_prop, else_branch: else_prop },
+        span,
+    ))
 }
 
 #[cfg(test)]
@@ -1697,6 +1627,18 @@ mod tests {
 
     #[test]
     fn test_propagate_constants_in_if_condition() {
+        let x_ident = Expr::new(
+            ExprKind::Identifier("x".to_string()),
+            Span::new(0, 0),
+        );
+        let condition = Expr::new(
+            ExprKind::Binary {
+                left: Box::new(x_ident),
+                op: BinaryOp::Greater,
+                right: Box::new(int_lit(3)),
+            },
+            Span::new(0, 0),
+        );
         let expr = Expr::new(
             ExprKind::Let {
                 name: "x".to_string(),
@@ -1704,17 +1646,7 @@ mod tests {
                 value: Box::new(int_lit(5)),
                 body: Box::new(Expr::new(
                     ExprKind::If {
-                        condition: Box::new(Expr::new(
-                            ExprKind::Binary {
-                                left: Box::new(Expr::new(
-                                    ExprKind::Identifier("x".to_string()),
-                                    Span::new(0, 0),
-                                )),
-                                op: BinaryOp::Greater,
-                                right: Box::new(int_lit(3)),
-                            },
-                            Span::new(0, 0),
-                        )),
+                        condition: Box::new(condition),
                         then_branch: Box::new(int_lit(1)),
                         else_branch: Some(Box::new(int_lit(0))),
                     },
