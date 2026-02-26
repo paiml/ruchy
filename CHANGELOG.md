@@ -2,6 +2,44 @@
 
 All notable changes to the Ruchy programming language will be documented in this file.
 
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [Unreleased]
+
+### Changed
+- Removed all `#[allow(dead_code)]` attributes for improved code quality scoring
+- Added safety lints and benchmark CI workflow
+
+### Added
+- Domain-specific Verus formal verification specifications
+- MSRV documentation, dev profile optimization
+- docs.rs metadata, release automation, workspace config
+- Security audit configuration and linting configs
+- Quality infrastructure for SQI A- compliance
+- `build.rs` for compile-time version and feature metadata
+
+### Fixed
+- Stack dependency drift (trueno + realizar updates)
+
+## [4.2.1] - 2026-02-10
+
+### Changed
+- Refactored 8 test files exceeding 2000 lines into separate modules
+- Extracted inline tests from 9 production files to reduce complexity
+- Split large test files into parts under 2000 lines
+- Reduced coverage exclusion patterns from 13 to 9
+- Feature-gated sovereign stack deps to reduce prod transitive count
+
+### Added
+- 1700+ coverage tests across VM opcodes, runtime, oracle, parser, MIR, transpiler, formatter, interpreter
+- Property tests for WASM emitter and MIR modules
+- PMAT query section to CLAUDE.md, migrated to PMAT v3.0.3
+
+### Fixed
+- Replaced `.expect()` with safe error handling in JSON transpiler
+- Resolved Makefile compliance issues (CB-127-A/C, CB-126-D, CB-127-B, CB-125-B)
+
 ## [4.2.0] - 2026-02-01
 
 ### Security & Sovereign AI Stack Update
