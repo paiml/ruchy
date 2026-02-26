@@ -107,3 +107,5 @@ dependency_cleanup_analysis.md
 .pmat/context.idx/
 .pmat/workspace.idx/
 .pmat/deps-cache.json
+.pmat/context.db
+.pmat/workspace.db
