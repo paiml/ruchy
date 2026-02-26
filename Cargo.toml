@@ -453,6 +453,7 @@ harness = false
 # ⚡ [BUILD-TIME-002] Dev Profile Optimization (same strategy as test profile)
 # CRITICAL: Reduces cargo build from slow to fast with parallel compilation
 [profile.dev]
+panic = "abort"
 opt-level = 0              # No optimization for dev builds (faster compile)
 lto = false                # Disable link-time optimization (faster linking)
 codegen-units = 256        # ← CRITICAL: Maximum parallelization!
