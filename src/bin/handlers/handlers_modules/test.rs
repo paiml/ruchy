@@ -49,8 +49,7 @@ fn run_tests(
     // Discover test files
     let test_files = discover_test_files(path, filter, verbose)?;
     if test_files.is_empty() {
-        println!("⚠️  No .ruchy test files found in {}", path.display());
-        return Ok(());
+        anyhow::bail!("No .ruchy test files found in {}", path.display());
     }
     println!("🧪 Running {} .ruchy test files...\n", test_files.len());
     // Execute tests
