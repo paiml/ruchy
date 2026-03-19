@@ -114,3 +114,4 @@ dependency_cleanup_analysis.md
 .pmat/deps-cache.json
 .pmat/context.db
 .pmat/workspace.db
+.cargo/config.toml
