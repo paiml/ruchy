@@ -1,5 +1,5 @@
 # Rustfmt configuration
-# Skip files where proptest! macro causes formatting cycles
+# `ignore` requires nightly — CI must use `cargo +nightly fmt`
 ignore = [
     "tests/issue_119_property_tests.rs",
     "tests/issue_128_property_tests.rs",
