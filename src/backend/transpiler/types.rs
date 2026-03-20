@@ -1312,7 +1312,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let target_ident = format_ident!("{}", target_type);
         let trait_name = format_ident!("{}Ext", target_type); // e.g., StringExt
-        // Generate trait definition
+                                                              // Generate trait definition
         let trait_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {

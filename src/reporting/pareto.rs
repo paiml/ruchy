@@ -485,8 +485,8 @@ mod tests {
         counts3.insert("E0308".to_string(), 3); // 3% and <10 = P3
         counts3.insert("E0382".to_string(), 3); // 3% and <10 = P3
         counts3.insert("E0425".to_string(), 4); // 4% and <10 = P3
-        // Total = 10, each is 30-40% but all <10 occurrences
-        // 3/10 = 30% > 20% = P0! Need larger total
+                                                // Total = 10, each is 30-40% but all <10 occurrences
+                                                // 3/10 = 30% > 20% = P0! Need larger total
 
         // Use 100 total with small individual counts
         let mut counts4 = HashMap::new();

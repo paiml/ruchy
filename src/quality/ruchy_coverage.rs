@@ -400,7 +400,9 @@ impl RuchyCoverageCollector {
                     for line in &lines {
                         let trimmed = line.trim();
                         let is_fn = trimmed.starts_with("fn ") || trimmed.starts_with("fun ");
-                        if let Some(func_name) = is_fn.then(|| extract_function_name(trimmed)).flatten() {
+                        if let Some(func_name) =
+                            is_fn.then(|| extract_function_name(trimmed)).flatten()
+                        {
                             coverage.covered_functions.insert(func_name.clone());
                             let instr = &mut self.runtime_instrumentation;
                             instr.mark_function_executed(&file_str_owned, &func_name);

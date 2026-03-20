@@ -66,12 +66,11 @@ impl Interpreter {
 
                 // Check if this is an async actor with runtime ID
                 if let Some(Value::String(actor_id)) = instance.get("__actor_id") {
-                    use crate::runtime::actor_runtime::{ActorMessage, actor_runtime};
+                    use crate::runtime::actor_runtime::{actor_runtime, ActorMessage};
 
                     // Extract message type and data
                     let message = &arg_values[0];
-                    let (msg_type, msg_data) =
-                        Self::extract_send_message_parts(message);
+                    let (msg_type, msg_data) = Self::extract_send_message_parts(message);
 
                     // Convert data to strings for thread safety
                     let str_data: Vec<String> =
@@ -225,10 +224,7 @@ impl Interpreter {
         Self::bind_params(&mut handler_env, &params_clone, &msg_args);
 
         // CRITICAL: Bind 'self' to ObjectMut (not immutable Object)
-        handler_env.insert(
-            "self".to_string(),
-            Value::ObjectMut(Arc::clone(cell_rc)),
-        );
+        handler_env.insert("self".to_string(), Value::ObjectMut(Arc::clone(cell_rc)));
 
         // Execute the handler body
         self.env_stack.push(Rc::new(RefCell::new(handler_env)));
@@ -313,14 +309,19 @@ impl Interpreter {
         }
 
         // No handler found - return a default response
-        Ok(Value::from_string(format!("Received: {}", msg_type.as_ref())))
+        Ok(Value::from_string(format!(
+            "Received: {}",
+            msg_type.as_ref()
+        )))
     }
 
     /// Extract message type and data from a structured ask message.
     ///
     /// Returns `None` when the message is not a structured Message object.
     fn extract_ask_message(message: &Value) -> Option<(&Arc<str>, &Arc<[Value]>)> {
-        let Value::Object(msg_obj) = message else { return None };
+        let Value::Object(msg_obj) = message else {
+            return None;
+        };
         let Some(Value::String(type_str)) = msg_obj.get("__type") else {
             return None;
         };
@@ -384,7 +385,9 @@ impl Interpreter {
             return None;
         };
         for handler in handlers.iter() {
-            let Value::Object(handler_obj) = handler else { continue };
+            let Value::Object(handler_obj) = handler else {
+                continue;
+            };
             let Some(Value::String(handler_type)) = handler_obj.get("message_type") else {
                 continue;
             };
@@ -417,7 +420,9 @@ impl Interpreter {
             return None;
         };
         for handler in handlers.iter() {
-            let Value::Object(handler_obj) = handler else { continue };
+            let Value::Object(handler_obj) = handler else {
+                continue;
+            };
             let Some(Value::String(handler_type)) = handler_obj.get("message_type") else {
                 continue;
             };

@@ -1832,9 +1832,9 @@ impl Interpreter {
         let get_name = |kind: &str| -> Result<&str, InterpreterError> {
             match obj.get("__name") {
                 Some(Value::String(name)) => Ok(name.as_ref()),
-                _ => Err(InterpreterError::RuntimeError(
-                    format!("{kind} missing __name field"),
-                )),
+                _ => Err(InterpreterError::RuntimeError(format!(
+                    "{kind} missing __name field"
+                ))),
             }
         };
 

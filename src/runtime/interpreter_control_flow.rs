@@ -421,9 +421,7 @@ impl Interpreter {
                 self.set_variable(name, val.clone());
                 Ok(val)
             }
-            ExprKind::FieldAccess { object, field } => {
-                self.eval_field_assign(object, field, val)
-            }
+            ExprKind::FieldAccess { object, field } => self.eval_field_assign(object, field, val),
             // BUG-003: Support array index assignment (arr[i] = value)
             ExprKind::IndexAccess { object, index } => self.eval_index_assign(object, index, val),
             _ => Err(InterpreterError::RuntimeError(
@@ -647,8 +645,7 @@ impl Interpreter {
             }
             _ => {
                 return Err(InterpreterError::RuntimeError(
-                    "Complex assignment targets not supported in compound assignment"
-                        .to_string(),
+                    "Complex assignment targets not supported in compound assignment".to_string(),
                 ))
             }
         }

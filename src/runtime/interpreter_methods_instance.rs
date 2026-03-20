@@ -61,10 +61,8 @@ impl Interpreter {
                     // Get the method closure
                     if let Some(Value::Closure { params, body, .. }) = method_meta.get("closure") {
                         // Check if it's a static method
-                        let is_static = matches!(
-                            method_meta.get("is_static"),
-                            Some(Value::Bool(true))
-                        );
+                        let is_static =
+                            matches!(method_meta.get("is_static"), Some(Value::Bool(true)));
 
                         if is_static {
                             return Err(InterpreterError::RuntimeError(format!(

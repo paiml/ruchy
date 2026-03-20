@@ -994,7 +994,8 @@ impl Formatter {
                         let params_str = if h.params.is_empty() {
                             String::new()
                         } else {
-                            let joined = h.params
+                            let joined = h
+                                .params
                                 .iter()
                                 .map(|p| format!("{p:?}"))
                                 .collect::<Vec<_>>()
