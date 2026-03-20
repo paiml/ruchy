@@ -131,6 +131,7 @@ impl OracleMetrics {
 
     /// Export metrics as JSON
     #[must_use]
+    #[allow(clippy::disallowed_methods)] // serde_json::json! macro uses unwrap internally
     pub fn to_json(&self) -> serde_json::Value {
         serde_json::json!({
             "classifications": self.classifications,

@@ -1377,6 +1377,7 @@ fn json_value_to_ruchy(json: serde_json::Value) -> Value {
 /// Complexity: 2 (thin wrapper helper)
 /// Convert Ruchy value to JSON value
 /// Complexity: 5 (reduced by extracting object conversion helpers)
+#[allow(clippy::disallowed_methods)] // serde_json::json! macro uses unwrap internally
 fn ruchy_value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
     match value {
         Value::Nil => Ok(serde_json::Value::Null),

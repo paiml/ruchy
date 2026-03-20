@@ -589,7 +589,7 @@ fn eval_while_let(
         match eval_scoped_loop_body(interp, bindings, body)? {
             LoopBodyResult::Continue(v) => last_value = v,
             LoopBodyResult::BreakWith(v) => return Ok(v),
-            LoopBodyResult::ContinueLoop => continue,
+            LoopBodyResult::ContinueLoop => {}
         }
     }
     Ok(last_value)

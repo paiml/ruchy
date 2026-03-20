@@ -206,7 +206,9 @@ impl ConvergenceDashboard {
 
         self.iterations
             .push(ConvergenceIteration::new(number, errors_before));
-        self.iterations.last_mut().unwrap()
+        self.iterations
+            .last_mut()
+            .expect("just pushed an iteration")
     }
 
     /// Complete current iteration with error count

@@ -73,6 +73,7 @@ pub(crate) fn convert_json_object(obj: serde_json::Map<String, serde_json::Value
 
 /// Convert Ruchy Value to `serde_json::Value`
 /// Complexity: 5 (reduced by extracting array and object converters)
+#[allow(clippy::disallowed_methods)] // serde_json::json! macro uses unwrap internally
 pub(crate) fn value_to_json(value: &Value) -> Result<serde_json::Value, InterpreterError> {
     match value {
         Value::Nil => Ok(serde_json::Value::Null),

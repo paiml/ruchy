@@ -1162,6 +1162,7 @@ fn handle_test_dispatch(
     )
 }
 /// Handle Oracle subcommands for ML model management
+#[allow(clippy::unnecessary_wraps)] // Returns Result for API consistency with callers
 fn run_auto_train_json(oracle: ruchy::oracle::RuchyOracle, max_iterations: usize) -> Result<()> {
     use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
     let config = TrainingLoopConfig {
@@ -1195,6 +1196,7 @@ fn run_auto_train_json(oracle: ruchy::oracle::RuchyOracle, max_iterations: usize
     Ok(())
 }
 
+#[allow(clippy::unnecessary_wraps)] // Returns Result for API consistency with callers
 fn run_auto_train_visual(oracle: ruchy::oracle::RuchyOracle, max_iterations: usize) -> Result<()> {
     use ruchy::oracle::{DisplayMode, TrainingEvent, TrainingLoop, TrainingLoopConfig};
     let config = TrainingLoopConfig {

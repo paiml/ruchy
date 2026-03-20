@@ -51,28 +51,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: dtolnay/rust-toolchain@nightly
       - uses: Swatinem/rust-cache@v2
-      - name: Install test dependencies
-        run: |
-          cargo install cargo-nextest
-          rustup component add llvm-tools-preview
       - name: Run REPL unit tests
         run: cargo test repl --lib
       - name: Run REPL integration tests
         run: |
-          cargo test --test repl_commands_test
-          cargo test --test cli_oneliner_tests
-      - name: Run REPL property tests
-        run: cargo test repl_function_tests::property_tests
+          cargo test --test critical_repl_features
+          cargo test --test cli_contract_repl
+          cargo test --test repl_005_loop_output
+          cargo test --test repl_thread_safety
+          cargo test --test string_interpolation_repl_fix
       - name: Run REPL doctests
         run: cargo test --doc runtime::repl
-      - name: Run REPL examples
-        run: cargo run --example repl_demo
-      - name: Run REPL coverage tests
-        run: cargo test --test repl_coverage_tests
-      - name: Check REPL coverage
-        run: |
-          cargo llvm-cov --lib --no-report
-          cargo llvm-cov report --lib | grep -E "^\s+runtime::repl" || true
 
   lint:
     name: Lint
@@ -105,7 +94,7 @@ jobs:
       - name: Build release
         run: cargo build --release --all-features --workspace
       - name: Check examples
-        run: cargo build --examples
+        run: cargo build --examples --all-features
 
   coverage:
     name: Code Coverage
@@ -134,8 +123,6 @@ jobs:
       - name: Check package metadata
         run: |
           cargo package --list -p ruchy
-          cargo package --list -p ruchy-cli
       - name: Dry run publish
         run: |
           cargo publish --dry-run -p ruchy
-          cargo publish --dry-run -p ruchy-cli

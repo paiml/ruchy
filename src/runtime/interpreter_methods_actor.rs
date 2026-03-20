@@ -170,7 +170,7 @@ impl Interpreter {
         let mut handler_env = env.borrow().clone(); // ISSUE-119
 
         // RUNTIME-DEFAULT-PARAMS: Bind message parameters
-        Self::bind_params(&mut handler_env, &params, &msg_args);
+        Self::bind_params(&mut handler_env, params, &msg_args);
 
         // Bind 'self' -- create an object with public fields only
         let self_obj: HashMap<String, Value> = instance
@@ -182,7 +182,7 @@ impl Interpreter {
 
         // Execute the handler body
         self.env_stack.push(Rc::new(RefCell::new(handler_env)));
-        let result = self.eval_expr(&body);
+        let result = self.eval_expr(body);
         self.env_stack.pop();
 
         result

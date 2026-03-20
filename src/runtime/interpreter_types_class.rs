@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 /// Copy all non-metadata fields from source object map into destination.
 fn copy_non_meta_fields(src: &HashMap<String, Value>, dst: &mut HashMap<String, Value>) {
-    for (key, value) in src.iter() {
+    for (key, value) in src {
         if !key.starts_with("__") {
             dst.insert(key.clone(), value.clone());
         }

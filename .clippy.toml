@@ -7,7 +7,8 @@ cognitive-complexity-threshold = 30
 # We use wildcard imports in module definitions
 warn-on-all-wildcard-imports = false
 
-disallowed-methods = [
-    { path = "std::option::Option::unwrap", reason = "Use .expect() or ? operator" },
-    { path = "std::result::Result::unwrap", reason = "Use .expect() or ? operator" },
-]
+# Note: unwrap was previously in disallowed-methods but removed because
+# serde_json::json! macro expansion internally calls unwrap(), causing
+# false positives across 34+ call sites. The workspace lint
+# `unwrap_used = "allow"` controls this lint category instead.
+disallowed-methods = []

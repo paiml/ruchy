@@ -26,8 +26,8 @@ mod inner {
     // Re-export notebook runtime for reactive cell execution
     pub use presentar::browser::{Cell, CellGraph, CellId, CellOutput, NotebookRuntime};
 
-    // Re-export WebGPU types for visualization
-    pub use presentar::{commands_to_instances, GpuInstance, GpuUniforms, GpuVertex};
+    // Re-export WebGPU types for visualization (only when presentar has gpu feature)
+    // Note: presentar gates GPU types behind cfg(feature = "gpu") which we don't enable
 }
 
 #[cfg(feature = "widgets")]

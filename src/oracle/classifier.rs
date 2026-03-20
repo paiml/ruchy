@@ -645,7 +645,8 @@ impl RuchyOracle {
         use super::{Sample, SampleSource};
         use regex::Regex;
 
-        let error_re = Regex::new(r"error\[E(\d{4})\]:\s*(.+?)(?:\n|$)").unwrap();
+        let error_re = Regex::new(r"error\[E(\d{4})\]:\s*(.+?)(?:\n|$)")
+            .expect("static regex pattern is valid");
         let mut samples = Vec::new();
 
         for cap in error_re.captures_iter(stderr) {

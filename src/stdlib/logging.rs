@@ -151,7 +151,7 @@ pub fn is_level_enabled(level: &str) -> Result<bool, String> {
         return Err(format!("Invalid log level '{level}': unknown variant `{level}`, expected one of `trace`, `debug`, `info`, `warn`, `error`"));
     }
     // Check against the current max level
-    let current = LOG_LEVEL.get().map(String::as_str).unwrap_or("info");
+    let current = LOG_LEVEL.get().map_or("info", String::as_str);
     let level_order = |l: &str| -> i32 {
         match l {
             "off" => 0,

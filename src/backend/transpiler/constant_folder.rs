@@ -75,7 +75,7 @@ fn fold_binary(left: Box<Expr>, op: BinaryOp, right: Box<Expr>, span: Span) -> E
 }
 
 /// Fold a let expression, recursively folding value, body, and else block.
-#[expect(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 fn fold_let(
     name: String,
     type_annotation: Option<Type>,
@@ -227,13 +227,14 @@ fn collect_used_functions_rec(expr: &Expr, used: &mut HashSet<String>) {
                 used.insert(func_name.clone());
             }
             collect_used_functions_rec(func, used);
-            args.iter()
-                .for_each(|a| collect_used_functions_rec(a, used));
+            for a in args {
+                collect_used_functions_rec(a, used);
+            }
         }
         ExprKind::Block(exprs) => {
-            exprs
-                .iter()
-                .for_each(|e| collect_used_functions_rec(e, used));
+            for e in exprs {
+                collect_used_functions_rec(e, used);
+            }
         }
         ExprKind::Function { body, .. }
         | ExprKind::Await { expr: body }
@@ -297,9 +298,9 @@ fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &H
             ..
         } => collect_let_vars(name, value, body, else_block.as_deref(), used, bound),
         ExprKind::Block(exprs) => {
-            exprs
-                .iter()
-                .for_each(|e| collect_used_variables_rec(e, used, bound));
+            for e in exprs {
+                collect_used_variables_rec(e, used, bound);
+            }
         }
         ExprKind::Function { body, .. } => {
             collect_used_variables_rec(body, used, &HashSet::new());
@@ -328,8 +329,9 @@ fn collect_used_variables_rec(expr: &Expr, used: &mut HashSet<String>, bound: &H
         }
         ExprKind::Call { func, args } => {
             collect_used_variables_rec(func, used, bound);
-            args.iter()
-                .for_each(|a| collect_used_variables_rec(a, used, bound));
+            for a in args {
+                collect_used_variables_rec(a, used, bound);
+            }
         }
         ExprKind::Return { value: Some(val) } => collect_used_variables_rec(val, used, bound),
         _ => {}

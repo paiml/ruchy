@@ -8,13 +8,7 @@ use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
 // Re-export from builtin_type_inference for backwards compatibility
 pub use super::builtin_type_inference::{infer_param_type_from_builtin_usage, is_string_literal};
 
-/// Generic AST traversal for parameter usage checks.
-///
-/// The `check` closure returns:
-/// - `Some(true)` if the check succeeded (stop traversal, return true)
-/// - `Some(false)` if the check explicitly failed (stop traversal, return false)
-/// - `None` to continue traversal into child nodes
-/// Collect child expressions for generic AST traversal
+/// Collect child expressions for generic AST traversal.
 fn collect_child_exprs(expr: &Expr) -> Vec<&Expr> {
     match &expr.kind {
         ExprKind::Block(exprs) => exprs.iter().collect(),
