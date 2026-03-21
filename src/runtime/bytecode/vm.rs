@@ -167,7 +167,59 @@ impl VM {
         instruction: Instruction,
     ) -> Result<(), String> {
         match opcode {
-            // Load constant into register
+            // Stack and data movement operations
+            OpCode::Const
+            | OpCode::Move
+            | OpCode::LoadField
+            | OpCode::LoadIndex
+            | OpCode::LoadGlobal
+            | OpCode::StoreGlobal => self.exec_stack_ops(opcode, instruction),
+
+            // Arithmetic operations
+            OpCode::Add
+            | OpCode::Sub
+            | OpCode::Mul
+            | OpCode::Div
+            | OpCode::Mod
+            | OpCode::Neg
+            | OpCode::BitNot => self.exec_arithmetic_ops(opcode, instruction),
+
+            // Comparison and logical operations
+            OpCode::Equal
+            | OpCode::NotEqual
+            | OpCode::Less
+            | OpCode::LessEqual
+            | OpCode::Greater
+            | OpCode::GreaterEqual
+            | OpCode::Not
+            | OpCode::And
+            | OpCode::Or => self.exec_comparison_ops(opcode, instruction),
+
+            // Collection construction operations
+            OpCode::NewArray | OpCode::NewTuple | OpCode::NewObject => {
+                self.exec_collection_ops(opcode, instruction)
+            }
+
+            // Control flow operations
+            OpCode::Jump
+            | OpCode::JumpIfFalse
+            | OpCode::JumpIfTrue
+            | OpCode::Call
+            | OpCode::Return
+            | OpCode::For
+            | OpCode::MethodCall
+            | OpCode::Match
+            | OpCode::NewClosure => self.exec_control_flow(opcode, instruction),
+
+            _ => Err(format!("Unsupported opcode: {opcode:?}")),
+        }
+    }
+
+    /// Execute stack and data movement operations
+    ///
+    /// Handles: Const, Move, LoadField, LoadIndex, LoadGlobal, StoreGlobal
+    fn exec_stack_ops(&mut self, opcode: OpCode, instruction: Instruction) -> Result<(), String> {
+        match opcode {
             OpCode::Const => {
                 let dest = instruction.get_a() as usize;
                 let const_idx = instruction.get_bx() as usize;
@@ -183,7 +235,6 @@ impl VM {
                 Ok(())
             }
 
-            // Move value between registers
             OpCode::Move => {
                 let dest = instruction.get_a() as usize;
                 let src = instruction.get_b() as usize;
@@ -192,7 +243,6 @@ impl VM {
                 Ok(())
             }
 
-            // Array indexing: arr[index]
             OpCode::LoadField => {
                 // OPT-015: Field access implementation
                 // ABC format: A = dest_reg, B = object_reg, C = field_constant_idx
@@ -314,6 +364,121 @@ impl VM {
                 Ok(())
             }
 
+            OpCode::LoadGlobal => {
+                let dest = instruction.get_a() as usize;
+                let name_idx = instruction.get_bx() as usize;
+
+                let frame = self.call_stack.last().ok_or("No active call frame")?;
+                let name_value = frame
+                    .chunk
+                    .constants
+                    .get(name_idx)
+                    .ok_or_else(|| format!("Constant index out of bounds: {name_idx}"))?;
+
+                let name = match name_value {
+                    Value::String(s) => s.as_ref(),
+                    _ => return Err("Global name must be a string".to_string()),
+                };
+
+                let value = self
+                    .globals
+                    .get(name)
+                    .ok_or_else(|| format!("Undefined global variable: {name}"))?;
+
+                self.registers[dest] = value.clone();
+                Ok(())
+            }
+
+            OpCode::StoreGlobal => {
+                let src = instruction.get_a() as usize;
+                let name_idx = instruction.get_bx() as usize;
+
+                let frame = self.call_stack.last().ok_or("No active call frame")?;
+                let name_value = frame
+                    .chunk
+                    .constants
+                    .get(name_idx)
+                    .ok_or_else(|| format!("Constant index out of bounds: {name_idx}"))?;
+
+                let name = match name_value {
+                    Value::String(s) => s.to_string(),
+                    _ => return Err("Global name must be a string".to_string()),
+                };
+
+                self.globals.insert(name, self.registers[src].clone());
+                Ok(())
+            }
+
+            _ => unreachable!("exec_stack_ops called with non-stack opcode: {opcode:?}"),
+        }
+    }
+
+    /// Execute arithmetic operations
+    ///
+    /// Handles: Add, Sub, Mul, Div, Mod, Neg, BitNot
+    fn exec_arithmetic_ops(
+        &mut self,
+        opcode: OpCode,
+        instruction: Instruction,
+    ) -> Result<(), String> {
+        match opcode {
+            OpCode::Add => self.binary_op(instruction, super::super::interpreter::Value::add),
+            OpCode::Sub => self.binary_op(instruction, super::super::interpreter::Value::subtract),
+            OpCode::Mul => self.binary_op(instruction, super::super::interpreter::Value::multiply),
+            OpCode::Div => self.binary_op(instruction, super::super::interpreter::Value::divide),
+            OpCode::Mod => self.binary_op(instruction, super::super::interpreter::Value::modulo),
+            OpCode::Neg => self.unary_op(instruction, |v| match v {
+                Value::Integer(i) => Ok(Value::Integer(-i)),
+                Value::Float(f) => Ok(Value::Float(-f)),
+                _ => Err(format!("Cannot negate {}", v.type_name())),
+            }),
+            OpCode::BitNot => self.unary_op(instruction, |v| match v {
+                Value::Integer(i) => Ok(Value::Integer(!i)),
+                _ => Err(format!("Cannot apply bitwise NOT to {}", v.type_name())),
+            }),
+            _ => unreachable!("exec_arithmetic_ops called with non-arithmetic opcode: {opcode:?}"),
+        }
+    }
+
+    /// Execute comparison and logical operations
+    ///
+    /// Handles: Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual, Not, And, Or
+    fn exec_comparison_ops(
+        &mut self,
+        opcode: OpCode,
+        instruction: Instruction,
+    ) -> Result<(), String> {
+        match opcode {
+            OpCode::Equal => self.binary_op(instruction, |a, b| Ok(Value::Bool(a == b))),
+            OpCode::NotEqual => self.binary_op(instruction, |a, b| Ok(Value::Bool(a != b))),
+            OpCode::Less => {
+                self.comparison_op(instruction, super::super::interpreter::Value::less_than)
+            }
+            OpCode::LessEqual => {
+                self.comparison_op(instruction, super::super::interpreter::Value::less_equal)
+            }
+            OpCode::Greater => {
+                self.comparison_op(instruction, super::super::interpreter::Value::greater_than)
+            }
+            OpCode::GreaterEqual => {
+                self.comparison_op(instruction, super::super::interpreter::Value::greater_equal)
+            }
+            OpCode::Not => self.unary_op(instruction, |v| Ok(Value::Bool(!v.is_truthy()))),
+            OpCode::And => self.logical_op(instruction, |a, b| a && b),
+            OpCode::Or => self.logical_op(instruction, |a, b| a || b),
+            _ => unreachable!("exec_comparison_ops called with non-comparison opcode: {opcode:?}"),
+        }
+    }
+
+    /// Execute collection construction operations
+    ///
+    /// Handles: NewArray, NewTuple, NewObject
+    fn exec_collection_ops(
+        &mut self,
+        opcode: OpCode,
+        instruction: Instruction,
+    ) -> Result<(), String> {
+        match opcode {
             OpCode::NewArray => {
                 // OPT-020: Runtime array construction from register values
                 // ABx format: A = dest_reg, Bx = index into chunk.array_element_regs
@@ -411,46 +576,19 @@ impl VM {
                 Ok(())
             }
 
-            // Arithmetic operations
-            OpCode::Add => self.binary_op(instruction, super::super::interpreter::Value::add),
-            OpCode::Sub => self.binary_op(instruction, super::super::interpreter::Value::subtract),
-            OpCode::Mul => self.binary_op(instruction, super::super::interpreter::Value::multiply),
-            OpCode::Div => self.binary_op(instruction, super::super::interpreter::Value::divide),
-            OpCode::Mod => self.binary_op(instruction, super::super::interpreter::Value::modulo),
+            _ => unreachable!("exec_collection_ops called with non-collection opcode: {opcode:?}"),
+        }
+    }
 
-            // Unary operations
-            OpCode::Neg => self.unary_op(instruction, |v| match v {
-                Value::Integer(i) => Ok(Value::Integer(-i)),
-                Value::Float(f) => Ok(Value::Float(-f)),
-                _ => Err(format!("Cannot negate {}", v.type_name())),
-            }),
-            OpCode::Not => self.unary_op(instruction, |v| Ok(Value::Bool(!v.is_truthy()))),
-            OpCode::BitNot => self.unary_op(instruction, |v| match v {
-                Value::Integer(i) => Ok(Value::Integer(!i)),
-                _ => Err(format!("Cannot apply bitwise NOT to {}", v.type_name())),
-            }),
-
-            // Comparison operations
-            OpCode::Equal => self.binary_op(instruction, |a, b| Ok(Value::Bool(a == b))),
-            OpCode::NotEqual => self.binary_op(instruction, |a, b| Ok(Value::Bool(a != b))),
-            OpCode::Less => {
-                self.comparison_op(instruction, super::super::interpreter::Value::less_than)
-            }
-            OpCode::LessEqual => {
-                self.comparison_op(instruction, super::super::interpreter::Value::less_equal)
-            }
-            OpCode::Greater => {
-                self.comparison_op(instruction, super::super::interpreter::Value::greater_than)
-            }
-            OpCode::GreaterEqual => {
-                self.comparison_op(instruction, super::super::interpreter::Value::greater_equal)
-            }
-
-            // Logical operations
-            OpCode::And => self.logical_op(instruction, |a, b| a && b),
-            OpCode::Or => self.logical_op(instruction, |a, b| a || b),
-
-            // Control flow
+    /// Execute control flow operations
+    ///
+    /// Handles: Jump, JumpIfFalse, JumpIfTrue, Call, Return, For, MethodCall, Match, NewClosure
+    fn exec_control_flow(
+        &mut self,
+        opcode: OpCode,
+        instruction: Instruction,
+    ) -> Result<(), String> {
+        match opcode {
             OpCode::Jump => {
                 let offset = instruction.get_sbx();
                 if let Some(frame) = self.call_stack.last_mut() {
@@ -492,372 +630,11 @@ impl VM {
                 Ok(())
             }
 
-            OpCode::Call => {
-                // OPT-011: Function call implementation (hybrid approach)
-                // ABx format: A = result register, Bx = call_info constant index
-                // call_info = [func_reg, arg_reg1, arg_reg2, ...]
-                let result_reg = instruction.get_a() as usize;
-                let call_info_idx = instruction.get_bx() as usize;
-
-                // Get call info (func_reg + arg_regs) from constant pool
-                let frame = self.call_stack.last().ok_or("No active call frame")?;
-                let call_info_value = frame
-                    .chunk
-                    .constants
-                    .get(call_info_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {call_info_idx}"))?;
-
-                let call_info: Vec<usize> = match call_info_value {
-                    Value::Array(arr) => arr
-                        .iter()
-                        .map(|v| match v {
-                            Value::Integer(i) => Ok(*i as usize),
-                            _ => Err("Call info element must be an integer".to_string()),
-                        })
-                        .collect::<Result<Vec<_>, _>>()?,
-                    _ => return Err("Call info must be an array".to_string()),
-                };
-
-                // Extract func_reg (first element) and arg_regs (rest)
-                if call_info.is_empty() {
-                    return Err("Call info array is empty".to_string());
-                }
-                let func_reg = call_info[0];
-                let arg_regs = &call_info[1..];
-
-                // Get function from register
-                let func_value = self.registers[func_reg].clone();
-
-                // Extract closure
-                let (params, body, env) = match func_value {
-                    Value::Closure { params, body, env } => (params, body, env),
-                    _ => {
-                        return Err(format!(
-                            "Cannot call non-function value: {}",
-                            func_value.type_name()
-                        ))
-                    }
-                };
-
-                // Check argument count
-                if arg_regs.len() != params.len() {
-                    return Err(format!(
-                        "Function expects {} arguments, got {}",
-                        params.len(),
-                        arg_regs.len()
-                    ));
-                }
-
-                // Collect arguments from their registers
-                let mut args: Vec<Value> = Vec::new();
-                for &arg_reg in arg_regs {
-                    args.push(self.registers[arg_reg].clone());
-                }
-
-                // Push new scope for function call
-                self.interpreter.push_scope();
-
-                // CLOSURE-REFCELL-FIX: Clone captured env to release the borrow before calling set_variable
-                // This prevents "already borrowed" panics when env is shared with env_stack
-                let captured_vars: Vec<(String, Value)> = env
-                    .borrow()
-                    .iter()
-                    .map(|(k, v)| (k.clone(), v.clone()))
-                    .collect();
-
-                // Bind captured environment variables (borrow is now released)
-                for (name, value) in captured_vars {
-                    self.interpreter.set_variable(&name, value);
-                }
-
-                // Bind parameters to arguments
-                // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple (name, default_value)
-                for ((param_name, _default_value), arg) in params.iter().zip(args.iter()) {
-                    self.interpreter.set_variable(param_name, arg.clone());
-                }
-
-                // Execute closure body using interpreter
-                let result = self
-                    .interpreter
-                    .eval_expr(&body)
-                    .map_err(|e| format!("Function call error: {e}"))?;
-
-                // Pop scope
-                self.interpreter.pop_scope();
-
-                // Store result in result register
-                self.registers[result_reg] = result;
-                Ok(())
-            }
-
-            OpCode::For => {
-                // OPT-012: For-loop implementation (hybrid approach)
-                // ABx format: A = result register, Bx = loop_info constant index
-                // loop_info = [iter_reg, var_name, body_index]
-                let result_reg = instruction.get_a() as usize;
-                let loop_info_idx = instruction.get_bx() as usize;
-
-                // Get loop info from constant pool
-                let frame = self.call_stack.last().ok_or("No active call frame")?;
-                let loop_info_value = frame
-                    .chunk
-                    .constants
-                    .get(loop_info_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {loop_info_idx}"))?;
-
-                let loop_info: Vec<i64> = match loop_info_value {
-                    Value::Array(arr) => {
-                        let mut info = Vec::new();
-                        // First two elements are integers
-                        if arr.len() < 3 {
-                            return Err("Loop info array must have at least 3 elements".to_string());
-                        }
-                        if let Value::Integer(iter_reg) = arr[0] {
-                            info.push(iter_reg);
-                        } else {
-                            return Err("Loop info[0] must be an integer".to_string());
-                        }
-                        // Second element is the var name (skip for now, get separately)
-                        // Third element is body_index
-                        if let Value::Integer(body_idx) = arr[2] {
-                            info.push(body_idx);
-                        } else {
-                            return Err("Loop info[2] must be an integer".to_string());
-                        }
-                        info
-                    }
-                    _ => return Err("Loop info must be an array".to_string()),
-                };
-
-                let iter_reg = loop_info[0] as usize;
-                let body_idx = loop_info[1] as usize;
-
-                // Extract var name from loop_info
-                let var_name = match &loop_info_value {
-                    Value::Array(arr) if arr.len() >= 2 => match &arr[1] {
-                        Value::String(s) => s.as_ref().to_string(),
-                        _ => return Err("Loop var name must be a string".to_string()),
-                    },
-                    _ => return Err("Loop info must be an array".to_string()),
-                };
-
-                // Get iterator array from register
-                let iter_value = self.registers[iter_reg].clone();
-                let iter_array = match iter_value {
-                    Value::Array(arr) => arr,
-                    _ => {
-                        return Err(format!(
-                            "For-loop iterator must be an array, got {}",
-                            iter_value.type_name()
-                        ))
-                    }
-                };
-
-                // Get body from chunk's loop_bodies
-                let body = frame
-                    .chunk
-                    .loop_bodies
-                    .get(body_idx)
-                    .ok_or_else(|| format!("Loop body index out of bounds: {body_idx}"))?
-                    .clone();
-
-                // Synchronize register-based locals to interpreter scope
-                // This allows the loop body to access variables like 'sum' that were
-                // defined in bytecode mode but need to be visible to the interpreter
-                for (name, reg_idx) in &frame.chunk.locals_map {
-                    let value = self.registers[*reg_idx as usize].clone();
-                    self.interpreter.set_variable(name, value);
-                }
-
-                // Execute loop by iterating over array elements
-                let mut last_result = Value::Nil;
-
-                for elem in iter_array.iter() {
-                    // Push new scope for loop iteration
-                    self.interpreter.push_scope();
-
-                    // Bind loop variable to current element
-                    self.interpreter.set_variable(&var_name, elem.clone());
-
-                    // Execute loop body using interpreter
-                    last_result = self
-                        .interpreter
-                        .eval_expr(&body)
-                        .map_err(|e| format!("For-loop body error: {e}"))?;
-
-                    // Pop scope
-                    self.interpreter.pop_scope();
-
-                    // Synchronize interpreter scope back to registers
-                    // This allows mutations to 'sum' inside the loop to persist
-                    for (name, reg_idx) in &frame.chunk.locals_map {
-                        if let Some(value) = self.interpreter.get_variable(name) {
-                            self.registers[*reg_idx as usize] = value;
-                        }
-                    }
-                }
-
-                // Store result in result register (last iteration's result, or Nil if empty)
-                self.registers[result_reg] = last_result;
-                Ok(())
-            }
-
-            OpCode::MethodCall => {
-                // OPT-014: Method call implementation (hybrid approach)
-                // ABx format: A = result register, Bx = method_call_idx constant
-                let result_reg = instruction.get_a() as usize;
-                let method_call_idx_const = instruction.get_bx() as usize;
-
-                // Get method call index from constant pool
-                let frame = self.call_stack.last().ok_or("No active call frame")?;
-                let method_call_idx_value = frame
-                    .chunk
-                    .constants
-                    .get(method_call_idx_const)
-                    .ok_or_else(|| {
-                        format!("Constant index out of bounds: {method_call_idx_const}")
-                    })?;
-
-                let method_call_idx = match method_call_idx_value {
-                    Value::Integer(idx) => *idx as usize,
-                    _ => return Err("Method call index must be an integer".to_string()),
-                };
-
-                // Get (receiver, method, args) from chunk's method_calls
-                let (receiver, method, args) = frame
-                    .chunk
-                    .method_calls
-                    .get(method_call_idx)
-                    .ok_or_else(|| format!("Method call index out of bounds: {method_call_idx}"))?;
-
-                // Synchronize register-based locals to interpreter scope
-                // This allows method bodies to access variables defined in bytecode mode
-                for (name, reg_idx) in &frame.chunk.locals_map {
-                    let value = self.registers[*reg_idx as usize].clone();
-                    self.interpreter.set_variable(name, value);
-                }
-
-                // Convert Vec<Arc<Expr>> to Vec<Expr> for eval_method_call
-                let args_exprs: Vec<Expr> = args.iter().map(|arc| (**arc).clone()).collect();
-
-                // Execute method call using interpreter
-                let result = self
-                    .interpreter
-                    .eval_method_call(receiver, method, &args_exprs)
-                    .map_err(|e| format!("Method call error: {e}"))?;
-
-                // Synchronize interpreter scope back to registers
-                // This allows mutations inside methods to persist
-                for (name, reg_idx) in &frame.chunk.locals_map {
-                    if let Some(value) = self.interpreter.get_variable(name) {
-                        self.registers[*reg_idx as usize] = value;
-                    }
-                }
-
-                // Store result in result register
-                self.registers[result_reg] = result;
-                Ok(())
-            }
-
-            OpCode::Match => {
-                // OPT-018: Match expression implementation (hybrid approach)
-                // ABx format: A = result register, Bx = match_idx constant
-                let result_reg = instruction.get_a() as usize;
-                let match_idx_const = instruction.get_bx() as usize;
-
-                // Get match index from constant pool
-                let frame = self.call_stack.last().ok_or("No active call frame")?;
-                let match_idx_value =
-                    frame.chunk.constants.get(match_idx_const).ok_or_else(|| {
-                        format!("Constant index out of bounds: {match_idx_const}")
-                    })?;
-
-                let match_idx = match match_idx_value {
-                    Value::Integer(idx) => *idx as usize,
-                    _ => return Err("Match index must be an integer".to_string()),
-                };
-
-                // Get (expr, arms) from chunk's match_exprs
-                let (expr, arms) = frame
-                    .chunk
-                    .match_exprs
-                    .get(match_idx)
-                    .ok_or_else(|| format!("Match index out of bounds: {match_idx}"))?;
-
-                // Synchronize register-based locals to interpreter scope
-                // This allows pattern bindings and guards to access variables defined in bytecode mode
-                for (name, reg_idx) in &frame.chunk.locals_map {
-                    let value = self.registers[*reg_idx as usize].clone();
-                    self.interpreter.set_variable(name, value);
-                }
-
-                // Execute match expression using interpreter
-                let result = self
-                    .interpreter
-                    .eval_match(expr, arms)
-                    .map_err(|e| format!("Match expression error: {e}"))?;
-
-                // Synchronize interpreter scope back to registers
-                // This allows mutations inside match arms to persist
-                for (name, reg_idx) in &frame.chunk.locals_map {
-                    if let Some(value) = self.interpreter.get_variable(name) {
-                        self.registers[*reg_idx as usize] = value;
-                    }
-                }
-
-                // Store result in result register
-                self.registers[result_reg] = result;
-                Ok(())
-            }
-
-            OpCode::NewClosure => {
-                // OPT-019: Closure creation (hybrid approach)
-                // ABx format: A = result register, Bx = closure_idx constant
-                let result_reg = instruction.get_a() as usize;
-                let closure_idx_const = instruction.get_bx() as usize;
-
-                // Get closure index from constant pool
-                let frame = self.call_stack.last().ok_or("No active call frame")?;
-                let closure_idx_value = frame
-                    .chunk
-                    .constants
-                    .get(closure_idx_const)
-                    .ok_or_else(|| format!("Constant index out of bounds: {closure_idx_const}"))?;
-
-                let closure_idx = match closure_idx_value {
-                    Value::Integer(idx) => *idx as usize,
-                    _ => return Err("Closure index must be an integer".to_string()),
-                };
-
-                // Get (params, body) from chunk's closures
-                let (params, body) = frame
-                    .chunk
-                    .closures
-                    .get(closure_idx)
-                    .ok_or_else(|| format!("Closure index out of bounds: {closure_idx}"))?;
-
-                // Synchronize register-based locals to interpreter scope
-                // This ensures closures capture variables defined in bytecode mode
-                for (name, reg_idx) in &frame.chunk.locals_map {
-                    let value = self.registers[*reg_idx as usize].clone();
-                    self.interpreter.set_variable(name, value);
-                }
-
-                // Capture current environment from interpreter
-                // This is the key to closures - we snapshot the current scope
-                let env = self.interpreter.current_env().clone(); // ISSUE-119: Rc::clone (shallow copy)
-
-                // Create closure value
-                let closure = Value::Closure {
-                    params: params.clone(),
-                    body: body.clone(),
-                    env,
-                };
-
-                // Store closure in result register
-                self.registers[result_reg] = closure;
-                Ok(())
-            }
+            OpCode::Call => self.exec_call(instruction),
+            OpCode::For => self.exec_for_loop(instruction),
+            OpCode::MethodCall => self.exec_method_call(instruction),
+            OpCode::Match => self.exec_match(instruction),
+            OpCode::NewClosure => self.exec_new_closure(instruction),
 
             OpCode::Return => {
                 // Get return value from register specified in instruction
@@ -872,54 +649,374 @@ impl VM {
                 Ok(())
             }
 
-            // Load/store global variables
-            OpCode::LoadGlobal => {
-                let dest = instruction.get_a() as usize;
-                let name_idx = instruction.get_bx() as usize;
-
-                let frame = self.call_stack.last().ok_or("No active call frame")?;
-                let name_value = frame
-                    .chunk
-                    .constants
-                    .get(name_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {name_idx}"))?;
-
-                let name = match name_value {
-                    Value::String(s) => s.as_ref(),
-                    _ => return Err("Global name must be a string".to_string()),
-                };
-
-                let value = self
-                    .globals
-                    .get(name)
-                    .ok_or_else(|| format!("Undefined global variable: {name}"))?;
-
-                self.registers[dest] = value.clone();
-                Ok(())
-            }
-
-            OpCode::StoreGlobal => {
-                let src = instruction.get_a() as usize;
-                let name_idx = instruction.get_bx() as usize;
-
-                let frame = self.call_stack.last().ok_or("No active call frame")?;
-                let name_value = frame
-                    .chunk
-                    .constants
-                    .get(name_idx)
-                    .ok_or_else(|| format!("Constant index out of bounds: {name_idx}"))?;
-
-                let name = match name_value {
-                    Value::String(s) => s.to_string(),
-                    _ => return Err("Global name must be a string".to_string()),
-                };
-
-                self.globals.insert(name, self.registers[src].clone());
-                Ok(())
-            }
-
-            _ => Err(format!("Unsupported opcode: {opcode:?}")),
+            _ => unreachable!("exec_control_flow called with non-control-flow opcode: {opcode:?}"),
         }
+    }
+
+    /// Execute function call (OPT-011: hybrid approach)
+    fn exec_call(&mut self, instruction: Instruction) -> Result<(), String> {
+        // ABx format: A = result register, Bx = call_info constant index
+        // call_info = [func_reg, arg_reg1, arg_reg2, ...]
+        let result_reg = instruction.get_a() as usize;
+        let call_info_idx = instruction.get_bx() as usize;
+
+        // Get call info (func_reg + arg_regs) from constant pool
+        let frame = self.call_stack.last().ok_or("No active call frame")?;
+        let call_info_value = frame
+            .chunk
+            .constants
+            .get(call_info_idx)
+            .ok_or_else(|| format!("Constant index out of bounds: {call_info_idx}"))?;
+
+        let call_info: Vec<usize> = match call_info_value {
+            Value::Array(arr) => arr
+                .iter()
+                .map(|v| match v {
+                    Value::Integer(i) => Ok(*i as usize),
+                    _ => Err("Call info element must be an integer".to_string()),
+                })
+                .collect::<Result<Vec<_>, _>>()?,
+            _ => return Err("Call info must be an array".to_string()),
+        };
+
+        // Extract func_reg (first element) and arg_regs (rest)
+        if call_info.is_empty() {
+            return Err("Call info array is empty".to_string());
+        }
+        let func_reg = call_info[0];
+        let arg_regs = &call_info[1..];
+
+        // Get function from register
+        let func_value = self.registers[func_reg].clone();
+
+        // Extract closure
+        let (params, body, env) = match func_value {
+            Value::Closure { params, body, env } => (params, body, env),
+            _ => {
+                return Err(format!(
+                    "Cannot call non-function value: {}",
+                    func_value.type_name()
+                ))
+            }
+        };
+
+        // Check argument count
+        if arg_regs.len() != params.len() {
+            return Err(format!(
+                "Function expects {} arguments, got {}",
+                params.len(),
+                arg_regs.len()
+            ));
+        }
+
+        // Collect arguments from their registers
+        let mut args: Vec<Value> = Vec::new();
+        for &arg_reg in arg_regs {
+            args.push(self.registers[arg_reg].clone());
+        }
+
+        // Push new scope for function call
+        self.interpreter.push_scope();
+
+        // CLOSURE-REFCELL-FIX: Clone captured env to release the borrow before calling set_variable
+        // This prevents "already borrowed" panics when env is shared with env_stack
+        let captured_vars: Vec<(String, Value)> = env
+            .borrow()
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+
+        // Bind captured environment variables (borrow is now released)
+        for (name, value) in captured_vars {
+            self.interpreter.set_variable(&name, value);
+        }
+
+        // Bind parameters to arguments
+        // RUNTIME-DEFAULT-PARAMS: Extract param name from tuple (name, default_value)
+        for ((param_name, _default_value), arg) in params.iter().zip(args.iter()) {
+            self.interpreter.set_variable(param_name, arg.clone());
+        }
+
+        // Execute closure body using interpreter
+        let result = self
+            .interpreter
+            .eval_expr(&body)
+            .map_err(|e| format!("Function call error: {e}"))?;
+
+        // Pop scope
+        self.interpreter.pop_scope();
+
+        // Store result in result register
+        self.registers[result_reg] = result;
+        Ok(())
+    }
+
+    /// Execute for-loop (OPT-012: hybrid approach)
+    fn exec_for_loop(&mut self, instruction: Instruction) -> Result<(), String> {
+        // ABx format: A = result register, Bx = loop_info constant index
+        // loop_info = [iter_reg, var_name, body_index]
+        let result_reg = instruction.get_a() as usize;
+        let loop_info_idx = instruction.get_bx() as usize;
+
+        // Get loop info from constant pool
+        let frame = self.call_stack.last().ok_or("No active call frame")?;
+        let loop_info_value = frame
+            .chunk
+            .constants
+            .get(loop_info_idx)
+            .ok_or_else(|| format!("Constant index out of bounds: {loop_info_idx}"))?;
+
+        let loop_info: Vec<i64> = match loop_info_value {
+            Value::Array(arr) => {
+                let mut info = Vec::new();
+                // First two elements are integers
+                if arr.len() < 3 {
+                    return Err("Loop info array must have at least 3 elements".to_string());
+                }
+                if let Value::Integer(iter_reg) = arr[0] {
+                    info.push(iter_reg);
+                } else {
+                    return Err("Loop info[0] must be an integer".to_string());
+                }
+                // Second element is the var name (skip for now, get separately)
+                // Third element is body_index
+                if let Value::Integer(body_idx) = arr[2] {
+                    info.push(body_idx);
+                } else {
+                    return Err("Loop info[2] must be an integer".to_string());
+                }
+                info
+            }
+            _ => return Err("Loop info must be an array".to_string()),
+        };
+
+        let iter_reg = loop_info[0] as usize;
+        let body_idx = loop_info[1] as usize;
+
+        // Extract var name from loop_info
+        let var_name = match &loop_info_value {
+            Value::Array(arr) if arr.len() >= 2 => match &arr[1] {
+                Value::String(s) => s.as_ref().to_string(),
+                _ => return Err("Loop var name must be a string".to_string()),
+            },
+            _ => return Err("Loop info must be an array".to_string()),
+        };
+
+        // Get iterator array from register
+        let iter_value = self.registers[iter_reg].clone();
+        let iter_array = match iter_value {
+            Value::Array(arr) => arr,
+            _ => {
+                return Err(format!(
+                    "For-loop iterator must be an array, got {}",
+                    iter_value.type_name()
+                ))
+            }
+        };
+
+        // Get body from chunk's loop_bodies
+        let body = frame
+            .chunk
+            .loop_bodies
+            .get(body_idx)
+            .ok_or_else(|| format!("Loop body index out of bounds: {body_idx}"))?
+            .clone();
+
+        // Synchronize register-based locals to interpreter scope
+        // This allows the loop body to access variables like 'sum' that were
+        // defined in bytecode mode but need to be visible to the interpreter
+        for (name, reg_idx) in &frame.chunk.locals_map {
+            let value = self.registers[*reg_idx as usize].clone();
+            self.interpreter.set_variable(name, value);
+        }
+
+        // Execute loop by iterating over array elements
+        let mut last_result = Value::Nil;
+
+        for elem in iter_array.iter() {
+            // Push new scope for loop iteration
+            self.interpreter.push_scope();
+
+            // Bind loop variable to current element
+            self.interpreter.set_variable(&var_name, elem.clone());
+
+            // Execute loop body using interpreter
+            last_result = self
+                .interpreter
+                .eval_expr(&body)
+                .map_err(|e| format!("For-loop body error: {e}"))?;
+
+            // Pop scope
+            self.interpreter.pop_scope();
+
+            // Synchronize interpreter scope back to registers
+            // This allows mutations to 'sum' inside the loop to persist
+            for (name, reg_idx) in &frame.chunk.locals_map {
+                if let Some(value) = self.interpreter.get_variable(name) {
+                    self.registers[*reg_idx as usize] = value;
+                }
+            }
+        }
+
+        // Store result in result register (last iteration's result, or Nil if empty)
+        self.registers[result_reg] = last_result;
+        Ok(())
+    }
+
+    /// Execute method call (OPT-014: hybrid approach)
+    fn exec_method_call(&mut self, instruction: Instruction) -> Result<(), String> {
+        // ABx format: A = result register, Bx = method_call_idx constant
+        let result_reg = instruction.get_a() as usize;
+        let method_call_idx_const = instruction.get_bx() as usize;
+
+        // Get method call index from constant pool
+        let frame = self.call_stack.last().ok_or("No active call frame")?;
+        let method_call_idx_value = frame
+            .chunk
+            .constants
+            .get(method_call_idx_const)
+            .ok_or_else(|| format!("Constant index out of bounds: {method_call_idx_const}"))?;
+
+        let method_call_idx = match method_call_idx_value {
+            Value::Integer(idx) => *idx as usize,
+            _ => return Err("Method call index must be an integer".to_string()),
+        };
+
+        // Get (receiver, method, args) from chunk's method_calls
+        let (receiver, method, args) = frame
+            .chunk
+            .method_calls
+            .get(method_call_idx)
+            .ok_or_else(|| format!("Method call index out of bounds: {method_call_idx}"))?;
+
+        // Synchronize register-based locals to interpreter scope
+        // This allows method bodies to access variables defined in bytecode mode
+        for (name, reg_idx) in &frame.chunk.locals_map {
+            let value = self.registers[*reg_idx as usize].clone();
+            self.interpreter.set_variable(name, value);
+        }
+
+        // Convert Vec<Arc<Expr>> to Vec<Expr> for eval_method_call
+        let args_exprs: Vec<Expr> = args.iter().map(|arc| (**arc).clone()).collect();
+
+        // Execute method call using interpreter
+        let result = self
+            .interpreter
+            .eval_method_call(receiver, method, &args_exprs)
+            .map_err(|e| format!("Method call error: {e}"))?;
+
+        // Synchronize interpreter scope back to registers
+        // This allows mutations inside methods to persist
+        for (name, reg_idx) in &frame.chunk.locals_map {
+            if let Some(value) = self.interpreter.get_variable(name) {
+                self.registers[*reg_idx as usize] = value;
+            }
+        }
+
+        // Store result in result register
+        self.registers[result_reg] = result;
+        Ok(())
+    }
+
+    /// Execute match expression (OPT-018: hybrid approach)
+    fn exec_match(&mut self, instruction: Instruction) -> Result<(), String> {
+        // ABx format: A = result register, Bx = match_idx constant
+        let result_reg = instruction.get_a() as usize;
+        let match_idx_const = instruction.get_bx() as usize;
+
+        // Get match index from constant pool
+        let frame = self.call_stack.last().ok_or("No active call frame")?;
+        let match_idx_value = frame
+            .chunk
+            .constants
+            .get(match_idx_const)
+            .ok_or_else(|| format!("Constant index out of bounds: {match_idx_const}"))?;
+
+        let match_idx = match match_idx_value {
+            Value::Integer(idx) => *idx as usize,
+            _ => return Err("Match index must be an integer".to_string()),
+        };
+
+        // Get (expr, arms) from chunk's match_exprs
+        let (expr, arms) = frame
+            .chunk
+            .match_exprs
+            .get(match_idx)
+            .ok_or_else(|| format!("Match index out of bounds: {match_idx}"))?;
+
+        // Synchronize register-based locals to interpreter scope
+        // This allows pattern bindings and guards to access variables defined in bytecode mode
+        for (name, reg_idx) in &frame.chunk.locals_map {
+            let value = self.registers[*reg_idx as usize].clone();
+            self.interpreter.set_variable(name, value);
+        }
+
+        // Execute match expression using interpreter
+        let result = self
+            .interpreter
+            .eval_match(expr, arms)
+            .map_err(|e| format!("Match expression error: {e}"))?;
+
+        // Synchronize interpreter scope back to registers
+        // This allows mutations inside match arms to persist
+        for (name, reg_idx) in &frame.chunk.locals_map {
+            if let Some(value) = self.interpreter.get_variable(name) {
+                self.registers[*reg_idx as usize] = value;
+            }
+        }
+
+        // Store result in result register
+        self.registers[result_reg] = result;
+        Ok(())
+    }
+
+    /// Execute closure creation (OPT-019: hybrid approach)
+    fn exec_new_closure(&mut self, instruction: Instruction) -> Result<(), String> {
+        // ABx format: A = result register, Bx = closure_idx constant
+        let result_reg = instruction.get_a() as usize;
+        let closure_idx_const = instruction.get_bx() as usize;
+
+        // Get closure index from constant pool
+        let frame = self.call_stack.last().ok_or("No active call frame")?;
+        let closure_idx_value = frame
+            .chunk
+            .constants
+            .get(closure_idx_const)
+            .ok_or_else(|| format!("Constant index out of bounds: {closure_idx_const}"))?;
+
+        let closure_idx = match closure_idx_value {
+            Value::Integer(idx) => *idx as usize,
+            _ => return Err("Closure index must be an integer".to_string()),
+        };
+
+        // Get (params, body) from chunk's closures
+        let (params, body) = frame
+            .chunk
+            .closures
+            .get(closure_idx)
+            .ok_or_else(|| format!("Closure index out of bounds: {closure_idx}"))?;
+
+        // Synchronize register-based locals to interpreter scope
+        // This ensures closures capture variables defined in bytecode mode
+        for (name, reg_idx) in &frame.chunk.locals_map {
+            let value = self.registers[*reg_idx as usize].clone();
+            self.interpreter.set_variable(name, value);
+        }
+
+        // Capture current environment from interpreter
+        // This is the key to closures - we snapshot the current scope
+        let env = self.interpreter.current_env().clone(); // ISSUE-119: Rc::clone (shallow copy)
+
+        // Create closure value
+        let closure = Value::Closure {
+            params: params.clone(),
+            body: body.clone(),
+            env,
+        };
+
+        // Store closure in result register
+        self.registers[result_reg] = closure;
+        Ok(())
     }
 
     /// Execute a binary arithmetic operation

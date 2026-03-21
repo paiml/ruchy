@@ -199,7 +199,6 @@ impl ReferenceInterpreter {
         }
     }
     /// Evaluate primitive operations
-    #[allow(clippy::too_many_lines)] // Comprehensive primitive operations
     fn eval_prim(&mut self, op: &PrimOp, args: &[CoreExpr]) -> Result<Value, String> {
         // Evaluate all arguments first (strict evaluation)
         let mut values = Vec::new();
@@ -207,7 +206,27 @@ impl ReferenceInterpreter {
             values.push(self.eval(arg)?);
         }
         match op {
-            // Arithmetic operations
+            PrimOp::Add | PrimOp::Sub | PrimOp::Mul | PrimOp::Div | PrimOp::Mod | PrimOp::Pow => {
+                Self::eval_arithmetic_prim(op, &values)
+            }
+            PrimOp::Eq | PrimOp::Ne | PrimOp::Lt | PrimOp::Le | PrimOp::Gt | PrimOp::Ge => {
+                Self::eval_comparison_prim(op, &values)
+            }
+            PrimOp::And | PrimOp::Or | PrimOp::NullCoalesce | PrimOp::Not => {
+                Self::eval_logical_prim(op, &values)
+            }
+            PrimOp::If => Self::eval_control_flow_prim(&values),
+            PrimOp::ArrayNew | PrimOp::ArrayIndex | PrimOp::ArrayLen | PrimOp::Concat => {
+                Self::eval_collection_prim(op, values)
+            }
+        }
+    }
+
+    /// Evaluate arithmetic primitive operations
+    ///
+    /// Handles: Add, Sub, Mul, Div, Mod, Pow
+    fn eval_arithmetic_prim(op: &PrimOp, values: &[Value]) -> Result<Value, String> {
+        match op {
             PrimOp::Add => {
                 if values.len() != 2 {
                     return Err(format!("Add expects 2 arguments, got {}", values.len()));
@@ -270,7 +289,15 @@ impl ReferenceInterpreter {
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Float(a.powf(*b))),
                 _ => Err("Type error in power".to_string()),
             },
-            // Comparison operations
+            _ => unreachable!("eval_arithmetic_prim called with non-arithmetic op: {op:?}"),
+        }
+    }
+
+    /// Evaluate comparison primitive operations
+    ///
+    /// Handles: Eq, Ne, Lt, Le, Gt, Ge
+    fn eval_comparison_prim(op: &PrimOp, values: &[Value]) -> Result<Value, String> {
+        match op {
             PrimOp::Eq => Ok(Value::Bool(values[0] == values[1])),
             PrimOp::Ne => Ok(Value::Bool(values[0] != values[1])),
             PrimOp::Lt => match (&values[0], &values[1]) {
@@ -293,7 +320,15 @@ impl ReferenceInterpreter {
                 (Value::Float(a), Value::Float(b)) => Ok(Value::Bool(a >= b)),
                 _ => Err("Type error in greater-equal".to_string()),
             },
-            // Logical operations
+            _ => unreachable!("eval_comparison_prim called with non-comparison op: {op:?}"),
+        }
+    }
+
+    /// Evaluate logical primitive operations
+    ///
+    /// Handles: And, Or, NullCoalesce, Not
+    fn eval_logical_prim(op: &PrimOp, values: &[Value]) -> Result<Value, String> {
+        match op {
             PrimOp::And => match (&values[0], &values[1]) {
                 (Value::Bool(a), Value::Bool(b)) => Ok(Value::Bool(*a && *b)),
                 _ => Err("Type error in AND".to_string()),
@@ -324,20 +359,31 @@ impl ReferenceInterpreter {
                     _ => Err("Type error in NOT".to_string()),
                 }
             }
-            // Control flow
-            PrimOp::If => {
-                if values.len() != 3 {
-                    return Err(format!("IF expects 3 arguments, got {}", values.len()));
-                }
-                // Note: We already evaluated all branches (strict evaluation)
-                // A lazy interpreter would evaluate condition first, then the appropriate branch
-                match &values[0] {
-                    Value::Bool(true) => Ok(values[1].clone()),
-                    Value::Bool(false) => Ok(values[2].clone()),
-                    _ => Err("Type error: IF condition must be boolean".to_string()),
-                }
-            }
-            // Array operations
+            _ => unreachable!("eval_logical_prim called with non-logical op: {op:?}"),
+        }
+    }
+
+    /// Evaluate control flow primitive operations
+    ///
+    /// Handles: If
+    fn eval_control_flow_prim(values: &[Value]) -> Result<Value, String> {
+        if values.len() != 3 {
+            return Err(format!("IF expects 3 arguments, got {}", values.len()));
+        }
+        // Note: We already evaluated all branches (strict evaluation)
+        // A lazy interpreter would evaluate condition first, then the appropriate branch
+        match &values[0] {
+            Value::Bool(true) => Ok(values[1].clone()),
+            Value::Bool(false) => Ok(values[2].clone()),
+            _ => Err("Type error: IF condition must be boolean".to_string()),
+        }
+    }
+
+    /// Evaluate collection primitive operations
+    ///
+    /// Handles: ArrayNew, ArrayIndex, ArrayLen, Concat
+    fn eval_collection_prim(op: &PrimOp, values: Vec<Value>) -> Result<Value, String> {
+        match op {
             PrimOp::ArrayNew => {
                 // Create array from all arguments
                 Ok(Value::Array(values))
@@ -367,6 +413,7 @@ impl ReferenceInterpreter {
                 }
             }
             PrimOp::Concat => Err(format!("Unsupported primitive: {op:?}")),
+            _ => unreachable!("eval_collection_prim called with non-collection op: {op:?}"),
         }
     }
     /// Get execution trace for debugging
