@@ -147,10 +147,33 @@ impl OpCode {
         self as u8
     }
 
-    /// Try to convert u8 to opcode
-    ///
-    /// Returns None if the u8 value doesn't correspond to a valid opcode.
+    /// Valid opcode values bitmap (0x00-0x3B range, with gaps)
+    const VALID_OPCODES: [bool; 64] = {
+        let mut valid = [false; 64];
+        let codes: &[u8] = &[
+            0x00,0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x0A,0x0B,0x0C,0x0D,0x0E,0x0F,
+            0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x1A,0x1B,0x1C,0x1D,0x1E,0x1F,
+            0x20,0x21,0x22,0x23,0x24,0x25,0x26,0x27,0x28,0x29,0x2A,0x2B,0x2C,0x2D,0x2E,0x2F,
+            0x30,0x31,0x32,0x33,0x34,0x35,0x36,0x37,0x38,0x39,0x3A,0x3B,
+        ];
+        let mut i = 0;
+        while i < codes.len() { valid[codes[i] as usize] = true; i += 1; }
+        valid
+    };
+
+    /// Try to convert u8 to opcode using validated transmute
     pub fn from_u8(value: u8) -> Option<Self> {
+        if (value as usize) < Self::VALID_OPCODES.len() && Self::VALID_OPCODES[value as usize] {
+            // SAFETY: value is validated against the exhaustive list of repr(u8) discriminants
+            Some(unsafe { std::mem::transmute::<u8, Self>(value) })
+        } else {
+            None
+        }
+    }
+
+    /// Legacy match-based conversion (kept for reference, replaced by array lookup above)
+    #[allow(dead_code)]
+    fn from_u8_match(value: u8) -> Option<Self> {
         match value {
             // Stack Operations
             0x00 => Some(Self::Nop),
@@ -223,7 +246,32 @@ impl OpCode {
     }
 
     /// Get human-readable name of opcode
-    pub const fn name(self) -> &'static str {
+    /// Static name table indexed by opcode discriminant
+    const OPCODE_NAMES: [&'static str; 60] = [
+        "Nop","Const","LoadLocal","StoreLocal","LoadGlobal","StoreGlobal",
+        "LoadField","StoreField","LoadIndex","StoreIndex","LoadUpvalue","StoreUpvalue",
+        "Move","Pop","Dup","Swap",
+        "Add","Sub","Mul","Div","Mod","Neg","BitAnd","BitOr","BitXor","BitNot",
+        "Shl","Shr","Pow","FloorDiv",
+        "Eq","Ne","Lt","Le","Gt","Ge","Not","And","Or","Is",
+        "Concat","Len","In","Range","Slice","RangeInclusive","TypeOf",
+        "Reserved2F",
+        "Jump","JumpIfFalse","JumpIfTrue","Call","Return","Closure",
+        "NewArray","NewMap","NewSet","For","MethodCall","Match",
+    ];
+
+    pub fn name(self) -> &'static str {
+        let idx = self as u8 as usize;
+        if idx < Self::OPCODE_NAMES.len() {
+            Self::OPCODE_NAMES[idx]
+        } else {
+            "Unknown"
+        }
+    }
+
+    /// Legacy match-based name (kept for reference)
+    #[allow(dead_code)]
+    pub const fn name_match(self) -> &'static str {
         match self {
             Self::Nop => "Nop",
             Self::Const => "Const",
