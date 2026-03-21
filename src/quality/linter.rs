@@ -355,97 +355,11 @@ impl Linter {
         match &expr.kind {
             ExprKind::Let {
                 name, value, body, ..
-            } => {
-                // Analyze the value first (with current scope)
-                self.analyze_expr(value, scope, issues);
-
-                // Check if this is a top-level let (body is Unit) or expression-level let
-                let is_top_level = matches!(body.kind, ExprKind::Literal(Literal::Unit));
-
-                if is_top_level {
-                    // Top-level let: Define variable in current scope (for use in subsequent statements)
-                    // Check for shadowing before defining
-                    if self
-                        .rules
-                        .iter()
-                        .any(|r| matches!(r, LintRule::VariableShadowing))
-                        && scope.is_shadowing(name)
-                    {
-                        issues.push(Self::create_shadowing_issue(name));
-                    }
-                    // Define in current scope for visibility in subsequent block statements
-                    scope.define(name.clone(), 2, 1, VarType::Local);
-                    // Analyze body (even if Unit) to maintain consistency
-                    self.analyze_expr(body, scope, issues);
-                } else {
-                    // Expression-level let: Create new scope for the let binding body
-                    let mut let_scope = Scope::with_parent(scope.clone());
-                    // Check for shadowing before defining
-                    if self
-                        .rules
-                        .iter()
-                        .any(|r| matches!(r, LintRule::VariableShadowing))
-                        && let_scope.is_shadowing(name)
-                    {
-                        issues.push(Self::create_shadowing_issue(name));
-                    }
-                    // Define the variable in the new scope
-                    let_scope.define(name.clone(), 2, 1, VarType::Local);
-                    // Analyze the body with the new scope
-                    self.analyze_expr(body, &mut let_scope, issues);
-                    // LINT-008 FIX: Propagate "used" status from cloned parent back to original scope
-                    // The let_scope's parent is a clone of the original scope, so we need to sync the "used" flags
-                    if let Some(parent_scope) = &let_scope.parent {
-                        for (var_name, parent_var_info) in &parent_scope.variables {
-                            if parent_var_info.used {
-                                scope.mark_used(var_name);
-                            }
-                        }
-                    }
-                    // Check for unused variables in the let scope
-                    self.check_unused_in_scope(&let_scope, issues);
-                }
-            }
-            ExprKind::Identifier(name) => {
-                // Skip built-in functions - they're always available
-                if is_builtin(name) {
-                    return;
-                }
-                // Mark as used if defined, otherwise report as undefined
-                if !scope.mark_used(name)
-                    && self
-                        .rules
-                        .iter()
-                        .any(|r| matches!(r, LintRule::UndefinedVariable))
-                {
-                    issues.push(Self::create_undefined_variable_issue(name));
-                }
-            }
+            } => self.analyze_let_expr(name, value, body, scope, issues),
+            ExprKind::Identifier(name) => self.analyze_identifier_expr(name, scope, issues),
             ExprKind::Function {
                 name, params, body, ..
-            } => {
-                // Define the function name in the current scope (as Function, not Local)
-                scope.define(name.clone(), 1, 1, VarType::Function);
-                // Create new scope for function body
-                let mut func_scope = Scope::with_parent(scope.clone());
-                // Add parameters to scope with correct type
-                for param in params {
-                    Self::extract_param_bindings(&param.pattern, &mut func_scope);
-                }
-                // Analyze function body
-                self.analyze_expr(body, &mut func_scope, issues);
-                // Check for unused variables in function body (but not parameters for now)
-                // Parameters might be part of public API
-                for (name, info) in &func_scope.variables {
-                    if !info.used && matches!(info.var_type, VarType::Local) {
-                        issues.push(Self::create_unused_issue(
-                            name,
-                            info.var_type.clone(),
-                            info.defined_at,
-                        ));
-                    }
-                }
-            }
+            } => self.analyze_function_expr(name, params, body, scope, issues),
             ExprKind::For {
                 label: None,
                 var,
@@ -453,115 +367,49 @@ impl Linter {
                 iter,
                 body,
                 ..
-            } => {
-                // Create new scope for loop
-                let mut loop_scope = Scope::with_parent(scope.clone());
-                // Add loop variable to scope
-                if let Some(pat) = pattern {
-                    Self::extract_loop_bindings(pat, &mut loop_scope);
-                } else {
-                    // Fall back to var field for backward compatibility
-                    loop_scope.define(var.clone(), 2, 1, VarType::LoopVariable);
-                }
-                // Analyze iterator
-                self.analyze_expr(iter, scope, issues);
-                // Analyze loop body
-                self.analyze_expr(body, &mut loop_scope, issues);
-                // Check for unused loop variables
-                self.check_unused_in_scope(&loop_scope, issues);
-            }
+            } => self.analyze_for_expr(var, pattern.as_ref(), iter, body, scope, issues),
             ExprKind::Match { expr, arms, .. } => {
-                // Analyze scrutinee
-                self.analyze_expr(expr, scope, issues);
-                // Analyze each branch
-                for arm in arms {
-                    let mut branch_scope = Scope::with_parent(scope.clone());
-                    // Add pattern bindings to scope
-                    Self::extract_pattern_bindings(&arm.pattern, &mut branch_scope);
-                    // Analyze guard if present
-                    if let Some(guard) = &arm.guard {
-                        self.analyze_expr(guard, &mut branch_scope, issues);
-                    }
-                    // Analyze branch expression
-                    self.analyze_expr(&arm.body, &mut branch_scope, issues);
-                    // Check for unused match bindings
-                    self.check_unused_in_scope(&branch_scope, issues);
-                }
+                self.analyze_match_expr(expr, arms, scope, issues);
             }
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
                 ..
-            } => {
-                self.analyze_expr(condition, scope, issues);
-                // Create new scope for then branch
-                let mut then_scope = Scope::with_parent(scope.clone());
-                self.analyze_expr(then_branch, &mut then_scope, issues);
-                // Create new scope for else branch if exists
-                if let Some(else_expr) = else_branch {
-                    let mut else_scope = Scope::with_parent(scope.clone());
-                    self.analyze_expr(else_expr, &mut else_scope, issues);
-                }
-            }
+            } => self.analyze_if_expr(
+                condition,
+                then_branch,
+                else_branch.as_ref().map(|e| e.as_ref()),
+                scope,
+                issues,
+            ),
             ExprKind::Block(exprs) => {
-                // For blocks, we use the same scope level - each statement can see previous ones
-                for expr in exprs {
-                    self.analyze_expr(expr, scope, issues);
+                for e in exprs {
+                    self.analyze_expr(e, scope, issues);
                 }
             }
             ExprKind::Binary { left, right, .. } => {
                 self.analyze_expr(left, scope, issues);
                 self.analyze_expr(right, scope, issues);
             }
-            ExprKind::Call { func, args, .. } => {
-                self.analyze_expr(func, scope, issues);
-                for arg in args {
-                    self.analyze_expr(arg, scope, issues);
-                }
-            }
+            ExprKind::Call { func, args, .. } => self.analyze_call_expr(func, args, scope, issues),
             ExprKind::MethodCall { receiver, args, .. } => {
-                self.analyze_expr(receiver, scope, issues);
-                for arg in args {
-                    self.analyze_expr(arg, scope, issues);
-                }
+                self.analyze_call_expr(receiver, args, scope, issues);
             }
             ExprKind::StringInterpolation { parts } => {
-                // Analyze expressions within f-string interpolations
-                for part in parts {
-                    match part {
-                        crate::frontend::ast::StringPart::Expr(expr) => {
-                            self.analyze_expr(expr, scope, issues);
-                        }
-                        crate::frontend::ast::StringPart::ExprWithFormat { expr, .. } => {
-                            self.analyze_expr(expr, scope, issues);
-                        }
-                        crate::frontend::ast::StringPart::Text(_) => {
-                            // Literal text, nothing to analyze
-                        }
-                    }
-                }
+                self.analyze_string_interpolation(parts, scope, issues);
             }
             ExprKind::Lambda { params, body, .. } => {
-                // Create new scope for lambda body
-                let mut lambda_scope = Scope::with_parent(scope.clone());
-                // Add parameters to scope
-                for param in params {
-                    Self::extract_param_bindings(&param.pattern, &mut lambda_scope);
-                }
-                // Analyze lambda body
-                self.analyze_expr(body, &mut lambda_scope, issues);
-                // Check for unused parameters
-                self.check_unused_in_scope(&lambda_scope, issues);
+                self.analyze_lambda_expr(params, body, scope, issues);
             }
             ExprKind::Return { value } => {
-                if let Some(expr) = value {
-                    self.analyze_expr(expr, scope, issues);
+                if let Some(e) = value {
+                    self.analyze_expr(e, scope, issues);
                 }
             }
             ExprKind::List(exprs) | ExprKind::Tuple(exprs) => {
-                for expr in exprs {
-                    self.analyze_expr(expr, scope, issues);
+                for e in exprs {
+                    self.analyze_expr(e, scope, issues);
                 }
             }
             ExprKind::FieldAccess { object, .. } => {
@@ -582,26 +430,211 @@ impl Linter {
                 self.analyze_expr(value, scope, issues);
             }
             ExprKind::MacroInvocation { args, .. } => {
-                // LINT-008: Visit macro arguments to mark variables as used (Issue #8)
-                // format!("{}", name) should mark 'name' as used
                 for arg in args {
                     self.analyze_expr(arg, scope, issues);
                 }
             }
             ExprKind::Enum { name, .. } => {
-                // Issue #107 FIX: Register enum type name in scope
-                // This prevents "undefined variable" false positives for enum types
                 scope.define(name.clone(), 1, 1, VarType::TypeName);
             }
             ExprKind::Struct { name, .. } => {
-                // Issue #107 FIX: Register struct type name in scope
-                // This prevents "undefined variable" false positives for struct types
                 scope.define(name.clone(), 1, 1, VarType::TypeName);
             }
-            _ => {
-                // Handle other expression types as needed
+            _ => {}
+        }
+    }
+
+    fn analyze_let_expr(
+        &self,
+        name: &str,
+        value: &Expr,
+        body: &Expr,
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        // Analyze the value first (with current scope)
+        self.analyze_expr(value, scope, issues);
+
+        // Check if this is a top-level let (body is Unit) or expression-level let
+        let is_top_level = matches!(body.kind, ExprKind::Literal(Literal::Unit));
+
+        if is_top_level {
+            // Top-level let: Define variable in current scope (for use in subsequent statements)
+            if self
+                .rules
+                .iter()
+                .any(|r| matches!(r, LintRule::VariableShadowing))
+                && scope.is_shadowing(name)
+            {
+                issues.push(Self::create_shadowing_issue(name));
+            }
+            scope.define(name.to_owned(), 2, 1, VarType::Local);
+            self.analyze_expr(body, scope, issues);
+        } else {
+            // Expression-level let: Create new scope for the let binding body
+            let mut let_scope = Scope::with_parent(scope.clone());
+            if self
+                .rules
+                .iter()
+                .any(|r| matches!(r, LintRule::VariableShadowing))
+                && let_scope.is_shadowing(name)
+            {
+                issues.push(Self::create_shadowing_issue(name));
+            }
+            let_scope.define(name.to_owned(), 2, 1, VarType::Local);
+            self.analyze_expr(body, &mut let_scope, issues);
+            // LINT-008 FIX: Propagate "used" status from cloned parent back to original scope
+            if let Some(parent_scope) = &let_scope.parent {
+                for (var_name, parent_var_info) in &parent_scope.variables {
+                    if parent_var_info.used {
+                        scope.mark_used(var_name);
+                    }
+                }
+            }
+            self.check_unused_in_scope(&let_scope, issues);
+        }
+    }
+
+    fn analyze_identifier_expr(&self, name: &str, scope: &mut Scope, issues: &mut Vec<LintIssue>) {
+        if is_builtin(name) {
+            return;
+        }
+        if !scope.mark_used(name)
+            && self
+                .rules
+                .iter()
+                .any(|r| matches!(r, LintRule::UndefinedVariable))
+        {
+            issues.push(Self::create_undefined_variable_issue(name));
+        }
+    }
+
+    fn analyze_function_expr(
+        &self,
+        name: &str,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        scope.define(name.to_owned(), 1, 1, VarType::Function);
+        let mut func_scope = Scope::with_parent(scope.clone());
+        for param in params {
+            Self::extract_param_bindings(&param.pattern, &mut func_scope);
+        }
+        self.analyze_expr(body, &mut func_scope, issues);
+        for (n, info) in &func_scope.variables {
+            if !info.used && matches!(info.var_type, VarType::Local) {
+                issues.push(Self::create_unused_issue(
+                    n,
+                    info.var_type.clone(),
+                    info.defined_at,
+                ));
             }
         }
+    }
+
+    fn analyze_for_expr(
+        &self,
+        var: &str,
+        pattern: Option<&Pattern>,
+        iter: &Expr,
+        body: &Expr,
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        let mut loop_scope = Scope::with_parent(scope.clone());
+        if let Some(pat) = pattern {
+            Self::extract_loop_bindings(pat, &mut loop_scope);
+        } else {
+            loop_scope.define(var.to_owned(), 2, 1, VarType::LoopVariable);
+        }
+        self.analyze_expr(iter, scope, issues);
+        self.analyze_expr(body, &mut loop_scope, issues);
+        self.check_unused_in_scope(&loop_scope, issues);
+    }
+
+    fn analyze_match_expr(
+        &self,
+        scrutinee: &Expr,
+        arms: &[crate::frontend::ast::MatchArm],
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        self.analyze_expr(scrutinee, scope, issues);
+        for arm in arms {
+            let mut branch_scope = Scope::with_parent(scope.clone());
+            Self::extract_pattern_bindings(&arm.pattern, &mut branch_scope);
+            if let Some(guard) = &arm.guard {
+                self.analyze_expr(guard, &mut branch_scope, issues);
+            }
+            self.analyze_expr(&arm.body, &mut branch_scope, issues);
+            self.check_unused_in_scope(&branch_scope, issues);
+        }
+    }
+
+    fn analyze_if_expr(
+        &self,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        self.analyze_expr(condition, scope, issues);
+        let mut then_scope = Scope::with_parent(scope.clone());
+        self.analyze_expr(then_branch, &mut then_scope, issues);
+        if let Some(else_expr) = else_branch {
+            let mut else_scope = Scope::with_parent(scope.clone());
+            self.analyze_expr(else_expr, &mut else_scope, issues);
+        }
+    }
+
+    fn analyze_call_expr(
+        &self,
+        callee: &Expr,
+        args: &[Expr],
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        self.analyze_expr(callee, scope, issues);
+        for arg in args {
+            self.analyze_expr(arg, scope, issues);
+        }
+    }
+
+    fn analyze_string_interpolation(
+        &self,
+        parts: &[crate::frontend::ast::StringPart],
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        for part in parts {
+            match part {
+                crate::frontend::ast::StringPart::Expr(expr) => {
+                    self.analyze_expr(expr, scope, issues);
+                }
+                crate::frontend::ast::StringPart::ExprWithFormat { expr, .. } => {
+                    self.analyze_expr(expr, scope, issues);
+                }
+                crate::frontend::ast::StringPart::Text(_) => {}
+            }
+        }
+    }
+
+    fn analyze_lambda_expr(
+        &self,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
+        let mut lambda_scope = Scope::with_parent(scope.clone());
+        for param in params {
+            Self::extract_param_bindings(&param.pattern, &mut lambda_scope);
+        }
+        self.analyze_expr(body, &mut lambda_scope, issues);
+        self.check_unused_in_scope(&lambda_scope, issues);
     }
     fn extract_loop_bindings(pattern: &Pattern, scope: &mut Scope) {
         match pattern {

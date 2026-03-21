@@ -289,419 +289,97 @@ impl Formatter {
         }
 
         // Format the expression itself
-        let expr_str = match &expr.kind {
-            ExprKind::Literal(lit) => match lit {
-                crate::frontend::ast::Literal::Integer(n, _) => n.to_string(),
-                crate::frontend::ast::Literal::Float(f) => f.to_string(),
-                crate::frontend::ast::Literal::String(s) => {
-                    format!("\"{}\"", s.replace('"', "\\\""))
-                }
-                crate::frontend::ast::Literal::Bool(b) => b.to_string(),
-                crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
-                crate::frontend::ast::Literal::Byte(b) => format!("b'{}'", *b as char),
-                crate::frontend::ast::Literal::Unit => "()".to_string(),
-                crate::frontend::ast::Literal::Null => "null".to_string(),
-                crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
-            },
+        let expr_str = self.format_expr_kind(&expr.kind, &indent_str, indent);
+
+        // Append the formatted expression
+        result.push_str(&expr_str);
+
+        // Append trailing comment if present
+        if let Some(trailing) = &expr.trailing_comment {
+            result.push(' ');
+            result.push_str(&self.format_comment(trailing, 0)); // No indent for trailing
+        }
+
+        result
+    }
+
+    // --- Extracted helpers for format_expr (CB-200 reduction) ---
+
+    fn format_expr_kind(&self, kind: &ExprKind, indent_str: &str, indent: usize) -> String {
+        match kind {
+            ExprKind::Literal(lit) => self.format_literal_expr(lit),
             ExprKind::Identifier(name) => name.clone(),
             ExprKind::Let {
                 name, value, body, ..
-            } => {
-                // FIX: QUALITY-FORMATTER-002 (GitHub Issue #64)
-                // Detect if this is a sequential let statement or a true let-in expression
-                // Sequential statements: let followed by Block, Unit, Call, MethodCall, etc.
-                // True let-in expressions: let followed by value expression (Binary, If, etc.)
-                let is_sequential_statement = matches!(
-                    body.kind,
-                    ExprKind::Literal(crate::frontend::ast::Literal::Unit)
-                        | ExprKind::Block(_)
-                        | ExprKind::Call { .. }
-                        | ExprKind::MethodCall { .. }
-                        | ExprKind::Let { .. } // Nested let is also a statement
-                );
-
-                if is_sequential_statement {
-                    // Statement style: let x = 42
-                    let mut result = format!("let {} = {}", name, self.format_expr(value, indent));
-
-                    // If body is a Block, format its contents (without braces) at same level
-                    // This handles sequential statements: let x = 1; let y = 2; ...
-                    if let ExprKind::Block(body_exprs) = &body.kind {
-                        let indent_str = if self.config.use_tabs {
-                            "\t".repeat(indent)
-                        } else {
-                            " ".repeat(indent * self.config.indent_width)
-                        };
-                        for expr in body_exprs {
-                            result.push('\n');
-                            result.push_str(&indent_str);
-                            result.push_str(&self.format_expr(expr, indent));
-                        }
-                    } else if !matches!(
-                        body.kind,
-                        ExprKind::Literal(crate::frontend::ast::Literal::Unit)
-                    ) {
-                        // FIX: CRITICAL-FMT-DATA-LOSS (GitHub Issue #64)
-                        // Body is Let/Call/MethodCall but NOT Block or Unit
-                        // Must recursively format the body to avoid silent code deletion
-                        let indent_str = if self.config.use_tabs {
-                            "\t".repeat(indent)
-                        } else {
-                            " ".repeat(indent * self.config.indent_width)
-                        };
-                        result.push('\n');
-                        result.push_str(&indent_str);
-                        result.push_str(&self.format_expr(body, indent));
-                    }
-                    // If body is Unit, nothing more to add
-
-                    result
-                } else {
-                    // Functional style only when there's a true let-in expression
-                    // Example: let x = 10 in x + 1
-                    format!(
-                        "let {} = {} in {}",
-                        name,
-                        self.format_expr(value, indent),
-                        self.format_expr(body, indent)
-                    )
-                }
-            }
-            ExprKind::Binary { left, op, right } => {
-                // FIX: CRITICAL-FMT-CODE-DESTRUCTION - Use Display trait, not Debug
-                format!(
-                    "{} {} {}",
-                    self.format_expr(left, indent),
-                    op, // Uses Display trait: "*" not "Multiply"
-                    self.format_expr(right, indent)
-                )
-            }
-            ExprKind::Block(exprs) => {
-                let mut result = String::from("{\n");
-                let inner_indent_str = if self.config.use_tabs {
-                    "\t".repeat(indent + 1)
-                } else {
-                    " ".repeat((indent + 1) * self.config.indent_width)
-                };
-                for expr in exprs {
-                    result.push_str(&format!(
-                        "{}{}\n",
-                        inner_indent_str,
-                        self.format_expr(expr, indent + 1)
-                    ));
-                }
-                result.push_str(&format!("{indent_str}}}"));
-                result
-            }
+            } => self.format_let_expr(name, value, body, indent),
+            ExprKind::Block(exprs) => self.format_block_expr(exprs, indent_str, indent),
             ExprKind::Function {
                 name,
                 params,
                 return_type,
                 body,
                 ..
-            } => {
-                let mut result = format!("fun {name}");
-                // Parameters
-                result.push('(');
-                for (i, param) in params.iter().enumerate() {
-                    if i > 0 {
-                        result.push_str(", ");
-                    }
-                    if let crate::frontend::ast::Pattern::Identifier(param_name) = &param.pattern {
-                        result.push_str(param_name);
-                        // Only add type annotation if it's not the default "Any"
-                        if let crate::frontend::ast::TypeKind::Named(type_name) = &param.ty.kind {
-                            if type_name != "Any" {
-                                result.push_str(": ");
-                                result.push_str(type_name);
-                            }
-                        } else {
-                            result.push_str(": ");
-                            result.push_str(&Self::format_type(&param.ty.kind));
-                        }
-                    }
-                }
-                result.push(')');
-                // Return type
-                if let Some(ret_ty) = return_type {
-                    result.push_str(" -> ");
-                    result.push_str(&Self::format_type(&ret_ty.kind));
-                }
-                result.push(' ');
-                result.push_str(&self.format_expr(body.as_ref(), indent));
-                result
+            } => self.format_function_expr(name, params, return_type.as_ref(), body, indent),
+            ExprKind::Lambda { params, body } => self.format_lambda_expr(params, body, indent),
+            ExprKind::AsyncLambda { params, body } => {
+                format!(
+                    "async |{}| {}",
+                    params.join(", "),
+                    self.format_expr(body, indent)
+                )
             }
-            ExprKind::If {
-                condition,
-                then_branch,
-                else_branch,
-            } => {
-                let mut result = "if ".to_string();
-                result.push_str(&self.format_expr(condition, indent));
-                result.push(' ');
-                result.push_str(&self.format_expr(then_branch, indent));
-                if let Some(else_expr) = else_branch {
-                    result.push_str(" else ");
-                    result.push_str(&self.format_expr(else_expr, indent));
-                }
-                result
-            }
-            ExprKind::Call { func, args } => {
-                let mut result = self.format_expr(func, indent);
-                result.push('(');
-                for (i, arg) in args.iter().enumerate() {
-                    if i > 0 {
-                        result.push_str(", ");
-                    }
-                    result.push_str(&self.format_expr(arg, indent));
-                }
-                result.push(')');
-                result
-            }
+            // Control flow
+            ExprKind::If { .. }
+            | ExprKind::IfLet { .. }
+            | ExprKind::Match { .. }
+            | ExprKind::For { .. }
+            | ExprKind::While { .. }
+            | ExprKind::WhileLet { .. }
+            | ExprKind::Loop { .. }
+            | ExprKind::Break { .. }
+            | ExprKind::Continue { .. }
+            | ExprKind::Return { .. }
+            | ExprKind::TryCatch { .. }
+            | ExprKind::Throw { .. } => self.format_control_flow(kind, indent),
+            // Operators and access
+            ExprKind::Binary { .. }
+            | ExprKind::Unary { .. }
+            | ExprKind::CompoundAssign { .. }
+            | ExprKind::Ternary { .. }
+            | ExprKind::Range { .. }
+            | ExprKind::Assign { .. }
+            | ExprKind::IndexAccess { .. }
+            | ExprKind::FieldAccess { .. }
+            | ExprKind::OptionalFieldAccess { .. }
+            | ExprKind::Slice { .. }
+            | ExprKind::TypeCast { .. }
+            | ExprKind::Try { .. }
+            | ExprKind::Spread { .. }
+            | ExprKind::PreIncrement { .. }
+            | ExprKind::PostIncrement { .. }
+            | ExprKind::PreDecrement { .. }
+            | ExprKind::PostDecrement { .. }
+            | ExprKind::Pipeline { .. } => self.format_operators(kind, indent),
+            // Call expressions
+            ExprKind::Call { func, args } => self.format_call_expr(func, args, indent),
             ExprKind::MethodCall {
                 receiver,
                 method,
                 args,
                 ..
-            } => {
-                let mut result = self.format_expr(receiver, indent);
-                result.push('.');
-                result.push_str(method);
-                result.push('(');
-                for (i, arg) in args.iter().enumerate() {
-                    if i > 0 {
-                        result.push_str(", ");
-                    }
-                    result.push_str(&self.format_expr(arg, indent));
-                }
-                result.push(')');
-                result
-            }
-            ExprKind::For {
-                var,
-                pattern,
-                iter,
-                body,
-                ..
-            } => {
-                let mut result = "for ".to_string();
-                if let Some(pat) = pattern {
-                    if let crate::frontend::ast::Pattern::Identifier(name) = pat {
-                        result.push_str(name);
-                    } else {
-                        result.push_str(&format!("{pat:?}"));
-                    }
-                } else {
-                    result.push_str(var);
-                }
-                result.push_str(" in ");
-                result.push_str(&self.format_expr(iter, indent));
-                result.push(' ');
-                result.push_str(&self.format_expr(body, indent));
-                result
-            }
-            // CRITICAL: IndexAccess - array/object indexing (arr[i])
-            ExprKind::IndexAccess { object, index } => {
-                format!(
-                    "{}[{}]",
-                    self.format_expr(object, indent),
-                    self.format_expr(index, indent)
-                )
-            }
-            // CRITICAL: Assign - assignment statements (x = value)
-            ExprKind::Assign { target, value } => {
-                format!(
-                    "{} = {}",
-                    self.format_expr(target, indent),
-                    self.format_expr(value, indent)
-                )
-            }
-            // CRITICAL: Return - return statements
-            ExprKind::Return { value } => {
-                if let Some(val) = value {
-                    format!("return {}", self.format_expr(val, indent))
-                } else {
-                    "return".to_string()
-                }
-            }
-            // CRITICAL: FieldAccess - object.field
-            ExprKind::FieldAccess { object, field } => {
-                format!("{}.{}", self.format_expr(object, indent), field)
-            }
-            // CRITICAL: While - while loops
-            ExprKind::While {
-                condition, body, ..
-            } => {
-                format!(
-                    "while {} {}",
-                    self.format_expr(condition, indent),
-                    self.format_expr(body, indent)
-                )
-            }
-            // CRITICAL: Break
-            ExprKind::Break { value, .. } => {
-                if let Some(val) = value {
-                    format!("break {}", self.format_expr(val, indent))
-                } else {
-                    "break".to_string()
-                }
-            }
-            // CRITICAL: Continue
-            ExprKind::Continue { .. } => "continue".to_string(),
-            // CRITICAL: Range expressions (0..10)
-            ExprKind::Range {
-                start,
-                end,
-                inclusive,
-            } => {
-                let op = if *inclusive { "..=" } else { ".." };
-                format!(
-                    "{}{}{}",
-                    self.format_expr(start, indent),
-                    op,
-                    self.format_expr(end, indent)
-                )
-            }
-            // CRITICAL: Unary operations (-x, !x)
-            ExprKind::Unary { op, operand } => {
-                format!("{}{}", op, self.format_expr(operand, indent))
-            }
-            // CRITICAL: List literals [1, 2, 3]
-            ExprKind::List(items) => {
-                let formatted_items: Vec<String> = items
-                    .iter()
-                    .map(|item| self.format_expr(item, indent))
-                    .collect();
-                format!("[{}]", formatted_items.join(", "))
-            }
-            // CRITICAL: Tuple literals (1, 2, 3)
-            ExprKind::Tuple(items) => {
-                let formatted_items: Vec<String> = items
-                    .iter()
-                    .map(|item| self.format_expr(item, indent))
-                    .collect();
-                format!("({})", formatted_items.join(", "))
-            }
-            // Match expressions
-            ExprKind::Match { expr, arms } => {
-                let mut result = format!("match {} {{\n", self.format_expr(expr, indent));
-                for arm in arms {
-                    let pattern_str = format!("{:?}", arm.pattern); // FORMATTER-003: Implement proper pattern formatting
-                    result.push_str(&format!(
-                        "{}  {} => {},\n",
-                        " ".repeat(indent * self.config.indent_width),
-                        pattern_str,
-                        self.format_expr(&arm.body, indent + 1)
-                    ));
-                }
-                result.push_str(&format!(
-                    "{}}}",
-                    " ".repeat(indent * self.config.indent_width)
-                ));
-                result
-            }
-            // CompoundAssign (+=, -=, etc.)
-            ExprKind::CompoundAssign { target, op, value } => {
-                format!(
-                    "{} {}= {}",
-                    self.format_expr(target, indent),
-                    op,
-                    self.format_expr(value, indent)
-                )
-            }
-            // Sprint 2: ExprKind Coverage Expansion
-            ExprKind::Lambda { params, body } => {
-                let params_str = params
-                    .iter()
-                    .map(|p| self.format_pattern(&p.pattern))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("|{}| {}", params_str, self.format_expr(body, indent))
-            }
-            ExprKind::ObjectLiteral { fields } => {
-                if fields.is_empty() {
-                    "{}".to_string()
-                } else {
-                    let fields_str = fields
-                        .iter()
-                        .map(|f| match f {
-                            crate::frontend::ast::ObjectField::KeyValue { key, value } => {
-                                format!("{}: {}", key, self.format_expr(value, indent))
-                            }
-                            crate::frontend::ast::ObjectField::Spread { expr } => {
-                                format!("...{}", self.format_expr(expr, indent))
-                            }
-                        })
-                        .collect::<Vec<_>>()
-                        .join(", ");
-                    format!("{{ {fields_str} }}")
-                }
-            }
+            } => self.format_method_call_expr(receiver, method, args, indent),
+            ExprKind::OptionalMethodCall {
+                receiver,
+                method,
+                args,
+            } => self.format_optional_method_call(receiver, method, args, indent),
+            // Collections and literals
+            ExprKind::List(items) => self.format_collection("[", items, "]", indent),
+            ExprKind::Tuple(items) => self.format_collection("(", items, ")", indent),
+            ExprKind::ObjectLiteral { fields } => self.format_object_literal(fields, indent),
             ExprKind::StructLiteral { name, fields, base } => {
-                let fields_str = fields
-                    .iter()
-                    .map(|(key, val)| format!("{}: {}", key, self.format_expr(val, indent)))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-
-                if let Some(base_expr) = base {
-                    format!(
-                        "{} {{ {}, ..{} }}",
-                        name,
-                        fields_str,
-                        self.format_expr(base_expr, indent)
-                    )
-                } else {
-                    format!("{name} {{ {fields_str} }}")
-                }
+                self.format_struct_literal(name, fields, base.as_ref(), indent)
             }
-            ExprKind::Ternary {
-                condition,
-                true_expr,
-                false_expr,
-            } => {
-                format!(
-                    "{} ? {} : {}",
-                    self.format_expr(condition, indent),
-                    self.format_expr(true_expr, indent),
-                    self.format_expr(false_expr, indent)
-                )
-            }
-            ExprKind::Throw { expr } => {
-                format!("throw {}", self.format_expr(expr, indent))
-            }
-            ExprKind::TryCatch {
-                try_block,
-                catch_clauses,
-                finally_block,
-            } => {
-                let mut result = format!("try {}", self.format_expr(try_block, indent));
-
-                for catch_clause in catch_clauses {
-                    result.push_str(&format!(
-                        " catch ({}) {}",
-                        self.format_pattern(&catch_clause.pattern),
-                        self.format_expr(&catch_clause.body, indent)
-                    ));
-                }
-
-                if let Some(finally) = finally_block {
-                    result.push_str(&format!(" finally {}", self.format_expr(finally, indent)));
-                }
-
-                result
-            }
-            ExprKind::Await { expr } => {
-                format!("await {}", self.format_expr(expr, indent))
-            }
-            ExprKind::AsyncBlock { body } => {
-                format!("async {}", self.format_expr(body, indent))
-            }
-            ExprKind::TypeCast { expr, target_type } => {
-                format!("{} as {}", self.format_expr(expr, indent), target_type)
-            }
-
-            // Phase 2: Additional high-priority variants
             ExprKind::ArrayInit { value, size } => {
                 format!(
                     "[{}; {}]",
@@ -709,201 +387,42 @@ impl Formatter {
                     self.format_expr(size, indent)
                 )
             }
-            ExprKind::Ok { value } => {
-                format!("Ok({})", self.format_expr(value, indent))
-            }
-            ExprKind::Err { error } => {
-                format!("Err({})", self.format_expr(error, indent))
-            }
-            ExprKind::Some { value } => {
-                format!("Some({})", self.format_expr(value, indent))
-            }
-            ExprKind::None => "None".to_string(),
-            ExprKind::Try { expr } => {
-                format!("{}?", self.format_expr(expr, indent))
-            }
-            ExprKind::Spawn { actor } => {
-                format!("spawn {}", self.format_expr(actor, indent))
-            }
-            ExprKind::AsyncLambda { params, body } => {
-                let params_str = params.join(", ");
-                format!("async |{}| {}", params_str, self.format_expr(body, indent))
-            }
-            ExprKind::IfLet {
-                pattern,
-                expr,
-                then_branch,
-                else_branch,
-            } => {
-                let mut result = format!(
-                    "if let {} = {} {}",
-                    self.format_pattern(pattern),
-                    self.format_expr(expr, indent),
-                    self.format_expr(then_branch, indent)
-                );
-                if let Some(else_expr) = else_branch {
-                    result.push_str(&format!(" else {}", self.format_expr(else_expr, indent)));
-                }
-                result
-            }
-            ExprKind::OptionalFieldAccess { object, field } => {
-                format!("{}?.{}", self.format_expr(object, indent), field)
-            }
-            ExprKind::Slice { object, start, end } => {
-                let start_str = start
-                    .as_ref()
-                    .map_or(String::new(), |e| self.format_expr(e, indent));
-                let end_str = end
-                    .as_ref()
-                    .map_or(String::new(), |e| self.format_expr(e, indent));
+            ExprKind::VecRepeat { value, count } => {
                 format!(
-                    "{}[{}..{}]",
-                    self.format_expr(object, indent),
-                    start_str,
-                    end_str
+                    "vec![{}; {}]",
+                    self.format_expr(value, indent),
+                    self.format_expr(count, indent)
                 )
             }
-
-            // Phase 3: Declarations, modules, patterns
-            ExprKind::Struct {
-                name,
-                type_params,
-                fields,
-                is_pub,
-                ..
-            } => {
-                let pub_str = if *is_pub { "pub " } else { "" };
-                let type_params_str = if type_params.is_empty() {
-                    String::new()
-                } else {
-                    format!("<{}>", type_params.join(", "))
-                };
-                let fields_str = fields
-                    .iter()
-                    .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("{pub_str}struct {name}{type_params_str} {{ {fields_str} }}")
-            }
-            ExprKind::TupleStruct {
-                name,
-                type_params,
-                fields,
-                is_pub,
-                ..
-            } => {
-                let pub_str = if *is_pub { "pub " } else { "" };
-                let type_params_str = if type_params.is_empty() {
-                    String::new()
-                } else {
-                    format!("<{}>", type_params.join(", "))
-                };
-                let fields_str = fields
-                    .iter()
-                    .map(|ty| Self::format_type(&ty.kind))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("{pub_str}struct {name}{type_params_str}({fields_str})")
-            }
-            ExprKind::Enum {
-                name,
-                type_params,
-                variants,
-                is_pub,
-            } => {
-                let pub_str = if *is_pub { "pub " } else { "" };
-                let type_params_str = if type_params.is_empty() {
-                    String::new()
-                } else {
-                    format!("<{}>", type_params.join(", "))
-                };
-                let variants_str = variants
-                    .iter()
-                    .map(|v| self.format_enum_variant(v))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("{pub_str}enum {name}{type_params_str} {{ {variants_str} }}")
-            }
-            ExprKind::Trait {
-                name,
-                type_params,
-                methods,
-                is_pub,
-                ..
-            } => {
-                let pub_str = if *is_pub { "pub " } else { "" };
-                let type_params_str = if type_params.is_empty() {
-                    String::new()
-                } else {
-                    format!("<{}>", type_params.join(", "))
-                };
-                let methods_str = methods
-                    .iter()
-                    .map(|m| self.format_trait_method(m))
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                format!("{pub_str}trait {name}{type_params_str} {{ {methods_str} }}")
-            }
-            ExprKind::Impl {
-                type_params,
-                trait_name,
-                for_type,
-                methods,
-                ..
-            } => {
-                let type_params_str = if type_params.is_empty() {
-                    String::new()
-                } else {
-                    format!("<{}>", type_params.join(", "))
-                };
-                let trait_part = trait_name
-                    .as_ref()
-                    .map_or(String::new(), |t| format!("{t} for "));
-                let methods_str = methods
-                    .iter()
-                    .map(|m| self.format_impl_method(m))
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                format!("impl{type_params_str} {trait_part}{for_type} {{ {methods_str} }}")
-            }
-            ExprKind::Class {
-                name,
-                type_params,
-                fields,
-                ..
-            } => {
-                let type_params_str = if type_params.is_empty() {
-                    String::new()
-                } else {
-                    format!("<{}>", type_params.join(", "))
-                };
-                let fields_str = fields
-                    .iter()
-                    .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("class {name}{type_params_str} {{ {fields_str} }}")
-            }
-            ExprKind::Module { name, body } => {
-                format!("mod {} {}", name, self.format_expr(body, indent))
-            }
-            ExprKind::ModuleDeclaration { name } => {
-                // ISSUE-106: External module declaration (mod name;)
-                format!("mod {name};")
-            }
-            ExprKind::Import { module, items } => {
-                if let Some(item_list) = items {
-                    format!("import {}::{{{}}}", module, item_list.join(", "))
-                } else {
-                    format!("import {module}")
-                }
-            }
-            ExprKind::Export { expr, is_default } => {
-                if *is_default {
-                    format!("export default {}", self.format_expr(expr, indent))
-                } else {
-                    format!("export {}", self.format_expr(expr, indent))
-                }
+            ExprKind::Set(s) => format!("/* UNIMPLEMENTED: {:?} */", ExprKind::Set(s.clone())),
+            // Result/Option wrappers
+            ExprKind::Ok { value } => format!("Ok({})", self.format_expr(value, indent)),
+            ExprKind::Err { error } => format!("Err({})", self.format_expr(error, indent)),
+            ExprKind::Some { value } => format!("Some({})", self.format_expr(value, indent)),
+            ExprKind::None => "None".to_string(),
+            // Declarations
+            ExprKind::Struct { .. }
+            | ExprKind::TupleStruct { .. }
+            | ExprKind::Enum { .. }
+            | ExprKind::Trait { .. }
+            | ExprKind::Impl { .. }
+            | ExprKind::Class { .. }
+            | ExprKind::TypeAlias { .. }
+            | ExprKind::Extension { .. } => self.format_declarations(kind, indent),
+            // Module system
+            ExprKind::Module { .. }
+            | ExprKind::ModuleDeclaration { .. }
+            | ExprKind::Import { .. }
+            | ExprKind::ImportAll { .. }
+            | ExprKind::ImportDefault { .. }
+            | ExprKind::Export { .. }
+            | ExprKind::ExportList { .. }
+            | ExprKind::ExportDefault { .. }
+            | ExprKind::ReExport { .. }
+            | ExprKind::QualifiedName { .. } => self.format_module_system(kind, indent),
+            // String interpolation
+            ExprKind::StringInterpolation { parts } => {
+                self.format_string_interpolation(parts, indent)
             }
             ExprKind::LetPattern {
                 pattern,
@@ -915,6 +434,75 @@ impl Formatter {
                     "let {} = {} in {}",
                     self.format_pattern(pattern),
                     self.format_expr(value, indent),
+                    self.format_expr(body, indent)
+                )
+            }
+            // Comprehensions
+            ExprKind::ListComprehension { element, clauses } => {
+                self.format_list_comprehension(element, clauses, indent)
+            }
+            ExprKind::DictComprehension {
+                key,
+                value,
+                clauses,
+            } => self.format_dict_comprehension(key, value, clauses, indent),
+            ExprKind::SetComprehension { element, clauses } => {
+                self.format_set_comprehension(element, clauses, indent)
+            }
+            // Actor and effects
+            ExprKind::Actor { .. }
+            | ExprKind::Effect { .. }
+            | ExprKind::Handle { .. }
+            | ExprKind::Send { .. }
+            | ExprKind::Spawn { .. }
+            | ExprKind::ActorSend { .. }
+            | ExprKind::ActorQuery { .. }
+            | ExprKind::Ask { .. } => self.format_actor_effects(kind, indent),
+            // Async
+            ExprKind::Await { expr } => format!("await {}", self.format_expr(expr, indent)),
+            ExprKind::AsyncBlock { body } => format!("async {}", self.format_expr(body, indent)),
+            // Macros and commands
+            ExprKind::Macro { name, args } => self.format_macro_def(name, args, indent),
+            ExprKind::MacroInvocation { name, args } => {
+                self.format_macro_invocation(name, args, indent)
+            }
+            ExprKind::Command { program, args, .. } => self.format_command(program, args),
+            // Data
+            ExprKind::DataFrame { columns } => self.format_dataframe(columns, indent),
+            ExprKind::DataFrameOperation { source, operation } => {
+                format!("{}.{:?}", self.format_expr(source, indent), operation)
+            }
+            ExprKind::Lazy { expr } => format!("lazy {}", self.format_expr(expr, indent)),
+        }
+    }
+
+    fn format_control_flow(&self, kind: &ExprKind, indent: usize) -> String {
+        match kind {
+            ExprKind::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => self.format_if_expr(condition, then_branch, else_branch.as_ref(), indent),
+            ExprKind::IfLet {
+                pattern,
+                expr,
+                then_branch,
+                else_branch,
+            } => self.format_if_let_expr(pattern, expr, then_branch, else_branch.as_ref(), indent),
+            ExprKind::Match { expr, arms } => self.format_match_expr(expr, arms, indent),
+            ExprKind::For {
+                var,
+                pattern,
+                iter,
+                body,
+                ..
+            } => self.format_for_expr(var, pattern.as_ref(), iter, body, indent),
+            ExprKind::While {
+                condition, body, ..
+            } => {
+                format!(
+                    "while {} {}",
+                    self.format_expr(condition, indent),
                     self.format_expr(body, indent)
                 )
             }
@@ -931,92 +519,6 @@ impl Formatter {
                     self.format_expr(body, indent)
                 )
             }
-            ExprKind::StringInterpolation { parts } => {
-                let parts_str = parts
-                    .iter()
-                    .map(|part| match part {
-                        crate::frontend::ast::StringPart::Text(s) => s.clone(),
-                        crate::frontend::ast::StringPart::Expr(e) => {
-                            format!("{{{}}}", self.format_expr(e, indent))
-                        }
-                        crate::frontend::ast::StringPart::ExprWithFormat { expr, format_spec } => {
-                            format!("{{{}:{}}}", self.format_expr(expr, indent), format_spec)
-                        }
-                    })
-                    .collect::<String>();
-                format!("f\"{parts_str}\"")
-            }
-            ExprKind::Actor {
-                name,
-                state,
-                handlers,
-            } => {
-                let state_str = state
-                    .iter()
-                    .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let handlers_str = handlers
-                    .iter()
-                    .map(|h| format!("handle {}", h.message_type))
-                    .collect::<Vec<_>>()
-                    .join(" ");
-                format!("actor {name} {{ {state_str} {handlers_str} }}")
-            }
-            // SPEC-001-I: Effect declaration formatting
-            ExprKind::Effect { name, operations } => {
-                let ops_str = operations
-                    .iter()
-                    .map(|op| {
-                        let params_str = op
-                            .params
-                            .iter()
-                            .map(|p| format!("{:?}: {:?}", p.pattern, p.ty))
-                            .collect::<Vec<_>>()
-                            .join(", ");
-                        let ret_str = op
-                            .return_type
-                            .as_ref()
-                            .map(|t| format!(" -> {:?}", t.kind))
-                            .unwrap_or_default();
-                        format!("{}({}){}", op.name, params_str, ret_str)
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("effect {name} {{ {ops_str} }}")
-            }
-            // SPEC-001-J: Effect handler formatting
-            ExprKind::Handle { expr, handlers } => {
-                let expr_str = self.format_expr(expr, indent);
-                let handlers_str = handlers
-                    .iter()
-                    .map(|h| {
-                        let params_str = if h.params.is_empty() {
-                            String::new()
-                        } else {
-                            let joined = h
-                                .params
-                                .iter()
-                                .map(|p| format!("{p:?}"))
-                                .collect::<Vec<_>>()
-                                .join(", ");
-                            format!("({joined})")
-                        };
-                        let body_str = self.format_expr(&h.body, indent);
-                        format!("{}{} => {}", h.operation, params_str, body_str)
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("handle {expr_str} with {{ {handlers_str} }}")
-            }
-            ExprKind::Send { actor, message } => {
-                format!(
-                    "send({}, {})",
-                    self.format_expr(actor, indent),
-                    self.format_expr(message, indent)
-                )
-            }
-            // Phase 4: High Priority Variants
             ExprKind::Loop { body, .. } => {
                 format!(
                     "loop {{\n{}\n{}}}",
@@ -1024,28 +526,195 @@ impl Formatter {
                     " ".repeat(indent * self.config.indent_width)
                 )
             }
-            ExprKind::Pipeline { expr, stages } => {
-                // Start with initial expression, then chain stages
-                let mut result = self.format_expr(expr, indent);
-                for stage in stages {
-                    result.push_str(" |> ");
-                    result.push_str(&self.format_expr(&stage.op, indent));
-                }
-                result
+            ExprKind::Break { value, .. } => {
+                self.format_return_like("break", value.as_ref(), indent)
             }
-            // Note: Reference (&, &mut) is handled via Unary operator, not separate ExprKind
-            ExprKind::PreIncrement { target } => {
-                format!("++{}", self.format_expr(target, indent))
+            ExprKind::Continue { .. } => "continue".to_string(),
+            ExprKind::Return { value } => self.format_return(value.as_ref(), indent),
+            ExprKind::TryCatch {
+                try_block,
+                catch_clauses,
+                finally_block,
+            } => self.format_try_catch(try_block, catch_clauses, finally_block.as_ref(), indent),
+            ExprKind::Throw { expr } => format!("throw {}", self.format_expr(expr, indent)),
+            _ => unreachable!(),
+        }
+    }
+
+    fn format_operators(&self, kind: &ExprKind, indent: usize) -> String {
+        match kind {
+            ExprKind::Binary { left, op, right } => {
+                format!(
+                    "{} {} {}",
+                    self.format_expr(left, indent),
+                    op,
+                    self.format_expr(right, indent)
+                )
             }
-            ExprKind::PostIncrement { target } => {
-                format!("{}++", self.format_expr(target, indent))
+            ExprKind::Unary { op, operand } => {
+                format!("{}{}", op, self.format_expr(operand, indent))
             }
-            ExprKind::PreDecrement { target } => {
-                format!("--{}", self.format_expr(target, indent))
+            ExprKind::CompoundAssign { target, op, value } => {
+                format!(
+                    "{} {}= {}",
+                    self.format_expr(target, indent),
+                    op,
+                    self.format_expr(value, indent)
+                )
             }
-            ExprKind::PostDecrement { target } => {
-                format!("{}--", self.format_expr(target, indent))
+            ExprKind::Ternary {
+                condition,
+                true_expr,
+                false_expr,
+            } => {
+                format!(
+                    "{} ? {} : {}",
+                    self.format_expr(condition, indent),
+                    self.format_expr(true_expr, indent),
+                    self.format_expr(false_expr, indent)
+                )
             }
+            ExprKind::Range {
+                start,
+                end,
+                inclusive,
+            } => {
+                let op = if *inclusive { "..=" } else { ".." };
+                format!(
+                    "{}{}{}",
+                    self.format_expr(start, indent),
+                    op,
+                    self.format_expr(end, indent)
+                )
+            }
+            ExprKind::Assign { target, value } => self.format_assign(target, value, indent),
+            ExprKind::IndexAccess { object, index } => {
+                self.format_index_access(object, index, indent)
+            }
+            ExprKind::FieldAccess { object, field } => {
+                format!("{}.{}", self.format_expr(object, indent), field)
+            }
+            ExprKind::OptionalFieldAccess { object, field } => {
+                format!("{}?.{}", self.format_expr(object, indent), field)
+            }
+            ExprKind::Slice { object, start, end } => {
+                self.format_slice(object, start.as_ref(), end.as_ref(), indent)
+            }
+            ExprKind::TypeCast { expr, target_type } => {
+                format!("{} as {}", self.format_expr(expr, indent), target_type)
+            }
+            ExprKind::Try { expr } => format!("{}?", self.format_expr(expr, indent)),
+            ExprKind::Spread { expr } => format!("...{}", self.format_expr(expr, indent)),
+            ExprKind::PreIncrement { target } => format!("++{}", self.format_expr(target, indent)),
+            ExprKind::PostIncrement { target } => format!("{}++", self.format_expr(target, indent)),
+            ExprKind::PreDecrement { target } => format!("--{}", self.format_expr(target, indent)),
+            ExprKind::PostDecrement { target } => format!("{}--", self.format_expr(target, indent)),
+            ExprKind::Pipeline { expr, stages } => self.format_pipeline(expr, stages, indent),
+            _ => unreachable!(),
+        }
+    }
+
+    fn format_declarations(&self, kind: &ExprKind, indent: usize) -> String {
+        match kind {
+            ExprKind::Struct {
+                name,
+                type_params,
+                fields,
+                is_pub,
+                ..
+            } => self.format_struct_decl(name, type_params, fields, *is_pub),
+            ExprKind::TupleStruct {
+                name,
+                type_params,
+                fields,
+                is_pub,
+                ..
+            } => self.format_tuple_struct_decl(name, type_params, fields, *is_pub),
+            ExprKind::Enum {
+                name,
+                type_params,
+                variants,
+                is_pub,
+            } => self.format_enum_decl(name, type_params, variants, *is_pub),
+            ExprKind::Trait {
+                name,
+                type_params,
+                methods,
+                is_pub,
+                ..
+            } => self.format_trait_decl(name, type_params, methods, *is_pub),
+            ExprKind::Impl {
+                type_params,
+                trait_name,
+                for_type,
+                methods,
+                ..
+            } => self.format_impl_decl(type_params, trait_name.as_ref(), for_type, methods),
+            ExprKind::Class {
+                name,
+                type_params,
+                fields,
+                ..
+            } => self.format_class_decl(name, type_params, fields),
+            ExprKind::TypeAlias { name, target_type } => {
+                format!("type {} = {}", name, Self::format_type(&target_type.kind))
+            }
+            ExprKind::Extension {
+                target_type,
+                methods,
+            } => self.format_extension(target_type, methods, indent),
+            _ => unreachable!(),
+        }
+    }
+
+    fn format_module_system(&self, kind: &ExprKind, indent: usize) -> String {
+        match kind {
+            ExprKind::Module { name, body } => {
+                format!("mod {} {}", name, self.format_expr(body, indent))
+            }
+            ExprKind::ModuleDeclaration { name } => format!("mod {name};"),
+            ExprKind::Import { module, items } => self.format_import(module, items.as_ref()),
+            ExprKind::ImportAll { module, .. } => format!("import {module}::*"),
+            ExprKind::ImportDefault { module, name } => {
+                format!("import default {name} from {module}")
+            }
+            ExprKind::Export { expr, is_default } => {
+                let prefix = if *is_default {
+                    "export default "
+                } else {
+                    "export "
+                };
+                format!("{}{}", prefix, self.format_expr(expr, indent))
+            }
+            ExprKind::ExportList { names } => format!("export {{ {} }}", names.join(", ")),
+            ExprKind::ExportDefault { expr } => {
+                format!("export default {}", self.format_expr(expr, indent))
+            }
+            ExprKind::ReExport { items, module } => {
+                format!("export {{ {} }} from {}", items.join(", "), module)
+            }
+            ExprKind::QualifiedName { module, name } => format!("{module}::{name}"),
+            _ => unreachable!(),
+        }
+    }
+
+    fn format_actor_effects(&self, kind: &ExprKind, indent: usize) -> String {
+        match kind {
+            ExprKind::Actor {
+                name,
+                state,
+                handlers,
+            } => self.format_actor(name, state, handlers),
+            ExprKind::Effect { name, operations } => self.format_effect(name, operations),
+            ExprKind::Handle { expr, handlers } => self.format_handle(expr, handlers, indent),
+            ExprKind::Send { actor, message } => {
+                format!(
+                    "send({}, {})",
+                    self.format_expr(actor, indent),
+                    self.format_expr(message, indent)
+                )
+            }
+            ExprKind::Spawn { actor } => format!("spawn {}", self.format_expr(actor, indent)),
             ExprKind::ActorSend { actor, message } => {
                 format!(
                     "{} <- {}",
@@ -1061,226 +730,782 @@ impl Formatter {
                 )
             }
             ExprKind::Ask { actor, message, .. } => {
-                // timeout is optional, ignore for basic formatting
                 format!(
                     "ask {} {}",
                     self.format_expr(actor, indent),
                     self.format_expr(message, indent)
                 )
             }
-            ExprKind::ListComprehension { element, clauses } => {
-                let clauses_str = clauses
-                    .iter()
-                    .map(|clause| {
-                        let cond = clause
-                            .condition
-                            .as_ref()
-                            .map(|c| format!(" if {}", self.format_expr(c, indent)))
-                            .unwrap_or_default();
-                        format!(
-                            "{} in {}{}",
-                            clause.variable,
-                            self.format_expr(&clause.iterable, indent),
-                            cond
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!(
-                    "[{} for {}]",
-                    self.format_expr(element, indent),
-                    clauses_str
-                )
-            }
-            ExprKind::DictComprehension {
-                key,
-                value,
-                clauses,
-            } => {
-                let clauses_str = clauses
-                    .iter()
-                    .map(|clause| {
-                        let cond = clause
-                            .condition
-                            .as_ref()
-                            .map(|c| format!(" if {}", self.format_expr(c, indent)))
-                            .unwrap_or_default();
-                        format!(
-                            "{} in {}{}",
-                            clause.variable,
-                            self.format_expr(&clause.iterable, indent),
-                            cond
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!(
-                    "{{{}: {} for {}}}",
-                    self.format_expr(key, indent),
-                    self.format_expr(value, indent),
-                    clauses_str
-                )
-            }
-            ExprKind::SetComprehension { element, clauses } => {
-                let clauses_str = clauses
-                    .iter()
-                    .map(|clause| {
-                        let cond = clause
-                            .condition
-                            .as_ref()
-                            .map(|c| format!(" if {}", self.format_expr(c, indent)))
-                            .unwrap_or_default();
-                        format!(
-                            "{} in {}{}",
-                            clause.variable,
-                            self.format_expr(&clause.iterable, indent),
-                            cond
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!(
-                    "{{{} for {}}}",
-                    self.format_expr(element, indent),
-                    clauses_str
-                )
-            }
-            ExprKind::ImportAll { module, .. } => {
-                format!("import {module}::*")
-            }
-            ExprKind::ImportDefault { module, name } => {
-                format!("import default {name} from {module}")
-            }
-            ExprKind::ExportList { names } => {
-                format!("export {{ {} }}", names.join(", "))
-            }
-            ExprKind::ExportDefault { expr } => {
-                format!("export default {}", self.format_expr(expr, indent))
-            }
-            ExprKind::Command { program, args, .. } => {
-                // Format as backtick command - reconstruct the shell command
-                let full_cmd = if args.is_empty() {
-                    program.clone()
-                } else {
-                    format!("{} {}", program, args.join(" "))
-                };
-                format!("`{full_cmd}`")
-            }
-            // Phase 5: Final 10 variants (100% coverage)
-            ExprKind::QualifiedName { module, name } => {
-                format!("{module}::{name}")
-            }
-            ExprKind::TypeAlias { name, target_type } => {
-                format!("type {} = {}", name, Self::format_type(&target_type.kind))
-            }
-            ExprKind::Spread { expr } => {
-                format!("...{}", self.format_expr(expr, indent))
-            }
-            ExprKind::OptionalMethodCall {
-                receiver,
-                method,
-                args,
-            } => {
-                let args_str = args
-                    .iter()
-                    .map(|arg| self.format_expr(arg, indent))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!(
-                    "{}?.{}({})",
-                    self.format_expr(receiver, indent),
-                    method,
-                    args_str
-                )
-            }
-            ExprKind::Extension {
-                target_type,
-                methods,
-            } => {
-                let indent_str = " ".repeat(indent * self.config.indent_width);
-                let methods_str = methods
-                    .iter()
-                    .map(|method| {
-                        let params_str = method
-                            .params
-                            .iter()
-                            .map(|p| self.format_pattern(&p.pattern))
-                            .collect::<Vec<_>>()
-                            .join(", ");
-                        format!(
-                            "{}    fun {}({}) {{ }}",
-                            indent_str, method.name, params_str
-                        )
-                    })
-                    .collect::<Vec<_>>()
-                    .join("\n");
-                format!("extension {target_type} {{\n{methods_str}\n{indent_str}}}")
-            }
-            ExprKind::ReExport { items, module } => {
-                format!("export {{ {} }} from {}", items.join(", "), module)
-            }
-            ExprKind::Macro { name, args } => {
-                let args_str = args
-                    .iter()
-                    .map(|arg| self.format_expr(arg, indent))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("macro {name}({args_str}) {{ }}")
-            }
-            ExprKind::MacroInvocation { name, args } => {
-                let args_str = args
-                    .iter()
-                    .map(|arg| self.format_expr(arg, indent))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("{name}!({args_str})")
-            }
-            // Issue #155: Format vec repeat pattern with semicolon
-            ExprKind::VecRepeat { value, count } => {
-                let value_str = self.format_expr(value, indent);
-                let count_str = self.format_expr(count, indent);
-                format!("vec![{value_str}; {count_str}]")
-            }
-            ExprKind::DataFrame { columns } => {
-                let columns_str = columns
-                    .iter()
-                    .map(|col| {
-                        let values_str = col
-                            .values
-                            .iter()
-                            .map(|v| self.format_expr(v, indent))
-                            .collect::<Vec<_>>()
-                            .join(", ");
-                        format!("\"{}\" => [{}]", col.name, values_str)
-                    })
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                format!("df![{columns_str}]")
-            }
-            ExprKind::DataFrameOperation { source, operation } => {
-                // Format DataFrame operations like df.select(), df.filter(), etc.
-                format!("{}.{:?}", self.format_expr(source, indent), operation)
-            }
-            ExprKind::Lazy { expr } => {
-                format!("lazy {}", self.format_expr(expr, indent))
-            }
-            ExprKind::Set(_) => {
-                // CRITICAL: Changed from silent Debug output to explicit error
-                // This prevents silent data corruption
-                format!("/* UNIMPLEMENTED: {:?} */", expr.kind)
-            }
-        };
-
-        // Append the formatted expression
-        result.push_str(&expr_str);
-
-        // Append trailing comment if present
-        if let Some(trailing) = &expr.trailing_comment {
-            result.push(' ');
-            result.push_str(&self.format_comment(trailing, 0)); // No indent for trailing
+            _ => unreachable!(),
         }
+    }
 
+    fn format_literal_expr(&self, lit: &crate::frontend::ast::Literal) -> String {
+        match lit {
+            crate::frontend::ast::Literal::Integer(n, _) => n.to_string(),
+            crate::frontend::ast::Literal::Float(f) => f.to_string(),
+            crate::frontend::ast::Literal::String(s) => {
+                format!("\"{}\"", s.replace('"', "\\\""))
+            }
+            crate::frontend::ast::Literal::Bool(b) => b.to_string(),
+            crate::frontend::ast::Literal::Char(c) => format!("'{c}'"),
+            crate::frontend::ast::Literal::Byte(b) => format!("b'{}'", *b as char),
+            crate::frontend::ast::Literal::Unit => "()".to_string(),
+            crate::frontend::ast::Literal::Null => "null".to_string(),
+            crate::frontend::ast::Literal::Atom(s) => format!(":{s}"),
+        }
+    }
+
+    fn format_let_expr(&self, name: &str, value: &Expr, body: &Expr, indent: usize) -> String {
+        // FIX: QUALITY-FORMATTER-002 (GitHub Issue #64)
+        let is_sequential_statement = matches!(
+            body.kind,
+            ExprKind::Literal(crate::frontend::ast::Literal::Unit)
+                | ExprKind::Block(_)
+                | ExprKind::Call { .. }
+                | ExprKind::MethodCall { .. }
+                | ExprKind::Let { .. }
+        );
+
+        if is_sequential_statement {
+            let mut result = format!("let {} = {}", name, self.format_expr(value, indent));
+            if let ExprKind::Block(body_exprs) = &body.kind {
+                let indent_str = if self.config.use_tabs {
+                    "\t".repeat(indent)
+                } else {
+                    " ".repeat(indent * self.config.indent_width)
+                };
+                for expr in body_exprs {
+                    result.push('\n');
+                    result.push_str(&indent_str);
+                    result.push_str(&self.format_expr(expr, indent));
+                }
+            } else if !matches!(
+                body.kind,
+                ExprKind::Literal(crate::frontend::ast::Literal::Unit)
+            ) {
+                // FIX: CRITICAL-FMT-DATA-LOSS (GitHub Issue #64)
+                let indent_str = if self.config.use_tabs {
+                    "\t".repeat(indent)
+                } else {
+                    " ".repeat(indent * self.config.indent_width)
+                };
+                result.push('\n');
+                result.push_str(&indent_str);
+                result.push_str(&self.format_expr(body, indent));
+            }
+            result
+        } else {
+            format!(
+                "let {} = {} in {}",
+                name,
+                self.format_expr(value, indent),
+                self.format_expr(body, indent)
+            )
+        }
+    }
+
+    fn format_block_expr(&self, exprs: &[Expr], indent_str: &str, indent: usize) -> String {
+        let mut result = String::from("{\n");
+        let inner_indent_str = if self.config.use_tabs {
+            "\t".repeat(indent + 1)
+        } else {
+            " ".repeat((indent + 1) * self.config.indent_width)
+        };
+        for expr in exprs {
+            result.push_str(&format!(
+                "{}{}\n",
+                inner_indent_str,
+                self.format_expr(expr, indent + 1)
+            ));
+        }
+        result.push_str(&format!("{indent_str}}}"));
         result
+    }
+
+    fn format_function_expr(
+        &self,
+        name: &str,
+        params: &[crate::frontend::ast::Param],
+        return_type: Option<&crate::frontend::ast::Type>,
+        body: &Expr,
+        indent: usize,
+    ) -> String {
+        let mut result = format!("fun {name}");
+        result.push('(');
+        for (i, param) in params.iter().enumerate() {
+            if i > 0 {
+                result.push_str(", ");
+            }
+            if let crate::frontend::ast::Pattern::Identifier(param_name) = &param.pattern {
+                result.push_str(param_name);
+                if let crate::frontend::ast::TypeKind::Named(type_name) = &param.ty.kind {
+                    if type_name != "Any" {
+                        result.push_str(": ");
+                        result.push_str(type_name);
+                    }
+                } else {
+                    result.push_str(": ");
+                    result.push_str(&Self::format_type(&param.ty.kind));
+                }
+            }
+        }
+        result.push(')');
+        if let Some(ret_ty) = return_type {
+            result.push_str(" -> ");
+            result.push_str(&Self::format_type(&ret_ty.kind));
+        }
+        result.push(' ');
+        result.push_str(&self.format_expr(body, indent));
+        result
+    }
+
+    fn format_if_expr(
+        &self,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Box<Expr>>,
+        indent: usize,
+    ) -> String {
+        let mut result = "if ".to_string();
+        result.push_str(&self.format_expr(condition, indent));
+        result.push(' ');
+        result.push_str(&self.format_expr(then_branch, indent));
+        if let Some(else_expr) = else_branch {
+            result.push_str(" else ");
+            result.push_str(&self.format_expr(else_expr, indent));
+        }
+        result
+    }
+
+    fn format_call_expr(&self, func: &Expr, args: &[Expr], indent: usize) -> String {
+        let mut result = self.format_expr(func, indent);
+        result.push('(');
+        for (i, arg) in args.iter().enumerate() {
+            if i > 0 {
+                result.push_str(", ");
+            }
+            result.push_str(&self.format_expr(arg, indent));
+        }
+        result.push(')');
+        result
+    }
+
+    fn format_method_call_expr(
+        &self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+        indent: usize,
+    ) -> String {
+        let mut result = self.format_expr(receiver, indent);
+        result.push('.');
+        result.push_str(method);
+        result.push('(');
+        for (i, arg) in args.iter().enumerate() {
+            if i > 0 {
+                result.push_str(", ");
+            }
+            result.push_str(&self.format_expr(arg, indent));
+        }
+        result.push(')');
+        result
+    }
+
+    fn format_for_expr(
+        &self,
+        var: &str,
+        pattern: Option<&crate::frontend::ast::Pattern>,
+        iter: &Expr,
+        body: &Expr,
+        indent: usize,
+    ) -> String {
+        let mut result = "for ".to_string();
+        if let Some(pat) = pattern {
+            if let crate::frontend::ast::Pattern::Identifier(name) = pat {
+                result.push_str(name);
+            } else {
+                result.push_str(&format!("{pat:?}"));
+            }
+        } else {
+            result.push_str(var);
+        }
+        result.push_str(" in ");
+        result.push_str(&self.format_expr(iter, indent));
+        result.push(' ');
+        result.push_str(&self.format_expr(body, indent));
+        result
+    }
+
+    fn format_index_access(&self, object: &Expr, index: &Expr, indent: usize) -> String {
+        format!(
+            "{}[{}]",
+            self.format_expr(object, indent),
+            self.format_expr(index, indent)
+        )
+    }
+
+    fn format_assign(&self, target: &Expr, value: &Expr, indent: usize) -> String {
+        format!(
+            "{} = {}",
+            self.format_expr(target, indent),
+            self.format_expr(value, indent)
+        )
+    }
+
+    fn format_return(&self, value: Option<&Box<Expr>>, indent: usize) -> String {
+        if let Some(val) = value {
+            format!("return {}", self.format_expr(val, indent))
+        } else {
+            "return".to_string()
+        }
+    }
+
+    fn format_return_like(
+        &self,
+        keyword: &str,
+        value: Option<&Box<Expr>>,
+        indent: usize,
+    ) -> String {
+        if let Some(val) = value {
+            format!("{} {}", keyword, self.format_expr(val, indent))
+        } else {
+            keyword.to_string()
+        }
+    }
+
+    fn format_collection(&self, open: &str, items: &[Expr], close: &str, indent: usize) -> String {
+        let formatted: Vec<String> = items
+            .iter()
+            .map(|item| self.format_expr(item, indent))
+            .collect();
+        format!("{}{}{}", open, formatted.join(", "), close)
+    }
+
+    fn format_match_expr(
+        &self,
+        scrutinee: &Expr,
+        arms: &[crate::frontend::ast::MatchArm],
+        indent: usize,
+    ) -> String {
+        let mut result = format!("match {} {{\n", self.format_expr(scrutinee, indent));
+        for arm in arms {
+            let pattern_str = format!("{:?}", arm.pattern);
+            result.push_str(&format!(
+                "{}  {} => {},\n",
+                " ".repeat(indent * self.config.indent_width),
+                pattern_str,
+                self.format_expr(&arm.body, indent + 1)
+            ));
+        }
+        result.push_str(&format!(
+            "{}}}",
+            " ".repeat(indent * self.config.indent_width)
+        ));
+        result
+    }
+
+    fn format_lambda_expr(
+        &self,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+        indent: usize,
+    ) -> String {
+        let params_str = params
+            .iter()
+            .map(|p| self.format_pattern(&p.pattern))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("|{}| {}", params_str, self.format_expr(body, indent))
+    }
+
+    fn format_object_literal(
+        &self,
+        fields: &[crate::frontend::ast::ObjectField],
+        indent: usize,
+    ) -> String {
+        if fields.is_empty() {
+            "{}".to_string()
+        } else {
+            let fields_str = fields
+                .iter()
+                .map(|f| match f {
+                    crate::frontend::ast::ObjectField::KeyValue { key, value } => {
+                        format!("{}: {}", key, self.format_expr(value, indent))
+                    }
+                    crate::frontend::ast::ObjectField::Spread { expr } => {
+                        format!("...{}", self.format_expr(expr, indent))
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("{{ {fields_str} }}")
+        }
+    }
+
+    fn format_struct_literal(
+        &self,
+        name: &str,
+        fields: &[(String, Expr)],
+        base: Option<&Box<Expr>>,
+        indent: usize,
+    ) -> String {
+        let fields_str = fields
+            .iter()
+            .map(|(key, val)| format!("{}: {}", key, self.format_expr(val, indent)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        if let Some(base_expr) = base {
+            format!(
+                "{} {{ {}, ..{} }}",
+                name,
+                fields_str,
+                self.format_expr(base_expr, indent)
+            )
+        } else {
+            format!("{name} {{ {fields_str} }}")
+        }
+    }
+
+    fn format_try_catch(
+        &self,
+        try_block: &Expr,
+        catch_clauses: &[crate::frontend::ast::CatchClause],
+        finally_block: Option<&Box<Expr>>,
+        indent: usize,
+    ) -> String {
+        let mut result = format!("try {}", self.format_expr(try_block, indent));
+        for catch_clause in catch_clauses {
+            result.push_str(&format!(
+                " catch ({}) {}",
+                self.format_pattern(&catch_clause.pattern),
+                self.format_expr(&catch_clause.body, indent)
+            ));
+        }
+        if let Some(finally) = finally_block {
+            result.push_str(&format!(" finally {}", self.format_expr(finally, indent)));
+        }
+        result
+    }
+
+    fn format_if_let_expr(
+        &self,
+        pattern: &crate::frontend::ast::Pattern,
+        expr: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Box<Expr>>,
+        indent: usize,
+    ) -> String {
+        let mut result = format!(
+            "if let {} = {} {}",
+            self.format_pattern(pattern),
+            self.format_expr(expr, indent),
+            self.format_expr(then_branch, indent)
+        );
+        if let Some(else_expr) = else_branch {
+            result.push_str(&format!(" else {}", self.format_expr(else_expr, indent)));
+        }
+        result
+    }
+
+    fn format_slice(
+        &self,
+        object: &Expr,
+        start: Option<&Box<Expr>>,
+        end: Option<&Box<Expr>>,
+        indent: usize,
+    ) -> String {
+        let start_str = start.map_or(String::new(), |e| self.format_expr(e, indent));
+        let end_str = end.map_or(String::new(), |e| self.format_expr(e, indent));
+        format!(
+            "{}[{}..{}]",
+            self.format_expr(object, indent),
+            start_str,
+            end_str
+        )
+    }
+
+    fn format_type_params_str(type_params: &[String]) -> String {
+        if type_params.is_empty() {
+            String::new()
+        } else {
+            format!("<{}>", type_params.join(", "))
+        }
+    }
+
+    fn format_struct_decl(
+        &self,
+        name: &str,
+        type_params: &[String],
+        fields: &[crate::frontend::ast::StructField],
+        is_pub: bool,
+    ) -> String {
+        let pub_str = if is_pub { "pub " } else { "" };
+        let type_params_str = Self::format_type_params_str(type_params);
+        let fields_str = fields
+            .iter()
+            .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("{pub_str}struct {name}{type_params_str} {{ {fields_str} }}")
+    }
+
+    fn format_tuple_struct_decl(
+        &self,
+        name: &str,
+        type_params: &[String],
+        fields: &[crate::frontend::ast::Type],
+        is_pub: bool,
+    ) -> String {
+        let pub_str = if is_pub { "pub " } else { "" };
+        let type_params_str = Self::format_type_params_str(type_params);
+        let fields_str = fields
+            .iter()
+            .map(|ty| Self::format_type(&ty.kind))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("{pub_str}struct {name}{type_params_str}({fields_str})")
+    }
+
+    fn format_enum_decl(
+        &self,
+        name: &str,
+        type_params: &[String],
+        variants: &[crate::frontend::ast::EnumVariant],
+        is_pub: bool,
+    ) -> String {
+        let pub_str = if is_pub { "pub " } else { "" };
+        let type_params_str = Self::format_type_params_str(type_params);
+        let variants_str = variants
+            .iter()
+            .map(|v| self.format_enum_variant(v))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("{pub_str}enum {name}{type_params_str} {{ {variants_str} }}")
+    }
+
+    fn format_trait_decl(
+        &self,
+        name: &str,
+        type_params: &[String],
+        methods: &[crate::frontend::ast::TraitMethod],
+        is_pub: bool,
+    ) -> String {
+        let pub_str = if is_pub { "pub " } else { "" };
+        let type_params_str = Self::format_type_params_str(type_params);
+        let methods_str = methods
+            .iter()
+            .map(|m| self.format_trait_method(m))
+            .collect::<Vec<_>>()
+            .join(" ");
+        format!("{pub_str}trait {name}{type_params_str} {{ {methods_str} }}")
+    }
+
+    fn format_impl_decl(
+        &self,
+        type_params: &[String],
+        trait_name: Option<&String>,
+        for_type: &str,
+        methods: &[crate::frontend::ast::ImplMethod],
+    ) -> String {
+        let type_params_str = Self::format_type_params_str(type_params);
+        let trait_part = trait_name.map_or(String::new(), |t| format!("{t} for "));
+        let methods_str = methods
+            .iter()
+            .map(|m| self.format_impl_method(m))
+            .collect::<Vec<_>>()
+            .join(" ");
+        format!("impl{type_params_str} {trait_part}{for_type} {{ {methods_str} }}")
+    }
+
+    fn format_class_decl(
+        &self,
+        name: &str,
+        type_params: &[String],
+        fields: &[crate::frontend::ast::StructField],
+    ) -> String {
+        let type_params_str = Self::format_type_params_str(type_params);
+        let fields_str = fields
+            .iter()
+            .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("class {name}{type_params_str} {{ {fields_str} }}")
+    }
+
+    fn format_import(&self, module: &str, items: Option<&Vec<String>>) -> String {
+        if let Some(item_list) = items {
+            format!("import {}::{{{}}}", module, item_list.join(", "))
+        } else {
+            format!("import {module}")
+        }
+    }
+
+    fn format_string_interpolation(
+        &self,
+        parts: &[crate::frontend::ast::StringPart],
+        indent: usize,
+    ) -> String {
+        let parts_str = parts
+            .iter()
+            .map(|part| match part {
+                crate::frontend::ast::StringPart::Text(s) => s.clone(),
+                crate::frontend::ast::StringPart::Expr(e) => {
+                    format!("{{{}}}", self.format_expr(e, indent))
+                }
+                crate::frontend::ast::StringPart::ExprWithFormat { expr, format_spec } => {
+                    format!("{{{}:{}}}", self.format_expr(expr, indent), format_spec)
+                }
+            })
+            .collect::<String>();
+        format!("f\"{parts_str}\"")
+    }
+
+    fn format_actor(
+        &self,
+        name: &str,
+        state: &[crate::frontend::ast::StructField],
+        handlers: &[crate::frontend::ast::ActorHandler],
+    ) -> String {
+        let state_str = state
+            .iter()
+            .map(|f| format!("{}: {}", f.name, Self::format_type(&f.ty.kind)))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let handlers_str = handlers
+            .iter()
+            .map(|h| format!("handle {}", h.message_type))
+            .collect::<Vec<_>>()
+            .join(" ");
+        format!("actor {name} {{ {state_str} {handlers_str} }}")
+    }
+
+    fn format_effect(
+        &self,
+        name: &str,
+        operations: &[crate::frontend::ast::EffectOperation],
+    ) -> String {
+        let ops_str = operations
+            .iter()
+            .map(|op| {
+                let params_str = op
+                    .params
+                    .iter()
+                    .map(|p| format!("{:?}: {:?}", p.pattern, p.ty))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let ret_str = op
+                    .return_type
+                    .as_ref()
+                    .map(|t| format!(" -> {:?}", t.kind))
+                    .unwrap_or_default();
+                format!("{}({}){}", op.name, params_str, ret_str)
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("effect {name} {{ {ops_str} }}")
+    }
+
+    fn format_handle(
+        &self,
+        expr: &Expr,
+        handlers: &[crate::frontend::ast::EffectHandler],
+        indent: usize,
+    ) -> String {
+        let expr_str = self.format_expr(expr, indent);
+        let handlers_str = handlers
+            .iter()
+            .map(|h| {
+                let params_str = if h.params.is_empty() {
+                    String::new()
+                } else {
+                    let joined = h
+                        .params
+                        .iter()
+                        .map(|p| format!("{p:?}"))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    format!("({joined})")
+                };
+                let body_str = self.format_expr(&h.body, indent);
+                format!("{}{} => {}", h.operation, params_str, body_str)
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("handle {expr_str} with {{ {handlers_str} }}")
+    }
+
+    fn format_pipeline(
+        &self,
+        expr: &Expr,
+        stages: &[crate::frontend::ast::PipelineStage],
+        indent: usize,
+    ) -> String {
+        let mut result = self.format_expr(expr, indent);
+        for stage in stages {
+            result.push_str(" |> ");
+            result.push_str(&self.format_expr(&stage.op, indent));
+        }
+        result
+    }
+
+    fn format_comprehension_clauses(
+        &self,
+        clauses: &[crate::frontend::ast::ComprehensionClause],
+        indent: usize,
+    ) -> String {
+        clauses
+            .iter()
+            .map(|clause| {
+                let cond = clause
+                    .condition
+                    .as_ref()
+                    .map(|c| format!(" if {}", self.format_expr(c, indent)))
+                    .unwrap_or_default();
+                format!(
+                    "{} in {}{}",
+                    clause.variable,
+                    self.format_expr(&clause.iterable, indent),
+                    cond
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
+    fn format_list_comprehension(
+        &self,
+        element: &Expr,
+        clauses: &[crate::frontend::ast::ComprehensionClause],
+        indent: usize,
+    ) -> String {
+        format!(
+            "[{} for {}]",
+            self.format_expr(element, indent),
+            self.format_comprehension_clauses(clauses, indent)
+        )
+    }
+
+    fn format_dict_comprehension(
+        &self,
+        key: &Expr,
+        value: &Expr,
+        clauses: &[crate::frontend::ast::ComprehensionClause],
+        indent: usize,
+    ) -> String {
+        format!(
+            "{{{}: {} for {}}}",
+            self.format_expr(key, indent),
+            self.format_expr(value, indent),
+            self.format_comprehension_clauses(clauses, indent)
+        )
+    }
+
+    fn format_set_comprehension(
+        &self,
+        element: &Expr,
+        clauses: &[crate::frontend::ast::ComprehensionClause],
+        indent: usize,
+    ) -> String {
+        format!(
+            "{{{} for {}}}",
+            self.format_expr(element, indent),
+            self.format_comprehension_clauses(clauses, indent)
+        )
+    }
+
+    fn format_command(&self, program: &str, args: &[String]) -> String {
+        let full_cmd = if args.is_empty() {
+            program.to_string()
+        } else {
+            format!("{} {}", program, args.join(" "))
+        };
+        format!("`{full_cmd}`")
+    }
+
+    fn format_optional_method_call(
+        &self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+        indent: usize,
+    ) -> String {
+        let args_str = args
+            .iter()
+            .map(|arg| self.format_expr(arg, indent))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!(
+            "{}?.{}({})",
+            self.format_expr(receiver, indent),
+            method,
+            args_str
+        )
+    }
+
+    fn format_extension(
+        &self,
+        target_type: &str,
+        methods: &[crate::frontend::ast::ImplMethod],
+        indent: usize,
+    ) -> String {
+        let indent_str = " ".repeat(indent * self.config.indent_width);
+        let methods_str = methods
+            .iter()
+            .map(|method| {
+                let params_str = method
+                    .params
+                    .iter()
+                    .map(|p| self.format_pattern(&p.pattern))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!(
+                    "{}    fun {}({}) {{ }}",
+                    indent_str, method.name, params_str
+                )
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        format!("extension {target_type} {{\n{methods_str}\n{indent_str}}}")
+    }
+
+    fn format_macro_def(&self, name: &str, args: &[Expr], indent: usize) -> String {
+        let args_str = args
+            .iter()
+            .map(|arg| self.format_expr(arg, indent))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("macro {name}({args_str}) {{ }}")
+    }
+
+    fn format_macro_invocation(&self, name: &str, args: &[Expr], indent: usize) -> String {
+        let args_str = args
+            .iter()
+            .map(|arg| self.format_expr(arg, indent))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("{name}!({args_str})")
+    }
+
+    fn format_dataframe(
+        &self,
+        columns: &[crate::frontend::ast::DataFrameColumn],
+        indent: usize,
+    ) -> String {
+        let columns_str = columns
+            .iter()
+            .map(|col| {
+                let values_str = col
+                    .values
+                    .iter()
+                    .map(|v| self.format_expr(v, indent))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                format!("\"{}\" => [{}]", col.name, values_str)
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("df![{columns_str}]")
     }
 
     /// Format a comment (complexity: 2)
