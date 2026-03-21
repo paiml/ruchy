@@ -14,6 +14,7 @@
 <p align="center">
   <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
   <a href="https://crates.io/crates/ruchy"><img src="https://img.shields.io/crates/v/ruchy.svg" alt="Crates.io"></a>
+[![Documentation](https://docs.rs/ruchy/badge.svg)](https://docs.rs/ruchy)
   <a href="https://github.com/paiml/ruchy"><img src="https://img.shields.io/badge/tests-16102%20passing-green.svg" alt="Tests"></a>
 </p>
 
@@ -193,6 +194,10 @@ Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) gui
 ## MSRV
 
 Minimum Supported Rust Version: **1.75**
+
+## See Also
+
+- [Cookbook](https://github.com/paiml/sovereign-ai-cookbook)
 
 ## License
 
