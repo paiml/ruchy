@@ -3,13 +3,12 @@
 /// Examples demonstrating different quality scores
 /// Run with: cargo run --example `score_examples`
 use std::fs;
+use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
 
-fn main() {
-    println!("🎯 Ruchy Score Examples - Demonstrating Quality Spectrum\n");
-
-    let examples = vec![
+fn build_examples() -> Vec<(&'static str, &'static str, &'static str)> {
+    vec![
         (
             "perfect_code",
             r#"
@@ -47,7 +46,7 @@ fn process_data(values: Vec<i32>) -> i32 {
 // Moderate complexity - Score ~0.5
 fn complex_logic(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
     let mut result = 0;
-    
+
     if a > 0 {
         if b > 0 {
             if c > 0 {
@@ -69,7 +68,7 @@ fn complex_logic(a: i32, b: i32, c: i32, d: i32, e: i32) -> i32 {
             }
         }
     }
-    
+
     result
 }
 ",
@@ -101,7 +100,7 @@ fn terrible_function(
             }
         }
     }
-    
+
     for i in 0..param8 {
         for j in 0..param9 {
             for k in 0..param10 {
@@ -113,7 +112,7 @@ fn terrible_function(
             }
         }
     }
-    
+
     x
 }
 ",
@@ -132,7 +131,7 @@ fn nightmare(
     f1: i32
 ) -> i32 {
     let mut result = 0;
-    
+
     // 8+ levels of nesting
     if a1 > 0 {
         if a2 > 0 {
@@ -153,7 +152,7 @@ fn nightmare(
             }
         }
     }
-    
+
     // Multiple nested loops
     for i in 0..10 {
         for j in 0..10 {
@@ -166,76 +165,99 @@ fn nightmare(
             }
         }
     }
-    
+
     result
 }
 ",
             "0.01-0.10",
         ),
-    ];
+    ]
+}
 
-    let temp_dir = TempDir::new().unwrap();
+fn run_score_command(file_path: &Path) {
+    let output = Command::new("./target/debug/ruchy")
+        .args(["score", file_path.to_str().unwrap()])
+        .output()
+        .expect("Failed to execute ruchy score");
 
-    for (name, code, expected_score) in examples {
-        println!("📝 Example: {name} (Expected: {expected_score})");
-        println!("{}", "─".repeat(50));
+    let stdout = String::from_utf8_lossy(&output.stdout);
 
-        // Write the code to a working file
-        let file_path = temp_dir.path().join(format!("{name}.ruchy"));
-        fs::write(&file_path, code).unwrap();
+    if let Some(score_line) = stdout.lines().find(|l| l.contains("Score:")) {
+        println!("{score_line}");
+    } else {
+        println!("Output: {stdout}");
+    }
+}
 
-        // Run the score command
-        let output = Command::new("./target/debug/ruchy")
-            .args(["score", file_path.to_str().unwrap()])
-            .output()
-            .expect("Failed to execute ruchy score");
+fn run_json_score_and_validate(file_path: &Path, expected_score: &str) {
+    let json_output = Command::new("./target/debug/ruchy")
+        .args(["score", file_path.to_str().unwrap(), "--format", "json"])
+        .output()
+        .expect("Failed to execute ruchy score");
 
-        let stdout = String::from_utf8_lossy(&output.stdout);
-
-        // Extract and display the score
-        if let Some(score_line) = stdout.lines().find(|l| l.contains("Score:")) {
-            println!("{score_line}");
-        } else {
-            println!("Output: {stdout}");
-        }
-
-        // Also run with JSON format for detailed metrics
-        let json_output = Command::new("./target/debug/ruchy")
-            .args(["score", file_path.to_str().unwrap(), "--format", "json"])
-            .output()
-            .expect("Failed to execute ruchy score");
-
-        if json_output.status.success() {
-            let json_str = String::from_utf8_lossy(&json_output.stdout);
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&json_str) {
-                if let Some(score) = json["score"].as_f64() {
-                    println!("Actual Score: {score:.2}");
-
-                    // Validate score is in expected range
-                    let in_range = match expected_score {
-                        "1.00" => score >= 0.95,
-                        "0.80-0.90" => (0.80..=0.90).contains(&score),
-                        "0.40-0.60" => (0.40..=0.60).contains(&score),
-                        "0.10-0.30" => (0.10..=0.30).contains(&score),
-                        "0.01-0.10" => (0.01..=0.10).contains(&score),
-                        _ => true,
-                    };
-
-                    if in_range {
-                        println!("✅ Score is in expected range");
-                    } else {
-                        println!("❌ Score {score} is outside expected range {expected_score}");
-                    }
-                }
-            }
-        }
-
-        println!("\n");
+    if !json_output.status.success() {
+        return;
     }
 
+    let json_str = String::from_utf8_lossy(&json_output.stdout);
+    let json: serde_json::Value = match serde_json::from_str(&json_str) {
+        Ok(v) => v,
+        Err(_) => return,
+    };
+
+    let score = match json["score"].as_f64() {
+        Some(s) => s,
+        None => return,
+    };
+
+    println!("Actual Score: {score:.2}");
+
+    let in_range = match expected_score {
+        "1.00" => score >= 0.95,
+        "0.80-0.90" => (0.80..=0.90).contains(&score),
+        "0.40-0.60" => (0.40..=0.60).contains(&score),
+        "0.10-0.30" => (0.10..=0.30).contains(&score),
+        "0.01-0.10" => (0.01..=0.10).contains(&score),
+        _ => true,
+    };
+
+    if in_range {
+        println!("✅ Score is in expected range");
+    } else {
+        println!("❌ Score {score} is outside expected range {expected_score}");
+    }
+}
+
+fn run_example(temp_dir: &Path, name: &str, code: &str, expected_score: &str) {
+    println!("📝 Example: {name} (Expected: {expected_score})");
+    println!("{}", "─".repeat(50));
+
+    let file_path = temp_dir.join(format!("{name}.ruchy"));
+    fs::write(&file_path, code).unwrap();
+
+    run_score_command(&file_path);
+    run_json_score_and_validate(&file_path, expected_score);
+
+    println!("\n");
+}
+
+fn print_summary() {
     println!("🏁 Score Examples Complete");
     println!("\nTo test individual files:");
     println!("  ruchy score path/to/file.ruchy");
     println!("  ruchy score path/to/file.ruchy --format json");
     println!("  ruchy score path/to/file.ruchy --min 0.8  # Enforce minimum score");
+}
+
+fn main() {
+    println!("🎯 Ruchy Score Examples - Demonstrating Quality Spectrum\n");
+
+    let examples = build_examples();
+    let temp_dir = TempDir::new().unwrap();
+
+    for (name, code, expected_score) in examples {
+        run_example(temp_dir.path(), name, code, expected_score);
+    }
+
+    print_summary();
 }
