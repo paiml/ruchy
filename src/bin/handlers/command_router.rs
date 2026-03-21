@@ -59,6 +59,22 @@ pub fn validate_lint_args(file: Option<&String>, init_config: bool) -> Result<()
 /// commands in the Ruchy CLI.
 pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
     match command {
+        // Analysis commands
+        cmd @ (crate::Commands::Ast { .. }
+        | crate::Commands::Provability { .. }
+        | crate::Commands::Runtime { .. }
+        | crate::Commands::Score { .. }
+        | crate::Commands::QualityGate { .. }
+        | crate::Commands::Fmt { .. }
+        | crate::Commands::Lint { .. }
+        | crate::Commands::Coverage { .. }) => dispatch_analysis(cmd),
+        // Interactive and tooling commands
+        cmd => dispatch_tooling(cmd),
+    }
+}
+
+fn dispatch_analysis(command: crate::Commands) -> Result<()> {
+    match command {
         crate::Commands::Ast {
             file,
             json,
@@ -260,6 +276,12 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
             &format,
             verbose,
         ),
+        _ => unreachable!("dispatch_analysis called with non-analysis command"),
+    }
+}
+
+fn dispatch_tooling(command: crate::Commands) -> Result<()> {
+    match command {
         crate::Commands::Notebook {
             file,
             port,
