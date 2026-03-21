@@ -1,0 +1,42 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Command dispatch contract for Ruchy language CLI"
+  crate: "ruchy"
+  references:
+    - "Pierce, Types and Programming Languages, 2002"
+
+equations:
+  dispatch_completeness:
+    formula: "∀cmd ∈ Commands: dispatch(cmd) ≠ ⊥"
+    domain: "cmd ∈ enum Commands"
+    invariants:
+      - "Every command variant has a handler"
+
+proof_obligations:
+  - type: completeness
+    property: "All commands dispatched"
+    formal: "match coverage is exhaustive"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-DISPATCH-001
+    rule: "Dispatch completeness"
+    test: "test_handle_command_dispatch_repl"
+    prediction: "verified"
+    if_fails: "Contract violation — command not dispatched"
+
+kani_harnesses:
+  - id: KANI-DISPATCH-001
+    obligation: PO-DISPATCH-001
+    property: "Dispatch totality"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_dispatch
+
+qa_gate:
+  id: QA-DISPATCH
+  name: "dispatch contract"
+  min_coverage: 0.90
+  max_complexity: 20
+  required_tests: ["test_handle_command_dispatch_repl"]

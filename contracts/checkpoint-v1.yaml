@@ -1,0 +1,42 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Prover state checkpoint contract for Ruchy"
+  crate: "ruchy"
+  references:
+    - "Paulson, Isabelle: A Generic Theorem Prover, LNCS 1994"
+
+equations:
+  state_checkpoint:
+    formula: "restore(save(prover_state)) = prover_state"
+    domain: "prover_state ∈ ProverState"
+    invariants:
+      - "Goal stack preserved across checkpoint"
+
+proof_obligations:
+  - type: roundtrip
+    property: "State checkpoint fidelity"
+    formal: "restore(save(s)) = s"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-CKPT-001
+    rule: "Checkpoint roundtrip"
+    test: "test_show_prover_state_complete"
+    prediction: "verified"
+    if_fails: "Contract violation — state lost"
+
+kani_harnesses:
+  - id: KANI-CKPT-001
+    obligation: PO-CKPT-001
+    property: "State fidelity"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_checkpoint
+
+qa_gate:
+  id: QA-CKPT
+  name: "checkpoint contract"
+  min_coverage: 0.90
+  max_complexity: 20
+  required_tests: ["test_show_prover_state_complete"]
