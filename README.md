@@ -1,4 +1,5 @@
 <div align="center">
+[![CI](https://github.com/paiml/ruchy/actions/workflows/ci.yml/badge.svg)](https://github.com/paiml/ruchy/actions/workflows/ci.yml)
 
 <p align="center">
   <img src=".github/ruchy-hero.svg" alt="ruchy" width="800">
