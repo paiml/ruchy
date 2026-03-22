@@ -1,141 +1,22 @@
+# Sovereign CI — calls reusable workflow from paiml/.github
+# Change once in paiml/.github → applies to all repos
 name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, master]
   pull_request:
-    branches: [ main ]
+    branches: [main, master]
   workflow_dispatch:
 
-env:
-  CARGO_TERM_COLOR: always
-  RUST_BACKTRACE: 1
-  # Reproducibility: Fixed random seeds
-  RUCHY_SEED: 42
-  RUCHY_TEST_SEED: 42
-  RUCHY_ORACLE_SEED: 42
-  PROPTEST_SEED: 12345678901234567890123456789012
-  SOURCE_DATE_EPOCH: 1704067200
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test Suite
-    runs-on: [self-hosted, clean-room]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Run fast tests
-        run: make test
-      - name: Run comprehensive tests
-        run: make test-all
+  ci:
+    uses: paiml/.github/.github/workflows/sovereign-ci.yml@main
+    with:
+      repo: ${{ github.event.repository.name }}
+    secrets: inherit
 
-  exhaustive-patterns:
-    name: Exhaustive Pattern Coverage
-    runs-on: [self-hosted, clean-room]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Check compilation
-        run: cargo check
-      - name: Test exhaustive pattern coverage
-        run: cargo test exhaustive_pattern_coverage
-      - name: Lint compliance
-        run: make lint
-
-  repl-tests:
-    name: REPL Test Suite
-    runs-on: [self-hosted, clean-room]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: dtolnay/rust-toolchain@nightly
-      - uses: Swatinem/rust-cache@v2
-      - name: Run REPL unit tests
-        run: cargo test repl --lib
-      - name: Run REPL integration tests
-        run: |
-          cargo test --test critical_repl_features
-          cargo test --test cli_contract_repl
-          cargo test --test repl_005_loop_output
-          cargo test --test repl_thread_safety
-          cargo test --test string_interpolation_repl_fix
-      - name: Run REPL doctests
-        run: cargo test --doc runtime::repl
-
-  lint:
-    name: Lint
-    runs-on: [self-hosted, clean-room]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-      - uses: dtolnay/rust-toolchain@nightly
-        with:
-          components: rustfmt
-      - uses: Swatinem/rust-cache@v2
-      - name: Check formatting
-        run: cargo +nightly fmt --all -- --check
-      - name: Run clippy on library
-        run: cargo clippy --lib -- -D warnings
-      - name: Run clippy on bins
-        run: cargo clippy --bins -- -D warnings
-
-  build:
-    name: Build
-    runs-on: [self-hosted, clean-room]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Build debug
-        run: cargo build --all-features --workspace
-      - name: Build release
-        run: cargo build --release --all-features --workspace
-      - name: Check examples
-        run: cargo build --examples --all-features
-
-  coverage:
-    name: Code Coverage
-    runs-on: [self-hosted, clean-room]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Install cargo-llvm-cov
-        uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Generate coverage
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: lcov.info
-          fail_ci_if_error: false
-
-  check-release:
-    name: Check Release
-    runs-on: [self-hosted, clean-room]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
-      - name: Check package metadata
-        run: |
-          cargo package --list -p ruchy
-      - name: Dry run publish
-        run: |
-          cargo publish --dry-run -p ruchy
-
-  gate:
-    name: gate
-    runs-on: [self-hosted, clean-room]
-    if: always()
-    needs: [test, lint, coverage]
-    steps:
-      - name: Check all jobs
-        run: |
-          if [ "${{ needs.test.result }}" = "failure" ] || [ "${{ needs.lint.result }}" = "failure" ]; then
-            exit 1
-          fi
