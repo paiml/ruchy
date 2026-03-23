@@ -165,6 +165,7 @@ impl OpCode {
     pub fn from_u8(value: u8) -> Option<Self> {
         if (value as usize) < Self::VALID_OPCODES.len() && Self::VALID_OPCODES[value as usize] {
             // SAFETY: value is validated against the exhaustive list of repr(u8) discriminants
+            #[allow(unsafe_code)]
             Some(unsafe { std::mem::transmute::<u8, Self>(value) })
         } else {
             None

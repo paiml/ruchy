@@ -2,6 +2,7 @@ use super::*;
 use crate::frontend::ast::{
     BinaryOp, Expr, ExprKind, Literal, Pattern, Span, StructPatternField, Type, TypeKind,
 };
+#[allow(unused_imports)]
 use crate::middleend::types::{MonoType, TyVarGenerator, TypeScheme};
 
 // ============================================================================

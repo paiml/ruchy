@@ -1336,7 +1336,7 @@ mod tests {
         let mut interp = make_interpreter();
 
         // Define a class with methods map but without the requested method
-        let mut methods = HashMap::new();
+        let _methods: HashMap<String, Value> = HashMap::new();
         // No "missing_method" defined
         let mut class_info = HashMap::new();
         class_info.insert(

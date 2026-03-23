@@ -1456,7 +1456,7 @@ mod eval_method_call_tests {
         let args = vec![make_expr(ExprKind::Identifier("bad_arg".to_string()))];
 
         let mut call_count = 0;
-        let mut eval_fn = |expr: &Expr| -> Result<Value, InterpreterError> {
+        let mut eval_fn = |_expr: &Expr| -> Result<Value, InterpreterError> {
             call_count += 1;
             if call_count == 1 {
                 // Receiver evaluates fine

@@ -2,9 +2,9 @@
 //!
 //! Ruchy combines functional programming with systems programming capabilities,
 //! featuring an ML-style syntax, advanced type inference, and zero-cost abstractions.
-#![warn(clippy::all)]
-// Temporarily disabled pedantic for RUCHY-0801 - Re-enable in quality sprint
-// #![warn(clippy::pedantic)]
+// Lint levels managed at workspace level in Cargo.toml
+#![allow(clippy::duplicate_mod)]
+#![allow(clippy::drop_non_drop)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::must_use_candidate)]
 // TECH-DEBT: 33 only_used_in_recursion errors remain (12/45 fixed in PR #144)

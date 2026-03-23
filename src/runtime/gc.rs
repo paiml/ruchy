@@ -31,6 +31,7 @@ impl ConservativeGC {
 }
 
 #[cfg(test)]
+#[allow(clippy::drop_non_drop)]
 mod tests {
     use super::*;
     use std::sync::Arc;

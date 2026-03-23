@@ -1,5 +1,7 @@
+#[allow(unused_imports)]
 use super::*;
 
+#[allow(unused_imports)]
 use crate::frontend::ast::TypeKind;
 use crate::frontend::parser::Parser;
 

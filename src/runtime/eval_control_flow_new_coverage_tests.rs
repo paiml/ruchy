@@ -261,7 +261,7 @@ fn test_eval_range_iteration_exclusive() {
         end: Box::new(Value::Integer(3)),
         inclusive: false,
     };
-    let body_expr = make_expr_int(1);
+    let _body_expr = make_expr_int(1);
     let mut collected = Vec::new();
 
     let mut with_variable =

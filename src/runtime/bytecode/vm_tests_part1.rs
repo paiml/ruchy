@@ -1,4 +1,5 @@
 use super::*;
+#[allow(unused_imports)]
 use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span, UnaryOp};
 use crate::runtime::bytecode::Compiler;
 
