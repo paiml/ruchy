@@ -365,6 +365,7 @@ web-sys = "0.3"
 tokio = { version = "1.47", features = ["macros", "rt", "time"], optional = true }
 
 [dev-dependencies]
+provable-contracts = { path = "../provable-contracts/crates/provable-contracts" }
 proptest = { workspace = true }
 criterion = { workspace = true }
 insta = { workspace = true }
