@@ -115,3 +115,4 @@ dependency_cleanup_analysis.md
 .pmat/context.db
 .pmat/workspace.db
 .cargo/config.toml
+src/generated_contracts.rs
