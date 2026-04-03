@@ -9,10 +9,11 @@ use std::path::PathBuf;
 ///
 /// # Arguments
 /// * `record_file` - Optional path to record REPL session
+/// * `max_depth` - Maximum recursion depth (RUNTIME-001)
 ///
 /// # Errors
 /// Returns error if REPL fails to initialize or run
-pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
+pub fn handle_repl_command(record_file: Option<PathBuf>, max_depth: usize) -> Result<()> {
     use colored::Colorize;
     let version_msg = format!("Welcome to Ruchy REPL v{}", env!("CARGO_PKG_VERSION"));
     println!("{}", version_msg.bright_cyan().bold());
@@ -21,6 +22,8 @@ pub fn handle_repl_command(record_file: Option<PathBuf>) -> Result<()> {
         ":help".green(),
         ":quit".yellow()
     );
+    // RUNTIME-001: Set recursion depth from CLI arg
+    ruchy::runtime::eval_function::set_max_recursion_depth(max_depth);
     let mut repl = super::create_repl()?;
     if let Some(record_path) = record_file {
         repl.run_with_recording(&record_path)
@@ -77,7 +80,7 @@ mod tests {
     fn test_repl_handler_accepts_none_record() {
         // Just verify the function signature
         // REPL runs interactively so we can't test full execution
-        let _ = handle_repl_command(None);
+        let _ = handle_repl_command(None, 100);
     }
 
     #[test]
@@ -86,13 +89,13 @@ mod tests {
         let record_path = temp_dir.path().join("repl_session.txt");
         // Just verify it accepts the path
         // REPL runs interactively so we can't test full execution
-        let _ = handle_repl_command(Some(record_path));
+        let _ = handle_repl_command(Some(record_path), 100);
     }
 
     #[test]
     fn test_repl_handler_record_nonexistent_dir() {
         let record_path = std::path::PathBuf::from("/nonexistent/dir/session.txt");
-        let _ = handle_repl_command(Some(record_path));
+        let _ = handle_repl_command(Some(record_path), 100);
     }
 
     #[test]
@@ -122,7 +125,7 @@ mod tests {
             std::path::PathBuf::from("session"),
         ];
         for path in paths {
-            let _ = handle_repl_command(Some(path));
+            let _ = handle_repl_command(Some(path), 100);
         }
     }
 
@@ -140,7 +143,7 @@ mod tests {
         let files = ["session1.txt", "session2.record", "test.log"];
         for file in &files {
             let record_path = temp_dir.path().join(file);
-            let _ = handle_repl_command(Some(record_path));
+            let _ = handle_repl_command(Some(record_path), 100);
         }
     }
 
@@ -150,7 +153,7 @@ mod tests {
         let nested = temp_dir.path().join("a").join("b").join("c");
         std::fs::create_dir_all(&nested).unwrap();
         let record_path = nested.join("session.txt");
-        let _ = handle_repl_command(Some(record_path));
+        let _ = handle_repl_command(Some(record_path), 100);
     }
 
     #[test]
@@ -158,7 +161,7 @@ mod tests {
         let extensions = [".txt", ".repl", ".session", ".log", ""];
         for ext in &extensions {
             let path = PathBuf::from(format!("/tmp/test{}", ext));
-            let _ = handle_repl_command(Some(path));
+            let _ = handle_repl_command(Some(path), 100);
         }
     }
 }

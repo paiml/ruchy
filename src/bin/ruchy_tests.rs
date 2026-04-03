@@ -80,7 +80,7 @@ fn test_try_handle_stdin_no_command() {
 
 #[test]
 fn test_try_handle_stdin_with_command() {
-    let command = Commands::Repl { record: None };
+    let command = Commands::Repl { record: None, max_depth: 100 };
     let result = try_handle_stdin(Some(&command));
     assert!(result.is_ok());
 }
@@ -169,7 +169,7 @@ fn test_handle_test_dispatch_with_filter() {
 
 #[test]
 fn test_handle_advanced_command_repl() {
-    let command = Commands::Repl { record: None };
+    let command = Commands::Repl { record: None, max_depth: 100 };
     let result = handle_advanced_command(command);
     assert!(result.is_ok());
 }
@@ -451,7 +451,7 @@ fn test_handle_advanced_command_wasm() {
 
 #[test]
 fn test_handle_command_dispatch_repl() {
-    let result = handle_command_dispatch(Some(Commands::Repl { record: None }), false, VmMode::Ast);
+    let result = handle_command_dispatch(Some(Commands::Repl { record: None, max_depth: 100 }), false, VmMode::Ast);
     assert!(result.is_ok());
 }
 

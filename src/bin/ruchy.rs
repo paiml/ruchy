@@ -23,7 +23,6 @@ mod report;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-// use colored::Colorize; // Unused after refactoring
 use ruchy::{runtime::repl::Repl, Parser as RuchyParser};
 use std::fs;
 use std::io::{self, IsTerminal, Read};
@@ -82,6 +81,9 @@ enum Commands {
         /// Record REPL session to a .replay file
         #[arg(long, value_name = "FILE")]
         record: Option<PathBuf>,
+        /// Maximum recursion depth (RUNTIME-001)
+        #[arg(long, default_value = "100")]
+        max_depth: usize,
     },
     /// Create a new Ruchy project with Cargo integration
     New {
@@ -946,11 +948,9 @@ enum OracleCommands {
 }
 
 fn main() -> Result<()> {
-    // CLI-UNIFY-001: If no args provided, open REPL directly
-    // This matches behavior of python, ruby, node, deno
-    // Check before clap parsing to avoid showing help
+    // CLI-UNIFY-001: No args → open REPL directly (like python, ruby, node)
     if std::env::args().len() == 1 {
-        return handle_repl_command(None);
+        return handle_repl_command(None, 100);
     }
 
     let cli = Cli::parse();
@@ -1001,7 +1001,7 @@ fn handle_command_dispatch(
     vm_mode: VmMode,
 ) -> Result<()> {
     match command {
-        Some(Commands::Repl { record }) => handle_repl_command(record),
+        Some(Commands::Repl { record, max_depth }) => handle_repl_command(record, max_depth),
         Some(Commands::New { name, lib }) => handlers::new::handle_new_command(&name, lib, verbose),
         Some(Commands::Build { release }) => {
             handlers::build::handle_build_command(release, verbose)
@@ -1018,7 +1018,7 @@ fn handle_command_dispatch(
             allow_dirty,
             verbose,
         ),
-        None => handle_repl_command(None),
+        None => handle_repl_command(None, 100),
         Some(Commands::Parse { file }) => handle_parse_command(&file, verbose),
         Some(Commands::Transpile {
             file,
