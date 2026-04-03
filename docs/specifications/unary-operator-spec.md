@@ -1,5 +1,8 @@
 # Unary Operator Specification
 
+**Status**: Implemented (UnaryOp enum: Negate, Not, BitwiseNot, Reference, MutableReference, Deref in AST; parser + transpiler support)
+**Date**: 2026-04-03 (status updated)
+
 ## Core Principle
 
 Unary operators in Ruchy follow the **Principle of Least Surprise**: behavior matches Ruby/Elixir/Python programmer expectations exactly. No cognitive overhead for memory management. No hidden failure modes.
@@ -8,25 +11,32 @@ Unary operators in Ruchy follow the **Principle of Least Surprise**: behavior ma
 
 ### Prefix (Precedence: 8)
 
-| Operator | Type Constraint | Semantics |
-|----------|----------------|-----------|
-| `-` | `Numeric a => a -> a` | Arithmetic negation |
-| `!` | `Bool -> Bool` | Logical NOT |
-| `await` | `Future<a> -> a` | Async force |
+| Operator | UnaryOp Variant | Type Constraint | Semantics |
+|----------|----------------|----------------|-----------|
+| `-` | `Negate` | `Numeric a => a -> a` | Arithmetic negation |
+| `!` | `Not` | `Bool -> Bool` | Logical NOT |
+| `~` | `BitwiseNot` | `Integer a => a -> a` | Bitwise complement |
+| `&` | `Reference` | `a -> &a` | Immutable reference |
+| `&mut` | `MutableReference` | `a -> &mut a` | Mutable reference |
+| `*` | `Deref` | `&a -> a` | Dereference |
 
-### Postfix (Precedence: 10)
+### Separate Constructs (not in UnaryOp)
 
-| Operator | Type Constraint | Semantics |
-|----------|----------------|-----------|
-| `?` | `Option<a> -> Option<b>` | Optional chaining |
+| Operator | AST Node | Type Constraint | Semantics |
+|----------|----------|----------------|-----------|
+| `await` | `ExprKind::Await` | `Future<a> -> a` | Async force |
 
-## Rejected Operators
+### Not Yet Implemented
 
-**Memory operators** (`*`, `&`): Handled by escape analysis. Never surface syntax.
+| Operator | Type Constraint | Semantics | Status |
+|----------|----------------|-----------|--------|
+| `?` (postfix) | `Option<a> -> Option<b>` | Optional chaining | Spec only |
 
-**Force unwrap** (`!`): Use `.expect()` or `.unwrap_or()`. Explicit failure modes only.
+## Design Notes
 
-**Bitwise NOT** (`~`): Use `.bit_not()` method. Rare in scripting context.
+**Reference operators** (`*`, `&`, `&mut`): Exposed in syntax for Rust interop. The transpiler maps these directly to Rust reference/dereference operations.
+
+**Force unwrap** (`!` suffix): Not planned. Use `.expect()` or `.unwrap_or()` for explicit failure modes.
 
 ## Grammar
 
@@ -120,3 +130,16 @@ No type theory in error messages. Show the fix.
 - All operators have single, obvious semantics
 - Error messages show working code, not theory
 - Performance costs visible via LSP markers (implicit await)
+
+## Implementation Status (as of v4.2.1, 2026-04-03)
+
+| Feature | Status | Key File |
+|---------|--------|----------|
+| `-` (Negate) | Implemented | `ast.rs:989`, parser + transpiler |
+| `!` (Not) | Implemented | `ast.rs:988`, parser + transpiler |
+| `~` (BitwiseNot) | Implemented | `ast.rs:990`, parser + transpiler |
+| `&` (Reference) | Implemented | `ast.rs:991`, parser + transpiler |
+| `&mut` (MutableReference) | Implemented | `ast.rs:992`, PARSER-085 |
+| `*` (Deref) | Implemented | `ast.rs:993`, parser + transpiler |
+| `await` | Implemented | Separate `ExprKind::Await` node |
+| `?` (optional chaining) | Not implemented | Spec only — no parser support |

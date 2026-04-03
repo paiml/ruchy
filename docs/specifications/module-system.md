@@ -95,23 +95,24 @@ project/
 
 ## Implementation Plan
 
-### Phase 1: Basic Modules (RUCHY-0719)
+### Phase 1: Basic Modules (RUCHY-0719) — Complete
 - [x] Add `mod` keyword to lexer
-- [ ] Parse inline module definitions
-- [ ] Implement module scoping in interpreter
-- [ ] Add `pub` visibility modifier
+- [x] Parse inline module definitions (`ExprKind::Module` in AST)
+- [x] Parse module declarations (`ExprKind::ModuleDeclaration`)
+- [x] Add `pub` visibility modifier (`is_pub` flag on Function, Struct, Class, Trait, Impl)
+- [x] Visibility enum (`Public`, `PubCrate`, `PubSuper`, `Private`) in `ast.rs`
 
-### Phase 2: File Modules
-- [ ] Implement file-based module loading
-- [ ] Add module path resolution
-- [ ] Cache loaded modules
-- [ ] Detect circular dependencies
+### Phase 2: File Modules — Partial
+- [x] Implement file-based module loading (`ModuleResolver` in `backend/module_resolver.rs`)
+- [x] Add module path resolution (`resolve_modules_for_execution` in `execution_handler.rs`)
+- [ ] Cache loaded modules (currently re-resolves on each invocation)
+- [ ] Detect circular dependencies (no cycle detection implemented)
 
-### Phase 3: Import System
-- [ ] Parse `use` statements
-- [ ] Resolve imported symbols
-- [ ] Support wildcard imports
-- [ ] Add import aliases
+### Phase 3: Import System — Implemented
+- [x] Parse `use`/`import` statements (`ExprKind::Import`, `ImportAll`, `ImportDefault`)
+- [x] Resolve imported symbols (via `ModuleResolver`)
+- [x] Support wildcard imports (`ImportAll`)
+- [ ] Add import aliases (not yet implemented)
 
 ## Examples
 
@@ -232,3 +233,18 @@ std/
 1. **No arbitrary code execution during import** (unlike Python)
 2. **Sandboxed module loading** (future)
 3. **Capability-based imports** (future)
+
+## Implementation Status (as of v4.2.1, 2026-04-03)
+
+| Feature | Status | Key Files |
+|---------|--------|-----------|
+| `mod` keyword / inline modules | Implemented | `ast.rs`, `parser/expressions_helpers/modules.rs` |
+| Module declarations (`mod name;`) | Implemented | `ExprKind::ModuleDeclaration` |
+| `pub` visibility | Implemented | `visibility_modifiers.rs`, `Visibility` enum |
+| File-based module loading | Implemented | `backend/module_resolver.rs` |
+| Import statements (`use`/`import`) | Implemented | `ExprKind::Import`, `ImportAll`, `ImportDefault` |
+| Formatter support | Implemented | `formatter.rs::format_module_system` |
+| Transpiler analysis | Implemented | `transpiler/ast_analysis.rs::contains_imports` |
+| Module caching | Not started | Modules re-resolved each invocation |
+| Circular dependency detection | Not started | No cycle detection |
+| Import aliases (`as`) | Not started | Syntax not yet parsed |
