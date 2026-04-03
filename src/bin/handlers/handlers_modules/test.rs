@@ -303,8 +303,8 @@ mod tests {
             "text", // Output format
         );
 
-        // Should handle empty directory gracefully
-        assert!(result.is_ok());
+        // Empty directory correctly errors with "No .ruchy test files found"
+        assert!(result.is_err());
     }
 
     #[test]
