@@ -1670,4 +1670,26 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok(), "Failed to parse for+invariant: {:?}", result.err());
     }
+
+    #[test]
+    fn test_pmat001_parse_decorator_on_function() {
+        let src = "@verified\nfun normalize(data: List) -> List { data }";
+        let mut parser = Parser::new(src);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse @verified decorator: {:?}", result.err());
+        let expr = result.unwrap();
+        assert!(!expr.attributes.is_empty(), "Should have attributes from decorator");
+        assert_eq!(expr.attributes[0].name, "verified");
+    }
+
+    #[test]
+    fn test_pmat001_parse_decorator_with_args_on_function() {
+        let src = "@gpu(\"threshold\")\nfun matmul(a: List, b: List) -> List { a }";
+        let mut parser = Parser::new(src);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse @gpu decorator: {:?}", result.err());
+        let expr = result.unwrap();
+        assert_eq!(expr.attributes[0].name, "gpu");
+        assert_eq!(expr.attributes[0].args.len(), 1);
+    }
 }

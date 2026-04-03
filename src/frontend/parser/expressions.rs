@@ -180,12 +180,35 @@ fn parse_declaration_prefix(state: &mut ParserState, token: Token, _span: Span) 
 fn parse_decorator_prefix(state: &mut ParserState) -> Result<Expr> {
     let decorators = expressions_helpers::classes::parse_decorators(state)?;
     let mut expr = parse_prefix(state)?;
-    if let ExprKind::Class {
-        decorators: ref mut class_decorators,
-        ..
-    } = &mut expr.kind
-    {
-        *class_decorators = decorators;
+    match &mut expr.kind {
+        ExprKind::Class {
+            decorators: ref mut class_decorators,
+            ..
+        } => {
+            *class_decorators = decorators;
+        }
+        // PMAT-001/PMAT-084: Apply decorators to functions too
+        // Enables @verified, @gpu, @tuned, @brick, @anomaly_checked, etc.
+        ExprKind::Function { .. } => {
+            // Store decorators as attributes on the Expr for transpiler access
+            for dec in &decorators {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: dec.name.clone(),
+                    args: dec.args.clone(),
+                    span: expr.span.clone(),
+                });
+            }
+        }
+        _ => {
+            // Decorators on other expression types: store as attributes
+            for dec in &decorators {
+                expr.attributes.push(crate::frontend::ast::Attribute {
+                    name: dec.name.clone(),
+                    args: dec.args.clone(),
+                    span: expr.span.clone(),
+                });
+            }
+        }
     }
     Ok(expr)
 }
