@@ -1,19 +1,15 @@
 # WASM Match Expression Support Specification
 
-## Five Whys Root Cause Analysis
+**Status**: Implemented (`lower_match()` in `src/backend/wasm/emitter.rs`; match expressions compile to cascading if-else WASM instructions)
+**Date**: 2026-04-03 (status updated — implementation complete)
+
+## Five Whys Root Cause Analysis (historical — defect resolved)
 
 1. **Why does match expression WASM compilation fail?** → "type mismatch: expected i32 but nothing on stack"
 2. **Why is nothing on the stack?** → Match expressions not handled in WASM backend at all
 3. **Why weren't match expressions implemented?** → Incremental development, focused on simpler constructs first
 4. **Why was this not caught earlier?** → 15-tool validation exposed the gap
-5. **ROOT CAUSE**: Match expressions (`ExprKind::Match`) have NO implementation in `lower_expression()`
-
-## Defect Classification
-
-**DEFECT TYPE**: Missing language feature in WASM backend
-**SEVERITY**: HIGH - Blocks control flow examples from compiling to WASM
-**IMPACT**: Users cannot use match expressions when targeting WASM
-**TOYOTA WAY RESPONSE**: STOP THE LINE - implement immediately per "NO DEFECT OUT OF SCOPE"
+5. **ROOT CAUSE**: Match expressions (`ExprKind::Match`) had no implementation in `lower_expression()` — now resolved
 
 ## Technical Analysis
 

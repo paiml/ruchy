@@ -1,7 +1,7 @@
 # STD-008: Time Module Specification
 
-**Date**: 2025-10-10
-**Status**: PLANNED
+**Date**: 2026-04-03 (verified current)
+**Status**: Implemented (`src/stdlib/time.rs` exists in v4.2.1)
 **Module**: `src/stdlib/time.rs`
 **Tests**: `tests/std_008_time.rs`
 **Ticket**: TIME-IMPL (Phase 2, Month 2)

@@ -1,19 +1,21 @@
 # WASM F-String (String Interpolation) Support Specification
 
-## Five Whys Root Cause Analysis
+**Status**: Implemented (`lower_string_interpolation()` in `src/backend/wasm/emitter.rs`; f-strings desugar to string concatenation in WASM)
+**Date**: 2026-04-03 (status updated — implementation complete)
+
+## Five Whys Root Cause Analysis (historical — defect resolved)
 
 1. **Why do 14/17 LANG-COMP tests fail?** → Example files contain f-strings like `println(f"Value: {x}")`
 2. **Why do f-strings fail in WASM?** → `StringInterpolation` expressions not handled in WASM backend
 3. **Why weren't f-strings implemented in WASM?** → Initial WASM work focused on basic expressions
 4. **Why was this not caught earlier?** → 15-tool validation exposed the gap
-5. **ROOT CAUSE**: Incremental WASM development without comprehensive feature coverage validation
+5. **ROOT CAUSE**: Incremental WASM development without comprehensive feature coverage validation — now resolved
 
-## Defect Classification
+## Defect Classification (resolved)
 
-**DEFECT TYPE**: Missing language feature in WASM backend
-**SEVERITY**: HIGH - Blocks 14/17 (82%) of LANG-COMP tests
-**IMPACT**: Users cannot use f-strings when compiling to WASM
-**TOYOTA WAY RESPONSE**: STOP THE LINE - implement immediately, no deferrals
+**DEFECT TYPE**: Missing language feature in WASM backend — **RESOLVED**
+**SEVERITY**: HIGH (was) — f-strings now compile to WASM via `lower_string_interpolation()`
+**RESOLUTION**: `ExprKind::StringInterpolation` handled in emitter, desugars to string concatenation
 
 ## Technical Analysis
 
