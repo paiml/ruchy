@@ -6838,7 +6838,7 @@ dependencies = [
  "tower-lsp",
  "tracing",
  "tracing-subscriber",
- "trueno 0.15.0",
+ "trueno 0.16.3",
  "trueno-viz 0.1.27",
  "uuid",
  "walkdir",
