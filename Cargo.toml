@@ -278,7 +278,7 @@ rand = "0.8"
 # Sovereign AI Stack Core - trueno-aprender-stdlib-core-language-spec.md v2.0
 # trueno and aprender are always required; others are feature-gated (CB-081 dep reduction)
 trueno = { version = "0.16", default-features = false }  # Pillar 1: CPU SIMD only (no wgpu)
-aprender = { version = "0.26", default-features = false, features = ["format-quantize", "format-signing"] }  # Pillar 4: ML + quantization + signing
+aprender = { version = "0.27", default-features = false, features = ["format-quantize", "format-signing"] }  # Pillar 4: ML + quantization + signing
 # Optional sovereign stack extensions (enabled via `sovereign-stack` feature)
 alimentar = { version = "0.2.5", optional = true }      # Pillar 2: Data loading
 entrenar = { version = "0.7", features = ["citl"], optional = true }  # CITL, training
