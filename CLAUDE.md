@@ -14,6 +14,16 @@
    - **Migration**: All roadmap data now lives exclusively in YAML format
    - **Benefits**: Machine-readable, programmatically accessible, prevents drift
 
+## CRITICAL: Contract-First Design
+
+**NEVER write code before writing a provable contract.**
+
+All code changes MUST have a corresponding contract (YAML in ../provable-contracts/contracts/<project>/ or .pmat-work/<TICKET>/contract.json) BEFORE implementation. This is enforced by `pmat comply` CB-1400.
+
+- Use `pmat comply check` to verify contract coverage
+- Minimum verification level: L1 (recommended L3+)
+- See docs/agent-instructions/provable-contract-first-agents.md for the full workflow
+
 ## Prime Directive
 
 **Generate correct code that compiles on first attempt. Quality is built-in, not bolted-on.**
