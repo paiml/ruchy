@@ -1,9 +1,10 @@
 # [RUNTIME-001] Recursion Depth Limit Implementation Specification
 
-**Status**: CRITICAL PRODUCTION BLOCKER
+**Status**: FULLY IMPLEMENTED (resolved in v4.x, CLI integration added 2026-04-03)
 **Discovered**: 2025-10-16 via SQLITE-TEST-004 defensive testing
-**Priority**: P0 - Must fix before v4.0.0 release
-**Estimated Effort**: 4-6 hours
+**Priority**: P0 - Was a blocker for v4.0.0 release (now resolved)
+**Resolution**: `src/runtime/eval_function.rs` — `RecursionLimitExceeded` error + configurable `set_max_recursion_depth()`
+**CLI**: `ruchy repl --max-depth <N>` (default: 100)
 
 ---
 

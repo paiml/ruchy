@@ -296,11 +296,11 @@ pub use presentar::{Widget, Column, Row, Button, Text, Input};
 ```toml
 [dependencies]
 # === CORE DATA SCIENCE STACK (ALL REQUIRED) ===
-trueno = "0.7"           # SIMD compute engine
-trueno-db = "0.3"        # Embedded analytics database
+trueno = "0.16.5"        # SIMD compute engine (actual version in Cargo.toml)
+trueno-db = "0.3"        # Embedded analytics database (aspirational)
 aprender = "0.14"        # Machine learning primitives
-trueno-viz = "0.1"       # GPU/WASM visualization
-presentar = "0.1"        # WASM-first notebook widgets
+trueno-viz = "0.1.23"    # GPU/WASM visualization (actual version in Cargo.toml)
+presentar = "0.1"        # WASM-first notebook widgets (aspirational)
 
 [features]
 default = ["batteries-included"]

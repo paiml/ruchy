@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This specification defines the successful migration path that implemented the Ruchy compiler in Ruchy. The self-hosted compiler achieved historic milestone status as the first compiler of its kind to achieve complete bootstrap capability, exceeding performance targets and maintaining production quality.
+This specification defines the intended migration path to implement the Ruchy compiler in Ruchy. When achieved, the self-hosted compiler would represent a historic milestone as a fully bootstrapped compiler, targeting performance parity with the Rust implementation while maintaining production quality.
 
 ## Prerequisites
 
