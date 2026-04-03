@@ -1,5 +1,9 @@
 # Ruchy Notebook State Management Architecture v2.0
 
+**Status**: Architectural specification — `SharedSession` struct is NOT implemented (design only).
+The notebook runtime (`src/notebook/`) uses a simpler REPL-based cell evaluation model.
+**Date**: 2026-04-03 (status updated)
+
 *Updated to incorporate architectural review feedback: pragmatic TDD enforcement via coverage metrics, leveraging battle-tested crates (im, polars) for persistent data structures, explicit module imports, reactive execution plan preview, and staged CI verification.*
 
 ---
@@ -18,9 +22,9 @@
 
 The notebook implementation violated the fundamental invariant of computational notebooks: state persistence across cells. Each cell instantiated an isolated REPL, creating semantic discontinuity that rendered the system unusable for iterative development.
 
-## Architectural Solution Summary
+## Architectural Solution Summary (design — not yet implemented)
 
-The fix introduces a persistent `SharedSession` layer that decouples REPL lifetime from cell execution. Key components:
+The proposed fix introduces a persistent `SharedSession` layer that decouples REPL lifetime from cell execution. Key components:
 
 1. **SharedSession** -- Singleton evaluator with persistent namespace and transactional rollback
 2. **GlobalRegistry** -- O(1) binding lookup with values, functions, types, imports, and provenance

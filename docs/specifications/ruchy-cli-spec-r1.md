@@ -2,8 +2,8 @@
 ## A Multi-Domain Systems Programming Language with Ergonomic Pipeline Architecture
 
 **Version:** 1.1.0 (Revision 1)  
-**Date:** October 20, 2025  
-**Status:** Architectural Specification (Post-Kaizen Refinement)  
+**Date:** October 20, 2025 (spec written), updated 2026-04-03  
+**Status:** Aspirational Architectural Specification (TIER 0-3 sys/data commands NOT implemented; TIER 1 core commands and TIER 4 dev commands ARE implemented in v4.2.1)  
 **Supersedes:** STDLIB-006  
 
 ---
@@ -82,15 +82,19 @@ The most frequently used commands should have the lowest possible syntactic over
 
 ## 4. Architectural Hierarchy (Refined)
 
+> **Implementation Note (2026-04-03):** TIER 0 promoted commands and TIER 2/3
+> sys/data domain commands are **aspirational** — none are implemented in v4.2.1.
+> TIER 1 core commands and TIER 4 dev commands ARE implemented.
+
 ```
-# TIER 0: Promoted Commands (Frequency-Optimized)
+# TIER 0: Promoted Commands (NOT IMPLEMENTED — aspirational)
 ruchy rg <pattern>            # Direct alias to sys.rg
 ruchy find <path>             # Direct alias to sys.find
 ruchy csv <file>              # Direct alias to data.csv
 ruchy json <file>             # Direct alias to data.json
 ruchy df <path>               # Direct alias to sys.du (disk free)
 
-# TIER 1: Core Language Runtime
+# TIER 1: Core Language Runtime (IMPLEMENTED in v4.2.1)
 ruchy                         # REPL
 ruchy run <file>             # Execute script
 ruchy compile <file>         # AOT compilation
@@ -98,7 +102,7 @@ ruchy fmt <path>             # Format code
 ruchy test <subcommand>      # Testing subsystem
 ruchy build                  # Build project
 
-# TIER 2: Systems Operations
+# TIER 2: Systems Operations (NOT IMPLEMENTED — aspirational)
 ruchy sys rg <pattern>       # Parallel text search
 ruchy sys find <path>        # Parallel filesystem walk
 ruchy sys du <path>          # Parallel disk usage
@@ -108,7 +112,7 @@ ruchy sys watch <cmd>        # Repeat command
 ruchy sys ps                 # Process listing
 ruchy sys top                # Process monitor
 
-# TIER 3: Data Processing
+# TIER 3: Data Processing (NOT IMPLEMENTED — aspirational)
 ruchy data csv <subcommand>  # CSV operations
 ruchy data json <subcommand> # JSON operations
 ruchy data parquet <sub>     # Parquet format
@@ -116,7 +120,8 @@ ruchy data frame <sub>       # DataFrame operations
 ruchy data query <sql>       # SQL query interface
 ruchy data join <files>      # Data joining
 
-# TIER 4: Notebook/WASM/Dev (Unchanged from STDLIB-006)
+# TIER 4: Notebook/WASM/Dev (IMPLEMENTED in v4.2.1)
+# ruchy notebook, ruchy wasm, ruchy prove, ruchy oracle, etc.
 ```
 
 ---
