@@ -18,6 +18,7 @@ fn make_expr(kind: crate::frontend::ast::ExprKind) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     }
 }
 

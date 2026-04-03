@@ -142,6 +142,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 

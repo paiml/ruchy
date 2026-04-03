@@ -285,6 +285,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_external_mod_declaration("utils", &expr);
         assert_eq!(result.to_string(), "mod utils ;");
@@ -304,6 +305,7 @@ mod tests {
             }],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_external_mod_declaration("api", &expr);
         assert_eq!(result.to_string(), "pub mod api ;");
@@ -323,6 +325,7 @@ mod tests {
             }],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_external_mod_declaration("internal", &expr);
         let result_str = result.to_string();
@@ -425,6 +428,7 @@ mod tests {
             }],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_external_mod_declaration("helpers", &expr);
         let result_str = result.to_string();
@@ -512,6 +516,7 @@ mod tests {
             }],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_external_mod_declaration("module", &expr);
         // Non-pub attributes are ignored, so result is just "mod module ;"
@@ -654,6 +659,7 @@ mod tests {
             }],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_external_mod_declaration("restricted", &expr);
         let result_str = result.to_string();

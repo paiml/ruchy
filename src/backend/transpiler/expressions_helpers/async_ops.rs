@@ -128,6 +128,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -139,6 +140,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -233,6 +235,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_spawn(&actor)

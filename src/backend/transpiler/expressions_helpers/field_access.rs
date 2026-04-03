@@ -295,6 +295,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -309,6 +310,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -320,6 +322,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -331,6 +334,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -642,6 +646,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_field_access(&obj, "name");
         assert!(result.is_ok());
@@ -728,6 +733,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_field_access(&obj, "HashMap");
         assert!(result.is_ok());
@@ -793,6 +799,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_field_access(&obj, "0");
         assert!(result.is_ok());
@@ -813,6 +820,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_field_access(&obj, "is_empty");
         assert!(result.is_ok());
@@ -834,6 +842,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_field_access(&obj, "name");
         assert!(result.is_ok());

@@ -14,6 +14,7 @@ fn make_expr(kind: ExprKind) -> Arc<Expr> {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     })
 }
 
@@ -36,6 +37,7 @@ fn test_vm_call_closure() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         op: crate::frontend::ast::BinaryOp::Add,
         right: Box::new(Expr {
@@ -44,6 +46,7 @@ fn test_vm_call_closure() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
     });
 
@@ -259,6 +262,7 @@ fn test_vm_for_loop_with_locals_map() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         op: crate::frontend::ast::BinaryOp::Add,
         right: Box::new(Expr {
@@ -267,6 +271,7 @@ fn test_vm_for_loop_with_locals_map() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
     });
 
@@ -312,6 +317,7 @@ fn test_vm_method_call() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
         Expr {
             kind: ExprKind::Literal(Literal::Integer(2, None)),
@@ -319,6 +325,7 @@ fn test_vm_method_call() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
     ]));
 
@@ -388,6 +395,7 @@ fn test_vm_match_expr() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         span: make_span(),
     };
@@ -615,6 +623,7 @@ fn test_vm_match_with_literal_pattern() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         span: make_span(),
     };
@@ -627,6 +636,7 @@ fn test_vm_match_with_literal_pattern() {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         span: make_span(),
     };
@@ -652,6 +662,7 @@ fn test_vm_method_call_with_locals_sync() {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     }]));
 
     let mut chunk = BytecodeChunk::new("test_method_locals".to_string());

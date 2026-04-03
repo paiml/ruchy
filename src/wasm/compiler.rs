@@ -206,6 +206,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -216,6 +217,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -226,6 +228,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -240,6 +243,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -360,6 +364,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(
             compiler.has_return(&ast),
@@ -599,6 +604,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());
@@ -613,6 +619,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());
@@ -627,6 +634,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());
@@ -681,6 +689,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());
@@ -695,6 +704,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());
@@ -709,6 +719,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());
@@ -789,6 +800,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(
@@ -844,6 +856,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok(), "Should compile function with params");
@@ -865,6 +878,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let ast = Expr {
             kind: ExprKind::Function {
@@ -883,6 +897,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok(), "Should compile function with return");
@@ -912,6 +927,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let func2 = Expr {
             kind: ExprKind::Function {
@@ -930,6 +946,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let ast = Expr {
             kind: ExprKind::Block(vec![func1, func2]),
@@ -937,6 +954,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok(), "Should compile block with functions");
@@ -956,6 +974,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());
@@ -988,6 +1007,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = compiler.compile(&ast);
         assert!(result.is_ok());

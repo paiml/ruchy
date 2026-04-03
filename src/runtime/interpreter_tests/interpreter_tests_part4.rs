@@ -15,6 +15,7 @@ fn test_unary_negate_integer_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&neg).expect("should evaluate");
     assert_eq!(result, Value::Integer(-42));
@@ -32,6 +33,7 @@ fn test_unary_negate_float_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&neg).expect("should evaluate");
     match result {
@@ -52,6 +54,7 @@ fn test_unary_not_true_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&not).expect("should evaluate");
     assert_eq!(result, Value::Bool(false));
@@ -69,6 +72,7 @@ fn test_unary_not_false_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&not).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -302,6 +306,7 @@ fn test_tuple_literal_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     match result {
@@ -324,6 +329,7 @@ fn test_list_literal_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     match result {
@@ -346,6 +352,7 @@ fn test_empty_list_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     match result {
@@ -363,6 +370,7 @@ fn test_empty_tuple_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     match result {
@@ -383,6 +391,7 @@ fn test_double_negate_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let outer = Expr {
         kind: ExprKind::Unary {
@@ -393,6 +402,7 @@ fn test_double_negate_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&outer).expect("should evaluate");
     assert_eq!(result, Value::Integer(42));
@@ -410,6 +420,7 @@ fn test_double_not_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let outer = Expr {
         kind: ExprKind::Unary {
@@ -420,6 +431,7 @@ fn test_double_not_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&outer).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -434,6 +446,7 @@ fn test_block_with_multiple_exprs_r127() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&block).expect("should evaluate");
     assert_eq!(result, Value::Integer(42)); // Last expression is returned
@@ -495,6 +508,7 @@ fn test_if_else_true_branch_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&if_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(100));
@@ -513,6 +527,7 @@ fn test_if_else_false_branch_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&if_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(200));
@@ -531,6 +546,7 @@ fn test_if_no_else_true_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&if_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(42));
@@ -549,6 +565,7 @@ fn test_if_no_else_false_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&if_expr).expect("should evaluate");
     assert_eq!(result, Value::Nil);
@@ -563,6 +580,7 @@ fn test_list_creation_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     match result {
@@ -582,6 +600,7 @@ fn test_empty_list_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     match result {
@@ -601,6 +620,7 @@ fn test_tuple_creation_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     match result {
@@ -863,6 +883,7 @@ fn test_range_expr_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&range).expect("should evaluate");
     // Range returns a Range object (not Array) - just verify it evaluated
@@ -882,6 +903,7 @@ fn test_range_inclusive_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&range).expect("should evaluate");
     // Range returns a Range object (not Array) - just verify it evaluated
@@ -916,6 +938,7 @@ fn test_nested_if_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let outer_if = Expr {
         kind: ExprKind::If {
@@ -927,6 +950,7 @@ fn test_nested_if_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&outer_if).expect("should evaluate");
     assert_eq!(result, Value::Integer(10));
@@ -941,6 +965,7 @@ fn test_empty_block_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&block).expect("should evaluate");
     assert_eq!(result, Value::Nil);
@@ -955,6 +980,7 @@ fn test_empty_tuple_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     match result {
@@ -980,6 +1006,7 @@ fn test_index_expr_array_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let index_expr = Expr {
         kind: ExprKind::IndexAccess {
@@ -990,6 +1017,7 @@ fn test_index_expr_array_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&index_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(20));
@@ -1004,6 +1032,7 @@ fn test_index_expr_tuple_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let index_expr = Expr {
         kind: ExprKind::IndexAccess {
@@ -1014,6 +1043,7 @@ fn test_index_expr_tuple_r129() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&index_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(100));

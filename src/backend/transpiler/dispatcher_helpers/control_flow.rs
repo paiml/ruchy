@@ -76,7 +76,7 @@ impl Transpiler {
                 is_async,
                 return_type,
                 is_pub,
-            } => self.transpile_function(
+            } => self.transpile_function_with_contracts(
                 name,
                 type_params,
                 params,
@@ -85,6 +85,7 @@ impl Transpiler {
                 return_type.as_ref(),
                 *is_pub,
                 &expr.attributes,
+                &expr.contracts,
             ),
             ExprKind::Lambda { params, body } => self.transpile_lambda(params, body),
             ExprKind::Call { func, args } => self.transpile_call(func, args),
@@ -226,6 +227,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -237,6 +239,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -248,6 +251,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -265,6 +269,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -288,6 +293,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -309,6 +315,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -328,6 +335,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -346,6 +354,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -369,6 +378,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_function_expr(&expr);
         assert!(result.is_ok());
@@ -387,6 +397,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_function_expr(&expr);
         assert!(result.is_ok());
@@ -405,6 +416,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_function_expr(&expr);
         assert!(result.is_ok());
@@ -424,6 +436,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_function_expr(&expr);
         assert!(result.is_ok());
@@ -484,6 +497,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -502,6 +516,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -520,6 +535,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -535,6 +551,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());
@@ -550,6 +567,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());
@@ -565,6 +583,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());
@@ -584,6 +603,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -602,6 +622,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -620,6 +641,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -639,6 +661,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -656,6 +679,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -673,6 +697,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -693,6 +718,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -713,6 +739,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -732,6 +759,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_control_flow_only_expr(&expr);
         assert!(result.is_ok());
@@ -773,6 +801,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -792,6 +821,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -811,6 +841,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());
@@ -828,6 +859,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -845,6 +877,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -862,6 +895,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -879,6 +913,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -896,6 +931,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -914,6 +950,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_operator_only_expr(&expr);
         assert!(result.is_ok());
@@ -975,6 +1012,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -996,6 +1034,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -1034,6 +1073,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_struct_expr(&expr);
         assert!(result.is_ok());
@@ -1049,6 +1089,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());
@@ -1067,6 +1108,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_data_error_expr(&expr);
         assert!(result.is_ok());

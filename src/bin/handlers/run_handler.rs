@@ -260,6 +260,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpile_for_execution(&ast, Path::new("/test.ruchy"));
         // May succeed or fail

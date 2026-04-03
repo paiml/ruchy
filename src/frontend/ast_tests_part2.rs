@@ -88,6 +88,7 @@ fn test_all_expr_kinds_systematic() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         // Just test creation and access
         assert!(matches!(expr.kind, ExprKind::Literal(_)));
@@ -100,6 +101,7 @@ fn test_all_expr_kinds_systematic() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     });
     let right = Box::new(Expr {
         kind: ExprKind::Literal(Literal::Integer(2, None)),
@@ -107,6 +109,7 @@ fn test_all_expr_kinds_systematic() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     });
 
     let binary_ops = vec![
@@ -144,6 +147,7 @@ fn test_all_expr_kinds_systematic() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(matches!(expr.kind, ExprKind::Binary { .. }));
     }
@@ -155,6 +159,7 @@ fn test_all_expr_kinds_systematic() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     });
 
     let unary_ops = vec![
@@ -175,6 +180,7 @@ fn test_all_expr_kinds_systematic() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(matches!(expr.kind, ExprKind::Unary { .. }));
     }
@@ -349,6 +355,7 @@ fn test_complex_expr_constructions() {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 }),
                 field: "method".to_string(),
             },
@@ -356,6 +363,7 @@ fn test_complex_expr_constructions() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         args: vec![
             Expr {
@@ -364,6 +372,7 @@ fn test_complex_expr_constructions() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             },
             Expr {
                 kind: ExprKind::Literal(Literal::String("arg".to_string())),
@@ -371,6 +380,7 @@ fn test_complex_expr_constructions() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             },
         ],
     };
@@ -381,6 +391,7 @@ fn test_complex_expr_constructions() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     assert!(matches!(expr.kind, ExprKind::Call { .. }));
 
@@ -395,6 +406,7 @@ fn test_complex_expr_constructions() {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 }),
                 right: Box::new(Expr {
                     kind: ExprKind::Literal(Literal::Integer(0, None)),
@@ -402,12 +414,14 @@ fn test_complex_expr_constructions() {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 }),
             },
             span: Span::new(3, 8),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         then_branch: Box::new(Expr {
             kind: ExprKind::Block(vec![Expr {
@@ -416,11 +430,13 @@ fn test_complex_expr_constructions() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }]),
             span: Span::new(9, 23),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         else_branch: Some(Box::new(Expr {
             kind: ExprKind::Literal(Literal::String("negative".to_string())),
@@ -428,6 +444,7 @@ fn test_complex_expr_constructions() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         })),
     };
 
@@ -437,6 +454,7 @@ fn test_complex_expr_constructions() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     assert!(matches!(if_expr.kind, ExprKind::If { .. }));
 }
@@ -510,6 +528,7 @@ fn test_all_remaining_expr_kinds() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
         Expr {
             kind: ExprKind::Literal(Literal::Integer(2, None)),
@@ -517,6 +536,7 @@ fn test_all_remaining_expr_kinds() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
     ]);
 
@@ -527,6 +547,7 @@ fn test_all_remaining_expr_kinds() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
         Expr {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
@@ -534,6 +555,7 @@ fn test_all_remaining_expr_kinds() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
     ]);
 
@@ -545,6 +567,7 @@ fn test_all_remaining_expr_kinds() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         value: Box::new(Expr {
             kind: ExprKind::Literal(Literal::Integer(42, None)),
@@ -552,6 +575,7 @@ fn test_all_remaining_expr_kinds() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
     };
 
@@ -594,6 +618,7 @@ fn test_all_remaining_expr_kinds() {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 }),
                 right: Box::new(Expr {
                     kind: ExprKind::Identifier("b".to_string()),
@@ -601,12 +626,14 @@ fn test_all_remaining_expr_kinds() {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 }),
             },
             span: Span::new(0, 5),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         is_async: false,
         is_pub: false,
@@ -622,6 +649,7 @@ fn test_all_remaining_expr_kinds() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         // Verify construction succeeded
         assert!(expr.span.start <= expr.span.end);

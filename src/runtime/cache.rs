@@ -242,6 +242,7 @@ mod tests {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         })
     }
     #[test]
@@ -443,6 +444,7 @@ mod mutation_tests {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
 
         cache.insert("test".to_string(), expr, None);
@@ -488,6 +490,7 @@ mod mutation_tests {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
 
         cache.insert("test".to_string(), Rc::clone(&expr), None);
@@ -515,6 +518,7 @@ mod mutation_tests {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
 
         cache.cache_parsed("expr".to_string(), expr);
@@ -539,6 +543,7 @@ mod coverage_push_round29 {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         })
     }
 

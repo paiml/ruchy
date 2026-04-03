@@ -156,6 +156,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let docs = gen.extract_docs(&ast);
         assert_eq!(docs.len(), 2);
@@ -170,6 +171,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = gen.generate(&ast, DocFormat::Markdown);
         assert!(result.is_ok());
@@ -184,6 +186,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = gen.generate(&ast, DocFormat::Html);
         assert!(result.is_ok());
@@ -199,6 +202,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = gen.generate(&ast, DocFormat::Json);
         assert!(result.is_ok());
@@ -214,6 +218,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let examples = gen.extract_examples(&ast);
         assert_eq!(examples.len(), 1);
@@ -228,6 +233,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = gen.validate_examples(&ast);
         assert!(result.is_ok());
@@ -242,6 +248,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let attrs = gen.extract_attributes(&ast);
         assert_eq!(attrs.len(), 0);
@@ -256,6 +263,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let docs = gen.extract_inline_docs(&ast);
         assert_eq!(docs.len(), 0);
@@ -270,6 +278,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let groups = gen.group_by_module(&ast);
         assert!(groups.is_empty());
@@ -284,6 +293,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let index = gen.generate_index(&ast);
         assert!(index.is_empty());
@@ -298,6 +308,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = gen.resolve_links(&ast);
         assert!(result.is_ok());

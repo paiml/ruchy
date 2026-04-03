@@ -236,6 +236,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -247,6 +248,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -258,6 +260,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -353,6 +356,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -374,6 +378,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -393,6 +398,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -412,6 +418,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -431,6 +438,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -448,6 +456,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -466,6 +475,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_type_decl_expr(&expr);
         assert!(result.is_ok());
@@ -525,6 +535,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -557,6 +568,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_try_operator(&complex_expr);
         assert!(result.is_ok());
@@ -581,6 +593,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -606,6 +619,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -627,6 +641,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -647,6 +662,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -668,6 +684,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -687,6 +704,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -708,6 +726,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -729,6 +748,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -748,6 +768,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -767,6 +788,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_result_ok(&nested);
         assert!(result.is_ok());
@@ -786,6 +808,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_result_err(&nested);
         assert!(result.is_ok());
@@ -805,6 +828,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_option_some(&nested);
         assert!(result.is_ok());
@@ -829,12 +853,14 @@ mod tests {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 })),
             },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -856,6 +882,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let expr = Expr {
             kind: ExprKind::Try {
@@ -865,6 +892,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_error_only_expr(&expr);
         assert!(result.is_ok());
@@ -888,6 +916,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -910,6 +939,7 @@ mod tests {
             }],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -935,6 +965,7 @@ mod tests {
             }],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -956,6 +987,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -976,6 +1008,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -997,6 +1030,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1021,6 +1055,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1044,6 +1079,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1064,6 +1100,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1096,6 +1133,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1117,6 +1155,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1136,6 +1175,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1155,6 +1195,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_misc_expr(&expr);
         assert!(result.is_ok());
@@ -1172,6 +1213,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_result_ok(&bool_expr);
         assert!(result.is_ok());
@@ -1190,6 +1232,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_result_err(&bool_expr);
         assert!(result.is_ok());
@@ -1208,6 +1251,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_option_some(&bool_expr);
         assert!(result.is_ok());

@@ -567,6 +567,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -578,6 +579,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_len_call(&expr));
     }
@@ -592,6 +594,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let arg = Expr {
             kind: ExprKind::Identifier("vec".to_string()),
@@ -599,6 +602,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let expr = Expr {
             kind: ExprKind::Call {
@@ -609,6 +613,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_len_call(&expr));
     }
@@ -623,6 +628,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -634,6 +640,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!Transpiler::is_len_call(&expr));
     }
@@ -678,6 +685,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let right = Expr {
             kind: ExprKind::List(vec![Expr {
@@ -686,11 +694,13 @@ mod tests {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }]),
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_vec_array_concat(&left, &right));
     }
@@ -705,6 +715,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let right = Expr {
             kind: ExprKind::Identifier("other".to_string()),
@@ -712,6 +723,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!Transpiler::is_vec_array_concat(&left, &right));
     }

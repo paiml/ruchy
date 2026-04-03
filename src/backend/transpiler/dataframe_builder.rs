@@ -149,6 +149,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -164,6 +165,7 @@ mod tests {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+            contracts: Vec::new(),
                     })
                     .collect(),
             ),
@@ -171,6 +173,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -187,6 +190,7 @@ mod tests {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 }),
                 args: vec![],
             },
@@ -194,6 +198,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -209,6 +214,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -224,6 +230,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -534,6 +541,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(transpiler.is_dataframe_builder(&expr));
     }
@@ -617,6 +625,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!transpiler.is_dataframe_builder(&expr));
     }

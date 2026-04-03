@@ -500,6 +500,7 @@ fn test_ternary_true() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(1));
@@ -518,6 +519,7 @@ fn test_ternary_false() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&expr).unwrap();
     assert_eq!(result, Value::Integer(2));
@@ -537,6 +539,7 @@ fn test_break_with_value() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&expr);
     assert!(matches!(
@@ -557,6 +560,7 @@ fn test_break_with_label() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&expr);
     assert!(matches!(
@@ -576,6 +580,7 @@ fn test_continue_with_label() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&expr);
     assert!(matches!(
@@ -1059,6 +1064,7 @@ fn test_loop_expression() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&loop_expr).unwrap();
     assert_eq!(result, Value::Integer(42));
@@ -1081,6 +1087,7 @@ fn test_labeled_loop() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
     let result = interp.eval_expr(&loop_expr).unwrap();
     assert_eq!(result, Value::Integer(99));

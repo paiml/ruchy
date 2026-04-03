@@ -400,6 +400,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -414,6 +415,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -424,6 +426,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -483,6 +486,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         transpiler.collect_signatures_from_expr(&func_expr);
@@ -533,6 +537,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         // Test regular literal (should not contain hashmap)
@@ -559,6 +564,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         // Test regular literal (should not contain dataframe)
@@ -590,6 +596,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         transpiler.analyze_expr_mutability(&assign_expr);
@@ -604,6 +611,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         transpiler.analyze_expr_mutability(&assign_expr2);
@@ -644,6 +652,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         let result = transpiler.transpile(&block_expr);
@@ -688,6 +697,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         let result = transpiler.transpile_to_program(&object_expr);
@@ -741,6 +751,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         let result = transpiler.transpile_to_program(&func_expr);
@@ -771,6 +782,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         // Should not panic, even with potentially undefined variables
@@ -834,6 +846,7 @@ mod tests {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             };
 
             transpiler.collect_signatures_from_expr(&func_expr);
@@ -908,6 +921,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_call_to_main(&main_call));
     }
@@ -924,6 +938,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!Transpiler::is_call_to_main(&other_call));
     }
@@ -965,6 +980,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::contains_imports(&import_expr));
     }
@@ -989,6 +1005,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::contains_file_imports(&file_import));
     }
@@ -1005,6 +1022,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::contains_file_imports(&file_import));
     }
@@ -1021,6 +1039,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!Transpiler::contains_file_imports(&std_import));
     }
@@ -1041,6 +1060,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_statement_expr(&let_expr));
     }
@@ -1057,6 +1077,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_statement_expr(&assign_expr));
     }
@@ -1074,6 +1095,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_statement_expr(&while_expr));
     }
@@ -1108,6 +1130,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         transpiler.collect_module_names_from_expr(&module_expr);
         assert!(transpiler.module_names.contains("test_module"));
@@ -1126,6 +1149,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let module2 = Expr {
             kind: ExprKind::Module {
@@ -1136,6 +1160,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let block_expr = Expr {
             kind: ExprKind::Block(vec![module1, module2]),
@@ -1143,6 +1168,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         transpiler.collect_module_names_from_expr(&block_expr);
         assert!(transpiler.module_names.contains("mod1"));
@@ -1179,6 +1205,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         transpiler.analyze_block_mutability(&[assign_expr]);
         assert!(transpiler.mutable_vars.contains("y"));
@@ -1242,6 +1269,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::has_standalone_functions(&func_expr));
     }
@@ -1263,6 +1291,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let block_expr = Expr {
             kind: ExprKind::Block(vec![func_expr, create_test_literal_expr(3)]),
@@ -1270,6 +1299,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::has_standalone_functions(&block_expr));
     }
@@ -1314,6 +1344,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let func2 = Expr {
             kind: ExprKind::Function {
@@ -1329,6 +1360,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let block_expr = Expr {
             kind: ExprKind::Block(vec![func1, func2]),
@@ -1336,6 +1368,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         transpiler.collect_signatures_from_expr(&block_expr);
         // Should collect both function signatures
@@ -1355,6 +1388,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let outer_module = Expr {
             kind: ExprKind::Module {
@@ -1365,6 +1399,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         transpiler.collect_module_names_from_expr(&outer_module);
         assert!(transpiler.module_names.contains("outer"));

@@ -130,6 +130,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -225,6 +226,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -245,6 +247,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -264,6 +267,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -281,6 +285,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -300,6 +305,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -430,6 +436,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -453,6 +460,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -474,6 +482,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -598,6 +607,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_type_cast(&expr, "f32")
@@ -616,6 +626,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_type_cast(&expr, "f64")
@@ -673,12 +684,14 @@ mod tests {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 })),
             },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -702,12 +715,14 @@ mod tests {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 })),
             },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -765,6 +780,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)
@@ -820,12 +836,14 @@ mod tests {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 })),
             },
             span: Span::default(),
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_control_misc_expr(&expr)

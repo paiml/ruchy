@@ -684,6 +684,7 @@ fn make_constructor(name: Option<&str>, return_type: Option<Type>) -> Constructo
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         return_type,
         is_pub: true,
@@ -740,6 +741,7 @@ fn make_class_method(name: &str, is_pub: bool) -> ClassMethod {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         is_pub,
         is_async: false,
@@ -778,6 +780,7 @@ fn make_class_constant(name: &str, is_pub: bool) -> crate::frontend::ast::ClassC
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
         is_pub,
     }
@@ -855,6 +858,7 @@ fn test_generate_default_impl_with_defaults() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         decorators: vec![],
     };
@@ -1376,6 +1380,7 @@ fn make_trait_method(name: &str, has_body: bool) -> crate::frontend::ast::TraitM
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }))
         } else {
             None
@@ -1452,6 +1457,7 @@ fn make_impl_method(name: &str, is_pub: bool) -> crate::frontend::ast::ImplMetho
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         is_pub,
     }
@@ -1637,6 +1643,7 @@ fn test_transpile_struct_with_methods() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         is_pub: true,
         is_async: false,
@@ -1735,6 +1742,7 @@ fn test_transpile_class_full() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         return_type: None,
         is_pub: true,
@@ -1749,6 +1757,7 @@ fn test_transpile_class_full() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }),
         is_pub: true,
         is_async: false,
@@ -1767,6 +1776,7 @@ fn test_transpile_class_full() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         },
         is_pub: true,
     }];

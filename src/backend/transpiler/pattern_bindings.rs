@@ -302,6 +302,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let pattern = Pattern::WithDefault {
             pattern: Box::new(Pattern::Identifier("x".to_string())),

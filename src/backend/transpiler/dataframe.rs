@@ -470,6 +470,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     #[test]
@@ -652,6 +653,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "select", &args);
         assert!(result.is_ok());
@@ -739,6 +741,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "groupby", &args);
         assert!(result.is_ok());
@@ -770,6 +773,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_dataframe_expr(&expr));
     }
@@ -783,6 +787,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_dataframe_expr(&expr));
     }
@@ -796,6 +801,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -807,6 +813,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_dataframe_expr(&expr));
     }
@@ -823,6 +830,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::Call { func, args: vec![] },
@@ -830,6 +838,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_dataframe_expr(&expr));
     }
@@ -877,6 +886,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!Transpiler::is_dataframe_expr(&expr));
     }
@@ -896,6 +906,7 @@ mod tests {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             },
             make_literal_expr(42),
         ];
@@ -922,6 +933,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "get", &args);
         assert!(result.is_ok());
@@ -1023,6 +1035,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "sort", &args);
         assert!(result.is_ok());
@@ -1039,6 +1052,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }];
         let result = transpiler.transpile_dataframe_method(&df_expr, "group_by", &args);
         assert!(result.is_ok());
@@ -1053,6 +1067,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::Call {
@@ -1063,6 +1078,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_option_or_result_expr(&expr));
     }
@@ -1075,6 +1091,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_option_or_result_expr(&expr));
     }
@@ -1087,6 +1104,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -1098,6 +1116,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_option_or_result_expr(&expr));
     }
@@ -1110,6 +1129,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -1121,6 +1141,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_option_or_result_expr(&expr));
     }
@@ -1133,6 +1154,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -1144,6 +1166,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!Transpiler::is_option_or_result_expr(&expr));
     }
@@ -1157,6 +1180,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(transpiler.is_option_or_result_with_context(&expr));
     }
@@ -1171,6 +1195,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(transpiler.is_option_or_result_with_context(&expr));
     }
@@ -1185,6 +1210,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(transpiler.is_option_or_result_with_context(&expr));
     }
@@ -1198,6 +1224,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(!transpiler.is_option_or_result_with_context(&expr));
     }
@@ -1214,6 +1241,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         // x is not Option/Result so should return false
         assert!(!transpiler.is_option_or_result_with_context(&expr_x));
@@ -1298,6 +1326,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -1309,6 +1338,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_dataframe_expr(&expr));
     }
@@ -1321,6 +1351,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -1332,6 +1363,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_dataframe_expr(&expr));
     }
@@ -1344,6 +1376,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         });
         let expr = Expr {
             kind: ExprKind::MethodCall {
@@ -1355,6 +1388,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         assert!(Transpiler::is_dataframe_expr(&expr));
     }
@@ -1407,6 +1441,7 @@ mod property_tests_dataframe {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+            contracts: Vec::new(),
                     },
                     Expr {
                         kind: ExprKind::Literal(Literal::Integer(2, None)),
@@ -1414,6 +1449,7 @@ mod property_tests_dataframe {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+            contracts: Vec::new(),
                     },
                 ],
             },
@@ -1426,6 +1462,7 @@ mod property_tests_dataframe {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+            contracts: Vec::new(),
                     },
                     Expr {
                         kind: ExprKind::Literal(Literal::String("Bob".to_string())),
@@ -1433,6 +1470,7 @@ mod property_tests_dataframe {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+            contracts: Vec::new(),
                     },
                 ],
             },

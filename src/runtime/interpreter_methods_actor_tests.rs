@@ -15,6 +15,7 @@ fn make_expr(kind: ExprKind) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     }
 }
 

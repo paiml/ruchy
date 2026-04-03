@@ -276,6 +276,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler.transpile_expr(&expr);
         assert!(result.is_ok());
@@ -290,6 +291,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .try_transpile_dataframe_builder_inline_impl(&expr)
@@ -326,6 +328,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = Transpiler::extract_dataframe_columns_impl(&expr);
         assert!(result.is_none());
@@ -352,6 +355,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 

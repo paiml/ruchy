@@ -13,6 +13,7 @@ fn test_returns_vec_macro() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(returns_vec(&body));
 }
@@ -28,11 +29,13 @@ fn test_returns_vec_list() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+        contracts: Vec::new(),
         }]),
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(returns_vec(&body));
 }
@@ -46,6 +49,7 @@ fn test_returns_object_literal_true() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(returns_object_literal(&body));
 }
@@ -59,6 +63,7 @@ fn test_returns_object_literal_false() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(!returns_object_literal(&body));
 }
@@ -73,6 +78,7 @@ fn test_expr_is_string_literal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(expr_is_string(&expr));
 }
@@ -87,6 +93,7 @@ fn test_expr_is_string_interpolation() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(expr_is_string(&expr));
 }
@@ -101,6 +108,7 @@ fn test_has_non_unit_expression_true() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(super::super::function_analysis::has_non_unit_expression(
         &body
@@ -117,6 +125,7 @@ fn test_has_non_unit_expression_false() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(!super::super::function_analysis::has_non_unit_expression(
         &body
@@ -133,6 +142,7 @@ fn test_is_void_expression_unit_v2() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     assert!(super::super::function_analysis::is_void_expression(&expr));
 }
@@ -149,6 +159,7 @@ fn test_generate_body_tokens_with_string_conversion() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_body_tokens_with_string_conversion(&body, false);
     assert!(result.is_ok());
@@ -164,6 +175,7 @@ fn test_generate_body_tokens_with_string_conversion_async() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_body_tokens_with_string_conversion(&body, true);
     assert!(result.is_ok());
@@ -179,6 +191,7 @@ fn test_generate_param_tokens_with_lifetime_empty() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_param_tokens_with_lifetime(&[], &body, "test_fn");
     assert!(result.is_ok());
@@ -195,6 +208,7 @@ fn test_generate_param_tokens_with_lifetime_with_ref() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let params = vec![Param {
         pattern: Pattern::Identifier("x".to_string()),
@@ -227,6 +241,7 @@ fn test_generate_return_type_tokens_with_lifetime_none() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_return_type_tokens_with_lifetime("test_fn", None, &body);
     assert!(result.is_ok());
@@ -242,6 +257,7 @@ fn test_generate_return_type_tokens_with_lifetime_ref() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let return_type = Type {
         kind: TypeKind::Reference {
@@ -269,6 +285,7 @@ fn test_transpile_function_pub() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.transpile_function(
         "pub_fn",
@@ -295,6 +312,7 @@ fn test_transpile_function_async() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.transpile_function(
         "async_fn",
@@ -321,6 +339,7 @@ fn test_transpile_function_with_type_params() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let params = vec![Param {
         pattern: Pattern::Identifier("x".to_string()),
@@ -355,6 +374,7 @@ fn test_transpile_function_with_return_type() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let return_type = Type {
         kind: TypeKind::Named("i64".to_string()),
@@ -397,6 +417,7 @@ fn test_infer_param_type_simple() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             op: BinaryOp::Add,
             right: Box::new(Expr {
@@ -405,12 +426,14 @@ fn test_infer_param_type_simple() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.infer_param_type(&param, &body, "test_fn");
     assert!(!result.is_empty());
@@ -450,6 +473,7 @@ fn test_generate_param_tokens_multiple() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             op: BinaryOp::Add,
             right: Box::new(Expr {
@@ -458,12 +482,14 @@ fn test_generate_param_tokens_multiple() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_param_tokens(&params, &body, "add_fn");
     assert!(result.is_ok());
@@ -480,6 +506,7 @@ fn test_generate_return_type_tokens_explicit() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let return_type = Type {
         kind: TypeKind::Named("i64".to_string()),
@@ -502,11 +529,13 @@ fn test_generate_body_tokens_sync() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+        contracts: Vec::new(),
         }]),
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_body_tokens(&body, false);
     assert!(result.is_ok());
@@ -522,6 +551,7 @@ fn test_generate_body_tokens_async() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_body_tokens(&body, true);
     assert!(result.is_ok());
@@ -565,6 +595,7 @@ fn test_transpile_block_with_statements() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     }];
     let result = transpiler.transpile_block(&exprs);
     assert!(result.is_ok());
@@ -592,6 +623,7 @@ fn test_transpile_lambda_simple() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             op: BinaryOp::Multiply,
             right: Box::new(Expr {
@@ -600,12 +632,14 @@ fn test_transpile_lambda_simple() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.transpile_lambda(&params, &body);
     assert!(result.is_ok());
@@ -623,6 +657,7 @@ fn test_transpile_call_simple_fn() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let args = vec![Expr {
         kind: ExprKind::Literal(Literal::Integer(42, None)),
@@ -630,6 +665,7 @@ fn test_transpile_call_simple_fn() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     }];
     let result = transpiler.transpile_call(&func, &args);
     assert!(result.is_ok());
@@ -645,6 +681,7 @@ fn test_transpile_method_call_simple() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let args = vec![];
     let result = transpiler.transpile_method_call(&object, "len", &args);
@@ -663,6 +700,7 @@ fn test_transpile_method_call_with_args() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let args = vec![Expr {
         kind: ExprKind::Literal(Literal::Integer(42, None)),
@@ -670,6 +708,7 @@ fn test_transpile_method_call_with_args() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     }];
     let result = transpiler.transpile_method_call(&object, "push", &args);
     assert!(result.is_ok());
@@ -686,6 +725,7 @@ fn test_transpile_pipeline_simple() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let stages = vec![PipelineStage {
         op: Box::new(Expr {
@@ -694,6 +734,7 @@ fn test_transpile_pipeline_simple() {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+        contracts: Vec::new(),
         }),
         span: Span::default(),
     }];
@@ -723,6 +764,7 @@ fn test_transpile_function_infer_return_type() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             op: BinaryOp::Multiply,
             right: Box::new(Expr {
@@ -731,12 +773,14 @@ fn test_transpile_function_infer_return_type() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result =
         transpiler.transpile_function("square", &[], &params, &body, false, None, false, &[]);
@@ -767,6 +811,7 @@ fn test_transpile_function_nested_array_param() {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+                    contracts: Vec::new(),
                     }),
                     index: Box::new(Expr {
                         kind: ExprKind::Identifier("i".to_string()),
@@ -774,12 +819,14 @@ fn test_transpile_function_nested_array_param() {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+                    contracts: Vec::new(),
                     }),
                 },
                 span: Span::default(),
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             index: Box::new(Expr {
                 kind: ExprKind::Identifier("j".to_string()),
@@ -787,12 +834,14 @@ fn test_transpile_function_nested_array_param() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result =
         transpiler.transpile_function("get_element", &[], &params, &body, false, None, false, &[]);
@@ -811,6 +860,7 @@ fn test_transpile_function_references_global() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             op: BinaryOp::Add,
             right: Box::new(Expr {
@@ -819,12 +869,14 @@ fn test_transpile_function_references_global() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let params = vec![Param {
         pattern: Pattern::Identifier("x".to_string()),
@@ -852,6 +904,7 @@ fn test_transpile_function_with_test_attribute() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let attrs = vec![Attribute {
         name: "test".to_string(),
@@ -882,6 +935,7 @@ fn test_transpile_function_with_derive_attribute() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let attrs = vec![Attribute {
         name: "derive".to_string(),
@@ -927,6 +981,7 @@ fn test_try_transpile_dataframe_builder_inline() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.try_transpile_dataframe_builder_inline(&expr);
     assert!(result.is_ok());
@@ -955,6 +1010,7 @@ fn test_transpile_function_match_string_arms() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             arms: vec![
                 MatchArm {
@@ -966,6 +1022,7 @@ fn test_transpile_function_match_string_arms() {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+                    contracts: Vec::new(),
                     }),
                     span: Span::default(),
                 },
@@ -978,6 +1035,7 @@ fn test_transpile_function_match_string_arms() {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+                    contracts: Vec::new(),
                     }),
                     span: Span::default(),
                 },
@@ -987,6 +1045,7 @@ fn test_transpile_function_match_string_arms() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.transpile_function(
         "to_string",
@@ -1031,6 +1090,7 @@ fn test_transpile_function_mutable_ref_lifetime() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.transpile_function(
         "modify",
@@ -1067,6 +1127,7 @@ fn test_generate_body_tokens_with_string_conversion_if() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             then_branch: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::String("yes".to_string())),
@@ -1074,6 +1135,7 @@ fn test_generate_body_tokens_with_string_conversion_if() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             else_branch: Some(Box::new(Expr {
                 kind: ExprKind::Literal(Literal::String("no".to_string())),
@@ -1081,12 +1143,14 @@ fn test_generate_body_tokens_with_string_conversion_if() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             })),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.generate_body_tokens_with_string_conversion(&body, false);
     assert!(result.is_ok());
@@ -1102,6 +1166,7 @@ fn test_transpile_call_col_function() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let args = vec![Expr {
         kind: ExprKind::Literal(Literal::String("name".to_string())),
@@ -1109,6 +1174,7 @@ fn test_transpile_call_col_function() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     }];
     let result = transpiler.transpile_call(&func, &args);
     assert!(result.is_ok());
@@ -1127,6 +1193,7 @@ fn test_transpile_pipeline_multiple_stages() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             },
             Expr {
                 kind: ExprKind::Literal(Literal::Integer(2, None)),
@@ -1134,12 +1201,14 @@ fn test_transpile_pipeline_multiple_stages() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             },
         ]),
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let stages = vec![
         PipelineStage {
@@ -1149,6 +1218,7 @@ fn test_transpile_pipeline_multiple_stages() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             span: Span::default(),
         },
@@ -1159,6 +1229,7 @@ fn test_transpile_pipeline_multiple_stages() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             span: Span::default(),
         },
@@ -1189,6 +1260,7 @@ fn test_infer_return_type_from_params_typed() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.infer_return_type_from_params(&body, &params);
     assert!(result.is_ok());
@@ -1204,6 +1276,7 @@ fn test_infer_return_type_from_params_empty() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.infer_return_type_from_params(&body, &[]);
     assert!(result.is_ok());
@@ -1219,6 +1292,7 @@ fn test_is_nested_array_param_simple() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.is_nested_array_param("matrix", &expr);
     assert!(!result);
@@ -1238,6 +1312,7 @@ fn test_is_nested_array_param_nested() {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+                    contracts: Vec::new(),
                     }),
                     index: Box::new(Expr {
                         kind: ExprKind::Literal(Literal::Integer(0, None)),
@@ -1245,12 +1320,14 @@ fn test_is_nested_array_param_nested() {
                         attributes: vec![],
                         leading_comments: vec![],
                         trailing_comment: None,
+                    contracts: Vec::new(),
                     }),
                 },
                 span: Span::default(),
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             index: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(1, None)),
@@ -1258,12 +1335,14 @@ fn test_is_nested_array_param_nested() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.is_nested_array_param("matrix", &expr);
     assert!(result);
@@ -1279,6 +1358,7 @@ fn test_references_globals_local() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let result = transpiler.references_globals(&expr);
     assert!(!result);
@@ -1294,6 +1374,7 @@ fn test_references_globals_uppercase() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     // references_globals checks for specific patterns, not just uppercase
     let _result = transpiler.references_globals(&expr);
@@ -1428,6 +1509,7 @@ fn test_transpile_match_with_string_arms_direct() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     };
     let arms = vec![
         MatchArm {
@@ -1439,6 +1521,7 @@ fn test_transpile_match_with_string_arms_direct() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             span: Span::default(),
         },
@@ -1451,6 +1534,7 @@ fn test_transpile_match_with_string_arms_direct() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
+            contracts: Vec::new(),
             }),
             span: Span::default(),
         },
@@ -1500,6 +1584,7 @@ fn test_try_transpile_dataframe_function_col() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
+    contracts: Vec::new(),
     }];
     let result = transpiler.try_transpile_dataframe_function("col", &args);
     assert!(result.is_ok());
@@ -1539,4 +1624,43 @@ fn test_generate_function_declaration_generic() {
         &body,
     );
     assert!(result.is_ok());
+}
+
+// === PMAT-001: Contract transpilation tests ===
+
+#[test]
+fn test_pmat001_transpile_function_with_requires_emits_doc_comment() {
+    let transpiler = Transpiler::new();
+    let source = r#"fun divide(a: f64, b: f64) -> f64 requires b != 0.0 { a / b }"#;
+    let mut parser = Parser::new(source);
+    let ast = parser.parse().unwrap();
+    let result = transpiler.transpile_expr(&ast);
+    assert!(result.is_ok(), "Transpilation failed: {:?}", result.err());
+    let output = result.unwrap().to_string();
+    assert!(output.contains("Contract"), "Output should contain contract doc comment: {}", output);
+    assert!(output.contains("requires"), "Output should mention 'requires': {}", output);
+}
+
+#[test]
+fn test_pmat001_transpile_function_without_contracts_no_doc_comment() {
+    let transpiler = Transpiler::new();
+    let source = r#"fun add(a: i64, b: i64) -> i64 { a + b }"#;
+    let mut parser = Parser::new(source);
+    let ast = parser.parse().unwrap();
+    let result = transpiler.transpile_expr(&ast);
+    assert!(result.is_ok());
+    let output = result.unwrap().to_string();
+    assert!(!output.contains("Contract"), "No contract comment expected: {}", output);
+}
+
+#[test]
+fn test_pmat001_transpile_function_with_ensures_emits_doc_comment() {
+    let transpiler = Transpiler::new();
+    let source = r#"fun abs(x: i64) -> i64 ensures result >= 0 { if x < 0 { -x } else { x } }"#;
+    let mut parser = Parser::new(source);
+    let ast = parser.parse().unwrap();
+    let result = transpiler.transpile_expr(&ast);
+    assert!(result.is_ok(), "Transpilation failed: {:?}", result.err());
+    let output = result.unwrap().to_string();
+    assert!(output.contains("ensures"), "Output should mention 'ensures': {}", output);
 }

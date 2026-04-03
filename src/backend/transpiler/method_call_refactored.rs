@@ -254,6 +254,7 @@ mod tests {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -264,6 +265,7 @@ mod tests {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -726,6 +728,7 @@ mod tests {
             attributes: Vec::new(),
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = t.transpile_method_call_refactored(&obj, "contains", &[field_access]);
         assert!(result.is_ok());

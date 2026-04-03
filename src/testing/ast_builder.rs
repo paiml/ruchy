@@ -65,6 +65,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a boolean literal
@@ -83,6 +84,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create an identifier expression
@@ -101,6 +103,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a binary operation
@@ -123,6 +126,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a unary operation
@@ -144,6 +148,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create an if expression
@@ -166,6 +171,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a match expression
@@ -187,6 +193,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a match arm
@@ -320,6 +327,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a lambda expression
@@ -341,6 +349,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a block expression
@@ -359,6 +368,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a let expression
@@ -384,12 +394,14 @@ impl AstBuilder {
                     attributes: vec![],
                     leading_comments: vec![],
                     trailing_comment: None,
+            contracts: Vec::new(),
                 }),
             },
             span: self.span,
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create an assignment
@@ -411,6 +423,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a `Result::Ok` variant
@@ -432,6 +445,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a `Result::Err` variant
@@ -453,6 +467,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create an `Option::Some` variant
@@ -474,6 +489,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create an `Option::None` variant
@@ -504,6 +520,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a tuple literal
@@ -522,6 +539,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create string interpolation
@@ -540,6 +558,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a for loop
@@ -564,6 +583,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a while loop
@@ -586,6 +606,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a loop expression
@@ -607,6 +628,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a break expression
@@ -625,6 +647,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a continue expression
@@ -643,6 +666,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a return expression
@@ -663,6 +687,7 @@ impl AstBuilder {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
     /// Create a type annotation

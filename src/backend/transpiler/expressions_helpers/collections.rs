@@ -313,6 +313,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -324,6 +325,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -544,6 +546,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_struct_literal("Person", &fields, Some(&base))
@@ -594,6 +597,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let end = Expr {
             kind: ExprKind::Identifier("end".to_string()),
@@ -601,6 +605,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let result = transpiler
             .transpile_range(&start, &end, false)
@@ -618,6 +623,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let fields = vec![("numbers".to_string(), nested_list)];
         let result = transpiler
@@ -639,6 +645,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let spread = Expr {
             kind: ExprKind::Spread {
@@ -648,6 +655,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let elements = vec![spread];
         let result = transpiler
@@ -669,6 +677,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let spread = Expr {
             kind: ExprKind::Spread {
@@ -678,6 +687,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let elements = vec![int_expr(1), spread, int_expr(3)];
         let result = transpiler
@@ -698,6 +708,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let spread = Expr {
             kind: ExprKind::Spread {
@@ -707,6 +718,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let elements = vec![spread];
         let result = transpiler
@@ -728,6 +740,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let spread = Expr {
             kind: ExprKind::Spread {
@@ -737,6 +750,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let elements = vec![int_expr(1), spread];
         let result = transpiler
@@ -757,6 +771,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let fields = vec![ObjectField::Spread { expr: other_map }];
         let result = transpiler
@@ -809,6 +824,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         let end = int_expr(5);
         let result = transpiler
