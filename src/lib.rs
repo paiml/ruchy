@@ -54,6 +54,9 @@
 #![allow(clippy::unnecessary_to_owned)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::if_same_then_else)]
+#[macro_use]
+#[allow(unused_macros)]
+mod generated_contracts;
 #[cfg(feature = "mcp")]
 pub mod actors;
 pub mod api_docs;
@@ -133,12 +136,19 @@ pub use utils::*;
 /// - The source code cannot be parsed
 /// - The transpilation to Rust fails
 pub fn compile(source: &str) -> Result<String> {
+    if source.is_empty() {
+        return Err(anyhow::anyhow!("empty source"));
+    }
+    // Contract: configuration-v1.yaml precondition (pv codegen)
+    contract_pre_configuration!(source.as_bytes());
     let mut parser = Parser::new(source);
     let ast = parser.parse()?;
     let mut transpiler = Transpiler::new();
     // Use transpile_to_program to wrap in main() for standalone compilation
     let rust_code = transpiler.transpile_to_program(&ast)?;
-    Ok(rust_code.to_string())
+    let result = rust_code.to_string();
+    contract_post_configuration!(&result);
+    Ok(result)
 }
 /// Check if the given source code has valid syntax
 #[must_use]
@@ -258,12 +268,10 @@ mod tests {
     fn test_compile_impl() {
         // PARSER-009: impl blocks are now supported
         let result = compile("impl Point { fun new() -> Point { Point { x: 0.0, y: 0.0 } } }");
-
         assert!(
             result.is_ok(),
             "Should accept impl blocks (PARSER-009 implementation)"
         );
-
         if let Ok(code) = result {
             assert!(code.contains("impl Point"));
             assert!(code.contains("fn new"));
@@ -829,7 +837,6 @@ mod tests {
         ";
         assert!(compile(quicksort).is_ok());
     }
-
     #[test]
     fn test_is_valid_syntax() {
         // Test valid syntax
@@ -838,14 +845,12 @@ mod tests {
         assert!(is_valid_syntax("fun f() { }"));
         assert!(is_valid_syntax("[1, 2, 3]"));
         assert!(is_valid_syntax("true && false"));
-
         // Test invalid syntax
         assert!(!is_valid_syntax("let x ="));
         assert!(!is_valid_syntax("fun"));
         assert!(!is_valid_syntax("if { }"));
         assert!(!is_valid_syntax("match"));
     }
-
     #[test]
     fn test_compile_more_binary_ops() {
         assert!(compile("10 % 3").is_ok());
@@ -853,47 +858,40 @@ mod tests {
         assert!(compile("\"a\" < \"b\"").is_ok());
         assert!(compile("[1] + [2]").is_ok());
     }
-
     #[test]
     fn test_compile_more_unary_ops() {
         // Just test that these don't panic
         let _ = compile("+42");
         let _ = compile("-(-42)");
     }
-
     #[test]
     fn test_compile_string_ops() {
         assert!(compile("\"hello\"").is_ok());
         assert!(compile("\"hello\" + \" world\"").is_ok());
         assert!(compile("\"test\".len()").is_ok());
     }
-
     #[test]
     fn test_compile_tuples() {
         assert!(compile("(1, 2)").is_ok());
         assert!(compile("(1, \"hello\", true)").is_ok());
         assert!(compile("(x, y, z)").is_ok());
     }
-
     #[test]
     fn test_compile_do_while() {
         let result = compile("do { x = x + 1 } while x < 10");
         // Even if not supported, shouldn't panic
         let _ = result;
     }
-
     #[test]
     fn test_compile_loop() {
         // Loop might not be supported, just test it doesn't panic
         let _ = compile("loop { break }");
     }
-
     #[test]
     fn test_compile_comments() {
         assert!(compile("// This is a comment\n42").is_ok());
         assert!(compile("/* Block comment */ 42").is_ok());
     }
-
     #[test]
     fn test_compile_float_literals() {
         assert!(compile("3.15").is_ok());
@@ -901,19 +899,16 @@ mod tests {
         assert!(compile("0.5").is_ok());
         assert!(compile("1.0").is_ok());
     }
-
     #[test]
     fn test_compile_bool_literals() {
         assert!(compile("true").is_ok());
         assert!(compile("false").is_ok());
     }
-
     #[test]
     fn test_compile_async() {
         // Async might not be fully supported, just test it doesn't panic
         let _ = compile("async fn fetch() { await get_data() }");
     }
-
     #[test]
     fn test_compile_various_errors() {
         // Test various compilation errors
@@ -924,81 +919,68 @@ mod tests {
         assert!(compile("][").is_err());
         assert!(compile("}{").is_err());
     }
-
     #[test]
     fn test_compile_record() {
         assert!(compile("{ x: 1, y: 2 }").is_ok());
         assert!(compile("{ name: \"test\", age: 30 }").is_ok());
     }
-
     #[test]
     fn test_compile_field_access() {
         assert!(compile("point.x").is_ok());
         assert!(compile("person.name").is_ok());
         assert!(compile("obj.method()").is_ok());
     }
-
     #[test]
     fn test_compile_array_index() {
         assert!(compile("arr[0]").is_ok());
         assert!(compile("matrix[i][j]").is_ok());
     }
-
     #[test]
     fn test_compile_range_expressions() {
         assert!(compile("1..10").is_ok());
         assert!(compile("0..=100").is_ok());
     }
-
     #[test]
     fn test_compile_advanced_patterns() {
         assert!(compile("match x { Some(v) => v, None => 0 }").is_ok());
         assert!(compile("match (x, y) { (0, 0) => \"origin\", _ => \"other\" }").is_ok());
     }
-
     #[test]
     fn test_compile_type_annotations() {
         assert!(compile("let x: i32 = 42").is_ok());
         assert!(compile("fun f(x: String) -> bool { true }").is_ok());
     }
-
     #[test]
     fn test_compile_generics() {
         assert!(compile("fun id<T>(x: T) -> T { x }").is_ok());
         assert!(compile("struct Box<T> { value: T }").is_ok());
     }
-
     #[test]
     fn test_compile_traits() {
         // Trait declarations are supported
         assert!(compile("trait Show { fun show(self) -> String }").is_ok());
-
         // PARSER-009: impl blocks are now supported
         let result = compile("impl Show for i32 { fun show(self) -> String { self.to_string() } }");
         assert!(
             result.is_ok(),
             "Should accept impl blocks (PARSER-009 implementation)"
         );
-
         if let Ok(code) = result {
             assert!(code.contains("impl"));
             assert!(code.contains("Show"));
         }
     }
-
     #[test]
     fn test_compile_modules() {
         assert!(compile("mod math { fun add(x: i32, y: i32) -> i32 { x + y } }").is_ok());
         assert!(compile("use std::collections::HashMap").is_ok());
     }
-
     #[test]
     fn test_compile_const() {
         // Const might not be supported yet, just ensure no panic
         let _ = compile("const PI: f64 = 3.15159");
         let _ = compile("static COUNT: i32 = 0");
     }
-
     #[test]
     fn test_compile_error_handling() {
         // Test various error conditions
@@ -1009,24 +991,20 @@ mod tests {
         assert!(compile("if").is_err());
         assert!(compile("match").is_err());
     }
-
     #[test]
     fn test_compile_unicode() {
         assert!(compile("let emoji = \"😀\"").is_ok());
         assert!(compile("let chinese = \"你好\"").is_ok());
         assert!(compile("let arabic = \"مرحبا\"").is_ok());
     }
-
     #[test]
     fn test_compile_edge_cases() {
         // Very long identifier
         let long_id = "a".repeat(1000);
         let _ = compile(&format!("let {long_id} = 1"));
-
         // Deeply nested expression - reduced from 100 to 30 to avoid stack overflow
         let nested = "(".repeat(30) + "1" + &")".repeat(30);
         let _ = compile(&nested);
-
         // Many arguments
         let args = (0..100)
             .map(|i| format!("arg{i}"))
@@ -1034,103 +1012,84 @@ mod tests {
             .join(", ");
         let _ = compile(&format!("fun f({args}) {{ }}"));
     }
-
     #[test]
     fn test_transpile_direct() {
         use crate::backend::transpiler::Transpiler;
         use crate::frontend::parser::Parser;
-
         let mut parser = Parser::new("1 + 2");
         if let Ok(ast) = parser.parse() {
             let mut transpiler = Transpiler::new();
             let _ = transpiler.transpile(&ast);
         }
     }
-
     #[test]
     fn test_type_inference_direct() {
         use crate::frontend::parser::Parser;
         use crate::middleend::infer::InferenceContext;
-
         let mut ctx = InferenceContext::new();
         let mut parser = Parser::new("42");
         if let Ok(ast) = parser.parse() {
             let _ = ctx.infer(&ast);
         }
     }
-
     #[test]
     fn test_interpreter_direct() {
         use crate::frontend::parser::Parser;
         use crate::runtime::interpreter::Interpreter;
-
         let mut interp = Interpreter::new();
         let mut parser = Parser::new("1 + 2");
         if let Ok(ast) = parser.parse() {
             let _ = interp.eval_expr(&ast);
         }
     }
-
     #[test]
     #[cfg(feature = "repl")]
     fn test_repl_commands() {
         use crate::runtime::repl::Repl;
         use std::path::PathBuf;
-
         let mut repl = Repl::new(PathBuf::from("/tmp")).expect("operation should succeed in test");
         let _ = repl.eval(":help");
         let _ = repl.eval(":clear");
         let _ = repl.eval(":exit");
     }
-
     #[test]
     fn test_module_resolver() {
         use crate::backend::module_resolver::ModuleResolver;
-
         let mut resolver = ModuleResolver::new();
         resolver.add_search_path(".");
         resolver.clear_cache();
         let stats = resolver.stats();
         assert_eq!(stats.cached_modules, 0);
     }
-
     #[test]
     fn test_token_types() {
         use crate::frontend::lexer::Token;
-
         let t1 = Token::Integer("42".to_string());
         let t2 = Token::Identifier("test".to_string());
         let t3 = Token::String("hello".to_string());
-
         assert!(matches!(t1, Token::Integer(_)));
         assert!(matches!(t2, Token::Identifier(_)));
         assert!(matches!(t3, Token::String(_)));
     }
-
     #[test]
     fn test_value_operations() {
         use crate::runtime::Value;
         use std::sync::Arc;
-
         let v1 = Value::Integer(42);
         let v2 = Value::String(Arc::from("test"));
         let v3 = Value::Bool(true);
         let v4 = Value::Nil;
-
         assert_eq!(v1.to_string(), "42");
         assert_eq!(v2.to_string(), "\"test\"");
         assert_eq!(v3.to_string(), "true");
         assert_eq!(v4.to_string(), "nil");
     }
-
     #[test]
     fn test_span_operations() {
         use crate::frontend::ast::Span;
-
         let s1 = Span::new(0, 10);
         let s2 = Span::new(5, 15);
         let merged = s1.merge(s2);
-
         assert_eq!(merged.start, 0);
         assert_eq!(merged.end, 15);
     }
@@ -1138,7 +1097,6 @@ mod tests {
 #[cfg(test)]
 mod property_tests_lib {
     use proptest::proptest;
-
     proptest! {
         /// Property: Function never panics on any input
         #[test]

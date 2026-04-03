@@ -119,6 +119,7 @@ fn log_run_start(file: &Path, verbose: bool) {
 
 /// Transpile AST for execution with context (complexity: 3)
 pub fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
+    contract_pre_atomic_write!(ast);
     let mut transpiler = Transpiler::new();
     transpiler
         .transpile_to_program_with_context(ast, Some(file))

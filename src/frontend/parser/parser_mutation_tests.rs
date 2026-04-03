@@ -11,6 +11,7 @@ fn test_try_range_operators_less_than_comparison() {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
 
     // Test when prec < min_prec (should return None)
@@ -42,6 +43,7 @@ fn test_try_range_operators_plus_arithmetic() {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
 
     let result = try_range_operators(&mut state, left, &Token::DotDot, 1);
@@ -68,6 +70,7 @@ fn test_try_assignment_operators_less_than_comparison() {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
 
     // Test boundary: when prec == min_prec
@@ -101,6 +104,7 @@ fn test_try_assignment_operators_equals_comparison() {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
 
     // Test when prec < min_prec (should return None with < operator)
@@ -132,6 +136,7 @@ fn test_try_ternary_operator_plus_arithmetic() {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
+            contracts: Vec::new(),
     };
 
     let result = try_ternary_operator(&mut state, left, &Token::Question, 1);

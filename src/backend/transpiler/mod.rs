@@ -379,6 +379,7 @@ impl Transpiler {
     /// which produces invalid Rust when the Block contains top-level items (functions/structs/etc)
     /// Fix: Always use `transpile_to_program()` which properly handles top-level items
     pub fn transpile(&mut self, expr: &Expr) -> Result<TokenStream> {
+        contract_pre_configuration!();
         self.transpile_to_program(expr)
     }
     // EXTREME TDD Round 69: is_rust_reserved_keyword and transpile_expr

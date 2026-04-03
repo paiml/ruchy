@@ -95,6 +95,8 @@ impl RuchyTestHarness {
     /// assert_eq!(result, Ok(()));
     /// ```
     pub fn validate_source(&self, source: &str, name: &str) -> TestResult<ValidationResult> {
+        // Contract: configuration-v1.yaml precondition (pv codegen)
+        contract_pre_configuration!(source.as_bytes());
         // Parse
         let mut parser = Parser::new(source);
         let ast = parser

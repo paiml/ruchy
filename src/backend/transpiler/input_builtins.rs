@@ -32,6 +32,7 @@ impl Transpiler {
         base_name: &str,
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
+        contract_pre_bce!(base_name);
         match base_name {
             "input" => {
                 if args.len() > 1 {

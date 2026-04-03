@@ -401,6 +401,15 @@ pub enum Token {
     Crate,
     #[token("df", priority = 2)]
     DataFrame,
+    // Contract keywords (Ruchy 5.0 - Design by Contract)
+    #[token("requires")]
+    Requires,
+    #[token("ensures")]
+    Ensures,
+    #[token("invariant")]
+    Invariant_,
+    #[token("decreases")]
+    Decreases,
     // Identifiers (lower priority than keywords)
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string(), priority = 1)]
     Identifier(String),

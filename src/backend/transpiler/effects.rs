@@ -16,6 +16,7 @@ impl Transpiler {
         name: &str,
         operations: &[EffectOperation],
     ) -> Result<TokenStream> {
+        contract_pre_configuration!(name);
         let effect_name = syn::parse_str::<syn::Ident>(name)?;
         let methods = transpile_effect_operations(self, operations)?;
 

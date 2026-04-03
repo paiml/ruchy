@@ -16,6 +16,7 @@ pub fn handle_transpile_command(
     minimal: bool,
     verbose: bool,
 ) -> Result<()> {
+    contract_pre_configuration!(file);
     log_transpile_start(file, minimal, verbose);
     let source = read_source_file(file, verbose)?;
     let ast = parse_source(&source)?;
@@ -73,6 +74,7 @@ pub fn parse_source(source: &str) -> Result<Expr> {
 /// Transpile AST to Rust code (complexity: 4)
 /// PARSER-077: Use prettyplease for proper formatting (no extra spaces)
 pub fn transpile_ast(ast: &Expr, minimal: bool) -> Result<String> {
+    contract_pre_configuration!(ast);
     let mut transpiler = Transpiler::new();
     if minimal {
         transpiler

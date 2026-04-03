@@ -6071,6 +6071,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "provable-contracts"
+version = "0.1.1"
+dependencies = [
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "provable-contracts-macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6798,6 +6809,7 @@ dependencies = [
  "prettyplease",
  "proc-macro2",
  "proptest",
+ "provable-contracts",
  "pulldown-cmark",
  "quickcheck",
  "quickcheck_macros",

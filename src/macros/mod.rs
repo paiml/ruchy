@@ -126,6 +126,7 @@ impl MacroExpander {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -138,6 +139,7 @@ impl MacroExpander {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -152,6 +154,7 @@ impl MacroExpander {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 }
@@ -174,6 +177,7 @@ mod tests {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -559,6 +563,7 @@ mod tests {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         let result = expander
@@ -580,6 +585,7 @@ mod tests {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         let result = expander
@@ -601,6 +607,7 @@ mod tests {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         let result = expander

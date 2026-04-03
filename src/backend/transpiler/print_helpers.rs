@@ -38,6 +38,8 @@ impl Transpiler {
             let func_tokens = proc_macro2::Ident::new(func_name, proc_macro2::Span::call_site());
             return Ok(quote! { #func_tokens!("") });
         }
+        contract_pre_configuration!(func_name);
+        contract_post_configuration!(&"ok");
         let mut format_string = String::new();
         let mut args = Vec::new();
         for part in parts {
@@ -87,6 +89,8 @@ impl Transpiler {
         base_name: &str,
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
+        contract_pre_configuration!();
+        contract_post_configuration!(&"ok");
         if !(base_name == "println"
             || base_name == "print"
             || base_name == "dbg"
@@ -147,6 +151,7 @@ impl Transpiler {
         func_tokens: &TokenStream,
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
+        contract_pre_configuration!();
         // FIXED: Don't treat first string argument as format string
         // Instead, treat all arguments as values to print with spaces
         if args.is_empty() {

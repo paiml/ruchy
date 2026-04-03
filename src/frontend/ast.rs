@@ -29,6 +29,27 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Contract clause for formal correctness annotations (Ruchy 5.0).
+///
+/// Contract clauses implement Design by Contract (Meyer, 1997) with
+/// SPARK-inspired graduated enforcement levels. At Silver level (default),
+/// they transpile to `debug_assert!` in Rust. At Gold/Platinum levels,
+/// they generate SMT queries or Kani proof harnesses.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub enum ContractClause {
+    /// Precondition: must hold on function entry.
+    /// Violation blame: caller.
+    Requires(Box<Expr>),
+    /// Postcondition: must hold on function exit.
+    /// `result` pseudo-variable binds the return value.
+    /// Violation blame: callee.
+    Ensures(Box<Expr>),
+    /// Class or loop invariant: preserved across mutations/iterations.
+    Invariant(Box<Expr>),
+    /// Termination metric: must strictly decrease each iteration.
+    Decreases(Box<Expr>),
+}
+
 /// Comment information for AST nodes.
 ///
 /// Comments are preserved during parsing to enable accurate code formatting
@@ -245,6 +266,13 @@ pub struct Expr {
     /// Trailing comments are inline comments that provide context for the
     /// specific line of code they follow.
     pub trailing_comment: Option<Comment>,
+    /// Contract clauses attached to this expression (Ruchy 5.0).
+    ///
+    /// Contract clauses are `requires`, `ensures`, `invariant`, and `decreases`
+    /// annotations that specify formal correctness properties. They are parsed
+    /// as part of function declarations, class bodies, and loop constructs.
+    /// At Silver level (default), they transpile to `debug_assert!` in Rust.
+    pub contracts: Vec<ContractClause>,
 }
 impl Expr {
     /// Creates a new expression with the given kind and span.
@@ -275,6 +303,7 @@ impl Expr {
             attributes: Vec::new(),
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 
@@ -321,6 +350,7 @@ impl Expr {
             attributes: Vec::new(),
             leading_comments,
             trailing_comment,
+            contracts: Vec::new(),
         }
     }
     /// Creates a new expression with attributes attached.
@@ -354,6 +384,7 @@ impl Expr {
             attributes,
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 }

@@ -97,6 +97,7 @@ impl<'a> Parser<'a> {
                 attributes: Vec::new(),
                 leading_comments: Vec::new(),
                 trailing_comment: None,
+            contracts: Vec::new(),
             })
         }
     }

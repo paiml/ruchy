@@ -16,6 +16,9 @@
 #![allow(clippy::items_after_statements)]
 #![allow(clippy::redundant_pub_crate)]
 #![allow(clippy::doc_markdown)]
+#[macro_use]
+#[allow(unused_macros)]
+mod generated_contracts;
 mod report;
 
 use anyhow::Result;

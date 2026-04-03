@@ -39,6 +39,8 @@ impl Transpiler {
     /// Wraps transpiled code in a complete Rust program with necessary imports
     /// Complexity: 4 (within Toyota Way limits)
     pub fn transpile_to_program(&mut self, expr: &Expr) -> Result<TokenStream> {
+        contract_pre_configuration!();
+        contract_post_configuration!(&"ok");
         // First analyze the entire program to detect mutable variables, const declarations, function signatures, and modules
         // SPEC-001-B: Must collect const names BEFORE optimization to preserve attributes
         if let ExprKind::Block(exprs) = &expr.kind {
@@ -72,6 +74,8 @@ impl Transpiler {
         expr: &Expr,
         file_path: Option<&std::path::Path>,
     ) -> Result<TokenStream> {
+        contract_pre_fp8_architecture_guard!();
+        contract_post_configuration!(&"ok");
         // First, resolve any file imports using the module resolver
         let resolved_expr = self.resolve_imports_with_context(expr, file_path)?;
 
@@ -234,6 +238,7 @@ impl Transpiler {
     /// Transpile module declaration
     /// Complexity: 5 (within Toyota Way limits)
     pub fn transpile_module_declaration(&self, name: &str, body: &Expr) -> Result<TokenStream> {
+        contract_pre_configuration!(name);
         let module_name = format_ident!("{}", name);
         let body_tokens = if let ExprKind::Block(exprs) = &body.kind {
             let mut module_items = Vec::new();
@@ -618,6 +623,7 @@ impl Transpiler {
     /// Transpiles an expression to a String
     /// Complexity: 3 (within Toyota Way limits)
     pub fn transpile_to_string(&mut self, expr: &Expr) -> Result<String> {
+        contract_pre_configuration!();
         let tokens = self.transpile(expr)?;
         let mut result = String::new();
         let token_str = tokens.to_string();
@@ -633,6 +639,7 @@ impl Transpiler {
     /// Generate minimal code for self-hosting (direct Rust mapping, no optimization)
     /// Complexity: 1 (within Toyota Way limits)
     pub fn transpile_minimal(&self, expr: &Expr) -> Result<String> {
+        contract_pre_configuration!();
         codegen_minimal::MinimalCodeGen::gen_program(expr)
     }
 

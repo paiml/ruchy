@@ -228,6 +228,7 @@ impl Transpiler {
         is_pub: bool,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
+        contract_pre_bce!();
         self.transpile_function_impl(
             name,
             type_params,
@@ -244,11 +245,13 @@ impl Transpiler {
     /// Transpile lambda/closure expressions
     /// EXTREME TDD Round 79: Delegates to lambda_transpiler module
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
+        contract_pre_configuration!(params);
         self.transpile_lambda_impl(params, body)
     }
     /// Transpiles function calls
     /// EXTREME TDD Round 79: Delegates to call_transpilation module
     pub fn transpile_call(&self, func: &Expr, args: &[Expr]) -> Result<TokenStream> {
+        contract_pre_configuration!();
         self.transpile_call_impl(func, args)
     }
 
@@ -262,6 +265,7 @@ impl Transpiler {
         method: &str,
         args: &[Expr],
     ) -> Result<TokenStream> {
+        contract_pre_configuration!();
         self.transpile_method_call_impl(object, method, args)
     }
 
@@ -283,12 +287,14 @@ impl Transpiler {
     /// Transpiles blocks
     /// EXTREME TDD Round 79: Delegates to block_transpiler module
     pub fn transpile_block(&self, exprs: &[Expr]) -> Result<TokenStream> {
+        contract_pre_q4k_superblock!(exprs);
         self.transpile_block_impl(exprs)
     }
 
     /// Transpiles pipeline expressions
     /// EXTREME TDD Round 79: Delegates to block_transpiler module
     pub fn transpile_pipeline(&self, expr: &Expr, stages: &[PipelineStage]) -> Result<TokenStream> {
+        contract_pre_embedding_extraction!();
         self.transpile_pipeline_impl(expr, stages)
     }
     // EXTREME TDD Round 53: Control flow methods moved to control_flow.rs

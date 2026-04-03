@@ -228,6 +228,7 @@ impl Transpiler {
             attributes: vec![],
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         };
 
         self.try_transpile_dataframe_builder_inline(&method_call_expr)
@@ -425,6 +426,7 @@ mod tests {
             attributes: vec![],
             leading_comments: vec![],
             trailing_comment: None,
+            contracts: Vec::new(),
         }
     }
 

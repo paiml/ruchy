@@ -1,6 +1,47 @@
 //! Function-related parsing (function definitions, lambdas, calls)
 use super::{bail, utils, Expr, ExprKind, Param, ParserState, Result, Span, Token, Type, TypeKind};
-use crate::frontend::ast::{DataFrameOp, Literal, Pattern};
+use crate::frontend::ast::{ContractClause, DataFrameOp, Literal, Pattern};
+
+/// Parse contract clauses: `requires expr`, `ensures expr`, `invariant expr`, `decreases expr`
+///
+/// Contract clauses appear between the function signature and the body block.
+/// Multiple clauses of the same kind are allowed. Each clause parses one expression.
+/// At Silver level (default), these transpile to `debug_assert!` in Rust.
+///
+/// # Grammar
+/// ```text
+/// contract_clause  = ("requires" | "ensures" | "invariant" | "decreases") expr
+/// contract_clauses = contract_clause*
+/// ```
+fn parse_contract_clauses(state: &mut ParserState) -> Result<Vec<ContractClause>> {
+    let mut clauses = Vec::new();
+    loop {
+        match state.tokens.peek() {
+            Some((Token::Requires, _)) => {
+                state.tokens.advance();
+                let condition = super::parse_expr_recursive(state)?;
+                clauses.push(ContractClause::Requires(Box::new(condition)));
+            }
+            Some((Token::Ensures, _)) => {
+                state.tokens.advance();
+                let condition = super::parse_expr_recursive(state)?;
+                clauses.push(ContractClause::Ensures(Box::new(condition)));
+            }
+            Some((Token::Invariant_, _)) => {
+                state.tokens.advance();
+                let condition = super::parse_expr_recursive(state)?;
+                clauses.push(ContractClause::Invariant(Box::new(condition)));
+            }
+            Some((Token::Decreases, _)) => {
+                state.tokens.advance();
+                let condition = super::parse_expr_recursive(state)?;
+                clauses.push(ContractClause::Decreases(Box::new(condition)));
+            }
+            _ => break,
+        }
+    }
+    Ok(clauses)
+}
 /// Skip any comment tokens in the stream (PARSER-063)
 ///
 /// Comments should be transparent to parsing logic - they don't affect syntax.
@@ -64,12 +105,15 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
         }
     }
 
+    // PMAT-001: Parse contract clauses (requires/ensures/invariant/decreases)
+    let contracts = parse_contract_clauses(state)?;
+
     // PARSER-063: Skip comments before function body
     skip_comments(state);
 
     let body = super::parse_expr_recursive(state)?;
 
-    Ok(Expr::new(
+    let mut expr = Expr::new(
         ExprKind::Function {
             name,
             type_params,
@@ -80,7 +124,9 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
             is_pub,
         },
         start_span,
-    ))
+    );
+    expr.contracts = contracts;
+    Ok(expr)
 }
 
 /// Parse function name or return "anonymous" (complexity: 1)
@@ -334,6 +380,7 @@ fn build_call_expression(
             attributes: Vec::new(),
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         })
     } else {
         build_struct_literal_call(func, named_args)
@@ -354,6 +401,7 @@ fn build_struct_literal_call(func: Expr, named_args: Vec<(String, Expr)>) -> Res
             attributes: Vec::new(),
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         })
     } else {
         // For now, only support named args with simple identifiers
@@ -366,6 +414,7 @@ fn build_struct_literal_call(func: Expr, named_args: Vec<(String, Expr)>) -> Res
             attributes: Vec::new(),
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         })
     }
 }
@@ -389,6 +438,7 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
             attributes: Vec::new(),
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         });
     }
     // Skip any comments between '.' and method name (PARSER-053)
@@ -423,6 +473,7 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
                 attributes: Vec::new(),
                 leading_comments: Vec::new(),
                 trailing_comment: None,
+            contracts: Vec::new(),
             })
         }
         _ => {
@@ -463,6 +514,7 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
                 attributes: Vec::new(),
                 leading_comments: Vec::new(),
                 trailing_comment: None,
+            contracts: Vec::new(),
             })
         }
         _ => {
@@ -649,6 +701,7 @@ fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> R
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
+            contracts: Vec::new(),
     })
 }
 /// Extract column names from select arguments (complexity: 8)
@@ -701,6 +754,7 @@ fn create_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
+            contracts: Vec::new(),
     }
 }
 /// Create a field access expression (complexity: 1)
@@ -714,6 +768,7 @@ fn create_field_access(receiver: Expr, field: String) -> Expr {
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
+            contracts: Vec::new(),
     }
 }
 /// Parse optional method or field access (?. operator) (complexity: 2, cognitive: 3)
@@ -770,6 +825,7 @@ fn create_optional_method_call(receiver: Expr, method: String, args: Vec<Expr>) 
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
+            contracts: Vec::new(),
     }
 }
 
@@ -784,6 +840,7 @@ fn create_optional_field_access(receiver: Expr, field: String) -> Expr {
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
+            contracts: Vec::new(),
     }
 }
 
@@ -1552,5 +1609,49 @@ mod tests {
     fn test_extract_select_columns_empty() {
         let cols = super::extract_select_columns(vec![]);
         assert!(cols.is_empty(), "Empty args should produce empty columns");
+    }
+
+    // === PMAT-001: Contract keyword parsing tests ===
+
+    #[test]
+    fn test_pmat001_parse_function_with_requires() {
+        let mut parser = Parser::new("fun divide(a: f64, b: f64) -> f64 requires b != 0.0 { a / b }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function with requires: {:?}", result.err());
+        let expr = result.unwrap();
+        assert!(!expr.contracts.is_empty(), "Function should have contract clauses");
+        assert_eq!(expr.contracts.len(), 1, "Should have exactly 1 requires clause");
+        assert!(matches!(&expr.contracts[0], crate::frontend::ast::ContractClause::Requires(_)));
+    }
+
+    #[test]
+    fn test_pmat001_parse_function_with_ensures() {
+        let mut parser = Parser::new("fun abs(x: i64) -> i64 ensures result >= 0 { if x < 0 { -x } else { x } }");
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse function with ensures: {:?}", result.err());
+        let expr = result.unwrap();
+        assert_eq!(expr.contracts.len(), 1);
+        assert!(matches!(&expr.contracts[0], crate::frontend::ast::ContractClause::Ensures(_)));
+    }
+
+    #[test]
+    fn test_pmat001_parse_function_with_multiple_contracts() {
+        let src = "fun search(arr: List, target: i64) -> i64 requires len(arr) > 0 ensures result >= -1 { 0 }";
+        let mut parser = Parser::new(src);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse multi-contract: {:?}", result.err());
+        let expr = result.unwrap();
+        assert_eq!(expr.contracts.len(), 2, "Should have requires + ensures");
+        assert!(matches!(&expr.contracts[0], crate::frontend::ast::ContractClause::Requires(_)));
+        assert!(matches!(&expr.contracts[1], crate::frontend::ast::ContractClause::Ensures(_)));
+    }
+
+    #[test]
+    fn test_pmat001_parse_function_without_contracts() {
+        let mut parser = Parser::new("fun add(a: i64, b: i64) -> i64 { a + b }");
+        let result = parser.parse();
+        assert!(result.is_ok());
+        let expr = result.unwrap();
+        assert!(expr.contracts.is_empty(), "No contracts should mean empty vec");
     }
 }
