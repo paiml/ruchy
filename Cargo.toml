@@ -2,6 +2,7 @@
 members = [
     ".",
     "ruchy-wasm",
+    "ruchy-embed",
 ]
 exclude = ["fuzz"]
 resolver = "2"

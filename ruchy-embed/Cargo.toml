@@ -1,0 +1,13 @@
+[package]
+name = "ruchy-embed"
+version = "0.1.0"
+edition = "2021"
+description = "Embeddable Ruchy scripting engine for Rust applications"
+license = "MIT"
+readme = "README.md"
+
+[dependencies]
+ruchy = { path = "..", default-features = false }
+anyhow = "1"
+
+[dev-dependencies]

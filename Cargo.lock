@@ -6830,6 +6830,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruchy-embed"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ruchy",
+]
+
+[[package]]
 name = "ruchy-wasm"
 version = "4.2.1"
 dependencies = [
