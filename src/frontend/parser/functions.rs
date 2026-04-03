@@ -1654,4 +1654,20 @@ mod tests {
         let expr = result.unwrap();
         assert!(expr.contracts.is_empty(), "No contracts should mean empty vec");
     }
+
+    #[test]
+    fn test_pmat001_parse_while_with_invariant() {
+        let src = "fun f() { let x = 0; while x < 10 invariant x >= 0 { x = x + 1 } }";
+        let mut parser = Parser::new(src);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse while+invariant: {:?}", result.err());
+    }
+
+    #[test]
+    fn test_pmat001_parse_for_with_invariant() {
+        let src = "fun f() { for i in range(0, 10) invariant i >= 0 { print(i) } }";
+        let mut parser = Parser::new(src);
+        let result = parser.parse();
+        assert!(result.is_ok(), "Failed to parse for+invariant: {:?}", result.err());
+    }
 }
