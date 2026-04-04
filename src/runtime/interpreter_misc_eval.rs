@@ -88,6 +88,27 @@ pub(crate) fn eval_misc_expr(
         ExprKind::ListComprehension { element, clauses } => {
             eval_list_comprehension(interp, element, clauses)
         }
+        // ── Ruchy 5.0 Sovereign Platform expressions ──
+        // Yield: coroutine suspension — currently returns value or Nil
+        ExprKind::Yield { value } => {
+            let val = match value {
+                Some(expr) => interp.eval_expr(expr)?,
+                None => Value::Nil,
+            };
+            // In a full coroutine runtime, this would suspend execution.
+            // For now, yield behaves like return in the interpreter.
+            Err(InterpreterError::Return(val))
+        }
+        // Signal: reactive state creation — returns the initial value
+        ExprKind::Signal { initial_value } => interp.eval_expr(initial_value),
+        // InfraBlock: infrastructure-as-code block — evaluates body, returns last
+        ExprKind::InfraBlock { body } => {
+            let mut result = Value::Nil;
+            for expr in body {
+                result = interp.eval_expr(expr)?;
+            }
+            Ok(result)
+        }
         _ => {
             // Fallback for unimplemented expressions
             Err(InterpreterError::RuntimeError(format!(

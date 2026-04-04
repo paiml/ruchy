@@ -1,0 +1,35 @@
+// Ruchy 5.0: The Graduate Workflow (Pillar 9: Embedding)
+//
+// This file demonstrates the three execution modes:
+//
+// 1. INTERPRET: ruchy repl
+//    Instant feedback, no compilation.
+//
+// 2. EMBED: ruchy-embed crate
+//    ```rust
+//    use ruchy_embed::{Engine, Value, Sandbox};
+//    let engine = Engine::with_sandbox(
+//        Sandbox::default().with_timeout(Duration::from_secs(10))
+//    );
+//    engine.load_file("34_embedding.ruchy")?;
+//    let result = engine.call("greet", &[Value::from("world")])?;
+//    ```
+//    Engine::new() startup: < 5ms (verified).
+//    Sandbox controls: timeout, recursion depth, fs/net/env.
+//
+// 3. COMPILE: ruchy compile 34_embedding.ruchy -o embedding
+//    Full Rust transpilation. Zero runtime overhead.
+
+fun greet(name: str) -> str requires name != "" {
+    f"Hello, {name}! Welcome to Ruchy 5.0."
+}
+
+fun add(a: i64, b: i64) -> i64 {
+    a + b
+}
+
+fn main() {
+    println("=== Ruchy 5.0 Embedding Demo ===")
+    println(greet("world"))
+    println(add(21, 21))
+}

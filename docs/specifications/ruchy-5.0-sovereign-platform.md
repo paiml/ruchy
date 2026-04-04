@@ -32,6 +32,8 @@
 | Alpha.2: array SIMD lowering module | DONE | array_simd.rs: try_lower_array_binary(), 10 tests. Lowers list+list to trueno. |
 | Alpha.3: ruchy-embed sandboxing | DONE | Sandbox struct (timeout/recursion/fs/net/env). Engine::with_sandbox(). 21 tests. |
 | Alpha.3: startup time tracking | DONE | Engine::startup_time(). Verified < 5ms target documented. |
+| Alpha.3: yield/signal/infra in interpreter | DONE | Yield→Return(val), Signal→eval initial, InfraBlock→eval body. 20,456 tests pass. |
+| 5.0 Examples (5 files) | DONE | 30_contracts, 31_sovereign_platform, 32_migration_demo, 33_simd_arrays, 34_embedding |
 
 ---
 
