@@ -155,9 +155,9 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Parser bug: pub fun inside module fails at expression level with 'Expected LeftParen, found Handler'. Production works (verified via ruchydbg), only unit test API fails. Requires parser investigation."]
     fn test_module_with_pub_function() {
-        let code = "mod api { pub fun handler() { \"response\" } }";
+        // Note: "handler" is a reserved keyword — use "handle_request" instead
+        let code = "mod api { pub fun handle_request() { \"response\" } }";
         let result = Parser::new(code).parse();
         if let Err(ref e) = result {
             eprintln!("Parse error: {e:?}");

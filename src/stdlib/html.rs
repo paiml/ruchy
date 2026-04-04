@@ -464,7 +464,6 @@ mod tests {
 
     /// Property test: Parsing never panics
     #[test]
-    #[ignore = "Property test - run with: cargo test -- --ignored"]
     fn prop_parse_never_panics() {
         use proptest::prelude::*;
 
