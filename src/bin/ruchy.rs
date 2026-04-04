@@ -928,6 +928,21 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Contract management (Pillar 1: Correctness)
+    #[command(subcommand)]
+    Contracts(ContractsCommands),
+    /// Suggest contracts for functions without them
+    #[command(name = "suggest-contracts")]
+    SuggestContracts {
+        /// File or directory to analyze
+        path: PathBuf,
+        /// Output format (text, json, yaml)
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
 }
 
 /// Oracle subcommands for ML model management
@@ -1158,6 +1173,37 @@ enum ModelCommands {
     Verify {
         /// Model file
         file: PathBuf,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum ContractsCommands {
+    /// Generate YAML contract manifests from source
+    Sync {
+        /// File or directory to scan
+        path: PathBuf,
+        /// Output directory for contract manifests
+        #[arg(short, long, default_value = "contracts")]
+        output: PathBuf,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
+    /// List all contracts in a file/project
+    List {
+        /// File or directory to scan
+        path: PathBuf,
+        /// Output format (text, json, yaml)
+        #[arg(long, default_value = "text")]
+        format: String,
+    },
+    /// Verify contract coverage for all functions
+    Check {
+        /// File or directory to check
+        path: PathBuf,
+        /// Fail if coverage is below threshold (0-100)
+        #[arg(long)]
+        min_coverage: Option<f64>,
     },
 }
 

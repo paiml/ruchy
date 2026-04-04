@@ -450,6 +450,105 @@ fn test_migrate_4to5_clean_files() {
 }
 
 // ============================================================================
+// ruchy contracts
+// ============================================================================
+
+#[test]
+fn test_contracts_sync() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("code.ruchy");
+    fs::write(&file, "fn main() {}").unwrap();
+
+    ruchy_cmd()
+        .arg("contracts")
+        .arg("sync")
+        .arg(&file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("contracts sync"));
+}
+
+#[test]
+fn test_contracts_list() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("code.ruchy");
+    fs::write(&file, "fn main() {}").unwrap();
+
+    ruchy_cmd()
+        .arg("contracts")
+        .arg("list")
+        .arg(&file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("contracts list"));
+}
+
+#[test]
+fn test_contracts_check() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("code.ruchy");
+    fs::write(&file, "fn main() {}").unwrap();
+
+    ruchy_cmd()
+        .arg("contracts")
+        .arg("check")
+        .arg(&file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Contract coverage"));
+}
+
+#[test]
+fn test_contracts_check_with_threshold() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("code.ruchy");
+    fs::write(&file, "fn main() {}").unwrap();
+
+    ruchy_cmd()
+        .arg("contracts")
+        .arg("check")
+        .arg(&file)
+        .arg("--min-coverage")
+        .arg("80")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("80.0%"));
+}
+
+// ============================================================================
+// ruchy suggest-contracts
+// ============================================================================
+
+#[test]
+fn test_suggest_contracts() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("code.ruchy");
+    fs::write(&file, "fn main() {}").unwrap();
+
+    ruchy_cmd()
+        .arg("suggest-contracts")
+        .arg(&file)
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("suggest-contracts"));
+}
+
+#[test]
+fn test_suggest_contracts_yaml() {
+    let dir = TempDir::new().unwrap();
+    let file = dir.path().join("code.ruchy");
+    fs::write(&file, "fn main() {}").unwrap();
+
+    ruchy_cmd()
+        .arg("suggest-contracts")
+        .arg(&file)
+        .arg("--format")
+        .arg("yaml")
+        .assert()
+        .success();
+}
+
+// ============================================================================
 // Version verification
 // ============================================================================
 

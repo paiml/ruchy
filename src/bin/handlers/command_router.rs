@@ -555,6 +555,25 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             crate::handlers::handlers_modules::migrate::run_migration(&path, dry_run)?;
             Ok(())
         }
+        crate::Commands::Contracts(cmd) => {
+            use crate::handlers::handlers_modules::sovereign::*;
+            match cmd {
+                crate::ContractsCommands::Sync { path, output, verbose } => {
+                    handle_contracts_sync(&path, &output, verbose)
+                }
+                crate::ContractsCommands::List { path, format } => {
+                    handle_contracts_list(&path, &format)
+                }
+                crate::ContractsCommands::Check { path, min_coverage } => {
+                    handle_contracts_check(&path, min_coverage)
+                }
+            }
+        }
+        crate::Commands::SuggestContracts { path, format, verbose } => {
+            crate::handlers::handlers_modules::sovereign::handle_suggest_contracts(
+                &path, &format, verbose,
+            )
+        }
         _ => {
             eprintln!("Command not yet implemented");
             Ok(())

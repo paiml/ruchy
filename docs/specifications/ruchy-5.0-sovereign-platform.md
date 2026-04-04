@@ -9,18 +9,22 @@
 | Milestone | Status | Evidence |
 |-----------|--------|----------|
 | Version bump 5.0.0-alpha.1 | DONE | `ruchy --version` → 5.0.0-alpha.1 |
-| Parser: 7 new keywords | PARTIAL | requires/ensures/invariant/decreases (4.x), infra/signal/yield (5.0). All 7 reserved. |
+| Parser: 7 new keywords | DONE | All 7 reserved in lexer (Token enum) and parser. 3 keyword reservation tests. |
+| Parser: infra/signal/yield expressions | DONE | InfraBlock, Signal, Yield AST nodes parsed. 5 parser tests. |
 | Unified decorator grammar | DONE (4.x) | `@decorator` and `#[attribute]` both parse |
 | Feature gates (infra/simulation/shell-target) | DONE | Cargo.toml feature definitions |
 | Optional deps (forjar/simular/bashrs) | DONE | Added as optional, feature-gated |
 | New CLI subcommands | DONE | prove/infra/sim/widget/apr/model/purify/migrate-4to5 all registered with clap |
-| CLI handler routing | DONE | All sovereign commands dispatched in command_router.rs |
-| Transpiler: contract → debug_assert! | DONE (Silver) | requires/ensures emit debug_assert! macros, verified e2e |
-| trueno 0.16.5 upgrade | PARTIAL | 0.16 in Cargo.toml, spec says 0.16.5 |
-| ruchy-embed Engine API | DONE (192 lines) | Engine/Value/compile/eval implemented, 8 tests passing |
-| Stdlib bridges (forjar/simular/bashrs) | DONE | Bridge modules with types, builders, tests. Feature-gated re-exports. |
-| migrate-4to5 tool | DONE | Scans/renames keyword conflicts, dry-run support, 10 tests |
-| Sovereign CLI handlers (stub) | DONE | infra/sim/widget/apr/model/purify handlers with file validation |
+| CLI handler routing | DONE | All sovereign commands dispatched in command_router.rs (23 handler tests) |
+| CLI integration tests | DONE | 29 assert_cmd tests for sovereign commands |
+| Transpiler: contract → debug_assert! | DONE (Silver) | requires/ensures emit debug_assert! macros. 6 transpiler tests. |
+| Transpiler: infra/signal/yield | DONE | InfraBlock→block, Signal→Signal::new(), Yield→yield |
+| trueno 0.16.5 upgrade | PARTIAL | 0.16.5 in Cargo.lock, spec says 0.16.5 |
+| ruchy-embed Engine API | DONE | Engine: new/eval/compile/load_file/load_source/call/reset. 15 tests + 2 doctests. |
+| Stdlib bridges (forjar/simular/bashrs) | DONE | Bridge modules with types, builders, tests (24 tests). Feature-gated re-exports. |
+| migrate-4to5 tool | DONE | Scans/renames keyword conflicts, dry-run support, 12 tests |
+| 5.0 Examples | DONE | 30_contracts.ruchy, 31_sovereign_platform.ruchy, 32_migration_demo.ruchy |
+| CHANGELOG 5.0 section | DONE | Full release notes for 5.0.0-alpha.1 |
 
 ---
 
