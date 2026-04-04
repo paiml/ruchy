@@ -1062,7 +1062,7 @@ fn test_format_expr_set() {
     let f = make_formatter();
     let expr = Expr::new(ExprKind::Set(vec![int_expr(1)]), span());
     let result = f.format_expr(&expr, 0);
-    assert!(result.contains("UNIMPLEMENTED"));
+    assert_eq!(result, "{1}");
 }
 
 // ============================================================================

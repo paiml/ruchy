@@ -394,7 +394,7 @@ impl Formatter {
                     self.format_expr(count, indent)
                 )
             }
-            ExprKind::Set(s) => format!("/* UNIMPLEMENTED: {:?} */", ExprKind::Set(s.clone())),
+            ExprKind::Set(elems) => format!("{{{}}}", elems.iter().map(|e| self.format_expr(e, indent)).collect::<Vec<_>>().join(", ")),
             // Result/Option wrappers
             ExprKind::Ok { value } => format!("Ok({})", self.format_expr(value, indent)),
             ExprKind::Err { error } => format!("Err({})", self.format_expr(error, indent)),
