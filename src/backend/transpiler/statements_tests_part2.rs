@@ -353,7 +353,7 @@ fn test_helper_functions() {
         attributes: vec![],
         leading_comments: Vec::new(),
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(transpiler.value_creates_vec(&vec_expr));
 
@@ -581,7 +581,7 @@ fn test_transpiler_helper_methods_comprehensive() {
                     attributes: vec![],
                     leading_comments: Vec::new(),
                     trailing_comment: None,
-            contracts: Vec::new(),
+                    contracts: Vec::new(),
                 }),
                 args: vec![],
             },
@@ -657,7 +657,7 @@ fn test_is_variable_mutated_assign_v2() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let assign_expr = Expr {
         kind: ExprKind::Assign {
@@ -668,14 +668,14 @@ fn test_is_variable_mutated_assign_v2() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "x",
@@ -696,7 +696,7 @@ fn test_is_variable_mutated_compound_assign_v2() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let compound_expr = Expr {
         kind: ExprKind::CompoundAssign {
@@ -707,7 +707,7 @@ fn test_is_variable_mutated_compound_assign_v2() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             op: BinaryOp::Add,
         },
@@ -715,7 +715,7 @@ fn test_is_variable_mutated_compound_assign_v2() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "counter",
@@ -732,7 +732,7 @@ fn test_is_variable_mutated_pre_increment_v2() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let inc_expr = Expr {
         kind: ExprKind::PreIncrement {
@@ -742,7 +742,7 @@ fn test_is_variable_mutated_pre_increment_v2() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "i", &inc_expr
@@ -758,7 +758,7 @@ fn test_is_variable_mutated_post_decrement() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let dec_expr = Expr {
         kind: ExprKind::PostDecrement {
@@ -768,7 +768,7 @@ fn test_is_variable_mutated_post_decrement() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "value", &dec_expr
@@ -786,7 +786,7 @@ fn test_is_variable_mutated_in_block() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(10, None)),
@@ -794,14 +794,14 @@ fn test_is_variable_mutated_in_block() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let block_expr = Expr {
         kind: ExprKind::Block(vec![assign]),
@@ -809,7 +809,7 @@ fn test_is_variable_mutated_in_block() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "x",
@@ -828,7 +828,7 @@ fn test_is_variable_mutated_in_if() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Bool(true)),
@@ -836,14 +836,14 @@ fn test_is_variable_mutated_in_if() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let if_expr = Expr {
         kind: ExprKind::If {
@@ -854,7 +854,7 @@ fn test_is_variable_mutated_in_if() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             else_branch: None,
         },
@@ -862,7 +862,7 @@ fn test_is_variable_mutated_in_if() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "flag", &if_expr
@@ -880,14 +880,14 @@ fn test_is_variable_mutated_in_while() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let while_expr = Expr {
         kind: ExprKind::While {
@@ -897,7 +897,7 @@ fn test_is_variable_mutated_in_while() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             body: Box::new(inc),
             label: None,
@@ -906,7 +906,7 @@ fn test_is_variable_mutated_in_while() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "count",
@@ -925,7 +925,7 @@ fn test_is_variable_mutated_in_for() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(0, None)),
@@ -933,14 +933,14 @@ fn test_is_variable_mutated_in_for() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let for_expr = Expr {
         kind: ExprKind::For {
@@ -952,7 +952,7 @@ fn test_is_variable_mutated_in_for() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             body: Box::new(assign),
             label: None,
@@ -961,7 +961,7 @@ fn test_is_variable_mutated_in_for() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "sum", &for_expr
@@ -980,7 +980,7 @@ fn test_is_variable_mutated_in_match() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(1, None)),
@@ -988,14 +988,14 @@ fn test_is_variable_mutated_in_match() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let match_expr = Expr {
         kind: ExprKind::Match {
@@ -1005,7 +1005,7 @@ fn test_is_variable_mutated_in_match() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             arms: vec![MatchArm {
                 pattern: Pattern::Wildcard,
@@ -1018,7 +1018,7 @@ fn test_is_variable_mutated_in_match() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "result",
@@ -1037,14 +1037,14 @@ fn test_is_variable_mutated_in_let() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let let_expr = Expr {
         kind: ExprKind::Let {
@@ -1055,7 +1055,7 @@ fn test_is_variable_mutated_in_let() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             body: Box::new(inc),
             type_annotation: None,
@@ -1066,7 +1066,7 @@ fn test_is_variable_mutated_in_let() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "x", &let_expr
@@ -1084,7 +1084,7 @@ fn test_is_variable_mutated_in_binary() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(1, None)),
@@ -1092,14 +1092,14 @@ fn test_is_variable_mutated_in_binary() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let binary_expr = Expr {
         kind: ExprKind::Binary {
@@ -1111,14 +1111,14 @@ fn test_is_variable_mutated_in_binary() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "a",
@@ -1137,14 +1137,14 @@ fn test_is_variable_mutated_in_unary() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let unary_expr = Expr {
         kind: ExprKind::Unary {
@@ -1155,7 +1155,7 @@ fn test_is_variable_mutated_in_unary() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "val",
@@ -1174,7 +1174,7 @@ fn test_is_variable_mutated_in_call() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(42, None)),
@@ -1182,14 +1182,14 @@ fn test_is_variable_mutated_in_call() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let call_expr = Expr {
         kind: ExprKind::Call {
@@ -1199,7 +1199,7 @@ fn test_is_variable_mutated_in_call() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             args: vec![assign],
         },
@@ -1207,7 +1207,7 @@ fn test_is_variable_mutated_in_call() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "arg", &call_expr
@@ -1225,7 +1225,7 @@ fn test_is_variable_mutated_in_method_call() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             value: Box::new(Expr {
                 kind: ExprKind::Literal(Literal::Integer(1, None)),
@@ -1233,14 +1233,14 @@ fn test_is_variable_mutated_in_method_call() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let method_expr = Expr {
         kind: ExprKind::MethodCall {
@@ -1252,7 +1252,7 @@ fn test_is_variable_mutated_in_method_call() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(super::super::mutation_detection::is_variable_mutated(
         "obj",
@@ -1269,7 +1269,7 @@ fn test_is_variable_mutated_immutable_access() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(!super::super::mutation_detection::is_variable_mutated(
         "x", &literal
@@ -1281,7 +1281,7 @@ fn test_is_variable_mutated_immutable_access() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(!super::super::mutation_detection::is_variable_mutated(
         "x", &ident
@@ -1546,7 +1546,7 @@ fn test_returns_boolean_literal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(returns_boolean(&body));
 }
@@ -1562,7 +1562,7 @@ fn test_returns_boolean_comparison_v2() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             op: BinaryOp::Equal,
             right: Box::new(Expr {
@@ -1571,14 +1571,14 @@ fn test_returns_boolean_comparison_v2() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
         },
         span: Span::default(),
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(returns_boolean(&body));
 }
@@ -1592,7 +1592,7 @@ fn test_returns_string_literal_true() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(returns_string_literal(&body));
 }
@@ -1606,7 +1606,7 @@ fn test_returns_string_literal_false() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     assert!(!returns_string_literal(&body));
 }

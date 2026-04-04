@@ -473,7 +473,7 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
                 attributes: Vec::new(),
                 leading_comments: Vec::new(),
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             })
         }
         _ => {
@@ -514,7 +514,7 @@ pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Re
                 attributes: Vec::new(),
                 leading_comments: Vec::new(),
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             })
         }
         _ => {
@@ -701,7 +701,7 @@ fn handle_dataframe_method(receiver: Expr, method: String, args: Vec<Expr>) -> R
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     })
 }
 /// Extract column names from select arguments (complexity: 8)
@@ -754,7 +754,7 @@ fn create_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 /// Create a field access expression (complexity: 1)
@@ -768,7 +768,7 @@ fn create_field_access(receiver: Expr, field: String) -> Expr {
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 /// Parse optional method or field access (?. operator) (complexity: 2, cognitive: 3)
@@ -825,7 +825,7 @@ fn create_optional_method_call(receiver: Expr, method: String, args: Vec<Expr>) 
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -840,7 +840,7 @@ fn create_optional_field_access(receiver: Expr, field: String) -> Expr {
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -1615,23 +1615,47 @@ mod tests {
 
     #[test]
     fn test_pmat001_parse_function_with_requires() {
-        let mut parser = Parser::new("fun divide(a: f64, b: f64) -> f64 requires b != 0.0 { a / b }");
+        let mut parser =
+            Parser::new("fun divide(a: f64, b: f64) -> f64 requires b != 0.0 { a / b }");
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function with requires: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse function with requires: {:?}",
+            result.err()
+        );
         let expr = result.unwrap();
-        assert!(!expr.contracts.is_empty(), "Function should have contract clauses");
-        assert_eq!(expr.contracts.len(), 1, "Should have exactly 1 requires clause");
-        assert!(matches!(&expr.contracts[0], crate::frontend::ast::ContractClause::Requires(_)));
+        assert!(
+            !expr.contracts.is_empty(),
+            "Function should have contract clauses"
+        );
+        assert_eq!(
+            expr.contracts.len(),
+            1,
+            "Should have exactly 1 requires clause"
+        );
+        assert!(matches!(
+            &expr.contracts[0],
+            crate::frontend::ast::ContractClause::Requires(_)
+        ));
     }
 
     #[test]
     fn test_pmat001_parse_function_with_ensures() {
-        let mut parser = Parser::new("fun abs(x: i64) -> i64 ensures result >= 0 { if x < 0 { -x } else { x } }");
+        let mut parser = Parser::new(
+            "fun abs(x: i64) -> i64 ensures result >= 0 { if x < 0 { -x } else { x } }",
+        );
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse function with ensures: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse function with ensures: {:?}",
+            result.err()
+        );
         let expr = result.unwrap();
         assert_eq!(expr.contracts.len(), 1);
-        assert!(matches!(&expr.contracts[0], crate::frontend::ast::ContractClause::Ensures(_)));
+        assert!(matches!(
+            &expr.contracts[0],
+            crate::frontend::ast::ContractClause::Ensures(_)
+        ));
     }
 
     #[test]
@@ -1639,11 +1663,21 @@ mod tests {
         let src = "fun search(arr: List, target: i64) -> i64 requires len(arr) > 0 ensures result >= -1 { 0 }";
         let mut parser = Parser::new(src);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse multi-contract: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse multi-contract: {:?}",
+            result.err()
+        );
         let expr = result.unwrap();
         assert_eq!(expr.contracts.len(), 2, "Should have requires + ensures");
-        assert!(matches!(&expr.contracts[0], crate::frontend::ast::ContractClause::Requires(_)));
-        assert!(matches!(&expr.contracts[1], crate::frontend::ast::ContractClause::Ensures(_)));
+        assert!(matches!(
+            &expr.contracts[0],
+            crate::frontend::ast::ContractClause::Requires(_)
+        ));
+        assert!(matches!(
+            &expr.contracts[1],
+            crate::frontend::ast::ContractClause::Ensures(_)
+        ));
     }
 
     #[test]
@@ -1652,7 +1686,10 @@ mod tests {
         let result = parser.parse();
         assert!(result.is_ok());
         let expr = result.unwrap();
-        assert!(expr.contracts.is_empty(), "No contracts should mean empty vec");
+        assert!(
+            expr.contracts.is_empty(),
+            "No contracts should mean empty vec"
+        );
     }
 
     #[test]
@@ -1660,7 +1697,11 @@ mod tests {
         let src = "fun f() { let x = 0; while x < 10 invariant x >= 0 { x = x + 1 } }";
         let mut parser = Parser::new(src);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse while+invariant: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse while+invariant: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1668,7 +1709,11 @@ mod tests {
         let src = "fun f() { for i in range(0, 10) invariant i >= 0 { print(i) } }";
         let mut parser = Parser::new(src);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse for+invariant: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse for+invariant: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1676,9 +1721,16 @@ mod tests {
         let src = "@verified\nfun normalize(data: List) -> List { data }";
         let mut parser = Parser::new(src);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse @verified decorator: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse @verified decorator: {:?}",
+            result.err()
+        );
         let expr = result.unwrap();
-        assert!(!expr.attributes.is_empty(), "Should have attributes from decorator");
+        assert!(
+            !expr.attributes.is_empty(),
+            "Should have attributes from decorator"
+        );
         assert_eq!(expr.attributes[0].name, "verified");
     }
 
@@ -1687,7 +1739,11 @@ mod tests {
         let src = "@gpu(\"threshold\")\nfun matmul(a: List, b: List) -> List { a }";
         let mut parser = Parser::new(src);
         let result = parser.parse();
-        assert!(result.is_ok(), "Failed to parse @gpu decorator: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to parse @gpu decorator: {:?}",
+            result.err()
+        );
         let expr = result.unwrap();
         assert_eq!(expr.attributes[0].name, "gpu");
         assert_eq!(expr.attributes[0].args.len(), 1);

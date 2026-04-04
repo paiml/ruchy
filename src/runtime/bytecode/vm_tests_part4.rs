@@ -14,7 +14,7 @@ fn make_expr(kind: ExprKind) -> Arc<Expr> {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     })
 }
 
@@ -662,7 +662,7 @@ fn test_vm_method_call_with_locals_sync() {
         attributes: Vec::new(),
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }]));
 
     let mut chunk = BytecodeChunk::new("test_method_locals".to_string());

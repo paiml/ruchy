@@ -12,8 +12,10 @@ macro_rules! contract_pre_absolute_position_add {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract absolute_position_add: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract absolute_position_add: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -26,10 +28,14 @@ macro_rules! contract_pre_gelu {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract gelu: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract gelu: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract gelu: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract gelu: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -39,10 +45,14 @@ macro_rules! contract_pre_relu {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract relu: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract relu: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract relu: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract relu: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -52,10 +62,14 @@ macro_rules! contract_pre_silu {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract silu: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract silu: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract silu: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract silu: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -68,10 +82,14 @@ macro_rules! contract_pre_entropy_score {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract entropy_score: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract entropy_score: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract entropy_score: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract entropy_score: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -81,10 +99,14 @@ macro_rules! contract_pre_margin_score {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract margin_score: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract margin_score: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract margin_score: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract margin_score: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -94,10 +116,14 @@ macro_rules! contract_pre_qbc_score {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract qbc_score: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract qbc_score: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract qbc_score: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract qbc_score: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -123,8 +149,10 @@ macro_rules! contract_pre_adam_moments {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract adam_moments: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract adam_moments: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -134,8 +162,10 @@ macro_rules! contract_pre_adam_variance {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract adam_variance: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract adam_variance: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -145,8 +175,10 @@ macro_rules! contract_pre_bias_correction {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract bias_correction: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract bias_correction: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -156,8 +188,10 @@ macro_rules! contract_pre_weight_update {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract weight_update: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract weight_update: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -170,8 +204,10 @@ macro_rules! contract_pre_alibi_bias {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract alibi_bias: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract alibi_bias: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -181,8 +217,10 @@ macro_rules! contract_pre_alibi_slopes {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract alibi_slopes: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract alibi_slopes: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -195,10 +233,14 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let data = &$input;
-        debug_assert!(!data.is_empty(),
-            "Contract identity: precondition violated — !data.is_empty()");
-        debug_assert!(data.len() > 0,
-            "Contract identity: precondition violated — data.len() > 0");
+        debug_assert!(
+            !data.is_empty(),
+            "Contract identity: precondition violated — !data.is_empty()"
+        );
+        debug_assert!(
+            data.len() > 0,
+            "Contract identity: precondition violated — data.len() > 0"
+        );
     }};
 }
 
@@ -220,8 +262,10 @@ macro_rules! contract_pre_format_report {
     () => {{}};
     ($input:expr) => {{
         let entries = &$input;
-        debug_assert!(entries.len() > 0,
-            "Contract format_report: precondition violated — entries.len() > 0");
+        debug_assert!(
+            entries.len() > 0,
+            "Contract format_report: precondition violated — entries.len() > 0"
+        );
     }};
 }
 
@@ -240,10 +284,14 @@ macro_rules! contract_pre_serialize_roundtrip {
     () => {{}};
     ($input:expr) => {{
         let data = &$input;
-        debug_assert!(!data.is_empty(),
-            "Contract serialize_roundtrip: precondition violated — !data.is_empty()");
-        debug_assert!(data.len() > 0,
-            "Contract serialize_roundtrip: precondition violated — data.len() > 0");
+        debug_assert!(
+            !data.is_empty(),
+            "Contract serialize_roundtrip: precondition violated — !data.is_empty()"
+        );
+        debug_assert!(
+            data.len() > 0,
+            "Contract serialize_roundtrip: precondition violated — data.len() > 0"
+        );
     }};
 }
 
@@ -253,8 +301,10 @@ macro_rules! contract_pre_validate_schema {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract validate_schema: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract validate_schema: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -311,10 +361,14 @@ macro_rules! contract_pre_ar_forecast {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract ar_forecast: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract ar_forecast: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract ar_forecast: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract ar_forecast: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -324,10 +378,14 @@ macro_rules! contract_pre_differencing {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract differencing: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract differencing: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract differencing: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract differencing: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -350,10 +408,14 @@ macro_rules! contract_pre_ma_filter {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract ma_filter: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract ma_filter: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract ma_filter: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract ma_filter: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -366,8 +428,10 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract identity: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract identity: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -380,8 +444,10 @@ macro_rules! contract_pre_attention {
     () => {{}};
     ($input:expr) => {{
         let query = &$input;
-        debug_assert!(query.len() > 0,
-            "Contract attention: precondition violated — query.len() > 0");
+        debug_assert!(
+            query.len() > 0,
+            "Contract attention: precondition violated — query.len() > 0"
+        );
     }};
 }
 
@@ -390,7 +456,10 @@ macro_rules! contract_pre_attention {
 macro_rules! contract_post_attention {
     ($result:expr) => {{
         let _contract_result = &$result;
-        debug_assert!(_contract_result.iter().all(|v| v.is_finite()), "Contract attention: postcondition violated — result.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            _contract_result.iter().all(|v| v.is_finite()),
+            "Contract attention: postcondition violated — result.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -413,8 +482,10 @@ macro_rules! contract_pre_attention_entropy {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract attention_entropy: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract attention_entropy: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -424,8 +495,10 @@ macro_rules! contract_pre_numerical_stability {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract numerical_stability: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract numerical_stability: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -435,8 +508,10 @@ macro_rules! contract_pre_scaled_dot_product {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract scaled_dot_product: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract scaled_dot_product: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -459,10 +534,14 @@ macro_rules! contract_pre_softmax_saturation {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract softmax_saturation: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract softmax_saturation: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract softmax_saturation: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract softmax_saturation: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -472,8 +551,10 @@ macro_rules! contract_pre_variance_preservation {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract variance_preservation: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract variance_preservation: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -486,8 +567,10 @@ macro_rules! contract_pre_dot_product {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract dot_product: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract dot_product: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -497,8 +580,10 @@ macro_rules! contract_pre_fma_accumulation {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract fma_accumulation: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract fma_accumulation: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -511,10 +596,14 @@ macro_rules! contract_pre_garbage_oracle {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract garbage_oracle: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract garbage_oracle: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract garbage_oracle: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract garbage_oracle: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -524,10 +613,14 @@ macro_rules! contract_pre_gpu_threshold {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract gpu_threshold: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract gpu_threshold: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract gpu_threshold: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract gpu_threshold: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -566,8 +659,10 @@ macro_rules! contract_pre_batch_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract batch_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract batch_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -577,8 +672,10 @@ macro_rules! contract_pre_gradient_accumulation {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract gradient_accumulation: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract gradient_accumulation: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -588,8 +685,10 @@ macro_rules! contract_pre_gradient_clipping {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract gradient_clipping: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract gradient_clipping: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -602,8 +701,10 @@ macro_rules! contract_pre_batched_beam_projection {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract batched_beam_projection: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract batched_beam_projection: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -613,8 +714,10 @@ macro_rules! contract_pre_beam_selection {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract beam_selection: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract beam_selection: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -624,8 +727,10 @@ macro_rules! contract_pre_sequential_beam_projection {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract sequential_beam_projection: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract sequential_beam_projection: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -635,8 +740,10 @@ macro_rules! contract_pre_termination {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract termination: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract termination: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -649,10 +756,14 @@ macro_rules! contract_pre_batchnorm_eval {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract batchnorm_eval: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract batchnorm_eval: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract batchnorm_eval: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract batchnorm_eval: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -675,10 +786,14 @@ macro_rules! contract_pre_running_stats {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract running_stats: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract running_stats: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract running_stats: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract running_stats: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -691,10 +806,14 @@ macro_rules! contract_pre_blr_predict {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract blr_predict: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract blr_predict: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract blr_predict: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract blr_predict: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -746,10 +865,14 @@ macro_rules! contract_pre_bias_add {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract bias_add: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract bias_add: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract bias_add: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract bias_add: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -762,8 +885,10 @@ macro_rules! contract_pre_bidirectional_attention {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract bidirectional_attention: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract bidirectional_attention: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -776,8 +901,10 @@ macro_rules! contract_pre_composite_hash {
     () => {{}};
     ($input:expr) => {{
         let parts = &$input;
-        debug_assert!(parts.len() > 0,
-            "Contract composite_hash: precondition violated — parts.len() > 0");
+        debug_assert!(
+            parts.len() > 0,
+            "Contract composite_hash: precondition violated — parts.len() > 0"
+        );
     }};
 }
 
@@ -796,10 +923,14 @@ macro_rules! contract_pre_hash_string {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(!input.is_empty(),
-            "Contract hash_string: precondition violated — !input.is_empty()");
-        debug_assert!(input.len() <= 1_073_741_824,
-            "Contract hash_string: precondition violated — input.len() <= 1_073_741_824");
+        debug_assert!(
+            !input.is_empty(),
+            "Contract hash_string: precondition violated — !input.is_empty()"
+        );
+        debug_assert!(
+            input.len() <= 1_073_741_824,
+            "Contract hash_string: precondition violated — input.len() <= 1_073_741_824"
+        );
     }};
 }
 
@@ -812,8 +943,10 @@ macro_rules! contract_pre_decode {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract decode: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract decode: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -823,8 +956,10 @@ macro_rules! contract_pre_encode {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract encode: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract encode: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -834,8 +969,10 @@ macro_rules! contract_pre_merge_rule {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract merge_rule: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract merge_rule: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -899,10 +1036,14 @@ macro_rules! contract_pre_platt_scaling {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract platt_scaling: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract platt_scaling: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract platt_scaling: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract platt_scaling: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -928,8 +1069,10 @@ macro_rules! contract_pre_classifier_weight_shape {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract classifier_weight_shape: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract classifier_weight_shape: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -939,8 +1082,10 @@ macro_rules! contract_pre_label_bounds {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract label_bounds: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract label_bounds: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -950,8 +1095,10 @@ macro_rules! contract_pre_logit_shape {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract logit_shape: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract logit_shape: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -961,10 +1108,14 @@ macro_rules! contract_pre_softmax_sum {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract softmax_sum: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract softmax_sum: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract softmax_sum: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract softmax_sum: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -977,8 +1128,10 @@ macro_rules! contract_pre_embedding_extraction {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract embedding_extraction: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract embedding_extraction: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -1009,8 +1162,10 @@ macro_rules! contract_pre_covariance_update {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract covariance_update: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract covariance_update: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -1020,8 +1175,10 @@ macro_rules! contract_pre_mean_update {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract mean_update: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract mean_update: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -1031,8 +1188,10 @@ macro_rules! contract_pre_sample {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract sample: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract sample: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -1045,8 +1204,10 @@ macro_rules! contract_pre_tokenizer_adequacy {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract tokenizer_adequacy: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract tokenizer_adequacy: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1089,8 +1250,10 @@ macro_rules! contract_pre_aggregate_score {
     () => {{}};
     ($input:expr) => {{
         let checks = &$input;
-        debug_assert!(checks.len() > 0,
-            "Contract aggregate_score: precondition violated — checks.len() > 0");
+        debug_assert!(
+            checks.len() > 0,
+            "Contract aggregate_score: precondition violated — checks.len() > 0"
+        );
     }};
 }
 
@@ -1163,8 +1326,10 @@ macro_rules! contract_pre_decode_degradation {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract decode_degradation: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract decode_degradation: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1201,8 +1366,10 @@ macro_rules! contract_pre_token_budget {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract token_budget: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract token_budget: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1215,8 +1382,10 @@ macro_rules! contract_pre_conv1d {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract conv1d: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract conv1d: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -1229,8 +1398,10 @@ macro_rules! contract_pre_chatml_format {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract chatml_format: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract chatml_format: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1261,10 +1432,14 @@ macro_rules! contract_pre_current_path {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract current_path: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract current_path: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract current_path: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract current_path: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -1274,10 +1449,14 @@ macro_rules! contract_pre_speedup_bound {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract speedup_bound: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract speedup_bound: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract speedup_bound: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract speedup_bound: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -1287,10 +1466,14 @@ macro_rules! contract_pre_target_path {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract target_path: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract target_path: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract target_path: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract target_path: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -1303,10 +1486,14 @@ macro_rules! contract_pre_l1_tiling {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract l1_tiling: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract l1_tiling: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract l1_tiling: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract l1_tiling: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1316,10 +1503,14 @@ macro_rules! contract_pre_rayon_overhead {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract rayon_overhead: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract rayon_overhead: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract rayon_overhead: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract rayon_overhead: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1332,10 +1523,14 @@ macro_rules! contract_pre_cross_entropy {
     () => {{}};
     ($input:expr) => {{
         let logits = &$input;
-        debug_assert!(logits.len() > 0,
-            "Contract cross_entropy: precondition violated — logits.len() > 0");
-        debug_assert!(logits.iter().all(|v| v.is_finite()),
-            "Contract cross_entropy: precondition violated — logits.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            logits.len() > 0,
+            "Contract cross_entropy: precondition violated — logits.len() > 0"
+        );
+        debug_assert!(
+            logits.iter().all(|v| v.is_finite()),
+            "Contract cross_entropy: precondition violated — logits.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1344,8 +1539,14 @@ macro_rules! contract_pre_cross_entropy {
 macro_rules! contract_post_cross_entropy {
     ($result:expr) => {{
         let _contract_result = &$result;
-        debug_assert!(_contract_result.is_finite(), "Contract cross_entropy: postcondition violated — result.is_finite()");
-        debug_assert!(_contract_result >= 0.0, "Contract cross_entropy: postcondition violated — result >= 0.0");
+        debug_assert!(
+            _contract_result.is_finite(),
+            "Contract cross_entropy: postcondition violated — result.is_finite()"
+        );
+        debug_assert!(
+            _contract_result >= 0.0,
+            "Contract cross_entropy: postcondition violated — result >= 0.0"
+        );
     }};
 }
 
@@ -1365,10 +1566,14 @@ macro_rules! contract_pre_log_softmax {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract log_softmax: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract log_softmax: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract log_softmax: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract log_softmax: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -1399,8 +1604,10 @@ macro_rules! contract_pre_weight_roundtrip {
     () => {{}};
     ($input:expr) => {{
         let weights = &$input;
-        debug_assert!(weights.len() > 0,
-            "Contract weight_roundtrip: precondition violated — weights.len() > 0");
+        debug_assert!(
+            weights.len() > 0,
+            "Contract weight_roundtrip: precondition violated — weights.len() > 0"
+        );
     }};
 }
 
@@ -1434,10 +1641,14 @@ macro_rules! contract_pre_gini_impurity {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract gini_impurity: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract gini_impurity: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract gini_impurity: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract gini_impurity: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1447,10 +1658,14 @@ macro_rules! contract_pre_gini_split {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract gini_split: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract gini_split: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract gini_split: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract gini_split: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1460,10 +1675,14 @@ macro_rules! contract_pre_mse_split {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract mse_split: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract mse_split: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract mse_split: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract mse_split: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1473,10 +1692,14 @@ macro_rules! contract_pre_prediction {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract prediction: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract prediction: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract prediction: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract prediction: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1501,8 +1724,10 @@ macro_rules! contract_pre_gradient_allreduce {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract gradient_allreduce: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract gradient_allreduce: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -1525,10 +1750,14 @@ macro_rules! contract_pre_sharding {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract sharding: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract sharding: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract sharding: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract sharding: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1538,10 +1767,14 @@ macro_rules! contract_pre_swiglu_ffn {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract swiglu_ffn: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract swiglu_ffn: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract swiglu_ffn: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract swiglu_ffn: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1551,8 +1784,10 @@ macro_rules! contract_pre_weighted_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract weighted_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract weighted_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -1565,8 +1800,10 @@ macro_rules! contract_pre_dpo_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract dpo_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract dpo_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -1576,8 +1813,10 @@ macro_rules! contract_pre_implicit_reward {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract implicit_reward: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract implicit_reward: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -1587,8 +1826,10 @@ macro_rules! contract_pre_log_ratio {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract log_ratio: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract log_ratio: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -1610,8 +1851,10 @@ macro_rules! contract_pre_min_samples_guard {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract min_samples_guard: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract min_samples_guard: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -1642,10 +1885,14 @@ macro_rules! contract_pre_dropout_eval {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract dropout_eval: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract dropout_eval: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract dropout_eval: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract dropout_eval: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -1655,10 +1902,14 @@ macro_rules! contract_pre_dropout_train {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract dropout_train: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract dropout_train: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract dropout_train: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract dropout_train: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -1671,8 +1922,10 @@ macro_rules! contract_pre_embedding_lookup {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract embedding_lookup: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract embedding_lookup: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -1682,10 +1935,14 @@ macro_rules! contract_pre_embedding_norm {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract embedding_norm: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract embedding_norm: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract embedding_norm: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract embedding_norm: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -1695,8 +1952,10 @@ macro_rules! contract_pre_logit_temperature {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract logit_temperature: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract logit_temperature: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -1706,8 +1965,10 @@ macro_rules! contract_pre_tied_weights {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract tied_weights: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract tied_weights: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -1717,8 +1978,10 @@ macro_rules! contract_pre_unembedding_projection {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract unembedding_projection: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract unembedding_projection: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -1728,8 +1991,10 @@ macro_rules! contract_pre_vocabulary_bounds {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract vocabulary_bounds: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract vocabulary_bounds: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1773,8 +2038,10 @@ macro_rules! contract_pre_cls_pooling {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract cls_pooling: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract cls_pooling: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1784,8 +2051,10 @@ macro_rules! contract_pre_encoder_layer {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract encoder_layer: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract encoder_layer: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1798,8 +2067,10 @@ macro_rules! contract_pre_emit_posix {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract emit_posix: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract emit_posix: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1809,8 +2080,10 @@ macro_rules! contract_pre_emit_purified {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract emit_purified: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract emit_purified: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1820,8 +2093,10 @@ macro_rules! contract_pre_roundtrip {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract roundtrip: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract roundtrip: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -1867,8 +2142,10 @@ macro_rules! contract_pre_f16_to_f32_bias {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract f16_to_f32_bias: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract f16_to_f32_bias: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -1878,8 +2155,10 @@ macro_rules! contract_pre_roundtrip {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract roundtrip: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract roundtrip: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -1892,8 +2171,10 @@ macro_rules! contract_pre_flash_attention {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract flash_attention: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract flash_attention: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -1915,10 +2196,14 @@ macro_rules! contract_pre_identity_1d {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract identity_1d: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract identity_1d: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract identity_1d: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract identity_1d: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -1928,8 +2213,10 @@ macro_rules! contract_pre_name_bijection {
     () => {{}};
     ($input:expr) => {{
         let names = &$input;
-        debug_assert!(names.len() > 0,
-            "Contract name_bijection: precondition violated — names.len() > 0");
+        debug_assert!(
+            names.len() > 0,
+            "Contract name_bijection: precondition violated — names.len() > 0"
+        );
     }};
 }
 
@@ -1939,8 +2226,10 @@ macro_rules! contract_pre_transpose_involution {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract transpose_involution: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract transpose_involution: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -1953,8 +2242,10 @@ macro_rules! contract_pre_e4m3_encode {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract e4m3_encode: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract e4m3_encode: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -1964,8 +2255,10 @@ macro_rules! contract_pre_e5m2_encode {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract e5m2_encode: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract e5m2_encode: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -1975,8 +2268,10 @@ macro_rules! contract_pre_roundtrip {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract roundtrip: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract roundtrip: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -1989,8 +2284,10 @@ macro_rules! contract_pre_fused_qkv {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract fused_qkv: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract fused_qkv: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2000,8 +2297,10 @@ macro_rules! contract_pre_separate_qkv {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract separate_qkv: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract separate_qkv: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2011,8 +2310,10 @@ macro_rules! contract_pre_shared_q8_qkv {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract shared_q8_qkv: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract shared_q8_qkv: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2025,10 +2326,14 @@ macro_rules! contract_pre_decay {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract decay: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract decay: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract decay: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract decay: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -2038,10 +2343,14 @@ macro_rules! contract_pre_delta {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract delta: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract delta: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract delta: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract delta: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2051,10 +2360,14 @@ macro_rules! contract_pre_output {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract output: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract output: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract output: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract output: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2064,10 +2377,14 @@ macro_rules! contract_pre_read {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract read: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract read: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract read: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract read: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2077,10 +2394,14 @@ macro_rules! contract_pre_write {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract write: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract write: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract write: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract write: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2119,10 +2440,14 @@ macro_rules! contract_pre_predict {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract predict: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract predict: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract predict: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract predict: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2132,8 +2457,10 @@ macro_rules! contract_pre_training_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract training_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract training_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -2146,10 +2473,14 @@ macro_rules! contract_pre_gelu {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract gelu: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract gelu: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract gelu: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract gelu: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -2159,10 +2490,14 @@ macro_rules! contract_pre_gelu_tanh_approx {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract gelu_tanh_approx: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract gelu_tanh_approx: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract gelu_tanh_approx: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract gelu_tanh_approx: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -2175,8 +2510,10 @@ macro_rules! contract_pre_backward_a_gemm {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract backward_a_gemm: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract backward_a_gemm: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2186,8 +2523,10 @@ macro_rules! contract_pre_backward_b_gemm {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract backward_b_gemm: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract backward_b_gemm: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2197,8 +2536,10 @@ macro_rules! contract_pre_shared_memory_per_tile {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract shared_memory_per_tile: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract shared_memory_per_tile: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2208,8 +2549,10 @@ macro_rules! contract_pre_tiled_gemm_arithmetic_intensity {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract tiled_gemm_arithmetic_intensity: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract tiled_gemm_arithmetic_intensity: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2219,8 +2562,10 @@ macro_rules! contract_pre_unrolled_instruction_ratio {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract unrolled_instruction_ratio: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract unrolled_instruction_ratio: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2245,10 +2590,14 @@ macro_rules! contract_pre_binomial_link {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract binomial_link: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract binomial_link: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract binomial_link: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract binomial_link: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2258,10 +2607,14 @@ macro_rules! contract_pre_gamma_link {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract gamma_link: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract gamma_link: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract gamma_link: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract gamma_link: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2271,10 +2624,14 @@ macro_rules! contract_pre_irls_fit {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract irls_fit: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract irls_fit: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract irls_fit: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract irls_fit: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2284,10 +2641,14 @@ macro_rules! contract_pre_poisson_link {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract poisson_link: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract poisson_link: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract poisson_link: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract poisson_link: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2366,8 +2727,10 @@ macro_rules! contract_pre_fp8_architecture_guard {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract fp8_architecture_guard: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract fp8_architecture_guard: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -2380,8 +2743,10 @@ macro_rules! contract_pre_brick_ordering {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract brick_ordering: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract brick_ordering: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2391,8 +2756,10 @@ macro_rules! contract_pre_graph_disable {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract graph_disable: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract graph_disable: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2402,8 +2769,10 @@ macro_rules! contract_pre_report_completeness {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract report_completeness: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract report_completeness: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2413,8 +2782,10 @@ macro_rules! contract_pre_report_denominator {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract report_denominator: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract report_denominator: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2424,8 +2795,10 @@ macro_rules! contract_pre_report_fidelity {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract report_fidelity: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract report_fidelity: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2435,8 +2808,10 @@ macro_rules! contract_pre_report_metadata {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract report_metadata: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract report_metadata: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2446,8 +2821,10 @@ macro_rules! contract_pre_sync_verification {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract sync_verification: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract sync_verification: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2457,8 +2834,10 @@ macro_rules! contract_pre_token_accounting {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract token_accounting: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract token_accounting: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2468,8 +2847,10 @@ macro_rules! contract_pre_wall_coverage {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract wall_coverage: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract wall_coverage: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2542,8 +2923,10 @@ macro_rules! contract_pre_gqa {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract gqa: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract gqa: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -2613,8 +2996,10 @@ macro_rules! contract_pre_conv1d_causal {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract conv1d_causal: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract conv1d_causal: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2624,10 +3009,14 @@ macro_rules! contract_pre_head_grouping {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract head_grouping: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract head_grouping: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract head_grouping: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract head_grouping: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2663,10 +3052,14 @@ macro_rules! contract_pre_linear_no_softmax {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract linear_no_softmax: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract linear_no_softmax: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract linear_no_softmax: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract linear_no_softmax: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -2676,10 +3069,14 @@ macro_rules! contract_pre_linear_shapes {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract linear_shapes: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract linear_shapes: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract linear_shapes: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract linear_shapes: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2692,8 +3089,10 @@ macro_rules! contract_pre_fastica {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract fastica: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract fastica: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2703,8 +3102,10 @@ macro_rules! contract_pre_mixing {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract mixing: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract mixing: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2714,8 +3115,10 @@ macro_rules! contract_pre_unmixing {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract unmixing: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract unmixing: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2728,8 +3131,10 @@ macro_rules! contract_pre_decode_step {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract decode_step: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract decode_step: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2748,8 +3153,10 @@ macro_rules! contract_pre_kv_cache_growth {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract kv_cache_growth: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract kv_cache_growth: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -2759,8 +3166,10 @@ macro_rules! contract_pre_layer_composition {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract layer_composition: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract layer_composition: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -2791,8 +3200,10 @@ macro_rules! contract_pre_dequant_dot {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract dequant_dot: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract dequant_dot: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -2802,8 +3213,10 @@ macro_rules! contract_pre_per_row_scale {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract per_row_scale: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract per_row_scale: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -2813,8 +3226,10 @@ macro_rules! contract_pre_quantize {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract quantize: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract quantize: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -2839,8 +3254,10 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract identity: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract identity: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -2853,8 +3270,10 @@ macro_rules! contract_pre_bsum_budget {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract bsum_budget: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract bsum_budget: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -2864,8 +3283,10 @@ macro_rules! contract_pre_per_layer_decomposition {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract per_layer_decomposition: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract per_layer_decomposition: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -2875,8 +3296,10 @@ macro_rules! contract_pre_per_token_launches {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract per_token_launches: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract per_token_launches: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -2889,10 +3312,14 @@ macro_rules! contract_pre_assignment {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract assignment: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract assignment: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract assignment: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract assignment: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2902,10 +3329,14 @@ macro_rules! contract_pre_objective {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract objective: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract objective: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract objective: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract objective: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2915,10 +3346,14 @@ macro_rules! contract_pre_update {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract update: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract update: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract update: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract update: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -2988,8 +3423,10 @@ macro_rules! contract_pre_per_token_per_layer {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract per_token_per_layer: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract per_token_per_layer: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -3032,10 +3469,14 @@ macro_rules! contract_pre_layernorm {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.len() > 0,
-            "Contract layernorm: precondition violated — x.len() > 0");
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract layernorm: precondition violated — x.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            x.len() > 0,
+            "Contract layernorm: precondition violated — x.len() > 0"
+        );
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract layernorm: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3044,7 +3485,10 @@ macro_rules! contract_pre_layernorm {
 macro_rules! contract_post_layernorm {
     ($result:expr) => {{
         let _contract_result = &$result;
-        debug_assert!(_contract_result.iter().all(|v| v.is_finite()), "Contract layernorm: postcondition violated — result.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            _contract_result.iter().all(|v| v.is_finite()),
+            "Contract layernorm: postcondition violated — result.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3064,10 +3508,14 @@ macro_rules! contract_pre_statistics {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract statistics: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract statistics: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract statistics: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract statistics: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -3080,8 +3528,10 @@ macro_rules! contract_pre_line_search {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract line_search: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract line_search: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3091,8 +3541,10 @@ macro_rules! contract_pre_secant_condition {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract secant_condition: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract secant_condition: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3102,8 +3554,10 @@ macro_rules! contract_pre_two_loop_recursion {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract two_loop_recursion: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract two_loop_recursion: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3116,8 +3570,10 @@ macro_rules! contract_pre_position_embedding {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract position_embedding: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract position_embedding: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -3143,10 +3599,14 @@ macro_rules! contract_pre_ols_fit {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract ols_fit: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract ols_fit: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract ols_fit: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract ols_fit: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3156,10 +3616,14 @@ macro_rules! contract_pre_ols_predict {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract ols_predict: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract ols_predict: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract ols_predict: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract ols_predict: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3197,8 +3661,10 @@ macro_rules! contract_pre_linear_forward {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract linear_forward: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract linear_forward: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -3208,8 +3674,10 @@ macro_rules! contract_pre_linear_no_bias {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract linear_no_bias: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract linear_no_bias: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -3222,10 +3690,14 @@ macro_rules! contract_pre_dare_unbiased {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract dare_unbiased: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract dare_unbiased: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract dare_unbiased: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract dare_unbiased: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3235,10 +3707,14 @@ macro_rules! contract_pre_eckart_young {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract eckart_young: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract eckart_young: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract eckart_young: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract eckart_young: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3248,10 +3724,14 @@ macro_rules! contract_pre_lora_shape {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract lora_shape: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract lora_shape: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract lora_shape: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract lora_shape: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3274,10 +3754,14 @@ macro_rules! contract_pre_task_vector {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract task_vector: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract task_vector: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract task_vector: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract task_vector: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3302,8 +3786,10 @@ macro_rules! contract_pre_bce {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract bce: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract bce: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -3313,8 +3799,10 @@ macro_rules! contract_pre_huber {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract huber: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract huber: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -3324,8 +3812,10 @@ macro_rules! contract_pre_l1_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract l1_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract l1_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -3335,8 +3825,10 @@ macro_rules! contract_pre_mse_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract mse_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract mse_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -3346,8 +3838,10 @@ macro_rules! contract_pre_nll {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract nll: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract nll: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -3357,8 +3851,10 @@ macro_rules! contract_pre_smooth_l1 {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract smooth_l1: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract smooth_l1: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -3379,7 +3875,10 @@ macro_rules! contract_pre_matmul {
 macro_rules! contract_post_matmul {
     ($result:expr) => {{
         let _contract_result = &$result;
-        debug_assert!(_contract_result.iter().all(|v| v.is_finite()), "Contract matmul: postcondition violated — result.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            _contract_result.iter().all(|v| v.is_finite()),
+            "Contract matmul: postcondition violated — result.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3399,8 +3898,10 @@ macro_rules! contract_pre_quantized_dot {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract quantized_dot: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract quantized_dot: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -3470,8 +3971,10 @@ macro_rules! contract_pre_best_monotone {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract best_monotone: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract best_monotone: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3481,8 +3984,10 @@ macro_rules! contract_pre_ga_crossover {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract ga_crossover: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract ga_crossover: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3492,8 +3997,10 @@ macro_rules! contract_pre_pso_velocity {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract pso_velocity: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract pso_velocity: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3503,8 +4010,10 @@ macro_rules! contract_pre_sa_acceptance {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract sa_acceptance: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract sa_acceptance: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3517,10 +4026,14 @@ macro_rules! contract_pre_accuracy {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract accuracy: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract accuracy: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract accuracy: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract accuracy: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3543,10 +4056,14 @@ macro_rules! contract_pre_f1_score {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract f1_score: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract f1_score: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract f1_score: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract f1_score: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3556,10 +4073,14 @@ macro_rules! contract_pre_precision {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract precision: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract precision: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract precision: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract precision: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3569,10 +4090,14 @@ macro_rules! contract_pre_recall {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract recall: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract recall: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract recall: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract recall: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3615,8 +4140,10 @@ macro_rules! contract_pre_hit_at_k {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract hit_at_k: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract hit_at_k: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -3626,8 +4153,10 @@ macro_rules! contract_pre_mrr {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract mrr: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract mrr: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -3637,8 +4166,10 @@ macro_rules! contract_pre_ndcg_at_k {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract ndcg_at_k: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract ndcg_at_k: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -3648,8 +4179,10 @@ macro_rules! contract_pre_reciprocal_rank {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract reciprocal_rank: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract reciprocal_rank: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -3662,8 +4195,10 @@ macro_rules! contract_pre_mae {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract mae: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract mae: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -3673,10 +4208,14 @@ macro_rules! contract_pre_mse {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract mse: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract mse: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract mse: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract mse: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3686,10 +4225,14 @@ macro_rules! contract_pre_r_squared {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract r_squared: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract r_squared: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract r_squared: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract r_squared: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3699,10 +4242,14 @@ macro_rules! contract_pre_rmse {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract rmse: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract rmse: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract rmse: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract rmse: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3775,10 +4322,14 @@ macro_rules! contract_pre_mqs_composite {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract mqs_composite: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract mqs_composite: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract mqs_composite: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract mqs_composite: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3814,10 +4365,14 @@ macro_rules! contract_pre_mqs_pass_rate {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract mqs_pass_rate: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract mqs_pass_rate: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract mqs_pass_rate: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract mqs_pass_rate: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3830,10 +4385,14 @@ macro_rules! contract_pre_class_prior {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract class_prior: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract class_prior: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract class_prior: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract class_prior: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3856,10 +4415,14 @@ macro_rules! contract_pre_log_posterior {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract log_posterior: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract log_posterior: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract log_posterior: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract log_posterior: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -3872,10 +4435,14 @@ macro_rules! contract_pre_online_normalizer {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract online_normalizer: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract online_normalizer: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract online_normalizer: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract online_normalizer: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -3885,10 +4452,14 @@ macro_rules! contract_pre_standard_softmax {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract standard_softmax: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract standard_softmax: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract standard_softmax: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract standard_softmax: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -3901,8 +4472,10 @@ macro_rules! contract_pre_cg_minimize {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract cg_minimize: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract cg_minimize: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3912,8 +4485,10 @@ macro_rules! contract_pre_convergence {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract convergence: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract convergence: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3923,8 +4498,10 @@ macro_rules! contract_pre_line_search {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract line_search: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract line_search: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -3937,8 +4514,10 @@ macro_rules! contract_pre_block_allocation {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract block_allocation: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract block_allocation: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -3948,8 +4527,10 @@ macro_rules! contract_pre_block_table_lookup {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract block_table_lookup: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract block_table_lookup: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -3959,8 +4540,10 @@ macro_rules! contract_pre_copy_on_write {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract copy_on_write: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract copy_on_write: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -3973,8 +4556,10 @@ macro_rules! contract_pre_block_allocation {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract block_allocation: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract block_allocation: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -3984,8 +4569,10 @@ macro_rules! contract_pre_block_table_invariant {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract block_table_invariant: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract block_table_invariant: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -3995,8 +4582,10 @@ macro_rules! contract_pre_fragmentation_free {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract fragmentation_free: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract fragmentation_free: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -4024,8 +4613,10 @@ macro_rules! contract_pre_slot_mapping {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract slot_mapping: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract slot_mapping: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -4102,8 +4693,10 @@ macro_rules! contract_pre_pca_transform {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract pca_transform: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract pca_transform: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -4113,8 +4706,10 @@ macro_rules! contract_pre_reconstruction {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract reconstruction: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract reconstruction: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -4207,10 +4802,14 @@ macro_rules! contract_pre_minmax_scaler {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract minmax_scaler: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract minmax_scaler: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract minmax_scaler: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract minmax_scaler: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4220,10 +4819,14 @@ macro_rules! contract_pre_robust_scaler {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract robust_scaler: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract robust_scaler: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract robust_scaler: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract robust_scaler: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4275,10 +4878,14 @@ macro_rules! contract_pre_target_parity {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract target_parity: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract target_parity: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract target_parity: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract target_parity: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -4291,8 +4898,10 @@ macro_rules! contract_pre_bsum {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract bsum: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract bsum: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4302,8 +4911,10 @@ macro_rules! contract_pre_dequantization {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract dequantization: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract dequantization: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4313,8 +4924,10 @@ macro_rules! contract_pre_q4k_superblock {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract q4k_superblock: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract q4k_superblock: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4324,8 +4937,10 @@ macro_rules! contract_pre_q6k_superblock {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract q6k_superblock: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract q6k_superblock: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4335,8 +4950,10 @@ macro_rules! contract_pre_total_bytes {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract total_bytes: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract total_bytes: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4349,10 +4966,14 @@ macro_rules! contract_pre_qk_norm_load {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract qk_norm_load: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract qk_norm_load: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract qk_norm_load: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract qk_norm_load: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4365,10 +4986,14 @@ macro_rules! contract_pre_qk_rmsnorm {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract qk_rmsnorm: precondition violated — input.iter().all(|v| v.is_finite())");
-        debug_assert!(input.len() > 0,
-            "Contract qk_rmsnorm: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract qk_rmsnorm: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            input.len() > 0,
+            "Contract qk_rmsnorm: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4381,8 +5006,10 @@ macro_rules! contract_pre_effective_batch_size {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract effective_batch_size: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract effective_batch_size: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -4392,8 +5019,10 @@ macro_rules! contract_pre_epoch_count_imbalanced {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract epoch_count_imbalanced: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract epoch_count_imbalanced: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -4403,8 +5032,10 @@ macro_rules! contract_pre_gradient_clip_bound {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract gradient_clip_bound: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract gradient_clip_bound: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -4414,8 +5045,10 @@ macro_rules! contract_pre_learning_rate_scaling {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract learning_rate_scaling: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract learning_rate_scaling: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -4425,8 +5058,10 @@ macro_rules! contract_pre_lora_alpha_ratio {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract lora_alpha_ratio: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract lora_alpha_ratio: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -4436,8 +5071,10 @@ macro_rules! contract_pre_seq_len_from_data {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract seq_len_from_data: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract seq_len_from_data: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -4447,8 +5084,10 @@ macro_rules! contract_pre_warmup_fraction {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract warmup_fraction: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract warmup_fraction: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -4461,8 +5100,10 @@ macro_rules! contract_pre_alpha_scaling {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract alpha_scaling: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract alpha_scaling: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4472,8 +5113,10 @@ macro_rules! contract_pre_bytes_per_param {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract bytes_per_param: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract bytes_per_param: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4496,8 +5139,10 @@ macro_rules! contract_pre_size_ordering {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract size_ordering: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract size_ordering: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4510,8 +5155,10 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract identity: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract identity: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -4524,8 +5171,10 @@ macro_rules! contract_pre_contract_composition {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract contract_composition: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract contract_composition: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -4535,8 +5184,10 @@ macro_rules! contract_pre_flops_per_token {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract flops_per_token: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract flops_per_token: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -4603,8 +5254,10 @@ macro_rules! contract_pre_o_projection_transpose {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract o_projection_transpose: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract o_projection_transpose: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -4623,8 +5276,10 @@ macro_rules! contract_pre_rope_frequency {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract rope_frequency: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract rope_frequency: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -4685,8 +5340,10 @@ macro_rules! contract_pre_contract_composition {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract contract_composition: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract contract_composition: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -4696,8 +5353,10 @@ macro_rules! contract_pre_flops_per_token {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract flops_per_token: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract flops_per_token: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -4764,8 +5423,10 @@ macro_rules! contract_pre_o_projection_transpose {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract o_projection_transpose: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract o_projection_transpose: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -4784,8 +5445,10 @@ macro_rules! contract_pre_rope_frequency {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract rope_frequency: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract rope_frequency: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -4807,8 +5470,10 @@ macro_rules! contract_pre_contract_composition {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract contract_composition: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract contract_composition: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -4818,8 +5483,10 @@ macro_rules! contract_pre_flops_per_token {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract flops_per_token: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract flops_per_token: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -4881,8 +5548,10 @@ macro_rules! contract_pre_attention_sublayer {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract attention_sublayer: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract attention_sublayer: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -4944,8 +5613,10 @@ macro_rules! contract_pre_o_projection_transpose {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract o_projection_transpose: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract o_projection_transpose: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -4964,8 +5635,10 @@ macro_rules! contract_pre_rope_frequency {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract rope_frequency: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract rope_frequency: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -4996,8 +5669,10 @@ macro_rules! contract_pre_contract_composition {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract contract_composition: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract contract_composition: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5007,8 +5682,10 @@ macro_rules! contract_pre_flops_per_token {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract flops_per_token: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract flops_per_token: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -5075,8 +5752,10 @@ macro_rules! contract_pre_moe_router_shape {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract moe_router_shape: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract moe_router_shape: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -5086,8 +5765,10 @@ macro_rules! contract_pre_o_projection_transpose {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract o_projection_transpose: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract o_projection_transpose: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -5106,8 +5787,10 @@ macro_rules! contract_pre_rope_frequency {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract rope_frequency: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract rope_frequency: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5129,8 +5812,10 @@ macro_rules! contract_pre_bootstrap_sample {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract bootstrap_sample: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract bootstrap_sample: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -5140,10 +5825,14 @@ macro_rules! contract_pre_ensemble_size {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract ensemble_size: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract ensemble_size: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract ensemble_size: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract ensemble_size: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5153,10 +5842,14 @@ macro_rules! contract_pre_majority_vote {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract majority_vote: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract majority_vote: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract majority_vote: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract majority_vote: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5166,10 +5859,14 @@ macro_rules! contract_pre_predict {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract predict: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract predict: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract predict: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract predict: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5200,8 +5897,10 @@ macro_rules! contract_pre_validate_inputs {
     () => {{}};
     ($input:expr) => {{
         let inputs = &$input;
-        debug_assert!(inputs.len() > 0,
-            "Contract validate_inputs: precondition violated — inputs.len() > 0");
+        debug_assert!(
+            inputs.len() > 0,
+            "Contract validate_inputs: precondition violated — inputs.len() > 0"
+        );
     }};
 }
 
@@ -5214,10 +5913,14 @@ macro_rules! contract_pre_rmsnorm {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.len() > 0,
-            "Contract rmsnorm: precondition violated — x.len() > 0");
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract rmsnorm: precondition violated — x.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            x.len() > 0,
+            "Contract rmsnorm: precondition violated — x.len() > 0"
+        );
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract rmsnorm: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5226,7 +5929,10 @@ macro_rules! contract_pre_rmsnorm {
 macro_rules! contract_post_rmsnorm {
     ($result:expr) => {{
         let _contract_result = &$result;
-        debug_assert!(_contract_result.iter().all(|v| v.is_finite()), "Contract rmsnorm: postcondition violated — result.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            _contract_result.iter().all(|v| v.is_finite()),
+            "Contract rmsnorm: postcondition violated — result.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5288,8 +5994,10 @@ macro_rules! contract_pre_base_frequency {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract base_frequency: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract base_frequency: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5299,8 +6007,10 @@ macro_rules! contract_pre_linear_interpolation {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract linear_interpolation: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract linear_interpolation: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5310,8 +6020,10 @@ macro_rules! contract_pre_ntk_scaled_base {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract ntk_scaled_base: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract ntk_scaled_base: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5321,8 +6033,10 @@ macro_rules! contract_pre_rotation_matrix {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract rotation_matrix: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract rotation_matrix: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5332,8 +6046,10 @@ macro_rules! contract_pre_yarn_mixed_frequency {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract yarn_mixed_frequency: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract yarn_mixed_frequency: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5343,8 +6059,10 @@ macro_rules! contract_pre_yarn_ramp {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract yarn_ramp: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract yarn_ramp: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -5357,10 +6075,14 @@ macro_rules! contract_pre_rope {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.len() > 0,
-            "Contract rope: precondition violated — x.len() > 0");
-        debug_assert!(x.len() % 2 == 0,
-            "Contract rope: precondition violated — x.len() % 2 == 0");
+        debug_assert!(
+            x.len() > 0,
+            "Contract rope: precondition violated — x.len() > 0"
+        );
+        debug_assert!(
+            x.len() % 2 == 0,
+            "Contract rope: precondition violated — x.len() % 2 == 0"
+        );
     }};
 }
 
@@ -5369,7 +6091,10 @@ macro_rules! contract_pre_rope {
 macro_rules! contract_post_rope {
     ($result:expr) => {{
         let _contract_result = &$result;
-        debug_assert!(_contract_result.iter().all(|v| v.is_finite()), "Contract rope: postcondition violated — result.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            _contract_result.iter().all(|v| v.is_finite()),
+            "Contract rope: postcondition violated — result.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5392,10 +6117,14 @@ macro_rules! contract_pre_format_parity {
     () => {{}};
     ($input:expr) => {{
         let data = &$input;
-        debug_assert!(!data.is_empty(),
-            "Contract format_parity: precondition violated — !data.is_empty()");
-        debug_assert!(data.len() > 0,
-            "Contract format_parity: precondition violated — data.len() > 0");
+        debug_assert!(
+            !data.is_empty(),
+            "Contract format_parity: precondition violated — !data.is_empty()"
+        );
+        debug_assert!(
+            data.len() > 0,
+            "Contract format_parity: precondition violated — data.len() > 0"
+        );
     }};
 }
 
@@ -5408,10 +6137,14 @@ macro_rules! contract_pre_classify_filesystem {
     () => {{}};
     ($input:expr) => {{
         let source = &$input;
-        debug_assert!(!source.is_empty(),
-            "Contract classify_filesystem: precondition violated — !source.is_empty()");
-        debug_assert!(source.len() <= 1_000_000,
-            "Contract classify_filesystem: precondition violated — source.len() <= 1_000_000");
+        debug_assert!(
+            !source.is_empty(),
+            "Contract classify_filesystem: precondition violated — !source.is_empty()"
+        );
+        debug_assert!(
+            source.len() <= 1_000_000,
+            "Contract classify_filesystem: precondition violated — source.len() <= 1_000_000"
+        );
     }};
 }
 
@@ -5421,10 +6154,14 @@ macro_rules! contract_pre_classify_injection {
     () => {{}};
     ($input:expr) => {{
         let source = &$input;
-        debug_assert!(!source.is_empty(),
-            "Contract classify_injection: precondition violated — !source.is_empty()");
-        debug_assert!(source.len() <= 1_000_000,
-            "Contract classify_injection: precondition violated — source.len() <= 1_000_000");
+        debug_assert!(
+            !source.is_empty(),
+            "Contract classify_injection: precondition violated — !source.is_empty()"
+        );
+        debug_assert!(
+            source.len() <= 1_000_000,
+            "Contract classify_injection: precondition violated — source.len() <= 1_000_000"
+        );
     }};
 }
 
@@ -5434,10 +6171,14 @@ macro_rules! contract_pre_classify_secrets {
     () => {{}};
     ($input:expr) => {{
         let source = &$input;
-        debug_assert!(!source.is_empty(),
-            "Contract classify_secrets: precondition violated — !source.is_empty()");
-        debug_assert!(source.len() <= 1_000_000,
-            "Contract classify_secrets: precondition violated — source.len() <= 1_000_000");
+        debug_assert!(
+            !source.is_empty(),
+            "Contract classify_secrets: precondition violated — !source.is_empty()"
+        );
+        debug_assert!(
+            source.len() <= 1_000_000,
+            "Contract classify_secrets: precondition violated — source.len() <= 1_000_000"
+        );
     }};
 }
 
@@ -5459,8 +6200,10 @@ macro_rules! contract_pre_greedy {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract greedy: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract greedy: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -5470,8 +6213,10 @@ macro_rules! contract_pre_temperature {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract temperature: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract temperature: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -5481,8 +6226,10 @@ macro_rules! contract_pre_top_k {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract top_k: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract top_k: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -5492,8 +6239,10 @@ macro_rules! contract_pre_top_p {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract top_p: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract top_p: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -5506,10 +6255,14 @@ macro_rules! contract_pre_geometric_mean {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract geometric_mean: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract geometric_mean: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract geometric_mean: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract geometric_mean: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5583,10 +6336,14 @@ macro_rules! contract_pre_serialization {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract serialization: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract serialization: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract serialization: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract serialization: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5599,10 +6356,14 @@ macro_rules! contract_pre_entropy {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract entropy: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract entropy: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract entropy: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract entropy: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5628,10 +6389,14 @@ macro_rules! contract_pre_sigmoid {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract sigmoid: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract sigmoid: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract sigmoid: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract sigmoid: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -5641,10 +6406,14 @@ macro_rules! contract_pre_silu {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract silu: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract silu: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract silu: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract silu: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -5657,8 +6426,10 @@ macro_rules! contract_pre_attention_sparsity {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract attention_sparsity: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract attention_sparsity: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -5668,8 +6439,10 @@ macro_rules! contract_pre_causal_window_mask {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract causal_window_mask: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract causal_window_mask: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -5679,8 +6452,10 @@ macro_rules! contract_pre_effective_context {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract effective_context: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract effective_context: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -5690,8 +6465,10 @@ macro_rules! contract_pre_multi_layer_receptive_field {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract multi_layer_receptive_field: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract multi_layer_receptive_field: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -5701,8 +6478,10 @@ macro_rules! contract_pre_window_mask {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract window_mask: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract window_mask: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -5715,10 +6494,14 @@ macro_rules! contract_pre_softmax {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.len() > 0,
-            "Contract softmax: precondition violated — x.len() > 0");
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract softmax: precondition violated — x.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            x.len() > 0,
+            "Contract softmax: precondition violated — x.len() > 0"
+        );
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract softmax: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5751,8 +6534,10 @@ macro_rules! contract_pre_token_bounds {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract token_bounds: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract token_bounds: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -5765,8 +6550,10 @@ macro_rules! contract_pre_acceptance_probability {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract acceptance_probability: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract acceptance_probability: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -5776,8 +6563,10 @@ macro_rules! contract_pre_output_equivalence {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract output_equivalence: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract output_equivalence: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -5787,8 +6576,10 @@ macro_rules! contract_pre_token_acceptance {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract token_acceptance: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract token_acceptance: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -5801,10 +6592,14 @@ macro_rules! contract_pre_selective_gate {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract selective_gate: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract selective_gate: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract selective_gate: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract selective_gate: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5814,10 +6609,14 @@ macro_rules! contract_pre_ssm_discretize {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract ssm_discretize: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract ssm_discretize: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract ssm_discretize: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract ssm_discretize: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -5827,10 +6626,14 @@ macro_rules! contract_pre_ssm_scan {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract ssm_scan: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract ssm_scan: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract ssm_scan: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract ssm_scan: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5872,8 +6675,10 @@ macro_rules! contract_pre_hinge_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract hinge_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract hinge_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -5883,10 +6688,14 @@ macro_rules! contract_pre_margin {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract margin: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract margin: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract margin: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract margin: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5896,10 +6705,14 @@ macro_rules! contract_pre_svm_predict {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract svm_predict: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract svm_predict: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract svm_predict: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract svm_predict: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5912,10 +6725,14 @@ macro_rules! contract_pre_silu {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract silu: precondition violated — x.iter().all(|v| v.is_finite())");
-        debug_assert!(x.len() > 0,
-            "Contract silu: precondition violated — x.len() > 0");
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract silu: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
+        debug_assert!(
+            x.len() > 0,
+            "Contract silu: precondition violated — x.len() > 0"
+        );
     }};
 }
 
@@ -5925,10 +6742,14 @@ macro_rules! contract_pre_swiglu {
     () => {{}};
     ($input:expr) => {{
         let x = &$input;
-        debug_assert!(x.len() > 0,
-            "Contract swiglu: precondition violated — x.len() > 0");
-        debug_assert!(x.iter().all(|v| v.is_finite()),
-            "Contract swiglu: precondition violated — x.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            x.len() > 0,
+            "Contract swiglu: precondition violated — x.len() > 0"
+        );
+        debug_assert!(
+            x.iter().all(|v| v.is_finite()),
+            "Contract swiglu: precondition violated — x.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5937,7 +6758,10 @@ macro_rules! contract_pre_swiglu {
 macro_rules! contract_post_swiglu {
     ($result:expr) => {{
         let _contract_result = &$result;
-        debug_assert!(_contract_result.iter().all(|v| v.is_finite()), "Contract swiglu: postcondition violated — result.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            _contract_result.iter().all(|v| v.is_finite()),
+            "Contract swiglu: postcondition violated — result.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -5998,8 +6822,10 @@ macro_rules! contract_pre_parameter_decomposition {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract parameter_decomposition: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract parameter_decomposition: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -6009,8 +6835,10 @@ macro_rules! contract_pre_quantization_bytes {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract quantization_bytes: precondition violated — input.len() > 0");
+        debug_assert!(
+            input.len() > 0,
+            "Contract quantization_bytes: precondition violated — input.len() > 0"
+        );
     }};
 }
 
@@ -6020,10 +6848,14 @@ macro_rules! contract_pre_tensor_count {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract tensor_count: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract tensor_count: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract tensor_count: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract tensor_count: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -6033,8 +6865,10 @@ macro_rules! contract_pre_tied_embeddings {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract tied_embeddings: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract tied_embeddings: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -6047,8 +6881,10 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract identity: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract identity: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -6090,8 +6926,10 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract identity: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract identity: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -6104,8 +6942,10 @@ macro_rules! contract_pre_gqa_grouping {
     () => {{}};
     ($input:expr) => {{
         let q = &$input;
-        debug_assert!(q.len() > 0,
-            "Contract gqa_grouping: precondition violated — q.len() > 0");
+        debug_assert!(
+            q.len() > 0,
+            "Contract gqa_grouping: precondition violated — q.len() > 0"
+        );
     }};
 }
 
@@ -6115,10 +6955,14 @@ macro_rules! contract_pre_lm_head {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract lm_head: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract lm_head: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract lm_head: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract lm_head: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -6128,10 +6972,14 @@ macro_rules! contract_pre_qkv_projection {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract qkv_projection: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract qkv_projection: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract qkv_projection: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract qkv_projection: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -6141,10 +6989,14 @@ macro_rules! contract_pre_residual {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract residual: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract residual: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract residual: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract residual: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -6154,10 +7006,14 @@ macro_rules! contract_pre_swiglu_shape {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract swiglu_shape: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract swiglu_shape: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract swiglu_shape: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract swiglu_shape: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -6170,8 +7026,10 @@ macro_rules! contract_pre_tied_lm_head {
     () => {{}};
     ($input:expr) => {{
         let indices = &$input;
-        debug_assert!(indices.len() > 0,
-            "Contract tied_lm_head: precondition violated — indices.len() > 0");
+        debug_assert!(
+            indices.len() > 0,
+            "Contract tied_lm_head: precondition violated — indices.len() > 0"
+        );
     }};
 }
 
@@ -6184,8 +7042,10 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract identity: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract identity: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -6198,8 +7058,10 @@ macro_rules! contract_pre_identity {
     () => {{}};
     ($input:expr) => {{
         let _contract_input = &$input;
-        debug_assert!(!_contract_input.is_empty(),
-            "Contract identity: precondition violated — !input.is_empty()");
+        debug_assert!(
+            !_contract_input.is_empty(),
+            "Contract identity: precondition violated — !input.is_empty()"
+        );
     }};
 }
 
@@ -6212,8 +7074,10 @@ macro_rules! contract_pre_ema_loss {
     () => {{}};
     ($input:expr) => {{
         let predicted = &$input;
-        debug_assert!(predicted.len() > 0,
-            "Contract ema_loss: precondition violated — predicted.len() > 0");
+        debug_assert!(
+            predicted.len() > 0,
+            "Contract ema_loss: precondition violated — predicted.len() > 0"
+        );
     }};
 }
 
@@ -6223,10 +7087,14 @@ macro_rules! contract_pre_val_split {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract val_split: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract val_split: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract val_split: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract val_split: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 
@@ -6236,8 +7104,10 @@ macro_rules! contract_pre_warmup_lr {
     () => {{}};
     ($input:expr) => {{
         let params = &$input;
-        debug_assert!(params.len() > 0,
-            "Contract warmup_lr: precondition violated — params.len() > 0");
+        debug_assert!(
+            params.len() > 0,
+            "Contract warmup_lr: precondition violated — params.len() > 0"
+        );
     }};
 }
 
@@ -6250,8 +7120,10 @@ macro_rules! contract_pre_transpose {
     () => {{}};
     ($input:expr) => {{
         let a = &$input;
-        debug_assert!(a.len() > 0,
-            "Contract transpose: precondition violated — a.len() > 0");
+        debug_assert!(
+            a.len() > 0,
+            "Contract transpose: precondition violated — a.len() > 0"
+        );
     }};
 }
 
@@ -6312,10 +7184,14 @@ macro_rules! contract_pre_density_gate {
     () => {{}};
     ($input:expr) => {{
         let input = &$input;
-        debug_assert!(input.len() > 0,
-            "Contract density_gate: precondition violated — input.len() > 0");
-        debug_assert!(input.iter().all(|v| v.is_finite()),
-            "Contract density_gate: precondition violated — input.iter().all(|v| v.is_finite())");
+        debug_assert!(
+            input.len() > 0,
+            "Contract density_gate: precondition violated — input.len() > 0"
+        );
+        debug_assert!(
+            input.iter().all(|v| v.is_finite()),
+            "Contract density_gate: precondition violated — input.iter().all(|v| v.is_finite())"
+        );
     }};
 }
 

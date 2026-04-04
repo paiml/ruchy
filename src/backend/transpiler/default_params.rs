@@ -99,7 +99,9 @@ mod tests {
     fn test_fill_default_args_no_signature() {
         let transpiler = make_transpiler();
         let args = vec![quote! { "Smith".to_string() }];
-        let result = transpiler.fill_default_args("unknown_fn", args.clone()).unwrap();
+        let result = transpiler
+            .fill_default_args("unknown_fn", args.clone())
+            .unwrap();
         assert_eq!(result.len(), 1, "No signature should return args as-is");
     }
 

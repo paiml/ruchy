@@ -842,7 +842,7 @@ fn parse_prefix_range(state: &mut ParserState, token: Token, _span: Span) -> Res
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     })
 }
 

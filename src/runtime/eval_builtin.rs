@@ -738,16 +738,42 @@ fn eval_is_nil(args: &[Value]) -> Result<Value, InterpreterError> {
 fn eval_dir(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("dir", args, 1)?;
     let methods: Vec<&str> = match &args[0] {
-        Value::String(_) => vec!["len", "to_uppercase", "to_lowercase", "trim", "contains", "split", "replace", "starts_with", "ends_with", "chars"],
-        Value::Array(_) => vec!["len", "push", "pop", "map", "filter", "reduce", "sort", "reverse", "contains", "join"],
-        Value::Object(_) | Value::ObjectMut(_) => vec!["len", "keys", "values", "contains_key", "insert", "remove", "get"],
+        Value::String(_) => vec![
+            "len",
+            "to_uppercase",
+            "to_lowercase",
+            "trim",
+            "contains",
+            "split",
+            "replace",
+            "starts_with",
+            "ends_with",
+            "chars",
+        ],
+        Value::Array(_) => vec![
+            "len", "push", "pop", "map", "filter", "reduce", "sort", "reverse", "contains", "join",
+        ],
+        Value::Object(_) | Value::ObjectMut(_) => vec![
+            "len",
+            "keys",
+            "values",
+            "contains_key",
+            "insert",
+            "remove",
+            "get",
+        ],
         Value::Integer(_) => vec!["abs", "to_string", "to_float"],
         Value::Float(_) => vec!["abs", "floor", "ceil", "round", "to_string", "to_int"],
         Value::Bool(_) => vec!["to_string"],
         Value::Nil => vec![],
         _ => vec!["to_string", "type_name"],
     };
-    Ok(Value::Array(methods.into_iter().map(|m| Value::from_string(m.to_string())).collect()))
+    Ok(Value::Array(
+        methods
+            .into_iter()
+            .map(|m| Value::from_string(m.to_string()))
+            .collect(),
+    ))
 }
 
 /// Reverse arrays and strings

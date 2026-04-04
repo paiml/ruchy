@@ -1372,7 +1372,7 @@ fn test_is_assignment_compound() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     });
     let value = Box::new(crate::frontend::ast::Expr {
         kind: crate::frontend::ast::ExprKind::Literal(crate::frontend::ast::Literal::Integer(
@@ -1382,7 +1382,7 @@ fn test_is_assignment_compound() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     });
     let kind = crate::frontend::ast::ExprKind::CompoundAssign {
         target,

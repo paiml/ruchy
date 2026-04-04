@@ -16,7 +16,7 @@ fn test_eval_range_simple() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&range);
     assert!(result.is_ok());
@@ -35,7 +35,7 @@ fn test_eval_range_inclusive() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&range);
     assert!(result.is_ok());
@@ -50,7 +50,7 @@ fn test_eval_tuple_empty() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     assert!(matches!(result, Value::Tuple(_)));
@@ -65,7 +65,7 @@ fn test_eval_tuple_single() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     assert!(matches!(result, Value::Tuple(_)));
@@ -80,7 +80,7 @@ fn test_eval_tuple_multiple() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     if let Value::Tuple(vals) = result {
@@ -99,7 +99,7 @@ fn test_eval_list_to_array_empty() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     assert!(matches!(result, Value::Array(_)));
@@ -114,7 +114,7 @@ fn test_eval_list_to_array_integers() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     if let Value::Array(vals) = result {
@@ -136,7 +136,7 @@ fn test_eval_array_init_expr() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&arr);
     assert!(result.is_ok());
@@ -151,7 +151,7 @@ fn test_eval_null_literal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&nil).expect("should evaluate");
     assert!(matches!(result, Value::Nil));
@@ -166,7 +166,7 @@ fn test_eval_char_to_string_literal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&ch).expect("should evaluate");
     // Char literals are converted to single-character strings
@@ -185,7 +185,7 @@ fn test_eval_unary_negate_expr() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&neg).expect("should evaluate");
     assert_eq!(result, Value::Integer(-42));
@@ -203,7 +203,7 @@ fn test_eval_unary_not_expr() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&not).expect("should evaluate");
     assert_eq!(result, Value::Bool(false));
@@ -222,7 +222,7 @@ fn test_eval_binary_power() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&power).expect("should evaluate");
     assert_eq!(result, Value::Integer(8));
@@ -241,7 +241,7 @@ fn test_eval_logical_and() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&and).expect("should evaluate");
     assert_eq!(result, Value::Bool(false));
@@ -260,7 +260,7 @@ fn test_eval_logical_or() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&or).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -279,7 +279,7 @@ fn test_eval_float_add_expr() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&add).expect("should evaluate");
     assert_eq!(result, Value::Float(4.0));
@@ -298,7 +298,7 @@ fn test_eval_float_div_expr() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&div).expect("should evaluate");
     assert_eq!(result, Value::Float(2.5));
@@ -313,7 +313,7 @@ fn test_eval_block_multi_stmt() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&block).expect("should evaluate");
     assert_eq!(result, Value::Integer(3));
@@ -332,7 +332,7 @@ fn test_eval_if_no_else() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&if_expr).expect("should evaluate");
     assert!(matches!(result, Value::Nil));
@@ -354,7 +354,7 @@ fn test_eval_if_nested_expr() {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }),
             else_branch: Some(Box::new(make_int(-1))),
         },
@@ -362,7 +362,7 @@ fn test_eval_if_nested_expr() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&nested).expect("should evaluate");
     assert_eq!(result, Value::Integer(42));
@@ -403,7 +403,7 @@ fn test_eval_nested_arithmetic() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let mul = Expr {
         kind: ExprKind::Binary {
@@ -415,7 +415,7 @@ fn test_eval_nested_arithmetic() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&mul).expect("should evaluate");
     assert_eq!(result, Value::Integer(20));
@@ -434,7 +434,7 @@ fn test_eval_less_comparison() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&cmp).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -453,7 +453,7 @@ fn test_eval_equal_comparison() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&eq).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -472,7 +472,7 @@ fn test_eval_not_equal_comparison() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&neq).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -487,7 +487,7 @@ fn test_eval_byte_literal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&byte).expect("should evaluate");
     assert_eq!(result, Value::Byte(255));
@@ -502,7 +502,7 @@ fn test_eval_unit_literal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&unit).expect("should evaluate");
     assert!(matches!(result, Value::Nil));
@@ -517,7 +517,7 @@ fn test_eval_list_nested() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let outer = Expr {
         kind: ExprKind::List(vec![inner]),
@@ -525,7 +525,7 @@ fn test_eval_list_nested() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&outer).expect("should evaluate");
     assert!(matches!(result, Value::Array(_)));
@@ -544,7 +544,7 @@ fn test_eval_if_true_branch() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&if_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(100));
@@ -563,7 +563,7 @@ fn test_eval_if_false_branch() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&if_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(0));
@@ -581,7 +581,7 @@ fn test_eval_unary_negate_float() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&neg).expect("should evaluate");
     assert_eq!(result, Value::Float(-3.5));
@@ -600,7 +600,7 @@ fn test_eval_binary_subtract() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&sub).expect("should evaluate");
     assert_eq!(result, Value::Integer(6));
@@ -619,7 +619,7 @@ fn test_eval_binary_multiply() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&mul).expect("should evaluate");
     assert_eq!(result, Value::Integer(42));
@@ -638,7 +638,7 @@ fn test_eval_binary_divide() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&div).expect("should evaluate");
     assert_eq!(result, Value::Integer(5));
@@ -657,7 +657,7 @@ fn test_eval_binary_greater() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&gt).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -672,7 +672,7 @@ fn test_eval_empty_block() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&block).expect("should evaluate");
     assert!(matches!(result, Value::Nil));
@@ -687,7 +687,7 @@ fn test_eval_single_stmt_block() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&block).expect("should evaluate");
     assert_eq!(result, Value::Integer(99));
@@ -704,7 +704,7 @@ fn test_eval_none_literal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&none_expr).expect("should evaluate");
     match result {
@@ -732,7 +732,7 @@ fn test_eval_some_with_integer() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&some_expr).expect("should evaluate");
     match result {
@@ -763,7 +763,7 @@ fn test_eval_some_with_string() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&some_expr).expect("should evaluate");
     match result {
@@ -787,7 +787,7 @@ fn test_eval_set_empty() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&set_expr).expect("should evaluate");
     assert!(matches!(result, Value::Nil));
@@ -802,7 +802,7 @@ fn test_eval_set_single() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&set_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(100));
@@ -817,7 +817,7 @@ fn test_eval_set_multiple_returns_last() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&set_expr).expect("should evaluate");
     assert_eq!(result, Value::Integer(3));
@@ -835,7 +835,7 @@ fn test_eval_qualified_name_std_module() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     // May succeed or fail depending on stdlib availability
     let _ = interp.eval_expr(&qual_expr);
@@ -854,7 +854,7 @@ fn test_eval_binary_less_than() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&lt).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -873,7 +873,7 @@ fn test_eval_binary_less_equal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&le).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -892,7 +892,7 @@ fn test_eval_binary_greater_equal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&ge).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -911,7 +911,7 @@ fn test_eval_binary_not_equal() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&ne).expect("should evaluate");
     assert_eq!(result, Value::Bool(true));
@@ -930,7 +930,7 @@ fn test_eval_binary_modulo() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&modulo).expect("should evaluate");
     assert_eq!(result, Value::Integer(2));
@@ -949,7 +949,7 @@ fn test_eval_binary_power_large() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&power).expect("should evaluate");
     assert_eq!(result, Value::Integer(1024));
@@ -988,7 +988,7 @@ fn test_eval_list_empty_r120() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     match result {
@@ -1006,7 +1006,7 @@ fn test_eval_list_with_elements_r120() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&list).expect("should evaluate");
     match result {
@@ -1029,7 +1029,7 @@ fn test_eval_tuple_empty_r120() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     match result {
@@ -1047,7 +1047,7 @@ fn test_eval_tuple_with_mixed_types() {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     };
     let result = interp.eval_expr(&tuple).expect("should evaluate");
     match result {

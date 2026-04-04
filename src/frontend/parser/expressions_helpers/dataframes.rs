@@ -225,65 +225,65 @@ mod tests {
         use proptest::prelude::*;
 
         proptest! {
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_dataframe_identifier_always_parses(_suffix in "[a-z]{0,10}") {
-                let code = "df";
-                let result = Parser::new(code).parse();
-                prop_assert!(result.is_ok(), "DataFrame identifier should always parse");
-            }
-
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_empty_dataframe_literal_parses(_n in 0..100usize) {
-                let code = "df![]";
-                let result = Parser::new(code).parse();
-                prop_assert!(result.is_ok(), "Empty DataFrame literal should parse");
-            }
-
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_single_column_integers_parse(values in prop::collection::vec(any::<i32>(), 1..10)) {
-                let values_str = values.iter()
-                    .map(std::string::ToString::to_string)
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let code = format!("df![x => [{values_str}]]");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok(), "Single column with integers {} should parse", code);
-            }
-
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_dataframe_method_chain_parses(depth in 1..5usize) {
-                let mut code = "df".to_string();
-                for _ in 0..depth {
-                    code.push_str(".select(\"x\")");
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_dataframe_identifier_always_parses(_suffix in "[a-z]{0,10}") {
+                    let code = "df";
+                    let result = Parser::new(code).parse();
+                    prop_assert!(result.is_ok(), "DataFrame identifier should always parse");
                 }
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok(), "DataFrame method chain {} should parse", code);
-            }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_dataframe_column_names_parse(name in "[a-z][a-z0-9_]{0,10}") {
-                let code = format!("df![{name} => [1, 2, 3]]");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok(), "DataFrame with column {} should parse", name);
-            }
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_empty_dataframe_literal_parses(_n in 0..100usize) {
+                    let code = "df![]";
+                    let result = Parser::new(code).parse();
+                    prop_assert!(result.is_ok(), "Empty DataFrame literal should parse");
+                }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_multiple_columns_parse(num_cols in 1..5usize) {
-                let columns = (0..num_cols)
-                    .map(|i| format!("col{i} => [1, 2]"))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                let code = format!("df![{columns}]");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok(), "DataFrame with {} columns should parse", num_cols);
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_single_column_integers_parse(values in prop::collection::vec(any::<i32>(), 1..10)) {
+                    let values_str = values.iter()
+                        .map(std::string::ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    let code = format!("df![x => [{values_str}]]");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok(), "Single column with integers {} should parse", code);
+                }
+
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_dataframe_method_chain_parses(depth in 1..5usize) {
+                    let mut code = "df".to_string();
+                    for _ in 0..depth {
+                        code.push_str(".select(\"x\")");
+                    }
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok(), "DataFrame method chain {} should parse", code);
+                }
+
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_dataframe_column_names_parse(name in "[a-z][a-z0-9_]{0,10}") {
+                    let code = format!("df![{name} => [1, 2, 3]]");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok(), "DataFrame with column {} should parse", name);
+                }
+
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_multiple_columns_parse(num_cols in 1..5usize) {
+                    let columns = (0..num_cols)
+                        .map(|i| format!("col{i} => [1, 2]"))
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    let code = format!("df![{columns}]");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok(), "DataFrame with {} columns should parse", num_cols);
+                }
             }
-        }
     }
 
     // Additional Tests for Coverage: Method Chain Parsing (Tests 21-30)

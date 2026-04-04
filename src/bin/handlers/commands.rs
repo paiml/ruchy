@@ -842,12 +842,15 @@ fn handle_single_file_score(
     } else {
         let mut s = format!(
             "=== Quality Score ===\nFile: {}\nScore: {:.2}/1.0\nAnalysis Depth: {}\n",
-            path.display(), score, depth
+            path.display(),
+            score,
+            depth
         );
         if explain {
             s.push_str(&format!(
                 "\n--- Breakdown ---\nLines: {}\nFunctions: {}\nHas tests: {}\nHas docs: {}\n",
-                lines, functions,
+                lines,
+                functions,
                 source.contains("#[test]") || source.contains("fun test_"),
                 source.contains("///") || source.contains("//!"),
             ));

@@ -55,15 +55,23 @@ impl Engine {
     /// Compile a script for repeated evaluation (validates syntax).
     pub fn compile(&self, source: &str) -> Result<CompiledScript> {
         let mut parser = ruchy::Parser::new(source);
-        let _ast = parser.parse().map_err(|e| anyhow::anyhow!("Parse error: {e}"))?;
-        Ok(CompiledScript { source: source.to_string() })
+        let _ast = parser
+            .parse()
+            .map_err(|e| anyhow::anyhow!("Parse error: {e}"))?;
+        Ok(CompiledScript {
+            source: source.to_string(),
+        })
     }
 
     /// Evaluate a source string and return the result.
     pub fn eval(&mut self, source: &str) -> Result<Value> {
         let mut parser = ruchy::Parser::new(source);
-        let ast = parser.parse().map_err(|e| anyhow::anyhow!("Parse error: {e}"))?;
-        let result = self.interp.eval_expr(&ast)
+        let ast = parser
+            .parse()
+            .map_err(|e| anyhow::anyhow!("Parse error: {e}"))?;
+        let result = self
+            .interp
+            .eval_expr(&ast)
             .map_err(|e| anyhow::anyhow!("Eval error: {e}"))?;
         Ok(ruchy_to_embed(result))
     }
@@ -75,14 +83,36 @@ impl Engine {
 }
 
 impl Default for Engine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
-impl From<i64> for Value { fn from(v: i64) -> Self { Value::Integer(v) } }
-impl From<f64> for Value { fn from(v: f64) -> Self { Value::Float(v) } }
-impl From<bool> for Value { fn from(v: bool) -> Self { Value::Bool(v) } }
-impl From<String> for Value { fn from(v: String) -> Self { Value::String(v) } }
-impl From<&str> for Value { fn from(v: &str) -> Self { Value::String(v.to_string()) } }
+impl From<i64> for Value {
+    fn from(v: i64) -> Self {
+        Value::Integer(v)
+    }
+}
+impl From<f64> for Value {
+    fn from(v: f64) -> Self {
+        Value::Float(v)
+    }
+}
+impl From<bool> for Value {
+    fn from(v: bool) -> Self {
+        Value::Bool(v)
+    }
+}
+impl From<String> for Value {
+    fn from(v: String) -> Self {
+        Value::String(v)
+    }
+}
+impl From<&str> for Value {
+    fn from(v: &str) -> Self {
+        Value::String(v.to_string())
+    }
+}
 
 fn embed_to_ruchy(v: &Value) -> RuchyValue {
     match v {

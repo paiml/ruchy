@@ -603,7 +603,6 @@ mod tests {
 
     // Additional EXTREME TDD tests
 
-
     #[test]
     fn test_async_fun_single_char_name() {
         let result = parse("async fun f() { 1 }");
@@ -621,7 +620,6 @@ mod tests {
         let result = parse("async fun fetch2() { 1 }");
         assert!(result.is_ok());
     }
-
 
     #[test]
     fn test_async_lambda_single_char_param() {
@@ -641,7 +639,6 @@ mod tests {
         assert!(result.is_ok());
     }
 
-
     #[test]
     fn test_two_async_functions() {
         let result = parse("async fun a() { 1 }\nasync fun b() { 2 }");
@@ -660,7 +657,6 @@ mod tests {
         assert!(result.is_ok());
     }
 
-
     #[test]
     fn test_async_fun_with_if() {
         let result = parse("async fun check(x) { if x > 0 { x } else { 0 } }");
@@ -678,7 +674,6 @@ mod tests {
         let result = parse("async fun count() { let mut i = 0; while i < 10 { i = i + 1 }; i }");
         assert!(result.is_ok());
     }
-
 
     #[test]
     fn test_async_fun_return_i32() {
@@ -703,7 +698,6 @@ mod tests {
         let result = parse("async fun try_get() -> Result<i32, Error> { Ok(0) }");
         assert!(result.is_ok());
     }
-
 
     #[test]
     fn test_async_block_empty_like() {
@@ -734,7 +728,6 @@ mod tests {
         let result = parse("async { x.method() }");
         assert!(result.is_ok());
     }
-
 
     // Test 72: Async block with await
     #[test]
@@ -1098,63 +1091,63 @@ mod tests {
         }
 
         proptest! {
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_async_blocks_parse(_seed in any::<u32>()) {
-                let code = "async { 42 }";
-                let result = Parser::new(code).parse();
-                prop_assert!(result.is_ok());
-            }
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_async_blocks_parse(_seed in any::<u32>()) {
+                    let code = "async { 42 }";
+                    let result = Parser::new(code).parse();
+                    prop_assert!(result.is_ok());
+                }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_async_lambda_with_param(param in valid_identifier()) {
-                let code = format!("async |{param}| {param}");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok());
-            }
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_async_lambda_with_param(param in valid_identifier()) {
+                    let code = format!("async |{param}| {param}");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok());
+                }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_async_arrow_lambda_parses(param in valid_identifier(), val in 0i32..100) {
-                // Async arrow lambda uses pipe syntax: async |param| expr
-                // NOT arrow syntax: async param => expr (unsupported)
-                let code = format!("async |{param}| {val}");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok());
-            }
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_async_arrow_lambda_parses(param in valid_identifier(), val in 0i32..100) {
+                    // Async arrow lambda uses pipe syntax: async |param| expr
+                    // NOT arrow syntax: async param => expr (unsupported)
+                    let code = format!("async |{param}| {val}");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok());
+                }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_async_function_parses(name in valid_identifier()) {
-                let code = format!("async fun {name}() {{ 42 }}");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok());
-            }
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_async_function_parses(name in valid_identifier()) {
+                    let code = format!("async fun {name}() {{ 42 }}");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok());
+                }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_async_lambda_multi_params(p1 in valid_identifier(), p2 in valid_identifier()) {
-                let code = format!("async |{p1}, {p2}| {p1} + {p2}");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok());
-            }
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_async_lambda_multi_params(p1 in valid_identifier(), p2 in valid_identifier()) {
+                    let code = format!("async |{p1}, {p2}| {p1} + {p2}");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok());
+                }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_async_block_with_expressions(n in 0i32..100) {
-                let code = format!("async {{ {n} }}");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok());
-            }
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_async_block_with_expressions(n in 0i32..100) {
+                    let code = format!("async {{ {n} }}");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok());
+                }
 
-            #[test]
-    #[ignore = "Flaky property test"]
-            fn prop_async_function_with_params(name in valid_identifier(), param in valid_identifier()) {
-                let code = format!("async fun {name}({param}) {{ {param} }}");
-                let result = Parser::new(&code).parse();
-                prop_assert!(result.is_ok());
+                #[test]
+        #[ignore = "Flaky property test"]
+                fn prop_async_function_with_params(name in valid_identifier(), param in valid_identifier()) {
+                    let code = format!("async fun {name}({param}) {{ {param} }}");
+                    let result = Parser::new(&code).parse();
+                    prop_assert!(result.is_ok());
+                }
             }
-        }
     }
 }

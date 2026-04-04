@@ -205,7 +205,7 @@ impl ModuleResolver {
                 attributes: expr.attributes.clone(),
                 leading_comments: Vec::new(),
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             })
         }
     }

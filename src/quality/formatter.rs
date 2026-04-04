@@ -394,7 +394,14 @@ impl Formatter {
                     self.format_expr(count, indent)
                 )
             }
-            ExprKind::Set(elems) => format!("{{{}}}", elems.iter().map(|e| self.format_expr(e, indent)).collect::<Vec<_>>().join(", ")),
+            ExprKind::Set(elems) => format!(
+                "{{{}}}",
+                elems
+                    .iter()
+                    .map(|e| self.format_expr(e, indent))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             // Result/Option wrappers
             ExprKind::Ok { value } => format!("Ok({})", self.format_expr(value, indent)),
             ExprKind::Err { error } => format!("Err({})", self.format_expr(error, indent)),

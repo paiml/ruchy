@@ -9,9 +9,9 @@
 //! Run with: `cargo test --test contract_traits`
 
 use provable_contracts::traits::{
-    ActivationKernelV1, AdamwKernelV1, AttentionKernelV1, CrossEntropyKernelV1,
-    FlashAttentionV1, GqaKernelV1, LayernormKernelV1, MatmulKernelV1, RmsnormKernelV1,
-    RopeKernelV1, SiluKernelV1, SoftmaxKernelV1, SwigluKernelV1,
+    ActivationKernelV1, AdamwKernelV1, AttentionKernelV1, CrossEntropyKernelV1, FlashAttentionV1,
+    GqaKernelV1, LayernormKernelV1, MatmulKernelV1, RmsnormKernelV1, RopeKernelV1, SiluKernelV1,
+    SoftmaxKernelV1, SwigluKernelV1,
 };
 
 /// Marker struct for reference scalar kernel implementations.
@@ -189,7 +189,10 @@ fn rmsnorm_kernel_v1_properties() {
     // out ≈ [3/3.5355, 4/3.5355] ≈ [0.8485, 1.1314]
     assert!(out.len() == 2);
     let rms_out = (out.iter().map(|v| v * v).sum::<f32>() / out.len() as f32).sqrt();
-    assert!((rms_out - 1.0).abs() < 1e-3, "rmsnorm output should have ~unit RMS");
+    assert!(
+        (rms_out - 1.0).abs() < 1e-3,
+        "rmsnorm output should have ~unit RMS"
+    );
 }
 
 #[test]
@@ -221,7 +224,10 @@ fn cross_entropy_kernel_v1_properties() {
     }
     // exp(log_softmax) should sum to 1
     let sum_exp: f32 = lsm.iter().map(|v| v.exp()).sum();
-    assert!((sum_exp - 1.0).abs() < 1e-5, "exp(log_softmax) must sum to 1");
+    assert!(
+        (sum_exp - 1.0).abs() < 1e-5,
+        "exp(log_softmax) must sum to 1"
+    );
 
     // cross_entropy with one-hot target
     let targets = vec![0.0, 0.0, 1.0];

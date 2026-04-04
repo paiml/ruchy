@@ -1,0 +1,1457 @@
+{
+  "tree_hash": "74ef7c69f3bf92977dd6626ef77f1197ecc56066",
+  "pmat_version": "3.11.1",
+  "timestamp": "2026-04-04T10:56:08.704972241Z",
+  "report": {
+    "files_with_dead_code": [
+      {
+        "file_path": "src/backend/transpiler/program_transpiler.rs",
+        "dead_items": [
+          {
+            "name": "extract_main_function_body",
+            "kind": {
+              "Other": "unknown"
+            },
+            "line": 487,
+            "column": 8,
+            "message": "methods `extract_main_function_body` and `transpile_block_with_functions` are never used"
+          }
+        ],
+        "file_dead_percentage": 0.2805049088359046
+      },
+      {
+        "file_path": "src/backend/transpiler/lambda_transpiler.rs",
+        "dead_items": [
+          {
+            "name": "transpile_async_lambda_impl",
+            "kind": "Method",
+            "line": 55,
+            "column": 19,
+            "message": "method `transpile_async_lambda_impl` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.4981273408239701
+      },
+      {
+        "file_path": "src/frontend/parser/expressions_helpers/patterns.rs",
+        "dead_items": [
+          {
+            "name": "parse_variant_pattern_with_name",
+            "kind": "Function",
+            "line": 43,
+            "column": 4,
+            "message": "function `parse_variant_pattern_with_name` is never used"
+          },
+          {
+            "name": "create_pattern_for_variant",
+            "kind": "Function",
+            "line": 77,
+            "column": 4,
+            "message": "function `create_pattern_for_variant` is never used"
+          },
+          {
+            "name": "parse_let_pattern",
+            "kind": "Function",
+            "line": 118,
+            "column": 36,
+            "message": "function `parse_let_pattern` is never used"
+          },
+          {
+            "name": "parse_let_type_annotation",
+            "kind": "Function",
+            "line": 211,
+            "column": 4,
+            "message": "function `parse_let_type_annotation` is never used"
+          },
+          {
+            "name": "parse_let_else_clause",
+            "kind": "Function",
+            "line": 221,
+            "column": 4,
+            "message": "function `parse_let_else_clause` is never used"
+          },
+          {
+            "name": "parse_let_in_clause",
+            "kind": "Function",
+            "line": 237,
+            "column": 4,
+            "message": "function `parse_let_in_clause` is never used"
+          },
+          {
+            "name": "create_let_expression",
+            "kind": "Function",
+            "line": 251,
+            "column": 4,
+            "message": "function `create_let_expression` is never used"
+          },
+          {
+            "name": "parse_var_pattern",
+            "kind": "Function",
+            "line": 324,
+            "column": 36,
+            "message": "function `parse_var_pattern` is never used"
+          },
+          {
+            "name": "parse_optional_type_annotation",
+            "kind": "Function",
+            "line": 348,
+            "column": 4,
+            "message": "function `parse_optional_type_annotation` is never used"
+          },
+          {
+            "name": "create_var_expression",
+            "kind": "Function",
+            "line": 360,
+            "column": 4,
+            "message": "function `create_var_expression` is never used"
+          }
+        ],
+        "file_dead_percentage": 3.1796502384737675
+      },
+      {
+        "file_path": "src/frontend/parser/expressions.rs",
+        "dead_items": [
+          {
+            "name": "parse_let_mutability",
+            "kind": "Function",
+            "line": 598,
+            "column": 4,
+            "message": "function `parse_let_mutability` is never used"
+          },
+          {
+            "name": "parse_let_pattern",
+            "kind": "Function",
+            "line": 608,
+            "column": 4,
+            "message": "function `parse_let_pattern` is never used"
+          },
+          {
+            "name": "parse_var_pattern",
+            "kind": "Function",
+            "line": 613,
+            "column": 4,
+            "message": "function `parse_var_pattern` is never used"
+          },
+          {
+            "name": "parse_from_import_statement",
+            "kind": "Function",
+            "line": 728,
+            "column": 15,
+            "message": "function `parse_from_import_statement` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.8801410105757932
+      },
+      {
+        "file_path": "src/backend/compiler.rs",
+        "dead_items": [
+          {
+            "name": "get_embedded_model",
+            "kind": "Suppressed",
+            "line": 521,
+            "column": 1,
+            "message": "fn `get_embedded_model` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          },
+          {
+            "name": "parse_and_transpile",
+            "kind": "Function",
+            "line": 181,
+            "column": 4,
+            "message": "function `parse_and_transpile` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.5784526391901663
+      },
+      {
+        "file_path": "src/runtime/assessment.rs",
+        "dead_items": [
+          {
+            "name": "resource_limits",
+            "kind": "Field",
+            "line": 585,
+            "column": 5,
+            "message": "field `resource_limits` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.40858018386108275
+      },
+      {
+        "file_path": "src/middleend/mir/lower.rs",
+        "dead_items": [
+          {
+            "name": "type_env",
+            "kind": "Field",
+            "line": 16,
+            "column": 5,
+            "message": "field `type_env` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.28591851322373124
+      },
+      {
+        "file_path": "src/backend/transpiler/function_signature.rs",
+        "dead_items": [
+          {
+            "name": "references_globals_impl",
+            "kind": {
+              "Other": "unknown"
+            },
+            "line": 193,
+            "column": 19,
+            "message": "associated items `references_globals_impl` and `expr_references_any_impl` are never used"
+          }
+        ],
+        "file_dead_percentage": 0.3956478733926805
+      },
+      {
+        "file_path": "tests_temp_disabled_for_sprint7_mutation/disabled/extreme_tdd_anticheat.rs",
+        "dead_items": [
+          {
+            "name": "create_test_submission_with_time",
+            "kind": "Suppressed",
+            "line": 348,
+            "column": 1,
+            "message": "fn `create_test_submission_with_time` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 1.10803324099723
+      },
+      {
+        "file_path": "src/frontend/parser/utils_helpers/types.rs",
+        "dead_items": [
+          {
+            "name": "skip_trait_bounds",
+            "kind": "Function",
+            "line": 195,
+            "column": 4,
+            "message": "function `skip_trait_bounds` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.30257186081694404
+      },
+      {
+        "file_path": "tests/sqlite_003_metamorphic_testing.rs",
+        "dead_items": [
+          {
+            "name": "are_semantically_equivalent",
+            "kind": "Suppressed",
+            "line": 72,
+            "column": 1,
+            "message": "fn `are_semantically_equivalent` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          },
+          {
+            "name": "apply_constant_folding",
+            "kind": "Suppressed",
+            "line": 82,
+            "column": 1,
+            "message": "fn `apply_constant_folding` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          },
+          {
+            "name": "alpha_rename",
+            "kind": "Suppressed",
+            "line": 92,
+            "column": 1,
+            "message": "fn `alpha_rename` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 2.784222737819025
+      },
+      {
+        "file_path": "tests/dataframe_filter_properties.rs",
+        "dead_items": [
+          {
+            "name": "arb_dataframe_column",
+            "kind": "Suppressed",
+            "line": 16,
+            "column": 1,
+            "message": "fn `arb_dataframe_column` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 0.7476635514018692
+      },
+      {
+        "file_path": "src/backend/transpiler/patterns.rs",
+        "dead_items": [
+          {
+            "name": "transpile_result_pattern",
+            "kind": {
+              "Other": "unknown"
+            },
+            "line": 297,
+            "column": 8,
+            "message": "methods `transpile_result_pattern` and `transpile_option_pattern` are never used"
+          }
+        ],
+        "file_dead_percentage": 0.3805899143672693
+      },
+      {
+        "file_path": "src/frontend/parser/expressions_helpers/use_statements.rs",
+        "dead_items": [
+          {
+            "name": "parse_grouped_import_item",
+            "kind": "Function",
+            "line": 198,
+            "column": 4,
+            "message": "function `parse_grouped_import_item` is never used"
+          },
+          {
+            "name": "parse_nested_grouped_import",
+            "kind": "Function",
+            "line": 228,
+            "column": 4,
+            "message": "function `parse_nested_grouped_import` is never used"
+          },
+          {
+            "name": "parse_nested_import_items",
+            "kind": "Function",
+            "line": 248,
+            "column": 4,
+            "message": "function `parse_nested_import_items` is never used"
+          },
+          {
+            "name": "parse_import_item_with_alias",
+            "kind": "Function",
+            "line": 271,
+            "column": 4,
+            "message": "function `parse_import_item_with_alias` is never used"
+          },
+          {
+            "name": "parse_path_extension_import",
+            "kind": "Function",
+            "line": 290,
+            "column": 4,
+            "message": "function `parse_path_extension_import` is never used"
+          },
+          {
+            "name": "parse_simple_import_with_alias",
+            "kind": "Function",
+            "line": 323,
+            "column": 4,
+            "message": "function `parse_simple_import_with_alias` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.7366136034732274
+      },
+      {
+        "file_path": "src/bin/handlers/helpers.rs",
+        "dead_items": [
+          {
+            "name": "should_print_result",
+            "kind": "Function",
+            "line": 11,
+            "column": 8,
+            "message": "function `should_print_result` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.7857142857142856
+      },
+      {
+        "file_path": "src/bin/handlers/transpile_handler.rs",
+        "dead_items": [
+          {
+            "name": "derive_default_output_path",
+            "kind": "Function",
+            "line": 34,
+            "column": 8,
+            "message": "function `derive_default_output_path` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.486988847583643
+      },
+      {
+        "file_path": "src/backend/module_resolver.rs",
+        "dead_items": [
+          {
+            "name": "resolve_simple_import",
+            "kind": "Method",
+            "line": 166,
+            "column": 8,
+            "message": "method `resolve_simple_import` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.27266530334015
+      },
+      {
+        "file_path": "src/backend/transpiler/math_builtins.rs",
+        "dead_items": [
+          {
+            "name": "transpile_safe_divide",
+            "kind": "Method",
+            "line": 53,
+            "column": 8,
+            "message": "method `transpile_safe_divide` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.823045267489712
+      },
+      {
+        "file_path": "src/frontend/parser/utils_helpers/string_interpolation.rs",
+        "dead_items": [
+          {
+            "name": "parse_string_interpolation",
+            "kind": "Function",
+            "line": 19,
+            "column": 8,
+            "message": "function `parse_string_interpolation` is never used"
+          },
+          {
+            "name": "handle_escaped_brace",
+            "kind": "Function",
+            "line": 45,
+            "column": 4,
+            "message": "function `handle_escaped_brace` is never used"
+          },
+          {
+            "name": "handle_interpolation",
+            "kind": "Function",
+            "line": 55,
+            "column": 4,
+            "message": "function `handle_interpolation` is never used"
+          },
+          {
+            "name": "extract_expression_text",
+            "kind": "Function",
+            "line": 70,
+            "column": 4,
+            "message": "function `extract_expression_text` is never used"
+          },
+          {
+            "name": "process_character",
+            "kind": "Function",
+            "line": 82,
+            "column": 4,
+            "message": "function `process_character` is never used"
+          },
+          {
+            "name": "process_string_quote",
+            "kind": "Function",
+            "line": 98,
+            "column": 4,
+            "message": "function `process_string_quote` is never used"
+          },
+          {
+            "name": "process_char_quote",
+            "kind": "Function",
+            "line": 105,
+            "column": 4,
+            "message": "function `process_char_quote` is never used"
+          },
+          {
+            "name": "process_open_brace",
+            "kind": "Function",
+            "line": 112,
+            "column": 4,
+            "message": "function `process_open_brace` is never used"
+          },
+          {
+            "name": "process_close_brace",
+            "kind": "Function",
+            "line": 119,
+            "column": 4,
+            "message": "function `process_close_brace` is never used"
+          },
+          {
+            "name": "process_escape",
+            "kind": "Function",
+            "line": 129,
+            "column": 4,
+            "message": "function `process_escape` is never used"
+          },
+          {
+            "name": "process_regular_character",
+            "kind": "Function",
+            "line": 136,
+            "column": 4,
+            "message": "function `process_regular_character` is never used"
+          },
+          {
+            "name": "should_process_string_quote",
+            "kind": "Function",
+            "line": 143,
+            "column": 4,
+            "message": "function `should_process_string_quote` is never used"
+          },
+          {
+            "name": "should_process_char_quote",
+            "kind": "Function",
+            "line": 148,
+            "column": 4,
+            "message": "function `should_process_char_quote` is never used"
+          },
+          {
+            "name": "should_process_brace",
+            "kind": "Function",
+            "line": 153,
+            "column": 4,
+            "message": "function `should_process_brace` is never used"
+          },
+          {
+            "name": "should_escape",
+            "kind": "Function",
+            "line": 158,
+            "column": 4,
+            "message": "function `should_escape` is never used"
+          },
+          {
+            "name": "handle_string_delimiter",
+            "kind": "Function",
+            "line": 163,
+            "column": 4,
+            "message": "function `handle_string_delimiter` is never used"
+          },
+          {
+            "name": "handle_char_delimiter",
+            "kind": "Function",
+            "line": 168,
+            "column": 4,
+            "message": "function `handle_char_delimiter` is never used"
+          },
+          {
+            "name": "handle_open_brace",
+            "kind": "Function",
+            "line": 173,
+            "column": 4,
+            "message": "function `handle_open_brace` is never used"
+          },
+          {
+            "name": "handle_close_brace",
+            "kind": "Function",
+            "line": 178,
+            "column": 4,
+            "message": "function `handle_close_brace` is never used"
+          },
+          {
+            "name": "handle_escape",
+            "kind": "Function",
+            "line": 183,
+            "column": 4,
+            "message": "function `handle_escape` is never used"
+          },
+          {
+            "name": "handle_regular_char",
+            "kind": "Function",
+            "line": 188,
+            "column": 4,
+            "message": "function `handle_regular_char` is never used"
+          },
+          {
+            "name": "reset_escape_flag",
+            "kind": "Function",
+            "line": 193,
+            "column": 4,
+            "message": "function `reset_escape_flag` is never used"
+          },
+          {
+            "name": "should_terminate",
+            "kind": "Function",
+            "line": 200,
+            "column": 4,
+            "message": "function `should_terminate` is never used"
+          },
+          {
+            "name": "parse_interpolated_expr",
+            "kind": "Function",
+            "line": 205,
+            "column": 4,
+            "message": "function `parse_interpolated_expr` is never used"
+          },
+          {
+            "name": "split_format_specifier",
+            "kind": "Function",
+            "line": 228,
+            "column": 4,
+            "message": "function `split_format_specifier` is never used"
+          },
+          {
+            "name": "finalize_text_part",
+            "kind": "Function",
+            "line": 262,
+            "column": 4,
+            "message": "function `finalize_text_part` is never used"
+          },
+          {
+            "name": "ExprContext",
+            "kind": "Struct",
+            "line": 270,
+            "column": 8,
+            "message": "struct `ExprContext` is never constructed"
+          },
+          {
+            "name": "default",
+            "kind": "Function",
+            "line": 278,
+            "column": 8,
+            "message": "associated function `default` is never used"
+          }
+        ],
+        "file_dead_percentage": 14.659685863874344
+      },
+      {
+        "file_path": "src/bin/handlers/run_handler.rs",
+        "dead_items": [
+          {
+            "name": "execute_binary",
+            "kind": "Function",
+            "line": 174,
+            "column": 8,
+            "message": "function `execute_binary` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.1904761904761905
+      },
+      {
+        "file_path": "src/runtime/bytecode/compiler.rs",
+        "dead_items": [
+          {
+            "name": "scope_depth",
+            "kind": "Field",
+            "line": 194,
+            "column": 5,
+            "message": "field `scope_depth` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.37593984962406013
+      },
+      {
+        "file_path": "src/bin/handlers/test_handler.rs",
+        "dead_items": [
+          {
+            "name": "handle_watch_and_test",
+            "kind": "Function",
+            "line": 61,
+            "column": 8,
+            "message": "function `handle_watch_and_test` is never used"
+          },
+          {
+            "name": "handle_run_enhanced_tests",
+            "kind": "Function",
+            "line": 92,
+            "column": 8,
+            "message": "function `handle_run_enhanced_tests` is never used"
+          },
+          {
+            "name": "run_ruchy_test_file",
+            "kind": "Function",
+            "line": 125,
+            "column": 8,
+            "message": "function `run_ruchy_test_file` is never used"
+          }
+        ],
+        "file_dead_percentage": 4.013377926421405
+      },
+      {
+        "file_path": "src/docs/mod.rs",
+        "dead_items": [
+          {
+            "name": "include_private",
+            "kind": "Field",
+            "line": 13,
+            "column": 5,
+            "message": "field `include_private` is never read"
+          }
+        ],
+        "file_dead_percentage": 1.2195121951219512
+      },
+      {
+        "file_path": "src/frontend/parser/utils_helpers/modules.rs",
+        "dead_items": [
+          {
+            "name": "parse_module",
+            "kind": "Function",
+            "line": 55,
+            "column": 8,
+            "message": "function `parse_module` is never used"
+          },
+          {
+            "name": "parse_module_name",
+            "kind": "Function",
+            "line": 65,
+            "column": 4,
+            "message": "function `parse_module_name` is never used"
+          },
+          {
+            "name": "parse_module_body",
+            "kind": "Function",
+            "line": 76,
+            "column": 4,
+            "message": "function `parse_module_body` is never used"
+          },
+          {
+            "name": "parse_module_expressions",
+            "kind": "Function",
+            "line": 89,
+            "column": 4,
+            "message": "function `parse_module_expressions` is never used"
+          },
+          {
+            "name": "consume_optional_separator",
+            "kind": "Function",
+            "line": 101,
+            "column": 4,
+            "message": "function `consume_optional_separator` is never used"
+          },
+          {
+            "name": "create_module_body_expr",
+            "kind": "Function",
+            "line": 111,
+            "column": 4,
+            "message": "function `create_module_body_expr` is never used"
+          }
+        ],
+        "file_dead_percentage": 9.56175298804781
+      },
+      {
+        "file_path": "tests/issue_105_dataflow_debug_command.rs",
+        "dead_items": [
+          {
+            "name": "create_temp_file",
+            "kind": "Suppressed",
+            "line": 20,
+            "column": 1,
+            "message": "fn `create_temp_file` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 1.2345679012345678
+      },
+      {
+        "file_path": "src/error_recovery_enhanced.rs",
+        "dead_items": [
+          {
+            "name": "position",
+            "kind": "Field",
+            "line": 60,
+            "column": 5,
+            "message": "field `position` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.43620501635768816
+      },
+      {
+        "file_path": "tests/repl_thread_safety.rs",
+        "dead_items": [
+          {
+            "name": "assert_send",
+            "kind": "Suppressed",
+            "line": 20,
+            "column": 1,
+            "message": "fn `assert_send` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 5.797101449275362
+      },
+      {
+        "file_path": "src/backend/transpiler/function_param_inference.rs",
+        "dead_items": [
+          {
+            "name": "infer_param_type_impl",
+            "kind": "Method",
+            "line": 32,
+            "column": 19,
+            "message": "method `infer_param_type_impl` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.3590664272890485
+      },
+      {
+        "file_path": "tests/defect_compile_main_call.rs",
+        "dead_items": [
+          {
+            "name": "documentation_examples",
+            "kind": "Suppressed",
+            "line": 235,
+            "column": 1,
+            "message": "fn `documentation_examples` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 1.4134275618374559
+      },
+      {
+        "file_path": "src/frontend/parser/functions.rs",
+        "dead_items": [
+          {
+            "name": "parse_empty_lambda",
+            "kind": "Function",
+            "line": 254,
+            "column": 8,
+            "message": "function `parse_empty_lambda` is never used"
+          },
+          {
+            "name": "extract_select_columns",
+            "kind": "Function",
+            "line": 708,
+            "column": 4,
+            "message": "function `extract_select_columns` is never used"
+          },
+          {
+            "name": "consume_trait_bound_tokens",
+            "kind": "Function",
+            "line": 920,
+            "column": 4,
+            "message": "function `consume_trait_bound_tokens` is never used"
+          },
+          {
+            "name": "should_continue_parsing_trait_bound",
+            "kind": "Function",
+            "line": 928,
+            "column": 4,
+            "message": "function `should_continue_parsing_trait_bound` is never used"
+          },
+          {
+            "name": "is_comma_delimiter",
+            "kind": "Function",
+            "line": 945,
+            "column": 4,
+            "message": "function `is_comma_delimiter` is never used"
+          },
+          {
+            "name": "try_handle_trait_bound_delimiter",
+            "kind": "Function",
+            "line": 950,
+            "column": 4,
+            "message": "function `try_handle_trait_bound_delimiter` is never used"
+          },
+          {
+            "name": "consume_trait_bound_token_if_present",
+            "kind": "Function",
+            "line": 964,
+            "column": 4,
+            "message": "function `consume_trait_bound_token_if_present` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.6519174041297935
+      },
+      {
+        "file_path": "src/package/mod.rs",
+        "dead_items": [
+          {
+            "name": "registry",
+            "kind": "Field",
+            "line": 15,
+            "column": 5,
+            "message": "field `registry` is never read"
+          },
+          {
+            "name": "url",
+            "kind": "Field",
+            "line": 50,
+            "column": 5,
+            "message": "field `url` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.8213552361396305
+      },
+      {
+        "file_path": "src/frontend/parser/operator_precedence.rs",
+        "dead_items": [
+          {
+            "name": "Associativity",
+            "kind": "Enum",
+            "line": 8,
+            "column": 10,
+            "message": "enum `Associativity` is never used"
+          },
+          {
+            "name": "Precedence",
+            "kind": "Struct",
+            "line": 14,
+            "column": 12,
+            "message": "struct `Precedence` is never constructed"
+          },
+          {
+            "name": "get_operator_info",
+            "kind": "Function",
+            "line": 38,
+            "column": 8,
+            "message": "function `get_operator_info` is never used"
+          },
+          {
+            "name": "is_postfix_operator",
+            "kind": "Function",
+            "line": 85,
+            "column": 8,
+            "message": "function `is_postfix_operator` is never used"
+          },
+          {
+            "name": "is_prefix_operator",
+            "kind": "Function",
+            "line": 98,
+            "column": 8,
+            "message": "function `is_prefix_operator` is never used"
+          },
+          {
+            "name": "get_postfix_precedence",
+            "kind": "Function",
+            "line": 112,
+            "column": 8,
+            "message": "function `get_postfix_precedence` is never used"
+          },
+          {
+            "name": "should_continue_parsing",
+            "kind": "Function",
+            "line": 121,
+            "column": 8,
+            "message": "function `should_continue_parsing` is never used"
+          }
+        ],
+        "file_dead_percentage": 7.000000000000001
+      },
+      {
+        "file_path": "src/runtime/interpreter.rs",
+        "dead_items": [
+          {
+            "name": "env_depth",
+            "kind": "Field",
+            "line": 106,
+            "column": 5,
+            "message": "field `env_depth` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.2058672156459084
+      },
+      {
+        "file_path": "src/frontend/parser/mod.rs",
+        "dead_items": [
+          {
+            "name": "arena_stats",
+            "kind": {
+              "Other": "unknown"
+            },
+            "line": 148,
+            "column": 12,
+            "message": "methods `arena_stats` and `interner_stats` are never used"
+          }
+        ],
+        "file_dead_percentage": 0.3018867924528302
+      },
+      {
+        "file_path": "src/runtime/eval_function.rs",
+        "dead_items": [
+          {
+            "name": "eval_closure_call",
+            "kind": "Function",
+            "line": 293,
+            "column": 4,
+            "message": "function `eval_closure_call` is never used"
+          },
+          {
+            "name": "create_composition_closure",
+            "kind": "Function",
+            "line": 537,
+            "column": 4,
+            "message": "function `create_composition_closure` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.362862010221465
+      },
+      {
+        "file_path": "src/bin/ruchy.rs",
+        "dead_items": [
+          {
+            "name": "FormatConfig",
+            "kind": "Struct",
+            "line": 39,
+            "column": 8,
+            "message": "struct `FormatConfig` is never constructed"
+          },
+          {
+            "name": "collect_examples_samples",
+            "kind": "Function",
+            "line": 1553,
+            "column": 4,
+            "message": "function `collect_examples_samples` is never used"
+          },
+          {
+            "name": "categorize_error_code",
+            "kind": "Function",
+            "line": 1594,
+            "column": 4,
+            "message": "function `categorize_error_code` is never used"
+          },
+          {
+            "name": "run_file",
+            "kind": "Function",
+            "line": 1723,
+            "column": 4,
+            "message": "function `run_file` is never used"
+          },
+          {
+            "name": "check_syntax",
+            "kind": "Function",
+            "line": 1740,
+            "column": 4,
+            "message": "function `check_syntax` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.1376564277588168
+      },
+      {
+        "file_path": "src/oracle/features.rs",
+        "dead_items": [
+          {
+            "name": "HANDCRAFTED_FEATURES",
+            "kind": "Constant",
+            "line": 25,
+            "column": 11,
+            "message": "constant `HANDCRAFTED_FEATURES` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.8064516129032258
+      },
+      {
+        "file_path": "build.rs",
+        "dead_items": [
+          {
+            "name": "B",
+            "kind": "Suppressed",
+            "line": 48,
+            "column": 1,
+            "message": "struct `B` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 5.633802816901409
+      },
+      {
+        "file_path": "tests/property_arc_refactor.rs",
+        "dead_items": [
+          {
+            "name": "arb_env",
+            "kind": "Suppressed",
+            "line": 81,
+            "column": 1,
+            "message": "fn `arb_env` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 1.0666666666666667
+      },
+      {
+        "file_path": "src/backend/transpiler/constant_folder.rs",
+        "dead_items": [
+          {
+            "name": "remove_dead_statements",
+            "kind": "Function",
+            "line": 484,
+            "column": 4,
+            "message": "function `remove_dead_statements` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.2043944813490036
+      },
+      {
+        "file_path": "src/performance_optimizations.rs",
+        "dead_items": [
+          {
+            "name": "compile_time",
+            "kind": "Field",
+            "line": 31,
+            "column": 9,
+            "message": "field `compile_time` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.546448087431694
+      },
+      {
+        "file_path": "src/runtime/bytecode/vm.rs",
+        "dead_items": [
+          {
+            "name": "base_register",
+            "kind": "Field",
+            "line": 40,
+            "column": 5,
+            "message": "field `base_register` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.36596523330283626
+      },
+      {
+        "file_path": "src/frontend/parser/utils_helpers/url_validation.rs",
+        "dead_items": [
+          {
+            "name": "validate_url_import",
+            "kind": "Function",
+            "line": 6,
+            "column": 36,
+            "message": "function `validate_url_import` is never used"
+          },
+          {
+            "name": "validate_url_scheme",
+            "kind": "Function",
+            "line": 16,
+            "column": 8,
+            "message": "function `validate_url_scheme` is never used"
+          },
+          {
+            "name": "is_valid_url_scheme",
+            "kind": "Function",
+            "line": 25,
+            "column": 8,
+            "message": "function `is_valid_url_scheme` is never used"
+          },
+          {
+            "name": "validate_url_extension",
+            "kind": "Function",
+            "line": 32,
+            "column": 8,
+            "message": "function `validate_url_extension` is never used"
+          },
+          {
+            "name": "validate_url_path_safety",
+            "kind": "Function",
+            "line": 41,
+            "column": 8,
+            "message": "function `validate_url_path_safety` is never used"
+          },
+          {
+            "name": "validate_url_no_suspicious_patterns",
+            "kind": "Function",
+            "line": 49,
+            "column": 8,
+            "message": "function `validate_url_no_suspicious_patterns` is never used"
+          }
+        ],
+        "file_dead_percentage": 16.783216783216783
+      },
+      {
+        "file_path": "src/runtime/eval_data_structures.rs",
+        "dead_items": [
+          {
+            "name": "create_identifier_expr",
+            "kind": "Function",
+            "line": 397,
+            "column": 4,
+            "message": "function `create_identifier_expr` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.22172949002217296
+      },
+      {
+        "file_path": "tests/property_range_parsing.rs",
+        "dead_items": [
+          {
+            "name": "arb_slice_expr",
+            "kind": "Suppressed",
+            "line": 50,
+            "column": 1,
+            "message": "fn `arb_slice_expr` has #[allow(dead_code)] suppression (explicit dead code admission)"
+          }
+        ],
+        "file_dead_percentage": 1.4234875444839856
+      },
+      {
+        "file_path": "src/bin/handlers/wasm_handler.rs",
+        "dead_items": [
+          {
+            "name": "compile_ruchy_to_wasm",
+            "kind": "Function",
+            "line": 159,
+            "column": 8,
+            "message": "function `compile_ruchy_to_wasm` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.1267605633802817
+      },
+      {
+        "file_path": "src/bin/handlers/prove_handler.rs",
+        "dead_items": [
+          {
+            "name": "verify_proofs_from_ast",
+            "kind": "Function",
+            "line": 66,
+            "column": 8,
+            "message": "function `verify_proofs_from_ast` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.3559322033898304
+      },
+      {
+        "file_path": "src/backend/transpiler/codegen_minimal.rs",
+        "dead_items": [
+          {
+            "name": "gen_type",
+            "kind": "Function",
+            "line": 309,
+            "column": 8,
+            "message": "associated function `gen_type` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.4020100502512563
+      },
+      {
+        "file_path": "src/frontend/parser/utils.rs",
+        "dead_items": [
+          {
+            "name": "error_with_context",
+            "kind": "Function",
+            "line": 18,
+            "column": 8,
+            "message": "function `error_with_context` is never used"
+          },
+          {
+            "name": "suggest_correction",
+            "kind": "Function",
+            "line": 36,
+            "column": 8,
+            "message": "function `suggest_correction` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.0126582278481013
+      },
+      {
+        "file_path": "src/bin/handlers/eval.rs",
+        "dead_items": [
+          {
+            "name": "print_eval_success",
+            "kind": "Function",
+            "line": 68,
+            "column": 8,
+            "message": "function `print_eval_success` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.6326530612244898
+      },
+      {
+        "file_path": "src/macros/mod.rs",
+        "dead_items": [
+          {
+            "name": "macros",
+            "kind": "Field",
+            "line": 12,
+            "column": 5,
+            "message": "field `macros` is never read"
+          },
+          {
+            "name": "template",
+            "kind": "Field",
+            "line": 50,
+            "column": 5,
+            "message": "field `template` is never read"
+          }
+        ],
+        "file_dead_percentage": 1.0869565217391304
+      },
+      {
+        "file_path": "src/backend/wasm/emitter.rs",
+        "dead_items": [
+          {
+            "name": "module",
+            "kind": "Field",
+            "line": 16,
+            "column": 5,
+            "message": "field `module` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.21516944593867668
+      },
+      {
+        "file_path": "src/frontend/parser/utils_helpers/imports.rs",
+        "dead_items": [
+          {
+            "name": "parse_import_legacy",
+            "kind": "Function",
+            "line": 12,
+            "column": 8,
+            "message": "function `parse_import_legacy` is never used"
+          },
+          {
+            "name": "parse_url_import",
+            "kind": "Function",
+            "line": 25,
+            "column": 8,
+            "message": "function `parse_url_import` is never used"
+          },
+          {
+            "name": "parse_module_path",
+            "kind": "Function",
+            "line": 44,
+            "column": 8,
+            "message": "function `parse_module_path` is never used"
+          },
+          {
+            "name": "consume_module_identifier",
+            "kind": "Function",
+            "line": 55,
+            "column": 4,
+            "message": "function `consume_module_identifier` is never used"
+          },
+          {
+            "name": "parse_additional_path_segments",
+            "kind": "Function",
+            "line": 66,
+            "column": 4,
+            "message": "function `parse_additional_path_segments` is never used"
+          },
+          {
+            "name": "is_import_items_start",
+            "kind": "Function",
+            "line": 83,
+            "column": 4,
+            "message": "function `is_import_items_start` is never used"
+          },
+          {
+            "name": "parse_path_segment",
+            "kind": "Function",
+            "line": 91,
+            "column": 4,
+            "message": "function `parse_path_segment` is never used"
+          },
+          {
+            "name": "parse_import_items",
+            "kind": "Function",
+            "line": 102,
+            "column": 8,
+            "message": "function `parse_import_items` is never used"
+          },
+          {
+            "name": "parse_wildcard_import",
+            "kind": "Function",
+            "line": 116,
+            "column": 4,
+            "message": "function `parse_wildcard_import` is never used"
+          },
+          {
+            "name": "parse_braced_import_list",
+            "kind": "Function",
+            "line": 122,
+            "column": 8,
+            "message": "function `parse_braced_import_list` is never used"
+          },
+          {
+            "name": "parse_import_item_list",
+            "kind": "Function",
+            "line": 130,
+            "column": 4,
+            "message": "function `parse_import_item_list` is never used"
+          },
+          {
+            "name": "parse_single_import_item",
+            "kind": "Function",
+            "line": 143,
+            "column": 4,
+            "message": "function `parse_single_import_item` is never used"
+          },
+          {
+            "name": "parse_item_with_optional_alias",
+            "kind": "Function",
+            "line": 157,
+            "column": 4,
+            "message": "function `parse_item_with_optional_alias` is never used"
+          },
+          {
+            "name": "try_consume_item_separator",
+            "kind": "Function",
+            "line": 173,
+            "column": 4,
+            "message": "function `try_consume_item_separator` is never used"
+          },
+          {
+            "name": "parse_simple_import",
+            "kind": "Function",
+            "line": 185,
+            "column": 4,
+            "message": "function `parse_simple_import` is never used"
+          },
+          {
+            "name": "parse_simple_import_with_alias",
+            "kind": "Function",
+            "line": 194,
+            "column": 4,
+            "message": "function `parse_simple_import_with_alias` is never used"
+          },
+          {
+            "name": "parse_simple_import_without_alias",
+            "kind": "Function",
+            "line": 212,
+            "column": 4,
+            "message": "function `parse_simple_import_without_alias` is never used"
+          },
+          {
+            "name": "create_import_expression",
+            "kind": "Function",
+            "line": 230,
+            "column": 8,
+            "message": "function `create_import_expression` is never used"
+          }
+        ],
+        "file_dead_percentage": 8.76979293544458
+      },
+      {
+        "file_path": "src/wasm/compiler.rs",
+        "dead_items": [
+          {
+            "name": "config",
+            "kind": "Field",
+            "line": 16,
+            "column": 5,
+            "message": "field `config` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.3929273084479371
+      },
+      {
+        "file_path": "src/backend/transpiler/block_transpiler.rs",
+        "dead_items": [
+          {
+            "name": "transpile_block_contents",
+            "kind": "Method",
+            "line": 105,
+            "column": 19,
+            "message": "method `transpile_block_contents` is never used"
+          }
+        ],
+        "file_dead_percentage": 1.1627906976744187
+      },
+      {
+        "file_path": "src/bin/handlers/command_router.rs",
+        "dead_items": [
+          {
+            "name": "validate_lint_args",
+            "kind": "Function",
+            "line": 47,
+            "column": 8,
+            "message": "function `validate_lint_args` is never used"
+          }
+        ],
+        "file_dead_percentage": 0.6153846153846154
+      },
+      {
+        "file_path": "src/bin/handlers/repl_handler.rs",
+        "dead_items": [
+          {
+            "name": "print_prover_help",
+            "kind": "Function",
+            "line": 36,
+            "column": 15,
+            "message": "function `print_prover_help` is never used"
+          }
+        ],
+        "file_dead_percentage": 2.3952095808383236
+      },
+      {
+        "file_path": "src/runtime/completion.rs",
+        "dead_items": [
+          {
+            "name": "modules",
+            "kind": "Field",
+            "line": 105,
+            "column": 5,
+            "message": "field `modules` is never read"
+          }
+        ],
+        "file_dead_percentage": 0.3225806451612903
+      }
+    ],
+    "total_dead_items": 154,
+    "dead_code_percentage": 0.07874797809245437,
+    "total_lines": 845736,
+    "dead_lines": 666,
+    "dead_by_type": {
+      "constant": 1,
+      "method": 5,
+      "struct": 3,
+      "enum": 1,
+      "suppressed": 12,
+      "unknown": 4,
+      "function": 113,
+      "field": 15
+    }
+  }
+}

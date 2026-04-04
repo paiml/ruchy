@@ -1,0 +1,21 @@
+{
+  "rescue_id": "98316633-f53a-444f-89ed-d25353cca0c2",
+  "work_item_id": "Apex Hunt: PDCA Cycle 20 - to_int transpilation defect",
+  "timestamp": "2026-04-04T10:56:08.905837404Z",
+  "violated_clause": "No file exceeds 500 lines",
+  "strategy": {
+    "ManualIntervention": {
+      "guidance": "Split large files using extract-module refactoring. Target files exceeding the line limit."
+    }
+  },
+  "diagnosis": {
+    "summary": "Manual intervention required: Split large files using extract-module refactoring. Target files exceeding the line limit.",
+    "suggested_actions": [
+      "Split large files using extract-module refactoring. Target files exceeding the line limit.",
+      "Re-run: pmat work complete <id>"
+    ],
+    "generated_artifacts": []
+  },
+  "outcome": "ManualActionRequired",
+  "retry_allowed": true
+}

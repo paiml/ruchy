@@ -1380,7 +1380,7 @@ fn make_trait_method(name: &str, has_body: bool) -> crate::frontend::ast::TraitM
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             }))
         } else {
             None

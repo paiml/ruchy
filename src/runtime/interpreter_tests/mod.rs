@@ -26,7 +26,7 @@ fn make_int(val: i64) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -38,7 +38,7 @@ fn make_float(val: f64) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -50,7 +50,7 @@ fn make_bool(val: bool) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -62,7 +62,7 @@ fn make_string(val: &str) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -74,7 +74,7 @@ fn make_ident(name: &str) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -90,7 +90,7 @@ fn make_binary(left: Expr, op: AstBinaryOp, right: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -105,7 +105,7 @@ fn make_unary(op: UnaryOp, operand: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -121,7 +121,7 @@ fn make_if(condition: Expr, then_branch: Expr, else_branch: Option<Expr>) -> Exp
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -133,7 +133,7 @@ fn make_block(exprs: Vec<Expr>) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -145,7 +145,7 @@ fn make_list(elements: Vec<Expr>) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -157,7 +157,7 @@ fn make_tuple(elements: Vec<Expr>) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -172,7 +172,7 @@ fn make_index(object: Expr, index: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -191,7 +191,7 @@ fn make_let(name: &str, value: Expr, body: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -207,7 +207,7 @@ fn make_range(start: Expr, end: Expr, inclusive: bool) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -230,7 +230,7 @@ fn make_for(var: &str, iter: Expr, body: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -246,7 +246,7 @@ fn make_while(condition: Expr, body: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -261,7 +261,7 @@ fn make_assign(name: &str, value: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -280,7 +280,7 @@ fn make_let_mut(name: &str, value: Expr, body: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -296,7 +296,7 @@ fn make_compound_assign(name: &str, op: AstBinaryOp, value: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -311,7 +311,7 @@ fn make_break() -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -323,7 +323,7 @@ fn make_continue() -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -335,7 +335,7 @@ fn make_unit() -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -364,7 +364,7 @@ fn make_lambda_with_params(params: Vec<String>, body: Expr) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -378,7 +378,7 @@ fn make_return(value: Option<Expr>) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
@@ -393,7 +393,7 @@ fn make_call(func: Expr, args: Vec<Expr>) -> Expr {
         attributes: vec![],
         leading_comments: vec![],
         trailing_comment: None,
-            contracts: Vec::new(),
+        contracts: Vec::new(),
     }
 }
 
