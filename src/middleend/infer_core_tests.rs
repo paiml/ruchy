@@ -256,7 +256,6 @@ fn test_constraint_solving() {
 }
 
 #[test]
-#[ignore = "Unary operation type inference needs implementation"]
 fn test_unary_operations() {
     // Test negation
     assert_eq!(
@@ -361,7 +360,6 @@ fn test_match_expressions() {
 }
 
 #[test]
-#[ignore = "While loop type inference needs implementation"]
 fn test_while_loop() {
     // While loops return unit
     assert_eq!(

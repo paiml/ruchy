@@ -365,9 +365,15 @@ impl InferenceContext {
                 Ok(MonoType::Bool)
             }
             UnaryOp::Negate => {
-                // Can negate Int or Float
-                self.unifier.unify(&operand_ty, &MonoType::Int)?;
-                Ok(MonoType::Int)
+                // Can negate Int or Float — return the operand's own numeric type
+                match &operand_ty {
+                    MonoType::Int | MonoType::Float => Ok(operand_ty),
+                    _ => {
+                        // Try unifying with Int as fallback for type variables
+                        self.unifier.unify(&operand_ty, &MonoType::Int)?;
+                        Ok(MonoType::Int)
+                    }
+                }
             }
             UnaryOp::BitwiseNot => {
                 self.unifier.unify(&operand_ty, &MonoType::Int)?;
@@ -1061,28 +1067,22 @@ impl InferenceContext {
         let elem_ty = MonoType::Var(self.gen.fresh());
         self.unifier
             .unify(&iter_ty, &MonoType::List(Box::new(elem_ty.clone())))?;
-        // Bind loop variable and infer body
         let old_env = self.env.clone();
         self.env = self.env.extend(var, TypeScheme::mono(elem_ty));
         let _body_ty = self.infer_expr(body)?;
         self.env = old_env;
-        // For loops always return Unit regardless of body type
         Ok(MonoType::Unit)
     }
     fn infer_while(&mut self, condition: &Expr, body: &Expr) -> Result<MonoType> {
         // Condition must be Bool
         let cond_ty = self.infer_expr(condition)?;
         self.unifier.unify(&cond_ty, &MonoType::Bool)?;
-        // Type check body
-        let body_ty = self.infer_expr(body)?;
-        self.unifier.unify(&body_ty, &MonoType::Unit)?;
-        // While loops return unit
+        // Type check body (result discarded — while loops always return Unit)
+        let _body_ty = self.infer_expr(body)?;
         Ok(MonoType::Unit)
     }
     fn infer_loop(&mut self, body: &Expr) -> Result<MonoType> {
-        // Type check body
-        let body_ty = self.infer_expr(body)?;
-        self.unifier.unify(&body_ty, &MonoType::Unit)?;
+        let _body_ty = self.infer_expr(body)?;
         // Loop expressions return unit
         Ok(MonoType::Unit)
     }
