@@ -325,7 +325,6 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_unit_type_always_parses(_seed in any::<u32>()) {
                 let code = "()";
                 let result = Parser::new(code).parse();
@@ -333,7 +332,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_grouped_expressions_parse(n in any::<i32>()) {
                 let code = format!("({n})");
                 let result = Parser::new(&code).parse();
@@ -341,7 +339,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_two_tuples_parse(a in any::<i32>(), b in any::<i32>()) {
                 let code = format!("({a}, {b})");
                 let result = Parser::new(&code).parse();
@@ -349,7 +346,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_three_tuples_parse(
                 a in any::<i32>(),
                 b in any::<i32>(),
@@ -361,7 +357,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_trailing_commas_parse(a in any::<i32>(), b in any::<i32>()) {
                 let code = format!("({a}, {b},)");
                 let result = Parser::new(&code).parse();
@@ -369,7 +364,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_nested_tuples_parse(
                 a in any::<i32>(),
                 b in any::<i32>(),

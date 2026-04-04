@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Property tests run with --ignored flag"] // ASYNC-001: Async lambda no-param syntax not yet supported
+    #[ignore = "async || syntax not supported — use async fun() instead"]
     fn test_async_lambda_no_params() {
         let code = "async || await fetch()";
         let result = Parser::new(code).parse();
@@ -265,7 +265,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Property tests run with --ignored flag"] // ASYNC-002: Async arrow lambda syntax not yet supported
+    #[ignore = "async x => syntax not supported — use async x -> instead"]
     fn test_async_arrow_lambda() {
         let code = "async x => await transform(x)";
         let result = Parser::new(code).parse();
@@ -1122,7 +1122,6 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_async_blocks_parse(_seed in any::<u32>()) {
                 let code = "async { 42 }";
                 let result = Parser::new(code).parse();
@@ -1130,7 +1129,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_async_lambda_with_param(param in valid_identifier()) {
                 let code = format!("async |{param}| {param}");
                 let result = Parser::new(&code).parse();
@@ -1138,7 +1136,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_async_arrow_lambda_parses(param in valid_identifier(), val in 0i32..100) {
                 // Async arrow lambda uses pipe syntax: async |param| expr
                 // NOT arrow syntax: async param => expr (unsupported)
@@ -1148,7 +1145,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_async_function_parses(name in valid_identifier()) {
                 let code = format!("async fun {name}() {{ 42 }}");
                 let result = Parser::new(&code).parse();
@@ -1156,7 +1152,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_async_lambda_multi_params(p1 in valid_identifier(), p2 in valid_identifier()) {
                 let code = format!("async |{p1}, {p2}| {p1} + {p2}");
                 let result = Parser::new(&code).parse();
@@ -1164,7 +1159,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_async_block_with_expressions(n in 0i32..100) {
                 let code = format!("async {{ {n} }}");
                 let result = Parser::new(&code).parse();
@@ -1172,7 +1166,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_async_function_with_params(name in valid_identifier(), param in valid_identifier()) {
                 let code = format!("async fun {name}({param}) {{ {param} }}");
                 let result = Parser::new(&code).parse();

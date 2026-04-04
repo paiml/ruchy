@@ -226,7 +226,6 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_dataframe_identifier_always_parses(_suffix in "[a-z]{0,10}") {
                 let code = "df";
                 let result = Parser::new(code).parse();
@@ -234,7 +233,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_empty_dataframe_literal_parses(_n in 0..100usize) {
                 let code = "df![]";
                 let result = Parser::new(code).parse();
@@ -242,7 +240,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_single_column_integers_parse(values in prop::collection::vec(any::<i32>(), 1..10)) {
                 let values_str = values.iter()
                     .map(std::string::ToString::to_string)
@@ -254,7 +251,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_dataframe_method_chain_parses(depth in 1..5usize) {
                 let mut code = "df".to_string();
                 for _ in 0..depth {
@@ -265,7 +261,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_dataframe_column_names_parse(name in "[a-z][a-z0-9_]{0,10}") {
                 let code = format!("df![{name} => [1, 2, 3]]");
                 let result = Parser::new(&code).parse();
@@ -273,7 +268,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_multiple_columns_parse(num_cols in 1..5usize) {
                 let columns = (0..num_cols)
                     .map(|i| format!("col{i} => [1, 2]"))

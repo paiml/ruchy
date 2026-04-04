@@ -584,7 +584,6 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_empty_list_always_parses(_seed in any::<u32>()) {
                 let code = "[]";
                 let result = Parser::new(code).parse();
@@ -592,7 +591,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_single_element_lists_parse(n in any::<i32>()) {
                 let code = format!("[{n}]");
                 let result = Parser::new(&code).parse();
@@ -600,7 +598,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_multi_element_lists_parse(
                 a in any::<i32>(),
                 b in any::<i32>(),
@@ -612,7 +609,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_array_init_parses(value in any::<i32>(), size in 1..100usize) {
                 let code = format!("[{value}; {size}]");
                 let result = Parser::new(&code).parse();
@@ -620,7 +616,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_trailing_commas_parse(n in any::<i32>()) {
                 let code = format!("[{n},]");
                 let result = Parser::new(&code).parse();
@@ -628,7 +623,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_nested_lists_parse(
                 inner1 in prop::collection::vec(any::<i32>(), 0..5),
                 inner2 in prop::collection::vec(any::<i32>(), 0..5)

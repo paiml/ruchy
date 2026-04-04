@@ -518,7 +518,6 @@ mod tests {
     // ===== Edge cases and integration tests =====
 
     #[test]
-    #[ignore = "Property tests run with --ignored flag"] // PARSER-079: Parser architecture issue - statements with lifetime tokens in for loops
     fn test_break_with_label() {
         // Root cause: Parser gets confused when lifetime token appears in statement position within for loop
         // Error: "Expected RightBrace, found Break" suggests statement parsing consumes tokens incorrectly

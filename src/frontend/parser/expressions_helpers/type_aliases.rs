@@ -215,7 +215,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "Property tests run with --ignored flag"] // PARSER-081: Reference types with lifetime annotations not yet implemented
     fn test_lifetime_in_reference_type() {
         // Bug: Parser doesn't support &'a Type syntax yet
         // This requires extending type parsing to handle lifetime annotations

@@ -519,7 +519,6 @@ mod tests {
 
         proptest! {
             #[test]
-            #[ignore = "Property tests run with --ignored flag"] // Run with: cargo test property_tests -- --ignored
             fn prop_try_catch_always_parses(_seed in any::<u32>()) {
                 let code = "try { 42 } catch (e) { 0 }";
                 let result = Parser::new(code).parse();
@@ -527,7 +526,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_try_catch_with_identifier(err_name in "[a-z]+") {
                 let code = format!("try {{ 42 }} catch ({err_name}) {{ 0 }}");
                 let result = Parser::new(&code).parse();
@@ -535,7 +533,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_try_finally_parses(val in 0i32..100) {
                 let code = format!("try {{ {val} }} finally {{ cleanup() }}");
                 let result = Parser::new(&code).parse();
@@ -543,7 +540,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_multiple_catch_parses(n in 1usize..5) {
                 let mut code = String::from("try { risky() }");
                 for i in 0..n {
@@ -554,7 +550,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_try_without_handlers_fails(_seed in any::<u32>()) {
                 let code = "try { operation() }";
                 let result = Parser::new(code).parse();
@@ -562,7 +557,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_nested_try_catch_parses(depth in 1usize..4) {
                 let mut code = String::new();
                 for _ in 0..depth {
@@ -577,7 +571,6 @@ mod tests {
             }
 
             #[test]
-            #[ignore = "Property tests run with --ignored flag"]
             fn prop_catch_without_parens_parses(err_name in "[a-z]+") {
                 let code = format!("try {{ 42 }} catch {err_name} {{ 0 }}");
                 let result = Parser::new(&code).parse();
