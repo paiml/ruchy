@@ -3,14 +3,23 @@
 **Ticket**: QUALITY-002
 **Priority**: Critical
 **Estimated Effort**: 3-5 days (4 days realistic)
-**Status**: In Progress (Started 2025-11-21)
+**Status**: STALE — unwrap count has INCREASED (Started 2025-11-21, last validated 2026-04-04)
 **Methodology**: EXTREME TDD + Phased Rollout + Risk-Based Prioritization
+
+---
+
+> **FALSIFICATION NOTE (2026-04-04)**: This spec's premise has been falsified by regression.
+> The unwrap() count grew from 3,697 → 4,281 (+584, +15.8%) since spec creation.
+> No replacement work was completed despite "In Progress" status since 2025-11-21.
+> Five Whys: New features (contracts, decorators, embed crate) added unwrap() calls
+> faster than the replacement effort could remove them. Root cause: no CI gate
+> preventing new unwrap() introductions.
 
 ---
 
 ## Executive Summary
 
-**Problem**: 3,697 `unwrap()` calls in production code (`src/`) present a **Cloudflare-class defect risk**. Unwrap panics caused a 3+ hour Cloudflare outage (2025-11-18).
+**Problem**: 4,281 `unwrap()` calls in production code (`src/`) as of 2026-04-04 (was 3,697 when spec was written 2025-11-21 — increased by 584 calls, a 15.8% regression). Unwrap panics caused a 3+ hour Cloudflare outage (2025-11-18).
 
 **Solution**: Systematic replacement of `unwrap()` with `.expect("descriptive message")` across all production code, prioritizing highest-risk modules first.
 

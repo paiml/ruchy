@@ -1,8 +1,8 @@
 # 95% Coverage Strategy: Extreme TDD Pre-Release Goal
 
-**Version**: 1.0.0
-**Date**: 2025-12-13
-**Status**: DRAFT - Awaiting Review
+**Version**: 1.1.0
+**Date**: 2026-04-04 (updated from 2025-12-13)
+**Status**: DRAFT — baseline numbers stale, needs remeasurement
 **Authors**: Claude Code (AI Assistant)
 **Related**: `90-percent-coverage-strategy-spec.md`, `improve-testing-quality-using-certeza-concepts.md`
 
@@ -10,7 +10,8 @@
 
 This specification defines a rigorous, academically-grounded strategy to achieve 95% test coverage for the Ruchy compiler while maintaining fast feedback loops (<5 minutes for `test-fast`, <10 minutes for `coverage`). The approach synthesizes property-based testing, selective mutation analysis, and tiered test execution inspired by the bashrs project's proven methodology.
 
-**Current State**: 75.26% coverage
+**Current State (2025-12-13)**: 75.26% coverage
+**Current State (2026-04-04)**: Unknown — codebase grew 3.4x in tests (6k→20k), many new modules (contracts, decorators, embed)
 **Target State**: 95.00% coverage
 **Deadline**: Pre-release gate (FRIDAY release schedule)
 

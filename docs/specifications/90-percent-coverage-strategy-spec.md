@@ -1,18 +1,19 @@
 # 90% Coverage Strategy Specification
 
 **Document ID**: SPEC-COVERAGE-001
-**Version**: 1.0.0
-**Date**: 2025-11-13
-**Status**: Active
+**Version**: 1.1.0
+**Date**: 2026-04-04 (updated from 2025-11-13)
+**Status**: Active — numbers stale, strategy still valid
 **Author**: Ruchy Compiler Engineering Team
 
 ## Executive Summary
 
 This specification provides an evidence-based strategy for achieving and maintaining >90% code coverage in the Ruchy compiler project, derived from empirical analysis of the bashrs project (a sister transpiler achieving similar coverage levels) and supported by peer-reviewed research in software testing and quality assurance.
 
-**Current State**: Ruchy: 70.31% coverage (79,151/112,573 lines)
-**Target State**: >90% coverage (>101,316/112,573 lines)
-**Gap**: ~22,165 lines requiring additional test coverage
+**Current State (2025-11-13)**: 70.31% coverage (79,151/112,573 lines)
+**Current State (2026-04-04)**: Needs remeasurement — codebase has grown significantly (20,487 tests vs ~6,000 at spec time)
+**Target State**: >90% coverage
+**Gap**: Unknown until coverage is remeasured post-contracts/decorators/embed additions
 
 ## Sub-spec Index
 

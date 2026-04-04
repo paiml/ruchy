@@ -1,9 +1,9 @@
 # Language Feature Testing Specification v1.0
 
 **Document ID**: RUCHY-SPEC-001  
-**Version**: 1.0  
-**Status**: ACTIVE  
-**Last Updated**: August 23, 2025  
+**Version**: 1.1  
+**Status**: PARTIALLY SUPERSEDED  
+**Last Updated**: 2026-04-04 (falsified from August 23, 2025)  
 **Authors**: Ruchy Development Team  
 
 ## Executive Summary
@@ -286,23 +286,23 @@ const PERFORMANCE_THRESHOLDS: &[(&str, Duration)] = &[
 
 ## Implementation Priority
 
-### Phase 1: Foundation (Current)
+### Phase 1: Foundation (COMPLETED — August 2025)
 - ✅ Basic compatibility test suite implemented
 - ✅ One-liner compatibility verified (100%)
 - ✅ Core language features verified
-- 🔄 CI integration in progress
+- ✅ CI integration completed
 
-### Phase 2: Enhancement (Next Sprint)
-- 🎯 Property-based testing implementation
-- 🎯 Performance regression detection
-- 🎯 Enhanced error message testing
-- 🎯 Documentation example testing
+### Phase 2: Enhancement (COMPLETED — achieved organically by Dec 2025)
+- ✅ Property-based testing: 20,000+ proptest cases across parser/transpiler
+- ✅ Performance regression detection: criterion benchmarks in benches/
+- ✅ Enhanced error message testing: Oracle error classification via ruchydbg
+- ✅ Documentation example testing: ruchy-book Ch01-05 validation
 
-### Phase 3: Advanced (Future)
-- 🎯 Fuzz testing integration
-- 🎯 Memory safety property tests
-- 🎯 Concurrency testing (if applicable)
-- 🎯 Cross-platform compatibility verification
+### Phase 3: Advanced (PARTIALLY COMPLETED — as of Apr 2026)
+- ✅ Fuzz testing: cargo-fuzz integration exists
+- ✅ Memory safety: zero unsafe code policy (Issue #132) enforced
+- ✅ Concurrency testing: async/await transpilation tests exist
+- 🔄 Cross-platform: WASM target works, no other cross-platform CI
 
 ## Maintenance and Updates
 
@@ -326,7 +326,7 @@ The implementation of this specification will prevent language regressions, impr
 
 ---
 
-**Status**: APPROVED  
-**Implementation Deadline**: Sprint End (August 30, 2025)  
-**Review Cycle**: Monthly  
-**Next Review**: September 23, 2025
+**Status**: PARTIALLY SUPERSEDED  
+**Implementation Deadline**: Sprint End (August 30, 2025) — MET  
+**Review Cycle**: Monthly (not followed — last review was spec creation)  
+**Last Falsification**: 2026-04-04 — 20,487 tests exist (spec assumed ~hundreds)
