@@ -108,7 +108,10 @@ fn dispatch_prefix_token(state: &mut ParserState, token: Token, span: Span) -> R
         | Token::Async
         | Token::Lazy
         | Token::Increment
-        | Token::Decrement => parse_modifier_prefix(state, token, span),
+        | Token::Decrement
+        | Token::Yield
+        | Token::Signal
+        | Token::Infra => parse_modifier_prefix(state, token, span),
 
         // Collections and constructors
         Token::Pipe
@@ -576,8 +579,50 @@ fn parse_control_statement_token(
         Token::Lazy => parse_lazy_token(state),
         Token::Increment => parse_increment_token(state, span),
         Token::Decrement => parse_decrement_token(state, span),
+        Token::Yield => parse_yield_token(state, span),
+        Token::Signal => parse_signal_token(state, span),
+        Token::Infra => parse_infra_token(state, span),
         _ => bail!("Expected control statement token, got: {token:?}"),
     }
+}
+
+/// Parse `yield expr` — coroutine suspension (Ruchy 5.0 Pillar 9)
+fn parse_yield_token(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance(); // consume 'yield'
+    let value = if matches!(
+        state.tokens.peek(),
+        Some((Token::Semicolon | Token::RightBrace, _))
+    ) || state.tokens.peek().is_none()
+    {
+        None
+    } else {
+        Some(Box::new(super::parse_expr_recursive(state)?))
+    };
+    Ok(Expr::new(ExprKind::Yield { value }, span))
+}
+
+/// Parse `signal(init_value)` — reactive state (Ruchy 5.0 Pillar 6)
+fn parse_signal_token(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance(); // consume 'signal'
+    state.tokens.expect(&Token::LeftParen)?;
+    let initial_value = Box::new(super::parse_expr_recursive(state)?);
+    state.tokens.expect(&Token::RightParen)?;
+    Ok(Expr::new(ExprKind::Signal { initial_value }, span))
+}
+
+/// Parse `infra { ... }` — infrastructure block (Ruchy 5.0 Pillar 3)
+fn parse_infra_token(state: &mut ParserState, span: Span) -> Result<Expr> {
+    state.tokens.advance(); // consume 'infra'
+    state.tokens.expect(&Token::LeftBrace)?;
+    let mut body = Vec::new();
+    while !matches!(state.tokens.peek(), Some((Token::RightBrace, _)) | None) {
+        body.push(super::parse_expr_recursive(state)?);
+        while matches!(state.tokens.peek(), Some((Token::Semicolon, _))) {
+            state.tokens.advance();
+        }
+    }
+    state.tokens.expect(&Token::RightBrace)?;
+    Ok(Expr::new(ExprKind::InfraBlock { body }, span))
 }
 /// Parse collection/enum definition tokens (`LeftBracket`, Enum)
 /// Extracted from `parse_prefix` to reduce complexity

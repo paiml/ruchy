@@ -480,6 +480,24 @@ impl Formatter {
                 format!("{}.{:?}", self.format_expr(source, indent), operation)
             }
             ExprKind::Lazy { expr } => format!("lazy {}", self.format_expr(expr, indent)),
+            // Ruchy 5.0 Sovereign Platform expressions
+            ExprKind::Yield { value } => match value {
+                Some(v) => format!("yield {}", self.format_expr(v, indent)),
+                None => "yield".to_string(),
+            },
+            ExprKind::Signal { initial_value } => {
+                format!("signal({})", self.format_expr(initial_value, indent))
+            }
+            ExprKind::InfraBlock { body } => {
+                let pad = "    ".repeat(indent + 1);
+                let close_pad = "    ".repeat(indent);
+                let body_str = body
+                    .iter()
+                    .map(|e| format!("{pad}{}", self.format_expr(e, indent + 1)))
+                    .collect::<Vec<_>>()
+                    .join("\n");
+                format!("infra {{\n{body_str}\n{close_pad}}}")
+            }
         }
     }
 

@@ -1199,3 +1199,65 @@ fn test_label_as_decorator_empty_args() {
         }
     }
 }
+
+// ===== Ruchy 5.0 Sovereign Platform keyword tests =====
+
+#[test]
+fn test_v5_yield_with_value() {
+    let expr = parse("yield 42").unwrap();
+    if let Some(exprs) = get_block_exprs(&expr) {
+        assert!(
+            matches!(&exprs[0].kind, ExprKind::Yield { value: Some(_) }),
+            "Expected Yield with value, got: {:?}",
+            exprs[0].kind
+        );
+    }
+}
+
+#[test]
+fn test_v5_yield_bare() {
+    let expr = parse("yield").unwrap();
+    if let Some(exprs) = get_block_exprs(&expr) {
+        assert!(
+            matches!(&exprs[0].kind, ExprKind::Yield { value: None }),
+            "Expected bare Yield, got: {:?}",
+            exprs[0].kind
+        );
+    }
+}
+
+#[test]
+fn test_v5_signal_init() {
+    let expr = parse("signal(0)").unwrap();
+    if let Some(exprs) = get_block_exprs(&expr) {
+        assert!(
+            matches!(&exprs[0].kind, ExprKind::Signal { .. }),
+            "Expected Signal, got: {:?}",
+            exprs[0].kind
+        );
+    }
+}
+
+#[test]
+fn test_v5_infra_block() {
+    let expr = parse("infra { 42 }").unwrap();
+    if let Some(exprs) = get_block_exprs(&expr) {
+        assert!(
+            matches!(&exprs[0].kind, ExprKind::InfraBlock { .. }),
+            "Expected InfraBlock, got: {:?}",
+            exprs[0].kind
+        );
+    }
+}
+
+#[test]
+fn test_v5_infra_block_multiple_stmts() {
+    let expr = parse("infra { 1; 2; 3 }").unwrap();
+    if let Some(exprs) = get_block_exprs(&expr) {
+        if let ExprKind::InfraBlock { body } = &exprs[0].kind {
+            assert_eq!(body.len(), 3, "InfraBlock should have 3 statements");
+        } else {
+            panic!("Expected InfraBlock, got: {:?}", exprs[0].kind);
+        }
+    }
+}

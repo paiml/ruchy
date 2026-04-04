@@ -488,6 +488,25 @@ impl Transpiler {
             ExprKind::VecRepeat { value, count } => self.transpile_vec_repeat(value, count),
             // ISSUE-103: Handle MacroInvocation for compilation support
             ExprKind::MacroInvocation { name, args } => self.transpile_macro(name, args),
+            // Ruchy 5.0 Sovereign Platform expressions
+            ExprKind::Yield { value } => {
+                let val_ts = match value {
+                    Some(v) => self.transpile_expr(v)?,
+                    None => quote::quote! { () },
+                };
+                Ok(quote::quote! { yield #val_ts })
+            }
+            ExprKind::Signal { initial_value } => {
+                let init_ts = self.transpile_expr(initial_value)?;
+                Ok(quote::quote! { Signal::new(#init_ts) })
+            }
+            ExprKind::InfraBlock { body } => {
+                let stmts: Vec<_> = body
+                    .iter()
+                    .map(|e| self.transpile_expr(e))
+                    .collect::<Result<Vec<_>>>()?;
+                Ok(quote::quote! { { #(#stmts;)* } })
+            }
             _ => bail!("Unsupported expression kind: {:?}", expr.kind),
         }
     }

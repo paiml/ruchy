@@ -410,6 +410,13 @@ pub enum Token {
     Invariant_,
     #[token("decreases")]
     Decreases,
+    // Ruchy 5.0 Sovereign Platform keywords
+    #[token("infra")]
+    Infra,
+    #[token("signal")]
+    Signal,
+    #[token("yield")]
+    Yield,
     // Identifiers (lower priority than keywords)
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_string(), priority = 1)]
     Identifier(String),

@@ -167,7 +167,7 @@ assertions_on_constants = "allow"  # Tests assert expected constants
 overly_complex_bool_expr = "allow"  # Tests can have complex conditions
 
 [workspace.package]
-version = "4.2.1"
+version = "5.0.0-alpha.1"
 edition = "2021"
 authors = ["Noah Gift"]
 license = "MIT OR Apache-2.0"
@@ -255,6 +255,10 @@ training = ["dep:entrenar"]
 data-loading = ["dep:alimentar"]
 widgets = ["dep:presentar"]
 visualization = ["dep:trueno-viz"]
+# Ruchy 5.0 Sovereign Platform pillars (optional)
+infra = ["dep:forjar"]
+simulation = ["dep:simular"]
+shell-target = ["dep:bashrs"]
 minimal = []  # Users can use --no-default-features --features minimal for core only
 # DataFrame via trueno-db (default - uses Trueno SIMD backend)
 dataframe = ["polars", "arrow"]
@@ -285,6 +289,10 @@ alimentar = { version = "0.2.5", optional = true }      # Pillar 2: Data loading
 entrenar = { version = "0.7", features = ["citl"], optional = true }  # CITL, training
 trueno-viz = { version = "0.1.23", optional = true }    # Pillar 5: Visualization
 presentar = { version = "0.3.1", optional = true }      # Pillar 6: Notebook widgets
+# Ruchy 5.0 Sovereign Platform pillars (optional)
+forjar = { version = "1.2", default-features = false, optional = true }  # Pillar 3: Infrastructure as Code
+simular = { version = "0.3", default-features = false, optional = true } # Pillar 7: Simulation engine
+bashrs = { version = "6.65", default-features = false, optional = true } # Pillar 4: Shell transpilation
 wasm-encoder = "0.207.0"
 glob = "0.3"
 walkdir = "2.5"  # STDLIB-005: Directory traversal
@@ -388,7 +396,7 @@ axum = { version = "0.8", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # Probar: GUI coverage, Playwright-compatible testing, WASM worker harness
-jugar-probar = "1.0.2"
+jugar-probar = "1.0.4"
 
 # WASM QA Framework dependencies (following spec)
 wasm-bindgen-test = "0.3"

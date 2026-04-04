@@ -844,6 +844,19 @@ pub enum ExprKind {
         value: Box<Expr>,
         count: Box<Expr>,
     },
+    // ── Ruchy 5.0 Sovereign Platform expressions ──
+    /// Yield expression for coroutine suspension (Pillar 9: Embedding)
+    Yield {
+        value: Option<Box<Expr>>,
+    },
+    /// Reactive signal creation (Pillar 6: Visualization)
+    Signal {
+        initial_value: Box<Expr>,
+    },
+    /// Infrastructure-as-Code block (Pillar 3: Infrastructure)
+    InfraBlock {
+        body: Vec<Expr>,
+    },
 }
 /// Literal values that can appear in the source code.
 ///
