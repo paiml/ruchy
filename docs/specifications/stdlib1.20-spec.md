@@ -57,10 +57,13 @@ input(prompt: String) -> String    // Prompted input
 readline() -> String               // Raw line input
 
 // Type conversions - Status: ✅ Fully implemented (STDLIB-001)
+// Function-style: int(x), float(x), str(x), bool(x)
 str(x: Any) -> String              // Convert to string (wraps Rust Display/to_string)
 int(x: Any) -> Int                 // Convert to integer (wraps parse/type casting)
 float(x: Any) -> Float             // Convert to float (wraps parse/type casting)
 bool(x: Any) -> Bool               // Convert to boolean (truthiness logic)
+// Method-style: x.to_int(), x.to_float() - ✅ Fixed in PDCA-20 (2026-04-04)
+// String.to_int() → .parse::<i64>().unwrap(), Float.to_int() → as i64
 
 // Assertions - Status: ✅ Fully implemented
 assert(condition: Bool, msg?: String)           // Assert condition

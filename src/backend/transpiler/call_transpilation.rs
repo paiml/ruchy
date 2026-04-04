@@ -308,7 +308,7 @@ impl Transpiler {
     }
 
     /// Dispatch method call by category
-    fn dispatch_method_by_category(
+    pub(super) fn dispatch_method_by_category(
         &self,
         obj_tokens: &TokenStream,
         method: &str,
@@ -373,6 +373,12 @@ impl Transpiler {
                     Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
                 }
             }
+            // Type conversion methods — must emit valid Rust, not verbatim .to_int()/.to_float()
+            "to_int" => self.transpile_to_int_method(obj_tokens, object),
+            "to_float" => self.transpile_to_float_method(obj_tokens, object),
+            "to_bool" => {
+                Ok(quote! { (#obj_tokens != 0) })
+            }
             // String methods
             "to_s" | "to_string" | "to_upper" | "to_lower" | "upper" | "lower" | "length"
             | "substring" | "strip" | "lstrip" | "rstrip" | "startswith" | "endswith" | "split"
@@ -404,11 +410,8 @@ impl Transpiler {
             _ => Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) }),
         }
     }
-}
 
-// ============================================================================
-// Tests
-// ============================================================================
+}
 
 #[cfg(test)]
 mod tests {
@@ -442,10 +445,6 @@ mod tests {
         make_expr(ExprKind::Identifier(name.to_string()))
     }
 
-    // ========================================================================
-    // transform_main_call tests
-    // ========================================================================
-
     #[test]
     fn test_transform_main_call_renames() {
         let transpiler = make_transpiler();
@@ -462,10 +461,6 @@ mod tests {
         assert!(result.to_string().contains("other_func"));
         assert!(!result.to_string().contains("__ruchy"));
     }
-
-    // ========================================================================
-    // try_transpile_builtin_call tests
-    // ========================================================================
 
     #[test]
     fn test_builtin_len_call() {
@@ -492,10 +487,6 @@ mod tests {
         let tokens = result.unwrap();
         assert!(tokens.to_string().contains("SystemTime"));
     }
-
-    // ========================================================================
-    // try_transpile_dataframe_function_impl tests
-    // ========================================================================
 
     #[test]
     fn test_dataframe_new_call() {
@@ -531,10 +522,6 @@ mod tests {
         assert!(result.is_none());
     }
 
-    // ========================================================================
-    // try_transpile_contains_call tests
-    // ========================================================================
-
     #[test]
     fn test_contains_with_identifier() {
         let transpiler = make_transpiler();
@@ -561,10 +548,6 @@ mod tests {
         assert!(result.is_none()); // Literals don't need special handling
     }
 
-    // ========================================================================
-    // is_dataframe_method tests
-    // ========================================================================
-
     #[test]
     fn test_is_dataframe_method_true() {
         assert!(Transpiler::is_dataframe_method("select"));
@@ -579,10 +562,6 @@ mod tests {
         assert!(!Transpiler::is_dataframe_method("pop"));
         assert!(!Transpiler::is_dataframe_method("custom_method"));
     }
-
-    // ========================================================================
-    // dispatch_method_by_category tests
-    // ========================================================================
 
     #[test]
     fn test_dispatch_append_to_push() {
@@ -644,8 +623,6 @@ mod tests {
         assert!(result_str.contains("obj"));
         assert!(result_str.contains("custom_method"));
     }
-
-    // ===== EXTREME TDD Round 119 - Additional Tests =====
 
     #[test]
     fn test_dispatch_pop_method() {
@@ -788,10 +765,6 @@ mod tests {
         assert!(result.unwrap().to_string().contains("filter"));
     }
 
-    // ========================================================================
-    // try_transpile_std_time_call tests
-    // ========================================================================
-
     #[test]
     fn test_std_time_now_millis_valid() {
         let transpiler = make_transpiler();
@@ -919,4 +892,5 @@ mod tests {
             .unwrap();
         assert!(result.is_none());
     }
+
 }

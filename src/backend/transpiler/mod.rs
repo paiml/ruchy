@@ -42,8 +42,6 @@ pub mod constant_folder; // PERF-002-A: Constant folding optimization
 mod dataframe;
 mod effects;
 pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
-                         // #[cfg(feature = "dataframe")]
-                         // mod dataframe_arrow; // Temporarily disabled until proper implementation
 mod advanced_math; // EXTREME TDD Round 59: trig/log/random/trueno functions
 mod ast_analysis; // EXTREME TDD Round 66: AST analysis, collection, detection functions
 mod bindings; // EXTREME TDD Round 54: let bindings and patterns
@@ -76,6 +74,7 @@ mod lifetime_helpers; // EXTREME TDD Round 74: Lifetime parameter helpers
 mod math_builtins; // EXTREME TDD Round 56: math built-in functions
 mod method_call_refactored;
 mod method_transpilers; // EXTREME TDD Round 65: iterator/map/set/string/collection methods
+mod method_type_conversion; // PDCA-20: .to_int()/.to_float()/.to_bool() method transpilation
 pub mod mutation_detection;
 mod network_builtins; // EXTREME TDD Round 62: json/http functions
 pub mod param_usage_analysis;

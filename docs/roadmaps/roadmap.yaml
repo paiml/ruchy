@@ -1906,3 +1906,86 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: PMAT-084
+  github_issue: null
+  item_type: task
+  title: 'FIX-EMBED-001: Fix ruchy-embed cc crate compilation'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-04-04T06:39:15Z
+  updated: 2026-04-04T06:39:15Z
+  spec: null
+  acceptance_criteria:
+  - cc 1.2.56 had missing modules; updated to 1.2.59 in Cargo.lock
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-085
+  github_issue: null
+  item_type: task
+  title: 'INFER-001: Fix unary negate type inference for floats'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-04-04T06:43:00Z
+  updated: 2026-04-04T06:43:00Z
+  spec: null
+  acceptance_criteria:
+  - Negate always unifies with Int; fails on -3.15 (Float). Should accept both Int and Float.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-089
+  github_issue: null
+  item_type: task
+  title: 'New task: PMAT-089'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-04-04T06:43:00.904498691+00:00
+  updated: 2026-04-04T06:43:00.904498691+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-090
+  github_issue: null
+  item_type: task
+  title: 'TRANSPILER-TRYCATCH-001: Implement try/catch transpilation'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-04-04T09:05:58Z
+  updated: 2026-04-04T09:06:09.792646372+00:00
+  spec: null
+  acceptance_criteria:
+  - Parser has TryCatch AST node but transpiler does not handle it. test_error_handling ignored.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 20 - to_int transpilation defect'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 20 - to_int transpilation defect'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-04-04T10:32:27.208587691+00:00
+  updated: 2026-04-04T10:32:27.208587691+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
