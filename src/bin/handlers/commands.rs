@@ -18,7 +18,7 @@ struct ProvabilityAnalysis {
     termination: bool,
     bounds: bool,
 }
-/// Handle AST command - show Abstract Syntax Tree for a file
+/// AST command - show Abstract Syntax Tree for a file
 pub fn handle_ast_command(
     file: &Path,
     json: bool,
@@ -39,7 +39,6 @@ pub fn handle_ast_command(
     write_ast_output(output_content, output)?;
     Ok(())
 }
-/// Generate appropriate AST output based on flags
 /// Extracted to reduce complexity
 fn generate_ast_output(
     ast: &ruchy::Expr,
@@ -63,7 +62,6 @@ fn generate_ast_output(
         Ok(generate_default_output(ast))
     }
 }
-/// Generate JSON output for AST
 fn generate_json_output(ast: &ruchy::Expr) -> Result<String> {
     Ok(serde_json::to_string_pretty(ast)?)
 }
@@ -72,7 +70,6 @@ fn generate_graph_output() -> String {
     "digraph AST {\n  // AST graph visualization\n  node [shape=box];\n  // Graph generation placeholder\n}\n"
         .to_string()
 }
-/// Generate metrics output
 fn generate_metrics_output(ast: &ruchy::Expr) -> String {
     let node_count = count_ast_nodes(ast);
     let depth = calculate_ast_depth(ast);
@@ -86,7 +83,6 @@ fn generate_metrics_output(ast: &ruchy::Expr) -> String {
         node_count + depth
     )
 }
-/// Generate symbols output
 fn generate_symbols_output(ast: &ruchy::Expr) -> String {
     let symbols = extract_symbols(ast);
     format!(
@@ -99,15 +95,12 @@ fn generate_symbols_output(ast: &ruchy::Expr) -> String {
         symbols.unused.len()
     )
 }
-/// Generate dependencies output
 fn generate_deps_output() -> String {
     "=== Dependencies ===\nNo external dependencies\n".to_string()
 }
-/// Generate default pretty-print output
 fn generate_default_output(ast: &ruchy::Expr) -> String {
     format!("{:#?}", ast)
 }
-/// Write AST output to file or stdout
 fn write_ast_output(content: String, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
         fs::write(output_path, content)?;
@@ -117,7 +110,7 @@ fn write_ast_output(content: String, output: Option<&Path>) -> Result<()> {
     }
     Ok(())
 }
-/// Handle format command - format Ruchy source code
+/// format command - format Ruchy source code
 pub fn handle_fmt_command(
     path: &Path,
     check: bool,
@@ -135,7 +128,7 @@ pub fn handle_fmt_command(
     handle_fmt_output(mode, path, &source, &formatted_code, verbose)?;
     Ok(())
 }
-/// Output mode for formatting (complexity: 1)
+/// Output mode for formatting
 #[derive(Copy, Clone)]
 enum FmtMode {
     Check,
@@ -144,7 +137,6 @@ enum FmtMode {
     Write,
     Default,
 }
-/// Determine formatting mode (complexity: 1)
 fn determine_fmt_mode(check: bool, stdout: bool, diff: bool, write: bool) -> FmtMode {
     match (check, stdout, diff, write) {
         (true, _, _, _) => FmtMode::Check,
@@ -154,7 +146,6 @@ fn determine_fmt_mode(check: bool, stdout: bool, diff: bool, write: bool) -> Fmt
         _ => FmtMode::Default,
     }
 }
-/// Read and format a file (complexity: 2)
 fn read_and_format_file(path: &Path) -> Result<(String, String)> {
     use ruchy::quality::formatter::Formatter;
     let source = fs::read_to_string(path)
@@ -166,7 +157,6 @@ fn read_and_format_file(path: &Path) -> Result<(String, String)> {
     let formatted_code = formatter.format(&ast)?;
     Ok((source, formatted_code))
 }
-/// Handle formatting output based on mode (complexity: 1)
 fn handle_fmt_output(
     mode: FmtMode,
     path: &Path,
@@ -195,7 +185,6 @@ fn handle_fmt_output(
         }
     }
 }
-/// Handle check mode output (complexity: 3)
 fn handle_check_mode(path: &Path, source: &str, formatted_code: &str) -> Result<()> {
     if source == formatted_code {
         println!("{} {} is properly formatted", "✓".green(), path.display());
@@ -205,11 +194,9 @@ fn handle_check_mode(path: &Path, source: &str, formatted_code: &str) -> Result<
         Err(anyhow::anyhow!("File needs formatting"))
     }
 }
-/// Handle stdout mode output (complexity: 1)
 fn handle_stdout_mode(formatted_code: &str) {
     print!("{}", formatted_code);
 }
-/// Handle diff mode output (complexity: 4)
 fn handle_diff_mode(path: &Path, source: &str, formatted_code: &str) {
     println!("--- {}", path.display());
     println!("+++ {} (formatted)", path.display());
@@ -220,7 +207,6 @@ fn handle_diff_mode(path: &Path, source: &str, formatted_code: &str) {
         }
     }
 }
-/// Handle write mode output (complexity: 4)
 fn handle_write_mode(path: &Path, source: &str, formatted_code: &str, verbose: bool) -> Result<()> {
     if source == formatted_code {
         if verbose {
@@ -232,11 +218,10 @@ fn handle_write_mode(path: &Path, source: &str, formatted_code: &str, verbose: b
     }
     Ok(())
 }
-/// Handle default mode output (complexity: 1)
 fn handle_default_mode(formatted_code: &str) {
     print!("{}", formatted_code);
 }
-/// Read file and parse AST (complexity: 4)
+/// Read file and parse AST
 fn read_and_parse_source(path: &Path) -> Result<(String, ruchy::frontend::ast::Expr)> {
     let source = fs::read_to_string(path)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
@@ -244,7 +229,6 @@ fn read_and_parse_source(path: &Path) -> Result<(String, ruchy::frontend::ast::E
     let ast = parser.parse()?;
     Ok((source, ast))
 }
-/// Configure linter with rules and strict mode (complexity: 4)
 fn configure_linter(rules: Option<&str>, strict: bool) -> ruchy::quality::linter::Linter {
     use ruchy::quality::linter::Linter;
     let mut linter = Linter::new();
@@ -257,7 +241,7 @@ fn configure_linter(rules: Option<&str>, strict: bool) -> ruchy::quality::linter
     }
     linter
 }
-/// Run linter analysis (complexity: 3)
+/// Run linter analysis
 fn run_linter_analysis(
     linter: &ruchy::quality::linter::Linter,
     ast: &ruchy::frontend::ast::Expr,
@@ -265,7 +249,6 @@ fn run_linter_analysis(
 ) -> Result<Vec<ruchy::quality::linter::LintIssue>> {
     linter.lint(ast, source)
 }
-/// Format issues as JSON output (complexity: 3)
 fn format_json_output(issues: &[ruchy::quality::linter::LintIssue]) -> Result<()> {
     let json_output = serde_json::json!({
         "issues": issues
@@ -273,13 +256,13 @@ fn format_json_output(issues: &[ruchy::quality::linter::LintIssue]) -> Result<()
     println!("{}", serde_json::to_string_pretty(&json_output)?);
     Ok(())
 }
-/// Count errors and warnings in issues (complexity: 4)
+/// Count errors and warnings in issues
 fn count_issue_types(issues: &[ruchy::quality::linter::LintIssue]) -> (usize, usize) {
     let errors = issues.iter().filter(|i| i.severity == "error").count();
     let warnings = issues.iter().filter(|i| i.severity == "warning").count();
     (errors, warnings)
 }
-/// Format issues as text output with details (complexity: 8)
+/// Format issues as text output with details
 fn format_text_output(issues: &[ruchy::quality::linter::LintIssue], path: &Path, verbose: bool) {
     if issues.is_empty() {
         println!("{} No issues found in {}", "✓".green(), path.display());
@@ -320,7 +303,7 @@ fn format_text_output(issues: &[ruchy::quality::linter::LintIssue], path: &Path,
         }
     }
 }
-/// Handle auto-fix if requested (complexity: 4)
+/// auto-fix if requested
 fn handle_auto_fix(
     linter: &ruchy::quality::linter::Linter,
     source: &str,
@@ -336,7 +319,7 @@ fn handle_auto_fix(
     }
     Ok(())
 }
-/// Handle strict mode exit if issues found (complexity: 3)
+/// strict mode exit if issues found
 fn handle_strict_mode(issues: &[ruchy::quality::linter::LintIssue], strict: bool) -> Result<()> {
     if !issues.is_empty() && strict {
         Err(anyhow::anyhow!("Lint issues found in strict mode"))
@@ -344,7 +327,7 @@ fn handle_strict_mode(issues: &[ruchy::quality::linter::LintIssue], strict: bool
         Ok(())
     }
 }
-/// Handle lint command - check for code issues (complexity: 6)
+/// lint command - check for code issues
 pub fn handle_lint_command(
     path: &Path,
     auto_fix: bool,
@@ -367,7 +350,7 @@ pub fn handle_lint_command(
     handle_strict_mode(&issues, strict)?;
     Ok(())
 }
-/// Handle provability command - formal verification
+/// provability command - formal verification
 pub fn handle_provability_command(
     file: &Path,
     verify: bool,
@@ -486,7 +469,7 @@ fn write_provability_output(content: String, output: Option<&Path>) -> Result<()
     }
     Ok(())
 }
-/// Handle runtime command - performance analysis
+/// runtime command - performance analysis
 pub fn handle_runtime_command(
     file: &Path,
     profile: bool,
@@ -799,38 +782,37 @@ fn extract_function_names(expr: &ruchy::frontend::ast::Expr) -> Vec<String> {
     functions
 }
 
-/// Handle score command - quality scoring with directory support
+/// score command - quality scoring with directory support
 pub fn handle_score_command(
     path: &Path,
     depth: &str,
     _fast: bool,
     _deep: bool,
     _watch: bool,
-    _explain: bool,
+    explain: bool,
     _baseline: Option<&str>,
     min: Option<f64>,
     _config: Option<&Path>,
     format: &str,
-    _verbose: bool,
+    verbose: bool,
     output: Option<&Path>,
 ) -> Result<()> {
     if path.is_file() {
-        // Handle single file (original behavior)
-        handle_single_file_score(path, depth, min, format, output)
+        handle_single_file_score(path, depth, min, format, output, explain, verbose)
     } else if path.is_dir() {
-        // Handle directory (new functionality)
         handle_directory_score(path, depth, min, format, output)
     } else {
         anyhow::bail!("Failed to read file: {}", path.display());
     }
 }
-/// Handle scoring for a single file
 fn handle_single_file_score(
     path: &Path,
     depth: &str,
     min: Option<f64>,
     format: &str,
     output: Option<&Path>,
+    explain: bool,
+    verbose: bool,
 ) -> Result<()> {
     let source = fs::read_to_string(path)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
@@ -838,25 +820,42 @@ fn handle_single_file_score(
     let ast = parser
         .parse()
         .with_context(|| format!("Failed to parse file: {}", path.display()))?;
-    // Calculate quality score
     let score = calculate_quality_score(&ast, &source);
+    let lines = source.lines().count();
+    let functions = extract_function_names(&ast).len();
     let output_content = if format == "json" {
-        serde_json::to_string_pretty(&serde_json::json!({
+        let mut json = serde_json::json!({
             "file": path.display().to_string(),
             "score": score,
             "depth": depth,
             "passed": min.is_none_or(|m| score >= m)
-        }))?
+        });
+        if explain {
+            json["breakdown"] = serde_json::json!({
+                "lines": lines,
+                "functions": functions,
+                "has_tests": source.contains("#[test]") || source.contains("fun test_"),
+                "has_docs": source.contains("///") || source.contains("//!"),
+            });
+        }
+        serde_json::to_string_pretty(&json)?
     } else {
-        format!(
-            "=== Quality Score ===\n\
-             File: {}\n\
-             Score: {:.2}/1.0\n\
-             Analysis Depth: {}\n",
-            path.display(),
-            score,
-            depth
-        )
+        let mut s = format!(
+            "=== Quality Score ===\nFile: {}\nScore: {:.2}/1.0\nAnalysis Depth: {}\n",
+            path.display(), score, depth
+        );
+        if explain {
+            s.push_str(&format!(
+                "\n--- Breakdown ---\nLines: {}\nFunctions: {}\nHas tests: {}\nHas docs: {}\n",
+                lines, functions,
+                source.contains("#[test]") || source.contains("fun test_"),
+                source.contains("///") || source.contains("//!"),
+            ));
+        }
+        if verbose {
+            s.push_str(&format!("Functions: {:?}\n", extract_function_names(&ast)));
+        }
+        s
     };
     if let Some(output_path) = output {
         fs::write(output_path, &output_content)?;
@@ -873,7 +872,7 @@ fn handle_single_file_score(
     }
     Ok(())
 }
-/// Handle scoring for a directory (recursive traversal)
+/// scoring for a directory (recursive traversal)
 fn handle_directory_score(
     path: &Path,
     depth: &str,
@@ -903,7 +902,7 @@ fn handle_directory_score(
     check_score_threshold(average_score, min)?;
     Ok(())
 }
-/// Handle empty directory case (complexity: 4)
+/// empty directory case
 fn handle_empty_directory(
     path: &Path,
     depth: &str,
@@ -914,7 +913,7 @@ fn handle_empty_directory(
     write_output(&output_content, output)?;
     Ok(())
 }
-/// Format output for empty directory (complexity: 3)
+/// Format output for empty directory
 fn format_empty_directory_output(path: &Path, depth: &str, format: &str) -> Result<String> {
     if format == "json" {
         serde_json::to_string_pretty(&serde_json::json!({
@@ -938,7 +937,7 @@ fn format_empty_directory_output(path: &Path, depth: &str, format: &str) -> Resu
         ))
     }
 }
-/// Calculate scores for all files (complexity: 5)
+/// Calculate scores for all files
 fn calculate_all_file_scores(ruchy_files: &[PathBuf]) -> HashMap<PathBuf, f64> {
     use std::collections::HashMap;
     let mut file_scores = HashMap::new();
@@ -955,7 +954,7 @@ fn calculate_all_file_scores(ruchy_files: &[PathBuf]) -> HashMap<PathBuf, f64> {
     }
     file_scores
 }
-/// Calculate average score (complexity: 2)
+/// Calculate average score
 fn calculate_average(file_scores: &HashMap<PathBuf, f64>) -> f64 {
     if file_scores.is_empty() {
         return 0.0;
@@ -963,7 +962,7 @@ fn calculate_average(file_scores: &HashMap<PathBuf, f64>) -> f64 {
     let total: f64 = file_scores.values().sum();
     total / file_scores.len() as f64
 }
-/// Format score output (complexity: 4)
+/// Format score output
 fn format_score_output(
     path: &Path,
     depth: &str,
@@ -999,7 +998,7 @@ fn format_score_output(
         ))
     }
 }
-/// Write output to file or stdout (complexity: 3)
+/// Write output to file or stdout
 fn write_output(content: &str, output: Option<&Path>) -> Result<()> {
     if let Some(output_path) = output {
         fs::write(output_path, content)?;
@@ -1009,7 +1008,7 @@ fn write_output(content: &str, output: Option<&Path>) -> Result<()> {
     }
     Ok(())
 }
-/// Check if score meets threshold (complexity: 3)
+/// Check if score meets threshold
 fn check_score_threshold(average_score: f64, min: Option<f64>) -> Result<()> {
     if let Some(min_score) = min {
         if average_score < min_score {
@@ -1048,7 +1047,7 @@ fn calculate_file_score(file_path: &Path) -> Result<f64> {
         .with_context(|| format!("Failed to parse file: {}", file_path.display()))?;
     Ok(calculate_quality_score(&ast, &source))
 }
-/// Handle quality-gate command
+/// quality-gate command
 pub fn handle_quality_gate_command(
     path: &Path,
     _config: Option<&Path>,
@@ -1074,12 +1073,12 @@ pub fn handle_quality_gate_command(
     }
     Ok(())
 }
-/// Parse source file into AST (complexity: 2)
+/// Parse source file into AST
 fn parse_source_file(source: &str) -> Result<ruchy::frontend::ast::Expr> {
     let mut parser = RuchyParser::new(source);
     parser.parse().context("Failed to parse source file")
 }
-/// Run all quality gates (complexity: 4)
+/// Run all quality gates
 fn run_quality_gates(ast: &ruchy::frontend::ast::Expr, source: &str) -> (bool, Vec<String>) {
     let mut passed = true;
     let mut results = vec![];
@@ -1093,7 +1092,7 @@ fn run_quality_gates(ast: &ruchy::frontend::ast::Expr, source: &str) -> (bool, V
     passed = passed && satd_passed;
     (passed, results)
 }
-/// Check complexity gate (complexity: 3)
+/// Check complexity gate
 fn check_complexity_gate(ast: &ruchy::frontend::ast::Expr) -> (bool, String) {
     let complexity = calculate_complexity(ast);
     let limit = 10;
@@ -1106,7 +1105,7 @@ fn check_complexity_gate(ast: &ruchy::frontend::ast::Expr) -> (bool, String) {
         (true, format!("✅ Complexity {} within limit", complexity))
     }
 }
-/// Check for SATD comments (complexity: 5)
+/// Check for SATD comments
 fn check_satd_gate(source: &str) -> (bool, String) {
     let has_satd = source.lines().any(contains_satd_comment);
     if has_satd {
@@ -1115,7 +1114,7 @@ fn check_satd_gate(source: &str) -> (bool, String) {
         (true, "✅ No SATD comments".to_string())
     }
 }
-/// Check if line contains SATD comment (complexity: 4)
+/// Check if line contains SATD comment
 fn contains_satd_comment(line: &str) -> bool {
     if let Some(comment_pos) = line.find("//") {
         let comment = &line[comment_pos..];
@@ -1124,7 +1123,7 @@ fn contains_satd_comment(line: &str) -> bool {
         false
     }
 }
-/// Format gate results as JSON or text (complexity: 3)
+/// Format gate results as JSON or text
 fn format_gate_results(passed: bool, results: &[String], json: bool) -> Result<String> {
     if json {
         serde_json::to_string_pretty(&serde_json::json!({
@@ -1136,7 +1135,7 @@ fn format_gate_results(passed: bool, results: &[String], json: bool) -> Result<S
         Ok(format!("{}\n", results.join("\n")))
     }
 }
-/// Output results to console or file (complexity: 3)
+/// Output results to console or file
 fn output_results(content: &str, quiet: bool, output: Option<&Path>) -> Result<()> {
     if !quiet {
         print!("{}", content);
@@ -1146,7 +1145,7 @@ fn output_results(content: &str, quiet: bool, output: Option<&Path>) -> Result<(
     }
     Ok(())
 }
-/// Check if should fail in strict mode (complexity: 1)
+/// Check if should fail in strict mode
 fn should_fail_strict(passed: bool, strict: bool) -> bool {
     !passed && strict
 }
@@ -1217,7 +1216,7 @@ fn calculate_quality_score(ast: &ruchy::frontend::ast::Expr, source: &str) -> f6
     // Calculate score with all penalties
     calculate_score_with_penalties(&metrics)
 }
-/// Collect all quality metrics (complexity: 4)
+/// Collect all quality metrics
 fn collect_quality_metrics(ast: &ruchy::frontend::ast::Expr, source: &str) -> QualityMetrics {
     let mut metrics = QualityMetrics::default();
     // Check for SATD
@@ -1226,7 +1225,7 @@ fn collect_quality_metrics(ast: &ruchy::frontend::ast::Expr, source: &str) -> Qu
     analyze_ast_quality(ast, &mut metrics);
     metrics
 }
-/// Detect SATD comments in source (complexity: 5)
+/// Detect SATD comments in source
 fn detect_satd_in_source(source: &str) -> bool {
     source.lines().any(|line| {
         if let Some(comment_pos) = line.find("//") {
@@ -1237,13 +1236,13 @@ fn detect_satd_in_source(source: &str) -> bool {
         }
     })
 }
-/// Calculate complexity from metrics (complexity: 2)
+/// Calculate complexity from metrics
 fn calculate_complexity_from_metrics(metrics: &QualityMetrics) -> usize {
     // Simple complexity estimation based on collected metrics
     // Base complexity + branches + loops weighted
     5 + metrics.max_nesting_depth * 2 + metrics.max_parameters
 }
-/// Calculate final score with all penalties (complexity: 6)
+/// Calculate final score with all penalties
 fn calculate_score_with_penalties(metrics: &QualityMetrics) -> f64 {
     let mut score = 1.0;
     // Apply all penalties
@@ -1255,7 +1254,7 @@ fn calculate_score_with_penalties(metrics: &QualityMetrics) -> f64 {
     score *= get_documentation_penalty(metrics);
     score
 }
-/// Get complexity penalty (complexity: 8)
+/// Get complexity penalty
 fn get_complexity_penalty(complexity: usize) -> f64 {
     match complexity {
         0..=5 => 1.0,
@@ -1268,7 +1267,7 @@ fn get_complexity_penalty(complexity: usize) -> f64 {
         _ => 0.05,
     }
 }
-/// Get parameter count penalty (complexity: 7)
+/// Get parameter count penalty
 fn get_parameter_penalty(params: usize) -> f64 {
     match params {
         0..=3 => 1.0,
@@ -1280,7 +1279,7 @@ fn get_parameter_penalty(params: usize) -> f64 {
         _ => 0.05,
     }
 }
-/// Get nesting depth penalty (complexity: 7)
+/// Get nesting depth penalty
 fn get_nesting_penalty(depth: usize) -> f64 {
     match depth {
         0..=2 => 1.0,
@@ -1292,7 +1291,7 @@ fn get_nesting_penalty(depth: usize) -> f64 {
         _ => 0.05,
     }
 }
-/// Get function length penalty (complexity: 4)
+/// Get function length penalty
 fn get_length_penalty(metrics: &QualityMetrics) -> f64 {
     let avg_length = calculate_average_function_length(metrics);
     if avg_length > 20.0 {
@@ -1301,7 +1300,7 @@ fn get_length_penalty(metrics: &QualityMetrics) -> f64 {
         1.0
     }
 }
-/// Calculate average function length (complexity: 3)
+/// Calculate average function length
 fn calculate_average_function_length(metrics: &QualityMetrics) -> f64 {
     if metrics.function_count == 0 {
         0.0
@@ -1309,7 +1308,7 @@ fn calculate_average_function_length(metrics: &QualityMetrics) -> f64 {
         metrics.total_function_lines as f64 / metrics.function_count as f64
     }
 }
-/// Get SATD penalty (complexity: 1)
+/// Get SATD penalty
 fn get_satd_penalty(has_satd: bool) -> f64 {
     if has_satd {
         0.70
@@ -1317,7 +1316,7 @@ fn get_satd_penalty(has_satd: bool) -> f64 {
         1.0
     }
 }
-/// Get documentation penalty (complexity: 3)
+/// Get documentation penalty
 fn get_documentation_penalty(metrics: &QualityMetrics) -> f64 {
     if metrics.function_count == 0 {
         return 1.0; // No penalty if no functions

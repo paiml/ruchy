@@ -1,6 +1,7 @@
 # Ruchy Scoring Specification
 
-**Document Status**: Specification Index (split into sub-specs for maintainability)
+**Document Status**: Implemented (`ruchy score` command with `--explain`, `--format json`, `--min`, `--output`)
+**Date**: 2026-04-04 (--explain implemented, --watch/--baseline still stubbed)
 
 ---
 
