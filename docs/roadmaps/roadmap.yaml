@@ -2008,8 +2008,8 @@ roadmap:
 - id: 'Apex Hunt: PDCA Cycle 22 - reduce(init,fn) → fold transpilation'
   github_issue: null
   item_type: task
-  title: 'New task: Apex Hunt: PDCA Cycle 22 - reduce(init,fn) → fold transpilation'
-  status: inprogress
+  title: 'fix(transpiler): reduce(init,fn) emits fold() not reduce()'
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-04-04T11:32:45.457346773+00:00

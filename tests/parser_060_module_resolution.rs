@@ -475,6 +475,7 @@ fn execute_with_imports(code: &str, base: &std::path::Path) -> Result<Value, Str
             attributes: Vec::new(),
             leading_comments: Vec::new(),
             trailing_comment: None,
+            contracts: Vec::new(),
         };
         interpreter
             .eval_expr(&block_expr)

@@ -419,6 +419,10 @@ harness = false
 name = "performance_v3_13"
 harness = false
 
+[[example]]
+name = "wasm_compile"
+required-features = ["notebook"]
+
 [[bench]]
 name = "wasm_performance"
 harness = false
