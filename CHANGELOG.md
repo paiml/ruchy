@@ -16,6 +16,8 @@ rolling in the integration gate for rc.1.
 ### Added
 - **Nine-Pillar acceptance test suite**: 16 integration tests verifying keyword
   reservations, CLI dispatch, and transpile surface for all 9 pillars ([EMBED-001])
+- **migrate-4to5 e2e acceptance**: 4 tests building a synthetic 4.x project with
+  all 7 keyword conflicts and verifying dry-run + apply behaviour ([EMBED-002])
 - **aprender ML pipeline types** (beta.1): `TrainingConfig`, `InferenceConfig`,
   `PipelineStage`, `TrainingResult` (19 tests)
 - **presentar widget types** (beta.1): Widget (Column/Row/Text/Button/Input/Container),

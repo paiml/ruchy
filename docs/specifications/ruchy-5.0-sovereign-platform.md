@@ -39,6 +39,7 @@
 | Beta.2: shell transpilation types | DONE | ShellScript, ShellVar, QuoteStrategy. Injection-proof quoting. 16 tests. |
 | Version bump to 5.0.0-beta.1 | DONE | Workspace + ruchy-wasm bumped 2026-04-04 |
 | RC.1: 9-pillar acceptance gate | DONE | 16 integration tests in sovereign_nine_pillar_acceptance.rs (all passing) |
+| Criterion #12: migrate-4to5 synthetic 4.x e2e | DONE | 4 tests in sovereign_migrate_4to5_e2e.rs covering all 7 keywords (all passing) |
 
 ---
 
