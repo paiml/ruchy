@@ -71,7 +71,7 @@ impl Transpiler {
                     }
                     crate::frontend::ast::Literal::Unit => Ok(quote! { () }),
                     crate::frontend::ast::Literal::Null => Ok(quote! { None }),
-                    crate::frontend::ast::Literal::Atom(_) => Ok(quote! { todo!("Atom patterns") }),
+                    crate::frontend::ast::Literal::Atom(s) => Ok(quote! { #s }),
                 }
             }
             Pattern::Identifier(name) => {
