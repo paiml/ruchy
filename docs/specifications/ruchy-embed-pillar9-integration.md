@@ -106,7 +106,7 @@ value semantics, same error messages, same stdlib). Divergence is a bug.
 | EMBED-A2 | Sandbox default denies fs/net/env | 3 flags false | `test_sandbox_default_denies_all` |
 | EMBED-A3 | `eval` round-trips primitive values | Integer/Float/Bool/String/None | 5 unit tests |
 | EMBED-A4 | `call` dispatches to named function | `greet("world")` returns `"Hello, world!"` | `test_call_*` |
-| EMBED-A5 | `load_file` re-reads source on each call (hot reload) | 2 loads observe edit | hot-reload integration test (future) |
+| EMBED-A5 | `load_file` re-reads source on each call (hot reload) | 2 loads observe edit | `ruchy-embed/tests/hot_reload.rs` (2 tests, passing) |
 | EMBED-A6 | Zero unsafe in ruchy-embed | 0 occurrences | `pmat query --literal "unsafe {"` |
 | EMBED-A7 | 9-pillar acceptance gate | `yield` keyword reserved | `test_pillar_9_embedding_yield_keyword_reserved` |
 
@@ -118,7 +118,7 @@ value semantics, same error messages, same stdlib). Divergence is a bug.
 |--------|-------|
 | EMBED-003 | Enforce `max_execution_time` via interpreter deadline checks |
 | EMBED-004 | Enforce `allow_fs` in `load_file` with path allow-lists |
-| EMBED-005 | Hot-reload integration test (edit file, call again, observe new behaviour) |
+| ~~EMBED-005~~ | ~~Hot-reload integration test~~ (DONE: `ruchy-embed/tests/hot_reload.rs`) |
 | EMBED-006 | Release-mode benchmark for `Engine::new()` under `cargo bench` |
 | EMBED-007 | `Value` extension: Vec/Map/Tuple for richer marshaling |
 

@@ -21,6 +21,8 @@ rolling in the integration gate for rc.1.
 - **Pillar 9 sub-spec**: `docs/specifications/ruchy-embed-pillar9-integration.md`
   documents the Engine API, sandbox model, Graduate Workflow contract, and
   acceptance criteria (previously marked "to be created" in Appendix A)
+- **Hot-reload integration test** ([EMBED-005]): `ruchy-embed/tests/hot_reload.rs`
+  verifies EMBED-A5 (edit file on disk, observe new behaviour on reload)
 - **aprender ML pipeline types** (beta.1): `TrainingConfig`, `InferenceConfig`,
   `PipelineStage`, `TrainingResult` (19 tests)
 - **presentar widget types** (beta.1): Widget (Column/Row/Text/Button/Input/Container),
