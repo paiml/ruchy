@@ -50,7 +50,10 @@ pub mod presentar_bridge; // Pillar 6: WASM Widgets
 pub mod trueno_bridge; // Pillar 1: SIMD Compute
 #[cfg(feature = "visualization")]
 pub mod viz_bridge; // Pillar 5: Visualization
-                    // Pillar 3 (trueno-db) exposed via dataframe module
+// Ruchy 5.0 Sovereign Platform bridges
+pub mod forjar_bridge; // Pillar 3: Infrastructure as Code
+pub mod simular_bridge; // Pillar 7: Simulation Engine
+pub mod bashrs_bridge; // Pillar 4: Shell Transpilation
 
 // === Utility Modules ===
 pub mod env;
