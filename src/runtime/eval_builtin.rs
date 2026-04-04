@@ -206,6 +206,7 @@ fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, I
         // Test assertion built-ins for unit testing support
         "__builtin_assert_eq__" => Ok(Some(eval_assert_eq(args)?)),
         "__builtin_assert__" => Ok(Some(eval_assert(args)?)),
+        "__builtin_dir__" => Ok(Some(eval_dir(args)?)),
         // Advanced array utilities for functional programming patterns
         "__builtin_zip__" => Ok(Some(eval_zip(args)?)),
         "__builtin_enumerate__" => Ok(Some(eval_enumerate(args)?)),
@@ -286,8 +287,6 @@ fn try_eval_dataframe_function(
 /// - `println("Count: {}", 42)` → "Count: 42"
 /// - `println("Name: {}, Age: {}", "Alice", 30)` → "Name: Alice, Age: 30"
 ///
-/// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
 /// Format value for println (strings without quotes)
 /// Complexity: 2 (within Toyota Way limits)
 fn format_value_for_println(value: &Value) -> String {
@@ -353,8 +352,6 @@ fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Print values to stdout without newline
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
 fn eval_print(args: &[Value]) -> Result<Value, InterpreterError> {
     let output = args
         .iter()
@@ -376,8 +373,6 @@ fn eval_print(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Debug print with value inspection
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_dbg(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.len() == 1 {
         println!("[DEBUG] {:?}", args[0]);
@@ -390,8 +385,6 @@ fn eval_dbg(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Square root function
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_sqrt(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("sqrt", args, 1)?;
     match &args[0] {
@@ -405,8 +398,6 @@ fn eval_sqrt(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Power function (base^exponent)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits, reduced from 7)
 fn eval_pow(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("pow", args, 2)?;
     match (&args[0], &args[1]) {
@@ -428,8 +419,6 @@ fn eval_pow(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Absolute value function
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_abs(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("abs", args, 1)?;
     match &args[0] {
@@ -443,8 +432,6 @@ fn eval_abs(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Minimum of two values
 ///
-/// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits, reduced from 6)
 fn eval_min(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("min", args, 2)?;
     match (&args[0], &args[1]) {
@@ -460,8 +447,6 @@ fn eval_min(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Maximum of two values
 ///
-/// # Complexity
-/// Cyclomatic complexity: 5 (within Toyota Way limits, reduced from 6)
 fn eval_max(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("max", args, 2)?;
     match (&args[0], &args[1]) {
@@ -477,8 +462,6 @@ fn eval_max(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Floor function (round down)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_floor(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("floor", args, 1)?;
     match &args[0] {
@@ -492,8 +475,6 @@ fn eval_floor(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Ceiling function (round up)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_ceil(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("ceil", args, 1)?;
     match &args[0] {
@@ -507,8 +488,6 @@ fn eval_ceil(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Round to nearest integer
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_round(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("round", args, 1)?;
     match &args[0] {
@@ -522,8 +501,6 @@ fn eval_round(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Sine function
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_sin(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("sin", args, 1)?;
     match &args[0] {
@@ -537,8 +514,6 @@ fn eval_sin(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Cosine function
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_cos(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("cos", args, 1)?;
     match &args[0] {
@@ -552,8 +527,6 @@ fn eval_cos(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Tangent function
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits, reduced from 4)
 fn eval_tan(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("tan", args, 1)?;
     match &args[0] {
@@ -572,8 +545,6 @@ fn eval_tan(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Natural logarithm (base e)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_log(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("log", args, 1)?;
     match &args[0] {
@@ -587,8 +558,6 @@ fn eval_log(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Base-10 logarithm
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_log10(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("log10", args, 1)?;
     match &args[0] {
@@ -602,8 +571,6 @@ fn eval_log10(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Exponential function (e^x) - QA-065
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_exp(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("exp", args, 1)?;
     match &args[0] {
@@ -617,8 +584,6 @@ fn eval_exp(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Generate random float in [0.0, 1.0)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn eval_random(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("random", args, 0)?;
     // Wraps Rust rand::random (zero-cost abstraction)
@@ -629,8 +594,6 @@ fn eval_random(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Length of collections and strings
 ///
-/// # Complexity
-/// Cyclomatic complexity: 6 (within Toyota Way limits)
 fn eval_len(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("len", args, 1)?;
     match &args[0] {
@@ -652,8 +615,6 @@ fn eval_len(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Generate ranges of integers
 ///
-/// # Complexity
-/// Cyclomatic complexity: 9 (within Toyota Way limits)
 fn eval_range(args: &[Value]) -> Result<Value, InterpreterError> {
     match args.len() {
         1 => eval_range_one_arg(&args[0]),
@@ -667,8 +628,6 @@ fn eval_range(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Range with single argument: range(end) -> 0..end
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_range_one_arg(end_val: &Value) -> Result<Value, InterpreterError> {
     match end_val {
         Value::Integer(end) => {
@@ -686,8 +645,6 @@ fn eval_range_one_arg(end_val: &Value) -> Result<Value, InterpreterError> {
 
 /// Range with two arguments: range(start, end) -> start..end
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_range_two_args(start_val: &Value, end_val: &Value) -> Result<Value, InterpreterError> {
     match (start_val, end_val) {
         (Value::Integer(start), Value::Integer(end)) => {
@@ -705,8 +662,6 @@ fn eval_range_two_args(start_val: &Value, end_val: &Value) -> Result<Value, Inte
 
 /// Range with three arguments: range(start, end, step) -> start..end by step
 ///
-/// # Complexity
-/// Cyclomatic complexity: 8 (within Toyota Way limits)
 /// Generate range with positive step
 /// Complexity: 2 (within Toyota Way limits)
 fn generate_range_forward(start: i64, end: i64, step: i64) -> Vec<Value> {
@@ -760,37 +715,43 @@ fn eval_range_three_args(
 
 /// Get type name of a value
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits, reduced from 3)
 fn eval_type(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("type", args, 1)?;
     Ok(Value::from_string(args[0].type_name().to_string()))
 }
 
 /// Get type name of a value (alias for `eval_type`)
-/// RUNTIME-BUG-001: Added to support `type_of()` function
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
 fn eval_type_of(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("type_of", args, 1)?;
     Ok(Value::from_string(args[0].type_name().to_string()))
 }
 
 /// Check if value is nil
-/// RUNTIME-BUG-001: Added to support `is_nil()` function
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
 fn eval_is_nil(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("is_nil", args, 1)?;
     Ok(Value::Bool(matches!(args[0], Value::Nil)))
 }
 
+/// List available methods/properties of a value (object-inspection-consistency spec)
+fn eval_dir(args: &[Value]) -> Result<Value, InterpreterError> {
+    validate_arg_count("dir", args, 1)?;
+    let methods: Vec<&str> = match &args[0] {
+        Value::String(_) => vec!["len", "to_uppercase", "to_lowercase", "trim", "contains", "split", "replace", "starts_with", "ends_with", "chars"],
+        Value::Array(_) => vec!["len", "push", "pop", "map", "filter", "reduce", "sort", "reverse", "contains", "join"],
+        Value::Object(_) | Value::ObjectMut(_) => vec!["len", "keys", "values", "contains_key", "insert", "remove", "get"],
+        Value::Integer(_) => vec!["abs", "to_string", "to_float"],
+        Value::Float(_) => vec!["abs", "floor", "ceil", "round", "to_string", "to_int"],
+        Value::Bool(_) => vec!["to_string"],
+        Value::Nil => vec![],
+        _ => vec!["to_string", "type_name"],
+    };
+    Ok(Value::Array(methods.into_iter().map(|m| Value::from_string(m.to_string())).collect()))
+}
+
 /// Reverse arrays and strings
 ///
-/// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits, reduced from 5)
 fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("reverse", args, 1)?;
     match &args[0] {
@@ -811,8 +772,6 @@ fn eval_reverse(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Push element to array (returns new array)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
 fn eval_push(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("push", args, 2)?;
     match &args[0] {
@@ -829,8 +788,6 @@ fn eval_push(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Pop element from array (returns element, not mutated array)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
 fn eval_pop(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("pop", args, 1)?;
     match &args[0] {
@@ -850,8 +807,6 @@ fn eval_pop(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Sort array (returns new sorted array)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 4 (within Toyota Way limits)
 fn eval_sort(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("sort", args, 1)?;
     match &args[0] {
@@ -921,8 +876,6 @@ fn eval_enumerate(args: &[Value]) -> Result<Value, InterpreterError> {
 
 /// Sleep for a duration in milliseconds
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits, reduced from 3)
 fn eval_sleep(args: &[Value]) -> Result<Value, InterpreterError> {
     validate_arg_count("sleep", args, 1)?;
 
@@ -950,7 +903,6 @@ fn eval_sleep(args: &[Value]) -> Result<Value, InterpreterError> {
 /// let duration = end - start;
 /// ```
 ///
-/// # Complexity
 /// Cyclomatic complexity: 2
 fn eval_timestamp(args: &[Value]) -> Result<Value, InterpreterError> {
     if !args.is_empty() {
@@ -971,8 +923,6 @@ fn eval_timestamp(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Returns a string representation of the current UTC timestamp in RFC3339 format.
 /// This implements the `chrono::Utc::now()` functionality for Issue #82.
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
 ///
 /// # Examples
 /// ```ignore
@@ -998,8 +948,6 @@ fn eval_chrono_utc_now(args: &[Value]) -> Result<Value, InterpreterError> {
 /// Returns a builder object that accumulates columns via `.column()` calls
 /// and finalizes with `.build()` to create the `DataFrame`.
 ///
-/// # Complexity
-/// Cyclomatic complexity: 2 (within Toyota Way limits)
 fn eval_dataframe_new(args: &[Value]) -> Result<Value, InterpreterError> {
     if !args.is_empty() {
         return Err(InterpreterError::RuntimeError(

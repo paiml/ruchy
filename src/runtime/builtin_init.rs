@@ -12,8 +12,6 @@ use std::collections::HashMap;
 
 /// Initialize global environment with all builtin functions and constants
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 pub fn init_global_environment() -> HashMap<String, Value> {
     let mut global_env = HashMap::new();
 
@@ -44,16 +42,12 @@ pub fn init_global_environment() -> HashMap<String, Value> {
 
 /// Add builtin constants to the environment
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_builtin_constants(global_env: &mut HashMap<String, Value>) {
     global_env.insert("nil".to_string(), Value::Nil);
 }
 
 /// Add basic builtin functions (format, `HashMap`, `DataFrame`, `Command`)
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "format".to_string(),
@@ -105,8 +99,6 @@ fn add_basic_builtins(global_env: &mut HashMap<String, Value>) {
 
 /// Add math standard library functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_math_functions(global_env: &mut HashMap<String, Value>) {
     // STDLIB-002: Added log, log10, random
     let math_functions = [
@@ -122,8 +114,6 @@ fn add_math_functions(global_env: &mut HashMap<String, Value>) {
 
 /// Add I/O and output functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_io_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "println".to_string(),
@@ -141,8 +131,6 @@ fn add_io_functions(global_env: &mut HashMap<String, Value>) {
 
 /// Add basic utility functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_utility_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "len".to_string(),
@@ -155,6 +143,10 @@ fn add_utility_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "typeof".to_string(),
         Value::from_string("__builtin_type__".to_string()),
+    );
+    global_env.insert(
+        "dir".to_string(),
+        Value::from_string("__builtin_dir__".to_string()),
     );
     // Test assertion built-ins for unit testing support
     global_env.insert(
@@ -169,8 +161,6 @@ fn add_utility_functions(global_env: &mut HashMap<String, Value>) {
 
 /// Add type conversion functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_type_conversion_functions(global_env: &mut HashMap<String, Value>) {
     let conversion_functions = ["int", "float", "str", "bool"];
 
@@ -182,8 +172,6 @@ fn add_type_conversion_functions(global_env: &mut HashMap<String, Value>) {
 
 /// Add advanced utility functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_advanced_utility_functions(global_env: &mut HashMap<String, Value>) {
     let advanced_functions = [
         "reverse",
@@ -204,8 +192,6 @@ fn add_advanced_utility_functions(global_env: &mut HashMap<String, Value>) {
 
 /// Add string utility functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_string_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "join".to_string(),
@@ -219,8 +205,6 @@ fn add_string_functions(global_env: &mut HashMap<String, Value>) {
 
 /// Add random and time functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "random".to_string(),
@@ -251,8 +235,6 @@ fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
 
 /// Add environment functions
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_environment_functions(global_env: &mut HashMap<String, Value>) {
     global_env.insert(
         "env_args".to_string(),
@@ -536,8 +518,6 @@ fn add_http_functions(global_env: &mut HashMap<String, Value>) {
 /// Issue #90: `std::fs` module for file I/O operations
 /// Issue #92: `std::env` module for CLI argument access
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
     use std::sync::Arc;
 
@@ -709,8 +689,6 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
 /// Add chrono namespace with Utc, `DateTime`, Local types
 /// Issue #82: chrono support for date/time operations
 ///
-/// # Complexity
-/// Cyclomatic complexity: 1 (within Toyota Way limits)
 fn add_chrono_namespace(global_env: &mut HashMap<String, Value>) {
     use std::sync::Arc;
 
@@ -830,9 +808,8 @@ mod tests {
         // chrono namespace: chrono (contains chrono::Utc - Issue #82)
         // Utc direct: Utc (convenience import - Issue #82)
         // parse_json alias: parse_json (Issue #131 - v3.182.0)
-        // open() function: open (Issue #116 - v3.181.0)
-        // Total: 89 base + 3 STDLIB-002 + 2 STDLIB-003 + 6 STDLIB-004 + 6 STDLIB-005 + 2 misc + 1 std + 1 other + 1 Command + 1 Integer + 1 chrono + 1 Utc + 1 parse_json + 1 open = 116
-        assert_eq!(env.len(), 116);
+        // +1 dir() builtin (object-inspection-consistency spec)
+        assert_eq!(env.len(), 117);
     }
 
     #[test]
@@ -928,7 +905,8 @@ mod tests {
         assert!(env.contains_key("typeof"));
         assert!(env.contains_key("assert_eq"));
         assert!(env.contains_key("assert"));
-        assert_eq!(env.len(), 5);
+        assert!(env.contains_key("dir"));
+        assert_eq!(env.len(), 6);
     }
 
     #[test]
