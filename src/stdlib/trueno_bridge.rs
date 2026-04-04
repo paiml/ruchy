@@ -218,6 +218,272 @@ pub fn scale_f32(a: &[f32], scalar: f32) -> Vec<f32> {
     }
 }
 
+// ============================================================================
+// Ruchy 5.0 Alpha.2: Expanded SIMD Vector Operations
+// Per trueno-first-class-integration.md — target >60% trueno API coverage
+// ============================================================================
+
+/// Element-wise subtraction of two f32 vectors using SIMD.
+pub fn sub_f32(a: &[f32], b: &[f32]) -> Result<Vec<f32>, String> {
+    let va = Vector::from_slice(a);
+    let vb = Vector::from_slice(b);
+    va.sub(&vb)
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Sub failed: {e}"))
+}
+
+/// Element-wise division of two f32 vectors using SIMD.
+pub fn div_f32(a: &[f32], b: &[f32]) -> Result<Vec<f32>, String> {
+    let va = Vector::from_slice(a);
+    let vb = Vector::from_slice(b);
+    va.div(&vb)
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Div failed: {e}"))
+}
+
+/// Fused multiply-add: a * b + c (SIMD-accelerated, single rounding).
+pub fn fma_f32(a: &[f32], b: &[f32], c: &[f32]) -> Result<Vec<f32>, String> {
+    let va = Vector::from_slice(a);
+    let vb = Vector::from_slice(b);
+    let vc = Vector::from_slice(c);
+    va.fma(&vb, &vc)
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("FMA failed: {e}"))
+}
+
+/// SIMD-accelerated sum reduction.
+pub fn sum_f32(a: &[f32]) -> Result<f32, String> {
+    Vector::from_slice(a)
+        .sum()
+        .map_err(|e| format!("Sum failed: {e}"))
+}
+
+/// SIMD-accelerated maximum element.
+pub fn max_f32(a: &[f32]) -> Result<f32, String> {
+    Vector::from_slice(a)
+        .max()
+        .map_err(|e| format!("Max failed: {e}"))
+}
+
+/// SIMD-accelerated minimum element.
+pub fn min_f32(a: &[f32]) -> Result<f32, String> {
+    Vector::from_slice(a)
+        .min()
+        .map_err(|e| format!("Min failed: {e}"))
+}
+
+/// Index of maximum element.
+pub fn argmax_f32(a: &[f32]) -> Result<usize, String> {
+    Vector::from_slice(a)
+        .argmax()
+        .map_err(|e| format!("Argmax failed: {e}"))
+}
+
+/// Index of minimum element.
+pub fn argmin_f32(a: &[f32]) -> Result<usize, String> {
+    Vector::from_slice(a)
+        .argmin()
+        .map_err(|e| format!("Argmin failed: {e}"))
+}
+
+/// L2 (Euclidean) norm of a vector.
+pub fn norm_l2_f32(a: &[f32]) -> Result<f32, String> {
+    Vector::from_slice(a)
+        .norm_l2()
+        .map_err(|e| format!("L2 norm failed: {e}"))
+}
+
+/// L1 (Manhattan) norm of a vector.
+pub fn norm_l1_f32(a: &[f32]) -> Result<f32, String> {
+    Vector::from_slice(a)
+        .norm_l1()
+        .map_err(|e| format!("L1 norm failed: {e}"))
+}
+
+/// L-infinity (max absolute) norm of a vector.
+pub fn norm_linf_f32(a: &[f32]) -> Result<f32, String> {
+    Vector::from_slice(a)
+        .norm_linf()
+        .map_err(|e| format!("Linf norm failed: {e}"))
+}
+
+/// Element-wise absolute value.
+pub fn abs_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .abs()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Abs failed: {e}"))
+}
+
+/// Element-wise square root.
+pub fn sqrt_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .sqrt()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Sqrt failed: {e}"))
+}
+
+/// Element-wise reciprocal (1/x).
+pub fn recip_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .recip()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Recip failed: {e}"))
+}
+
+/// Element-wise power.
+pub fn pow_f32(a: &[f32], n: f32) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .pow(n)
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Pow failed: {e}"))
+}
+
+/// Clamp all elements to [min, max].
+pub fn clamp_f32(a: &[f32], min_val: f32, max_val: f32) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .clamp(min_val, max_val)
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Clamp failed: {e}"))
+}
+
+/// Element-wise negation.
+pub fn neg_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .neg()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Neg failed: {e}"))
+}
+
+/// Element-wise exponential (e^x).
+pub fn exp_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .exp()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Exp failed: {e}"))
+}
+
+/// Element-wise natural logarithm.
+pub fn ln_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .ln()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Ln failed: {e}"))
+}
+
+/// Element-wise sine.
+pub fn sin_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .sin()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Sin failed: {e}"))
+}
+
+/// Element-wise cosine.
+pub fn cos_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .cos()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Cos failed: {e}"))
+}
+
+/// Element-wise hyperbolic tangent (ML activation function).
+pub fn tanh_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .tanh()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Tanh failed: {e}"))
+}
+
+/// Softmax activation function (ML).
+pub fn softmax_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .softmax()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Softmax failed: {e}"))
+}
+
+/// ReLU activation function (ML).
+pub fn relu_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .relu()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("ReLU failed: {e}"))
+}
+
+/// Sigmoid activation function (ML).
+pub fn sigmoid_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .sigmoid()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Sigmoid failed: {e}"))
+}
+
+/// Z-score normalization.
+pub fn zscore_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .zscore()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Z-score failed: {e}"))
+}
+
+/// Min-max normalization to [0, 1].
+pub fn minmax_normalize_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .minmax_normalize()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("MinMax normalize failed: {e}"))
+}
+
+/// L2 unit normalization.
+pub fn normalize_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .normalize()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Normalize failed: {e}"))
+}
+
+/// Covariance of two vectors.
+pub fn covariance_f32(a: &[f32], b: &[f32]) -> Result<f32, String> {
+    let va = Vector::from_slice(a);
+    let vb = Vector::from_slice(b);
+    va.covariance(&vb)
+        .map_err(|e| format!("Covariance failed: {e}"))
+}
+
+/// Pearson correlation of two vectors.
+pub fn correlation_f32(a: &[f32], b: &[f32]) -> Result<f32, String> {
+    let va = Vector::from_slice(a);
+    let vb = Vector::from_slice(b);
+    va.correlation(&vb)
+        .map_err(|e| format!("Correlation failed: {e}"))
+}
+
+/// Linear interpolation between two vectors: a + (b - a) * t.
+pub fn lerp_f32(a: &[f32], b: &[f32], t: f32) -> Result<Vec<f32>, String> {
+    let va = Vector::from_slice(a);
+    let vb = Vector::from_slice(b);
+    va.lerp(&vb, t)
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Lerp failed: {e}"))
+}
+
+/// Element-wise floor rounding.
+pub fn floor_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .floor()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Floor failed: {e}"))
+}
+
+/// Element-wise ceiling rounding.
+pub fn ceil_f32(a: &[f32]) -> Result<Vec<f32>, String> {
+    Vector::from_slice(a)
+        .ceil()
+        .map(|v| v.as_slice().to_vec())
+        .map_err(|e| format!("Ceil failed: {e}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -358,6 +624,149 @@ mod tests {
         assert!((result[0] - 2.0).abs() < 1e-5);
         assert!((result[1] - 4.0).abs() < 1e-5);
         assert!((result[2] - 6.0).abs() < 1e-5);
+    }
+
+    // ========== Alpha.2: Expanded SIMD Ops Tests ==========
+
+    #[test]
+    fn test_sub_f32_basic() {
+        let a = vec![5.0_f32, 7.0, 9.0];
+        let b = vec![1.0_f32, 2.0, 3.0];
+        let result = sub_f32(&a, &b).expect("sub should succeed");
+        assert!((result[0] - 4.0).abs() < 1e-5);
+        assert!((result[1] - 5.0).abs() < 1e-5);
+        assert!((result[2] - 6.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_div_f32_basic() {
+        let a = vec![10.0_f32, 20.0, 30.0];
+        let b = vec![2.0_f32, 5.0, 6.0];
+        let result = div_f32(&a, &b).expect("div should succeed");
+        assert!((result[0] - 5.0).abs() < 1e-5);
+        assert!((result[1] - 4.0).abs() < 1e-5);
+        assert!((result[2] - 5.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_sum_f32() {
+        let a = vec![1.0_f32, 2.0, 3.0, 4.0];
+        let result = sum_f32(&a).expect("sum should succeed");
+        assert!((result - 10.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_max_min_f32() {
+        let a = vec![3.0_f32, 1.0, 4.0, 1.0, 5.0];
+        assert!((max_f32(&a).unwrap() - 5.0).abs() < 1e-5);
+        assert!((min_f32(&a).unwrap() - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_argmax_argmin_f32() {
+        let a = vec![3.0_f32, 1.0, 4.0, 1.0, 5.0];
+        assert_eq!(argmax_f32(&a).unwrap(), 4);
+        assert_eq!(argmin_f32(&a).unwrap(), 1);
+    }
+
+    #[test]
+    fn test_norm_l2_f32() {
+        let a = vec![3.0_f32, 4.0]; // sqrt(9+16) = 5
+        let result = norm_l2_f32(&a).unwrap();
+        assert!((result - 5.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_norm_l1_f32() {
+        let a = vec![-3.0_f32, 4.0]; // |−3|+|4| = 7
+        let result = norm_l1_f32(&a).unwrap();
+        assert!((result - 7.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_abs_f32() {
+        let a = vec![-1.0_f32, 2.0, -3.0];
+        let result = abs_f32(&a).unwrap();
+        assert!((result[0] - 1.0).abs() < 1e-5);
+        assert!((result[2] - 3.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_sqrt_f32() {
+        let a = vec![4.0_f32, 9.0, 16.0];
+        let result = sqrt_f32(&a).unwrap();
+        assert!((result[0] - 2.0).abs() < 1e-4);
+        assert!((result[1] - 3.0).abs() < 1e-4);
+        assert!((result[2] - 4.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_neg_f32() {
+        let a = vec![1.0_f32, -2.0, 3.0];
+        let result = neg_f32(&a).unwrap();
+        assert!((result[0] - (-1.0)).abs() < 1e-5);
+        assert!((result[1] - 2.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_clamp_f32() {
+        let a = vec![-1.0_f32, 0.5, 2.0];
+        let result = clamp_f32(&a, 0.0, 1.0).unwrap();
+        assert!((result[0] - 0.0).abs() < 1e-5);
+        assert!((result[1] - 0.5).abs() < 1e-5);
+        assert!((result[2] - 1.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_relu_f32() {
+        let a = vec![-2.0_f32, -1.0, 0.0, 1.0, 2.0];
+        let result = relu_f32(&a).unwrap();
+        assert!((result[0] - 0.0).abs() < 1e-5);
+        assert!((result[1] - 0.0).abs() < 1e-5);
+        assert!((result[3] - 1.0).abs() < 1e-5);
+        assert!((result[4] - 2.0).abs() < 1e-5);
+    }
+
+    #[test]
+    fn test_sigmoid_f32() {
+        let a = vec![0.0_f32];
+        let result = sigmoid_f32(&a).unwrap();
+        assert!((result[0] - 0.5).abs() < 1e-4); // sigmoid(0) = 0.5
+    }
+
+    #[test]
+    fn test_softmax_f32_sums_to_one() {
+        let a = vec![1.0_f32, 2.0, 3.0];
+        let result = softmax_f32(&a).unwrap();
+        let total: f32 = result.iter().sum();
+        assert!((total - 1.0).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_exp_f32() {
+        let a = vec![0.0_f32, 1.0];
+        let result = exp_f32(&a).unwrap();
+        assert!((result[0] - 1.0).abs() < 1e-4); // e^0 = 1
+        assert!((result[1] - std::f32::consts::E).abs() < 1e-3);
+    }
+
+    #[test]
+    fn test_normalize_f32() {
+        let a = vec![3.0_f32, 4.0]; // norm = 5, so [0.6, 0.8]
+        let result = normalize_f32(&a).unwrap();
+        assert!((result[0] - 0.6).abs() < 1e-4);
+        assert!((result[1] - 0.8).abs() < 1e-4);
+    }
+
+    #[test]
+    fn test_floor_ceil_f32() {
+        let a = vec![1.3_f32, 2.7, -0.5];
+        let floored = floor_f32(&a).unwrap();
+        assert!((floored[0] - 1.0).abs() < 1e-5);
+        assert!((floored[1] - 2.0).abs() < 1e-5);
+        let ceiled = ceil_f32(&a).unwrap();
+        assert!((ceiled[0] - 2.0).abs() < 1e-5);
+        assert!((ceiled[1] - 3.0).abs() < 1e-5);
     }
 
     #[test]

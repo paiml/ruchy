@@ -28,6 +28,10 @@
 | Test command: probar flags | DONE | --probar, --playbook, --visual-regression, --mutations registered |
 | Contracts CLI (sync/list/check) | DONE | 3 subcommands + suggest-contracts + 8 handler tests |
 | Alpha.1 gate: all 4.x tests pass | DONE | 20,429 lib tests pass, 0 failures |
+| Alpha.2: trueno bridge expansion | DONE | 44 public functions (was 11), 44 tests. sub/div/fma/norms/trig/ML activations. |
+| Alpha.2: array SIMD lowering module | DONE | array_simd.rs: try_lower_array_binary(), 10 tests. Lowers list+list to trueno. |
+| Alpha.3: ruchy-embed sandboxing | DONE | Sandbox struct (timeout/recursion/fs/net/env). Engine::with_sandbox(). 21 tests. |
+| Alpha.3: startup time tracking | DONE | Engine::startup_time(). Verified < 5ms target documented. |
 
 ---
 

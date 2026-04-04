@@ -1,5 +1,6 @@
 //! Expression transpilation helper modules
 
+pub mod array_simd;
 pub mod async_ops;
 pub mod binary_ops;
 pub mod collections;

@@ -20,8 +20,13 @@ subcommands, and an embedding crate.
 - **Feature gates**: `infra` (forjar), `simulation` (simular), `shell-target` (bashrs) — all optional
 - **Stdlib bridges**: `forjar_bridge` (IaC types, InfraPlan, MachineSpec), `simular_bridge` (SimConfig, SimResult, SimEvent), `bashrs_bridge` (Shell enum, ShellTarget, PurifyResult)
 - **Migration tool**: `ruchy migrate-4to5` scans and renames identifiers conflicting with new keywords
-- **ruchy-embed**: Embedding crate (v0.1.0) with Engine/Value/compile/eval API
+- **ruchy-embed**: Embedding crate (v0.1.0) with Engine/Value/compile/eval/call/load_file API
+- **ruchy-embed sandboxing**: Sandbox struct with timeout, recursion depth, fs/net/env capabilities
 - **Sovereign CLI handlers**: Stub handlers for all pillar subcommands with file validation
+- **Contracts CLI**: `ruchy contracts {sync,list,check}`, `ruchy suggest-contracts`
+- **Test flags**: `--probar`, `--playbook`, `--visual-regression`, `--mutations` on test command
+- **Trueno bridge expansion**: 44 SIMD functions (was 11) — sub/div/fma, norms, trig, ML activations, normalization
+- **Array SIMD lowering**: Transpiler module for type-directed `f32[]` arithmetic → trueno calls
 
 ### Changed
 - Version bump from 4.2.1 to 5.0.0-alpha.1
