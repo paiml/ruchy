@@ -5,6 +5,27 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0-beta.1] - 2026-04-04
+
+### Sovereign Platform: Beta Progression
+
+Beta.1 and Beta.2 milestones landed on top of the alpha baseline. This tag promotes
+the cumulative alpha.1/alpha.2/alpha.3/beta.1/beta.2 work to a single beta pre-release,
+rolling in the integration gate for rc.1.
+
+### Added
+- **Nine-Pillar acceptance test suite**: 16 integration tests verifying keyword
+  reservations, CLI dispatch, and transpile surface for all 9 pillars ([EMBED-001])
+- **aprender ML pipeline types** (beta.1): `TrainingConfig`, `InferenceConfig`,
+  `PipelineStage`, `TrainingResult` (19 tests)
+- **presentar widget types** (beta.1): Widget (Column/Row/Text/Button/Input/Container),
+  Alignment, RenderTarget (31 tests)
+- **bashrs shell transpilation types** (beta.2): `ShellScript`, `ShellVar`,
+  `QuoteStrategy` with injection-proof quoting (16 tests)
+
+### Changed
+- Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+
 ## [5.0.0-alpha.1] - 2026-04-04
 
 ### The Sovereign Platform Language

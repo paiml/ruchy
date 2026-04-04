@@ -1,7 +1,7 @@
 # Ruchy 5.0: The Sovereign Platform Language
 
 **Version:** 1.0.0
-**Status:** IN PROGRESS (alpha.1 started 2026-04-04)
+**Status:** IN PROGRESS (beta.1 released 2026-04-04; rc.1 integration gate met)
 **Date:** 2026-04-03
 
 ### Implementation Status (Ground Truth as of 2026-04-04)
@@ -37,6 +37,8 @@
 | Beta.1: aprender ML pipeline types | DONE | TrainingConfig, InferenceConfig, PipelineStage, TrainingResult. 19 tests. |
 | Beta.1: presentar widget types | DONE | Widget (Column/Row/Text/Button/Input/Container), Alignment, RenderTarget. 31 tests. |
 | Beta.2: shell transpilation types | DONE | ShellScript, ShellVar, QuoteStrategy. Injection-proof quoting. 16 tests. |
+| Version bump to 5.0.0-beta.1 | DONE | Workspace + ruchy-wasm bumped 2026-04-04 |
+| RC.1: 9-pillar acceptance gate | DONE | 16 integration tests in sovereign_nine_pillar_acceptance.rs (all passing) |
 
 ---
 

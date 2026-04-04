@@ -6932,7 +6932,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy"
-version = "5.0.0-alpha.1"
+version = "5.0.0-beta.1"
 dependencies = [
  "alimentar",
  "anyhow",
@@ -7028,7 +7028,7 @@ dependencies = [
 
 [[package]]
 name = "ruchy-wasm"
-version = "5.0.0-alpha.1"
+version = "5.0.0-beta.1"
 dependencies = [
  "console_error_panic_hook",
  "js-sys",
