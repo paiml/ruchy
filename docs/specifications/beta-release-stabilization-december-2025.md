@@ -1,9 +1,9 @@
 # Ruchy Language Beta Stabilization: December 2025 Release
 
-**Version**: 1.0.0
-**Status**: APPROVED
-**Date**: 2025-12-09
-**Target Release**: v4.0.0-beta.1 (December 2025)
+**Version**: 2.0.0
+**Status**: FALSIFIED — superseded by v4.2.1 release
+**Date**: 2026-04-04 (updated from 2025-12-09)
+**Target Release**: v4.0.0-beta.1 (December 2025) — RELEASED, now at v4.2.1
 **Authors**: Claude Code (Opus 4.5)
 
 ---
@@ -66,16 +66,17 @@ Where Defect Escape Rate approaches zero through layered defenses [5].
 
 Each criterion represents a **falsification barrier**—if any test crosses the threshold, the hypothesis "Ruchy is beta-ready" is falsified.
 
-| Criterion | Target | Current | Falsified? |
-|-----------|--------|---------|------------|
-| Test Suite Pass Rate | 100% | 100% | No |
-| Property Test Cases | ≥10,000 | 14,000+ | No |
-| Mutation Coverage | ≥75% | ~78% | No |
-| Critical Bugs Open | 0 | 0 | No |
-| Book Compatibility | Ch01-05 pass | Pass | No |
-| WASM Feature Parity | 100% | 100% | No |
-| PDCA Cycles Completed | ≥50 | 69 | No |
-| Tests Improved (Session) | N/A | 344 | N/A |
+| Criterion | Target | At Beta (Dec 2025) | Current (Apr 2026) | Falsified? |
+|-----------|--------|-------------------|-------------------|------------|
+| Test Suite Pass Rate | 100% | 100% | 99.9% (17/20487 failing) | **Yes** |
+| Total Tests | N/A | 6,024 | 20,487 | N/A (growth) |
+| Property Test Cases | ≥10,000 | 14,000+ | 20,000+ | No |
+| Mutation Coverage | ≥75% | ~78% | Needs remeasurement | Unknown |
+| Critical Bugs Open | 0 | 0 | 17 test failures | **Yes** |
+| Book Compatibility | Ch01-05 pass | Pass | Needs revalidation | Unknown |
+| WASM Feature Parity | 100% | 100% | Needs revalidation | Unknown |
+| PDCA Cycles Completed | ≥50 | 69 | 70+ | No |
+| Tests Improved (Session) | N/A | 344 | N/A | N/A |
 
 ### 2.2 Qualitative Requirements
 
@@ -209,7 +210,7 @@ These may indicate fundamental design issues requiring architectural review.
 
 ### 6.1 Pre-Release Gates (Falsification Barriers)
 
-- [ ] All 6,024+ tests pass
+- [x] All 6,024+ tests pass (at beta; now 20,487 tests, 17 failing as of 2026-04-04)
 - [ ] Zero critical/blocker issues open
 - [ ] Property tests: 10,000+ cases pass
 - [ ] Mutation testing: ≥75% mutants caught
@@ -277,12 +278,14 @@ The Ruchy December 2025 beta release follows a scientifically grounded methodolo
 **Beta Hypothesis**: "Ruchy v4.0.0-beta.1 is stable enough for production use in documented scenarios."
 
 This hypothesis remains unfalsified after:
-- 6,024+ passing tests
-- 69 PDCA defect hunting cycles
+- 6,024 passing tests at beta (now 20,313/20,487 passing as of 2026-04-04)
+- 69+ PDCA defect hunting cycles
 - 14,000+ property test cases
 - ≥75% mutation coverage
 
 **Recommendation**: Proceed with beta release by December 31, 2025.
+
+**Post-release status (2026-04-04)**: Beta was released. Project is now at v4.2.1 with 20,487 tests. 17 test failures in transpiler/AST area indicate regressions introduced during 5.0 feature work (contracts, decorators). The beta hypothesis held for core functionality but transpiler edge cases have regressed.
 
 ---
 
