@@ -179,6 +179,148 @@ pub fn compute_accuracy(y_true: &[usize], y_pred: &[usize]) -> f64 {
     correct as f64 / y_true.len() as f64
 }
 
+// ============================================================================
+// Ruchy 5.0 Beta.1: ML Pipeline Types
+// Per ruchy-5.0-sovereign-platform.md: aprender 0.27.5 integration
+// ============================================================================
+
+/// ML model training configuration for `ruchy apr run`.
+#[derive(Debug, Clone)]
+pub struct TrainingConfig {
+    /// Learning rate
+    pub learning_rate: f64,
+    /// Number of training epochs
+    pub epochs: usize,
+    /// Batch size
+    pub batch_size: usize,
+    /// Early stopping patience (None = no early stopping)
+    pub patience: Option<usize>,
+    /// Random seed for reproducibility
+    pub seed: Option<u64>,
+}
+
+impl Default for TrainingConfig {
+    fn default() -> Self {
+        Self {
+            learning_rate: 0.001,
+            epochs: 100,
+            batch_size: 32,
+            patience: Some(10),
+            seed: None,
+        }
+    }
+}
+
+impl TrainingConfig {
+    /// Set learning rate.
+    pub fn with_lr(mut self, lr: f64) -> Self {
+        self.learning_rate = lr;
+        self
+    }
+
+    /// Set number of epochs.
+    pub fn with_epochs(mut self, epochs: usize) -> Self {
+        self.epochs = epochs;
+        self
+    }
+
+    /// Set batch size.
+    pub fn with_batch_size(mut self, batch_size: usize) -> Self {
+        self.batch_size = batch_size;
+        self
+    }
+}
+
+/// ML model inference configuration for `ruchy apr serve`.
+#[derive(Debug, Clone)]
+pub struct InferenceConfig {
+    /// Model file path
+    pub model_path: String,
+    /// Quantization level (None = full precision)
+    pub quantization: Option<QuantLevel>,
+    /// Maximum batch size for inference
+    pub max_batch_size: usize,
+    /// HTTP port for serving (default: 8000)
+    pub port: u16,
+}
+
+/// Quantization levels for model deployment.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuantLevel {
+    /// 16-bit floating point (half precision)
+    F16,
+    /// 8-bit integer quantization
+    Int8,
+    /// 4-bit integer quantization
+    Int4,
+}
+
+impl Default for InferenceConfig {
+    fn default() -> Self {
+        Self {
+            model_path: String::new(),
+            quantization: None,
+            max_batch_size: 64,
+            port: 8000,
+        }
+    }
+}
+
+/// ML pipeline stage definition for `@pipeline` decorator.
+#[derive(Debug, Clone, PartialEq)]
+pub enum PipelineStage {
+    /// Load and preprocess data
+    DataLoad { source: String },
+    /// Transform features
+    Transform { method: String },
+    /// Train model
+    Train { config: String },
+    /// Evaluate model
+    Evaluate { metrics: Vec<String> },
+    /// Deploy model
+    Deploy { target: String },
+}
+
+/// Result of a training run.
+#[derive(Debug, Clone)]
+pub struct TrainingResult {
+    /// Final training loss
+    pub final_loss: f64,
+    /// Final validation loss (if validation set provided)
+    pub val_loss: Option<f64>,
+    /// Number of epochs actually run (may be less than config.epochs if early stopped)
+    pub epochs_run: usize,
+    /// Best epoch (by validation loss)
+    pub best_epoch: usize,
+    /// Metrics at best epoch
+    pub metrics: Vec<(String, f64)>,
+}
+
+impl TrainingResult {
+    /// Create a result for a completed training run.
+    pub fn completed(final_loss: f64, epochs_run: usize) -> Self {
+        Self {
+            final_loss,
+            val_loss: None,
+            epochs_run,
+            best_epoch: epochs_run,
+            metrics: Vec::new(),
+        }
+    }
+
+    /// Format as a human-readable summary.
+    pub fn summary(&self) -> String {
+        let val = self
+            .val_loss
+            .map(|v| format!(", val_loss={v:.6}"))
+            .unwrap_or_default();
+        format!(
+            "Training: {} epochs, loss={:.6}{}, best_epoch={}",
+            self.epochs_run, self.final_loss, val, self.best_epoch
+        )
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -300,6 +442,71 @@ mod tests {
 
         // Verify key sizes
         assert_eq!(verifying_key.as_bytes().len(), PUBLIC_KEY_SIZE);
+    }
+
+    // ========== Beta.1: ML Pipeline Types Tests ==========
+
+    #[test]
+    fn test_training_config_default() {
+        let config = TrainingConfig::default();
+        assert!((config.learning_rate - 0.001).abs() < 1e-10);
+        assert_eq!(config.epochs, 100);
+        assert_eq!(config.batch_size, 32);
+        assert_eq!(config.patience, Some(10));
+    }
+
+    #[test]
+    fn test_training_config_builder() {
+        let config = TrainingConfig::default()
+            .with_lr(0.01)
+            .with_epochs(50)
+            .with_batch_size(64);
+        assert!((config.learning_rate - 0.01).abs() < 1e-10);
+        assert_eq!(config.epochs, 50);
+        assert_eq!(config.batch_size, 64);
+    }
+
+    #[test]
+    fn test_inference_config_default() {
+        let config = InferenceConfig::default();
+        assert!(config.model_path.is_empty());
+        assert!(config.quantization.is_none());
+        assert_eq!(config.max_batch_size, 64);
+        assert_eq!(config.port, 8000);
+    }
+
+    #[test]
+    fn test_quant_levels() {
+        assert_ne!(QuantLevel::F16, QuantLevel::Int8);
+        assert_ne!(QuantLevel::Int8, QuantLevel::Int4);
+    }
+
+    #[test]
+    fn test_training_result_completed() {
+        let result = TrainingResult::completed(0.05, 42);
+        assert!((result.final_loss - 0.05).abs() < 1e-10);
+        assert_eq!(result.epochs_run, 42);
+        assert_eq!(result.best_epoch, 42);
+        assert!(result.val_loss.is_none());
+    }
+
+    #[test]
+    fn test_training_result_summary() {
+        let result = TrainingResult::completed(0.123456, 10);
+        let summary = result.summary();
+        assert!(summary.contains("10 epochs"));
+        assert!(summary.contains("0.123456"));
+    }
+
+    #[test]
+    fn test_pipeline_stages() {
+        let load = PipelineStage::DataLoad {
+            source: "data.csv".to_string(),
+        };
+        let train = PipelineStage::Train {
+            config: "default".to_string(),
+        };
+        assert_ne!(load, train);
     }
 }
 

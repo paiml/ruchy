@@ -208,6 +208,104 @@ impl PurifyResult {
     }
 }
 
+// ============================================================================
+// Ruchy 5.0 Beta.2: Shell Transpilation Target
+// Per ruchy-5.0-sovereign-platform.md: --target shell compilation
+// ============================================================================
+
+/// A generated shell script from Ruchy source.
+#[derive(Debug, Clone)]
+pub struct ShellScript {
+    /// The target shell
+    pub target: ShellTarget,
+    /// Generated script content
+    pub content: String,
+    /// Source file name (for comments/tracing)
+    pub source: String,
+}
+
+impl ShellScript {
+    /// Create a new shell script with the given target and content.
+    pub fn new(target: ShellTarget, content: &str, source: &str) -> Self {
+        Self {
+            target,
+            content: content.to_string(),
+            source: source.to_string(),
+        }
+    }
+
+    /// Generate the full script with preamble.
+    pub fn to_script(&self) -> String {
+        let preamble = self.target.preamble();
+        format!(
+            "{preamble}\n# Generated from {source} by ruchy --target shell\n\n{content}",
+            source = self.source,
+            content = self.content,
+        )
+    }
+
+    /// Get the number of lines in the generated script.
+    pub fn line_count(&self) -> usize {
+        self.content.lines().count()
+    }
+}
+
+/// Variable quoting strategy for injection prevention.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum QuoteStrategy {
+    /// Double-quote all variable expansions (safe default)
+    Double,
+    /// Single-quote (literal, no expansion)
+    Single,
+    /// No quoting (only for known-safe values)
+    None,
+}
+
+/// A shell variable declaration.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShellVar {
+    /// Variable name
+    pub name: String,
+    /// Value expression
+    pub value: String,
+    /// Quoting strategy
+    pub quoting: QuoteStrategy,
+    /// Whether this is exported to child processes
+    pub export: bool,
+}
+
+impl ShellVar {
+    /// Create a new quoted variable.
+    pub fn new(name: &str, value: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            value: value.to_string(),
+            quoting: QuoteStrategy::Double,
+            export: false,
+        }
+    }
+
+    /// Set as exported.
+    pub fn exported(mut self) -> Self {
+        self.export = true;
+        self
+    }
+
+    /// Format as a shell declaration.
+    pub fn to_shell(&self) -> String {
+        let val = match self.quoting {
+            QuoteStrategy::Double => format!("\"{}\"", self.value),
+            QuoteStrategy::Single => format!("'{}'", self.value),
+            QuoteStrategy::None => self.value.clone(),
+        };
+        if self.export {
+            format!("export {}={val}", self.name)
+        } else {
+            format!("{}={val}", self.name)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -321,5 +419,62 @@ mod tests {
         assert_eq!(format!("{}", Shell::Bash), "bash");
         assert_eq!(format!("{}", Shell::Zsh), "zsh");
         assert_eq!(format!("{}", Shell::Fish), "fish");
+    }
+
+    // ========== Beta.2: Shell Transpilation Tests ==========
+
+    #[test]
+    fn test_shell_script_new() {
+        let script = ShellScript::new(
+            ShellTarget::default(),
+            "echo hello",
+            "test.ruchy",
+        );
+        assert_eq!(script.source, "test.ruchy");
+        assert_eq!(script.line_count(), 1);
+    }
+
+    #[test]
+    fn test_shell_script_to_script() {
+        let script = ShellScript::new(
+            ShellTarget::default(),
+            "echo hello\necho world",
+            "test.ruchy",
+        );
+        let output = script.to_script();
+        assert!(output.contains("#!/usr/bin/env bash"));
+        assert!(output.contains("set -euo pipefail"));
+        assert!(output.contains("Generated from test.ruchy"));
+        assert!(output.contains("echo hello"));
+    }
+
+    #[test]
+    fn test_shell_var_new() {
+        let var = ShellVar::new("NAME", "world");
+        assert_eq!(var.to_shell(), "NAME=\"world\"");
+    }
+
+    #[test]
+    fn test_shell_var_exported() {
+        let var = ShellVar::new("PATH", "/usr/bin").exported();
+        assert!(var.export);
+        assert_eq!(var.to_shell(), "export PATH=\"/usr/bin\"");
+    }
+
+    #[test]
+    fn test_shell_var_single_quote() {
+        let var = ShellVar {
+            name: "PATTERN".to_string(),
+            value: "*.txt".to_string(),
+            quoting: QuoteStrategy::Single,
+            export: false,
+        };
+        assert_eq!(var.to_shell(), "PATTERN='*.txt'");
+    }
+
+    #[test]
+    fn test_quote_strategy_variants() {
+        assert_ne!(QuoteStrategy::Double, QuoteStrategy::Single);
+        assert_ne!(QuoteStrategy::Single, QuoteStrategy::None);
     }
 }

@@ -104,6 +104,121 @@ pub fn parse_hex_color(hex: &str) -> Result<Color, String> {
     Ok(Color::rgba(r, g, b, a))
 }
 
+// ============================================================================
+// Ruchy 5.0 Beta.1: Widget Types
+// Per ruchy-5.0-sovereign-platform.md: presentar 0.3.4 widget integration
+// Column/Row/Button/Text transpile from Ruchy syntax to presentar builders
+// ============================================================================
+
+/// Widget alignment within a layout container.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Alignment {
+    Start,
+    Center,
+    End,
+    Stretch,
+}
+
+/// A widget in the widget tree.
+#[derive(Debug, Clone, PartialEq)]
+pub enum Widget {
+    /// Vertical layout container.
+    Column {
+        children: Vec<Widget>,
+        alignment: Alignment,
+        spacing: f32,
+    },
+    /// Horizontal layout container.
+    Row {
+        children: Vec<Widget>,
+        alignment: Alignment,
+        spacing: f32,
+    },
+    /// Text display widget.
+    Text {
+        content: String,
+        font_size: f32,
+        color: Color,
+    },
+    /// Clickable button widget.
+    Button {
+        label: String,
+        on_click: String,
+        color: Color,
+    },
+    /// Text input field.
+    Input {
+        placeholder: String,
+        value: String,
+    },
+    /// Container with padding and optional background.
+    Container {
+        child: Box<Widget>,
+        padding: f32,
+        background: Option<Color>,
+    },
+}
+
+impl Widget {
+    /// Create a text widget.
+    pub fn text(content: &str) -> Self {
+        Self::Text {
+            content: content.to_string(),
+            font_size: 16.0,
+            color: Color::BLACK,
+        }
+    }
+
+    /// Create a button widget.
+    pub fn button(label: &str) -> Self {
+        Self::Button {
+            label: label.to_string(),
+            on_click: String::new(),
+            color: Color::rgb(66, 133, 244),
+        }
+    }
+
+    /// Create a column layout.
+    pub fn column(children: Vec<Widget>) -> Self {
+        Self::Column {
+            children,
+            alignment: Alignment::Start,
+            spacing: 8.0,
+        }
+    }
+
+    /// Create a row layout.
+    pub fn row(children: Vec<Widget>) -> Self {
+        Self::Row {
+            children,
+            alignment: Alignment::Start,
+            spacing: 8.0,
+        }
+    }
+
+    /// Count total widgets in the tree.
+    pub fn widget_count(&self) -> usize {
+        match self {
+            Widget::Column { children, .. } | Widget::Row { children, .. } => {
+                1 + children.iter().map(|c| c.widget_count()).sum::<usize>()
+            }
+            Widget::Container { child, .. } => 1 + child.widget_count(),
+            _ => 1,
+        }
+    }
+}
+
+/// Widget render target for `ruchy widget build`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RenderTarget {
+    /// WASM for browser rendering
+    Wasm,
+    /// Native desktop
+    Native,
+    /// Server-side HTML
+    Ssr,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,6 +282,78 @@ mod tests {
         assert_eq!(Color::RED.r, 255);
         assert_eq!(Color::RED.g, 0);
         assert_eq!(Color::TRANSPARENT.a, 0);
+    }
+
+    // ========== Beta.1: Widget Types Tests ==========
+
+    #[test]
+    fn test_widget_text() {
+        let w = Widget::text("Hello");
+        if let Widget::Text { content, font_size, .. } = &w {
+            assert_eq!(content, "Hello");
+            assert!((font_size - 16.0).abs() < 1e-5);
+        } else {
+            panic!("Expected Text widget");
+        }
+    }
+
+    #[test]
+    fn test_widget_button() {
+        let w = Widget::button("Click me");
+        if let Widget::Button { label, .. } = &w {
+            assert_eq!(label, "Click me");
+        } else {
+            panic!("Expected Button widget");
+        }
+    }
+
+    #[test]
+    fn test_widget_column() {
+        let col = Widget::column(vec![
+            Widget::text("A"),
+            Widget::text("B"),
+        ]);
+        if let Widget::Column { children, spacing, .. } = &col {
+            assert_eq!(children.len(), 2);
+            assert!((spacing - 8.0).abs() < 1e-5);
+        } else {
+            panic!("Expected Column widget");
+        }
+    }
+
+    #[test]
+    fn test_widget_row() {
+        let row = Widget::row(vec![Widget::button("OK"), Widget::button("Cancel")]);
+        if let Widget::Row { children, .. } = &row {
+            assert_eq!(children.len(), 2);
+        } else {
+            panic!("Expected Row widget");
+        }
+    }
+
+    #[test]
+    fn test_widget_count() {
+        let tree = Widget::column(vec![
+            Widget::text("Title"),
+            Widget::row(vec![
+                Widget::button("A"),
+                Widget::button("B"),
+            ]),
+        ]);
+        assert_eq!(tree.widget_count(), 5); // column + text + row + 2 buttons
+    }
+
+    #[test]
+    fn test_alignment_variants() {
+        assert_ne!(Alignment::Start, Alignment::Center);
+        assert_ne!(Alignment::Center, Alignment::End);
+        assert_ne!(Alignment::End, Alignment::Stretch);
+    }
+
+    #[test]
+    fn test_render_target_variants() {
+        assert_ne!(RenderTarget::Wasm, RenderTarget::Native);
+        assert_ne!(RenderTarget::Native, RenderTarget::Ssr);
     }
 }
 

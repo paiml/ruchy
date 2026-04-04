@@ -34,6 +34,9 @@
 | Alpha.3: startup time tracking | DONE | Engine::startup_time(). Verified < 5ms target documented. |
 | Alpha.3: yield/signal/infra in interpreter | DONE | Yield→Return(val), Signal→eval initial, InfraBlock→eval body. 20,456 tests pass. |
 | 5.0 Examples (5 files) | DONE | 30_contracts, 31_sovereign_platform, 32_migration_demo, 33_simd_arrays, 34_embedding |
+| Beta.1: aprender ML pipeline types | DONE | TrainingConfig, InferenceConfig, PipelineStage, TrainingResult. 19 tests. |
+| Beta.1: presentar widget types | DONE | Widget (Column/Row/Text/Button/Input/Container), Alignment, RenderTarget. 31 tests. |
+| Beta.2: shell transpilation types | DONE | ShellScript, ShellVar, QuoteStrategy. Injection-proof quoting. 16 tests. |
 
 ---
 
