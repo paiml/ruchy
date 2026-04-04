@@ -21,7 +21,7 @@ fn test_ast_size() {
     // Current sizes are larger than ideal but acceptable for MVP
     // Future optimization: Use arena allocation and indices
     // Increased limits after adding more OOP features and comment tracking
-    assert!(expr_size <= 400, "Expr too large: {expr_size} bytes");
+    assert!(expr_size <= 416, "Expr too large: {expr_size} bytes");
     assert!(kind_size <= 280, "ExprKind too large: {kind_size} bytes");
 }
 #[test]

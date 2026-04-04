@@ -321,12 +321,11 @@ impl Transpiler {
             #base
         })
     }
-    /// Transpiles lambda expressions
-    /// # Examples
-    /// Transpile lambda/closure expressions
-    /// EXTREME TDD Round 79: Delegates to lambda_transpiler module
+    /// Transpiles lambda/closure expressions
     pub fn transpile_lambda(&self, params: &[Param], body: &Expr) -> Result<TokenStream> {
-        contract_pre_configuration!(params);
+        if !params.is_empty() {
+            contract_pre_configuration!(params);
+        }
         self.transpile_lambda_impl(params, body)
     }
     /// Transpiles function calls
@@ -365,15 +364,16 @@ impl Transpiler {
     // (transpile_iterator_methods, transpile_map_set_methods, transpile_set_operations,
     //  transpile_string_methods, transpile_advanced_collection_methods)
 
-    /// Transpiles blocks
-    /// EXTREME TDD Round 79: Delegates to block_transpiler module
+    /// Transpiles blocks (returns `()` for empty blocks)
     pub fn transpile_block(&self, exprs: &[Expr]) -> Result<TokenStream> {
+        if exprs.is_empty() {
+            return Ok(quote::quote! { () });
+        }
         contract_pre_q4k_superblock!(exprs);
         self.transpile_block_impl(exprs)
     }
 
     /// Transpiles pipeline expressions
-    /// EXTREME TDD Round 79: Delegates to block_transpiler module
     pub fn transpile_pipeline(&self, expr: &Expr, stages: &[PipelineStage]) -> Result<TokenStream> {
         contract_pre_embedding_extraction!();
         self.transpile_pipeline_impl(expr, stages)
