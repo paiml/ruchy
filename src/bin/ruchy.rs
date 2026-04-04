@@ -195,6 +195,19 @@ enum Commands {
         /// Output format for test results (text, json, junit)
         #[arg(long, default_value = "text")]
         format: String,
+        // Ruchy 5.0: Probar testing integration (Pillar 8)
+        /// Run probar test suite
+        #[arg(long)]
+        probar: bool,
+        /// Run test playbook
+        #[arg(long)]
+        playbook: Option<String>,
+        /// Visual regression testing
+        #[arg(long)]
+        visual_regression: bool,
+        /// Mutation testing
+        #[arg(long)]
+        mutations: bool,
     },
     /// Launch interactive notebook server
     Notebook {
@@ -1324,6 +1337,10 @@ fn handle_command_dispatch(
             parallel,
             threshold,
             format,
+            probar: _,
+            playbook: _,
+            visual_regression: _,
+            mutations: _,
         }) => handle_test_dispatch(
             path,
             watch,
