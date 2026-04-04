@@ -85,7 +85,7 @@ Each pillar has a dedicated sub-spec in `docs/specifications/`. This table is th
 | 6 | Visualization | Reactive widgets/UI | `presentar-widget-integration.md` | `Column`/`Button`/`signal()` | presentar | 0.3.4 |
 | 7 | Simulation | Discrete-event sim | `simular-simulation-integration.md` | `import sim` | simular | 0.3.1 |
 | 8 | Testing | Property/mutation/fuzz | `probar-testing-integration.md` | `#[probar_test]` | jugar-probar | 1.0.4 |
-| 9 | Embedding | Scripting engine API | (new -- see Section 7) | `Engine::new()` | ruchy-embed | 0.1.0 |
+| 9 | Embedding | Scripting engine API | `ruchy-embed-pillar9-integration.md` | `Engine::new()` | ruchy-embed | 0.1.0 |
 
 **Design invariant:** Every pillar is optional via Cargo feature gates except Pillar 1
 (Correctness) and Pillar 2 (Compute), which are always-on because safety and performance
@@ -429,4 +429,4 @@ document takes precedence.
 | 6 - Visualization | `docs/specifications/presentar-widget-integration.md` | PRESENTAR-XXX |
 | 7 - Simulation | `docs/specifications/simular-simulation-integration.md` | SIMULAR-XXX |
 | 8 - Testing | `docs/specifications/probar-testing-integration.md` | PROBAR-XXX |
-| 9 - Embedding | (to be created) | EMBED-XXX |
+| 9 - Embedding | `docs/specifications/ruchy-embed-pillar9-integration.md` | EMBED-XXX |
