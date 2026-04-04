@@ -1,9 +1,9 @@
 # PARSER-082: Atoms (`:symbol`) Specification
 
-**Status**: Proposed  
+**Status**: Implemented (parser, transpiler expressions + pattern matching, runtime Value::Atom)  
 **Type**: Language Feature  
-**Domain**: Parser / Lexer  
-**Driver**: Data Science & Systems Engineering  
+**Domain**: Parser / Lexer / Transpiler  
+**Date**: 2026-04-04 (status updated — pattern matching added)  
 
 ## 1. Executive Summary
 
