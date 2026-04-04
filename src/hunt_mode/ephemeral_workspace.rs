@@ -736,7 +736,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "type checking semantics changed - needs investigation"]
     fn test_ephemeral_workspace_check_invalid_code() {
         let code = "pub fn add(a: i32, b: i32) -> String { a + b }"; // Type mismatch
         let workspace = EphemeralWorkspace::new("test", code).unwrap();

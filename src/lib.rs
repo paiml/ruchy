@@ -763,7 +763,6 @@ mod tests {
         assert!(compile("result.unwrap_or(default)").is_ok());
     }
     #[test]
-    #[ignore = "Class/struct syntax not yet implemented"]
     fn test_classes_structs() {
         assert!(compile("struct Point { x: int, y: int }").is_ok());
         assert!(compile("class Calculator { fn add(x, y) { x + y } }").is_ok());
