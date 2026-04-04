@@ -18,10 +18,6 @@ use crate::frontend::ast::{Expr, ExprKind, Type, TypeKind};
 use anyhow::Result;
 
 impl Transpiler {
-    // ========================================================================
-    // Mutability Analysis
-    // ========================================================================
-
     /// Analyzes expressions to determine which variables need mutable bindings.
     ///
     /// This performs a static analysis pass over the AST to identify variables
@@ -159,10 +155,6 @@ impl Transpiler {
         }
     }
 
-    // ========================================================================
-    // Const Declaration Collection
-    // ========================================================================
-
     /// SPEC-001-B: Collects const declarations BEFORE optimization (preserves attributes)
     ///
     /// # Purpose
@@ -200,10 +192,6 @@ impl Transpiler {
         }
     }
 
-    // ========================================================================
-    // Function Signature Collection
-    // ========================================================================
-
     /// Collects function signatures from the AST for type coercion.
     ///
     /// Scans the AST for function definitions and records their signatures
@@ -230,16 +218,32 @@ impl Transpiler {
     /// Helper to recursively collect function signatures from an expression
     pub fn collect_signatures_from_expr(&mut self, expr: &Expr) {
         match &expr.kind {
-            ExprKind::Function { name, params, .. } => {
+            ExprKind::Function {
+                name, params, body, ..
+            } => {
                 let param_types: Vec<String> = params
                     .iter()
                     .map(|param| Self::type_to_string(&param.ty))
                     .collect();
+                let has_defaults = params.iter().any(|p| p.default_value.is_some());
+                let default_values = if has_defaults {
+                    Some(
+                        params
+                            .iter()
+                            .map(|p| p.default_value.clone())
+                            .collect::<Vec<_>>(),
+                    )
+                } else {
+                    None
+                };
                 let signature = FunctionSignature {
                     name: name.clone(),
                     param_types,
+                    default_values,
                 };
                 self.function_signatures.insert(name.clone(), signature);
+                // Recurse into function body for nested function signatures
+                self.collect_signatures_from_expr(body);
             }
             ExprKind::Block(exprs) => {
                 for e in exprs {
@@ -279,10 +283,6 @@ impl Transpiler {
         }
     }
 
-    // ========================================================================
-    // Module Name Collection
-    // ========================================================================
-
     /// Collects module names from the AST (Issue #103).
     ///
     /// Scans the AST for module declarations and records their names
@@ -320,10 +320,6 @@ impl Transpiler {
             _ => {}
         }
     }
-
-    // ========================================================================
-    // Import Resolution
-    // ========================================================================
 
     /// Resolves file imports in the AST using `ModuleResolver`
     pub fn resolve_imports(&self, expr: &Expr) -> Result<Expr> {
@@ -409,10 +405,6 @@ impl Transpiler {
                 | "env_logger"
         )
     }
-
-    // ========================================================================
-    // AST Content Detection
-    // ========================================================================
 
     /// Check if AST contains `HashMap` operations requiring `std::collections::HashMap` import
     pub fn contains_hashmap(expr: &Expr) -> bool {
@@ -546,10 +538,6 @@ impl Transpiler {
         }
     }
 
-    // ========================================================================
-    // Call-Site Argument Type Collection (BOOK-COMPAT-017)
-    // ========================================================================
-
     /// BOOK-COMPAT-017: Collect call-site argument types for parameter inference
     ///
     /// When functions have untyped parameters, we can infer their types from
@@ -655,10 +643,6 @@ impl Transpiler {
     }
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -693,10 +677,6 @@ mod tests {
             value: Box::new(value),
         })
     }
-
-    // ========================================================================
-    // Mutability Analysis Tests
-    // ========================================================================
 
     #[test]
     fn test_analyze_mutability_empty() {
@@ -772,10 +752,6 @@ mod tests {
         assert!(transpiler.mutable_vars.contains("arg"));
     }
 
-    // ========================================================================
-    // Collection Tests
-    // ========================================================================
-
     #[test]
     fn test_collect_const_declarations_empty() {
         let mut transpiler = Transpiler::new();
@@ -839,10 +815,6 @@ mod tests {
         assert_eq!(Transpiler::type_to_string(&ty), "&str");
     }
 
-    // ========================================================================
-    // Import Detection Tests
-    // ========================================================================
-
     #[test]
     fn test_contains_imports_false() {
         let expr = int_expr(42);
@@ -897,10 +869,6 @@ mod tests {
         assert!(!Transpiler::is_standard_library("my_module"));
         assert!(!Transpiler::is_standard_library("helper"));
     }
-
-    // ========================================================================
-    // AST Content Detection Tests
-    // ========================================================================
 
     #[test]
     fn test_contains_hashmap_false() {

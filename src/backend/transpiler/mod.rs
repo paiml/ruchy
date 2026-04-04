@@ -37,11 +37,6 @@
 #![allow(clippy::missing_errors_doc)]
 #![allow(clippy::too_many_lines)]
 mod actors;
-pub mod codegen_minimal;
-pub mod constant_folder; // PERF-002-A: Constant folding optimization
-mod dataframe;
-mod effects;
-pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
 mod advanced_math; // EXTREME TDD Round 59: trig/log/random/trueno functions
 mod ast_analysis; // EXTREME TDD Round 66: AST analysis, collection, detection functions
 mod bindings; // EXTREME TDD Round 54: let bindings and patterns
@@ -51,12 +46,17 @@ mod body_generation; // EXTREME TDD Round 70: Function body token generation
 pub mod builtin_type_inference;
 mod call_helpers; // EXTREME TDD Round 63: result/option call and function call helpers
 mod call_transpilation; // EXTREME TDD Round 72: Call and method call transpilation
+pub mod codegen_minimal;
 mod comprehensions; // EXTREME TDD Round 53: List/set/dict comprehensions
+pub mod constant_folder; // PERF-002-A: Constant folding optimization
 mod control_flow; // EXTREME TDD Round 53: if/for/while/loop/try-catch
+mod dataframe;
 mod dataframe_builder;
 mod dataframe_helpers;
 mod dataframe_transpilers; // EXTREME TDD Round 80: DataFrame transpilation
+mod default_params; // PDCA-21: Default parameter transpilation
 mod dispatcher;
+mod effects;
 mod expr_dispatcher; // EXTREME TDD Round 69: Expression dispatcher and utilities
 pub mod expression_analysis;
 mod expressions;
@@ -66,6 +66,7 @@ mod function_signature; // EXTREME TDD Round 70: Function signature generation
 mod function_transpiler; // EXTREME TDD Round 81: Function transpilation
 pub mod import_helpers;
 mod imports; // EXTREME TDD Round 55: imports and exports
+pub mod inline_expander; // OPT-CODEGEN-004: Inline expansion optimization
 mod input_builtins; // EXTREME TDD Round 57: input/readline functions
 #[cfg(test)]
 mod integration_tests; // Transpiler integration tests for coverage improvement
@@ -123,20 +124,14 @@ type BlockCategorization<'a> = (
 /// Stores parameter type information to enable automatic type
 /// conversions when calling functions with mismatched types.
 ///
-/// # Examples
-///
-/// ```ignore
-/// let signature = FunctionSignature {
-///     name: "add".to_string(),
-///     param_types: vec!["i32".to_string(), "i32".to_string()],
-/// };
-/// ```
 #[derive(Debug, Clone)]
 pub struct FunctionSignature {
     /// The function name.
     pub name: String,
     /// Parameter types as string representations.
     pub param_types: Vec<String>,
+    /// Default values for parameters (None = no default, Some(expr) = has default).
+    pub default_values: Option<Vec<Option<Box<crate::frontend::ast::Expr>>>>,
 }
 /// The main transpiler for converting Ruchy AST to Rust code.
 ///
@@ -845,7 +840,7 @@ mod tests {
                 attributes: vec![],
                 leading_comments: vec![],
                 trailing_comment: None,
-            contracts: Vec::new(),
+                contracts: Vec::new(),
             };
 
             transpiler.collect_signatures_from_expr(&func_expr);

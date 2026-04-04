@@ -376,9 +376,7 @@ impl Transpiler {
             // Type conversion methods — must emit valid Rust, not verbatim .to_int()/.to_float()
             "to_int" => self.transpile_to_int_method(obj_tokens, object),
             "to_float" => self.transpile_to_float_method(obj_tokens, object),
-            "to_bool" => {
-                Ok(quote! { (#obj_tokens != 0) })
-            }
+            "to_bool" => Ok(quote! { (#obj_tokens != 0) }),
             // String methods
             "to_s" | "to_string" | "to_upper" | "to_lower" | "upper" | "lower" | "length"
             | "substring" | "strip" | "lstrip" | "rstrip" | "startswith" | "endswith" | "split"
@@ -410,7 +408,6 @@ impl Transpiler {
             _ => Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) }),
         }
     }
-
 }
 
 #[cfg(test)]
@@ -892,5 +889,4 @@ mod tests {
             .unwrap();
         assert!(result.is_none());
     }
-
 }

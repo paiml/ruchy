@@ -111,10 +111,7 @@ mod tests {
             output.contains("parse"),
             "String variable should use .parse(), got: {output}"
         );
-        assert!(
-            output.contains("i64"),
-            "Should parse to i64, got: {output}"
-        );
+        assert!(output.contains("i64"), "Should parse to i64, got: {output}");
     }
 
     #[test]
@@ -149,10 +146,7 @@ mod tests {
             output.contains("parse"),
             "String variable should use .parse(), got: {output}"
         );
-        assert!(
-            output.contains("f64"),
-            "Should parse to f64, got: {output}"
-        );
+        assert!(output.contains("f64"), "Should parse to f64, got: {output}");
     }
 
     #[test]
@@ -172,10 +166,7 @@ mod tests {
     #[test]
     fn test_is_string_typed_identifier_registered() {
         let transpiler = make_transpiler();
-        transpiler
-            .string_vars
-            .borrow_mut()
-            .insert("s".to_string());
+        transpiler.string_vars.borrow_mut().insert("s".to_string());
         let expr = ident_expr("s");
         assert!(transpiler.is_string_typed(&expr));
     }

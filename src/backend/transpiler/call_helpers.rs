@@ -147,6 +147,8 @@ impl Transpiler {
                 .collect()
         };
         let arg_tokens = arg_tokens?;
+        // PDCA-21: Fill in default values for missing arguments
+        let arg_tokens = self.fill_default_args(&func_name, arg_tokens)?;
         Ok(quote! { #func_tokens(#(#arg_tokens),*) })
     }
 
