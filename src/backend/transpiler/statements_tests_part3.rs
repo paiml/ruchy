@@ -1701,3 +1701,50 @@ fn test_v5_transpile_function_with_requires_emits_debug_assert() {
         output
     );
 }
+
+#[test]
+fn test_v5_transpile_function_both_requires_and_ensures() {
+    let transpiler = Transpiler::new();
+    let source = r#"fun factorial(n: i64) -> i64 requires n >= 0 ensures result >= 1 { if n <= 1 { return 1 } n * factorial(n - 1) }"#;
+    let mut parser = Parser::new(source);
+    let ast = parser.parse().unwrap();
+    let result = transpiler.transpile_expr(&ast);
+    assert!(result.is_ok(), "Transpilation failed: {:?}", result.err());
+    let output = result.unwrap().to_string();
+    // Should contain both requires and ensures debug_assert!
+    assert!(
+        output.contains("requires clause"),
+        "Should have requires assertion: {}",
+        output
+    );
+    assert!(
+        output.contains("ensures clause"),
+        "Should have ensures assertion: {}",
+        output
+    );
+    // Should contain the companion macro
+    assert!(
+        output.contains("__contract_check_factorial"),
+        "Should contain companion contract macro: {}",
+        output
+    );
+}
+
+#[test]
+fn test_v5_transpile_contract_macro_name_matches_function() {
+    let transpiler = Transpiler::new();
+    let source = r#"fun safe_sqrt(x: f64) -> f64 requires x >= 0.0 { x }"#;
+    let mut parser = Parser::new(source);
+    let ast = parser.parse().unwrap();
+    let output = transpiler.transpile_expr(&ast).unwrap().to_string();
+    assert!(
+        output.contains("__contract_check_safe_sqrt"),
+        "Contract macro should be named after function: {}",
+        output
+    );
+    assert!(
+        output.contains("Silver-level"),
+        "Should include Silver-level doc comment: {}",
+        output
+    );
+}
