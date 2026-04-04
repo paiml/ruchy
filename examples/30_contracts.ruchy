@@ -1,0 +1,31 @@
+// Ruchy 5.0: Contract Verification (Pillar 1: Correctness)
+// Demonstrates requires/ensures contract keywords
+//
+// Contract syntax: fun name(params) requires EXPR ensures EXPR { body }
+// Contracts go between the signature and the opening brace.
+// At Silver level, they emit debug_assert! macros in generated Rust code.
+
+// Function with precondition
+fun safe_divide(a: f64, b: f64) -> f64 requires b != 0.0 {
+    a / b
+}
+
+// Function with postcondition
+fun abs_value(x: i64) -> i64 ensures result >= 0 {
+    if x < 0 { -x } else { x }
+}
+
+// Function with both requires and ensures
+fun factorial(n: i64) -> i64 requires n >= 0 ensures result >= 1 {
+    if n <= 1 {
+        return 1
+    }
+    n * factorial(n - 1)
+}
+
+fn main() {
+    println("=== Ruchy 5.0 Contracts ===")
+    println(safe_divide(10.0, 3.0))
+    println(abs_value(-42))
+    println(factorial(10))
+}

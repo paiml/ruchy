@@ -1,0 +1,39 @@
+// Ruchy 5.0: The Sovereign Platform Language
+// Demonstrates 5.0 keywords and the nine-pillar architecture
+
+// --- Pillar 1: Correctness (requires/ensures) ---
+fun safe_sqrt(x: f64) -> f64 requires x >= 0.0 {
+    x.sqrt()
+}
+
+// --- Pillar 3: Infrastructure (infra blocks) ---
+// Infrastructure as Code: infra {} blocks transpile to forjar::InfraSpec
+// Requires --features infra for actual provisioning
+// infra {
+//     machine("web") { cpus: 2, memory: 4096 }
+//     machine("db")  { cpus: 4, memory: 8192 }
+// }
+
+// --- Pillar 6: Reactive State (signal) ---
+// Reactive programming with signals (requires --features widgets)
+// let count = signal(0)
+// let doubled = derived(|| count() * 2)
+
+// --- Pillar 9: Coroutines (yield) ---
+// Generator pattern with yield keyword
+// fun counter(start: i64, end: i64) {
+//     for i in start..end { yield i }
+// }
+
+// --- The Graduate Workflow ---
+// This same file works in all three modes:
+// 1. REPL:    ruchy repl (paste this code)
+// 2. Embed:   Engine::load_file("31_sovereign_platform.ruchy")
+// 3. Compile: ruchy compile 31_sovereign_platform.ruchy -o sovereign
+
+fn main() {
+    println("Ruchy 5.0: The Sovereign Platform Language")
+    println("Nine Pillars: Correctness, Compute, Infrastructure,")
+    println("  Scripting, Learning, Visualization, Simulation,")
+    println("  Testing, Embedding")
+}

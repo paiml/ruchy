@@ -1,0 +1,30 @@
+// Ruchy 5.0: Migration Demo
+// Shows code that has been migrated from 4.x to 5.0.
+// Run: ruchy migrate-4to5 src/ --dry-run
+// to preview what would be renamed.
+
+// BEFORE (4.x): fun process(signal: i64) -> i64 { signal * 2 }
+// AFTER  (5.0): fun process(signal_val: i64) -> i64 { signal_val * 2 }
+// The tool renamed 'signal' -> 'signal_val' because 'signal' is now a keyword.
+
+fun process(signal_val: i64) -> i64 {
+    signal_val * 2
+}
+
+// BEFORE (4.x): fun check(requires: i64) -> bool { requires > 0 }
+// AFTER  (5.0): fun check(requires_val: i64) -> bool { requires_val > 0 }
+fun check(requires_val: i64) -> bool {
+    requires_val > 0
+}
+
+// Now 'requires' is used as a contract keyword:
+fun validated(x: i64) -> i64 requires x > 0 {
+    x * 2
+}
+
+fn main() {
+    println("=== Migration Demo ===")
+    println(process(21))
+    println(check(42))
+    println(validated(5))
+}

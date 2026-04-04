@@ -1261,3 +1261,64 @@ fn test_v5_infra_block_multiple_stmts() {
         }
     }
 }
+
+// ============================================================================
+// 5.0 Keyword Reservation Tests
+// Verify that reserved keywords cannot be used as variable names.
+// Per ruchy-5.0-sovereign-platform.md Section 4: Migration Concern.
+// ============================================================================
+
+#[test]
+fn test_v5_keyword_infra_not_variable() {
+    // `infra` is a keyword, not a valid identifier for let binding
+    let result = parse("let infra = 42");
+    // Should either fail or parse infra as a keyword, not as an identifier
+    if let Ok(expr) = result {
+        if let Some(exprs) = get_block_exprs(&expr) {
+            // If it parses, verify it's NOT a simple let binding with name "infra"
+            let is_let_infra = matches!(
+                &exprs[0].kind,
+                ExprKind::Let { name, .. } if name == "infra"
+            );
+            assert!(
+                !is_let_infra,
+                "keyword 'infra' should not be usable as variable name"
+            );
+        }
+    }
+    // Parse error is also acceptable (keyword can't be used as identifier)
+}
+
+#[test]
+fn test_v5_keyword_signal_not_variable() {
+    let result = parse("let signal = 42");
+    if let Ok(expr) = result {
+        if let Some(exprs) = get_block_exprs(&expr) {
+            let is_let_signal = matches!(
+                &exprs[0].kind,
+                ExprKind::Let { name, .. } if name == "signal"
+            );
+            assert!(
+                !is_let_signal,
+                "keyword 'signal' should not be usable as variable name"
+            );
+        }
+    }
+}
+
+#[test]
+fn test_v5_keyword_yield_not_variable() {
+    let result = parse("let yield = 42");
+    if let Ok(expr) = result {
+        if let Some(exprs) = get_block_exprs(&expr) {
+            let is_let_yield = matches!(
+                &exprs[0].kind,
+                ExprKind::Let { name, .. } if name == "yield"
+            );
+            assert!(
+                !is_let_yield,
+                "keyword 'yield' should not be usable as variable name"
+            );
+        }
+    }
+}
