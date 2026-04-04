@@ -1,9 +1,10 @@
 # World-Class Formatter Specification v1.0
 
-**Status**: Implemented (`src/quality/formatter.rs`, 1766 LOC) with known gaps
+**Status**: Implemented (`src/quality/formatter.rs`, 1766 LOC) — 100% ExprKind coverage
 **Created**: 2025-10-15, updated 2026-04-04
-**Note**: ExprKind coverage is NOT 100% — some variants have `UNIMPLEMENTED` fallbacks.
-Comment preservation has known edge cases. Configuration system works.
+**Note**: Last UNIMPLEMENTED fallback (Set literals) resolved 2026-04-04.
+All ExprKind variants now have proper formatting. Comment preservation
+has known edge cases. Configuration system works.
 
 ---
 
