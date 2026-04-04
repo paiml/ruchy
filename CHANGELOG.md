@@ -5,7 +5,29 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [5.0.0-alpha.1] - 2026-04-04
+
+### The Sovereign Platform Language
+
+Ruchy 5.0 is a paradigm shift: the Nine-Pillar architecture elevates stdlib bridges
+to first-class language constructs with new keywords, decorator grammar, CLI
+subcommands, and an embedding crate.
+
+### Added
+- **Parser**: 7 new reserved keywords (`requires`, `ensures`, `invariant`, `decreases`, `infra`, `signal`, `yield`)
+- **Transpiler**: Contract clauses (`requires`/`ensures`) emit `debug_assert!` macros (Silver verification level)
+- **CLI**: 10+ new subcommands — `ruchy prove`, `ruchy infra {plan,apply,drift,status,destroy}`, `ruchy sim {run,inspect,verify,export}`, `ruchy widget {serve,build,test,inspect}`, `ruchy apr {run,serve,quantize,inspect,bench,eval}`, `ruchy model {save,load,export,import,inspect,verify}`, `ruchy purify`, `ruchy migrate-4to5`
+- **Feature gates**: `infra` (forjar), `simulation` (simular), `shell-target` (bashrs) — all optional
+- **Stdlib bridges**: `forjar_bridge` (IaC types, InfraPlan, MachineSpec), `simular_bridge` (SimConfig, SimResult, SimEvent), `bashrs_bridge` (Shell enum, ShellTarget, PurifyResult)
+- **Migration tool**: `ruchy migrate-4to5` scans and renames identifiers conflicting with new keywords
+- **ruchy-embed**: Embedding crate (v0.1.0) with Engine/Value/compile/eval API
+- **Sovereign CLI handlers**: Stub handlers for all pillar subcommands with file validation
+
+### Changed
+- Version bump from 4.2.1 to 5.0.0-alpha.1
+- Unified decorator grammar: `@decorator` and `#[attribute]` both parse
+
+## [Unreleased - 4.x]
 
 ### Changed
 - Removed all `#[allow(dead_code)]` attributes for improved code quality scoring

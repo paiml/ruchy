@@ -7,8 +7,6 @@
 
 // NOTE: ruchy_notebook crate not yet implemented - placeholder example for future feature
 
-#[cfg(feature = "notebook")]
-// use ruchy_notebook::server::start_server; // Disabled - crate doesn't exist
 #[cfg(not(feature = "notebook"))]
 fn main() {
     eprintln!("This example requires the 'notebook' feature.");

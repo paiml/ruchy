@@ -5,4 +5,6 @@ pub mod prove;
 pub mod prove_helpers;
 pub mod test;
 pub mod test_helpers;
+pub mod migrate;
+pub mod sovereign;
 // Re-export main handler functions

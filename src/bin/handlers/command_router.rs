@@ -499,42 +499,60 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
         ),
         // Ruchy 5.0 Sovereign Platform subcommands
         crate::Commands::Infra(cmd) => {
-            println!("[ruchy 5.0] Infrastructure command: {cmd:?}");
-            println!("  Requires: cargo install --features infra");
-            Ok(())
+            use crate::handlers::handlers_modules::sovereign::*;
+            match cmd {
+                crate::InfraCommands::Plan { file } => handle_infra_plan(&file),
+                crate::InfraCommands::Apply { file, yes } => handle_infra_apply(&file, yes),
+                crate::InfraCommands::Drift { file } => handle_infra_drift(&file),
+                crate::InfraCommands::Status => handle_infra_status(),
+                crate::InfraCommands::Destroy { file, yes } => handle_infra_destroy(&file, yes),
+            }
         }
         crate::Commands::Sim(cmd) => {
-            println!("[ruchy 5.0] Simulation command: {cmd:?}");
-            println!("  Requires: cargo install --features simulation");
-            Ok(())
+            use crate::handlers::handlers_modules::sovereign::*;
+            match cmd {
+                crate::SimCommands::Run { file, seed } => handle_sim_run(&file, seed),
+                crate::SimCommands::Inspect { file } => handle_sim_inspect(&file),
+                crate::SimCommands::Verify { file } => handle_sim_verify(&file),
+                crate::SimCommands::Export { file, format } => handle_sim_export(&file, &format),
+            }
         }
         crate::Commands::Widget(cmd) => {
-            println!("[ruchy 5.0] Widget command: {cmd:?}");
-            println!("  Requires: cargo install --features widgets");
-            Ok(())
+            use crate::handlers::handlers_modules::sovereign::*;
+            match cmd {
+                crate::WidgetCommands::Serve { file, port } => handle_widget_serve(&file, port),
+                crate::WidgetCommands::Build { file, output } => handle_widget_build(&file, &output),
+                crate::WidgetCommands::Test { path } => handle_widget_test(&path),
+                crate::WidgetCommands::Inspect { file } => handle_widget_inspect(&file),
+            }
         }
         crate::Commands::Apr(cmd) => {
-            println!("[ruchy 5.0] ML/Aprender command: {cmd:?}");
-            Ok(())
+            use crate::handlers::handlers_modules::sovereign::*;
+            match cmd {
+                crate::AprCommands::Run { file } => handle_apr_run(&file),
+                crate::AprCommands::Serve { file, port } => handle_apr_serve(&file, port),
+                crate::AprCommands::Quantize { file, bits } => handle_apr_quantize(&file, bits),
+                crate::AprCommands::Inspect { file } => handle_apr_inspect(&file),
+                crate::AprCommands::Bench { file, iterations } => handle_apr_bench(&file, iterations),
+                crate::AprCommands::Eval { file, data } => handle_apr_eval(&file, &data),
+            }
         }
         crate::Commands::Model(cmd) => {
-            println!("[ruchy 5.0] Model management command: {cmd:?}");
-            Ok(())
+            use crate::handlers::handlers_modules::sovereign::*;
+            match cmd {
+                crate::ModelCommands::Save { name, output } => handle_model_save(&name, &output),
+                crate::ModelCommands::Load { file } => handle_model_load(&file),
+                crate::ModelCommands::Export { file, format } => handle_model_export(&file, &format),
+                crate::ModelCommands::Import { file } => handle_model_import(&file),
+                crate::ModelCommands::Inspect { file } => handle_model_inspect(&file),
+                crate::ModelCommands::Verify { file } => handle_model_verify(&file),
+            }
         }
         crate::Commands::Purify { path, fix, verbose } => {
-            println!(
-                "[ruchy 5.0] Purify shell scripts: {} (fix={fix}, verbose={verbose})",
-                path.display()
-            );
-            println!("  Requires: cargo install --features shell-target");
-            Ok(())
+            crate::handlers::handlers_modules::sovereign::handle_purify(&path, fix, verbose)
         }
         crate::Commands::Migrate4to5 { path, dry_run } => {
-            println!(
-                "[ruchy 5.0] Migrate 4.x → 5.0: {} (dry_run={dry_run})",
-                path.display()
-            );
-            println!("  Scans for identifiers conflicting with new keywords: requires, ensures, invariant, decreases, infra, signal, yield");
+            crate::handlers::handlers_modules::migrate::run_migration(&path, dry_run)?;
             Ok(())
         }
         _ => {

@@ -5,7 +5,6 @@
 //! when fewer arguments are provided than the function expects.
 
 use super::Transpiler;
-use crate::frontend::ast::Expr;
 use anyhow::Result;
 use proc_macro2::TokenStream;
 
@@ -66,7 +65,7 @@ impl Transpiler {
 mod tests {
     use super::*;
     use crate::backend::transpiler::FunctionSignature;
-    use crate::frontend::ast::{ExprKind, Literal, Span};
+    use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
     use quote::quote;
 
     fn make_transpiler() -> Transpiler {

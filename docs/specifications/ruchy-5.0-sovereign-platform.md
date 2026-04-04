@@ -14,10 +14,13 @@
 | Feature gates (infra/simulation/shell-target) | DONE | Cargo.toml feature definitions |
 | Optional deps (forjar/simular/bashrs) | DONE | Added as optional, feature-gated |
 | New CLI subcommands | DONE | prove/infra/sim/widget/apr/model/purify/migrate-4to5 all registered with clap |
+| CLI handler routing | DONE | All sovereign commands dispatched in command_router.rs |
 | Transpiler: contract → debug_assert! | DONE (Silver) | requires/ensures emit debug_assert! macros, verified e2e |
 | trueno 0.16.5 upgrade | PARTIAL | 0.16 in Cargo.toml, spec says 0.16.5 |
-| ruchy-embed Engine API | EXISTS (192 lines) | Engine/Value/compile/eval implemented |
-| Stdlib bridges (forjar/simular/bashrs) | NOT STARTED | No bridge modules yet |
+| ruchy-embed Engine API | DONE (192 lines) | Engine/Value/compile/eval implemented, 8 tests passing |
+| Stdlib bridges (forjar/simular/bashrs) | DONE | Bridge modules with types, builders, tests. Feature-gated re-exports. |
+| migrate-4to5 tool | DONE | Scans/renames keyword conflicts, dry-run support, 10 tests |
+| Sovereign CLI handlers (stub) | DONE | infra/sim/widget/apr/model/purify handlers with file validation |
 
 ---
 
