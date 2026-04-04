@@ -3,7 +3,6 @@ use crate::frontend::ast::{BinaryOp, Expr, ExprKind, Literal, Span, UnaryOp};
 use crate::runtime::bytecode::Compiler;
 
 #[test]
-#[ignore = "VM doesn't implement modulo-by-zero error handling yet - panics instead of returning error"]
 fn test_vm_opcode_modulo_by_zero() {
     // Compile: 10 % 0
     // Should error with modulo by zero
@@ -32,7 +31,7 @@ fn test_vm_opcode_modulo_by_zero() {
 
     assert!(result.is_err());
     let err_msg = result.unwrap_err();
-    assert!(err_msg.contains("modulo by zero") || err_msg.contains("divide by zero"));
+    assert!(err_msg.contains("Modulo by zero"), "got: {err_msg}");
 }
 
 #[test]

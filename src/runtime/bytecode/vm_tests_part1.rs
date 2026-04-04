@@ -1763,7 +1763,6 @@ fn test_vm_opcode_tuple_index_out_of_bounds() {
 // ============================================================================
 
 #[test]
-#[ignore = "VM doesn't implement divide-by-zero error handling yet - panics instead of returning error"]
 fn test_vm_opcode_division_by_zero_integer() {
     // Compile: 10 / 0
     // Should error with division by zero
@@ -1792,5 +1791,5 @@ fn test_vm_opcode_division_by_zero_integer() {
 
     assert!(result.is_err());
     let err_msg = result.unwrap_err();
-    assert!(err_msg.contains("division by zero") || err_msg.contains("divide by zero"));
+    assert!(err_msg.contains("Division by zero"), "got: {err_msg}");
 }
