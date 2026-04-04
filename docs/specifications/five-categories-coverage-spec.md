@@ -23,13 +23,18 @@ Zero Tolerance: No clippy warnings, no broken tests
 
 ## Five-Category Coverage Strategy
 
-| Category | Target Coverage | Current | Gap | Sprint Priority |
-|----------|----------------|---------|-----|-----------------|
-| Frontend | 80% | 45% | 35% | 2 |
-| Backend | 80% | 50% | 30% | 3 |
-| Runtime | 80% | 40% | 40% | 4 |
-| WASM | 80% | 15% | 65% | 5 |
-| Quality | 80% | 60% | 20% | 1 |
+> **FALSIFICATION NOTE (2026-04-04)**: The "Current" column below is from the
+> original spec (undated). With 20,487 tests now vs ~6,000 at spec time, these
+> per-category numbers are certainly stale. Remeasurement with cargo-llvm-cov
+> per-module reporting is needed before acting on these gaps.
+
+| Category | Target Coverage | Current (at spec time) | Gap (stale) | Sprint Priority |
+|----------|----------------|----------------------|-------------|-----------------|
+| Frontend | 80% | 45% (stale) | ~35% | 2 |
+| Backend | 80% | 50% (stale) | ~30% | 3 |
+| Runtime | 80% | 40% (stale) | ~40% | 4 |
+| WASM | 80% | 15% (stale) | ~65% | 5 |
+| Quality | 80% | 60% (stale) | ~20% | 1 |
 
 ## Sub-spec Index
 

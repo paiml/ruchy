@@ -1,9 +1,9 @@
 # Ruchy 4.0.0-beta.1 External QA Checklist
 
-**Version**: 1.0.0
-**Status**: DRAFT - AWAITING EXTERNAL QA TEAM REVIEW
-**Date**: 2025-12-09
-**Target Release**: v4.0.0-beta.1 (December 2025)
+**Version**: 1.1.0
+**Status**: HISTORICAL — beta released despite REJECT recommendation; now at v4.2.1
+**Date**: 2026-04-04 (updated from 2025-12-09)
+**Target Release**: v4.0.0-beta.1 (December 2025) — RELEASED
 **Authors**: Claude Code (Opus 4.5)
 
 ---
@@ -157,7 +157,23 @@ Bainbridge's "Ironies of Automation" applies to QA: as we automate more (unit te
 
 ---
 
-## Appendix A: QA Summary Template
+## Post-Release Falsification (2026-04-04)
+
+> **The simulated QA recommended REJECT, but beta was released anyway.**
+> This is a falsification of the QA process itself: either the REJECT criteria
+> were too strict, or the release decision overrode QA recommendations.
+>
+> **Status of identified failures as of v4.2.1:**
+> - [QA-026] Variable Scoping: Still a known divergence (interpreter vs transpiler)
+> - [QA-061-070] Stdlib Imports: Partially resolved (std::env module implemented)
+> - [QA-072] Version Mismatch: RESOLVED — binary now reports 4.2.1
+> - [QA-049] Transpiler stdout: By design — transpile outputs to stdout for piping
+>
+> **Lesson**: Simulated QA with AI-generated failures is not a substitute for
+> actual external testing. The version mismatch (3.213.0) was an artifact of
+> the simulation running against the wrong binary, not a real defect.
+
+## Appendix A: QA Summary Template (HISTORICAL — simulated, not actual)
 
 # Ruchy 4.0.0-beta.1 QA Report
 
