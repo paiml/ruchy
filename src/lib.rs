@@ -739,7 +739,6 @@ mod tests {
         assert!(compile("f\"Result: {calculate()}\"").is_ok());
     }
     #[test]
-    #[ignore = "Comprehensions syntax not yet implemented"]
     fn test_comprehensions() {
         assert!(compile("[x * 2 for x in 0..10]").is_ok());
         assert!(compile("[x for x in items if x > 0]").is_ok());
@@ -779,7 +778,6 @@ mod tests {
         // assert!(compile("export fn helper()").is_ok());
     }
     #[test]
-    #[ignore = "Decorator syntax not yet implemented"]
     fn test_decorators() {
         assert!(compile("@memoize\nfn expensive(n) { }").is_ok());
         assert!(compile("@derive(Debug, Clone)\nstruct Data { }").is_ok());
