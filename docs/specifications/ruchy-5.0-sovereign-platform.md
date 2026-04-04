@@ -13,8 +13,8 @@
 | Unified decorator grammar | DONE (4.x) | `@decorator` and `#[attribute]` both parse |
 | Feature gates (infra/simulation/shell-target) | DONE | Cargo.toml feature definitions |
 | Optional deps (forjar/simular/bashrs) | DONE | Added as optional, feature-gated |
-| New CLI subcommands | NOT STARTED | prove/infra/sim/widget/apr/model/purify/migrate-4to5 |
-| Transpiler: contract → debug_assert! | NOT STARTED | contracts parse but don't transpile to assertions |
+| New CLI subcommands | DONE | prove/infra/sim/widget/apr/model/purify/migrate-4to5 all registered with clap |
+| Transpiler: contract → debug_assert! | DONE (Silver) | requires/ensures emit debug_assert! macros, verified e2e |
 | trueno 0.16.5 upgrade | PARTIAL | 0.16 in Cargo.toml, spec says 0.16.5 |
 | ruchy-embed Engine API | EXISTS (192 lines) | Engine/Value/compile/eval implemented |
 | Stdlib bridges (forjar/simular/bashrs) | NOT STARTED | No bridge modules yet |
