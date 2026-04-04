@@ -1,6 +1,11 @@
 # Ruchy REPL Specification v3.0
 ## Interactive Distributed Data Science Platform
 
+**Implementation Status (2026-04-04):** Core REPL implemented (eval, history, completion,
+`:help`/`:vars`/`:load`/`:save`/`:quit` commands). Phase 2 magic commands (`%time`, `%profile`,
+`%memprof`, `%debug`) are NOT implemented — only `:` colon-prefix commands exist. Distributed
+actor-based REPL and MCP integration are aspirational.
+
 ### Executive Summary
 
 Ruchy implements a distributed REPL combining IPython/R/Julia ergonomics with actor-based concurrency and native MCP support. This specification defines the architecture, implementation phases, and performance requirements for a production-grade data science platform that transpiles to zero-cost Rust.

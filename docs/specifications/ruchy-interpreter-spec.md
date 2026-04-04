@@ -1,5 +1,11 @@
 # Ruchy Interpreter Specification v2.1
 
+**Implementation Status (2026-04-04):** Tier 0 AST interpreter is fully implemented
+(`src/runtime/interpreter.rs`). Tier 1 JIT via Cranelift has scaffolding (`src/jit/`)
+but is NOT integrated into the main execution path. Tagged pointer representation is
+NOT implemented — uses standard Rust `Value` enum. The bytecode VM is a separate
+experimental backend (`--vm-mode bytecode`), not described in this spec.
+
 ## Executive Summary
 
 The Ruchy interpreter implements a two-tier execution strategy: AST interpretation with inline caching for cold code, direct JIT compilation via Cranelift for hot code. This lean design eliminates the bytecode VM layer, reducing implementation complexity by 40% while achieving 90% of the performance. Tagged pointer representation ensures portability across architectures.

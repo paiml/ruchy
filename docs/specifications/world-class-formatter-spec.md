@@ -1,9 +1,9 @@
 # World-Class Formatter Specification v1.0
 
-**Status**: ACTIVE - Specification for Perfect Formatter
-**Created**: 2025-10-15
-**Target**: v3.89.0 - v3.91.0 (3-release roadmap)
-**Goal**: Make `ruchy fmt` PERFECT - industry-leading formatter
+**Status**: Implemented (`src/quality/formatter.rs`, 1766 LOC) with known gaps
+**Created**: 2025-10-15, updated 2026-04-04
+**Note**: ExprKind coverage is NOT 100% — some variants have `UNIMPLEMENTED` fallbacks.
+Comment preservation has known edge cases. Configuration system works.
 
 ---
 

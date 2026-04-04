@@ -1,3 +1,8 @@
+**Implementation Status (2026-04-04):** Single-pass AST linter implemented
+(`src/quality/linter.rs`, 826 LOC). Content-addressable caching, MIR-level
+linting, SMT solver integration, and parallel execution are NOT implemented.
+Current linter is AST-only with basic rule categories.
+
 ## Lessons from Ruff's Architecture
 
 ### 1. **Single-Pass AST Visitor**
