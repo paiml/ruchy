@@ -14,7 +14,7 @@
 | Unified decorator grammar | DONE (4.x) | `@decorator` and `#[attribute]` both parse |
 | Feature gates (infra/simulation/shell-target) | DONE | Cargo.toml feature definitions |
 | Optional deps (forjar/simular/bashrs) | DONE | Added as optional, feature-gated |
-| New CLI subcommands | DONE | prove/infra/sim/widget/apr/model/purify/migrate-4to5 all registered with clap |
+| New CLI subcommands | DONE | prove/infra/sim/widget/apr/model/purify/migrate-4to5/contracts/suggest-contracts all registered |
 | CLI handler routing | DONE | All sovereign commands dispatched in command_router.rs (23 handler tests) |
 | CLI integration tests | DONE | 29 assert_cmd tests for sovereign commands |
 | Transpiler: contract → debug_assert! | DONE (Silver) | requires/ensures emit debug_assert! macros. 6 transpiler tests. |
@@ -25,6 +25,9 @@
 | migrate-4to5 tool | DONE | Scans/renames keyword conflicts, dry-run support, 12 tests |
 | 5.0 Examples | DONE | 30_contracts.ruchy, 31_sovereign_platform.ruchy, 32_migration_demo.ruchy |
 | CHANGELOG 5.0 section | DONE | Full release notes for 5.0.0-alpha.1 |
+| Test command: probar flags | DONE | --probar, --playbook, --visual-regression, --mutations registered |
+| Contracts CLI (sync/list/check) | DONE | 3 subcommands + suggest-contracts + 8 handler tests |
+| Alpha.1 gate: all 4.x tests pass | DONE | 20,429 lib tests pass, 0 failures |
 
 ---
 
