@@ -11,3 +11,4 @@ ruchy = { path = "..", default-features = false }
 anyhow = "1"
 
 [dev-dependencies]
+tempfile = "3"

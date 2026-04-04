@@ -1717,6 +1717,20 @@ impl Interpreter {
         None
     }
 
+    /// Call a named function with arguments (for ruchy-embed).
+    ///
+    /// Looks up the function by name in the environment, then calls it.
+    pub fn call_named_function(
+        &mut self,
+        name: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        let func = self.get_variable(name).ok_or_else(|| {
+            InterpreterError::RuntimeError(format!("undefined function: {name}"))
+        })?;
+        self.call_function(func, args)
+    }
+
     /// Pattern matching for try/catch
     ///
     /// # Complexity
