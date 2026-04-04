@@ -1992,12 +1992,28 @@ roadmap:
 - id: 'Apex Hunt: PDCA Cycle 21 - Default parameter transpilation'
   github_issue: null
   item_type: task
-  title: 'New task: Apex Hunt: PDCA Cycle 21 - Default parameter transpilation'
-  status: inprogress
+  title: 'feat(transpiler): default parameter values at call sites'
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-04-04T11:13:53.251109183+00:00
   updated: 2026-04-04T11:13:53.251109183+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: 'Apex Hunt: PDCA Cycle 22 - reduce(init,fn) → fold transpilation'
+  github_issue: null
+  item_type: task
+  title: 'New task: Apex Hunt: PDCA Cycle 22 - reduce(init,fn) → fold transpilation'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-04-04T11:32:45.457346773+00:00
+  updated: 2026-04-04T11:32:45.457346773+00:00
   spec: null
   acceptance_criteria: []
   phases: []

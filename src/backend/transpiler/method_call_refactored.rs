@@ -1,5 +1,4 @@
 //! Refactored method call transpilation with reduced complexity
-//! Original complexity: 58, Target: <20 per function
 use crate::backend::Transpiler;
 use crate::frontend::ast::Expr;
 use anyhow::{bail, Result};
@@ -7,13 +6,6 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 impl Transpiler {
     /// Main dispatcher for method calls (complexity: ~15)
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use ruchy::backend::Transpiler;
-    /// let mut transpiler = Transpiler::new();
-    /// // Method call transpilation is handled internally
-    /// ```
     pub fn transpile_method_call_refactored(
         &self,
         object: &Expr,
@@ -97,7 +89,16 @@ impl Transpiler {
                     quote! { #obj.into_iter().filter(|__x| { let __f = #user_closure; __f(*__x) }).collect::<Vec<_>>() },
                 )
             }
-            "reduce" => Ok(quote! { #obj.into_iter().reduce(#(#args),*) }),
+            "reduce" => {
+                // PDCA-22: reduce(init, fn) → fold(init, fn) when 2 args
+                if args.len() == 2 {
+                    let init = &args[0];
+                    let closure = &args[1];
+                    Ok(quote! { #obj.into_iter().fold(#init, #closure) })
+                } else {
+                    Ok(quote! { #obj.into_iter().reduce(#(#args),*) })
+                }
+            }
             "fold" => {
                 if args.len() != 2 {
                     bail!("fold requires exactly 2 arguments");
@@ -242,7 +243,6 @@ mod tests {
     use crate::backend::Transpiler;
     use crate::frontend::ast::{Expr, ExprKind, Literal};
     use proc_macro2::TokenStream;
-
     fn setup_transpiler() -> Transpiler {
         Transpiler::new()
     }

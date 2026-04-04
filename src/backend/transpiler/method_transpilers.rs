@@ -1,13 +1,5 @@
-//! Collection and String Method Transpilation
-//!
-//! This module handles transpilation of method calls on collections and strings:
-//! - Iterator methods: `map`, `filter`, `reduce`
-//! - `HashMap`/`HashSet` methods: `contains_key`, `items`, `update`
-//! - Set operations: `union`, `intersection`, `difference`
-//! - String methods: `to_upper`, `strip`, `split`, etc.
-//! - Advanced collection methods: `slice`, `concat`, `flatten`, `unique`, `join`
-//!
-//! **EXTREME TDD Round 65**: Extracted from statements.rs for modularization.
+//! Collection, string, and iterator method transpilation.
+//! Handles map/filter/reduce, HashMap/HashSet, string ops, and advanced collections.
 
 #![allow(clippy::doc_markdown)]
 
@@ -70,8 +62,18 @@ impl Transpiler {
                 }
             }
             "reduce" => {
-                // vec.reduce(f) -> vec.into_iter().reduce(f)
-                if already_iter {
+                // PDCA-22: reduce(initial, closure) → fold(initial, closure)
+                // Rust's reduce() takes only a closure, not an initial value.
+                // When 2 args are provided, use fold() instead.
+                if arg_tokens.len() == 2 {
+                    let init = &arg_tokens[0];
+                    let closure = &arg_tokens[1];
+                    if already_iter {
+                        Ok(quote! { #obj_tokens.fold(#init, #closure) })
+                    } else {
+                        Ok(quote! { #obj_tokens.into_iter().fold(#init, #closure) })
+                    }
+                } else if already_iter {
                     Ok(quote! { #obj_tokens.reduce(#(#arg_tokens),*) })
                 } else {
                     Ok(quote! { #obj_tokens.into_iter().reduce(#(#arg_tokens),*) })
@@ -289,17 +291,9 @@ impl Transpiler {
     }
 }
 
-// ============================================================================
-// Tests
-// ============================================================================
-
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // ========================================================================
-    // transpile_iterator_methods tests
-    // ========================================================================
 
     #[test]
     fn test_iterator_map() {
@@ -337,22 +331,6 @@ mod tests {
         assert!(tokens_str.contains("into_iter"));
         assert!(tokens_str.contains("filter"));
     }
-
-    #[test]
-    fn test_iterator_reduce() {
-        let transpiler = Transpiler::new();
-        let obj_tokens = quote! { vec };
-        let arg_tokens = vec![quote! { |a, b| a + b }];
-        let result = transpiler.transpile_iterator_methods(&obj_tokens, "reduce", &arg_tokens);
-        assert!(result.is_ok());
-        let tokens_str = result.unwrap().to_string();
-        assert!(tokens_str.contains("into_iter"));
-        assert!(tokens_str.contains("reduce"));
-    }
-
-    // ========================================================================
-    // transpile_map_set_methods tests
-    // ========================================================================
 
     #[test]
     fn test_map_contains_key() {
@@ -424,10 +402,6 @@ mod tests {
         assert!(tokens_str.contains("values"));
     }
 
-    // ========================================================================
-    // transpile_set_operations tests
-    // ========================================================================
-
     #[test]
     fn test_set_union() {
         let transpiler = Transpiler::new();
@@ -461,10 +435,6 @@ mod tests {
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("difference"));
     }
-
-    // ========================================================================
-    // transpile_string_methods tests
-    // ========================================================================
 
     #[test]
     fn test_string_to_s() {
@@ -579,10 +549,6 @@ mod tests {
         assert!(tokens_str.contains("take"));
     }
 
-    // ========================================================================
-    // transpile_advanced_collection_methods tests
-    // ========================================================================
-
     #[test]
     fn test_collection_slice() {
         let transpiler = Transpiler::new();
@@ -641,5 +607,37 @@ mod tests {
         assert!(result.is_ok());
         let tokens_str = result.unwrap().to_string();
         assert!(tokens_str.contains("join"));
+    }
+
+    #[test]
+    fn test_reduce_with_initial_value_uses_fold() {
+        let transpiler = Transpiler::new();
+        let obj_tokens = quote! { numbers };
+        let arg_tokens = vec![quote! { 0 }, quote! { |acc, x| acc + x }];
+        let result = transpiler.transpile_iterator_methods(&obj_tokens, "reduce", &arg_tokens);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(
+            output.contains("fold"),
+            "reduce(init, fn) should emit .fold(), got: {output}"
+        );
+        assert!(
+            !output.contains(". reduce"),
+            "Should NOT emit .reduce() with 2 args, got: {output}"
+        );
+    }
+
+    #[test]
+    fn test_reduce_without_initial_value_uses_reduce() {
+        let transpiler = Transpiler::new();
+        let obj_tokens = quote! { numbers };
+        let arg_tokens = vec![quote! { |a, b| a + b }];
+        let result = transpiler.transpile_iterator_methods(&obj_tokens, "reduce", &arg_tokens);
+        assert!(result.is_ok());
+        let output = result.unwrap().to_string();
+        assert!(
+            output.contains("reduce"),
+            "reduce(fn) should emit .reduce(), got: {output}"
+        );
     }
 }
