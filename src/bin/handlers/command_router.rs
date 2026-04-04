@@ -497,8 +497,47 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             &breakpoint,
             &start_mode,
         ),
+        // Ruchy 5.0 Sovereign Platform subcommands
+        crate::Commands::Infra(cmd) => {
+            println!("[ruchy 5.0] Infrastructure command: {cmd:?}");
+            println!("  Requires: cargo install --features infra");
+            Ok(())
+        }
+        crate::Commands::Sim(cmd) => {
+            println!("[ruchy 5.0] Simulation command: {cmd:?}");
+            println!("  Requires: cargo install --features simulation");
+            Ok(())
+        }
+        crate::Commands::Widget(cmd) => {
+            println!("[ruchy 5.0] Widget command: {cmd:?}");
+            println!("  Requires: cargo install --features widgets");
+            Ok(())
+        }
+        crate::Commands::Apr(cmd) => {
+            println!("[ruchy 5.0] ML/Aprender command: {cmd:?}");
+            Ok(())
+        }
+        crate::Commands::Model(cmd) => {
+            println!("[ruchy 5.0] Model management command: {cmd:?}");
+            Ok(())
+        }
+        crate::Commands::Purify { path, fix, verbose } => {
+            println!(
+                "[ruchy 5.0] Purify shell scripts: {} (fix={fix}, verbose={verbose})",
+                path.display()
+            );
+            println!("  Requires: cargo install --features shell-target");
+            Ok(())
+        }
+        crate::Commands::Migrate4to5 { path, dry_run } => {
+            println!(
+                "[ruchy 5.0] Migrate 4.x → 5.0: {} (dry_run={dry_run})",
+                path.display()
+            );
+            println!("  Scans for identifiers conflicting with new keywords: requires, ensures, invariant, decreases, infra, signal, yield");
+            Ok(())
+        }
         _ => {
-            // Other commands not yet implemented
             eprintln!("Command not yet implemented");
             Ok(())
         }

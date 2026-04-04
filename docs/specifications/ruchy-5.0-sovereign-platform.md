@@ -1,8 +1,23 @@
 # Ruchy 5.0: The Sovereign Platform Language
 
 **Version:** 1.0.0
-**Status:** PROPOSED
+**Status:** IN PROGRESS (alpha.1 started 2026-04-04)
 **Date:** 2026-04-03
+
+### Implementation Status (Ground Truth as of 2026-04-04)
+
+| Milestone | Status | Evidence |
+|-----------|--------|----------|
+| Version bump 5.0.0-alpha.1 | DONE | `ruchy --version` → 5.0.0-alpha.1 |
+| Parser: 7 new keywords | PARTIAL | requires/ensures/invariant/decreases (4.x), infra/signal/yield (5.0). All 7 reserved. |
+| Unified decorator grammar | DONE (4.x) | `@decorator` and `#[attribute]` both parse |
+| Feature gates (infra/simulation/shell-target) | DONE | Cargo.toml feature definitions |
+| Optional deps (forjar/simular/bashrs) | DONE | Added as optional, feature-gated |
+| New CLI subcommands | NOT STARTED | prove/infra/sim/widget/apr/model/purify/migrate-4to5 |
+| Transpiler: contract → debug_assert! | NOT STARTED | contracts parse but don't transpile to assertions |
+| trueno 0.16.5 upgrade | PARTIAL | 0.16 in Cargo.toml, spec says 0.16.5 |
+| ruchy-embed Engine API | EXISTS (192 lines) | Engine/Value/compile/eval implemented |
+| Stdlib bridges (forjar/simular/bashrs) | NOT STARTED | No bridge modules yet |
 
 ---
 

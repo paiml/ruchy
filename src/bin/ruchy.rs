@@ -892,6 +892,42 @@ enum Commands {
         #[arg(long)]
         verbose: bool,
     },
+    // ── Ruchy 5.0 Sovereign Platform subcommands ──
+    /// Infrastructure as Code management (Pillar 3: forjar)
+    #[command(subcommand)]
+    Infra(InfraCommands),
+    /// Simulation engine (Pillar 7: simular)
+    #[command(subcommand)]
+    Sim(SimCommands),
+    /// Widget/UI toolkit (Pillar 6: presentar)
+    #[command(subcommand)]
+    Widget(WidgetCommands),
+    /// ML training and inference (Pillar 5: aprender)
+    #[command(subcommand)]
+    Apr(AprCommands),
+    /// Model management (Pillar 5: aprender)
+    #[command(subcommand)]
+    Model(ModelCommands),
+    /// Analyze and clean legacy shell scripts (Pillar 4: bashrs)
+    Purify {
+        /// File or directory to analyze
+        path: PathBuf,
+        /// Auto-fix detected issues
+        #[arg(long)]
+        fix: bool,
+        /// Show verbose output
+        #[arg(long)]
+        verbose: bool,
+    },
+    /// Migrate Ruchy 4.x code to 5.0 (rename conflicting identifiers)
+    #[command(name = "migrate-4to5")]
+    Migrate4to5 {
+        /// Directory to migrate
+        path: PathBuf,
+        /// Dry run (show changes without applying)
+        #[arg(long)]
+        dry_run: bool,
+    },
 }
 
 /// Oracle subcommands for ML model management
@@ -944,6 +980,184 @@ enum OracleCommands {
         /// Show verbose output with confidence scores
         #[arg(long)]
         verbose: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum InfraCommands {
+    /// Preview infrastructure changes
+    Plan {
+        /// Infrastructure spec file
+        file: PathBuf,
+    },
+    /// Apply infrastructure changes
+    Apply {
+        /// Infrastructure spec file
+        file: PathBuf,
+        /// Auto-approve changes
+        #[arg(long)]
+        yes: bool,
+    },
+    /// Detect configuration drift
+    Drift {
+        /// Infrastructure spec file
+        file: PathBuf,
+    },
+    /// Show current infrastructure state
+    Status,
+    /// Tear down infrastructure
+    Destroy {
+        /// Infrastructure spec file
+        file: PathBuf,
+        /// Auto-approve destruction
+        #[arg(long)]
+        yes: bool,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum SimCommands {
+    /// Execute a simulation
+    Run {
+        /// Simulation file
+        file: PathBuf,
+        /// Random seed
+        #[arg(long)]
+        seed: Option<u64>,
+    },
+    /// Inspect simulation state
+    Inspect {
+        /// Simulation output file
+        file: PathBuf,
+    },
+    /// Verify simulation invariants
+    Verify {
+        /// Simulation file
+        file: PathBuf,
+    },
+    /// Export simulation results
+    Export {
+        /// Simulation output file
+        file: PathBuf,
+        /// Export format (csv, json, parquet)
+        #[arg(long, default_value = "json")]
+        format: String,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum WidgetCommands {
+    /// Dev server for widget preview
+    Serve {
+        /// Widget file
+        file: PathBuf,
+        /// Port
+        #[arg(short, long, default_value = "3000")]
+        port: u16,
+    },
+    /// Production widget build
+    Build {
+        /// Widget file
+        file: PathBuf,
+        /// Output directory
+        #[arg(short, long, default_value = "dist")]
+        output: PathBuf,
+    },
+    /// Widget visual regression tests
+    Test {
+        /// Widget file or directory
+        path: PathBuf,
+    },
+    /// Widget tree inspector
+    Inspect {
+        /// Widget file
+        file: PathBuf,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum AprCommands {
+    /// Train or run an ML model
+    Run {
+        /// Model script file
+        file: PathBuf,
+    },
+    /// Serve model via HTTP
+    Serve {
+        /// Model file (.apr)
+        file: PathBuf,
+        /// Port
+        #[arg(short, long, default_value = "8000")]
+        port: u16,
+    },
+    /// Quantize model weights
+    Quantize {
+        /// Model file
+        file: PathBuf,
+        /// Quantization bits (4, 8, 16)
+        #[arg(long, default_value = "8")]
+        bits: u8,
+    },
+    /// Inspect model architecture
+    Inspect {
+        /// Model file
+        file: PathBuf,
+    },
+    /// Benchmark model performance
+    Bench {
+        /// Model file
+        file: PathBuf,
+        /// Number of iterations
+        #[arg(long, default_value = "100")]
+        iterations: usize,
+    },
+    /// Evaluate model accuracy
+    Eval {
+        /// Model file
+        file: PathBuf,
+        /// Test dataset
+        #[arg(long)]
+        data: PathBuf,
+    },
+}
+
+#[derive(Subcommand, Debug)]
+enum ModelCommands {
+    /// Save model checkpoint
+    Save {
+        /// Model name
+        name: String,
+        /// Output path
+        #[arg(short, long)]
+        output: PathBuf,
+    },
+    /// Load model from checkpoint
+    Load {
+        /// Model file
+        file: PathBuf,
+    },
+    /// Export to ONNX/SafeTensors
+    Export {
+        /// Model file
+        file: PathBuf,
+        /// Export format (onnx, safetensors)
+        #[arg(long, default_value = "safetensors")]
+        format: String,
+    },
+    /// Import from ONNX/SafeTensors
+    Import {
+        /// External model file
+        file: PathBuf,
+    },
+    /// Inspect model metadata
+    Inspect {
+        /// Model file
+        file: PathBuf,
+    },
+    /// Verify model integrity
+    Verify {
+        /// Model file
+        file: PathBuf,
     },
 }
 
