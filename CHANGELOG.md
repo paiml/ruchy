@@ -23,6 +23,8 @@ rolling in the integration gate for rc.1.
   acceptance criteria (previously marked "to be created" in Appendix A)
 - **Hot-reload integration test** ([EMBED-005]): `ruchy-embed/tests/hot_reload.rs`
   verifies EMBED-A5 (edit file on disk, observe new behaviour on reload)
+- **Release-mode startup benchmark** ([EMBED-006]): `ruchy-embed/tests/startup_benchmark.rs`
+  validates Success Criterion #2 — `Engine::new()` completes in < 5ms on x86_64 release
 - **aprender ML pipeline types** (beta.1): `TrainingConfig`, `InferenceConfig`,
   `PipelineStage`, `TrainingResult` (19 tests)
 - **presentar widget types** (beta.1): Widget (Column/Row/Text/Button/Input/Container),

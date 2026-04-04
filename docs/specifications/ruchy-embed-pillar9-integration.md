@@ -102,7 +102,7 @@ value semantics, same error messages, same stdlib). Divergence is a bug.
 
 | # | Criterion | Threshold | Test |
 |---|-----------|-----------|------|
-| EMBED-A1 | `Engine::new()` startup | < 5ms release, < 100ms debug | `test_engine_startup_time` |
+| EMBED-A1 | `Engine::new()` startup | < 5ms release, < 100ms debug | `ruchy-embed/tests/startup_benchmark.rs` (release-gated) |
 | EMBED-A2 | Sandbox default denies fs/net/env | 3 flags false | `test_sandbox_default_denies_all` |
 | EMBED-A3 | `eval` round-trips primitive values | Integer/Float/Bool/String/None | 5 unit tests |
 | EMBED-A4 | `call` dispatches to named function | `greet("world")` returns `"Hello, world!"` | `test_call_*` |
@@ -119,7 +119,7 @@ value semantics, same error messages, same stdlib). Divergence is a bug.
 | EMBED-003 | Enforce `max_execution_time` via interpreter deadline checks |
 | EMBED-004 | Enforce `allow_fs` in `load_file` with path allow-lists |
 | ~~EMBED-005~~ | ~~Hot-reload integration test~~ (DONE: `ruchy-embed/tests/hot_reload.rs`) |
-| EMBED-006 | Release-mode benchmark for `Engine::new()` under `cargo bench` |
+| ~~EMBED-006~~ | ~~Release-mode benchmark for `Engine::new()`~~ (DONE: `tests/startup_benchmark.rs` -- verified < 5ms on x86_64 release) |
 | EMBED-007 | `Value` extension: Vec/Map/Tuple for richer marshaling |
 
 ---
