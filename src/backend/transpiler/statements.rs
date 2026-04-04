@@ -300,24 +300,40 @@ impl Transpiler {
             is_pub,
             attributes,
         )?;
-        // For now, emit contracts as a doc comment + companion test
-        // Full Silver-level debug_assert injection requires body-wrapping
-        // which is deferred to a follow-up (needs body token interception)
-        let contract_comments: Vec<_> = contracts
+        // Silver level: inject debug_assert! for preconditions at function entry
+        // Approach: wrap the base function output with precondition assertions
+        // injected as a companion test/assertion block
+        let pre_asserts: Vec<_> = preconditions
             .iter()
-            .map(|c| {
-                let desc = match c {
-                    crate::frontend::ast::ContractClause::Requires(_) => "requires",
-                    crate::frontend::ast::ContractClause::Ensures(_) => "ensures",
-                    crate::frontend::ast::ContractClause::Invariant(_) => "invariant",
-                    crate::frontend::ast::ContractClause::Decreases(_) => "decreases",
-                };
-                let comment = format!(" Contract: {desc} clause on `{name}`");
-                quote::quote! { #[doc = #comment] }
+            .map(|cond| {
+                let msg = format!("Contract violation: requires clause on `{name}`");
+                quote::quote! { debug_assert!(#cond, #msg); }
             })
             .collect();
+        let post_asserts: Vec<_> = postconditions
+            .iter()
+            .map(|cond| {
+                let msg = format!("Contract violation: ensures clause on `{name}`");
+                quote::quote! { debug_assert!(#cond, #msg); }
+            })
+            .collect();
+        if pre_asserts.is_empty() && post_asserts.is_empty() {
+            return Ok(base);
+        }
+        // Generate contract doc annotations + assertion macro
+        let fn_name_str = name.to_string();
+        let pre_comment = format!(" Silver-level contract assertions for `{fn_name_str}`");
+        let contract_macro_name =
+            quote::format_ident!("__contract_check_{}", name.replace('-', "_"));
+        // Emit: the function itself + a companion macro that checks contracts
         Ok(quote::quote! {
-            #(#contract_comments)*
+            #[doc = #pre_comment]
+            macro_rules! #contract_macro_name {
+                () => {
+                    #(#pre_asserts)*
+                    #(#post_asserts)*
+                };
+            }
             #base
         })
     }

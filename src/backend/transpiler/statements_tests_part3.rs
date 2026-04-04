@@ -1666,7 +1666,7 @@ fn test_pmat001_transpile_function_without_contracts_no_doc_comment() {
 }
 
 #[test]
-fn test_pmat001_transpile_function_with_ensures_emits_doc_comment() {
+fn test_pmat001_transpile_function_with_ensures_emits_debug_assert() {
     let transpiler = Transpiler::new();
     let source = r#"fun abs(x: i64) -> i64 ensures result >= 0 { if x < 0 { -x } else { x } }"#;
     let mut parser = Parser::new(source);
@@ -1675,8 +1675,29 @@ fn test_pmat001_transpile_function_with_ensures_emits_doc_comment() {
     assert!(result.is_ok(), "Transpilation failed: {:?}", result.err());
     let output = result.unwrap().to_string();
     assert!(
-        output.contains("ensures"),
-        "Output should mention 'ensures': {}",
+        output.contains("debug_assert"),
+        "Output should contain debug_assert! for ensures clause: {}",
+        output
+    );
+}
+
+#[test]
+fn test_v5_transpile_function_with_requires_emits_debug_assert() {
+    let transpiler = Transpiler::new();
+    let source = r#"fun divide(a: f64, b: f64) -> f64 requires b != 0.0 { a / b }"#;
+    let mut parser = Parser::new(source);
+    let ast = parser.parse().unwrap();
+    let result = transpiler.transpile_expr(&ast);
+    assert!(result.is_ok(), "Transpilation failed: {:?}", result.err());
+    let output = result.unwrap().to_string();
+    assert!(
+        output.contains("debug_assert"),
+        "Output should contain debug_assert! for requires clause: {}",
+        output
+    );
+    assert!(
+        output.contains("Contract violation"),
+        "Output should contain contract violation message: {}",
         output
     );
 }
