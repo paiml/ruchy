@@ -212,6 +212,7 @@ pub fn handle_provability_command(
     json: bool,
     list: bool,
     fail_under: Option<f64>,
+    fail_on_totality_violation: bool,
 ) -> Result<()> {
     let report = scan(path)?;
     if json {
@@ -267,6 +268,16 @@ pub fn handle_provability_command(
                 "non-bronze-pct {:.2}% is below threshold {:.2}% (F1 falsifier breach)",
                 actual,
                 threshold
+            );
+        }
+    }
+    // Apply --fail-on-totality-violation gate (§14.10.6 CI enforcement).
+    if fail_on_totality_violation {
+        let violations = report.totality_violations();
+        if !violations.is_empty() {
+            anyhow::bail!(
+                "{} Gold/Platinum function(s) lack @total (§14.10.6 breach)",
+                violations.len()
             );
         }
     }

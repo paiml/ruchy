@@ -169,6 +169,61 @@ fn test_tier_fail_under_zero_always_passes() {
 }
 
 #[test]
+fn test_tier_fail_on_totality_violation_triggers_on_gold_without_total() {
+    let tmp = TempDir::new().unwrap();
+    // @gold decorator + contracts -> Gold tier; no @total -> violation.
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "#[gold]\nfun compute() requires true ensures true { 1 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-on-totality-violation")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.10.6 breach"));
+}
+
+#[test]
+fn test_tier_fail_on_totality_violation_passes_when_gold_has_total() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "#[gold]\n#[total]\nfun compute() requires true ensures true { 1 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-on-totality-violation")
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_tier_fail_on_totality_violation_passes_on_silver_unmarked() {
+    // Silver functions without @total are NOT violations — §14.10.6 only
+    // applies to Gold/Platinum.
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun f() requires true { 1 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-on-totality-violation")
+        .assert()
+        .success();
+}
+
+#[test]
 fn test_tier_empty_directory() {
     let tmp = TempDir::new().unwrap();
     let output = ruchy_cmd()

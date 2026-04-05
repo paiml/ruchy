@@ -957,6 +957,9 @@ enum Commands {
         /// Fail (exit non-zero) if non-bronze pct < N (F1 CI gate)
         #[arg(long, value_name = "PCT")]
         fail_under: Option<f64>,
+        /// Fail if any Gold/Platinum function lacks @total (§14.10.6 gate)
+        #[arg(long)]
+        fail_on_totality_violation: bool,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

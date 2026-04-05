@@ -555,9 +555,19 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             crate::handlers::handlers_modules::migrate::run_migration(&path, dry_run)?;
             Ok(())
         }
-        crate::Commands::Tier { path, json, list, fail_under } => {
+        crate::Commands::Tier {
+            path,
+            json,
+            list,
+            fail_under,
+            fail_on_totality_violation,
+        } => {
             crate::handlers::handlers_modules::provability::handle_provability_command(
-                &path, json, list, fail_under,
+                &path,
+                json,
+                list,
+                fail_under,
+                fail_on_totality_violation,
             )
         }
         crate::Commands::Contracts(cmd) => {

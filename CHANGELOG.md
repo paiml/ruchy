@@ -48,6 +48,13 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-004] `--fail-on-totality-violation` CI gate**: Flag on
+  `ruchy tier` that flips §14.10.6 from stderr warning to compile-blocking
+  error. Exits status 1 with "§14.10.6 breach" message when any
+  Gold/Platinum function lacks `@total`/`@corecursive`. Parallels
+  `--fail-under` for F1 enforcement; both can be combined in CI. 3 new
+  CLI tests (violation triggers, @total passes, Silver unaffected).
+  Total cli_tier_command.rs tests: 13/13 passing.
 - **[PROVABILITY-003] `ruchy tier` totality tracking + §14.10.6 enforcement**:
   Extends the tier scanner with Totality tracking. Reads `@total`/`@partial`
   decorators on every function, aggregates counts, and checks the §14.10.6
