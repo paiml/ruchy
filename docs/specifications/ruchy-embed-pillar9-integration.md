@@ -58,9 +58,12 @@ impl Engine {
 
 impl Sandbox {
     pub fn permissive() -> Self;  // all caps enabled
+    pub fn strict() -> Self;      // all caps denied, tight limits
     pub fn with_timeout(self, timeout: Duration) -> Self;
     pub fn with_max_recursion(self, depth: usize) -> Self;
     pub fn with_fs(self) -> Self;
+    pub fn with_net(self) -> Self;
+    pub fn with_env(self) -> Self;
 }
 ```
 

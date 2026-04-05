@@ -78,6 +78,30 @@ impl Sandbox {
         self.allow_fs = true;
         self
     }
+
+    /// Allow network access.
+    pub fn with_net(mut self) -> Self {
+        self.allow_net = true;
+        self
+    }
+
+    /// Allow environment variable access.
+    pub fn with_env(mut self) -> Self {
+        self.allow_env = true;
+        self
+    }
+
+    /// Return a strictly-denied sandbox (all caps off, minimal limits).
+    /// Useful for high-risk untrusted input.
+    pub fn strict() -> Self {
+        Self {
+            max_execution_time: Duration::from_secs(1),
+            max_recursion_depth: 64,
+            allow_fs: false,
+            allow_net: false,
+            allow_env: false,
+        }
+    }
 }
 
 /// The main embeddable scripting engine.
@@ -506,6 +530,33 @@ mod tests {
         assert_eq!(sandbox.max_recursion_depth, 512);
         assert!(sandbox.allow_fs);
         assert!(!sandbox.allow_net);
+    }
+
+    #[test]
+    fn test_sandbox_with_net_and_env() {
+        let sandbox = Sandbox::default().with_net().with_env();
+        assert!(sandbox.allow_net);
+        assert!(sandbox.allow_env);
+        assert!(!sandbox.allow_fs, "with_net/env must not enable fs");
+    }
+
+    #[test]
+    fn test_sandbox_strict() {
+        let sandbox = Sandbox::strict();
+        assert!(!sandbox.allow_fs);
+        assert!(!sandbox.allow_net);
+        assert!(!sandbox.allow_env);
+        assert_eq!(sandbox.max_execution_time, Duration::from_secs(1));
+        assert_eq!(sandbox.max_recursion_depth, 64);
+    }
+
+    #[test]
+    fn test_sandbox_builder_chain_preserves_unset_caps() {
+        // with_fs() must not flip allow_net or allow_env.
+        let sandbox = Sandbox::default().with_fs();
+        assert!(sandbox.allow_fs);
+        assert!(!sandbox.allow_net);
+        assert!(!sandbox.allow_env);
     }
 
     #[test]

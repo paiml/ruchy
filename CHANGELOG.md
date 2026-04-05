@@ -25,6 +25,9 @@ rolling in the integration gate for rc.1.
   verifies EMBED-A5 (edit file on disk, observe new behaviour on reload)
 - **Release-mode startup benchmark** ([EMBED-006]): `ruchy-embed/tests/startup_benchmark.rs`
   validates Success Criterion #2 — `Engine::new()` completes in < 5ms on x86_64 release
+- **Sandbox builder completion**: `Sandbox::with_net()`, `Sandbox::with_env()`,
+  and `Sandbox::strict()` (tight-limit preset) — completes the capability API
+  symmetry. 3 new unit tests.
 - **Container marshaling** ([EMBED-007]): `Value::List` / `Value::Tuple` /
   `Value::Map` variants added to ruchy-embed with lossless bidirectional
   conversion to `RuchyValue::Array` / `RuchyValue::Tuple` / `RuchyValue::Object`;
