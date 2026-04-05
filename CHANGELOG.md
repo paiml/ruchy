@@ -48,6 +48,11 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **Spec Appendix B added**: enumerates all 7 paiml-org Ruchy book repos
+  (ruchy-book, ruchy-cookbook, ruchy-cli-tools-book, tooling-with-ruchy,
+  ruchy-repl-demos, rosetta-ruchy, ruchyruchy) that must pass validation
+  for RC.1 gate. Criterion #4 upgraded from "ruchy-book only" to "all 7
+  downstream books".
 
 ### Fixed
 - **[COMPILER-001]** `ruchy compile` now honours `CARGO_TARGET_DIR`. When the

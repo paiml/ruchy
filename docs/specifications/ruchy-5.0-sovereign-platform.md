@@ -400,7 +400,7 @@ keywords. It does not modify semantics.
 | 1 | All 9 pillar specs pass acceptance | 100% | Each spec defines its own acceptance tests |
 | 2 | ruchy-embed startup latency | < 5ms | Benchmark: `Engine::new()` on x86_64, release build |
 | 3 | Zero regressions in 4.x test suite | 0 failures | `cargo test --all-features` (existing tests) |
-| 4 | ruchy-book examples compile | 100% | `make validate-book` passes |
+| 4 | Downstream book repos compile | 100% on each book | See Appendix B: seven book repos must pass on 5.0 |
 | 5 | WASM target functional | All WASM tests pass | `cargo test --target wasm32-unknown-unknown` |
 | 6 | Binary size (default features) | < +20% vs 4.x | `ls -la target/release/ruchy` |
 | 7 | Compile time (default features) | < +30% vs 4.x | `cargo build --release --timings` |
@@ -434,3 +434,65 @@ document takes precedence.
 | 7 - Simulation | `docs/specifications/simular-simulation-integration.md` | SIMULAR-XXX |
 | 8 - Testing | `docs/specifications/probar-testing-integration.md` | PROBAR-XXX |
 | 9 - Embedding | `docs/specifications/ruchy-embed-pillar9-integration.md` | EMBED-XXX |
+
+---
+
+## Appendix B: Downstream Book Repos (paiml org)
+
+Success Criterion #4 requires every paiml-org book/cookbook/demo repo that
+teaches or exercises Ruchy to compile cleanly against 5.0. These repos are
+downstream consumers of the compiler and the most authentic regression
+surface for breaking changes. Each must pass its own validation harness on
+the released 5.0.0 binary before Go/No-Go.
+
+| # | Repo | Kind | What it validates | Local path |
+|---|------|------|-------------------|------------|
+| B1 | `paiml/ruchy-book` | Official language book | Chapters 01..23 parse/compile/run; `make validate-book` | `../ruchy-book` |
+| B2 | `paiml/ruchy-cookbook` | Language cookbook | Recipe-style examples across stdlib surface | `../ruchy-cookbook` |
+| B3 | `paiml/ruchy-cli-tools-book` | CLI tools book | Building CLI tools in Ruchy (clap-equivalents, argv parsing) | `../ruchy-cli-tools-book` |
+| B4 | `paiml/tooling-with-ruchy` | Tooling book | Using `ruchy` native tools (check/lint/fmt/test/coverage/...) | `../tooling-with-ruchy` |
+| B5 | `paiml/ruchy-repl-demos` | REPL demos | `ruchy -e` one-liners + REPL transcripts | `../ruchy-repl-demos` |
+| B6 | `paiml/rosetta-ruchy` | Polyglot benchmarks | Ruchy-vs-Rust-vs-Python performance parity examples | `../rosetta-ruchy` |
+| B7 | `paiml/ruchyruchy` | Self-hosting corpus | Ruchy compiling Ruchy (bootstrap reference) | `../ruchyruchy` |
+
+### Validation workflow
+
+For each book repo `$B`:
+
+```bash
+# 1. Clone alongside the ruchy repo (sibling path)
+( cd .. && [ -d "$B" ] || git clone "https://github.com/paiml/$B" )
+
+# 2. Install current ruchy binary
+cargo install --path . --force
+
+# 3. Run the book's own validation harness
+( cd ../$B && make validate 2>&1 )   # or the repo's documented target
+
+# 4. Record pass/fail in the 5.0 spec status table
+```
+
+### Current status on 5.0.0-beta.1 (2026-04-05)
+
+| # | Repo | Status | Notes |
+|---|------|--------|-------|
+| B1 | `ruchy-book` | PARTIAL | 15/16 critical chapters pass. ch18 DataFrames blocked by DATAFRAMES-001 (pre-existing transpiler defect, not 5.0 regression). |
+| B2 | `ruchy-cookbook` | UNVALIDATED | Not yet cloned locally. |
+| B3 | `ruchy-cli-tools-book` | UNVALIDATED | Not yet cloned locally. |
+| B4 | `tooling-with-ruchy` | UNVALIDATED | Not yet cloned locally. |
+| B5 | `ruchy-repl-demos` | UNVALIDATED | Not yet cloned locally. |
+| B6 | `rosetta-ruchy` | UNVALIDATED | Not yet cloned locally. |
+| B7 | `ruchyruchy` | UNVALIDATED | Not yet cloned locally. |
+
+### Gate for RC.1 → 5.0.0
+
+RC.1 cannot be tagged until **all seven** book repos report either PASS or
+a documented, ticketed, separate-from-5.0 failure. Missing validation
+(UNVALIDATED) blocks the release.
+
+### Known blockers
+
+| Ticket | Repo | Description | Scope |
+|--------|------|-------------|-------|
+| DATAFRAMES-001 | ruchy-book ch18 | `df!` macro emits `HashMap<String,Vec<String>>` but transpiled code calls `.lazy()` expecting a Polars DataFrame | Transpiler DataFrame type inference rework — pre-existing, not a 5.0 regression |
+| COMPILER-001 | ruchy-book (all compile-requiring chapters) | `ruchy compile` ignored `CARGO_TARGET_DIR` → "Expected binary not found" | **FIXED** in 5.0.0-beta.1 (`tests/compiler_cargo_target_dir.rs`) |

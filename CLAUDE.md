@@ -445,7 +445,7 @@ env PROPTEST_CASES=5 QUICKCHECK_TESTS=5 cargo llvm-cov nextest \
 - Use cargo-llvm-cov (not tarpaulin)
 - All bugs solved with TDD, never manual hacks
 - Mix: unit/doctests/property-tests/fuzz tests
-- Check ../ruchy-book and ../rosetta-ruchy at sprint start
+- Check all 7 paiml book repos at sprint start (see 5.0 spec Appendix B): ruchy-book, ruchy-cookbook, ruchy-cli-tools-book, tooling-with-ruchy, ruchy-repl-demos, rosetta-ruchy, ruchyruchy
 
 ## Scripting Policy
 
