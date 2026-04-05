@@ -68,6 +68,7 @@ ruchy tier src/ --by-file --sort-by bronze --top 10
 | `--parse-timeout-ms <MS>` | Per-file parse timeout (resilience vs parser hangs) | `5000` |
 | `--baseline <FILE>` | Regression gate: compare against stored baseline JSON | none |
 | `--markdown` | GitHub-flavored markdown report (for PR comments/summaries) | `false` |
+| `--fail-on-scorecard <LEVEL>` | Fail if any §14.5 scorecard metric ≥ LEVEL (warn\|fail) | none |
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |
@@ -202,7 +203,7 @@ Columns: tier, totality, `pub` marker, function name, source file.
 
 ## CI Gate Recipes
 
-`ruchy tier` ships with seven CI gate flags (six threshold gates + baseline). All exit non-zero on breach
+`ruchy tier` ships with eight CI gate flags (six threshold gates + baseline + scorecard). All exit non-zero on breach
 and print a spec-ticketed error message to stderr.
 
 ### Gate: ≥50% non-Bronze (§14.2)
@@ -241,6 +242,22 @@ ruchy tier src/ --fail-pub-bronze-above 0
 # ⇒ Error if any pub function is Bronze
 # Use during 5.0→5.2 migration with a declining ceiling
 ```
+
+### Gate: scorecard threshold
+
+```bash
+# Block any WARN or FAIL metric
+ruchy tier src/ --fail-on-scorecard warn
+# ⇒ Error: §14.5 scorecard breach at level=WARN: F4:WARN F11:WARN
+
+# Block only FAIL metrics (WARN is tolerated)
+ruchy tier src/ --fail-on-scorecard fail
+# ⇒ stricter than individual gates; watches all 4 falsifiers at once
+```
+
+Single flag that watches all four §14.5 metrics simultaneously. Useful
+during migration: start at `fail` (only the most severe breaches),
+ratchet down to `warn` at 5.2.
 
 ### Gate: no regressions vs baseline
 

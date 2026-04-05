@@ -169,6 +169,53 @@ fn test_tier_by_file_human_output() {
 }
 
 #[test]
+fn test_tier_fail_on_scorecard_warn_fires_on_pub_bronze() {
+    let tmp = TempDir::new().unwrap();
+    // 1 pub Bronze → F4 WARN → breach at level=warn.
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-on-scorecard")
+        .arg("warn")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 scorecard breach"))
+        .stderr(predicate::str::contains("F4:WARN"));
+}
+
+#[test]
+fn test_tier_fail_on_scorecard_fail_ignores_warn() {
+    let tmp = TempDir::new().unwrap();
+    // 1 pub Bronze → F4 WARN (not FAIL) → level=fail passes.
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-on-scorecard")
+        .arg("fail")
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_tier_fail_on_scorecard_invalid_level_errors() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-on-scorecard")
+        .arg("bogus")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("invalid --fail-on-scorecard"));
+}
+
+#[test]
 fn test_tier_markdown_output_has_headers() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();

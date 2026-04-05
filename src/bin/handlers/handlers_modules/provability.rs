@@ -221,6 +221,28 @@ impl FalsifierStatus {
             Self::NotApplicable => "N/A",
         }
     }
+
+    /// Numeric severity for comparison. Higher = worse.
+    /// OK/N/A = 0 (acceptable), WARN = 1, FAIL = 2.
+    #[must_use]
+    pub fn severity(&self) -> u8 {
+        match self {
+            Self::Ok | Self::NotApplicable => 0,
+            Self::Warn => 1,
+            Self::Fail => 2,
+        }
+    }
+
+    /// Parse a user-supplied level string (case-insensitive).
+    /// Accepts: "warn"/"warning" → Warn; "fail"/"error" → Fail.
+    #[must_use]
+    pub fn parse_level(s: &str) -> Option<FalsifierStatus> {
+        match s.to_ascii_lowercase().as_str() {
+            "warn" | "warning" => Some(Self::Warn),
+            "fail" | "error" => Some(Self::Fail),
+            _ => None,
+        }
+    }
 }
 
 /// §14.5 falsifier scorecard across the four tracked metrics.
@@ -236,10 +258,34 @@ impl FalsifierScorecard {
     /// True if any metric is in `Fail` state (falsifier range).
     #[must_use]
     pub fn any_fail(&self) -> bool {
-        matches!(self.f1, FalsifierStatus::Fail)
-            || matches!(self.f2, FalsifierStatus::Fail)
-            || matches!(self.f4, FalsifierStatus::Fail)
-            || matches!(self.f11, FalsifierStatus::Fail)
+        self.breaches_at(FalsifierStatus::Fail)
+    }
+
+    /// True if any metric is at-or-above `level` (severity-wise).
+    /// `level=Warn` matches Warn+Fail. `level=Fail` matches Fail only.
+    #[must_use]
+    pub fn breaches_at(&self, level: FalsifierStatus) -> bool {
+        [self.f1, self.f2, self.f4, self.f11]
+            .iter()
+            .any(|s| s.severity() >= level.severity())
+    }
+
+    /// Return (label, status) for each breached metric at-or-above `level`.
+    #[must_use]
+    pub fn breached_metrics(
+        &self,
+        level: FalsifierStatus,
+    ) -> Vec<(&'static str, FalsifierStatus)> {
+        let pairs = [
+            ("F1", self.f1),
+            ("F2", self.f2),
+            ("F4", self.f4),
+            ("F11", self.f11),
+        ];
+        pairs
+            .into_iter()
+            .filter(|(_, s)| s.severity() >= level.severity())
+            .collect()
     }
 }
 
@@ -933,6 +979,7 @@ pub fn handle_provability_command(
     parse_timeout_ms: u64,
     baseline: Option<&Path>,
     markdown: bool,
+    fail_on_scorecard: Option<&str>,
 ) -> Result<()> {
     let raw = scan_with_timeout(path, parse_timeout_ms)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
@@ -1078,6 +1125,28 @@ pub fn handle_provability_command(
                     ceiling
                 );
             }
+        }
+    }
+    // Apply --fail-on-scorecard gate (§14.5 scorecard CI enforcement).
+    if let Some(level_str) = fail_on_scorecard {
+        let level = FalsifierStatus::parse_level(level_str).ok_or_else(|| {
+            anyhow::anyhow!(
+                "invalid --fail-on-scorecard level `{}`: expected `warn` or `fail`",
+                level_str
+            )
+        })?;
+        let sc = report.falsifier_scorecard();
+        let breaches = sc.breached_metrics(level);
+        if !breaches.is_empty() {
+            let summary: Vec<String> = breaches
+                .iter()
+                .map(|(k, s)| format!("{k}:{}", s.label()))
+                .collect();
+            anyhow::bail!(
+                "§14.5 scorecard breach at level={}: {}",
+                level.label(),
+                summary.join(" ")
+            );
         }
     }
     // Baseline comparison (§14.5 regression gate).
@@ -1674,6 +1743,92 @@ mod tests {
         assert!(j.contains("\"f2\":"));
         assert!(j.contains("\"f4\":"));
         assert!(j.contains("\"f11\":"));
+    }
+
+    #[test]
+    fn test_falsifier_status_severity_ordering() {
+        assert!(FalsifierStatus::Fail.severity() > FalsifierStatus::Warn.severity());
+        assert!(FalsifierStatus::Warn.severity() > FalsifierStatus::Ok.severity());
+        assert_eq!(
+            FalsifierStatus::NotApplicable.severity(),
+            FalsifierStatus::Ok.severity()
+        );
+    }
+
+    #[test]
+    fn test_parse_level_accepts_common_spellings() {
+        assert_eq!(
+            FalsifierStatus::parse_level("warn"),
+            Some(FalsifierStatus::Warn)
+        );
+        assert_eq!(
+            FalsifierStatus::parse_level("WARN"),
+            Some(FalsifierStatus::Warn)
+        );
+        assert_eq!(
+            FalsifierStatus::parse_level("warning"),
+            Some(FalsifierStatus::Warn)
+        );
+        assert_eq!(
+            FalsifierStatus::parse_level("fail"),
+            Some(FalsifierStatus::Fail)
+        );
+        assert_eq!(
+            FalsifierStatus::parse_level("error"),
+            Some(FalsifierStatus::Fail)
+        );
+        assert_eq!(FalsifierStatus::parse_level("bogus"), None);
+        assert_eq!(FalsifierStatus::parse_level(""), None);
+    }
+
+    #[test]
+    fn test_scorecard_breaches_at_warn_catches_warn_and_fail() {
+        let sc = FalsifierScorecard {
+            f1: FalsifierStatus::Ok,
+            f2: FalsifierStatus::Warn,
+            f4: FalsifierStatus::Ok,
+            f11: FalsifierStatus::Ok,
+        };
+        assert!(sc.breaches_at(FalsifierStatus::Warn));
+        assert!(!sc.breaches_at(FalsifierStatus::Fail));
+    }
+
+    #[test]
+    fn test_scorecard_breaches_at_fail_ignores_warn() {
+        let sc = FalsifierScorecard {
+            f1: FalsifierStatus::Warn,
+            f2: FalsifierStatus::Warn,
+            f4: FalsifierStatus::Ok,
+            f11: FalsifierStatus::Ok,
+        };
+        // No metric at Fail → gate at Fail passes.
+        assert!(!sc.breaches_at(FalsifierStatus::Fail));
+    }
+
+    #[test]
+    fn test_scorecard_breached_metrics_returns_only_breaches() {
+        let sc = FalsifierScorecard {
+            f1: FalsifierStatus::Fail,
+            f2: FalsifierStatus::Warn,
+            f4: FalsifierStatus::Ok,
+            f11: FalsifierStatus::Ok,
+        };
+        let w = sc.breached_metrics(FalsifierStatus::Warn);
+        assert_eq!(w.len(), 2); // F1+F2
+        let f = sc.breached_metrics(FalsifierStatus::Fail);
+        assert_eq!(f.len(), 1); // F1 only
+        assert_eq!(f[0].0, "F1");
+    }
+
+    #[test]
+    fn test_scorecard_breached_metrics_clean_scorecard_empty() {
+        let sc = FalsifierScorecard {
+            f1: FalsifierStatus::Ok,
+            f2: FalsifierStatus::NotApplicable,
+            f4: FalsifierStatus::Ok,
+            f11: FalsifierStatus::Ok,
+        };
+        assert!(sc.breached_metrics(FalsifierStatus::Warn).is_empty());
     }
 
     #[test]

@@ -993,6 +993,9 @@ enum Commands {
         /// Emit GitHub-flavored markdown report (for PR summaries)
         #[arg(long)]
         markdown: bool,
+        /// Fail if any §14.5 scorecard metric is at-or-above level (warn|fail)
+        #[arg(long, value_name = "LEVEL")]
+        fail_on_scorecard: Option<String>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

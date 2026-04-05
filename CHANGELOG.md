@@ -48,6 +48,16 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-022] §14.5 scorecard CI gate (`--fail-on-scorecard`)**:
+  Eighth CI gate on `ruchy tier`. `--fail-on-scorecard <LEVEL>` exits 1
+  with "§14.5 scorecard breach" if any metric is at-or-above LEVEL.
+  Accepts `warn` (catches WARN+FAIL) or `fail` (catches FAIL only).
+  Severity ordering: OK/N/A = 0, WARN = 1, FAIL = 2. Error message
+  enumerates the breached metrics: "F4:WARN F11:WARN". Case-insensitive,
+  accepts common spellings (warn/warning, fail/error). New
+  `FalsifierStatus::severity()`, `parse_level()`, `breaches_at()`,
+  `breached_metrics()`. 6 new handler tests + 3 new CLI tests. 90/90
+  handler, 45/45 CLI tier.
 - **[PROVABILITY-021] `ruchy tier --markdown` PR-ready reports**: Emits
   GitHub-flavored markdown with tier distribution table, §14.5 falsifier
   scorecard with 🟢/🟡/🔴/⚪ status badges, and a parser-health section
