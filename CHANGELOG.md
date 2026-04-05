@@ -48,6 +48,18 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[TIER-001] §14.2 tier classification API**: `Tier` enum
+  (Bronze/Silver/Gold/Platinum) with strength ordering, `TierInputs` view
+  over function annotations, and pure `classify()` function enforcing
+  §14.2 precedence rules. Key invariants encoded as methods:
+  `is_stdlib_eligible_at_52()` (Bronze banned after 5.2 per §14.6),
+  `requires_kani()` (Gold+ need BMC per §14.10.6),
+  `requires_lean_refinement()` (Platinum only per §14.10.5). Refuses to
+  assign Platinum without full stack (YAML + Lean proof), refuses Gold
+  without `requires`/`ensures` — @gold/@platinum are claims that must be
+  backed, not labels that can be stuck on bare functions. 15 lib tests +
+  2 integration tests. Zero coupling to parser; takes decorator name
+  strings + booleans, returns `Tier`.
 - **[SPEC-HARDREQ-002] §14.10 runtime skeletons shipped**: New `ruchy::provability`
   module with the concrete types for §14.10.1 (Secret<T>/Public<T>/declassify),
   §14.10.2 (RootCapability/FsCap/NetCap/EnvCap/ClockCap/RandomCap), and §14.10.3

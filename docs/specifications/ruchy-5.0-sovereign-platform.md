@@ -46,6 +46,7 @@
 | §14.10.1 Secret<T>/Public<T> runtime skeleton | DONE | `src/provability/secret.rs` ships Secret/Public/declassify (4 lib tests + 3 integration tests). Static lint pass scheduled for SECRET-002. |
 | §14.10.2 RootCapability + 5 scoped caps runtime skeleton | DONE | `src/provability/capabilities.rs` ships Root/Fs/Net/Env/Clock/RandomCap (5 lib tests + 4 integration tests). Static enforcement scheduled for CAP-002. |
 | §14.10.3 Totality enum runtime skeleton | DONE | `src/provability/totality.rs` ships Total/Partial/Corecursive/Unknown + from_decorator (5 lib tests + 3 integration tests). Analyzer scheduled for TOTAL-002. |
+| §14.2 Tier classification runtime | DONE | `src/provability/tier.rs` ships `Tier`/`TierInputs`/`classify` (15 lib tests + 2 integration tests). Enforces spec precedence: @platinum-without-full-stack degrades, @gold-without-contracts degrades to Bronze. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---

@@ -16,8 +16,10 @@
 
 pub mod capabilities;
 pub mod secret;
+pub mod tier;
 pub mod totality;
 
 pub use capabilities::{ClockCap, EnvCap, FsCap, NetCap, RandomCap, RootCapability};
 pub use secret::{declassify, Public, Secret};
+pub use tier::{classify, Tier, TierInputs};
 pub use totality::Totality;
