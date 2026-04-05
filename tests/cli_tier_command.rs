@@ -169,6 +169,59 @@ fn test_tier_by_file_human_output() {
 }
 
 #[test]
+fn test_tier_config_file_applies_gate() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+    let cfg = tmp.path().join("tier.toml");
+    fs::write(&cfg, "[gates]\nfail_pub_bronze_above = 0\n").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--config")
+        .arg(&cfg)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 F4 breach"));
+}
+
+#[test]
+fn test_tier_cli_flag_overrides_config() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+    let cfg = tmp.path().join("tier.toml");
+    // Config says fail if pub_bronze > 5 (would pass)
+    fs::write(&cfg, "[gates]\nfail_pub_bronze_above = 5\n").unwrap();
+
+    // CLI flag tightens to 0 → should fail (CLI wins).
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--config")
+        .arg(&cfg)
+        .arg("--fail-pub-bronze-above")
+        .arg("0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 F4 breach"));
+}
+
+#[test]
+fn test_tier_config_file_missing_errors_cleanly() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--config")
+        .arg("/nonexistent-config.toml")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("reading config"));
+}
+
+#[test]
 fn test_tier_fail_on_scorecard_warn_fires_on_pub_bronze() {
     let tmp = TempDir::new().unwrap();
     // 1 pub Bronze → F4 WARN → breach at level=warn.

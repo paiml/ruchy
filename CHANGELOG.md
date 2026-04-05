@@ -48,6 +48,21 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-023] `ruchy tier --config <file.toml>` centralized config**:
+  Load all gate thresholds from a single TOML file so CI scripts don't
+  have to juggle 8 long flags:
+    [gates]
+    fail_under = 50.0
+    fail_under_f1 = 95.0
+    fail_exempt_density_above = 0.5
+    fail_pub_bronze_above = 0
+    fail_on_totality_violation = true
+    fail_on_scorecard = "warn"
+  Then: `ruchy tier src/ --config .ruchy-tier.toml`
+  CLI flags take precedence over config values (Option::or semantics).
+  Missing/malformed file errors cleanly with path context.
+  New `TierConfig` + `TierConfigGates` serde-Deserialize structs.
+  5 new handler tests + 3 new CLI tests. 95/95 handler, 48/48 CLI tier.
 - **[PROVABILITY-022] §14.5 scorecard CI gate (`--fail-on-scorecard`)**:
   Eighth CI gate on `ruchy tier`. `--fail-on-scorecard <LEVEL>` exits 1
   with "§14.5 scorecard breach" if any metric is at-or-above LEVEL.

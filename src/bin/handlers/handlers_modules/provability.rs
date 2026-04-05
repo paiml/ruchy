@@ -169,6 +169,38 @@ pub struct ProvabilityReport {
     pub functions: Vec<ClassifiedFunction>,
 }
 
+/// TOML config schema for `ruchy tier --config <file>`.
+/// All fields optional; CLI flags override non-None values here.
+#[derive(Debug, Default, Clone, serde::Deserialize)]
+#[serde(default)]
+pub struct TierConfig {
+    /// [gates] section — CI threshold values.
+    pub gates: TierConfigGates,
+}
+
+#[derive(Debug, Default, Clone, serde::Deserialize)]
+#[serde(default)]
+pub struct TierConfigGates {
+    pub fail_under: Option<f64>,
+    pub fail_under_f1: Option<f64>,
+    pub fail_exempt_density_above: Option<f64>,
+    pub fail_diff_exempt_density_above: Option<f64>,
+    pub fail_pub_bronze_above: Option<usize>,
+    pub fail_on_totality_violation: Option<bool>,
+    pub fail_on_scorecard: Option<String>,
+}
+
+impl TierConfig {
+    /// Load a TOML file into `TierConfig`. Returns an error if the file
+    /// cannot be read or parsed; missing [gates] fields default to None.
+    pub fn load(path: &Path) -> Result<Self> {
+        let raw = std::fs::read_to_string(path)
+            .with_context(|| format!("reading config {}", path.display()))?;
+        toml::from_str::<Self>(&raw)
+            .with_context(|| format!("parsing config {}", path.display()))
+    }
+}
+
 /// Snapshot of the metrics that matter for baseline comparison.
 /// Intentionally a subset of `ProvabilityReport` — only the numeric
 /// metrics we regression-check in CI.
@@ -980,7 +1012,30 @@ pub fn handle_provability_command(
     baseline: Option<&Path>,
     markdown: bool,
     fail_on_scorecard: Option<&str>,
+    config_path: Option<&Path>,
 ) -> Result<()> {
+    // Load config file, if any. CLI flag values take precedence: a CLI
+    // value wins only if it is Some / true; None / false falls back
+    // to the config file value.
+    let config = if let Some(p) = config_path {
+        TierConfig::load(p)?
+    } else {
+        TierConfig::default()
+    };
+    let fail_under = fail_under.or(config.gates.fail_under);
+    let fail_under_f1 = fail_under_f1.or(config.gates.fail_under_f1);
+    let fail_exempt_density_above =
+        fail_exempt_density_above.or(config.gates.fail_exempt_density_above);
+    let fail_diff_exempt_density_above =
+        fail_diff_exempt_density_above.or(config.gates.fail_diff_exempt_density_above);
+    let fail_pub_bronze_above = fail_pub_bronze_above.or(config.gates.fail_pub_bronze_above);
+    // For booleans: OR semantics (either CLI or config enables the gate).
+    let fail_on_totality_violation =
+        fail_on_totality_violation || config.gates.fail_on_totality_violation.unwrap_or(false);
+    // For fail_on_scorecard: CLI string wins; fall back to config string.
+    let config_scorecard = config.gates.fail_on_scorecard.clone();
+    let fail_on_scorecard_effective: Option<&str> = fail_on_scorecard.or(config_scorecard.as_deref());
+
     let raw = scan_with_timeout(path, parse_timeout_ms)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
     if markdown {
@@ -1128,7 +1183,7 @@ pub fn handle_provability_command(
         }
     }
     // Apply --fail-on-scorecard gate (§14.5 scorecard CI enforcement).
-    if let Some(level_str) = fail_on_scorecard {
+    if let Some(level_str) = fail_on_scorecard_effective {
         let level = FalsifierStatus::parse_level(level_str).ok_or_else(|| {
             anyhow::anyhow!(
                 "invalid --fail-on-scorecard level `{}`: expected `warn` or `fail`",
@@ -1743,6 +1798,67 @@ mod tests {
         assert!(j.contains("\"f2\":"));
         assert!(j.contains("\"f4\":"));
         assert!(j.contains("\"f11\":"));
+    }
+
+    #[test]
+    fn test_tier_config_load_parses_gates() {
+        let tmp = TempDir::new().unwrap();
+        let p = tmp.path().join("tier.toml");
+        fs::write(
+            &p,
+            r#"
+[gates]
+fail_under = 50.0
+fail_under_f1 = 95.0
+fail_exempt_density_above = 0.5
+fail_pub_bronze_above = 0
+fail_on_totality_violation = true
+fail_on_scorecard = "warn"
+"#,
+        )
+        .unwrap();
+        let cfg = TierConfig::load(&p).unwrap();
+        assert_eq!(cfg.gates.fail_under, Some(50.0));
+        assert_eq!(cfg.gates.fail_under_f1, Some(95.0));
+        assert_eq!(cfg.gates.fail_exempt_density_above, Some(0.5));
+        assert_eq!(cfg.gates.fail_pub_bronze_above, Some(0));
+        assert_eq!(cfg.gates.fail_on_totality_violation, Some(true));
+        assert_eq!(cfg.gates.fail_on_scorecard, Some("warn".to_string()));
+    }
+
+    #[test]
+    fn test_tier_config_load_empty_file_is_ok() {
+        let tmp = TempDir::new().unwrap();
+        let p = tmp.path().join("empty.toml");
+        fs::write(&p, "").unwrap();
+        let cfg = TierConfig::load(&p).unwrap();
+        // All defaults — None everywhere.
+        assert!(cfg.gates.fail_under.is_none());
+        assert!(cfg.gates.fail_pub_bronze_above.is_none());
+    }
+
+    #[test]
+    fn test_tier_config_load_partial_gates_section() {
+        let tmp = TempDir::new().unwrap();
+        let p = tmp.path().join("partial.toml");
+        fs::write(&p, "[gates]\nfail_under = 75.0").unwrap();
+        let cfg = TierConfig::load(&p).unwrap();
+        assert_eq!(cfg.gates.fail_under, Some(75.0));
+        assert!(cfg.gates.fail_under_f1.is_none());
+    }
+
+    #[test]
+    fn test_tier_config_load_missing_file_errors() {
+        let r = TierConfig::load(Path::new("/nonexistent/path.toml"));
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn test_tier_config_load_malformed_toml_errors() {
+        let tmp = TempDir::new().unwrap();
+        let p = tmp.path().join("bad.toml");
+        fs::write(&p, "[gates\nfail_under = \"not a number\"").unwrap();
+        assert!(TierConfig::load(&p).is_err());
     }
 
     #[test]

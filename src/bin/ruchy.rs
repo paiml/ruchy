@@ -996,6 +996,9 @@ enum Commands {
         /// Fail if any §14.5 scorecard metric is at-or-above level (warn|fail)
         #[arg(long, value_name = "LEVEL")]
         fail_on_scorecard: Option<String>,
+        /// Load gate thresholds from a TOML config file (CLI flags override)
+        #[arg(long, value_name = "FILE")]
+        config: Option<std::path::PathBuf>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

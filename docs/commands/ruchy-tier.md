@@ -69,6 +69,7 @@ ruchy tier src/ --by-file --sort-by bronze --top 10
 | `--baseline <FILE>` | Regression gate: compare against stored baseline JSON | none |
 | `--markdown` | GitHub-flavored markdown report (for PR comments/summaries) | `false` |
 | `--fail-on-scorecard <LEVEL>` | Fail if any §14.5 scorecard metric ≥ LEVEL (warn\|fail) | none |
+| `--config <FILE>` | Load gate thresholds from TOML file (CLI flags override) | none |
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |
@@ -281,6 +282,31 @@ non-trivial % down, etc.) fails the build.
 ruchy tier src/ --fail-on-totality-violation
 # ⇒ Error if any Gold/Platinum fn lacks @total / @corecursive
 ```
+
+### Config file (.ruchy-tier.toml)
+
+Centralize all gate thresholds in one file, commit to repo:
+
+```toml
+# .ruchy-tier.toml — project CI provability gates
+[gates]
+fail_under = 50.0                       # ≥50% non-Bronze
+fail_under_f1 = 95.0                    # ≥95% non-trivial contracts
+fail_exempt_density_above = 0.5         # ≤0.5 contract_exempt / KLoC
+fail_diff_exempt_density_above = 0.5    # ≤0.5 diff_exempt / KLoC
+fail_pub_bronze_above = 0               # no pub Bronze
+fail_on_totality_violation = true       # enforce §14.10.6
+fail_on_scorecard = "warn"              # any WARN/FAIL metric blocks CI
+```
+
+Then invoke with just the config path:
+
+```bash
+ruchy tier src/ --config .ruchy-tier.toml
+```
+
+Individual CLI flags override config values (e.g., use a stricter
+`--fail-pub-bronze-above 0` locally while keeping a looser default).
 
 ### Combined CI pipeline example
 
