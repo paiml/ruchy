@@ -575,65 +575,70 @@ mod tests {
 
     #[test]
     fn test_derive_attribute_processing_for_class() {
-        // Negative test: Verify helpful error for Rust-style attributes
-        // Ruchy uses @decorator syntax, not #[derive]
+        // PARSER-ATTR-001: `#[derive(...)]` is now accepted per 5.0 spec
+        // Section 3 (Unified Decorator Grammar). The derive args populate
+        // the class's `derives` field.
         let mut parser = Parser::new("#[derive(Debug, Clone)]\nclass Foo {}");
         let result = parser.parse();
-
         assert!(
-            result.is_err(),
-            "Should reject Rust-style #[derive] attributes"
+            result.is_ok(),
+            "Should accept #[derive] on class, got: {result:?}"
         );
-
-        if let Err(e) = result {
-            let error_msg = format!("{e:?}");
-            assert!(
-                error_msg.contains("Attributes are not supported")
-                    || error_msg.contains("does not use Rust-style attributes"),
-                "Error should explain that #[derive] is not supported. Got: {error_msg}"
-            );
+        if let Ok(expr) = result {
+            if let ExprKind::Class { derives, .. } = &expr.kind {
+                assert!(
+                    derives.iter().any(|d| d == "Debug"),
+                    "derives should contain Debug: {derives:?}"
+                );
+                assert!(
+                    derives.iter().any(|d| d == "Clone"),
+                    "derives should contain Clone: {derives:?}"
+                );
+            } else {
+                panic!("expected ExprKind::Class, got {:?}", expr.kind);
+            }
         }
     }
 
     #[test]
     fn test_derive_attribute_processing_for_struct() {
-        // Negative test: Verify helpful error for Rust-style attributes on struct
+        // PARSER-ATTR-001: `#[derive(...)]` is now accepted on structs.
         let mut parser = Parser::new("#[derive(Debug)]\nstruct Point { x: i32, y: i32 }");
         let result = parser.parse();
-
         assert!(
-            result.is_err(),
-            "Should reject Rust-style #[derive] attributes"
+            result.is_ok(),
+            "Should accept #[derive] on struct, got: {result:?}"
         );
-
-        if let Err(e) = result {
-            let error_msg = format!("{e:?}");
-            assert!(
-                error_msg.contains("Attributes are not supported")
-                    || error_msg.contains("does not use Rust-style attributes"),
-                "Error should explain that #[derive] is not supported. Got: {error_msg}"
-            );
+        if let Ok(expr) = result {
+            if let ExprKind::Struct { derives, .. } = &expr.kind {
+                assert!(
+                    derives.iter().any(|d| d == "Debug"),
+                    "derives should contain Debug: {derives:?}"
+                );
+            } else {
+                panic!("expected ExprKind::Struct, got {:?}", expr.kind);
+            }
         }
     }
 
     #[test]
     fn test_derive_attribute_processing_for_tuple_struct() {
-        // Negative test: Verify helpful error for Rust-style attributes on tuple struct
+        // PARSER-ATTR-001: `#[derive(...)]` is now accepted on tuple structs.
         let mut parser = Parser::new("#[derive(Clone)]\nstruct Wrapper(i32)");
         let result = parser.parse();
-
         assert!(
-            result.is_err(),
-            "Should reject Rust-style #[derive] attributes"
+            result.is_ok(),
+            "Should accept #[derive] on tuple struct, got: {result:?}"
         );
-
-        if let Err(e) = result {
-            let error_msg = format!("{e:?}");
-            assert!(
-                error_msg.contains("Attributes are not supported")
-                    || error_msg.contains("does not use Rust-style attributes"),
-                "Error should explain that #[derive] is not supported. Got: {error_msg}"
-            );
+        if let Ok(expr) = result {
+            if let ExprKind::TupleStruct { derives, .. } = &expr.kind {
+                assert!(
+                    derives.iter().any(|d| d == "Clone"),
+                    "derives should contain Clone: {derives:?}"
+                );
+            } else {
+                panic!("expected ExprKind::TupleStruct, got {:?}", expr.kind);
+            }
         }
     }
 }

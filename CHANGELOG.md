@@ -55,6 +55,19 @@ rolling in the integration gate for rc.1.
   downstream books".
 
 ### Fixed
+- **[PARSER-ATTR-001]** Unified decorator grammar: accept `#[attr]` syntax.
+  Parser previously bail!'d on any `#[...]` with "Attributes are not
+  supported", directly contradicting 5.0 spec Section 3 (which lists
+  `#[prove(level)]`, `#[probar_test]`, `#[playbook(name)]`,
+  `#[brick_budget(ms)]`, `#[zero_js]`, `#[infra_policy(p)]` as valid
+  attributes). The fix implements full `#[name(args)]` parsing
+  symmetrically with `@name(args)` decorators, accepts integer
+  arguments (e.g. `brick_budget(100)`), and supports interleaving
+  (`@verified #[prove(silver)]`). 6 TDD tests; 3 derive-attribute
+  rejection tests updated to assert the new positive behaviour; 1
+  property test excludes `df` (reserved DataFrame token). Discovered
+  via ruchy-cookbook validation (Genchi Genbutsu). Cookbook pass-rate
+  improved from 42% to 77% in one commit.
 - **[COMPILER-001]** `ruchy compile` now honours `CARGO_TARGET_DIR`. When the
   user's environment set `CARGO_TARGET_DIR` to a shared build cache, cargo
   wrote the compiled binary there instead of into `<temp>/target/`, so the

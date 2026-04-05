@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc c601b93ef1b50f572afec6416d65a13bd537bd202f86a567ce311aa58b29259d # shrinks to p1 = "fn", p2 = "a"
+cc f1b22d1b66a92c0e1738f517db420eb458e40931df08177f1b6f3c2014a9114e # shrinks to param = "df"

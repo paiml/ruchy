@@ -921,7 +921,7 @@ mod tests {
         /// Keywords like "fn", "if", "let" would cause parser failures.
         /// This strategy filters them out for property test validity.
         fn valid_identifier() -> impl Strategy<Value = String> {
-            "[a-z]+".prop_filter("Must not be a keyword", |s| {
+            "[a-z]+".prop_filter("Must not be a keyword or reserved word", |s| {
                 !matches!(
                     s.as_str(),
                     "fn" | "fun"
@@ -958,6 +958,8 @@ mod tests {
                         | "enum"
                         | "trait"
                         | "impl"
+                        // df is a reserved DataFrame token, not a regular identifier.
+                        | "df"
                 )
             })
         }

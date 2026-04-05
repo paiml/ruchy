@@ -477,12 +477,12 @@ cargo install --path . --force
 | # | Repo | Status | Notes |
 |---|------|--------|-------|
 | B1 | `ruchy-book` | PARTIAL | 15/16 critical chapters pass. ch18 DataFrames blocked by DATAFRAMES-001 (pre-existing transpiler defect, not 5.0 regression). |
-| B2 | `ruchy-cookbook` | UNVALIDATED | Not yet cloned locally. |
-| B3 | `ruchy-cli-tools-book` | UNVALIDATED | Not yet cloned locally. |
-| B4 | `tooling-with-ruchy` | UNVALIDATED | Not yet cloned locally. |
-| B5 | `ruchy-repl-demos` | UNVALIDATED | Not yet cloned locally. |
-| B6 | `rosetta-ruchy` | UNVALIDATED | Not yet cloned locally. |
-| B7 | `ruchyruchy` | UNVALIDATED | Not yet cloned locally. |
+| B2 | `ruchy-cookbook` | PARTIAL (77%) | 35/45 sampled `.ruchy` files pass. Recipe test-file parsing (`Expected RightBrace, found Let`) blocks the rest — separate pre-existing issue. Improved from 42% to 77% via PARSER-ATTR-001. |
+| B3 | `ruchy-cli-tools-book` | PASS (100%) | 12/12 sampled files pass. |
+| B4 | `tooling-with-ruchy` | SKIPPED (empty) | Repo has only README; no .ruchy corpus yet. |
+| B5 | `ruchy-repl-demos` | PASS (100%) | 50/50 sampled files pass. |
+| B6 | `rosetta-ruchy` | PASS (98%) | 49/50 sampled files pass. 1 pre-existing failure. |
+| B7 | `ruchyruchy` | PASS (92%) | 46/50 sampled files pass. 4 pre-existing failures in debugger test corpus. |
 
 ### Gate for RC.1 → 5.0.0
 
@@ -496,3 +496,4 @@ a documented, ticketed, separate-from-5.0 failure. Missing validation
 |--------|------|-------------|-------|
 | DATAFRAMES-001 | ruchy-book ch18 | `df!` macro emits `HashMap<String,Vec<String>>` but transpiled code calls `.lazy()` expecting a Polars DataFrame | Transpiler DataFrame type inference rework — pre-existing, not a 5.0 regression |
 | COMPILER-001 | ruchy-book (all compile-requiring chapters) | `ruchy compile` ignored `CARGO_TARGET_DIR` → "Expected binary not found" | **FIXED** in 5.0.0-beta.1 (`tests/compiler_cargo_target_dir.rs`) |
+| PARSER-ATTR-001 | ruchy-cookbook + every 5.0 attribute user | Parser bail!'d on `#[...]` with "Attributes are not supported", contradicting spec Section 3 (unified decorator grammar) | **FIXED** in 5.0.0-beta.1 (`tests/parser_attribute_syntax.rs`). Moves cookbook from 42% → 77%. |

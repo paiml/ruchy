@@ -336,6 +336,33 @@ fn parse_label_as_decorator(state: &mut ParserState, label_name: String) -> Resu
         });
     }
 
+    // PARSER-ATTR-001: Also consume any `#[attr]` attributes that follow.
+    // Per 5.0 spec Section 3, decorators (@name) and attributes (#[name])
+    // share the same AST `Attribute` slot and can be interleaved.
+    while let Some((Token::AttributeStart, attr_span)) = state.tokens.peek() {
+        let attr_span = *attr_span;
+        state.tokens.advance(); // consume #[
+        let attr_name = match state.tokens.peek() {
+            Some((Token::Identifier(n), _)) => {
+                let name = n.clone();
+                state.tokens.advance();
+                name
+            }
+            _ => bail!("Expected identifier after '#['"),
+        };
+        let attr_args = if matches!(state.tokens.peek(), Some((Token::LeftParen, _))) {
+            parse_decorator_args_inline(state)?
+        } else {
+            Vec::new()
+        };
+        state.tokens.expect(&Token::RightBracket)?;
+        attributes.push(Attribute {
+            name: attr_name,
+            args: attr_args,
+            span: attr_span,
+        });
+    }
+
     // Now parse the decorated item (function, class, etc.)
     let mut expr = parse_prefix(state)?;
 
@@ -383,7 +410,13 @@ fn parse_decorator_args_inline(state: &mut ParserState) -> Result<Vec<String>> {
                 args.push(id.clone());
                 state.tokens.advance();
             }
-            _ => bail!("Expected string or identifier in decorator arguments"),
+            // PARSER-ATTR-001: Accept integer literals (e.g.,
+            // `#[brick_budget(100)]` in the 5.0 decorator map).
+            Some((Token::Integer(n), _)) => {
+                args.push(n.clone());
+                state.tokens.advance();
+            }
+            _ => bail!("Expected string, identifier, or integer in decorator arguments"),
         }
         // Handle comma separator
         if matches!(state.tokens.peek(), Some((Token::Comma, _))) {

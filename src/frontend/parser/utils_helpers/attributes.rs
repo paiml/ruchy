@@ -12,8 +12,21 @@ use super::super::{bail, Attribute, ParserState, Result, Token};
 /// Returns an error if attribute syntax is malformed or contains invalid tokens.
 pub fn parse_attributes(state: &mut ParserState) -> Result<Vec<Attribute>> {
     let mut attributes = Vec::new();
-    parse_at_style_decorators(state, &mut attributes)?;
-    parse_rust_style_attributes(state, &mut attributes)?;
+    // Loop: decorators and attributes can be interleaved in any order
+    // (e.g., `@verified #[prove(silver)]` or `#[test] @deprecated`).
+    // Note: `@name` is lexed as `Token::Label("@name")` (priority 3 regex);
+    // parse_at_style_decorators only matches `Token::At`, so leading @
+    // decorators are actually consumed by parse_label_as_decorator in
+    // expressions.rs. This function handles bare #[attr] at statement-
+    // start position (which parse_attributes is called from in core.rs).
+    loop {
+        let before_count = attributes.len();
+        parse_at_style_decorators(state, &mut attributes)?;
+        parse_rust_style_attributes(state, &mut attributes)?;
+        if attributes.len() == before_count {
+            break;
+        }
+    }
     Ok(attributes)
 }
 
@@ -88,7 +101,13 @@ fn parse_single_decorator_argument(state: &mut ParserState) -> Result<String> {
             state.tokens.advance();
             Ok(arg)
         }
-        _ => bail!("Expected string or identifier in decorator arguments"),
+        // PARSER-ATTR-001: Accept integer literals in attribute args.
+        Some((Token::Integer(n), _)) => {
+            let arg = n.clone();
+            state.tokens.advance();
+            Ok(arg)
+        }
+        _ => bail!("Expected string, identifier, or integer in decorator arguments"),
     }
 }
 
@@ -106,19 +125,55 @@ fn consume_argument_separator(state: &mut ParserState) -> Result<()> {
 
 /// Parse Rust-style attributes (#[...])
 ///
-/// Complexity: 2
+/// Per `ruchy-5.0-sovereign-platform.md` Section 3 (Unified Decorator
+/// Grammar), `#[name(args)]` is the "Attribute" form and MUST parse
+/// symmetrically with the `@name(args)` decorator form. Both produce
+/// an `Attribute` AST node; semantics differ downstream (attributes are
+/// compile-time metadata, decorators wrap generated code).
+///
+/// Grammar (EBNF):
+///   attribute ::= '#[' IDENT ( '(' arg_list ')' )? ']'
+///
+/// Complexity: 5
 fn parse_rust_style_attributes(
     state: &mut ParserState,
-    _attributes: &mut Vec<Attribute>,
+    attributes: &mut Vec<Attribute>,
 ) -> Result<()> {
-    if matches!(state.tokens.peek(), Some((Token::AttributeStart, _))) {
-        bail!(
-            "Attributes are not supported. \
-             Ruchy does not use Rust-style attributes like #[derive]. \
-             Use @decorator syntax instead."
-        );
+    while matches!(state.tokens.peek(), Some((Token::AttributeStart, _))) {
+        let attr = parse_single_rust_style_attribute(state)?;
+        attributes.push(attr);
     }
     Ok(())
+}
+
+/// Parse a single `#[name(args)]` attribute.
+fn parse_single_rust_style_attribute(state: &mut ParserState) -> Result<Attribute> {
+    let span = state
+        .tokens
+        .peek()
+        .expect("peek() should return Some after matches! check in caller")
+        .1;
+    state.tokens.advance(); // consume #[
+
+    let name = parse_decorator_name_no_at(state)?;
+    let args = parse_decorator_arguments(state)?;
+
+    // Expect closing ]
+    state.tokens.expect(&Token::RightBracket)?;
+
+    Ok(Attribute { name, args, span })
+}
+
+/// Parse attribute/decorator name (identifier, no leading sigil).
+fn parse_decorator_name_no_at(state: &mut ParserState) -> Result<String> {
+    match state.tokens.peek() {
+        Some((Token::Identifier(n), _)) => {
+            let name = n.clone();
+            state.tokens.advance();
+            Ok(name)
+        }
+        _ => bail!("Expected identifier after '#['"),
+    }
 }
 
 #[cfg(test)]

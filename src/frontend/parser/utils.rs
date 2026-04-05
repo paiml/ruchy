@@ -763,28 +763,21 @@ mod mutation_tests {
 
     #[test]
     fn test_parse_rust_attribute_arguments_not_stub() {
-        // MISSED: replace parse_rust_attribute_arguments -> Result<Vec<String>> with Ok(vec![String::new()])
-
-        // Negative test: Verify that Rust-style attributes are rejected
-        // Ruchy uses @decorator syntax, not #[derive]
+        // PARSER-ATTR-001: `#[derive(...)]` is now accepted per 5.0 spec
+        // Section 3 (Unified Decorator Grammar). This mutation test
+        // verifies that attribute arguments are parsed non-trivially
+        // (both "Debug" and "Clone" appear in the resulting derives).
         use crate::Parser;
 
         let mut parser = Parser::new("#[derive(Debug, Clone)] struct Foo {}");
         let result = parser.parse();
 
-        // Rust-style attributes should be rejected with helpful error
-        assert!(
-            result.is_err(),
-            "Should reject Rust-style #[derive] attributes"
-        );
-
-        if let Err(e) = result {
-            let error_msg = format!("{e:?}");
-            assert!(
-                error_msg.contains("Attributes are not supported")
-                    || error_msg.contains("does not use Rust-style attributes"),
-                "Error should explain that #[derive] is not supported. Got: {error_msg}"
-            );
+        assert!(result.is_ok(), "Should accept #[derive], got: {result:?}");
+        if let Ok(expr) = result {
+            // Both arg names must appear in the parsed derives.
+            let s = format!("{:?}", expr);
+            assert!(s.contains("Debug"), "derives should contain Debug: {s}");
+            assert!(s.contains("Clone"), "derives should contain Clone: {s}");
         }
     }
 }
