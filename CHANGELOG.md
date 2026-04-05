@@ -48,6 +48,52 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **Spec §14.10 added — HARD REQUIREMENTS from external SOTA** (five
+  new mandatory feature sets ported from HACL*/F*, Austral, ATS, Idris,
+  EMI compiler testing, and seL4):
+
+  - **§14.10.1 Information-Flow Types** (from HACL* Lib.IntTypes):
+    `Secret<T>`/`Public<T>` marker types. Compile error on branching,
+    matching, indexing, or logging `Secret<T>`. Single escape hatch
+    (`declassify` requires `#[contract_exempt]` with ticket). Auto-
+    promotes holder functions to Gold. Stdlib ship in 5.2. New
+    falsifier F8. Ticket prefix: SECRET-XXX.
+
+  - **§14.10.2 Capability Types for Effects** (from Austral): no
+    ambient authority. `fs::read(&fs_cap, path)` replaces
+    `fs::read(path)` everywhere. `RootCapability` passed to `main()`
+    is the ONLY authority source; scoped derivation via
+    `root.fs_scope()`/`root.net_scope()`/etc. Capabilities are LINEAR
+    (Rust-owned, non-Copy). Stdlib `pub fn` cannot accept
+    `RootCapability` (anti-privilege-escalation). 5.1-alpha introduces,
+    5.2 makes mandatory. New falsifier F9. Ticket prefix: CAP-XXX.
+
+  - **§14.10.3 Totality Markers** (from Idris/ATS): `@total` +
+    existing `decreases` keyword wired to enforcement. Gold MUST be
+    `@total`. Platinum MUST be `@total` or have Lean-proved
+    well-foundedness. `@partial` marker for Bronze/Silver escape.
+    New falsifier F10. Ticket prefix: TOTAL-XXX.
+
+  - **§14.10.4 Differential Execution Check** (inspired by EMI
+    compiler testing, Le & Afshari PLDI'14): ensemble testing of
+    interpret(f,x) ≡ transpile-run(f,x) on 100 probar inputs.
+    Divergence = compile-blocking. Silver gates on release, Gold on
+    commit. New falsifier F11. Ticket prefix: DIFF-XXX.
+
+  - **§14.10.5 Refinement Tickets** (narrow seL4 slice): Platinum
+    functions prove Kani BMC refinement of their YAML abstract spec
+    via Lean theorem. Single-function, bounded-input, machine-
+    checkable today. `pv lint` Gate 5. New falsifier F12. Ticket
+    prefix: REFINE-XXX.
+
+  After 5.2, Ruchy will be the **only** language combining secret-
+  independence + capabilities + bounded refinement in one stack. The
+  remaining gap (verified compiler, CompCert-style) is explicitly
+  declared out-of-scope per F7.
+
+  §14.2 tier table updated with the new mandatory requirements per
+  tier. §14.6 deadline schedule updated with 5.1-alpha capability
+  introduction and 5.2 mandatory-by-default gates.
 - **Spec §14.F-Audit-8 added — external falsification**: five systems
   strictly beat Ruchy's Platinum tier on at least one axis: F*/HACL*
   (secret-independence, shipping in Firefox/Linux/Tezos/WireGuard),

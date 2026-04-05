@@ -456,12 +456,12 @@ Every non-test `fun` in Ruchy is assigned exactly one tier. The tier is
 written in the function signature (not as an attribute) so it is visible at
 use-site and impossible to erase accidentally.
 
-| Tier | Syntax | Discharge | When required |
-|------|--------|-----------|---------------|
-| **Bronze** | `@bronze fun f(x) { ... }` | `rustc` types only (baseline type safety) | Migration only; banned in stdlib after 5.2 |
-| **Silver** | `fun f(x) requires P ensures Q { ... }` | `assert!` (release) + `debug_assert!` (debug) + Kani harness in CI | Default tier for all user code |
-| **Gold** | `@gold fun f(x) requires P ensures Q { ... }` | SMT-discharged (Kani BMC) at compile time | Required for all `pub` stdlib fns |
-| **Platinum** | `@platinum` + YAML contract + Lean theorem | Quorum: rustc + Kani + probar(10K) + Lean + human review | Required for safety-critical kernels |
+| Tier | Syntax | Discharge | Additional §14.10 reqs | When required |
+|------|--------|-----------|------------------------|---------------|
+| **Bronze** | `@bronze fun f(x) { ... }` | `rustc` types only | — (capabilities FORBIDDEN) | Migration only; banned in stdlib after 5.2 |
+| **Silver** | `fun f(x) requires P ensures Q { ... }` | `assert!` (release) + Kani harness in CI | Capabilities for I/O, `@partial`/`@total` required, **differential check on release** | Default tier |
+| **Gold** | `@gold fun f(x) requires P ensures Q { ... }` | SMT-discharged at compile time | + `Secret<T>` where applicable + `@total` MANDATORY + **differential check on commit** + YAML contract | All `pub` stdlib fns |
+| **Platinum** | `@platinum` + YAML + Lean theorem | Quorum per §14.4 | + **Refinement proof (§14.10.5)** Lean `impl ≡ spec` | Safety-critical kernels |
 
 **Default is Silver.** A bare `fun f(x) { body }` without `requires`/`ensures`
 is a *Bronze* function and emits a warning. After version 5.2, unmarked `pub`
@@ -555,9 +555,9 @@ is restored.
 | Release | Gate level |
 |---------|-----------|
 | 5.0.0 | Silver *opt-in*. Bronze warned but allowed everywhere. |
-| 5.1.0 | Silver *default*. Bronze warned in user code, errored in stdlib. |
-| 5.2.0 | Silver *required* on all `pub` fns. Bronze banned in stdlib entirely. Gold required on `unsafe`-equivalent ops. |
-| 5.3.0 | Platinum quorum available for any user fn. `#[safety_critical]` marker enforced at 5-of-6. |
+| 5.1.0 | Silver *default*. Bronze warned in user code, errored in stdlib. **§14.10.2 capabilities introduced (alpha).** |
+| 5.2.0 | Silver *required* on all `pub` fns. Bronze banned in stdlib. Gold required on `unsafe`-equivalent ops. **§14.10.1 Secret types + §14.10.2 capabilities MANDATORY in stdlib. §14.10.3 @total required for Gold. §14.10.4 differential gate active on release.** |
+| 5.3.0 | Platinum quorum available. `#[safety_critical]` 5-of-6. **§14.10.5 refinement proofs mandatory for Platinum.** |
 
 ### 14.7 Escape-Hatch Policy
 
@@ -643,6 +643,215 @@ niche" claim is falsified on procedural grounds (we stopped looking).
 must either (a) have a Ruchy ticket with a designed mitigation by 5.3,
 or (b) be explicitly declared out-of-scope in this spec. Silent omission
 falsifies the claim to rigor.
+
+### 14.10 HARD REQUIREMENTS: Adopted Features from External SOTA
+
+The five falsifiers in §14.F-Audit-8 exposed four axes where Ruchy had no
+story. This section adopts **concrete features** from HACL*, Austral, ATS,
+and seL4 and makes them MANDATORY for specific tiers. These are not
+aspirational — each is tied to a release gate and a ticket prefix.
+
+**Design discipline:** We borrow *features*, not *implementations*. Ruchy
+does not become F*; it gains an F*-inspired secret type. Ruchy does not
+become Austral; it gains Austral-inspired capabilities. Etc.
+
+#### 14.10.1 Information-Flow Types (from HACL* / F* Lib.IntTypes)
+
+Ticket prefix: **SECRET-XXX**
+
+Two marker types carry information-flow labels:
+
+```ruchy
+type Secret<T>      // value came from a credential/key/password
+type Public<T>      // value is safe to branch on / log / return
+```
+
+**Hard rules** (compile-time enforced):
+- `if secret_val { ... }` — **compile error** (no branching on secrets)
+- `match secret_val { ... }` — **compile error** (same; match is branching)
+- `arr[secret_index]` — **compile error** (no secret-indexed access; timing-cache attack surface)
+- `println("{secret_val}")` — **compile error** (no leaking via I/O)
+- `secret_val == other_secret` — OK (returns `Secret<bool>`, must be consumed via constant-time combinators)
+
+**Escape hatch:** `declassify(secret) -> public` requires `#[contract_exempt]`
+with `reason` explaining why the secret is safe to expose (e.g. "public
+ciphertext output of AEAD").
+
+**Mandatory tier:** any function accepting a value marked `Secret<T>` is
+auto-promoted to Gold (Kani must verify no leak path exists). This
+cannot be downgraded.
+
+**Stdlib delivery:** `core::secret::{Secret, Public, declassify, ct_eq, ct_select}`
+ships in 5.2. All `ruchy apr` (ML) and hypothetical crypto stdlib modules
+MUST use `Secret<T>` for keys/weights-as-IP.
+
+**Falsifier F8:** if any `Secret<T>`-annotated value reaches an I/O syscall
+without passing through `declassify`, the type system has a hole.
+Measured by escape analysis on corpus.
+
+#### 14.10.2 Capability Types for Effects (from Austral)
+
+Ticket prefix: **CAP-XXX**
+
+All I/O requires an explicit capability argument. **There is no ambient
+authority** — `fs::read("/etc/passwd")` is gone; the call site is
+`fs::read(&root.fs, "/etc/passwd")`.
+
+**Capability hierarchy:**
+
+```
+RootCapability                  // passed to main() by runtime, LINEAR
+├── FileSystemCap              // derived via root.fs_scope("/tmp", READ|WRITE)
+├── NetworkCap                 // derived via root.net_scope(host = "api.example.com")
+├── EnvCap                     // derived via root.env_scope(["PATH", "HOME"])
+├── ClockCap                   // derived via root.clock()
+└── RandomCap                  // derived via root.random()
+```
+
+**Hard rules:**
+- `fn main(root: RootCapability)` is the ONLY way a program receives authority.
+- `fs::read`, `net::connect`, `env::var`, `time::now`, `rand::next` — each requires its matching cap.
+- Caps are **linear**: they can be passed, scoped, or revoked, but not duplicated.
+- A `pub fn` in stdlib CANNOT accept `RootCapability` — only scoped subcaps. This prevents library privilege escalation.
+
+**Mandatory tier:** any function accepting a capability MUST be Silver or
+higher. Bronze functions CANNOT access capabilities (they have no contract
+to constrain what they do with them).
+
+**Stdlib delivery:** 5.1-alpha introduces the cap types; 5.2 makes them
+the ONLY path to I/O. The 4.x stdlib functions (e.g., `read_file(path)`)
+are flagged by `ruchy migrate-4to5` and rewritten with an injected
+capability parameter threaded from `main`.
+
+**Falsifier F9:** If any stdlib `pub fn` issues a syscall without receiving
+a capability argument, ambient authority has leaked. Measured by auditing
+the generated Rust's syscall set against the function's cap parameters.
+
+#### 14.10.3 Totality Markers (from Idris / ATS)
+
+Ticket prefix: **TOTAL-XXX**
+
+The `@total` annotation + existing `decreases` keyword prove termination:
+
+```ruchy
+@total fun fib(n: u32) requires n < 100 decreases n ensures fib(n) >= 0 {
+    if n <= 1 { n } else { fib(n-1) + fib(n-2) }
+}
+```
+
+**Hard rules:**
+- Gold and Platinum functions MUST be `@total` OR explicitly marked `@corecursive(justification = "...")`.
+- `@total` implies: every recursive call strictly decreases `decreases` measure; every match is exhaustive; no infinite `loop {}` without `break` reachable.
+- Bronze/Silver may use partial functions but must annotate `@partial`.
+
+**Mandatory tier:** Gold requires `@total` proof. Platinum requires `@total` OR Lean-proved well-foundedness.
+
+**Falsifier F10:** If a Gold function triggers infinite recursion on any
+input within its `requires` domain (tested via probar with 10K fuzzed
+inputs + timeout detection), the totality check is broken.
+
+#### 14.10.4 Differential Execution Check (inspired by EMI compiler testing)
+
+Ticket prefix: **DIFF-XXX**
+
+For every Silver+ function with a contract, Ruchy automatically runs both
+the **interpreter** and the **transpiled-Rust binary** on 100 probar-
+generated inputs and compares outputs. Divergence = compile-blocking
+error.
+
+**Pipeline:**
+
+```
+D1. Generate inputs:   probar produces 100 inputs satisfying `requires`
+D2. Interpret:         ruchy_interpreter.eval(f, x) -> observed_a
+D3. Transpile-run:     cargo run --release on transpiled f(x) -> observed_b
+D4. Compare:           observed_a ≡ observed_b OR compile error
+```
+
+This is NOT CompCert (we can't verify `rustc`). It IS ensemble testing:
+*if the two execution paths diverge, at least one is wrong*. Over time,
+this catches transpiler miscompilations before they ship.
+
+**Hard rules:**
+- `ruchy check` in release gate mode runs D1-D4 on all Silver+ functions.
+- Divergence creates a `DIFF-XXX` ticket and blocks release.
+- `#[diff_exempt(reason = "FFI", ticket = "...")]` is the only exit, tracked in F2 metric.
+
+**Mandatory tier:** Silver (gates on release), Gold (gates on commit).
+
+**Falsifier F11:** If the transpiler ships a known-divergence function
+into crates.io, the differential gate has a hole. Measured by crawling
+published crates for `#[diff_exempt]` annotations without tickets.
+
+#### 14.10.5 Refinement Tickets (narrow seL4 slice)
+
+Ticket prefix: **REFINE-XXX**
+
+YAML contracts in `contracts/*.yaml` (provable-contracts format) ARE the
+abstract specification. Platinum functions MUST prove Kani BMC refinement:
+
+```
+∀ x satisfying requires, outputs(impl, x) ≡ outputs(abstract_spec, x)
+```
+
+This is a narrow slice of seL4's refinement approach: single-function
+refinement, bounded-input, no assembly — but machine-checkable today.
+
+**Hard rules:**
+- Every Platinum function has a `lean_theorem:` field in its YAML spec.
+- The Lean theorem proves `impl ≡ spec` within bounds.
+- `pv lint` Gate 5 checks refinement proof exists, no `sorry`.
+
+**Mandatory tier:** Platinum only. Gold uses YAML contracts but not proof
+of refinement.
+
+**Falsifier F12:** If a Platinum function's Lean theorem proves
+`spec(x) == impl(x)` for x in `[0, N]` but Kani finds a counter-example
+at `N+1` within the natural bound, the refinement claim is falsified.
+
+#### 14.10.6 Summary Table — What Each Tier Now Requires
+
+| Tier | requires/ensures | Secret<T> | Capabilities | @total | Differential | Refinement |
+|------|------------------|-----------|--------------|--------|--------------|-----------|
+| **Bronze** | no | no | forbidden | no | no | no |
+| **Silver** | yes | per-function opt-in | yes for I/O | @partial or @total | **yes (release gate)** | no |
+| **Gold** | yes | yes (auto-promotes) | yes | **yes (@total mandatory)** | **yes (commit gate)** | yes (YAML) |
+| **Platinum** | yes | yes | yes | yes | yes | **yes (Lean proof)** |
+
+#### 14.10.7 Falsifiability Additions
+
+Five new falsifier metrics in §14.5:
+
+| # | Metric | Target | Falsifier |
+|---|--------|--------|-----------|
+| F8 | `Secret<T>` reaches I/O without declassify | 0 occurrences | ≥ 1 — information flow type is unsound |
+| F9 | stdlib `pub fn` issues syscall without receiving capability | 0 | ≥ 1 — ambient authority leaked |
+| F10 | Gold function hangs on probar input within `requires` domain | 0 | ≥ 1 — totality check broken |
+| F11 | Published crate has `#[diff_exempt]` without ticket | 0 | ≥ 1 — differential gate has a hole |
+| F12 | Kani finds counter-example within spec bound for Platinum fn | 0 | ≥ 1 — refinement proof wrong |
+
+These are added to Criterion #13 (§10). Release 5.0.0 still requires 13
+criteria; F8-F12 become active gates at 5.2 (per §14.6 deadline
+schedule).
+
+#### 14.10.8 Competitive Re-Evaluation
+
+After §14.10 features ship (5.2), the comparison table in §14.F-Audit-8
+becomes:
+
+| System | Secret-indep | Capabilities | Refinement | Verified compiler |
+|--------|--------------|--------------|------------|-------------------|
+| F* / HACL* | ✅ | ❌ | — | — |
+| seL4 / Isabelle | — | — | ✅ (to asm) | — |
+| ATS | — | — | partial | — |
+| Austral | — | ✅ | — | — |
+| CompCert | — | — | — | ✅ |
+| **Ruchy 5.2** | **✅** (§14.10.1) | **✅** (§14.10.2) | **✅ bounded** (§14.10.5) | **❌** (out of scope — trusts rustc) |
+
+Ruchy would be the **only** language combining secret-independence +
+capabilities + bounded refinement in one stack. This is a defensible
+niche. The remaining gap (verified compiler) is declared out-of-scope
+via §14.F-Audit-8 / F7 and documented honestly.
 
 ### 14.9 Migration Feasibility (§14.F-Audit-5 fix)
 
