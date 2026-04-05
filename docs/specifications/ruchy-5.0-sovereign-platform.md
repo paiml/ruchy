@@ -43,6 +43,9 @@
 | Criterion #12: migrate-4to5 synthetic 4.x e2e | DONE | 4 tests in sovereign_migrate_4to5_e2e.rs covering all 7 keywords (all passing) |
 | Criterion #11: zero unsafe in transpile output | DONE | 2 tests in sovereign_zero_unsafe_transpile.rs (required + sovereign examples, all passing) |
 | Criterion #6: binary size (default) under +20% | DONE | 8.45 MB measured (target: <14.19 MB). 40% headroom. Automated in sovereign_binary_size_budget.rs. |
+| §14.10.1 Secret<T>/Public<T> runtime skeleton | DONE | `src/provability/secret.rs` ships Secret/Public/declassify (4 lib tests + 3 integration tests). Static lint pass scheduled for SECRET-002. |
+| §14.10.2 RootCapability + 5 scoped caps runtime skeleton | DONE | `src/provability/capabilities.rs` ships Root/Fs/Net/Env/Clock/RandomCap (5 lib tests + 4 integration tests). Static enforcement scheduled for CAP-002. |
+| §14.10.3 Totality enum runtime skeleton | DONE | `src/provability/totality.rs` ships Total/Partial/Corecursive/Unknown + from_decorator (5 lib tests + 3 integration tests). Analyzer scheduled for TOTAL-002. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---

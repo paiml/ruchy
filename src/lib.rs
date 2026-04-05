@@ -83,6 +83,7 @@ pub mod middleend;
 pub mod notebook;
 pub mod oracle;
 pub mod package;
+pub mod provability;
 pub mod parser;
 pub mod performance_optimizations;
 pub mod proving;

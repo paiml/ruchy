@@ -48,6 +48,14 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[SPEC-HARDREQ-002] §14.10 runtime skeletons shipped**: New `ruchy::provability`
+  module with the concrete types for §14.10.1 (Secret<T>/Public<T>/declassify),
+  §14.10.2 (RootCapability/FsCap/NetCap/EnvCap/ClockCap/RandomCap), and §14.10.3
+  (Totality enum). 14 unit tests + 10 integration tests, all passing. These
+  are the runtime type skeletons — static enforcement (reject `if secret { }`,
+  reject stdlib `pub fn` that omit capability params, enforce totality via
+  `decreases` measure) is delivered incrementally in SECRET-002 / CAP-002 /
+  TOTAL-002.
 - **Spec §14.10 added — HARD REQUIREMENTS from external SOTA** (five
   new mandatory feature sets ported from HACL*/F*, Austral, ATS, Idris,
   EMI compiler testing, and seL4):
