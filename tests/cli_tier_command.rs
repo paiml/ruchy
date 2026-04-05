@@ -146,6 +146,53 @@ fn test_tier_list_marks_pub_functions() {
 }
 
 #[test]
+fn test_tier_json_list_emits_functions_array() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "pub fun exposed() { 1 }\nfun hidden() { 2 }",
+    )
+    .unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--json")
+        .arg("--list")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // First line: aggregate JSON. Second line: functions array.
+    let mut lines = stdout.lines();
+    let aggr = lines.next().expect("aggregate line");
+    let funcs = lines.next().expect("functions line");
+    assert!(aggr.starts_with('{') && aggr.contains("\"functions\":2"));
+    assert!(funcs.starts_with('[') && funcs.ends_with(']'));
+    assert!(funcs.contains("\"name\":\"exposed\""));
+    assert!(funcs.contains("\"name\":\"hidden\""));
+    assert!(funcs.contains("\"pub\":true"));
+    assert!(funcs.contains("\"pub\":false"));
+}
+
+#[test]
+fn test_tier_json_without_list_emits_only_aggregate() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // Only one line of output (no functions array).
+    assert_eq!(stdout.trim().lines().count(), 1);
+    assert!(!stdout.contains("\"name\":"));
+}
+
+#[test]
 fn test_tier_summary_contains_pub_bronze_line() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();

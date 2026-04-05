@@ -35,6 +35,37 @@ impl ClassifiedFunction {
         matches!(self.tier, Tier::Gold | Tier::Platinum)
             && !matches!(self.totality, Totality::Total | Totality::Corecursive(_))
     }
+
+    /// Emit this function as a single-line JSON object. Filenames are
+    /// JSON-escaped minimally (backslash, quote, control chars).
+    #[must_use]
+    pub fn to_json(&self) -> String {
+        format!(
+            "{{\"name\":\"{}\",\"file\":\"{}\",\"tier\":\"{}\",\"totality\":\"{}\",\"pub\":{},\"non_trivial_contract\":{}}}",
+            escape_json(&self.name),
+            escape_json(&self.file.to_string_lossy()),
+            self.tier.label(),
+            self.totality.label(),
+            self.is_pub,
+            self.has_non_trivial_contract,
+        )
+    }
+}
+
+fn escape_json(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\\' => out.push_str("\\\\"),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if (c as u32) < 0x20 => out.push_str(&format!("\\u{:04x}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out
 }
 
 /// Aggregate tier counts for a directory scan.
@@ -117,6 +148,22 @@ impl ProvabilityReport {
             return 0.0;
         }
         (self.diff_exempt_count as f64 * 1000.0) / self.total_loc as f64
+    }
+
+    /// Emit the list of classified functions as a single-line JSON array.
+    /// Intended for `--json --list`; dashboards can consume per-function
+    /// records alongside the aggregate report.
+    #[must_use]
+    pub fn functions_to_json(&self) -> String {
+        let mut out = String::from("[");
+        for (i, f) in self.functions.iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&f.to_json());
+        }
+        out.push(']');
+        out
     }
 
     /// Emit the full report as a single-line JSON object for dashboards.
@@ -439,6 +486,9 @@ pub fn handle_provability_command(
     let report = if public_only { raw.filter_to_pub() } else { raw };
     if json {
         println!("{}", report.to_json());
+        if list {
+            println!("{}", report.functions_to_json());
+        }
     } else {
         println!("Provability tier scan: {}", path.display());
         println!("{}", report.summary());
@@ -1005,6 +1055,64 @@ mod tests {
         let s = r.summary();
         assert!(s.contains("functions: 1"));
         assert!(s.contains("silver:"));
+    }
+
+    #[test]
+    fn test_classified_function_to_json_has_all_keys() {
+        let cf = ClassifiedFunction {
+            file: PathBuf::from("src/a.ruchy"),
+            name: "foo".into(),
+            tier: Tier::Silver,
+            totality: Totality::Total,
+            has_non_trivial_contract: true,
+            is_pub: true,
+        };
+        let j = cf.to_json();
+        for key in ["name", "file", "tier", "totality", "pub", "non_trivial_contract"] {
+            assert!(j.contains(key), "missing key `{key}`: {j}");
+        }
+        assert!(j.contains("\"pub\":true"));
+        assert!(j.contains("\"non_trivial_contract\":true"));
+        assert!(j.contains("\"tier\":\"silver\""));
+    }
+
+    #[test]
+    fn test_classified_function_to_json_escapes_quotes() {
+        let cf = ClassifiedFunction {
+            file: PathBuf::from("src/with\"quote.ruchy"),
+            name: "bad\"name".into(),
+            tier: Tier::Bronze,
+            totality: Totality::Unknown,
+            has_non_trivial_contract: false,
+            is_pub: false,
+        };
+        let j = cf.to_json();
+        // Quotes must be escaped.
+        assert!(j.contains("bad\\\"name"), "json: {j}");
+        assert!(j.contains("with\\\"quote"), "json: {j}");
+    }
+
+    #[test]
+    fn test_functions_to_json_empty_is_empty_array() {
+        let r = ProvabilityReport::default();
+        assert_eq!(r.functions_to_json(), "[]");
+    }
+
+    #[test]
+    fn test_functions_to_json_commas_between_entries() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "pub fun a() { 1 }\nfun b() { 2 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        let j = r.functions_to_json();
+        assert!(j.starts_with('['));
+        assert!(j.ends_with(']'));
+        // Two function entries → one comma separator.
+        assert_eq!(j.matches("},{").count(), 1);
+        assert!(j.contains("\"name\":\"a\""));
+        assert!(j.contains("\"name\":\"b\""));
     }
 
     #[test]

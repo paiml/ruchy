@@ -48,6 +48,13 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-014] `ruchy tier --json --list` per-function JSON**:
+  Dashboards can now pull per-function telemetry alongside aggregate
+  metrics. When both `--json` and `--list` are passed, a second JSON line
+  emits a `[{...},{...}]` array with (name, file, tier, totality, pub,
+  non_trivial_contract) per function. `ClassifiedFunction::to_json()` +
+  JSON-escape helper handle names/paths containing quotes/control chars.
+  4 new handler tests + 2 new CLI tests. 50/50 handler, 28/28 CLI tier.
 - **[PROVABILITY-013] §14.5 F4 summary + list UX**: `ruchy tier` human
   summary now prints a "public API (F4 proxy)" section with the
   `pub Bronze: N` count. `--list` output adds a `pub` column so operators
