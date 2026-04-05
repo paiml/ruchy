@@ -4,10 +4,11 @@
 //! Ticket: SPEC-HARDREQ-002 (first delivery slice of §14.10).
 
 use ruchy::provability::{
-    classify, declassify, ClockCap, EnvCap, FsCap, NetCap, Public, RandomCap, RootCapability,
-    Secret, Tier, TierInputs, Totality,
+    classify, declassify, tier_of_function, ClockCap, EnvCap, FsCap, NetCap, Public, RandomCap,
+    RootCapability, Secret, Tier, TierInputs, Totality,
 };
 use ruchy::provability::capabilities::FsMode;
+use ruchy::Parser;
 
 // ============================================================================
 // §14.10.1 Secret<T> / Public<T> round-trip (SECRET-XXX)
@@ -149,6 +150,51 @@ fn test_tier_001_classify_via_full_api() {
         has_lean_proof: true,
     };
     assert_eq!(classify(&platinum), Tier::Platinum);
+}
+
+// ============================================================================
+// §14.2 AST-to-Tier bridge (TIER-002): real Ruchy source in, Tier out
+// ============================================================================
+
+fn tier_of_first_fn(src: &str) -> Option<Tier> {
+    let expr = Parser::new(src).parse().ok()?;
+    use ruchy::ExprKind;
+    match &expr.kind {
+        ExprKind::Function { .. } => tier_of_function(&expr),
+        ExprKind::Block(exprs) => exprs
+            .iter()
+            .find(|e| matches!(e.kind, ExprKind::Function { .. }))
+            .and_then(tier_of_function),
+        _ => None,
+    }
+}
+
+#[test]
+fn test_tier_002_bare_function_is_bronze() {
+    assert_eq!(tier_of_first_fn("fun f() { 1 }"), Some(Tier::Bronze));
+}
+
+#[test]
+fn test_tier_002_attribute_bronze_is_bronze() {
+    assert_eq!(
+        tier_of_first_fn("#[bronze]\nfun f() { 1 }"),
+        Some(Tier::Bronze)
+    );
+}
+
+#[test]
+fn test_tier_002_multiple_functions_classified_independently() {
+    // Parse two functions; first (bare) is Bronze.
+    assert_eq!(
+        tier_of_first_fn("fun a() { 1 }\nfun b() { 2 }"),
+        Some(Tier::Bronze)
+    );
+}
+
+#[test]
+fn test_tier_002_non_function_returns_none() {
+    assert_eq!(tier_of_first_fn("42"), None);
+    assert_eq!(tier_of_first_fn("let x = 1"), None);
 }
 
 #[test]

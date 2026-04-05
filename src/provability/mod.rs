@@ -15,11 +15,13 @@
 //! scheduled for subsequent sprints and not represented here.
 
 pub mod capabilities;
+pub mod from_ast;
 pub mod secret;
 pub mod tier;
 pub mod totality;
 
 pub use capabilities::{ClockCap, EnvCap, FsCap, NetCap, RandomCap, RootCapability};
+pub use from_ast::tier_of_function;
 pub use secret::{declassify, Public, Secret};
 pub use tier::{classify, Tier, TierInputs};
 pub use totality::Totality;

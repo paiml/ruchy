@@ -48,6 +48,15 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[TIER-002] §14.2 AST-to-Tier bridge**: `tier_of_function(&Expr) -> Option<Tier>`
+  — takes a parsed `Expr` that holds a function definition and returns its
+  §14.2 tier by reading decorator names from `expr.attributes` and
+  `requires`/`ensures` presence from `expr.contracts`. Returns `None` for
+  non-function expressions. Does not consult YAML/Lean artifacts (file-system
+  outside AST), so `@platinum` alone cannot elevate past Silver here — full
+  Platinum check requires the caller to populate `TierInputs` directly. 8 lib
+  tests + 4 integration tests. Unlocks future `ruchy provability` CLI
+  subcommand and lint passes that need AST→tier mapping.
 - **[TIER-001] §14.2 tier classification API**: `Tier` enum
   (Bronze/Silver/Gold/Platinum) with strength ordering, `TierInputs` view
   over function annotations, and pure `classify()` function enforcing
