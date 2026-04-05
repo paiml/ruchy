@@ -4,7 +4,7 @@
 **Status:** IN PROGRESS (beta.1 released 2026-04-04; rc.1 integration gate met)
 **Date:** 2026-04-03
 
-### Implementation Status (Ground Truth as of 2026-04-04)
+### Implementation Status (Ground Truth as of 2026-04-05)
 
 | Milestone | Status | Evidence |
 |-----------|--------|----------|
@@ -75,6 +75,49 @@
 | `ruchy contracts sync` wired to real YAML emitter | DONE | Previously a stub. Now groups contracted functions by source file and writes one YAML manifest per source (`src_foo_ruchy.yaml` naming). Manifest schema: `source`, `contracts: [{name, tier, totality, is_pub}]`. Creates output directory if missing. Functions without contracts are elided. 4 new sovereign tests. |
 | `ruchy suggest-contracts` wired to real uncontracted lister | DONE | Previously a stub ("0 functions analyzed"). Now enumerates Bronze-tier functions (those lacking contracts) in text/json/yaml formats. YAML mode emits stub `suggested_requires`/`suggested_ensures` fields for authors to fill in. Serves as the §14.9 migration to-do list. 5 new sovereign tests. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
+
+### 2026-04-05 session rollup (PROVABILITY-011..026)
+
+**Scope:** Pillar 1 (Correctness) CLI surface — §14.5 falsifier observability + enforcement.
+
+**Delivered (16 tickets, commits daef4eff..dc15a662):**
+
+1. `ruchy tier` grew from 3 flags to **15 flags** (8 CI gates, 4 output formats).
+2. All 4 `ruchy contracts`/`suggest-contracts` stub commands replaced with real scanner-backed implementations.
+3. 139+ new tests (≈95 handler + 48 CLI integration tests on tier alone).
+
+**Gate inventory (ruchy tier):**
+- Threshold: `--fail-under`, `--fail-under-f1`, `--fail-exempt-density-above`,
+  `--fail-diff-exempt-density-above`, `--fail-pub-bronze-above`,
+  `--fail-on-totality-violation`
+- Aggregate: `--fail-on-scorecard warn|fail` (watches all 4 §14.5 metrics at once)
+- Regression: `--baseline <file.json>` (serialises a `BaselineSnapshot`,
+  compares on next run)
+- Config: `--config <file.toml>` (TOML `[gates]` section; CLI flags override)
+
+**Output-format inventory:**
+- Human summary + `§14.5 scorecard:` line
+- Aggregate JSON (23 keys incl. `scorecard` nested object)
+- Per-function JSON via `--json --list`
+- Per-file JSON/table via `--by-file` (+ `--sort-by`, `--top N`)
+- Markdown with 🟢/🟡/🔴/⚪ status badges via `--markdown`
+
+**§14.5 falsifier coverage (F1/F2/F4/F11):**
+- F1 (non-trivial %): tracked, gated, graded. **Caveat:** triviality is
+  syntactic (`requires true` literal) — SMT tautology detection is deferred.
+- F2 (contract_exempt/KLoC): tracked, gated, graded.
+- F4 (pub Bronze): tracked, gated, graded via a **proxy** (pub_bronze count,
+  not stdlib-vs-user distinction — that needs package metadata).
+- F11 (diff_exempt/KLoC): tracked, gated, graded. **Caveat:** the
+  underlying §14.10.4 differential gate itself is not yet implemented;
+  only the escape-hatch-density reporter ships.
+
+**F3/F5/F6/F7/F8–F12: NOT addressed this session.**
+
+**Dogfood finding:** `ruchy tier examples/` surfaced a pre-existing parser
+infinite-loop on `examples/21_concurrency.ruchy` (actor syntax). Worked
+around via a per-file parse timeout (PROVABILITY-019); the underlying
+parser bug is open.
 
 ---
 
