@@ -57,6 +57,7 @@ fn should_exit_state_parsing(state: &mut ParserState) -> bool {
     matches!(state.tokens.peek(), Some((Token::RightBrace, _)))
         || matches!(state.tokens.peek(), Some((Token::Receive, _)))
         || matches!(state.tokens.peek(), Some((Token::Fun, _))) // PARSER-060 fix: exit on 'fun' keyword
+        || matches!(state.tokens.peek(), Some((Token::Handler, _))) // PARSER-ACTOR-HANG-2: exit on 'handler' keyword
         || state.tokens.peek().is_none() // PARSER-ACTOR-HANG fix: exit on EOF
 }
 
@@ -388,6 +389,17 @@ mod tests {
         // Second variant: opening brace + partial field.
         let result = Parser::new("actor Counter {\n  count: int").parse();
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_actor_handler_keyword_after_field_does_not_hang() {
+        use crate::frontend::Parser;
+        // Second variant of PARSER-ACTOR-HANG: after parsing one state
+        // field, the `handler` keyword appears. If the state-field loop
+        // doesn't exit on Handler, the outer loop runs forever.
+        let src = "fn main() { actor Counter { count: int = 0\nhandler Increment(amount: int) {";
+        let result = Parser::new(src).parse();
+        assert!(result.is_err(), "parser must error, not hang");
     }
 
     #[test]

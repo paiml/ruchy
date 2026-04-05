@@ -102,6 +102,18 @@ rolling in the integration gate for rc.1.
   (pre-existing feature-gap diagnostics).
 
 ### Fixed
+- **[PARSER-ACTOR-HANG-2] Parser infinite-loop on `handler` keyword in
+  actor body**: Second hang variant discovered via deeper dogfooding.
+  `should_exit_state_parsing` was extended in PARSER-ACTOR-HANG to
+  break on EOF, but didn't break on `handler` keyword. When an actor
+  body contained `count: int = 0 \n handler Foo(...)`, the state-field
+  loop parsed the field, then saw `Token::Handler`, and spun forever
+  because `parse_single_state_field` hit its `_ => Ok(())` catch-all
+  without advancing the cursor. Added `Token::Handler` to the exit
+  predicate. 1 new RED parser test. 56/56 actor tests passing.
+  Surfaced `examples/21_concurrency.ruchy` which still errors on legacy
+  `handler` syntax but at least no longer hangs — produces "Expected
+  RightBrace, found Identifier(...)" instead.
 - **[PARSER-ACTOR-HANG] Parser infinite-loop on unclosed actor body**: An
   actor declaration whose opening brace is not matched (e.g., `actor X {`
   followed by EOF) caused the parser to loop forever at 100% CPU.
