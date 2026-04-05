@@ -452,7 +452,7 @@ fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Resu
     let cargo_content = generate_cargo_toml("ruchy_binary");
     fs::write(&cargo_toml, cargo_content)?;
 
-    // Run cargo build --release
+    // Run cargo build --release.
     let mut cmd = Command::new("cargo");
     cmd.arg("build").arg("--release").current_dir(project_dir);
 
@@ -462,10 +462,22 @@ fn compile_with_cargo(rust_code: &TokenStream, options: &CompileOptions) -> Resu
         bail!("Cargo build failed:\n{stderr}");
     }
 
-    // Copy binary to output location
-    let compiled_binary = project_dir.join("target/release/ruchy_binary");
+    // Copy binary to output location.
+    //
+    // CARGO-TARGET-DIR FIX (COMPILER-001): If the user's environment sets
+    // CARGO_TARGET_DIR, cargo writes the binary there -- NOT into
+    // <project_dir>/target. Honouring it preserves the user's shared build
+    // cache (critical for ergonomics since generate_cargo_toml pulls in
+    // polars/serde/reqwest -- cold builds exceed 90s without caching).
+    let target_base: PathBuf = std::env::var_os("CARGO_TARGET_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| project_dir.join("target"));
+    let compiled_binary = target_base.join("release").join("ruchy_binary");
     if !compiled_binary.exists() {
-        bail!("Expected binary not found after cargo build");
+        bail!(
+            "Expected binary not found after cargo build at {}",
+            compiled_binary.display()
+        );
     }
 
     fs::copy(&compiled_binary, &options.output)

@@ -49,6 +49,17 @@ rolling in the integration gate for rc.1.
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
 
+### Fixed
+- **[COMPILER-001]** `ruchy compile` now honours `CARGO_TARGET_DIR`. When the
+  user's environment set `CARGO_TARGET_DIR` to a shared build cache, cargo
+  wrote the compiled binary there instead of into `<temp>/target/`, so the
+  post-build lookup failed with "Expected binary not found". The fix
+  resolves the binary path relative to `CARGO_TARGET_DIR` (if set) or falls
+  back to the project-local target. Discovered via ruchy-book ch18 validation
+  on 5.0.0-beta.1 (Genchi Genbutsu). Regression test:
+  `tests/compiler_cargo_target_dir.rs`. Enables 15/16 book chapters to pass
+  against 5.0.0-beta.1 (was 4/16 before fix).
+
 ## [5.0.0-alpha.1] - 2026-04-04
 
 ### The Sovereign Platform Language
