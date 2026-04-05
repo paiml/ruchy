@@ -25,6 +25,9 @@ rolling in the integration gate for rc.1.
   verifies EMBED-A5 (edit file on disk, observe new behaviour on reload)
 - **Release-mode startup benchmark** ([EMBED-006]): `ruchy-embed/tests/startup_benchmark.rs`
   validates Success Criterion #2 — `Engine::new()` completes in < 5ms on x86_64 release
+- **Binary size budget gate** ([EMBED-009]): `tests/sovereign_binary_size_budget.rs`
+  validates Success Criterion #6 — release binary stays under 14.19 MB
+  (12.4 MB 4.x baseline + 20%). Currently 8.45 MB (40% headroom).
 - **Zero-unsafe transpile gate** ([EMBED-008]): `tests/sovereign_zero_unsafe_transpile.rs`
   verifies Success Criterion #11 — transpiled output contains no `unsafe {`,
   `unsafe fn`, `unsafe trait`, or `unsafe impl`. Covers 7 required examples

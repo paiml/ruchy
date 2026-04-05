@@ -42,6 +42,7 @@
 | RC.1: 9-pillar acceptance gate | DONE | 16 integration tests in sovereign_nine_pillar_acceptance.rs (all passing) |
 | Criterion #12: migrate-4to5 synthetic 4.x e2e | DONE | 4 tests in sovereign_migrate_4to5_e2e.rs covering all 7 keywords (all passing) |
 | Criterion #11: zero unsafe in transpile output | DONE | 2 tests in sovereign_zero_unsafe_transpile.rs (required + sovereign examples, all passing) |
+| Criterion #6: binary size (default) under +20% | DONE | 8.45 MB measured (target: <14.19 MB). 40% headroom. Automated in sovereign_binary_size_budget.rs. |
 
 ---
 
