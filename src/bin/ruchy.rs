@@ -999,6 +999,9 @@ enum Commands {
         /// Load gate thresholds from a TOML config file (CLI flags override)
         #[arg(long, value_name = "FILE")]
         config: Option<std::path::PathBuf>,
+        /// Exclude .ruchy files whose path contains PATTERN (repeatable)
+        #[arg(long, value_name = "PATTERN")]
+        exclude: Vec<String>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

@@ -52,6 +52,9 @@ ruchy tier src/ --public-only
 
 # Triage: show the 10 files with the most Bronze functions
 ruchy tier src/ --by-file --sort-by bronze --top 10
+
+# Exclude test fixtures / known-broken dirs
+ruchy tier src/ --exclude broken --exclude vendor --exclude generated
 ```
 
 ## Command Options
@@ -66,6 +69,7 @@ ruchy tier src/ --by-file --sort-by bronze --top 10
 | `--sort-by <COL>` | Sort `--by-file` by file/bronze/silver/gold/platinum/total | `file` |
 | `--top <N>` | Limit `--by-file` to N entries after sorting | none |
 | `--parse-timeout-ms <MS>` | Per-file parse timeout (resilience vs parser hangs) | `5000` |
+| `--exclude <PATTERN>` | Skip files whose path contains PATTERN (repeatable) | none |
 | `--baseline <FILE>` | Regression gate: compare against stored baseline JSON | none |
 | `--markdown` | GitHub-flavored markdown report (for PR comments/summaries) | `false` |
 | `--fail-on-scorecard <LEVEL>` | Fail if any §14.5 scorecard metric ≥ LEVEL (warn\|fail) | none |

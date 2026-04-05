@@ -574,6 +574,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             markdown,
             fail_on_scorecard,
             config,
+            exclude,
         } => {
             crate::handlers::handlers_modules::provability::handle_provability_command(
                 &path,
@@ -594,6 +595,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
                 markdown,
                 fail_on_scorecard.as_deref(),
                 config.as_deref(),
+                &exclude,
             )
         }
         crate::Commands::Contracts(cmd) => {

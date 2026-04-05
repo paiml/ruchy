@@ -303,6 +303,49 @@ fn test_tier_markdown_suppresses_human_summary() {
 }
 
 #[test]
+fn test_tier_exclude_single_pattern() {
+    let tmp = TempDir::new().unwrap();
+    fs::create_dir_all(tmp.path().join("broken")).unwrap();
+    fs::write(tmp.path().join("good.ruchy"), "fun a() { 1 }").unwrap();
+    fs::write(tmp.path().join("broken/bad.ruchy"), "fun b() { 2 }").unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--exclude")
+        .arg("broken")
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("\"files\":1"));
+    assert!(stdout.contains("\"functions\":1"));
+}
+
+#[test]
+fn test_tier_exclude_multiple_patterns_stack() {
+    let tmp = TempDir::new().unwrap();
+    fs::create_dir_all(tmp.path().join("vendor")).unwrap();
+    fs::create_dir_all(tmp.path().join("tests")).unwrap();
+    fs::write(tmp.path().join("src.ruchy"), "fun src() { 1 }").unwrap();
+    fs::write(tmp.path().join("vendor/v.ruchy"), "fun v() { 2 }").unwrap();
+    fs::write(tmp.path().join("tests/t.ruchy"), "fun t() { 3 }").unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--exclude").arg("vendor")
+        .arg("--exclude").arg("tests")
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("\"files\":1"));
+}
+
+#[test]
 fn test_tier_baseline_creates_file_on_first_run() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();

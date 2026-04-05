@@ -123,16 +123,16 @@ all 7 §Appendix B corpus repos. Captured baselines in
 
 | metric | value |
 |--------|-------|
-| files scanned | 1,021 |
-| LoC | 245,841 |
-| functions | 6,408 |
-| Bronze | 6,408 (100%) |
+| files scanned | 997 (excluding `broken/` test fixtures) |
+| LoC | 244,801 |
+| functions | 6,371 |
+| Bronze | 6,371 (100%) |
 | Silver/Gold/Platinum | 0 |
 | pub Bronze | 80 (cookbook only) |
-| parse_errors | 159 (pre-existing feature gaps) |
-| parse_timeouts | 0 (after PARSER-ACTOR-HANG fix) |
+| parse_errors | 156 (pre-existing feature gaps) |
+| parse_timeouts | 0 (after PARSER-ACTOR-HANG x2 fixes) |
 
-**The §14.5 migration gap is fully visible: 6,408 functions, 0 contracts.**
+**The §14.5 migration gap is fully visible: 6,371 functions, 0 contracts.**
 Per §14.6 the 5.2 deadline requires Silver on every `pub fn`. Current
 starting state is 0% across the corpus.
 

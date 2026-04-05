@@ -1330,7 +1330,7 @@ check-tier-baselines:
 			echo "  ⚠  skip: $${baseline} (no baseline captured)"; \
 			continue; \
 		fi; \
-		if ruchy tier "../$${repo}" --baseline "$${baseline}" \
+		if ruchy tier "../$${repo}" --exclude broken --baseline "$${baseline}" \
 		   > /dev/null 2>&1; then \
 			echo "  ✅ $${repo}"; \
 		else \
@@ -1356,7 +1356,7 @@ refresh-tier-baselines:
 	             tooling-with-ruchy ruchy-repl-demos rosetta-ruchy ruchyruchy; do \
 		if [ -d "../$${repo}" ]; then \
 			rm -f ".ruchy-tier-baselines/$${repo}.json"; \
-			ruchy tier "../$${repo}" \
+			ruchy tier "../$${repo}" --exclude broken \
 			  --baseline ".ruchy-tier-baselines/$${repo}.json" \
 			  > /dev/null 2>&1 && echo "  ✅ refreshed: $${repo}.json"; \
 		else \

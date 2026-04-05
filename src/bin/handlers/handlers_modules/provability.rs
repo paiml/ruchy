@@ -1113,10 +1113,25 @@ pub fn scan(path: &Path) -> Result<ProvabilityReport> {
 /// Files whose parser exceeds the timeout are counted in `parse_timeouts`
 /// and skipped. Default via `scan()` is 5000ms.
 pub fn scan_with_timeout(path: &Path, timeout_ms: u64) -> Result<ProvabilityReport> {
+    scan_with_options(path, timeout_ms, &[])
+}
+
+/// Scan `path` with a timeout AND a list of substring patterns. Any file
+/// whose full path contains any pattern is skipped (not counted anywhere).
+/// Use cases: test-fixtures, `broken/` dirs, vendored code.
+pub fn scan_with_options(
+    path: &Path,
+    timeout_ms: u64,
+    exclude_patterns: &[String],
+) -> Result<ProvabilityReport> {
     let mut files = Vec::new();
     collect_ruchy_files(path, &mut files);
     let mut report = ProvabilityReport::default();
     for file in &files {
+        let path_str = file.to_string_lossy();
+        if exclude_patterns.iter().any(|p| path_str.contains(p.as_str())) {
+            continue;
+        }
         let src = std::fs::read_to_string(file)
             .with_context(|| format!("reading {}", file.display()))?;
         report.files_scanned += 1;
@@ -1147,6 +1162,7 @@ pub fn handle_provability_command(
     markdown: bool,
     fail_on_scorecard: Option<&str>,
     config_path: Option<&Path>,
+    exclude_patterns: &[String],
 ) -> Result<()> {
     // Load config file, if any. CLI flag values take precedence: a CLI
     // value wins only if it is Some / true; None / false falls back
@@ -1170,7 +1186,7 @@ pub fn handle_provability_command(
     let config_scorecard = config.gates.fail_on_scorecard.clone();
     let fail_on_scorecard_effective: Option<&str> = fail_on_scorecard.or(config_scorecard.as_deref());
 
-    let raw = scan_with_timeout(path, parse_timeout_ms)?;
+    let raw = scan_with_options(path, parse_timeout_ms, exclude_patterns)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
     if markdown {
         print!("{}", report.to_markdown());
@@ -2334,6 +2350,52 @@ fail_on_scorecard = "warn"
         let json = serde_json::to_string(&s).unwrap();
         let parsed: BaselineSnapshot = serde_json::from_str(&json).unwrap();
         assert_eq!(s, parsed);
+    }
+
+    #[test]
+    fn test_scan_with_options_excludes_matching_paths() {
+        let tmp = TempDir::new().unwrap();
+        fs::create_dir_all(tmp.path().join("good")).unwrap();
+        fs::create_dir_all(tmp.path().join("broken")).unwrap();
+        fs::write(tmp.path().join("good/a.ruchy"), "fun a() { 1 }").unwrap();
+        fs::write(tmp.path().join("broken/b.ruchy"), "fun b() { 2 }").unwrap();
+
+        // No exclude → both scanned.
+        let r = scan_with_options(tmp.path(), 5000, &[]).unwrap();
+        assert_eq!(r.files_scanned, 2);
+
+        // Exclude "broken" → only good/a.ruchy scanned.
+        let r = scan_with_options(tmp.path(), 5000, &["broken".to_string()]).unwrap();
+        assert_eq!(r.files_scanned, 1);
+        assert_eq!(r.functions_total, 1);
+    }
+
+    #[test]
+    fn test_scan_with_options_empty_exclude_matches_unfiltered() {
+        let tmp = TempDir::new().unwrap();
+        fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }").unwrap();
+        let r1 = scan_with_timeout(tmp.path(), 5000).unwrap();
+        let r2 = scan_with_options(tmp.path(), 5000, &[]).unwrap();
+        assert_eq!(r1.files_scanned, r2.files_scanned);
+        assert_eq!(r1.functions_total, r2.functions_total);
+    }
+
+    #[test]
+    fn test_scan_with_options_multiple_patterns() {
+        let tmp = TempDir::new().unwrap();
+        fs::write(tmp.path().join("main.ruchy"), "fun m() { 1 }").unwrap();
+        fs::create_dir_all(tmp.path().join("vendor")).unwrap();
+        fs::write(tmp.path().join("vendor/v.ruchy"), "fun v() { 2 }").unwrap();
+        fs::create_dir_all(tmp.path().join("tests")).unwrap();
+        fs::write(tmp.path().join("tests/t.ruchy"), "fun t() { 3 }").unwrap();
+
+        let r = scan_with_options(
+            tmp.path(),
+            5000,
+            &["vendor".to_string(), "tests".to_string()],
+        )
+        .unwrap();
+        assert_eq!(r.files_scanned, 1);
     }
 
     #[test]

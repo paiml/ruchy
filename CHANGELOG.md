@@ -47,6 +47,17 @@ rolling in the integration gate for rc.1.
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
 ### Added
+- **[PROVABILITY-034] `ruchy tier --exclude <PATTERN>`**: Skip files
+  whose full path contains the pattern. Repeatable flag for multiple
+  patterns. Use cases: test-fixtures (`--exclude broken`), vendored
+  code (`--exclude vendor/`), generated files (`--exclude target/`).
+  Excluded files don't count toward files_scanned, total_loc,
+  parse_errors, or any metric — effectively invisible to the scanner.
+  Dogfood result: `ruchy tier ../ruchy-book --exclude broken` now
+  reports 0 parse_errors (vs 2 prior), since the 2 errors were in
+  ruchy-book's intentional test-fixtures directory.
+  3 new handler tests + 2 new CLI tests. New `scan_with_options()`
+  public API. 108/108 handler, 50/50 CLI tier.
 - **[PROVABILITY-031] --pub-only for contracts commands**: Adds
   `--pub-only` to `ruchy suggest-contracts`, `ruchy contracts list`, and
   `ruchy contracts check`. Scopes output/coverage to `pub` functions —
