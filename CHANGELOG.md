@@ -48,6 +48,21 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-005] F1 trivial-contract detection**: `ruchy tier` now
+  detects syntactically-trivial contract clauses (literal `true` in
+  `requires`/`ensures`), tracks them as a separate category from
+  non-trivial clauses, and reports the F1 metric ("% of contract-bearing
+  functions with at least one non-trivial clause"). This is the §14.5
+  F1 definition enforced at the syntax level — a cheap approximation of
+  the spec's SMT-tautology check. Summary output adds:
+    contract triviality (F1):
+      non-trivial: N
+      trivial:     N
+      non-trivial %: NN.N%
+  ClassifiedFunction gained `has_non_trivial_contract: bool`. 6 new
+  handler tests (trivial detection, non-trivial detection, mixed case,
+  no-contract case, percentage calc, zero-denominator edge case).
+  Live on examples/30_contracts.ruchy: 3 non-trivial / 0 trivial / 100%.
 - **[PROVABILITY-004] `--fail-on-totality-violation` CI gate**: Flag on
   `ruchy tier` that flips §14.10.6 from stderr warning to compile-blocking
   error. Exits status 1 with "§14.10.6 breach" message when any

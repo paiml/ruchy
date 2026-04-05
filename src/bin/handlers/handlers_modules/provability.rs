@@ -9,6 +9,7 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
+use ruchy::frontend::ast::{ContractClause, Literal};
 use ruchy::provability::{tier_of_function, Tier, Totality};
 use ruchy::{ExprKind, Parser};
 
@@ -19,6 +20,9 @@ pub struct ClassifiedFunction {
     pub name: String,
     pub tier: Tier,
     pub totality: Totality,
+    /// Whether the function has at least one non-trivial contract clause
+    /// (§14.5 F1 approximation: "SMT-non-trivial" → at minimum, not `true`).
+    pub has_non_trivial_contract: bool,
 }
 
 impl ClassifiedFunction {
@@ -45,6 +49,10 @@ pub struct ProvabilityReport {
     pub total_marked: usize,
     pub partial_marked: usize,
     pub totality_unmarked: usize,
+    /// §14.5 F1 approximation: functions with at least one non-trivial clause.
+    pub non_trivial_contracts: usize,
+    /// Functions where EVERY requires/ensures clause is `true` (tautology).
+    pub trivial_contracts: usize,
     /// Per-function classifications (populated when caller needs detail).
     pub functions: Vec<ClassifiedFunction>,
 }
@@ -58,6 +66,26 @@ impl ProvabilityReport {
             Tier::Gold => self.gold += 1,
             Tier::Platinum => self.platinum += 1,
         }
+    }
+
+    fn record_contract_triviality(&mut self, has_non_trivial: bool, has_any_contract: bool) {
+        if has_any_contract {
+            if has_non_trivial {
+                self.non_trivial_contracts += 1;
+            } else {
+                self.trivial_contracts += 1;
+            }
+        }
+    }
+
+    /// §14.5 F1 metric: % of contract-bearing functions with a non-trivial clause.
+    #[must_use]
+    pub fn non_trivial_pct(&self) -> f64 {
+        let with_contracts = self.non_trivial_contracts + self.trivial_contracts;
+        if with_contracts == 0 {
+            return 0.0;
+        }
+        (self.non_trivial_contracts as f64 / with_contracts as f64) * 100.0
     }
 
     fn record_totality(&mut self, totality: Totality) {
@@ -92,7 +120,7 @@ impl ProvabilityReport {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "files: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
+            "files: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
             self.files_scanned,
             self.functions_total,
             self.bronze,
@@ -104,6 +132,9 @@ impl ProvabilityReport {
             self.platinum,
             pct(self.platinum, self.functions_total),
             self.non_bronze_pct(),
+            self.non_trivial_contracts,
+            self.trivial_contracts,
+            self.non_trivial_pct(),
             self.total_marked,
             self.partial_marked,
             self.totality_unmarked,
@@ -157,6 +188,34 @@ fn function_name(expr: &ruchy::Expr) -> Option<&str> {
     }
 }
 
+/// A contract clause is "trivially true" if it is the literal `true`.
+/// This is the §14.5 F1 approximation — a cheap syntactic check that
+/// catches `requires true` / `ensures true`. Genuine SMT-based tautology
+/// detection is a future sprint.
+fn clause_is_trivially_true(clause: &ContractClause) -> bool {
+    let body = match clause {
+        ContractClause::Requires(e) => e,
+        ContractClause::Ensures(e) => e,
+        // Invariant/Decreases aren't part of the F1 requires/ensures
+        // triviality check.
+        ContractClause::Invariant(_) | ContractClause::Decreases(_) => return false,
+    };
+    matches!(body.kind, ExprKind::Literal(Literal::Bool(true)))
+}
+
+/// Returns (has_any_contract, has_non_trivial) for a function's contract list.
+fn analyze_contract_triviality(contracts: &[ContractClause]) -> (bool, bool) {
+    let req_ens: Vec<&ContractClause> = contracts
+        .iter()
+        .filter(|c| matches!(c, ContractClause::Requires(_) | ContractClause::Ensures(_)))
+        .collect();
+    if req_ens.is_empty() {
+        return (false, false);
+    }
+    let has_non_trivial = req_ens.iter().any(|c| !clause_is_trivially_true(c));
+    (true, has_non_trivial)
+}
+
 fn function_totality(expr: &ruchy::Expr) -> Totality {
     // Scan attributes for @total, @partial. @corecursive requires a
     // justification argument and is intentionally not detected by
@@ -175,12 +234,15 @@ fn visit_expr(expr: &ruchy::Expr, file: &Path, report: &mut ProvabilityReport) {
             report.record_tier(tier);
             let totality = function_totality(expr);
             report.record_totality(totality);
+            let (has_contract, has_non_trivial) = analyze_contract_triviality(&expr.contracts);
+            report.record_contract_triviality(has_non_trivial, has_contract);
             if let Some(name) = function_name(expr) {
                 report.functions.push(ClassifiedFunction {
                     file: file.to_path_buf(),
                     name: name.to_string(),
                     tier,
                     totality,
+                    has_non_trivial_contract: has_non_trivial,
                 });
             }
         }
@@ -416,6 +478,7 @@ mod tests {
             name: "f".to_string(),
             tier: Tier::Gold,
             totality: Totality::Unknown,
+            has_non_trivial_contract: true,
         };
         assert!(cf.violates_totality_rule());
     }
@@ -427,6 +490,7 @@ mod tests {
             name: "f".to_string(),
             tier: Tier::Gold,
             totality: Totality::Total,
+            has_non_trivial_contract: true,
         };
         assert!(!cf.violates_totality_rule());
     }
@@ -439,6 +503,7 @@ mod tests {
             name: "f".to_string(),
             tier: Tier::Silver,
             totality: Totality::Partial,
+            has_non_trivial_contract: true,
         };
         assert!(!cf.violates_totality_rule());
     }
@@ -450,8 +515,69 @@ mod tests {
             name: "event_loop".to_string(),
             tier: Tier::Gold,
             totality: Totality::Corecursive("server event loop"),
+            has_non_trivial_contract: true,
         };
         assert!(!cf.violates_totality_rule());
+    }
+
+    #[test]
+    fn test_trivial_contract_requires_true_detected() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "fun f() requires true ensures true { 1 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.trivial_contracts, 1);
+        assert_eq!(r.non_trivial_contracts, 0);
+    }
+
+    #[test]
+    fn test_non_trivial_contract_detected() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "fun f(x: i32) requires x > 0 ensures x > 0 { x }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.non_trivial_contracts, 1);
+        assert_eq!(r.trivial_contracts, 0);
+    }
+
+    #[test]
+    fn test_mixed_trivial_and_nontrivial_is_nontrivial() {
+        // At least one non-trivial clause → classifies as non-trivial.
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "fun f(x: i32) requires true ensures x > 0 { x }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.non_trivial_contracts, 1);
+        assert_eq!(r.trivial_contracts, 0);
+    }
+
+    #[test]
+    fn test_no_contract_is_neither_trivial_nor_nontrivial() {
+        let mut r = ProvabilityReport::default();
+        classify_source("fun f() { 1 }", Path::new("t.ruchy"), &mut r);
+        assert_eq!(r.trivial_contracts, 0);
+        assert_eq!(r.non_trivial_contracts, 0);
+    }
+
+    #[test]
+    fn test_non_trivial_pct_calculation() {
+        let mut r = ProvabilityReport::default();
+        r.non_trivial_contracts = 3;
+        r.trivial_contracts = 1;
+        // 3 of 4 contract-bearing functions have a non-trivial clause.
+        assert_eq!(r.non_trivial_pct(), 75.0);
+    }
+
+    #[test]
+    fn test_non_trivial_pct_zero_contracts_returns_zero() {
+        let r = ProvabilityReport::default();
+        assert_eq!(r.non_trivial_pct(), 0.0);
     }
 
     #[test]
