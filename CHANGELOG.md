@@ -25,6 +25,10 @@ rolling in the integration gate for rc.1.
   verifies EMBED-A5 (edit file on disk, observe new behaviour on reload)
 - **Release-mode startup benchmark** ([EMBED-006]): `ruchy-embed/tests/startup_benchmark.rs`
   validates Success Criterion #2 — `Engine::new()` completes in < 5ms on x86_64 release
+- **Zero-unsafe transpile gate** ([EMBED-008]): `tests/sovereign_zero_unsafe_transpile.rs`
+  verifies Success Criterion #11 — transpiled output contains no `unsafe {`,
+  `unsafe fn`, `unsafe trait`, or `unsafe impl`. Covers 7 required examples
+  plus all 5 sovereign 5.0 examples.
 - **Sandbox builder completion**: `Sandbox::with_net()`, `Sandbox::with_env()`,
   and `Sandbox::strict()` (tight-limit preset) — completes the capability API
   symmetry. 3 new unit tests.
