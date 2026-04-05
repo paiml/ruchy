@@ -47,6 +47,16 @@ rolling in the integration gate for rc.1.
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
 ### Added
+- **[PROVABILITY-030] markdown format for contracts list/suggest**: Adds
+  `--format markdown` to `ruchy contracts list` and
+  `ruchy suggest-contracts` for consistency with `ruchy tier --markdown`.
+  `suggest-contracts --format markdown` further splits the output into
+  **Priority 1: Public API (F4 proxy)** and **Priority 2: Internal**
+  sections — pub functions get migration priority because they drive
+  the §14.5 F4 metric. All three provability commands (tier, contracts
+  list, suggest-contracts) now share the same markdown UX and can be
+  piped into `$GITHUB_STEP_SUMMARY`. 4 new sovereign tests.
+
 - **[PROVABILITY-029] `make check-tier-baselines` target**: CI-friendly
   Makefile target runs `ruchy tier --baseline` against all 7 §Appendix B
   corpus repos and exits 1 on any tier regression. Skips repos not

@@ -440,6 +440,18 @@ pub fn handle_contracts_list(path: &Path, format: &str) -> anyhow::Result<()> {
                 println!("  []");
             }
         }
+        "markdown" => {
+            println!("## Contracted Functions ({})", with_contracts.len());
+            if with_contracts.is_empty() {
+                println!("\n_No functions with non-trivial contracts found._");
+            } else {
+                println!("\n| Tier | Function | File |");
+                println!("|------|----------|------|");
+                for f in &with_contracts {
+                    println!("| {} | `{}` | {} |", f.tier.label(), f.name, f.file.display());
+                }
+            }
+        }
         _ => {
             // Default text format.
             println!("[ruchy contracts list] {} (format={format})", path.display());
@@ -545,6 +557,40 @@ pub fn handle_suggest_contracts(path: &Path, format: &str, verbose: bool) -> any
                 println!("    is_pub: {}", f.is_pub);
                 println!("    suggested_requires: \"\"  # fill in precondition");
                 println!("    suggested_ensures: \"\"   # fill in postcondition");
+            }
+        }
+        "markdown" => {
+            let pub_fns: Vec<_> = uncontracted.iter().filter(|f| f.is_pub).collect();
+            let priv_fns: Vec<_> = uncontracted.iter().filter(|f| !f.is_pub).collect();
+            println!(
+                "## Contract Migration Tasklist ({} uncontracted)",
+                uncontracted.len()
+            );
+            if uncontracted.is_empty() {
+                println!("\n_All functions already carry contracts. ✅_");
+            } else {
+                if !pub_fns.is_empty() {
+                    println!(
+                        "\n### Priority 1: Public API ({} functions, F4 proxy)\n",
+                        pub_fns.len()
+                    );
+                    println!("| Function | File |");
+                    println!("|----------|------|");
+                    for f in &pub_fns {
+                        println!("| `{}` | {} |", f.name, f.file.display());
+                    }
+                }
+                if !priv_fns.is_empty() {
+                    println!(
+                        "\n### Priority 2: Internal ({} functions)\n",
+                        priv_fns.len()
+                    );
+                    println!("| Function | File |");
+                    println!("|----------|------|");
+                    for f in &priv_fns {
+                        println!("| `{}` | {} |", f.name, f.file.display());
+                    }
+                }
             }
         }
         _ => {
@@ -922,6 +968,39 @@ mod tests {
         )
         .unwrap();
         assert!(handle_suggest_contracts(tmp.path(), "yaml", false).is_ok());
+    }
+
+    #[test]
+    fn test_contracts_list_markdown_format() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("a.ruchy");
+        std::fs::write(&p, "fun f() requires x > 0 { 1 }").unwrap();
+        assert!(handle_contracts_list(&p, "markdown").is_ok());
+    }
+
+    #[test]
+    fn test_contracts_list_markdown_empty_still_ok() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("a.ruchy");
+        std::fs::write(&p, "fun f() { 1 }").unwrap();
+        assert!(handle_contracts_list(&p, "markdown").is_ok());
+    }
+
+    #[test]
+    fn test_suggest_contracts_markdown_format() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("a.ruchy"),
+            "pub fun api() { 1 }\nfun helper() { 2 }",
+        )
+        .unwrap();
+        assert!(handle_suggest_contracts(tmp.path(), "markdown", false).is_ok());
+    }
+
+    #[test]
+    fn test_suggest_contracts_markdown_empty_path_ok() {
+        let tmp = tempfile::tempdir().unwrap();
+        assert!(handle_suggest_contracts(tmp.path(), "markdown", false).is_ok());
     }
 
     #[test]
