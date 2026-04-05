@@ -48,6 +48,14 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-015] §14.5 F11 CI gate (`--fail-diff-exempt-density-above K`)**:
+  Sixth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F11 breach" if
+  `#[diff_exempt]` density/KLoC > K. Mirrors --fail-exempt-density-above
+  (F2) in semantics; enforces the §14.10.4 differential gate escape-hatch
+  budget *before* the differential gate itself ships. 3 new CLI tests.
+  Gate suite now complete: 6 gates — --fail-under, --fail-under-f1,
+  --fail-exempt-density-above, --fail-diff-exempt-density-above,
+  --fail-pub-bronze-above, --fail-on-totality-violation. 31/31 CLI tests.
 - **[PROVABILITY-014] `ruchy tier --json --list` per-function JSON**:
   Dashboards can now pull per-function telemetry alongside aggregate
   metrics. When both `--json` and `--list` are passed, a second JSON line

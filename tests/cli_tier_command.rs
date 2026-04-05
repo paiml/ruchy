@@ -417,6 +417,52 @@ fn test_tier_fail_exempt_density_skipped_on_empty_loc() {
 }
 
 #[test]
+fn test_tier_fail_diff_exempt_density_above_triggers_on_high_density() {
+    let tmp = TempDir::new().unwrap();
+    // 2 #[diff_exempt] in ~5 LoC → density ~400/KLoC (way above 1.0).
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "#[diff_exempt]\nfun a() { 1 }\n#[diff_exempt]\nfun b() { 2 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-diff-exempt-density-above")
+        .arg("1.0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 F11 breach"));
+}
+
+#[test]
+fn test_tier_fail_diff_exempt_density_passes_when_no_exemptions() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }\nfun b() { 2 }").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-diff-exempt-density-above")
+        .arg("0.5")
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_tier_fail_diff_exempt_density_skipped_on_empty_loc() {
+    let tmp = TempDir::new().unwrap();
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-diff-exempt-density-above")
+        .arg("0.0")
+        .assert()
+        .success();
+}
+
+#[test]
 fn test_tier_public_only_filters_to_pub_functions() {
     let tmp = TempDir::new().unwrap();
     fs::write(

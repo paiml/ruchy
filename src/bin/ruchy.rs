@@ -972,6 +972,9 @@ enum Commands {
         /// Fail if pub Bronze count > N (§14.5 F4 proxy CI gate)
         #[arg(long, value_name = "N")]
         fail_pub_bronze_above: Option<usize>,
+        /// Fail if #[diff_exempt] density > K per KLoC (§14.5 F11 gate)
+        #[arg(long, value_name = "PER_KLOC")]
+        fail_diff_exempt_density_above: Option<f64>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

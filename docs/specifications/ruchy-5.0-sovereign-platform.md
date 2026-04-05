@@ -62,6 +62,7 @@
 | §14.5 F4 CI gate (`--fail-pub-bronze-above N`) | DONE | Fifth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F4 breach" when `pub_bronze > N`. Combines cleanly with `--public-only`. 1 new handler test + 3 new CLI tests. |
 | §14.5 F4 summary + list UX | DONE | `ruchy tier` human summary now includes `public API (F4 proxy): pub Bronze: N`. `--list` output marks `pub` functions with a `pub` column. 1 new handler test + 2 new CLI tests. |
 | `ruchy tier --json --list` emits per-function JSON | DONE | Dashboards can now ingest per-function records (name, file, tier, totality, pub, non_trivial_contract) via a second JSON line. `ClassifiedFunction::to_json()` + JSON-escaping of names/paths. 4 new handler tests + 2 new CLI tests. |
+| §14.5 F11 CI gate (`--fail-diff-exempt-density-above K`) | DONE | Sixth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F11 breach" when `#[diff_exempt]` density/KLoC > K. Mirrors --fail-exempt-density-above. Skipped when no LoC scanned. 3 new CLI tests. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---

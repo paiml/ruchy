@@ -481,6 +481,7 @@ pub fn handle_provability_command(
     fail_exempt_density_above: Option<f64>,
     public_only: bool,
     fail_pub_bronze_above: Option<usize>,
+    fail_diff_exempt_density_above: Option<f64>,
 ) -> Result<()> {
     let raw = scan(path)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
@@ -582,6 +583,19 @@ pub fn handle_provability_command(
                 actual,
                 ceiling
             );
+        }
+    }
+    // Apply --fail-diff-exempt-density-above gate (§14.5 F11 CI enforcement).
+    if let Some(ceiling) = fail_diff_exempt_density_above {
+        if report.total_loc > 0 {
+            let actual = report.diff_exempt_density_per_kloc();
+            if actual > ceiling {
+                anyhow::bail!(
+                    "#[diff_exempt] density {:.2}/KLoC exceeds ceiling {:.2}/KLoC (§14.5 F11 breach)",
+                    actual,
+                    ceiling
+                );
+            }
         }
     }
     Ok(())

@@ -62,6 +62,7 @@ ruchy tier src/ --public-only
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |
+| `--fail-diff-exempt-density-above <PER_KLOC>` | Exit 1 if F11 density > K | none |
 | `--fail-pub-bronze-above <N>` | Exit 1 if `pub_bronze` count > N | none |
 | `--fail-on-totality-violation` | Exit 1 on any §14.10.6 violation | `false` |
 
@@ -134,7 +135,7 @@ Columns: tier, totality, `pub` marker, function name, source file.
 
 ## CI Gate Recipes
 
-`ruchy tier` ships with five CI gate flags. All exit non-zero on breach
+`ruchy tier` ships with six CI gate flags. All exit non-zero on breach
 and print a spec-ticketed error message to stderr.
 
 ### Gate: ≥50% non-Bronze (§14.2)
@@ -156,6 +157,14 @@ ruchy tier src/ --fail-under-f1 95
 ```bash
 ruchy tier src/ --fail-exempt-density-above 0.5
 # ⇒ Error if #[contract_exempt] density > 0.5 per KLoC
+```
+
+### Gate: ≤1.0 `#[diff_exempt]` per KLoC (§14.5 F11)
+
+```bash
+ruchy tier src/ --fail-diff-exempt-density-above 1.0
+# ⇒ Error if #[diff_exempt] density > 1.0 per KLoC
+# F11 target: publish 0 #[diff_exempt] without ticket
 ```
 
 ### Gate: 0 pub Bronze (§14.5 F4)
@@ -180,6 +189,7 @@ ruchy tier src/ \
   --fail-under 50 \
   --fail-under-f1 80 \
   --fail-exempt-density-above 1.0 \
+  --fail-diff-exempt-density-above 1.0 \
   --fail-pub-bronze-above 5 \
   --fail-on-totality-violation
 ```
