@@ -78,6 +78,9 @@ pub struct ProvabilityReport {
     pub gold: usize,
     pub platinum: usize,
     pub parse_errors: usize,
+    /// Count of files where the parser exceeded the per-file timeout.
+    /// Indicates a parser bug (infinite loop / pathological input).
+    pub parse_timeouts: usize,
     /// Totality-marker counts (from @total/@partial decorators).
     pub total_marked: usize,
     pub partial_marked: usize,
@@ -379,7 +382,8 @@ impl ProvabilityReport {
 \"totality_violations\":{},\
 \"pub_bronze\":{},\
 \"scorecard\":{{\"f1\":\"{}\",\"f2\":\"{}\",\"f4\":\"{}\",\"f11\":\"{}\"}},\
-\"parse_errors\":{}\
+\"parse_errors\":{},\
+\"parse_timeouts\":{}\
 }}",
             self.files_scanned,
             self.total_loc,
@@ -406,6 +410,7 @@ impl ProvabilityReport {
             self.falsifier_scorecard().f4.label(),
             self.falsifier_scorecard().f11.label(),
             self.parse_errors,
+            self.parse_timeouts,
         )
     }
 
@@ -445,6 +450,7 @@ impl ProvabilityReport {
             files_scanned: self.files_scanned,
             total_loc: self.total_loc,
             parse_errors: self.parse_errors,
+            parse_timeouts: self.parse_timeouts,
             // §14.5 F2/F11: exemptions are file-level, not fn-scoped, so
             // we keep the absolute counts for density computation.
             contract_exempt_count: self.contract_exempt_count,
@@ -479,7 +485,7 @@ impl ProvabilityReport {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "files: {}\nloc: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\nexemptions (F2):\n  #[contract_exempt]: {}\n  density / KLoC:     {:.2}\ndiff exemptions (F11):\n  #[diff_exempt]: {}\n  density / KLoC: {:.2}\npublic API (F4 proxy):\n  pub Bronze: {}\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
+            "files: {}\nloc: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\nexemptions (F2):\n  #[contract_exempt]: {}\n  density / KLoC:     {:.2}\ndiff exemptions (F11):\n  #[diff_exempt]: {}\n  density / KLoC: {:.2}\npublic API (F4 proxy):\n  pub Bronze: {}\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}\nparse timeouts: {}",
             self.files_scanned,
             self.total_loc,
             self.functions_total,
@@ -504,6 +510,7 @@ impl ProvabilityReport {
             self.partial_marked,
             self.totality_unmarked,
             self.parse_errors,
+            self.parse_timeouts,
         )
     }
 }
@@ -544,6 +551,44 @@ fn classify_source(src: &str, file: &Path, report: &mut ProvabilityReport) {
         return;
     };
     visit_expr(&expr, file, report);
+}
+
+/// Parse `src` in a worker thread with a wall-clock timeout. Returns
+/// `Some(expr)` on success, `None` if the parser errored, `Err(())` if
+/// the parser exceeded `timeout_ms` milliseconds (treated as a hang /
+/// parser infinite loop).
+fn parse_with_timeout(
+    src: &str,
+    timeout_ms: u64,
+) -> Result<Option<ruchy::Expr>, ()> {
+    use std::sync::mpsc;
+    use std::time::Duration;
+    let (tx, rx) = mpsc::sync_channel::<Option<ruchy::Expr>>(1);
+    // Clone src into owned String for the worker thread.
+    let owned = src.to_string();
+    std::thread::spawn(move || {
+        let mut parser = Parser::new(&owned);
+        let result = parser.parse().ok();
+        // If receiver has hung up (timed out), this send fails silently.
+        let _ = tx.send(result);
+    });
+    match rx.recv_timeout(Duration::from_millis(timeout_ms)) {
+        Ok(maybe_expr) => Ok(maybe_expr),
+        Err(_) => Err(()),
+    }
+}
+
+fn classify_source_with_timeout(
+    src: &str,
+    file: &Path,
+    report: &mut ProvabilityReport,
+    timeout_ms: u64,
+) {
+    match parse_with_timeout(src, timeout_ms) {
+        Ok(Some(expr)) => visit_expr(&expr, file, report),
+        Ok(None) => report.parse_errors += 1,
+        Err(()) => report.parse_timeouts += 1,
+    }
 }
 
 fn function_name(expr: &ruchy::Expr) -> Option<&str> {
@@ -647,7 +692,15 @@ fn visit_expr(expr: &ruchy::Expr, file: &Path, report: &mut ProvabilityReport) {
 }
 
 /// Scan `path` (file or directory) and build a [`ProvabilityReport`].
+/// Default per-file parse timeout is 5 seconds; see [`scan_with_timeout`].
 pub fn scan(path: &Path) -> Result<ProvabilityReport> {
+    scan_with_timeout(path, 5000)
+}
+
+/// Scan `path` (file or directory) with a per-file parse timeout in ms.
+/// Files whose parser exceeds the timeout are counted in `parse_timeouts`
+/// and skipped. Default via `scan()` is 5000ms.
+pub fn scan_with_timeout(path: &Path, timeout_ms: u64) -> Result<ProvabilityReport> {
     let mut files = Vec::new();
     collect_ruchy_files(path, &mut files);
     let mut report = ProvabilityReport::default();
@@ -656,7 +709,7 @@ pub fn scan(path: &Path) -> Result<ProvabilityReport> {
             .with_context(|| format!("reading {}", file.display()))?;
         report.files_scanned += 1;
         report.total_loc += src.lines().count();
-        classify_source(&src, file, &mut report);
+        classify_source_with_timeout(&src, file, &mut report, timeout_ms);
     }
     Ok(report)
 }
@@ -677,8 +730,9 @@ pub fn handle_provability_command(
     by_file: bool,
     sort_by: &str,
     top: Option<usize>,
+    parse_timeout_ms: u64,
 ) -> Result<()> {
-    let raw = scan(path)?;
+    let raw = scan_with_timeout(path, parse_timeout_ms)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
     if json {
         println!("{}", report.to_json());
@@ -1389,6 +1443,42 @@ mod tests {
         assert!(j.contains("\"f2\":"));
         assert!(j.contains("\"f4\":"));
         assert!(j.contains("\"f11\":"));
+    }
+
+    #[test]
+    fn test_parse_with_timeout_succeeds_on_valid_source() {
+        let r = parse_with_timeout("fun a() { 1 }", 5000);
+        assert!(matches!(r, Ok(Some(_))));
+    }
+
+    #[test]
+    fn test_parse_with_timeout_none_on_invalid_source() {
+        let r = parse_with_timeout("fun (", 5000);
+        assert!(matches!(r, Ok(None)));
+    }
+
+    #[test]
+    fn test_scan_single_file_with_default_timeout_works() {
+        let tmp = TempDir::new().unwrap();
+        let p = tmp.path().join("t.ruchy");
+        fs::write(&p, "fun a() { 1 }").unwrap();
+        let r = scan(&p).unwrap();
+        assert_eq!(r.parse_timeouts, 0);
+        assert_eq!(r.functions_total, 1);
+    }
+
+    #[test]
+    fn test_to_json_includes_parse_timeouts_key() {
+        let r = ProvabilityReport::default();
+        let j = r.to_json();
+        assert!(j.contains("\"parse_timeouts\":0"));
+    }
+
+    #[test]
+    fn test_summary_includes_parse_timeouts() {
+        let r = ProvabilityReport::default();
+        let s = r.summary();
+        assert!(s.contains("parse timeouts:"));
     }
 
     #[test]

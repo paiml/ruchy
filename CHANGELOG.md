@@ -48,6 +48,17 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-019] `ruchy tier` per-file parse timeout**: Scanner is
+  now resilient to parser infinite-loops. Each file's parse runs in a
+  worker thread with a configurable wall-clock timeout (default 5000ms,
+  `--parse-timeout-ms <MS>`). Timeouts are tracked in a new
+  `parse_timeouts` field (JSON + summary) and the scanner continues to
+  the next file instead of hanging. Discovered by dogfooding: scanning
+  `examples/` hung indefinitely due to parser infinite-loop on
+  examples/21_concurrency.ruchy (actor syntax). Post-fix: full 183-file
+  scan completes in <2s, reporting 1 timeout + 28 parse errors (pre-
+  existing corpus state). 5 new handler tests. Parser hang itself is a
+  separate upstream bug to be tracked.
 - **[PROVABILITY-018] §14.5 falsifier scorecard**: Turns the raw F1/F2/F4/F11
   metrics into a single-glance OK/WARN/FAIL status line:
     §14.5 scorecard: F1:OK F2:WARN F4:WARN F11:OK

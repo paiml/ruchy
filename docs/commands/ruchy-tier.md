@@ -65,6 +65,7 @@ ruchy tier src/ --by-file --sort-by bronze --top 10
 | `--by-file` | Show per-file tier breakdown (table + JSON array) | `false` |
 | `--sort-by <COL>` | Sort `--by-file` by file/bronze/silver/gold/platinum/total | `file` |
 | `--top <N>` | Limit `--by-file` to N entries after sorting | none |
+| `--parse-timeout-ms <MS>` | Per-file parse timeout (resilience vs parser hangs) | `5000` |
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |
@@ -257,6 +258,10 @@ to stderr and (with `--fail-on-totality-violation`) exits non-zero:
   True stdlib-vs-user-code distinction requires package metadata.
 - No AST-to-tier bridge for method definitions inside `impl` blocks
   (functions in `fun` position only).
+- **Parse timeouts**: a file whose parser exceeds `--parse-timeout-ms`
+  (default 5000) is counted in `parse_timeouts` and skipped. This
+  indicates a parser bug (infinite loop) in the underlying `ruchy`
+  frontend, not in `ruchy tier` itself.
 
 ## See Also
 

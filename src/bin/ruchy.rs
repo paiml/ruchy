@@ -984,6 +984,9 @@ enum Commands {
         /// Limit --by-file output to top N files after sorting
         #[arg(long, value_name = "N")]
         top: Option<usize>,
+        /// Per-file parse timeout in milliseconds (protects against parser hangs)
+        #[arg(long, value_name = "MS", default_value = "5000")]
+        parse_timeout_ms: u64,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

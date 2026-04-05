@@ -569,6 +569,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             by_file,
             sort_by,
             top,
+            parse_timeout_ms,
         } => {
             crate::handlers::handlers_modules::provability::handle_provability_command(
                 &path,
@@ -584,6 +585,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
                 by_file,
                 &sort_by,
                 top,
+                parse_timeout_ms,
             )
         }
         crate::Commands::Contracts(cmd) => {
