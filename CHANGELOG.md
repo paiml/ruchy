@@ -48,6 +48,14 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-012] §14.5 F4 CI gate (`--fail-pub-bronze-above N`)**:
+  Fifth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F4 breach" if
+  `pub_bronze` count exceeds N. Teams set `--fail-pub-bronze-above 0` to
+  block any pub Bronze from shipping, or a declining ceiling during 5.0→5.2
+  migration. Pairs cleanly with `--public-only` (both scope to the public
+  API surface targeted by §14.5 F4). 1 new handler test + 3 new CLI tests.
+  Total gate suite: 5 (--fail-under, --fail-under-f1, --fail-exempt-density-above,
+  --fail-on-totality-violation, --fail-pub-bronze-above).
 - **[PROVABILITY-011] §14.5 F4 proxy: `pub_bronze` count + `--public-only` filter**:
   `ruchy tier` now tracks Bronze-tier `pub` functions — the stdlib surface
   that §14.5 F4 ("stdlib Bronze count → 0 after 5.2") actually targets.

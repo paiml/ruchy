@@ -352,6 +352,60 @@ fn test_tier_public_only_filters_to_pub_functions() {
 }
 
 #[test]
+fn test_tier_fail_pub_bronze_above_triggers_on_breach() {
+    let tmp = TempDir::new().unwrap();
+    // 3 pub Bronze (no requires/ensures) → breach at ceiling 1.
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "pub fun a() { 1 }\npub fun b() { 2 }\npub fun c() { 3 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-pub-bronze-above")
+        .arg("1")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 F4 breach"));
+}
+
+#[test]
+fn test_tier_fail_pub_bronze_above_passes_when_within_ceiling() {
+    let tmp = TempDir::new().unwrap();
+    // 1 pub Bronze → within ceiling 2.
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "pub fun a() { 1 }\nfun internal() { 2 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-pub-bronze-above")
+        .arg("2")
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_tier_fail_pub_bronze_above_zero_blocks_any_pub_bronze() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-pub-bronze-above")
+        .arg("0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 F4 breach"));
+}
+
+#[test]
 fn test_tier_public_only_without_pub_reports_zero() {
     let tmp = TempDir::new().unwrap();
     fs::write(

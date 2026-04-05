@@ -969,6 +969,9 @@ enum Commands {
         /// Only classify `pub fn` (§14.5 F4 proxy: stdlib public surface)
         #[arg(long)]
         public_only: bool,
+        /// Fail if pub Bronze count > N (§14.5 F4 proxy CI gate)
+        #[arg(long, value_name = "N")]
+        fail_pub_bronze_above: Option<usize>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

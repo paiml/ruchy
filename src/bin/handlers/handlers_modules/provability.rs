@@ -432,6 +432,7 @@ pub fn handle_provability_command(
     fail_under_f1: Option<f64>,
     fail_exempt_density_above: Option<f64>,
     public_only: bool,
+    fail_pub_bronze_above: Option<usize>,
 ) -> Result<()> {
     let raw = scan(path)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
@@ -518,6 +519,17 @@ pub fn handle_provability_command(
                     ceiling
                 );
             }
+        }
+    }
+    // Apply --fail-pub-bronze-above gate (§14.5 F4 proxy CI enforcement).
+    if let Some(ceiling) = fail_pub_bronze_above {
+        let actual = report.pub_bronze_count();
+        if actual > ceiling {
+            anyhow::bail!(
+                "pub Bronze count {} exceeds ceiling {} (§14.5 F4 breach)",
+                actual,
+                ceiling
+            );
         }
     }
     Ok(())
@@ -969,6 +981,19 @@ mod tests {
         assert!(j.contains("\"bronze\":1"));
         assert!(j.contains("\"functions\":3"));
         assert!(j.contains("\"loc\":100"));
+    }
+
+    #[test]
+    fn test_to_json_includes_pub_bronze_value() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "pub fun a() { 1 }\nfun b() { 2 }\npub fun c() requires x > 0 { 3 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        // 1 pub Bronze (a), 1 private Bronze (b, not counted), 1 pub Silver (c, not Bronze)
+        let j = r.to_json();
+        assert!(j.contains("\"pub_bronze\":1"), "JSON: {j}");
     }
 
     #[test]
