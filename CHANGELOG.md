@@ -46,6 +46,18 @@ rolling in the integration gate for rc.1.
 - **bashrs shell transpilation types** (beta.2): `ShellScript`, `ShellVar`,
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
+### Added
+- **[PROVABILITY-027] Tier baselines for §Appendix B corpus repos**:
+  Ran `ruchy tier --baseline` against all 7 paiml sibling repos
+  (ruchy-book, ruchy-cookbook, ruchy-cli-tools-book, tooling-with-ruchy,
+  ruchy-repl-demos, rosetta-ruchy, ruchyruchy). Captured baseline JSONs
+  in `.ruchy-tier-baselines/` with a README documenting the §14.5
+  starting state: 6,408 functions, 100% Bronze, 0 contracts, 80 pub
+  Bronze. This is the baseline CI will regression-check against as
+  contracts migrate to Silver/Gold during the 5.0→5.2 window. Zero
+  parse timeouts (vs pre-PARSER-ACTOR-HANG hangs), 159 parse errors
+  (pre-existing feature-gap diagnostics).
+
 ### Fixed
 - **[PARSER-ACTOR-HANG] Parser infinite-loop on unclosed actor body**: An
   actor declaration whose opening brace is not matched (e.g., `actor X {`

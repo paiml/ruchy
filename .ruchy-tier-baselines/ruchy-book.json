@@ -1,0 +1,16 @@
+{
+  "bronze": 216,
+  "silver": 0,
+  "gold": 0,
+  "platinum": 0,
+  "pub_bronze": 0,
+  "non_trivial_pct": 0.0,
+  "non_bronze_pct": 0.0,
+  "exempt_density_per_kloc": 0.0,
+  "diff_exempt_density_per_kloc": 0.0,
+  "contract_exempt": 0,
+  "diff_exempt": 0,
+  "parse_errors": 2,
+  "parse_timeouts": 0,
+  "totality_violations": 0
+}

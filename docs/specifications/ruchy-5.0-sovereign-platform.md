@@ -114,6 +114,25 @@
 
 **F3/F5/F6/F7/F8–F12: NOT addressed this session.**
 
+**Corpus-wide §14.5 baseline (PROVABILITY-027):** Ran `ruchy tier` against
+all 7 §Appendix B corpus repos. Captured baselines in
+`.ruchy-tier-baselines/` for CI regression-detection. Aggregate data:
+
+| metric | value |
+|--------|-------|
+| files scanned | 1,021 |
+| LoC | 245,841 |
+| functions | 6,408 |
+| Bronze | 6,408 (100%) |
+| Silver/Gold/Platinum | 0 |
+| pub Bronze | 80 (cookbook only) |
+| parse_errors | 159 (pre-existing feature gaps) |
+| parse_timeouts | 0 (after PARSER-ACTOR-HANG fix) |
+
+**The §14.5 migration gap is fully visible: 6,408 functions, 0 contracts.**
+Per §14.6 the 5.2 deadline requires Silver on every `pub fn`. Current
+starting state is 0% across the corpus.
+
 **Dogfood finding → upstream fix:** `ruchy tier examples/` surfaced a
 parser infinite-loop on `examples/21_concurrency.ruchy` (actor syntax).
 Initially worked around via a per-file parse timeout (PROVABILITY-019).
