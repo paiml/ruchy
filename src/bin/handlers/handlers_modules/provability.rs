@@ -27,6 +27,75 @@ pub struct ClassifiedFunction {
     pub is_pub: bool,
 }
 
+impl BaselineSnapshot {
+    /// Compare `current` against `self` (baseline) and return all
+    /// metrics that regressed. "Regression" semantics:
+    /// - count-like metrics regress when they INCREASE (more bad, more errors)
+    /// - percentage-like metrics regress when they DECREASE (less good)
+    #[must_use]
+    pub fn regressions_vs(&self, current: &BaselineSnapshot) -> Vec<Regression> {
+        let mut out = Vec::new();
+        // Counts that should not increase.
+        for (name, base, cur) in &[
+            ("bronze", self.bronze, current.bronze),
+            ("pub_bronze", self.pub_bronze, current.pub_bronze),
+            ("contract_exempt", self.contract_exempt, current.contract_exempt),
+            ("diff_exempt", self.diff_exempt, current.diff_exempt),
+            ("parse_errors", self.parse_errors, current.parse_errors),
+            ("parse_timeouts", self.parse_timeouts, current.parse_timeouts),
+            (
+                "totality_violations",
+                self.totality_violations,
+                current.totality_violations,
+            ),
+        ] {
+            if cur > base {
+                out.push(Regression {
+                    metric: name,
+                    baseline: base.to_string(),
+                    current: cur.to_string(),
+                });
+            }
+        }
+        // Percentages that should not decrease.
+        for (name, base, cur) in &[
+            ("non_trivial_pct", self.non_trivial_pct, current.non_trivial_pct),
+            ("non_bronze_pct", self.non_bronze_pct, current.non_bronze_pct),
+        ] {
+            // Tolerate 0.01% rounding noise.
+            if *cur + 0.01 < *base {
+                out.push(Regression {
+                    metric: name,
+                    baseline: format!("{base:.2}"),
+                    current: format!("{cur:.2}"),
+                });
+            }
+        }
+        // Densities that should not increase. Tolerate 0.01 noise.
+        for (name, base, cur) in &[
+            (
+                "exempt_density_per_kloc",
+                self.exempt_density_per_kloc,
+                current.exempt_density_per_kloc,
+            ),
+            (
+                "diff_exempt_density_per_kloc",
+                self.diff_exempt_density_per_kloc,
+                current.diff_exempt_density_per_kloc,
+            ),
+        ] {
+            if *cur > *base + 0.01 {
+                out.push(Regression {
+                    metric: name,
+                    baseline: format!("{base:.2}"),
+                    current: format!("{cur:.2}"),
+                });
+            }
+        }
+        out
+    }
+}
+
 impl ClassifiedFunction {
     /// Per §14.10.6 Gold/Platinum require `@total`. Return true if this
     /// classification violates the requirement.
@@ -98,6 +167,35 @@ pub struct ProvabilityReport {
     pub total_loc: usize,
     /// Per-function classifications (populated when caller needs detail).
     pub functions: Vec<ClassifiedFunction>,
+}
+
+/// Snapshot of the metrics that matter for baseline comparison.
+/// Intentionally a subset of `ProvabilityReport` — only the numeric
+/// metrics we regression-check in CI.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct BaselineSnapshot {
+    pub bronze: usize,
+    pub silver: usize,
+    pub gold: usize,
+    pub platinum: usize,
+    pub pub_bronze: usize,
+    pub non_trivial_pct: f64,
+    pub non_bronze_pct: f64,
+    pub exempt_density_per_kloc: f64,
+    pub diff_exempt_density_per_kloc: f64,
+    pub contract_exempt: usize,
+    pub diff_exempt: usize,
+    pub parse_errors: usize,
+    pub parse_timeouts: usize,
+    pub totality_violations: usize,
+}
+
+/// A single metric regression: name, baseline value, current value.
+#[derive(Debug, Clone)]
+pub struct Regression {
+    pub metric: &'static str,
+    pub baseline: String,
+    pub current: String,
 }
 
 /// §14.5 falsifier status for a single metric.
@@ -260,6 +358,27 @@ impl ProvabilityReport {
             rows.truncate(n);
         }
         rows
+    }
+
+    /// Extract a baseline snapshot for regression tracking.
+    #[must_use]
+    pub fn baseline_snapshot(&self) -> BaselineSnapshot {
+        BaselineSnapshot {
+            bronze: self.bronze,
+            silver: self.silver,
+            gold: self.gold,
+            platinum: self.platinum,
+            pub_bronze: self.pub_bronze_count(),
+            non_trivial_pct: self.non_trivial_pct(),
+            non_bronze_pct: self.non_bronze_pct(),
+            exempt_density_per_kloc: self.exempt_density_per_kloc(),
+            diff_exempt_density_per_kloc: self.diff_exempt_density_per_kloc(),
+            contract_exempt: self.contract_exempt_count,
+            diff_exempt: self.diff_exempt_count,
+            parse_errors: self.parse_errors,
+            parse_timeouts: self.parse_timeouts,
+            totality_violations: self.totality_violations().len(),
+        }
     }
 
     /// §14.5 falsifier scorecard: OK / WARN / FAIL per metric.
@@ -731,6 +850,7 @@ pub fn handle_provability_command(
     sort_by: &str,
     top: Option<usize>,
     parse_timeout_ms: u64,
+    baseline: Option<&Path>,
 ) -> Result<()> {
     let raw = scan_with_timeout(path, parse_timeout_ms)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
@@ -874,6 +994,33 @@ pub fn handle_provability_command(
                     ceiling
                 );
             }
+        }
+    }
+    // Baseline comparison (§14.5 regression gate).
+    if let Some(baseline_path) = baseline {
+        let current_snap = report.baseline_snapshot();
+        if baseline_path.exists() {
+            let raw = std::fs::read_to_string(baseline_path)
+                .with_context(|| format!("reading baseline {}", baseline_path.display()))?;
+            let baseline_snap: BaselineSnapshot = serde_json::from_str(&raw)
+                .with_context(|| format!("parsing baseline {}", baseline_path.display()))?;
+            let regs = baseline_snap.regressions_vs(&current_snap);
+            if regs.is_empty() {
+                eprintln!("baseline OK: no regressions vs {}", baseline_path.display());
+            } else {
+                eprintln!("\nbaseline regressions vs {}:", baseline_path.display());
+                for r in &regs {
+                    eprintln!("  {} : {} → {}", r.metric, r.baseline, r.current);
+                }
+                anyhow::bail!("{} baseline regression(s) detected", regs.len());
+            }
+        } else {
+            // First run: capture baseline.
+            let pretty = serde_json::to_string_pretty(&current_snap)
+                .with_context(|| "serializing baseline")?;
+            std::fs::write(baseline_path, pretty)
+                .with_context(|| format!("writing baseline {}", baseline_path.display()))?;
+            eprintln!("baseline captured: {}", baseline_path.display());
         }
     }
     Ok(())
@@ -1443,6 +1590,119 @@ mod tests {
         assert!(j.contains("\"f2\":"));
         assert!(j.contains("\"f4\":"));
         assert!(j.contains("\"f11\":"));
+    }
+
+    #[test]
+    fn test_baseline_snapshot_captures_current_metrics() {
+        let mut r = ProvabilityReport::default();
+        classify_source("pub fun a() { 1 }", Path::new("t.ruchy"), &mut r);
+        r.total_loc = 100;
+        r.contract_exempt_count = 2;
+        let s = r.baseline_snapshot();
+        assert_eq!(s.bronze, 1);
+        assert_eq!(s.pub_bronze, 1);
+        assert_eq!(s.contract_exempt, 2);
+    }
+
+    #[test]
+    fn test_regressions_vs_empty_when_identical() {
+        let s = BaselineSnapshot {
+            bronze: 3,
+            silver: 2,
+            gold: 0,
+            platinum: 0,
+            pub_bronze: 1,
+            non_trivial_pct: 95.0,
+            non_bronze_pct: 40.0,
+            exempt_density_per_kloc: 0.2,
+            diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 1,
+            diff_exempt: 0,
+            parse_errors: 0,
+            parse_timeouts: 0,
+            totality_violations: 0,
+        };
+        assert!(s.regressions_vs(&s).is_empty());
+    }
+
+    #[test]
+    fn test_regressions_vs_detects_bronze_increase() {
+        let base = BaselineSnapshot {
+            bronze: 3,
+            silver: 0, gold: 0, platinum: 0, pub_bronze: 0,
+            non_trivial_pct: 0.0, non_bronze_pct: 0.0,
+            exempt_density_per_kloc: 0.0, diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 0, diff_exempt: 0,
+            parse_errors: 0, parse_timeouts: 0, totality_violations: 0,
+        };
+        let cur = BaselineSnapshot { bronze: 5, ..base };
+        let regs = base.regressions_vs(&cur);
+        assert_eq!(regs.len(), 1);
+        assert_eq!(regs[0].metric, "bronze");
+        assert_eq!(regs[0].baseline, "3");
+        assert_eq!(regs[0].current, "5");
+    }
+
+    #[test]
+    fn test_regressions_vs_detects_pct_decrease() {
+        let base = BaselineSnapshot {
+            bronze: 0, silver: 0, gold: 0, platinum: 0, pub_bronze: 0,
+            non_trivial_pct: 95.0, non_bronze_pct: 0.0,
+            exempt_density_per_kloc: 0.0, diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 0, diff_exempt: 0,
+            parse_errors: 0, parse_timeouts: 0, totality_violations: 0,
+        };
+        let cur = BaselineSnapshot { non_trivial_pct: 80.0, ..base };
+        let regs = base.regressions_vs(&cur);
+        assert_eq!(regs.len(), 1);
+        assert_eq!(regs[0].metric, "non_trivial_pct");
+    }
+
+    #[test]
+    fn test_regressions_vs_ignores_tiny_pct_noise() {
+        let base = BaselineSnapshot {
+            bronze: 0, silver: 0, gold: 0, platinum: 0, pub_bronze: 0,
+            non_trivial_pct: 95.0, non_bronze_pct: 0.0,
+            exempt_density_per_kloc: 0.0, diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 0, diff_exempt: 0,
+            parse_errors: 0, parse_timeouts: 0, totality_violations: 0,
+        };
+        // Within 0.01 tolerance → no regression.
+        let cur = BaselineSnapshot { non_trivial_pct: 94.995, ..base };
+        assert!(base.regressions_vs(&cur).is_empty());
+    }
+
+    #[test]
+    fn test_regressions_vs_improvement_not_regression() {
+        let base = BaselineSnapshot {
+            bronze: 10, silver: 0, gold: 0, platinum: 0, pub_bronze: 3,
+            non_trivial_pct: 50.0, non_bronze_pct: 20.0,
+            exempt_density_per_kloc: 2.0, diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 5, diff_exempt: 0,
+            parse_errors: 2, parse_timeouts: 0, totality_violations: 1,
+        };
+        // Everything is improved.
+        let cur = BaselineSnapshot {
+            bronze: 5, pub_bronze: 0, non_trivial_pct: 90.0,
+            non_bronze_pct: 60.0, exempt_density_per_kloc: 0.5,
+            contract_exempt: 1, parse_errors: 0, totality_violations: 0,
+            ..base
+        };
+        assert!(base.regressions_vs(&cur).is_empty());
+    }
+
+    #[test]
+    fn test_baseline_snapshot_roundtrips_via_serde() {
+        let s = BaselineSnapshot {
+            bronze: 5, silver: 3, gold: 1, platinum: 0, pub_bronze: 2,
+            non_trivial_pct: 87.5, non_bronze_pct: 44.4,
+            exempt_density_per_kloc: 1.2, diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 3, diff_exempt: 0,
+            parse_errors: 1, parse_timeouts: 0, totality_violations: 0,
+        };
+        let json = serde_json::to_string(&s).unwrap();
+        let parsed: BaselineSnapshot = serde_json::from_str(&json).unwrap();
+        assert_eq!(s, parsed);
     }
 
     #[test]

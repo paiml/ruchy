@@ -987,6 +987,9 @@ enum Commands {
         /// Per-file parse timeout in milliseconds (protects against parser hangs)
         #[arg(long, value_name = "MS", default_value = "5000")]
         parse_timeout_ms: u64,
+        /// Baseline JSON file for regression comparison (created if missing)
+        #[arg(long, value_name = "FILE")]
+        baseline: Option<std::path::PathBuf>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

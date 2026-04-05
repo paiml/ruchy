@@ -48,6 +48,19 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-020] `ruchy tier --baseline <file>` regression gate**:
+  CI-friendly baseline comparison. First run captures scan metrics to a
+  JSON file; subsequent runs compare and exit 1 if any metric regresses.
+  Tracked metrics:
+  - Counts (regress on increase): bronze, pub_bronze, contract_exempt,
+    diff_exempt, parse_errors, parse_timeouts, totality_violations
+  - Percentages (regress on decrease): non_trivial_pct, non_bronze_pct
+  - Densities (regress on increase): exempt_density_per_kloc,
+    diff_exempt_density_per_kloc
+  0.01 tolerance on floats absorbs rounding noise. Human-readable diff:
+  "bronze : 1 → 3". New public types `BaselineSnapshot` (serde-roundtrip
+  via serde_json) + `Regression` + `regressions_vs()` comparison.
+  7 new handler tests + 3 new CLI tests. 81/81 handler, 40/40 CLI tier.
 - **[PROVABILITY-019] `ruchy tier` per-file parse timeout**: Scanner is
   now resilient to parser infinite-loops. Each file's parse runs in a
   worker thread with a configurable wall-clock timeout (default 5000ms,

@@ -66,6 +66,7 @@ ruchy tier src/ --by-file --sort-by bronze --top 10
 | `--sort-by <COL>` | Sort `--by-file` by file/bronze/silver/gold/platinum/total | `file` |
 | `--top <N>` | Limit `--by-file` to N entries after sorting | none |
 | `--parse-timeout-ms <MS>` | Per-file parse timeout (resilience vs parser hangs) | `5000` |
+| `--baseline <FILE>` | Regression gate: compare against stored baseline JSON | none |
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |
@@ -170,7 +171,7 @@ Columns: tier, totality, `pub` marker, function name, source file.
 
 ## CI Gate Recipes
 
-`ruchy tier` ships with six CI gate flags. All exit non-zero on breach
+`ruchy tier` ships with seven CI gate flags (six threshold gates + baseline). All exit non-zero on breach
 and print a spec-ticketed error message to stderr.
 
 ### Gate: ≥50% non-Bronze (§14.2)
@@ -209,6 +210,22 @@ ruchy tier src/ --fail-pub-bronze-above 0
 # ⇒ Error if any pub function is Bronze
 # Use during 5.0→5.2 migration with a declining ceiling
 ```
+
+### Gate: no regressions vs baseline
+
+```bash
+# First run: capture baseline
+ruchy tier src/ --baseline .ruchy/tier-baseline.json
+
+# Subsequent runs: compare
+ruchy tier src/ --baseline .ruchy/tier-baseline.json
+# ⇒ baseline OK: no regressions vs .ruchy/tier-baseline.json
+# ⇒ (or) Error: N baseline regression(s) detected
+```
+
+Commit the baseline JSON to version control. CI re-runs `ruchy tier`
+with `--baseline` on every PR; any metric regression (bronze count up,
+non-trivial % down, etc.) fails the build.
 
 ### Gate: no §14.10.6 totality violations
 

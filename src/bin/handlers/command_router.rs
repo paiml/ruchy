@@ -570,6 +570,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             sort_by,
             top,
             parse_timeout_ms,
+            baseline,
         } => {
             crate::handlers::handlers_modules::provability::handle_provability_command(
                 &path,
@@ -586,6 +587,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
                 &sort_by,
                 top,
                 parse_timeout_ms,
+                baseline.as_deref(),
             )
         }
         crate::Commands::Contracts(cmd) => {

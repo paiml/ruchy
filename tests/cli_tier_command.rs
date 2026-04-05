@@ -169,6 +169,86 @@ fn test_tier_by_file_human_output() {
 }
 
 #[test]
+fn test_tier_baseline_creates_file_on_first_run() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();
+    let baseline = tmp.path().join("tier-baseline.json");
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--baseline")
+        .arg(&baseline)
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("baseline captured"));
+
+    assert!(baseline.exists(), "baseline file should have been written");
+    let content = fs::read_to_string(&baseline).unwrap();
+    assert!(content.contains("\"bronze\""));
+    assert!(content.contains("\"pub_bronze\""));
+}
+
+#[test]
+fn test_tier_baseline_passes_when_no_regression() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();
+    let baseline = tmp.path().join("tier-baseline.json");
+
+    // First run captures baseline.
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--baseline")
+        .arg(&baseline)
+        .assert()
+        .success();
+
+    // Second run compares — identical scan, no regressions.
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--baseline")
+        .arg(&baseline)
+        .assert()
+        .success()
+        .stderr(predicate::str::contains("baseline OK"));
+}
+
+#[test]
+fn test_tier_baseline_fails_on_regression() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();
+    let baseline = tmp.path().join("tier-baseline.json");
+
+    // Capture baseline with 1 Bronze.
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--baseline")
+        .arg(&baseline)
+        .assert()
+        .success();
+
+    // Add 2 more Bronze functions → regression.
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun x() { 1 }\nfun y() { 2 }\nfun z() { 3 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--baseline")
+        .arg(&baseline)
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("baseline regression"))
+        .stderr(predicate::str::contains("bronze : 1 → 3"));
+}
+
+#[test]
 fn test_tier_summary_contains_scorecard_line() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
