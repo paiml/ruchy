@@ -941,6 +941,17 @@ enum Commands {
         #[arg(long)]
         dry_run: bool,
     },
+    /// Report §14.2 tier distribution for a path (Bronze/Silver/Gold/Platinum)
+    ///
+    /// Scans .ruchy files under <path> and prints tier counts + non-bronze
+    /// percentage. Raw input to falsifier metrics F1/F4 from spec §14.5.
+    Tier {
+        /// File or directory to scan
+        path: PathBuf,
+        /// Emit JSON instead of human-readable text
+        #[arg(long)]
+        json: bool,
+    },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]
     Contracts(ContractsCommands),

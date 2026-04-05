@@ -555,6 +555,11 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             crate::handlers::handlers_modules::migrate::run_migration(&path, dry_run)?;
             Ok(())
         }
+        crate::Commands::Tier { path, json } => {
+            crate::handlers::handlers_modules::provability::handle_provability_command(
+                &path, json,
+            )
+        }
         crate::Commands::Contracts(cmd) => {
             use crate::handlers::handlers_modules::sovereign::*;
             match cmd {

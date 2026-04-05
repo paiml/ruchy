@@ -48,6 +48,15 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-001] `ruchy tier <path>` CLI subcommand**: scans a file
+  or directory of `.ruchy` files, classifies every function by §14.2 tier
+  (Bronze/Silver/Gold/Platinum), and emits a distribution report. Supports
+  `--json` for machine-readable output. This is the first instrument for
+  the F1 falsifier metric (§14.5): users can now measure what percentage
+  of their codebase is at Silver tier or above. Recursively walks
+  subdirectories; ignores non-.ruchy files. 9 unit tests (including
+  non-ruchy filtering, recursion, unparseable-source handling) + 6 CLI
+  integration tests.
 - **[TIER-002] §14.2 AST-to-Tier bridge**: `tier_of_function(&Expr) -> Option<Tier>`
   — takes a parsed `Expr` that holds a function definition and returns its
   §14.2 tier by reading decorator names from `expr.attributes` and
