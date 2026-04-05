@@ -57,6 +57,7 @@ fn should_exit_state_parsing(state: &mut ParserState) -> bool {
     matches!(state.tokens.peek(), Some((Token::RightBrace, _)))
         || matches!(state.tokens.peek(), Some((Token::Receive, _)))
         || matches!(state.tokens.peek(), Some((Token::Fun, _))) // PARSER-060 fix: exit on 'fun' keyword
+        || state.tokens.peek().is_none() // PARSER-ACTOR-HANG fix: exit on EOF
 }
 
 fn parse_single_state_field(
@@ -366,6 +367,35 @@ mod tests {
 
         // If this compiles, the signatures are correct
         // Test passes if compilation succeeds
+    }
+
+    /// RED test for PARSER-ACTOR-HANG: parser must terminate (with error)
+    /// on an actor block that lacks a closing brace, rather than
+    /// infinite-looping.
+    #[test]
+    fn test_actor_unclosed_brace_does_not_hang() {
+        use crate::frontend::Parser;
+        // Unclosed actor body: `actor X {` followed by EOF.
+        // Before fix: parser loops forever at 100% CPU.
+        // After fix: parser returns Err (unexpected EOF).
+        let result = Parser::new("actor Counter {").parse();
+        assert!(result.is_err(), "parser must error on unclosed actor body");
+    }
+
+    #[test]
+    fn test_actor_unclosed_brace_with_field_does_not_hang() {
+        use crate::frontend::Parser;
+        // Second variant: opening brace + partial field.
+        let result = Parser::new("actor Counter {\n  count: int").parse();
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_actor_well_formed_still_parses() {
+        use crate::frontend::Parser;
+        // Regression guard: a closed actor body still parses.
+        let result = Parser::new("actor Counter { count: i32 = 0 }").parse();
+        assert!(result.is_ok(), "well-formed actor must still parse: {result:?}");
     }
 
     #[test]

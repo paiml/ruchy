@@ -46,6 +46,19 @@ rolling in the integration gate for rc.1.
 - **bashrs shell transpilation types** (beta.2): `ShellScript`, `ShellVar`,
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
+### Fixed
+- **[PARSER-ACTOR-HANG] Parser infinite-loop on unclosed actor body**: An
+  actor declaration whose opening brace is not matched (e.g., `actor X {`
+  followed by EOF) caused the parser to loop forever at 100% CPU.
+  `should_exit_state_parsing()` checked for `}`/`receive`/`fun` but
+  never for EOF, so `parse_single_state_field()` returned `Ok(())`
+  without advancing the cursor on `None` peek, and the outer loop
+  re-entered with identical state. One-line fix: add
+  `|| state.tokens.peek().is_none()` to the exit predicate. Discovered
+  by dogfooding `ruchy tier examples/` (PROVABILITY-019 had worked
+  around it with a per-file parse timeout; this fixes the underlying
+  bug). 3 new RED parser tests verify the fix. 55/55 actor tests.
+
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
 - **[PROVABILITY-026] `ruchy suggest-contracts` lists uncontracted fns**:

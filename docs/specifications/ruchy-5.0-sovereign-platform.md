@@ -114,10 +114,14 @@
 
 **F3/F5/F6/F7/F8–F12: NOT addressed this session.**
 
-**Dogfood finding:** `ruchy tier examples/` surfaced a pre-existing parser
-infinite-loop on `examples/21_concurrency.ruchy` (actor syntax). Worked
-around via a per-file parse timeout (PROVABILITY-019); the underlying
-parser bug is open.
+**Dogfood finding → upstream fix:** `ruchy tier examples/` surfaced a
+parser infinite-loop on `examples/21_concurrency.ruchy` (actor syntax).
+Initially worked around via a per-file parse timeout (PROVABILITY-019).
+Root cause **FIXED** in PARSER-ACTOR-HANG: `should_exit_state_parsing`
+did not break on EOF, so an unclosed actor body (`actor X {` + EOF)
+looped forever at 100% CPU. One-line fix: add
+`|| state.tokens.peek().is_none()` to the exit predicate. 3 new RED
+parser tests guard against regression.
 
 ---
 
