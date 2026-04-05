@@ -25,6 +25,9 @@ rolling in the integration gate for rc.1.
   verifies EMBED-A5 (edit file on disk, observe new behaviour on reload)
 - **Release-mode startup benchmark** ([EMBED-006]): `ruchy-embed/tests/startup_benchmark.rs`
   validates Success Criterion #2 — `Engine::new()` completes in < 5ms on x86_64 release
+- **Container marshaling** ([EMBED-007]): `Value::List` / `Value::Tuple` variants
+  added to ruchy-embed with lossless bidirectional conversion to
+  `RuchyValue::Array` / `RuchyValue::Tuple`; 6 tests including nested + heterogeneous
 - **aprender ML pipeline types** (beta.1): `TrainingConfig`, `InferenceConfig`,
   `PipelineStage`, `TrainingResult` (19 tests)
 - **presentar widget types** (beta.1): Widget (Column/Row/Text/Button/Input/Container),

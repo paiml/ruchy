@@ -38,7 +38,7 @@ zero modifications.
 pub struct Engine { /* ... */ }
 pub struct CompiledScript { /* ... */ }
 pub struct Sandbox { /* capability flags + resource limits */ }
-pub enum Value { Integer, Float, Bool, String, None }
+pub enum Value { Integer, Float, Bool, String, List, Tuple, None }
 
 impl Engine {
     pub fn new() -> Self;
@@ -105,6 +105,7 @@ value semantics, same error messages, same stdlib). Divergence is a bug.
 | EMBED-A1 | `Engine::new()` startup | < 5ms release, < 100ms debug | `ruchy-embed/tests/startup_benchmark.rs` (release-gated) |
 | EMBED-A2 | Sandbox default denies fs/net/env | 3 flags false | `test_sandbox_default_denies_all` |
 | EMBED-A3 | `eval` round-trips primitive values | Integer/Float/Bool/String/None | 5 unit tests |
+| EMBED-A8 | `eval` round-trips container values | List, Tuple, nested | `ruchy-embed/tests/value_containers.rs` (6 tests) |
 | EMBED-A4 | `call` dispatches to named function | `greet("world")` returns `"Hello, world!"` | `test_call_*` |
 | EMBED-A5 | `load_file` re-reads source on each call (hot reload) | 2 loads observe edit | `ruchy-embed/tests/hot_reload.rs` (2 tests, passing) |
 | EMBED-A6 | Zero unsafe in ruchy-embed | 0 occurrences | `pmat query --literal "unsafe {"` |
@@ -120,7 +121,7 @@ value semantics, same error messages, same stdlib). Divergence is a bug.
 | EMBED-004 | Enforce `allow_fs` in `load_file` with path allow-lists |
 | ~~EMBED-005~~ | ~~Hot-reload integration test~~ (DONE: `ruchy-embed/tests/hot_reload.rs`) |
 | ~~EMBED-006~~ | ~~Release-mode benchmark for `Engine::new()`~~ (DONE: `tests/startup_benchmark.rs` -- verified < 5ms on x86_64 release) |
-| EMBED-007 | `Value` extension: Vec/Map/Tuple for richer marshaling |
+| EMBED-007 (partial) | ~~`Value::List` / `Value::Tuple`~~ DONE (`tests/value_containers.rs`, 6 tests). Map/Object marshaling still open. |
 
 ---
 

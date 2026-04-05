@@ -90,12 +90,21 @@ pub struct Engine {
 }
 
 /// Runtime values in the embedded engine.
+///
+/// Primitive variants (Integer/Float/Bool/String/None) round-trip through the
+/// Ruchy interpreter losslessly. Container variants (List/Tuple) marshal to
+/// `RuchyValue::Array` / `RuchyValue::Tuple` respectively and recurse through
+/// their elements. See EMBED-007 in the Pillar 9 sub-spec.
 #[derive(Debug, Clone)]
 pub enum Value {
     Integer(i64),
     Float(f64),
     Bool(bool),
     String(String),
+    /// Ordered homogeneous-ish collection (maps to `RuchyValue::Array`).
+    List(Vec<Value>),
+    /// Fixed-arity heterogeneous collection (maps to `RuchyValue::Tuple`).
+    Tuple(Vec<Value>),
     None,
 }
 
@@ -283,6 +292,14 @@ fn embed_to_ruchy(v: &Value) -> RuchyValue {
         Value::Float(f) => RuchyValue::Float(*f),
         Value::Bool(b) => RuchyValue::Bool(*b),
         Value::String(s) => RuchyValue::String(s.as_str().into()),
+        Value::List(xs) => {
+            let arr: Vec<RuchyValue> = xs.iter().map(embed_to_ruchy).collect();
+            RuchyValue::Array(arr.into())
+        }
+        Value::Tuple(xs) => {
+            let arr: Vec<RuchyValue> = xs.iter().map(embed_to_ruchy).collect();
+            RuchyValue::Tuple(arr.into())
+        }
         Value::None => RuchyValue::Nil,
     }
 }
@@ -293,6 +310,12 @@ fn ruchy_to_embed(v: RuchyValue) -> Value {
         RuchyValue::Float(f) => Value::Float(f),
         RuchyValue::Bool(b) => Value::Bool(b),
         RuchyValue::String(s) => Value::String(s.to_string()),
+        RuchyValue::Array(xs) => {
+            Value::List(xs.iter().cloned().map(ruchy_to_embed).collect())
+        }
+        RuchyValue::Tuple(xs) => {
+            Value::Tuple(xs.iter().cloned().map(ruchy_to_embed).collect())
+        }
         RuchyValue::Nil => Value::None,
         other => Value::String(format!("{other:?}")),
     }
