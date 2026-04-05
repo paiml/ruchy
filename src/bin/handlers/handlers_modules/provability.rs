@@ -9,7 +9,7 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-use ruchy::frontend::ast::{ContractClause, Literal};
+use ruchy::frontend::ast::{BinaryOp, ContractClause, Literal, UnaryOp};
 use ruchy::provability::{tier_of_function, Tier, Totality};
 use ruchy::{ExprKind, Parser};
 
@@ -900,10 +900,18 @@ fn function_is_pub(expr: &ruchy::Expr) -> bool {
     }
 }
 
-/// A contract clause is "trivially true" if it is the literal `true`.
-/// This is the §14.5 F1 approximation — a cheap syntactic check that
-/// catches `requires true` / `ensures true`. Genuine SMT-based tautology
-/// detection is a future sprint.
+/// A contract clause is "trivially true" if it is a closed-form
+/// tautology detectable without an SMT solver. This is the §14.5 F1
+/// approximation — a cheap syntactic check that catches:
+///   - `requires true` / `ensures true`
+///   - `requires !false` / `requires !!true`
+///   - constant comparisons like `1 == 1`, `2 > 1`, `"a" == "a"`
+///   - trivial logic: `true && X`, `X && true`, `true || X`, `X || true`
+///   - reflexive identity on the same identifier: `x == x`
+///
+/// Anything more sophisticated (SMT tautology over arithmetic) is
+/// intentionally deferred to a future sprint. The goal here is to be
+/// correct on what we claim, not complete.
 fn clause_is_trivially_true(clause: &ContractClause) -> bool {
     let body = match clause {
         ContractClause::Requires(e) => e,
@@ -912,7 +920,116 @@ fn clause_is_trivially_true(clause: &ContractClause) -> bool {
         // triviality check.
         ContractClause::Invariant(_) | ContractClause::Decreases(_) => return false,
     };
-    matches!(body.kind, ExprKind::Literal(Literal::Bool(true)))
+    expr_evaluates_to_true(body)
+}
+
+/// Attempt to prove that `e` evaluates to the bool literal `true` under
+/// a closed-form syntactic evaluator. Returns false for anything
+/// uncertain (conservative).
+fn expr_evaluates_to_true(e: &ruchy::Expr) -> bool {
+    match &e.kind {
+        // Direct: `true`
+        ExprKind::Literal(Literal::Bool(true)) => true,
+        // Double-negation: `!false`, `!!true`
+        ExprKind::Unary { op: UnaryOp::Not, operand } => expr_evaluates_to_false(operand),
+        // Binary: constant comparisons + trivial logic
+        ExprKind::Binary { op, left, right } => match op {
+            // Logical: short-circuit tautologies
+            BinaryOp::And => {
+                expr_evaluates_to_true(left) && expr_evaluates_to_true(right)
+            }
+            BinaryOp::Or => {
+                expr_evaluates_to_true(left) || expr_evaluates_to_true(right)
+            }
+            // Reflexivity: `x == x` on the same identifier
+            BinaryOp::Equal => {
+                same_identifier(left, right) || const_cmp(left, right, op) == Some(true)
+            }
+            // Other comparison operators: const-vs-const only
+            BinaryOp::NotEqual
+            | BinaryOp::Less
+            | BinaryOp::LessEqual
+            | BinaryOp::Greater
+            | BinaryOp::GreaterEqual
+            | BinaryOp::Gt => const_cmp(left, right, op) == Some(true),
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+/// Attempt to prove that `e` evaluates to `false`.
+fn expr_evaluates_to_false(e: &ruchy::Expr) -> bool {
+    match &e.kind {
+        ExprKind::Literal(Literal::Bool(false)) => true,
+        ExprKind::Unary { op: UnaryOp::Not, operand } => expr_evaluates_to_true(operand),
+        ExprKind::Binary { op, left, right } => match op {
+            BinaryOp::Equal => const_cmp(left, right, op) == Some(false),
+            BinaryOp::NotEqual
+            | BinaryOp::Less
+            | BinaryOp::LessEqual
+            | BinaryOp::Greater
+            | BinaryOp::GreaterEqual
+            | BinaryOp::Gt => const_cmp(left, right, op) == Some(false),
+            BinaryOp::And => {
+                expr_evaluates_to_false(left) || expr_evaluates_to_false(right)
+            }
+            BinaryOp::Or => {
+                expr_evaluates_to_false(left) && expr_evaluates_to_false(right)
+            }
+            _ => false,
+        },
+        _ => false,
+    }
+}
+
+/// True if both expressions are the same identifier (syntactic
+/// alpha-equivalence, no scoping analysis).
+fn same_identifier(a: &ruchy::Expr, b: &ruchy::Expr) -> bool {
+    match (&a.kind, &b.kind) {
+        (ExprKind::Identifier(x), ExprKind::Identifier(y)) => x == y,
+        _ => false,
+    }
+}
+
+/// If both sides are constants, return the comparison result; else None.
+fn const_cmp(a: &ruchy::Expr, b: &ruchy::Expr, op: &BinaryOp) -> Option<bool> {
+    let (al, bl) = (literal_of(a)?, literal_of(b)?);
+    use Literal::*;
+    match (al, bl) {
+        (Integer(x, _), Integer(y, _)) => Some(apply_ord(*x, *y, op)),
+        (Bool(x), Bool(y)) => match op {
+            BinaryOp::Equal => Some(x == y),
+            BinaryOp::NotEqual => Some(x != y),
+            _ => None,
+        },
+        (Char(x), Char(y)) => Some(apply_ord(*x as i64, *y as i64, op)),
+        (String(x), String(y)) => match op {
+            BinaryOp::Equal => Some(x == y),
+            BinaryOp::NotEqual => Some(x != y),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+fn literal_of(e: &ruchy::Expr) -> Option<&Literal> {
+    match &e.kind {
+        ExprKind::Literal(lit) => Some(lit),
+        _ => None,
+    }
+}
+
+fn apply_ord(x: i64, y: i64, op: &BinaryOp) -> bool {
+    match op {
+        BinaryOp::Equal => x == y,
+        BinaryOp::NotEqual => x != y,
+        BinaryOp::Less => x < y,
+        BinaryOp::LessEqual => x <= y,
+        BinaryOp::Greater | BinaryOp::Gt => x > y,
+        BinaryOp::GreaterEqual => x >= y,
+        _ => false,
+    }
 }
 
 /// Returns (has_any_contract, has_non_trivial) for a function's contract list.
@@ -1427,6 +1544,76 @@ mod tests {
             is_pub: false,
         };
         assert!(!cf.violates_totality_rule());
+    }
+
+    /// Wraps source parsing and returns whether the first fn's contracts
+    /// collectively counted as trivial (has_non_trivial == false).
+    fn first_fn_has_non_trivial(src: &str) -> bool {
+        let mut r = ProvabilityReport::default();
+        classify_source(src, Path::new("t.ruchy"), &mut r);
+        assert_eq!(r.functions.len(), 1, "test helper expects 1 fn: {src}");
+        r.functions[0].has_non_trivial_contract
+    }
+
+    #[test]
+    fn test_trivial_not_false_detected() {
+        assert!(!first_fn_has_non_trivial("fun f() requires !false { 1 }"));
+    }
+
+    #[test]
+    fn test_trivial_double_not_true_detected() {
+        assert!(!first_fn_has_non_trivial("fun f() requires !!true { 1 }"));
+    }
+
+    #[test]
+    fn test_trivial_constant_equal_detected() {
+        assert!(!first_fn_has_non_trivial("fun f() requires 1 == 1 { 1 }"));
+    }
+
+    #[test]
+    fn test_trivial_constant_less_detected() {
+        assert!(!first_fn_has_non_trivial("fun f() requires 1 < 2 { 1 }"));
+    }
+
+    #[test]
+    fn test_trivial_constant_string_equal_detected() {
+        assert!(!first_fn_has_non_trivial("fun f() requires \"a\" == \"a\" { 1 }"));
+    }
+
+    #[test]
+    fn test_trivial_reflexive_identity_detected() {
+        // `x == x` is tautology regardless of x.
+        assert!(!first_fn_has_non_trivial("fun f(x: i32) requires x == x { 1 }"));
+    }
+
+    #[test]
+    fn test_trivial_true_and_true_detected() {
+        assert!(!first_fn_has_non_trivial("fun f() requires true && true { 1 }"));
+    }
+
+    #[test]
+    fn test_trivial_true_or_anything_detected() {
+        // `true || x` is always true; detectable without knowing x.
+        assert!(!first_fn_has_non_trivial("fun f(x: bool) requires true || x { 1 }"));
+    }
+
+    #[test]
+    fn test_nontrivial_inequality_on_identifier_still_nontrivial() {
+        // `x > 0` genuinely constrains x; must remain non-trivial.
+        assert!(first_fn_has_non_trivial("fun f(x: i32) requires x > 0 { 1 }"));
+    }
+
+    #[test]
+    fn test_nontrivial_constant_false_not_trivially_true() {
+        // `1 == 2` is trivially FALSE (not true) — not a vacuous
+        // requires, so should remain "non-trivial" from our POV.
+        assert!(first_fn_has_non_trivial("fun f() requires 1 == 2 { 1 }"));
+    }
+
+    #[test]
+    fn test_nontrivial_different_identifiers_not_reflexive() {
+        // `x == y` is not reflexive (different names).
+        assert!(first_fn_has_non_trivial("fun f(x: i32, y: i32) requires x == y { 1 }"));
     }
 
     #[test]

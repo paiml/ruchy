@@ -47,6 +47,24 @@ rolling in the integration gate for rc.1.
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
 ### Added
+- **[PROVABILITY-028] F1 triviality detector catches more tautologies**:
+  Per prior falsification ("F1 is measured syntactically, not SMT-based"),
+  the `clause_is_trivially_true` detector now catches more closed-form
+  tautologies WITHOUT SMT:
+  - `requires !false`, `requires !!true` (double-negation)
+  - Constant comparisons: `1 == 1`, `2 > 1`, `"a" == "a"`, `true == true`
+  - Reflexive identity: `x == x` (same identifier, no scope analysis)
+  - Trivial logic: `true && X`, `X && true`, `true || X`, `X || true`
+
+  Conservative: anything uncertain stays "non-trivial". This closes the
+  most obvious holes that would have inflated F1 numbers. Full SMT-based
+  tautology detection over arithmetic (Z3 `P ↔ true` in <100ms per
+  §14.5 F1 definition) is still deferred.
+
+  New helpers: `expr_evaluates_to_true/false`, `same_identifier`,
+  `const_cmp`, `apply_ord`. 11 new handler tests covering each new
+  tautology form + 3 "must remain non-trivial" regression guards.
+  105/105 provability tests passing.
 - **[PROVABILITY-027] Tier baselines for §Appendix B corpus repos**:
   Ran `ruchy tier --baseline` against all 7 paiml sibling repos
   (ruchy-book, ruchy-cookbook, ruchy-cli-tools-book, tooling-with-ruchy,

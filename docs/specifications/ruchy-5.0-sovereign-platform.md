@@ -103,8 +103,11 @@
 - Markdown with 🟢/🟡/🔴/⚪ status badges via `--markdown`
 
 **§14.5 falsifier coverage (F1/F2/F4/F11):**
-- F1 (non-trivial %): tracked, gated, graded. **Caveat:** triviality is
-  syntactic (`requires true` literal) — SMT tautology detection is deferred.
+- F1 (non-trivial %): tracked, gated, graded. **Extended (PROVABILITY-028)**:
+  syntactic detector now catches `!false`, `!!true`, constant comparisons
+  (`1==1`, `2>1`, `"a"=="a"`), reflexive identity (`x==x`), and trivial
+  logic (`true && X`, `X || true`). Full SMT tautology detection still
+  deferred. Closes the obvious holes reported in prior falsification.
 - F2 (contract_exempt/KLoC): tracked, gated, graded.
 - F4 (pub Bronze): tracked, gated, graded via a **proxy** (pub_bronze count,
   not stdlib-vs-user distinction — that needs package metadata).
