@@ -1309,6 +1309,61 @@ validate-book:
 	@echo ""
 	@echo "✅ Book validation complete!"
 
+# Tier-baseline regression check against §Appendix B corpus repos
+# PROVABILITY-029: Verifies §14.5 metrics haven't regressed against the
+# captured baselines in .ruchy-tier-baselines/. CI should invoke this.
+# Requires sibling repos at ../<repo>/. Missing repos are skipped with
+# a warning, not a hard failure (corpus is opt-in per developer).
+.PHONY: check-tier-baselines
+check-tier-baselines:
+	@echo "🔍 §14.5 TIER BASELINE REGRESSION CHECK"
+	@echo $$(printf '=%.0s' $$(seq 1 60))
+	@fail=0; \
+	for repo in ruchy-book ruchy-cookbook ruchy-cli-tools-book \
+	            tooling-with-ruchy ruchy-repl-demos rosetta-ruchy ruchyruchy; do \
+		baseline=".ruchy-tier-baselines/$${repo}.json"; \
+		if [ ! -d "../$${repo}" ]; then \
+			echo "  ⚠  skip: ../$${repo} (not checked out locally)"; \
+			continue; \
+		fi; \
+		if [ ! -f "$${baseline}" ]; then \
+			echo "  ⚠  skip: $${baseline} (no baseline captured)"; \
+			continue; \
+		fi; \
+		if ruchy tier "../$${repo}" --baseline "$${baseline}" \
+		   > /dev/null 2>&1; then \
+			echo "  ✅ $${repo}"; \
+		else \
+			echo "  ❌ $${repo} REGRESSED — rerun manually to see diff:"; \
+			echo "       ruchy tier ../$${repo} --baseline $${baseline}"; \
+			fail=1; \
+		fi; \
+	done; \
+	if [ $$fail -ne 0 ]; then \
+		echo ""; \
+		echo "❌ Tier baseline check FAILED"; \
+		exit 1; \
+	fi
+	@echo ""
+	@echo "✅ All available corpus baselines pass (no regressions)"
+
+# Re-capture tier baselines from current state. Use after intentional
+# contract migration to refresh the baseline JSONs.
+.PHONY: refresh-tier-baselines
+refresh-tier-baselines:
+	@echo "🔄 Refreshing tier baselines in .ruchy-tier-baselines/"
+	@for repo in ruchy-book ruchy-cookbook ruchy-cli-tools-book \
+	             tooling-with-ruchy ruchy-repl-demos rosetta-ruchy ruchyruchy; do \
+		if [ -d "../$${repo}" ]; then \
+			rm -f ".ruchy-tier-baselines/$${repo}.json"; \
+			ruchy tier "../$${repo}" \
+			  --baseline ".ruchy-tier-baselines/$${repo}.json" \
+			  > /dev/null 2>&1 && echo "  ✅ refreshed: $${repo}.json"; \
+		else \
+			echo "  ⚠  skip: ../$${repo}"; \
+		fi; \
+	done
+
 # Run LANG-COMP language completeness tests with 15-TOOL VALIDATION
 # MANDATORY: Tests ALL 15 native tools on every example (ZERO exceptions)
 # REPL VALIDATION: Uses ruchy -e flag to execute code (discovered 2025-10-07)

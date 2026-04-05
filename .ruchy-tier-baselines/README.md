@@ -52,15 +52,16 @@ in the corpus (not 5.0 regressions). Totals:
 Zero parse timeouts across 1,021 files after `PARSER-ACTOR-HANG` fix
 (prior to fix, actor-containing files hung indefinitely).
 
-## Regenerating Baselines
+## Running the Baseline Check
 
 ```bash
-for d in ruchy-book ruchy-cookbook ruchy-cli-tools-book tooling-with-ruchy \
-         ruchy-repl-demos rosetta-ruchy ruchyruchy; do
-  rm -f ".ruchy-tier-baselines/${d}.json"
-  ruchy tier "../$d" --baseline ".ruchy-tier-baselines/${d}.json"
-done
+make check-tier-baselines      # CI-friendly: exits 1 on any regression
+make refresh-tier-baselines    # re-capture after intentional migration
 ```
 
-Re-run whenever a sibling repo adds contracts / migrates to Silver+.
-Each file is ≈325 bytes — safe to track in git.
+The `check-tier-baselines` target skips repos that aren't checked out
+locally (with a warning, not a failure) so individual developers can
+run it without needing all 7 corpora cloned. CI workflows that need
+full coverage should check out the corpora first.
+
+Each baseline file is ≈325 bytes — safe to track in git.

@@ -47,6 +47,13 @@ rolling in the integration gate for rc.1.
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
 ### Added
+- **[PROVABILITY-029] `make check-tier-baselines` target**: CI-friendly
+  Makefile target runs `ruchy tier --baseline` against all 7 §Appendix B
+  corpus repos and exits 1 on any tier regression. Skips repos not
+  checked out locally (warning, not failure) so devs can run without
+  full corpus clone. Companion `make refresh-tier-baselines` re-captures
+  baselines after intentional migrations. Closes the loop from
+  PROVABILITY-027: baselines are now actually enforceable.
 - **[PROVABILITY-028] F1 triviality detector catches more tautologies**:
   Per prior falsification ("F1 is measured syntactically, not SMT-based"),
   the `clause_is_trivially_true` detector now catches more closed-form
