@@ -48,6 +48,16 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **Spec §14.F-Audit-8 added — external falsification**: five systems
+  strictly beat Ruchy's Platinum tier on at least one axis: F*/HACL*
+  (secret-independence, shipping in Firefox/Linux/Tezos/WireGuard),
+  seL4/Isabelle (refinement to assembly, 200k lines of Isabelle proof),
+  ATS (compile-time memory-corruption proofs since 2005), Austral
+  (capability-based effect isolation), CompCert/Coq (verified compiler
+  — the proof-bottom turtle). Adds F6 (quarterly SOTA-gap dossier) and
+  F7 (every known weakness ticketed or out-of-scope) to falsifiability
+  metrics. Scope-narrows the "most provable" claim to Ruchy's actual
+  niche: {Verus, Creusot, Prusti, Aeneas, Kani-annotated Rust, ourselves}.
 - **Spec §14 added — Provability Mandate**: Ruchy 5.x commits to becoming one
   of the most provable transpiled-to-Rust systems-scripting languages by 5.2.
   Four-tier model (Bronze/Silver/Gold/Platinum) encoded in `fun` signature.

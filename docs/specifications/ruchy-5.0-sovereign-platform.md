@@ -543,6 +543,8 @@ would refute the claim:
 | F3 | Pairwise oracle-verdict correlation on a 100-kernel sample | each pair < 0.95 | any pair ≥ 0.95 — quorum is an illusion |
 | F4 | Stdlib Bronze-tier function count | 0 after 5.2 | ≥ 1 — the deadline slipped, stdlib isn't provable |
 | F5 | Contract-free code ships to crates.io | 0 occurrences | ≥ 1 — the gate has a hole |
+| F6 | Quarterly SOTA-gap dossier published (per §14.F-Audit-8) | 1 per quarter | 0 — we stopped tracking what beats us |
+| F7 | Known weakness axes (secret-independence / refinement / capabilities / verified compiler) either ticketed or out-of-scope | 4/4 covered | ≤ 3 — silent omission |
 
 If any metric enters falsified range, the release committee MUST open a
 spec-round ticket and cannot ship the next minor version until the metric
@@ -600,6 +602,47 @@ or tooling hover (LSP), not at the call site — but authors cannot forget it
 because the tier IS the syntax of `fun`. SPARK and Verus bury tiers in
 separate ghost blocks. Eiffel hides them in runtime toggles. This is the
 "label on the package at author time" ergonomic bet.
+
+### 14.F-Audit-8: Languages strictly stronger than Platinum (external falsification)
+
+A 2026-Q2 survey of production systems falsifies any claim that Ruchy's
+Platinum tier is the top of the proof lattice. Five systems beat it
+on at least one axis:
+
+| System | Beats §14.4 Platinum on | Deployed in |
+|--------|-------------------------|-------------|
+| **F\* / HACL\*** | Secret-independence (timing-side-channel) | Firefox NSS, Linux kernel, Tezos, WireGuard |
+| **seL4 (Isabelle/HOL)** | Complete refinement to assembly | Qualcomm modem, aerospace |
+| **ATS** | Compile-time memory-corruption proofs (since 2005) | Niche, research |
+| **Austral** | Capability-based effect isolation | Pre-1.0 research |
+| **CompCert (Coq)** | Verified compiler (the proof bottom turtle) | Airbus, railway signalling |
+
+**Consequences for §14.1:** "one of the most provable transpiled-to-Rust
+systems-scripting languages" is a **niche** claim, not a general one.
+Ruchy is not competitive on:
+
+- **Secret-independence** (HACL* proves it; we don't even define it)
+- **Refinement to machine code** (seL4 does end-to-end; we stop at Rust)
+- **Capability-based effect isolation** (Austral makes I/O authority
+  visible in types; Ruchy assumes ambient authority)
+- **Verified compilation** (CompCert is a verified compiler; `rustc` is
+  trusted but unverified — our proof chain has an unverified link)
+
+**Fix applied (vision-bounding):** §14.1 already says "becoming one of
+the most provable transpiled-to-Rust systems-scripting languages." We
+keep that scope. Within this bounded niche, the competition is smaller:
+roughly {ourselves, Verus, Creusot, Prusti, Aeneas, Kani-annotated Rust}.
+We can plausibly lead *that* niche by 5.2.
+
+**New falsifier F6 added to §14.5:** publish a quarterly "state-of-the-
+art gap" dossier enumerating which of the 4 weaknesses above we have
+NOT closed. If the dossier is not published, the "most provable in
+niche" claim is falsified on procedural grounds (we stopped looking).
+
+**New falsifier F7 added to §14.5:** for the 4 weaknesses above, each
+must either (a) have a Ruchy ticket with a designed mitigation by 5.3,
+or (b) be explicitly declared out-of-scope in this spec. Silent omission
+falsifies the claim to rigor.
 
 ### 14.9 Migration Feasibility (§14.F-Audit-5 fix)
 
