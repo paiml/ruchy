@@ -602,17 +602,17 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
                 crate::ContractsCommands::Sync { path, output, verbose } => {
                     handle_contracts_sync(&path, &output, verbose)
                 }
-                crate::ContractsCommands::List { path, format } => {
-                    handle_contracts_list(&path, &format)
+                crate::ContractsCommands::List { path, format, pub_only } => {
+                    handle_contracts_list(&path, &format, pub_only)
                 }
-                crate::ContractsCommands::Check { path, min_coverage } => {
-                    handle_contracts_check(&path, min_coverage)
+                crate::ContractsCommands::Check { path, min_coverage, pub_only } => {
+                    handle_contracts_check(&path, min_coverage, pub_only)
                 }
             }
         }
-        crate::Commands::SuggestContracts { path, format, verbose } => {
+        crate::Commands::SuggestContracts { path, format, verbose, pub_only } => {
             crate::handlers::handlers_modules::sovereign::handle_suggest_contracts(
-                &path, &format, verbose,
+                &path, &format, verbose, pub_only,
             )
         }
         _ => {

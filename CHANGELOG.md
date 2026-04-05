@@ -47,6 +47,14 @@ rolling in the integration gate for rc.1.
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
 ### Added
+- **[PROVABILITY-031] --pub-only for contracts commands**: Adds
+  `--pub-only` to `ruchy suggest-contracts`, `ruchy contracts list`, and
+  `ruchy contracts check`. Scopes output/coverage to `pub` functions —
+  the §14.5 F4 surface that the 5.2 Silver-required deadline actually
+  targets. Parallels `ruchy tier --public-only`. Useful CI pattern:
+    ruchy contracts check src/ --pub-only --min-coverage 80
+    (enforce ≥80% contract coverage on public API only)
+  3 new sovereign tests. 51/51 sovereign tests passing.
 - **[PROVABILITY-030] markdown format for contracts list/suggest**: Adds
   `--format markdown` to `ruchy contracts list` and
   `ruchy suggest-contracts` for consistency with `ruchy tier --markdown`.

@@ -1008,12 +1008,15 @@ enum Commands {
     SuggestContracts {
         /// File or directory to analyze
         path: PathBuf,
-        /// Output format (text, json, yaml)
+        /// Output format (text, json, yaml, markdown)
         #[arg(long, default_value = "text")]
         format: String,
         /// Show verbose output
         #[arg(long)]
         verbose: bool,
+        /// Restrict suggestions to `pub` functions (§14.5 F4 surface)
+        #[arg(long)]
+        pub_only: bool,
     },
 }
 
@@ -1265,9 +1268,12 @@ enum ContractsCommands {
     List {
         /// File or directory to scan
         path: PathBuf,
-        /// Output format (text, json, yaml)
+        /// Output format (text, json, yaml, markdown)
         #[arg(long, default_value = "text")]
         format: String,
+        /// Restrict listing to `pub` functions (§14.5 F4 surface)
+        #[arg(long)]
+        pub_only: bool,
     },
     /// Verify contract coverage for all functions
     Check {
@@ -1276,6 +1282,9 @@ enum ContractsCommands {
         /// Fail if coverage is below threshold (0-100)
         #[arg(long)]
         min_coverage: Option<f64>,
+        /// Scope coverage to `pub` functions only (§14.5 F4 surface)
+        #[arg(long)]
+        pub_only: bool,
     },
 }
 
