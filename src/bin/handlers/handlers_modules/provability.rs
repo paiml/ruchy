@@ -9,7 +9,7 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-use ruchy::provability::{tier_of_function, Tier};
+use ruchy::provability::{tier_of_function, Tier, Totality};
 use ruchy::{ExprKind, Parser};
 
 /// A single classified function.
@@ -18,6 +18,17 @@ pub struct ClassifiedFunction {
     pub file: PathBuf,
     pub name: String,
     pub tier: Tier,
+    pub totality: Totality,
+}
+
+impl ClassifiedFunction {
+    /// Per §14.10.6 Gold/Platinum require `@total`. Return true if this
+    /// classification violates the requirement.
+    #[must_use]
+    pub fn violates_totality_rule(&self) -> bool {
+        matches!(self.tier, Tier::Gold | Tier::Platinum)
+            && !matches!(self.totality, Totality::Total | Totality::Corecursive(_))
+    }
 }
 
 /// Aggregate tier counts for a directory scan.
@@ -30,6 +41,10 @@ pub struct ProvabilityReport {
     pub gold: usize,
     pub platinum: usize,
     pub parse_errors: usize,
+    /// Totality-marker counts (from @total/@partial decorators).
+    pub total_marked: usize,
+    pub partial_marked: usize,
+    pub totality_unmarked: usize,
     /// Per-function classifications (populated when caller needs detail).
     pub functions: Vec<ClassifiedFunction>,
 }
@@ -43,6 +58,24 @@ impl ProvabilityReport {
             Tier::Gold => self.gold += 1,
             Tier::Platinum => self.platinum += 1,
         }
+    }
+
+    fn record_totality(&mut self, totality: Totality) {
+        match totality {
+            Totality::Total => self.total_marked += 1,
+            Totality::Partial => self.partial_marked += 1,
+            Totality::Corecursive(_) => self.total_marked += 1, // counts as "proved to not hang"
+            Totality::Unknown => self.totality_unmarked += 1,
+        }
+    }
+
+    /// Returns functions that violate §14.10.6 (Gold/Platinum without @total).
+    #[must_use]
+    pub fn totality_violations(&self) -> Vec<&ClassifiedFunction> {
+        self.functions
+            .iter()
+            .filter(|f| f.violates_totality_rule())
+            .collect()
     }
 
     /// Percentage of functions at Silver tier or above.
@@ -59,7 +92,7 @@ impl ProvabilityReport {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "files: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\nparse errors: {}",
+            "files: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
             self.files_scanned,
             self.functions_total,
             self.bronze,
@@ -71,6 +104,9 @@ impl ProvabilityReport {
             self.platinum,
             pct(self.platinum, self.functions_total),
             self.non_bronze_pct(),
+            self.total_marked,
+            self.partial_marked,
+            self.totality_unmarked,
             self.parse_errors,
         )
     }
@@ -121,15 +157,30 @@ fn function_name(expr: &ruchy::Expr) -> Option<&str> {
     }
 }
 
+fn function_totality(expr: &ruchy::Expr) -> Totality {
+    // Scan attributes for @total, @partial. @corecursive requires a
+    // justification argument and is intentionally not detected by
+    // bare-name lookup (Totality::from_decorator returns None for it).
+    for attr in &expr.attributes {
+        if let Some(t) = Totality::from_decorator(&attr.name) {
+            return t;
+        }
+    }
+    Totality::Unknown
+}
+
 fn visit_expr(expr: &ruchy::Expr, file: &Path, report: &mut ProvabilityReport) {
     if matches!(expr.kind, ExprKind::Function { .. }) {
         if let Some(tier) = tier_of_function(expr) {
             report.record_tier(tier);
+            let totality = function_totality(expr);
+            report.record_totality(totality);
             if let Some(name) = function_name(expr) {
                 report.functions.push(ClassifiedFunction {
                     file: file.to_path_buf(),
                     name: name.to_string(),
                     tier,
+                    totality,
                 });
             }
         }
@@ -181,7 +232,30 @@ pub fn handle_provability_command(
         if list {
             println!("\nfunctions:");
             for f in &report.functions {
-                println!("  {:<10} {} ({})", f.tier.label(), f.name, f.file.display());
+                println!(
+                    "  {:<10} {:<10} {} ({})",
+                    f.tier.label(),
+                    f.totality.label(),
+                    f.name,
+                    f.file.display()
+                );
+            }
+        }
+        // §14.10.6 totality rule enforcement: Gold/Platinum MUST be @total.
+        let violations = report.totality_violations();
+        if !violations.is_empty() {
+            eprintln!(
+                "\n§14.10.6 violations: {} Gold/Platinum function(s) lack @total:",
+                violations.len()
+            );
+            for f in &violations {
+                eprintln!(
+                    "  {} ({}) is {} but has {}",
+                    f.name,
+                    f.file.display(),
+                    f.tier.label(),
+                    f.totality.label()
+                );
             }
         }
     }
@@ -289,6 +363,84 @@ mod tests {
         let report = scan(tmp.path()).unwrap();
         assert_eq!(report.files_scanned, 2);
         assert_eq!(report.functions_total, 2);
+    }
+
+    #[test]
+    fn test_classify_source_records_total_marker() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "#[total]\nfun f() requires true { 1 }",
+            Path::new("test.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.total_marked, 1);
+        assert_eq!(r.totality_unmarked, 0);
+    }
+
+    #[test]
+    fn test_classify_source_records_partial_marker() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "#[partial]\nfun f() { 1 }",
+            Path::new("test.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.partial_marked, 1);
+        assert_eq!(r.total_marked, 0);
+    }
+
+    #[test]
+    fn test_classify_source_counts_unmarked() {
+        let mut r = ProvabilityReport::default();
+        classify_source("fun f() { 1 }", Path::new("test.ruchy"), &mut r);
+        assert_eq!(r.total_marked, 0);
+        assert_eq!(r.partial_marked, 0);
+        assert_eq!(r.totality_unmarked, 1);
+    }
+
+    #[test]
+    fn test_violates_totality_rule_gold_without_total() {
+        let cf = ClassifiedFunction {
+            file: PathBuf::from("x.ruchy"),
+            name: "f".to_string(),
+            tier: Tier::Gold,
+            totality: Totality::Unknown,
+        };
+        assert!(cf.violates_totality_rule());
+    }
+
+    #[test]
+    fn test_violates_totality_rule_gold_with_total_ok() {
+        let cf = ClassifiedFunction {
+            file: PathBuf::from("x.ruchy"),
+            name: "f".to_string(),
+            tier: Tier::Gold,
+            totality: Totality::Total,
+        };
+        assert!(!cf.violates_totality_rule());
+    }
+
+    #[test]
+    fn test_violates_totality_rule_silver_unaffected() {
+        // Silver may be @partial — no violation.
+        let cf = ClassifiedFunction {
+            file: PathBuf::from("x.ruchy"),
+            name: "f".to_string(),
+            tier: Tier::Silver,
+            totality: Totality::Partial,
+        };
+        assert!(!cf.violates_totality_rule());
+    }
+
+    #[test]
+    fn test_violates_totality_rule_gold_with_corecursive_ok() {
+        let cf = ClassifiedFunction {
+            file: PathBuf::from("server.ruchy"),
+            name: "event_loop".to_string(),
+            tier: Tier::Gold,
+            totality: Totality::Corecursive("server event loop"),
+        };
+        assert!(!cf.violates_totality_rule());
     }
 
     #[test]

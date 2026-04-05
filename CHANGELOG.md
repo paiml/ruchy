@@ -48,6 +48,18 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-003] `ruchy tier` totality tracking + §14.10.6 enforcement**:
+  Extends the tier scanner with Totality tracking. Reads `@total`/`@partial`
+  decorators on every function, aggregates counts, and checks the §14.10.6
+  rule: Gold/Platinum functions MUST be `@total` or `@corecursive`.
+  Violations are listed on stderr with file + function name. The `--list`
+  output now shows both tier and totality per function. 7 new handler
+  tests (totality marker recording, unmarked counting, all 4 violation
+  scenarios). Summary output includes:
+    totality:
+      @total:    N
+      @partial:  N
+      unmarked:  N
 - **[PROVABILITY-002] `ruchy tier` CI gate + per-function listing**: Two
   flags landed on `ruchy tier`:
     - `--fail-under N`: exits with error code 1 if `non_bronze_pct < N`,
