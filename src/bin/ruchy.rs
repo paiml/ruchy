@@ -978,6 +978,12 @@ enum Commands {
         /// Show per-file tier breakdown (paired with --json emits by_file array)
         #[arg(long)]
         by_file: bool,
+        /// Sort --by-file output by column (file|bronze|silver|gold|platinum|total); desc for non-file
+        #[arg(long, value_name = "COLUMN", default_value = "file")]
+        sort_by: String,
+        /// Limit --by-file output to top N files after sorting
+        #[arg(long, value_name = "N")]
+        top: Option<usize>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

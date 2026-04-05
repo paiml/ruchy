@@ -187,11 +187,45 @@ impl ProvabilityReport {
         map.into_iter().collect()
     }
 
+    /// Per-file tier counts, sorted by the given column.
+    /// `sort_by` is one of: `file` (ascending), `bronze`/`silver`/`gold`/
+    /// `platinum`/`total` (descending, ties broken by file path). Unknown
+    /// values fall back to `file` (for user typos — not a hard error).
+    /// `top` limits the output to N entries after sorting.
+    #[must_use]
+    pub fn by_file_sorted(
+        &self,
+        sort_by: &str,
+        top: Option<usize>,
+    ) -> Vec<(PathBuf, FileTierCounts)> {
+        let mut rows = self.by_file();
+        // Tie-breaker: file path ascending (already BTreeMap-ordered).
+        match sort_by {
+            "bronze" => rows.sort_by(|a, b| b.1.bronze.cmp(&a.1.bronze).then(a.0.cmp(&b.0))),
+            "silver" => rows.sort_by(|a, b| b.1.silver.cmp(&a.1.silver).then(a.0.cmp(&b.0))),
+            "gold" => rows.sort_by(|a, b| b.1.gold.cmp(&a.1.gold).then(a.0.cmp(&b.0))),
+            "platinum" => rows.sort_by(|a, b| b.1.platinum.cmp(&a.1.platinum).then(a.0.cmp(&b.0))),
+            "total" => rows.sort_by(|a, b| b.1.total().cmp(&a.1.total()).then(a.0.cmp(&b.0))),
+            _ => {} // default: already sorted by path
+        }
+        if let Some(n) = top {
+            rows.truncate(n);
+        }
+        rows
+    }
+
     /// Emit per-file breakdown as a single-line JSON array of objects.
     #[must_use]
     pub fn by_file_to_json(&self) -> String {
+        self.by_file_to_json_sorted("file", None)
+    }
+
+    /// Emit per-file breakdown as a single-line JSON array of objects,
+    /// sorted and limited per `sort_by`/`top`.
+    #[must_use]
+    pub fn by_file_to_json_sorted(&self, sort_by: &str, top: Option<usize>) -> String {
         let mut out = String::from("[");
-        for (i, (path, counts)) in self.by_file().iter().enumerate() {
+        for (i, (path, counts)) in self.by_file_sorted(sort_by, top).iter().enumerate() {
             if i > 0 {
                 out.push(',');
             }
@@ -542,6 +576,8 @@ pub fn handle_provability_command(
     fail_pub_bronze_above: Option<usize>,
     fail_diff_exempt_density_above: Option<f64>,
     by_file: bool,
+    sort_by: &str,
+    top: Option<usize>,
 ) -> Result<()> {
     let raw = scan(path)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
@@ -551,7 +587,7 @@ pub fn handle_provability_command(
             println!("{}", report.functions_to_json());
         }
         if by_file {
-            println!("{}", report.by_file_to_json());
+            println!("{}", report.by_file_to_json_sorted(sort_by, top));
         }
     } else {
         println!("Provability tier scan: {}", path.display());
@@ -575,7 +611,7 @@ pub fn handle_provability_command(
                 "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
                 "bronze", "silver", "gold", "platinum", "total", "file"
             );
-            for (path, c) in report.by_file() {
+            for (path, c) in report.by_file_sorted(sort_by, top) {
                 println!(
                     "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
                     c.bronze,
@@ -1185,6 +1221,56 @@ mod tests {
         assert!(j.contains("\"file\":\"t.ruchy\""));
         assert!(j.contains("\"bronze\":1"));
         assert!(j.contains("\"total\":1"));
+    }
+
+    #[test]
+    fn test_by_file_sorted_by_bronze_descending() {
+        let mut r = ProvabilityReport::default();
+        // a.ruchy: 1 Bronze, b.ruchy: 3 Bronze
+        classify_source("fun x() { 1 }", Path::new("a.ruchy"), &mut r);
+        classify_source(
+            "fun p() { 1 }\nfun q() { 2 }\nfun r() { 3 }",
+            Path::new("b.ruchy"),
+            &mut r,
+        );
+        let sorted = r.by_file_sorted("bronze", None);
+        assert_eq!(sorted[0].0, PathBuf::from("b.ruchy"));
+        assert_eq!(sorted[0].1.bronze, 3);
+        assert_eq!(sorted[1].0, PathBuf::from("a.ruchy"));
+    }
+
+    #[test]
+    fn test_by_file_sorted_top_n_truncates() {
+        let mut r = ProvabilityReport::default();
+        classify_source("fun x() { 1 }", Path::new("a.ruchy"), &mut r);
+        classify_source("fun y() { 2 }", Path::new("b.ruchy"), &mut r);
+        classify_source("fun z() { 3 }", Path::new("c.ruchy"), &mut r);
+        let sorted = r.by_file_sorted("file", Some(2));
+        assert_eq!(sorted.len(), 2);
+        assert_eq!(sorted[0].0, PathBuf::from("a.ruchy"));
+        assert_eq!(sorted[1].0, PathBuf::from("b.ruchy"));
+    }
+
+    #[test]
+    fn test_by_file_sorted_unknown_key_falls_back_to_file() {
+        let mut r = ProvabilityReport::default();
+        classify_source("fun y() { 1 }", Path::new("z.ruchy"), &mut r);
+        classify_source("fun x() { 1 }", Path::new("a.ruchy"), &mut r);
+        let sorted = r.by_file_sorted("typo_column", None);
+        // Falls back to default = file ascending
+        assert_eq!(sorted[0].0, PathBuf::from("a.ruchy"));
+        assert_eq!(sorted[1].0, PathBuf::from("z.ruchy"));
+    }
+
+    #[test]
+    fn test_by_file_sorted_ties_broken_by_file_path() {
+        let mut r = ProvabilityReport::default();
+        // Both have 1 Bronze; tie-breaker is path ascending
+        classify_source("fun x() { 1 }", Path::new("z.ruchy"), &mut r);
+        classify_source("fun y() { 1 }", Path::new("a.ruchy"), &mut r);
+        let sorted = r.by_file_sorted("bronze", None);
+        assert_eq!(sorted[0].0, PathBuf::from("a.ruchy"));
+        assert_eq!(sorted[1].0, PathBuf::from("z.ruchy"));
     }
 
     #[test]

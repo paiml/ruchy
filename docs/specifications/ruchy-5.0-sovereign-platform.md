@@ -64,6 +64,7 @@
 | `ruchy tier --json --list` emits per-function JSON | DONE | Dashboards can now ingest per-function records (name, file, tier, totality, pub, non_trivial_contract) via a second JSON line. `ClassifiedFunction::to_json()` + JSON-escaping of names/paths. 4 new handler tests + 2 new CLI tests. |
 | §14.5 F11 CI gate (`--fail-diff-exempt-density-above K`) | DONE | Sixth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F11 breach" when `#[diff_exempt]` density/KLoC > K. Mirrors --fail-exempt-density-above. Skipped when no LoC scanned. 3 new CLI tests. |
 | `ruchy tier --by-file` per-file tier breakdown | DONE | Dashboard feature: human table + `[{"file":...,"bronze":N,"silver":N,"gold":N,"platinum":N,"total":N}]` JSON array when paired with `--json`. Sorted by file path (BTreeMap) for deterministic output. New `FileTierCounts` type + `ProvabilityReport::by_file()`/`by_file_to_json()`. 5 new handler tests + 2 new CLI tests. |
+| `ruchy tier --by-file --sort-by --top` | DONE | Floats worst files first for triage. `--sort-by file\|bronze\|silver\|gold\|platinum\|total` (descending for non-file columns, path tie-breaker). `--top N` truncates. Unknown sort keys fall back to `file`. 4 new handler tests + 2 new CLI tests. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---

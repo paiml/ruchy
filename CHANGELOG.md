@@ -48,6 +48,13 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-017] `ruchy tier --by-file --sort-by --top`**: Floats
+  the worst files to the top for triage during migration work. `--sort-by`
+  accepts `file` (default, ascending), `bronze`/`silver`/`gold`/`platinum`/
+  `total` (descending). File path is always the tie-breaker, guaranteeing
+  deterministic output. `--top N` truncates after sorting. Unknown sort
+  keys fall back to `file` (forgiving of typos — not a hard error).
+  4 new handler tests + 2 new CLI tests. 59/59 handler, 35/35 CLI tier.
 - **[PROVABILITY-016] `ruchy tier --by-file` per-file breakdown**:
   Shows tier distribution per file — actionable triage for remediation.
   Human output: tab-aligned table with bronze/silver/gold/platinum/total

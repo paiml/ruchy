@@ -49,6 +49,9 @@ ruchy tier src/ --json --list
 
 # Scope to public API only (§14.5 F4 surface area)
 ruchy tier src/ --public-only
+
+# Triage: show the 10 files with the most Bronze functions
+ruchy tier src/ --by-file --sort-by bronze --top 10
 ```
 
 ## Command Options
@@ -60,6 +63,8 @@ ruchy tier src/ --public-only
 | `--list` | Enumerate each function with tier + `pub` marker | `false` |
 | `--public-only` | Restrict scan to `pub fn` only | `false` |
 | `--by-file` | Show per-file tier breakdown (table + JSON array) | `false` |
+| `--sort-by <COL>` | Sort `--by-file` by file/bronze/silver/gold/platinum/total | `file` |
+| `--top <N>` | Limit `--by-file` to N entries after sorting | none |
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |

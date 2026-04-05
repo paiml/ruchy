@@ -169,6 +169,57 @@ fn test_tier_by_file_human_output() {
 }
 
 #[test]
+fn test_tier_by_file_sort_by_bronze_puts_worst_first() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();
+    fs::write(
+        tmp.path().join("b.ruchy"),
+        "fun p() { 1 }\nfun q() { 2 }\nfun r() { 3 }",
+    )
+    .unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--json")
+        .arg("--by-file")
+        .arg("--sort-by")
+        .arg("bronze")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let by_file_line = stdout.lines().nth(1).unwrap();
+    // b.ruchy (3 Bronze) should come before a.ruchy (1 Bronze)
+    let b_pos = by_file_line.find("b.ruchy").unwrap();
+    let a_pos = by_file_line.find("a.ruchy").unwrap();
+    assert!(b_pos < a_pos, "worst file should come first: {by_file_line}");
+}
+
+#[test]
+fn test_tier_by_file_top_truncates() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();
+    fs::write(tmp.path().join("b.ruchy"), "fun y() { 1 }").unwrap();
+    fs::write(tmp.path().join("c.ruchy"), "fun z() { 1 }").unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--json")
+        .arg("--by-file")
+        .arg("--top")
+        .arg("2")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let by_file_line = stdout.lines().nth(1).unwrap();
+    // Exactly 2 entries → one comma between objects
+    assert_eq!(by_file_line.matches("},{").count(), 1);
+}
+
+#[test]
 fn test_tier_by_file_json_emits_second_array() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();
