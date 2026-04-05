@@ -563,6 +563,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             fail_on_totality_violation,
             fail_under_f1,
             fail_exempt_density_above,
+            public_only,
         } => {
             crate::handlers::handlers_modules::provability::handle_provability_command(
                 &path,
@@ -572,6 +573,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
                 fail_on_totality_violation,
                 fail_under_f1,
                 fail_exempt_density_above,
+                public_only,
             )
         }
         crate::Commands::Contracts(cmd) => {

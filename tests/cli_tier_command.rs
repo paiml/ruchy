@@ -329,6 +329,49 @@ fn test_tier_fail_exempt_density_skipped_on_empty_loc() {
 }
 
 #[test]
+fn test_tier_public_only_filters_to_pub_functions() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "pub fun exposed() { 1 }\nfun internal() { 2 }",
+    )
+    .unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--public-only")
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // Only 1 function reported (the pub one).
+    assert!(stdout.contains("\"functions\":1"));
+    assert!(stdout.contains("\"bronze\":1"));
+}
+
+#[test]
+fn test_tier_public_only_without_pub_reports_zero() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun a() { 1 }\nfun b() { 2 }",
+    )
+    .unwrap();
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--public-only")
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("\"functions\":0"));
+}
+
+#[test]
 fn test_tier_empty_directory() {
     let tmp = TempDir::new().unwrap();
     let output = ruchy_cmd()

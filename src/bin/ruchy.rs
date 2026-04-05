@@ -966,6 +966,9 @@ enum Commands {
         /// Fail if #[contract_exempt] density > K per KLoC (§14.5 F2 gate)
         #[arg(long, value_name = "PER_KLOC")]
         fail_exempt_density_above: Option<f64>,
+        /// Only classify `pub fn` (§14.5 F4 proxy: stdlib public surface)
+        #[arg(long)]
+        public_only: bool,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

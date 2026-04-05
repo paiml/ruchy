@@ -23,6 +23,8 @@ pub struct ClassifiedFunction {
     /// Whether the function has at least one non-trivial contract clause
     /// (§14.5 F1 approximation: "SMT-non-trivial" → at minimum, not `true`).
     pub has_non_trivial_contract: bool,
+    /// Whether the function was declared `pub` (part of the public API).
+    pub is_pub: bool,
 }
 
 impl ClassifiedFunction {
@@ -141,6 +143,7 @@ impl ProvabilityReport {
 \"partial_marked\":{},\
 \"totality_unmarked\":{},\
 \"totality_violations\":{},\
+\"pub_bronze\":{},\
 \"parse_errors\":{}\
 }}",
             self.files_scanned,
@@ -162,6 +165,7 @@ impl ProvabilityReport {
             self.partial_marked,
             self.totality_unmarked,
             self.totality_violations().len(),
+            self.pub_bronze_count(),
             self.parse_errors,
         )
     }
@@ -182,6 +186,44 @@ impl ProvabilityReport {
             .iter()
             .filter(|f| f.violates_totality_rule())
             .collect()
+    }
+
+    /// §14.5 F4 proxy: count of Bronze-tier `pub` functions.
+    /// After release 5.2, stdlib `pub` functions must not be Bronze.
+    #[must_use]
+    pub fn pub_bronze_count(&self) -> usize {
+        self.functions
+            .iter()
+            .filter(|f| f.is_pub && matches!(f.tier, Tier::Bronze))
+            .count()
+    }
+
+    /// Derive a new report containing ONLY `pub` functions. Aggregate
+    /// counts and totals are recomputed from the filtered set.
+    #[must_use]
+    pub fn filter_to_pub(&self) -> Self {
+        let mut out = Self {
+            files_scanned: self.files_scanned,
+            total_loc: self.total_loc,
+            parse_errors: self.parse_errors,
+            // §14.5 F2/F11: exemptions are file-level, not fn-scoped, so
+            // we keep the absolute counts for density computation.
+            contract_exempt_count: self.contract_exempt_count,
+            diff_exempt_count: self.diff_exempt_count,
+            ..Self::default()
+        };
+        for f in &self.functions {
+            if !f.is_pub {
+                continue;
+            }
+            out.record_tier(f.tier);
+            out.record_totality(f.totality);
+            if f.has_non_trivial_contract {
+                out.non_trivial_contracts += 1;
+            }
+            out.functions.push(f.clone());
+        }
+        out
     }
 
     /// Percentage of functions at Silver tier or above.
@@ -271,6 +313,13 @@ fn function_name(expr: &ruchy::Expr) -> Option<&str> {
     }
 }
 
+fn function_is_pub(expr: &ruchy::Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Function { is_pub, .. } => *is_pub,
+        _ => false,
+    }
+}
+
 /// A contract clause is "trivially true" if it is the literal `true`.
 /// This is the §14.5 F1 approximation — a cheap syntactic check that
 /// catches `requires true` / `ensures true`. Genuine SMT-based tautology
@@ -345,6 +394,7 @@ fn visit_expr(expr: &ruchy::Expr, file: &Path, report: &mut ProvabilityReport) {
                     tier,
                     totality,
                     has_non_trivial_contract: has_non_trivial,
+                    is_pub: function_is_pub(expr),
                 });
             }
         }
@@ -372,6 +422,7 @@ pub fn scan(path: &Path) -> Result<ProvabilityReport> {
 }
 
 /// CLI entry point for `ruchy tier <path>`.
+#[allow(clippy::too_many_arguments)]
 pub fn handle_provability_command(
     path: &Path,
     json: bool,
@@ -380,8 +431,10 @@ pub fn handle_provability_command(
     fail_on_totality_violation: bool,
     fail_under_f1: Option<f64>,
     fail_exempt_density_above: Option<f64>,
+    public_only: bool,
 ) -> Result<()> {
-    let report = scan(path)?;
+    let raw = scan(path)?;
+    let report = if public_only { raw.filter_to_pub() } else { raw };
     if json {
         println!("{}", report.to_json());
     } else {
@@ -603,6 +656,7 @@ mod tests {
             tier: Tier::Gold,
             totality: Totality::Unknown,
             has_non_trivial_contract: true,
+            is_pub: false,
         };
         assert!(cf.violates_totality_rule());
     }
@@ -615,6 +669,7 @@ mod tests {
             tier: Tier::Gold,
             totality: Totality::Total,
             has_non_trivial_contract: true,
+            is_pub: false,
         };
         assert!(!cf.violates_totality_rule());
     }
@@ -628,6 +683,7 @@ mod tests {
             tier: Tier::Silver,
             totality: Totality::Partial,
             has_non_trivial_contract: true,
+            is_pub: false,
         };
         assert!(!cf.violates_totality_rule());
     }
@@ -640,6 +696,7 @@ mod tests {
             tier: Tier::Gold,
             totality: Totality::Corecursive("server event loop"),
             has_non_trivial_contract: true,
+            is_pub: false,
         };
         assert!(!cf.violates_totality_rule());
     }
@@ -798,6 +855,63 @@ mod tests {
     }
 
     #[test]
+    fn test_is_pub_detected_on_function() {
+        let mut r = ProvabilityReport::default();
+        classify_source("pub fun f() { 1 }", Path::new("t.ruchy"), &mut r);
+        assert_eq!(r.functions.len(), 1);
+        assert!(r.functions[0].is_pub);
+    }
+
+    #[test]
+    fn test_is_pub_false_on_private_function() {
+        let mut r = ProvabilityReport::default();
+        classify_source("fun f() { 1 }", Path::new("t.ruchy"), &mut r);
+        assert_eq!(r.functions.len(), 1);
+        assert!(!r.functions[0].is_pub);
+    }
+
+    #[test]
+    fn test_pub_bronze_count_sees_only_pub_bronze() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "pub fun a() { 1 }\nfun b() { 2 }\npub fun c() requires true { 3 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        // a: pub Bronze ✓
+        // b: private Bronze ✗ (not pub)
+        // c: pub Silver ✗ (not Bronze)
+        assert_eq!(r.pub_bronze_count(), 1);
+    }
+
+    #[test]
+    fn test_filter_to_pub_keeps_only_pub_functions() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "pub fun a() { 1 }\nfun b() { 2 }\npub fun c() { 3 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        let pub_only = r.filter_to_pub();
+        assert_eq!(pub_only.functions.len(), 2);
+        assert!(pub_only.functions.iter().all(|f| f.is_pub));
+        assert_eq!(pub_only.functions_total, 2);
+        assert_eq!(pub_only.bronze, 2);
+    }
+
+    #[test]
+    fn test_filter_to_pub_preserves_file_and_loc_totals() {
+        let mut r = ProvabilityReport::default();
+        r.files_scanned = 5;
+        r.total_loc = 1000;
+        classify_source("pub fun a() { 1 }", Path::new("t.ruchy"), &mut r);
+        let pub_only = r.filter_to_pub();
+        // File/LoC counts are preserved (they're file-level, not fn-scoped).
+        assert_eq!(pub_only.files_scanned, 5);
+        assert_eq!(pub_only.total_loc, 1000);
+    }
+
+    #[test]
     fn test_to_json_contains_all_metric_keys() {
         let mut r = ProvabilityReport::default();
         r.record_tier(Tier::Silver);
@@ -829,6 +943,7 @@ mod tests {
             "partial_marked",
             "totality_unmarked",
             "totality_violations",
+            "pub_bronze",
             "parse_errors",
         ] {
             assert!(j.contains(key), "JSON missing key `{key}`: {j}");

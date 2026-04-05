@@ -48,6 +48,16 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-011] §14.5 F4 proxy: `pub_bronze` count + `--public-only` filter**:
+  `ruchy tier` now tracks Bronze-tier `pub` functions — the stdlib surface
+  that §14.5 F4 ("stdlib Bronze count → 0 after 5.2") actually targets.
+  New `--public-only` flag restricts the entire scan to `pub` functions, so
+  teams can measure the metric on just the public API without noise from
+  internal helpers. `ClassifiedFunction` gains an `is_pub` field;
+  `ProvabilityReport::pub_bronze_count()` and `filter_to_pub()` are new
+  public APIs. JSON output expanded to 21 keys (adds `pub_bronze`). 5 new
+  handler tests + 2 new CLI tests. Handler tests: 44/44 passing, CLI
+  tier tests: 21/21 passing.
 - **[PROVABILITY-010] §14.5 F11 `#[diff_exempt]` density tracking**:
   Parallels F2 but for the future §14.10.4 differential execution gate.
   `ruchy tier` now counts `#[diff_exempt]` attributes + reports
