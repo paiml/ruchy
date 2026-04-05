@@ -169,6 +169,35 @@ fn test_tier_by_file_human_output() {
 }
 
 #[test]
+fn test_tier_summary_contains_scorecard_line() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+    let output = ruchy_cmd().arg("tier").arg(tmp.path()).output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("§14.5 scorecard:"));
+    assert!(stdout.contains("F1:"));
+    assert!(stdout.contains("F4:WARN")); // 1 pub Bronze → F4 WARN
+}
+
+#[test]
+fn test_tier_json_contains_scorecard_object() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }").unwrap();
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--json")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("\"scorecard\""));
+    assert!(stdout.contains("\"f1\":"));
+    assert!(stdout.contains("\"f11\":"));
+}
+
+#[test]
 fn test_tier_by_file_sort_by_bronze_puts_worst_first() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();

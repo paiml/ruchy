@@ -103,7 +103,19 @@ totality:
   @partial:  128
   unmarked:  41
 parse errors: 0
+§14.5 scorecard: F1:OK F2:WARN F4:WARN F11:OK
 ```
+
+The scorecard line gives single-glance status per §14.5 metric:
+
+| Metric | OK | WARN | FAIL |
+|--------|----|------|------|
+| F1 non-trivial % | ≥95 | <95 | <50 |
+| F2 exempt/KLoC | ≤0.5 | >0.5 | >5.0 |
+| F4 pub Bronze | =0 | >0 | (becomes FAIL at 5.2) |
+| F11 diff_exempt/KLoC | =0 | >0 | — |
+
+`N/A` appears when a metric cannot be evaluated (e.g., no contracts → no F1).
 
 ### JSON Aggregate (`--json`)
 

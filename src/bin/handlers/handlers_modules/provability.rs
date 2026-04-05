@@ -97,6 +97,51 @@ pub struct ProvabilityReport {
     pub functions: Vec<ClassifiedFunction>,
 }
 
+/// §14.5 falsifier status for a single metric.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FalsifierStatus {
+    /// Metric meets the 5.2 target.
+    Ok,
+    /// Metric misses the target but is not in falsifier range.
+    Warn,
+    /// Metric is in falsifier range (refutes the claim).
+    Fail,
+    /// Metric cannot be evaluated (e.g., no contracts → no F1).
+    NotApplicable,
+}
+
+impl FalsifierStatus {
+    #[must_use]
+    pub fn label(&self) -> &'static str {
+        match self {
+            Self::Ok => "OK",
+            Self::Warn => "WARN",
+            Self::Fail => "FAIL",
+            Self::NotApplicable => "N/A",
+        }
+    }
+}
+
+/// §14.5 falsifier scorecard across the four tracked metrics.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FalsifierScorecard {
+    pub f1: FalsifierStatus,
+    pub f2: FalsifierStatus,
+    pub f4: FalsifierStatus,
+    pub f11: FalsifierStatus,
+}
+
+impl FalsifierScorecard {
+    /// True if any metric is in `Fail` state (falsifier range).
+    #[must_use]
+    pub fn any_fail(&self) -> bool {
+        matches!(self.f1, FalsifierStatus::Fail)
+            || matches!(self.f2, FalsifierStatus::Fail)
+            || matches!(self.f4, FalsifierStatus::Fail)
+            || matches!(self.f11, FalsifierStatus::Fail)
+    }
+}
+
 /// Per-file tier breakdown, sortable by worst-tier distribution.
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct FileTierCounts {
@@ -214,6 +259,55 @@ impl ProvabilityReport {
         rows
     }
 
+    /// §14.5 falsifier scorecard: OK / WARN / FAIL per metric.
+    /// - OK: metric meets the 5.2 target
+    /// - WARN: metric misses the target but is not in falsifier range
+    /// - FAIL: metric is in falsifier range (refutes the claim)
+    /// - N/A: metric cannot be evaluated (e.g., no contracts → no F1)
+    #[must_use]
+    pub fn falsifier_scorecard(&self) -> FalsifierScorecard {
+        // F1: non_trivial_pct. Target ≥95% at 5.2, falsifies <50%.
+        let f1 = if self.non_trivial_contracts + self.trivial_contracts == 0 {
+            FalsifierStatus::NotApplicable
+        } else {
+            let pct = self.non_trivial_pct();
+            if pct < 50.0 {
+                FalsifierStatus::Fail
+            } else if pct < 95.0 {
+                FalsifierStatus::Warn
+            } else {
+                FalsifierStatus::Ok
+            }
+        };
+        // F2: contract_exempt density/KLoC. Target ≤0.5, falsifies >5.0.
+        let f2 = if self.total_loc == 0 {
+            FalsifierStatus::NotApplicable
+        } else {
+            let d = self.exempt_density_per_kloc();
+            if d > 5.0 {
+                FalsifierStatus::Fail
+            } else if d > 0.5 {
+                FalsifierStatus::Warn
+            } else {
+                FalsifierStatus::Ok
+            }
+        };
+        // F4: pub_bronze. Target 0 after 5.2.
+        let f4 = match self.pub_bronze_count() {
+            0 => FalsifierStatus::Ok,
+            _ => FalsifierStatus::Warn, // Not Fail until 5.2
+        };
+        // F11: diff_exempt density/KLoC. Target 0, any > 0 is Warn.
+        let f11 = if self.total_loc == 0 {
+            FalsifierStatus::NotApplicable
+        } else if self.diff_exempt_count == 0 {
+            FalsifierStatus::Ok
+        } else {
+            FalsifierStatus::Warn
+        };
+        FalsifierScorecard { f1, f2, f4, f11 }
+    }
+
     /// Emit per-file breakdown as a single-line JSON array of objects.
     #[must_use]
     pub fn by_file_to_json(&self) -> String {
@@ -284,6 +378,7 @@ impl ProvabilityReport {
 \"totality_unmarked\":{},\
 \"totality_violations\":{},\
 \"pub_bronze\":{},\
+\"scorecard\":{{\"f1\":\"{}\",\"f2\":\"{}\",\"f4\":\"{}\",\"f11\":\"{}\"}},\
 \"parse_errors\":{}\
 }}",
             self.files_scanned,
@@ -306,6 +401,10 @@ impl ProvabilityReport {
             self.totality_unmarked,
             self.totality_violations().len(),
             self.pub_bronze_count(),
+            self.falsifier_scorecard().f1.label(),
+            self.falsifier_scorecard().f2.label(),
+            self.falsifier_scorecard().f4.label(),
+            self.falsifier_scorecard().f11.label(),
             self.parse_errors,
         )
     }
@@ -592,6 +691,14 @@ pub fn handle_provability_command(
     } else {
         println!("Provability tier scan: {}", path.display());
         println!("{}", report.summary());
+        let sc = report.falsifier_scorecard();
+        println!(
+            "§14.5 scorecard: F1:{} F2:{} F4:{} F11:{}",
+            sc.f1.label(),
+            sc.f2.label(),
+            sc.f4.label(),
+            sc.f11.label()
+        );
         if list {
             println!("\nfunctions:");
             for f in &report.functions {
@@ -1186,6 +1293,102 @@ mod tests {
         let s = r.summary();
         assert!(s.contains("functions: 1"));
         assert!(s.contains("silver:"));
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_empty_report() {
+        let r = ProvabilityReport::default();
+        let sc = r.falsifier_scorecard();
+        // No contracts → F1 N/A. No LoC → F2/F11 N/A. No pub Bronze → F4 OK.
+        assert_eq!(sc.f1, FalsifierStatus::NotApplicable);
+        assert_eq!(sc.f2, FalsifierStatus::NotApplicable);
+        assert_eq!(sc.f4, FalsifierStatus::Ok);
+        assert_eq!(sc.f11, FalsifierStatus::NotApplicable);
+        assert!(!sc.any_fail());
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_f1_fail_below_50pct() {
+        let mut r = ProvabilityReport::default();
+        // 1 non-trivial + 9 trivial = 10% non-trivial → F1 FAIL
+        r.non_trivial_contracts = 1;
+        r.trivial_contracts = 9;
+        let sc = r.falsifier_scorecard();
+        assert_eq!(sc.f1, FalsifierStatus::Fail);
+        assert!(sc.any_fail());
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_f1_warn_between_50_and_95() {
+        let mut r = ProvabilityReport::default();
+        r.non_trivial_contracts = 7;
+        r.trivial_contracts = 3; // 70%
+        let sc = r.falsifier_scorecard();
+        assert_eq!(sc.f1, FalsifierStatus::Warn);
+        assert!(!sc.any_fail());
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_f1_ok_at_95pct_or_above() {
+        let mut r = ProvabilityReport::default();
+        r.non_trivial_contracts = 19;
+        r.trivial_contracts = 1; // 95%
+        let sc = r.falsifier_scorecard();
+        assert_eq!(sc.f1, FalsifierStatus::Ok);
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_f2_fail_above_5_per_kloc() {
+        let mut r = ProvabilityReport::default();
+        r.total_loc = 100;
+        r.contract_exempt_count = 1; // 10/KLoC
+        let sc = r.falsifier_scorecard();
+        assert_eq!(sc.f2, FalsifierStatus::Fail);
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_f2_warn_between_half_and_5() {
+        let mut r = ProvabilityReport::default();
+        r.total_loc = 1000;
+        r.contract_exempt_count = 1; // 1.0/KLoC
+        let sc = r.falsifier_scorecard();
+        assert_eq!(sc.f2, FalsifierStatus::Warn);
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_f4_warn_on_pub_bronze() {
+        let mut r = ProvabilityReport::default();
+        classify_source("pub fun a() { 1 }", Path::new("t.ruchy"), &mut r);
+        let sc = r.falsifier_scorecard();
+        assert_eq!(sc.f4, FalsifierStatus::Warn);
+    }
+
+    #[test]
+    fn test_falsifier_scorecard_f11_warn_on_any_diff_exempt() {
+        let mut r = ProvabilityReport::default();
+        r.total_loc = 1000;
+        r.diff_exempt_count = 1;
+        let sc = r.falsifier_scorecard();
+        assert_eq!(sc.f11, FalsifierStatus::Warn);
+    }
+
+    #[test]
+    fn test_falsifier_status_labels() {
+        assert_eq!(FalsifierStatus::Ok.label(), "OK");
+        assert_eq!(FalsifierStatus::Warn.label(), "WARN");
+        assert_eq!(FalsifierStatus::Fail.label(), "FAIL");
+        assert_eq!(FalsifierStatus::NotApplicable.label(), "N/A");
+    }
+
+    #[test]
+    fn test_to_json_includes_scorecard() {
+        let r = ProvabilityReport::default();
+        let j = r.to_json();
+        assert!(j.contains("\"scorecard\""));
+        assert!(j.contains("\"f1\":"));
+        assert!(j.contains("\"f2\":"));
+        assert!(j.contains("\"f4\":"));
+        assert!(j.contains("\"f11\":"));
     }
 
     #[test]

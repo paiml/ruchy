@@ -48,6 +48,17 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-018] §14.5 falsifier scorecard**: Turns the raw F1/F2/F4/F11
+  metrics into a single-glance OK/WARN/FAIL status line:
+    §14.5 scorecard: F1:OK F2:WARN F4:WARN F11:OK
+  Thresholds per §14.5 falsifier table:
+  - F1 (non-trivial %): FAIL <50, WARN <95, OK ≥95 (N/A if 0 contracts)
+  - F2 (exempt/KLoC): FAIL >5, WARN >0.5, OK ≤0.5 (N/A if 0 LoC)
+  - F4 (pub Bronze count): OK if 0, else WARN (becomes FAIL at 5.2)
+  - F11 (diff_exempt/KLoC): OK if 0, else WARN (N/A if 0 LoC)
+  JSON output adds nested `scorecard: {f1, f2, f4, f11}` object. New
+  `FalsifierStatus` enum + `FalsifierScorecard` struct + `any_fail()`
+  check. 10 new handler tests + 2 new CLI tests. 69/69 handler, 37/37 CLI.
 - **[PROVABILITY-017] `ruchy tier --by-file --sort-by --top`**: Floats
   the worst files to the top for triage during migration work. `--sort-by`
   accepts `file` (default, ascending), `bronze`/`silver`/`gold`/`platinum`/
