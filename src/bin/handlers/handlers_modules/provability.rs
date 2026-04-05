@@ -349,6 +349,7 @@ pub fn handle_provability_command(
     fail_under: Option<f64>,
     fail_on_totality_violation: bool,
     fail_under_f1: Option<f64>,
+    fail_exempt_density_above: Option<f64>,
 ) -> Result<()> {
     let report = scan(path)?;
     if json {
@@ -418,6 +419,20 @@ pub fn handle_provability_command(
                     "non-trivial contract pct {:.2}% is below threshold {:.2}% (§14.5 F1 breach)",
                     actual,
                     threshold
+                );
+            }
+        }
+    }
+    // Apply --fail-exempt-density-above gate (§14.5 F2 CI enforcement).
+    if let Some(ceiling) = fail_exempt_density_above {
+        // F2 is only meaningful when at least some LoC has been scanned.
+        if report.total_loc > 0 {
+            let actual = report.exempt_density_per_kloc();
+            if actual > ceiling {
+                anyhow::bail!(
+                    "#[contract_exempt] density {:.2}/KLoC exceeds ceiling {:.2}/KLoC (§14.5 F2 breach)",
+                    actual,
+                    ceiling
                 );
             }
         }

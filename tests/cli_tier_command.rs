@@ -278,6 +278,57 @@ fn test_tier_fail_under_f1_skipped_when_no_contracts() {
 }
 
 #[test]
+fn test_tier_fail_exempt_density_above_triggers_on_high_density() {
+    let tmp = TempDir::new().unwrap();
+    // 2 exemptions in ~5 LoC -> density ~400/KLoC (way above 1.0).
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "#[contract_exempt]\nfun a() { 1 }\n#[contract_exempt]\nfun b() { 2 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-exempt-density-above")
+        .arg("1.0")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 F2 breach"));
+}
+
+#[test]
+fn test_tier_fail_exempt_density_passes_when_no_exemptions() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun a() { 1 }\nfun b() { 2 }\nfun c() { 3 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-exempt-density-above")
+        .arg("0.5")
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_tier_fail_exempt_density_skipped_on_empty_loc() {
+    // No .ruchy files -> total_loc = 0 -> gate skipped (not applicable).
+    let tmp = TempDir::new().unwrap();
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-exempt-density-above")
+        .arg("0.0")
+        .assert()
+        .success();
+}
+
+#[test]
 fn test_tier_empty_directory() {
     let tmp = TempDir::new().unwrap();
     let output = ruchy_cmd()

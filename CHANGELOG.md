@@ -48,6 +48,17 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-009] `--fail-exempt-density-above K` CI gate**: Fourth
+  CI gate on `ruchy tier`. Exits status 1 with "§14.5 F2 breach" when
+  `#[contract_exempt]` density exceeds K per KLoC. Skipped when no LoC
+  scanned (gate undefined). Composes with the other three gates:
+    ruchy tier src/ \
+      --fail-under 95 \
+      --fail-under-f1 90 \
+      --fail-exempt-density-above 0.5 \
+      --fail-on-totality-violation
+  All four §14.5 metrics now have both reporters AND gates. 3 new CLI
+  tests. cli_tier_command.rs: 19/19 passing.
 - **[PROVABILITY-008] `ruchy tier --json` extended to all §14.5 metrics**:
   JSON output now emits 18 keys in a single-line object — the complete
   §14.5 metric surface. Enables CI dashboards, trend tracking, and

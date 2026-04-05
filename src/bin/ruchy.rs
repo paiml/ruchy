@@ -963,6 +963,9 @@ enum Commands {
         /// Fail if non-trivial-contract pct < N (§14.5 F1 gate)
         #[arg(long, value_name = "PCT")]
         fail_under_f1: Option<f64>,
+        /// Fail if #[contract_exempt] density > K per KLoC (§14.5 F2 gate)
+        #[arg(long, value_name = "PER_KLOC")]
+        fail_exempt_density_above: Option<f64>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]
