@@ -48,6 +48,18 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **Spec §14 added — Provability Mandate**: Ruchy 5.x commits to becoming one
+  of the most provable transpiled-to-Rust systems-scripting languages by 5.2.
+  Four-tier model (Bronze/Silver/Gold/Platinum) encoded in `fun` signature.
+  Escape-proof build gate (ported from PAIML provable-contracts §13 + SPARK
+  GNATprove). Stratified 3-of-6 N-of-M quorum with symbolic/semantic/extrinsic
+  independence. Five published falsifiability metrics (F1-F5) with pre-committed
+  thresholds. Single canonical `#[contract_exempt]` escape hatch with
+  time-bound enforcement via build.rs. Sourced from 2026 survey of Eiffel,
+  SPARK Ada, Verus, Lean 4, Liquid Haskell, provable-contracts. New
+  Criterion #13 in §10 ties release gate to falsifiability metrics.
+  Section is self-falsifying: contains 7 self-audit findings (F-Audit-1
+  through F-Audit-7) that bound the vision and patch weaknesses in-place.
 - **Spec Appendix B added**: enumerates all 7 paiml-org Ruchy book repos
   (ruchy-book, ruchy-cookbook, ruchy-cli-tools-book, tooling-with-ruchy,
   ruchy-repl-demos, rosetta-ruchy, ruchyruchy) that must pass validation

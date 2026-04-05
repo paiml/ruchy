@@ -66,12 +66,18 @@ versioning boundary simultaneously:
 | CLI | 10+ new subcommands (`ruchy prove`, `ruchy infra`, `ruchy sim`, `ruchy widget`, ...) |
 | Runtime | Coroutine/yield semantics in interpreter and transpiler |
 
-**Tagline:** *"Ruchy 5.0: The Sovereign Platform Language"*
+**Tagline:** *"Ruchy 5.0: The Sovereign Platform Language — provable by construction."*
 
 A sovereign language owns its full stack -- from formal verification to infrastructure
 provisioning, from ML training to UI rendering -- without shelling out to foreign toolchains.
 Every pillar compiles to the same Rust backend, shares the same type system, and ships in
 the same binary.
+
+**Provability mandate** (see §14): Ruchy 5.x commits to **becoming one of the most
+provable transpiled-to-Rust systems-scripting languages in the world** (bounded claim —
+see §14.1 and §14.F-Audit-7). By 5.2, every non-test `fun` is required to carry a
+contract; the build gate refuses to produce a binary when contracts are missing or stubbed.
+This is the SPARK/GNATprove model, ported.
 
 ---
 
@@ -409,11 +415,205 @@ keywords. It does not modify semantics.
 | 10 | Mutation coverage | >= 75% for new pillar code | `cargo mutants --file <pillar>` |
 | 11 | Zero unsafe in transpiler output | 0 occurrences | `pmat query --literal "unsafe {" --files-with-matches` |
 | 12 | `ruchy migrate-4to5` handles all keyword conflicts | 100% | Test suite with synthetic 4.x code |
+| 13 | Provability Mandate (F1-F5 in §14.5) | All 5 metrics in-range | See §14.5 falsifiability table |
 
 ### Go/No-Go Decision
 
-Release 5.0.0 requires ALL 12 criteria met. Any single failure blocks the release.
+Release 5.0.0 requires ALL 13 criteria met. Any single failure blocks the release.
 The release committee (maintainers) reviews at the RC.1 milestone.
+
+---
+
+## 14. Provability Mandate
+
+> *"It must be impossible to ship code that violates a contract.
+>  Not difficult. Not caught in CI. Impossible. Like a type error."*
+> — PAIML provable-contracts §13, ported here as core policy.
+
+### 14.1 Vision (bounded claim)
+
+**Present fact (5.0.0-beta.1):** Ruchy has 18 `#[contract]`-enforced functions
+and a Silver-tier transpiler that emits `debug_assert!` from contract clauses.
+This is not yet "one of the most provable languages" by any existing standard
+(Lean's mathlib, CompCert, SPARK's Tokeneer kernel all dwarf us).
+
+**Forward commitment:** By release 5.2, Ruchy commits to being
+**one of the most provable transpiled-to-Rust systems-scripting languages**.
+The scope is bounded deliberately: we do not compete with Lean or Coq on
+mathematical depth; we compete on *pervasiveness* — every `pub fn` in
+stdlib discharged, zero `#[contract_exempt]` escape-hatches in public API.
+
+This section draws from six reference systems surveyed April 2026: Eiffel,
+SPARK Ada, Verus, Lean 4, Liquid Haskell, and PAIML `provable-contracts`.
+Consensus across 4 of 6: **compile-time gating + graduated proof strength
+per function**. Liquid Haskell's 2025 adoption study (arXiv 2509.15005) warns
+against pure refinement-type approaches due to ergonomic cliffs; we heed
+that warning.
+
+### 14.2 The Four Tiers
+
+Every non-test `fun` in Ruchy is assigned exactly one tier. The tier is
+written in the function signature (not as an attribute) so it is visible at
+use-site and impossible to erase accidentally.
+
+| Tier | Syntax | Discharge | When required |
+|------|--------|-----------|---------------|
+| **Bronze** | `@bronze fun f(x) { ... }` | `rustc` types only (baseline type safety) | Migration only; banned in stdlib after 5.2 |
+| **Silver** | `fun f(x) requires P ensures Q { ... }` | `assert!` (release) + `debug_assert!` (debug) + Kani harness in CI | Default tier for all user code |
+| **Gold** | `@gold fun f(x) requires P ensures Q { ... }` | SMT-discharged (Kani BMC) at compile time | Required for all `pub` stdlib fns |
+| **Platinum** | `@platinum` + YAML contract + Lean theorem | Quorum: rustc + Kani + probar(10K) + Lean + human review | Required for safety-critical kernels |
+
+**Default is Silver.** A bare `fun f(x) { body }` without `requires`/`ensures`
+is a *Bronze* function and emits a warning. After version 5.2, unmarked `pub`
+functions in stdlib are **compile errors** (see §14.6 deadline).
+
+**Silver-is-not-stripped rule (§14.F-Audit-2 fix):** unlike Rust's
+`debug_assert!`, Silver contracts emit `assert!` in release builds by
+default. Authors may opt down to `debug_assert!` with an explicit
+`@silver_debug_only` marker — which, critically, flips that function into
+the Bronze tier in metric F1 (no hiding).
+
+### 14.3 Escape-Proof Build Gate
+
+Adapted from SPARK GNATprove and PAIML provable-contracts §13:
+
+```
+A. Parse:         fun f(...) requires P ensures Q { body }   ← §14.2 syntax
+   ↓
+B. AST:           Expr has non-empty `contracts: Vec<Contract>` slot
+   ↓
+C. Lint:          `ruchy contracts check` (pmat comply CB-1400)
+   ↓ (must pass)
+D. Tier resolve:  decides Bronze/Silver/Gold/Platinum from annotations
+   ↓
+E. Codegen:       Silver → debug_assert!, Gold → Kani harness, Platinum → YAML
+   ↓
+F. Release gate:  stdlib forbids Bronze, CI forbids >20% Bronze in user code
+```
+
+Skipping any stage = `ruchy check` exits non-zero = `rustc` is never invoked.
+This is the SPARK "static prior to build" model, not the Eiffel "runtime flag"
+model.
+
+### 14.4 N-of-M Quorum for Platinum
+
+A Platinum function is "discharged" only when **N of M independent oracles
+agree**:
+
+| Oracle | Technology | Verdict |
+|--------|-----------|---------|
+| 1 | `rustc` type checker | constraint satisfied |
+| 2 | Kani BMC | no counter-example ≤ bound |
+| 3 | Z3 SMT via Verus-style ghost | postcondition entailed |
+| 4 | probar property test (10K cases) | no falsifier found |
+| 5 | Lean 4 theorem (no `sorry`) | mathematically proved |
+| 6 | Human review | LGTM with reason string |
+
+**Stratified quorum (§14.F-Audit-4 fix):** oracles are grouped into three
+epistemic strata. Discharge requires **≥1 vote from each stratum**:
+
+| Stratum | Oracles | Epistemic source |
+|---------|---------|------------------|
+| Symbolic | rustc, Kani, Z3 | first-order logic over AST |
+| Semantic | probar, Lean | random sampling / dependent types |
+| Extrinsic | human review | out-of-band judgment |
+
+A 3-of-6 quorum of {rustc, Kani, Z3} is **refused**: all three share the
+same epistemic source. Minimum: 1 symbolic + 1 semantic + 1 extrinsic.
+For `#[safety_critical]`: 2 symbolic + 2 semantic + 1 extrinsic (5 total).
+
+**Anti-illusion safeguard** (see §14.5 Falsifier F3): pairwise verdict
+correlation is continuously measured. If any two oracles exceed 0.95
+correlation on a 100-kernel sample, they collapse to a single vote.
+
+**Human-bottleneck acknowledgment:** the extrinsic stratum does not
+scale. Platinum is therefore capped at ~200 functions/release (human
+review budget). Non-safety-critical code uses Gold (no human stratum).
+
+### 14.5 Falsifiability Commitments (Popper)
+
+A provability claim that cannot be falsified is not science. We publish
+three metrics in every release and pre-commit to the thresholds that
+would refute the claim:
+
+| # | Metric | Target | Falsifier (we're wrong if...) |
+|---|--------|--------|-------------------------------|
+| F1 | % of `fun` defs with SMT-non-trivial contracts (Z3 cannot prove `P ↔ true` from empty context in <100 ms) | ≥ 95 % at 5.2 | drops below 50 % — the "mandatory" gate became performative |
+| F2 | Density of `#[contract_exempt]` escape-hatches per KLoC | ≤ 0.5 / KLoC | exceeds 5 / KLoC — the gate is being routinely bypassed |
+| F3 | Pairwise oracle-verdict correlation on a 100-kernel sample | each pair < 0.95 | any pair ≥ 0.95 — quorum is an illusion |
+| F4 | Stdlib Bronze-tier function count | 0 after 5.2 | ≥ 1 — the deadline slipped, stdlib isn't provable |
+| F5 | Contract-free code ships to crates.io | 0 occurrences | ≥ 1 — the gate has a hole |
+
+If any metric enters falsified range, the release committee MUST open a
+spec-round ticket and cannot ship the next minor version until the metric
+is restored.
+
+### 14.6 Deadline Schedule
+
+| Release | Gate level |
+|---------|-----------|
+| 5.0.0 | Silver *opt-in*. Bronze warned but allowed everywhere. |
+| 5.1.0 | Silver *default*. Bronze warned in user code, errored in stdlib. |
+| 5.2.0 | Silver *required* on all `pub` fns. Bronze banned in stdlib entirely. Gold required on `unsafe`-equivalent ops. |
+| 5.3.0 | Platinum quorum available for any user fn. `#[safety_critical]` marker enforced at 5-of-6. |
+
+### 14.7 Escape-Hatch Policy
+
+One canonical hatch, and only one:
+
+```rust
+#[contract_exempt(reason = "ffi boundary with legacy C header",
+                  until = "5.3.0",
+                  ticket = "COMPAT-042")]
+fun call_legacy() { ... }
+```
+
+Rules:
+- `reason` is a **required** human-readable string.
+- `until` is a **required** version pinning the exemption.
+- `ticket` is a **required** tracking ID.
+- Forbidden on `pub` functions (public API stays clean).
+- Tracked by `pmat tdg` as a -5 grade penalty.
+- Counted in F2 metric; CI fails if density exceeds threshold.
+- **Time-bound enforcement (§14.F-Audit-3 fix):** `build.rs` compares `until`
+  against `env!("CARGO_PKG_VERSION")` using semver. If the current version
+  is ≥ the `until` version, build fails with a hard error pointing at the
+  tracking ticket. Exemptions cannot silently outlive their deadline.
+
+This is the explicit dual of SPARK's `pragma Annotate (GNATprove, False_Positive)`:
+visible, justified, time-bounded, measured.
+
+### 14.8 Why this makes Ruchy competitive
+
+| Language | Contract model | Enforced at | Escape hatch |
+|----------|---------------|-------------|--------------|
+| Eiffel | require/ensure built in | runtime flag | compile option |
+| SPARK Ada | pre/post/invariant | **compile-time (GNATprove)** | `pragma Annotate` |
+| Verus | ghost code | compile-time SMT | `assume` |
+| Liquid Haskell | refinement types | typecheck | `assume` |
+| Lean 4 | dependent types | typecheck | `sorry` / `axiom` |
+| **Ruchy 5.2+** | **signature-level tier + build gate** | **compile-time + build.rs** | **`#[contract_exempt]` with ticket + deadline** |
+
+Ruchy's unique contribution: **the tier is visible in the function definition
+(§14.F-Audit-1 correction)**. Callers discover it via `ruchy contracts show f`
+or tooling hover (LSP), not at the call site — but authors cannot forget it
+because the tier IS the syntax of `fun`. SPARK and Verus bury tiers in
+separate ghost blocks. Eiffel hides them in runtime toggles. This is the
+"label on the package at author time" ergonomic bet.
+
+### 14.9 Migration Feasibility (§14.F-Audit-5 fix)
+
+Naïve manual migration of stdlib (~20k functions) to Silver requires
+~10 FTE-weeks. That is infeasible without automation. The 5.2 deadline is
+conditioned on:
+
+1. `ruchy suggest-contracts` (already registered as CLI in 5.0.0-alpha.1
+   status table) must reach ≥ 80 % acceptance rate on its inferred
+   contracts before 5.1 branches.
+2. An auto-migration PR stream (target: 100 functions/day, human-reviewed
+   in batches of 10) runs during the 5.1 → 5.2 window.
+3. If acceptance rate < 50 % at 5.1 RC, the 5.2 deadline slips to 5.3 and
+   we publicly update §14.6. Hiding slippage is a §14.5 falsification.
 
 ---
 
