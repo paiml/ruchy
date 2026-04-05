@@ -48,6 +48,15 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-006] `--fail-under-f1 N` CI gate**: Third CI gate on
+  `ruchy tier`. Exits status 1 with "§14.5 F1 breach" when the
+  non-trivial-contract percentage falls below the threshold. Skipped
+  when no contract-bearing functions exist (F1 is undefined). Composes
+  with `--fail-under` (F1 non-bronze) and `--fail-on-totality-violation`
+  (§14.10.6) — CI can enforce all three metrics in one invocation.
+  3 new CLI tests: triggers on 50% non-trivial with --fail-under-f1 80;
+  passes when all non-trivial with --fail-under-f1 100; skipped when
+  no contracts. Total cli_tier_command.rs tests: 16/16 passing.
 - **[PROVABILITY-005] F1 trivial-contract detection**: `ruchy tier` now
   detects syntactically-trivial contract clauses (literal `true` in
   `requires`/`ensures`), tracks them as a separate category from

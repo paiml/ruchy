@@ -960,6 +960,9 @@ enum Commands {
         /// Fail if any Gold/Platinum function lacks @total (§14.10.6 gate)
         #[arg(long)]
         fail_on_totality_violation: bool,
+        /// Fail if non-trivial-contract pct < N (§14.5 F1 gate)
+        #[arg(long, value_name = "PCT")]
+        fail_under_f1: Option<f64>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

@@ -275,6 +275,7 @@ pub fn handle_provability_command(
     list: bool,
     fail_under: Option<f64>,
     fail_on_totality_violation: bool,
+    fail_under_f1: Option<f64>,
 ) -> Result<()> {
     let report = scan(path)?;
     if json {
@@ -341,6 +342,21 @@ pub fn handle_provability_command(
                 "{} Gold/Platinum function(s) lack @total (§14.10.6 breach)",
                 violations.len()
             );
+        }
+    }
+    // Apply --fail-under-f1 gate (§14.5 F1 CI enforcement).
+    if let Some(threshold) = fail_under_f1 {
+        // F1 is only meaningful when at least one function has a contract.
+        let with_contracts = report.non_trivial_contracts + report.trivial_contracts;
+        if with_contracts > 0 {
+            let actual = report.non_trivial_pct();
+            if actual < threshold {
+                anyhow::bail!(
+                    "non-trivial contract pct {:.2}% is below threshold {:.2}% (§14.5 F1 breach)",
+                    actual,
+                    threshold
+                );
+            }
         }
     }
     Ok(())

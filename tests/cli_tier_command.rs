@@ -224,6 +224,60 @@ fn test_tier_fail_on_totality_violation_passes_on_silver_unmarked() {
 }
 
 #[test]
+fn test_tier_fail_under_f1_triggers_on_trivial_contracts() {
+    let tmp = TempDir::new().unwrap();
+    // Two functions: one trivial, one non-trivial -> F1 = 50%.
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun trivial() requires true ensures true { 1 }\n\
+         fun real(x: i32) requires x > 0 ensures x > 0 { x }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-under-f1")
+        .arg("80")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("§14.5 F1 breach"));
+}
+
+#[test]
+fn test_tier_fail_under_f1_passes_when_all_non_trivial() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun real(x: i32) requires x > 0 ensures x > 0 { x }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-under-f1")
+        .arg("100")
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_tier_fail_under_f1_skipped_when_no_contracts() {
+    // No contract-bearing functions -> F1 not applicable, must not fail.
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun f() { 1 }").unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-under-f1")
+        .arg("100")
+        .assert()
+        .success();
+}
+
+#[test]
 fn test_tier_empty_directory() {
     let tmp = TempDir::new().unwrap();
     let output = ruchy_cmd()
