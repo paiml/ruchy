@@ -55,7 +55,10 @@ pub struct ProvabilityReport {
     pub trivial_contracts: usize,
     /// §14.5 F2: count of `#[contract_exempt]` attributes encountered.
     pub contract_exempt_count: usize,
-    /// Lines of code scanned (for F2 density computation).
+    /// §14.5 F11: count of `#[diff_exempt]` attributes encountered.
+    /// Tracks escape hatches from the (future) §14.10.4 differential gate.
+    pub diff_exempt_count: usize,
+    /// Lines of code scanned (for F2/F11 density computation).
     pub total_loc: usize,
     /// Per-function classifications (populated when caller needs detail).
     pub functions: Vec<ClassifiedFunction>,
@@ -102,6 +105,18 @@ impl ProvabilityReport {
         (self.contract_exempt_count as f64 * 1000.0) / self.total_loc as f64
     }
 
+    /// §14.5 F11 metric: `#[diff_exempt]` attributes per 1000 LoC.
+    /// Parallels F2 but tracks escape hatches from §14.10.4 differential
+    /// execution gate. Shipping F11 reporter now so baseline density is
+    /// observable before the §14.10.4 gate itself lands.
+    #[must_use]
+    pub fn diff_exempt_density_per_kloc(&self) -> f64 {
+        if self.total_loc == 0 {
+            return 0.0;
+        }
+        (self.diff_exempt_count as f64 * 1000.0) / self.total_loc as f64
+    }
+
     /// Emit the full report as a single-line JSON object for dashboards.
     #[must_use]
     pub fn to_json(&self) -> String {
@@ -120,6 +135,8 @@ impl ProvabilityReport {
 \"non_trivial_pct\":{:.2},\
 \"contract_exempt\":{},\
 \"exempt_density_per_kloc\":{:.2},\
+\"diff_exempt\":{},\
+\"diff_exempt_density_per_kloc\":{:.2},\
 \"total_marked\":{},\
 \"partial_marked\":{},\
 \"totality_unmarked\":{},\
@@ -139,6 +156,8 @@ impl ProvabilityReport {
             self.non_trivial_pct(),
             self.contract_exempt_count,
             self.exempt_density_per_kloc(),
+            self.diff_exempt_count,
+            self.diff_exempt_density_per_kloc(),
             self.total_marked,
             self.partial_marked,
             self.totality_unmarked,
@@ -179,7 +198,7 @@ impl ProvabilityReport {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "files: {}\nloc: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\nexemptions (F2):\n  #[contract_exempt]: {}\n  density / KLoC:     {:.2}\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
+            "files: {}\nloc: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\nexemptions (F2):\n  #[contract_exempt]: {}\n  density / KLoC:     {:.2}\ndiff exemptions (F11):\n  #[diff_exempt]: {}\n  density / KLoC: {:.2}\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
             self.files_scanned,
             self.total_loc,
             self.functions_total,
@@ -197,6 +216,8 @@ impl ProvabilityReport {
             self.non_trivial_pct(),
             self.contract_exempt_count,
             self.exempt_density_per_kloc(),
+            self.diff_exempt_count,
+            self.diff_exempt_density_per_kloc(),
             self.total_marked,
             self.partial_marked,
             self.totality_unmarked,
@@ -290,16 +311,25 @@ fn function_totality(expr: &ruchy::Expr) -> Totality {
     Totality::Unknown
 }
 
+fn has_attribute(expr: &ruchy::Expr, name: &str) -> bool {
+    expr.attributes.iter().any(|a| a.name == name)
+}
+
 fn has_contract_exempt(expr: &ruchy::Expr) -> bool {
-    expr.attributes
-        .iter()
-        .any(|a| a.name == "contract_exempt")
+    has_attribute(expr, "contract_exempt")
+}
+
+fn has_diff_exempt(expr: &ruchy::Expr) -> bool {
+    has_attribute(expr, "diff_exempt")
 }
 
 fn visit_expr(expr: &ruchy::Expr, file: &Path, report: &mut ProvabilityReport) {
-    // Detect #[contract_exempt] on any expression, not just functions.
+    // Detect escape-hatch attributes on any expression.
     if has_contract_exempt(expr) {
         report.contract_exempt_count += 1;
+    }
+    if has_diff_exempt(expr) {
+        report.diff_exempt_count += 1;
     }
     if matches!(expr.kind, ExprKind::Function { .. }) {
         if let Some(tier) = tier_of_function(expr) {
@@ -729,6 +759,45 @@ mod tests {
     }
 
     #[test]
+    fn test_diff_exempt_detected() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "#[diff_exempt]\nfun divergent() { 1 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.diff_exempt_count, 1);
+        assert_eq!(r.contract_exempt_count, 0);
+    }
+
+    #[test]
+    fn test_diff_exempt_and_contract_exempt_independent() {
+        // Both attributes on the same function should count in both buckets.
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "#[contract_exempt]\n#[diff_exempt]\nfun exempt() { 1 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.contract_exempt_count, 1);
+        assert_eq!(r.diff_exempt_count, 1);
+    }
+
+    #[test]
+    fn test_diff_exempt_density_zero_loc_is_zero() {
+        let r = ProvabilityReport::default();
+        assert_eq!(r.diff_exempt_density_per_kloc(), 0.0);
+    }
+
+    #[test]
+    fn test_diff_exempt_density_calculation() {
+        let mut r = ProvabilityReport::default();
+        r.diff_exempt_count = 3;
+        r.total_loc = 1000;
+        assert_eq!(r.diff_exempt_density_per_kloc(), 3.0);
+    }
+
+    #[test]
     fn test_to_json_contains_all_metric_keys() {
         let mut r = ProvabilityReport::default();
         r.record_tier(Tier::Silver);
@@ -754,6 +823,8 @@ mod tests {
             "non_trivial_pct",
             "contract_exempt",
             "exempt_density_per_kloc",
+            "diff_exempt",
+            "diff_exempt_density_per_kloc",
             "total_marked",
             "partial_marked",
             "totality_unmarked",

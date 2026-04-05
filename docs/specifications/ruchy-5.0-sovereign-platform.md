@@ -57,6 +57,7 @@
 | §14.5 F2 escape-hatch density tracking | DONE | `ruchy tier` counts `#[contract_exempt]` attributes + LoC per file; reports density per KLoC. Target ≤ 0.5 (falsifies if > 5). 6 new handler tests (density calc, empty LoC, sub-KLoC, zero-exempt, detection, other-attrs-ignored). |
 | `ruchy tier --json` dashboard-ready output | DONE | Single-line JSON emits all 18 §14.5 metrics (files, loc, tier counts, F1 triviality, F2 exemptions, totality, violations, parse errors). Enables CI dashboards + trend tracking. 3 new handler tests. |
 | §14.5 F2 CI gate (`--fail-exempt-density-above K`) | DONE | Fourth CI gate on `ruchy tier`: exits status 1 with "§14.5 F2 breach" if exempt density/KLoC > K. Skipped when no LoC scanned. 3 new CLI tests. |
+| §14.5 F11 tracking (`#[diff_exempt]` density) | DONE (reporter) | Parallels F2: counts `#[diff_exempt]` escape hatches for §14.10.4 differential gate. Baseline density observable BEFORE §14.10.4 gate ships. 4 new handler tests. JSON output now 20 keys. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---

@@ -48,6 +48,18 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-010] §14.5 F11 `#[diff_exempt]` density tracking**:
+  Parallels F2 but for the future §14.10.4 differential execution gate.
+  `ruchy tier` now counts `#[diff_exempt]` attributes + reports
+  density/KLoC. Shipping the reporter BEFORE the underlying gate lets
+  teams observe baseline density against which §14.10.4 thresholds
+  can be calibrated. Extracted `has_attribute(&Expr, &str)` helper
+  (deduplicates F2/F11 detection). Summary output adds:
+    diff exemptions (F11):
+      #[diff_exempt]: N
+      density / KLoC: X.XX
+  JSON output expanded to 20 keys. 4 new handler tests. Handler
+  tests: 35/35 passing.
 - **[PROVABILITY-009] `--fail-exempt-density-above K` CI gate**: Fourth
   CI gate on `ruchy tier`. Exits status 1 with "§14.5 F2 breach" when
   `#[contract_exempt]` density exceeds K per KLoC. Skipped when no LoC
