@@ -53,6 +53,10 @@ pub struct ProvabilityReport {
     pub non_trivial_contracts: usize,
     /// Functions where EVERY requires/ensures clause is `true` (tautology).
     pub trivial_contracts: usize,
+    /// §14.5 F2: count of `#[contract_exempt]` attributes encountered.
+    pub contract_exempt_count: usize,
+    /// Lines of code scanned (for F2 density computation).
+    pub total_loc: usize,
     /// Per-function classifications (populated when caller needs detail).
     pub functions: Vec<ClassifiedFunction>,
 }
@@ -88,6 +92,16 @@ impl ProvabilityReport {
         (self.non_trivial_contracts as f64 / with_contracts as f64) * 100.0
     }
 
+    /// §14.5 F2 metric: `#[contract_exempt]` attributes per 1000 LoC.
+    /// Target ≤ 0.5; falsifies if > 5.
+    #[must_use]
+    pub fn exempt_density_per_kloc(&self) -> f64 {
+        if self.total_loc == 0 {
+            return 0.0;
+        }
+        (self.contract_exempt_count as f64 * 1000.0) / self.total_loc as f64
+    }
+
     fn record_totality(&mut self, totality: Totality) {
         match totality {
             Totality::Total => self.total_marked += 1,
@@ -120,8 +134,9 @@ impl ProvabilityReport {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "files: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
+            "files: {}\nloc: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\nexemptions (F2):\n  #[contract_exempt]: {}\n  density / KLoC:     {:.2}\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
             self.files_scanned,
+            self.total_loc,
             self.functions_total,
             self.bronze,
             pct(self.bronze, self.functions_total),
@@ -135,6 +150,8 @@ impl ProvabilityReport {
             self.non_trivial_contracts,
             self.trivial_contracts,
             self.non_trivial_pct(),
+            self.contract_exempt_count,
+            self.exempt_density_per_kloc(),
             self.total_marked,
             self.partial_marked,
             self.totality_unmarked,
@@ -228,7 +245,17 @@ fn function_totality(expr: &ruchy::Expr) -> Totality {
     Totality::Unknown
 }
 
+fn has_contract_exempt(expr: &ruchy::Expr) -> bool {
+    expr.attributes
+        .iter()
+        .any(|a| a.name == "contract_exempt")
+}
+
 fn visit_expr(expr: &ruchy::Expr, file: &Path, report: &mut ProvabilityReport) {
+    // Detect #[contract_exempt] on any expression, not just functions.
+    if has_contract_exempt(expr) {
+        report.contract_exempt_count += 1;
+    }
     if matches!(expr.kind, ExprKind::Function { .. }) {
         if let Some(tier) = tier_of_function(expr) {
             report.record_tier(tier);
@@ -263,6 +290,7 @@ pub fn scan(path: &Path) -> Result<ProvabilityReport> {
         let src = std::fs::read_to_string(file)
             .with_context(|| format!("reading {}", file.display()))?;
         report.files_scanned += 1;
+        report.total_loc += src.lines().count();
         classify_source(&src, file, &mut report);
     }
     Ok(report)
@@ -594,6 +622,60 @@ mod tests {
     fn test_non_trivial_pct_zero_contracts_returns_zero() {
         let r = ProvabilityReport::default();
         assert_eq!(r.non_trivial_pct(), 0.0);
+    }
+
+    #[test]
+    fn test_exempt_density_empty_loc_is_zero() {
+        let r = ProvabilityReport::default();
+        assert_eq!(r.exempt_density_per_kloc(), 0.0);
+    }
+
+    #[test]
+    fn test_exempt_density_calculation() {
+        let mut r = ProvabilityReport::default();
+        r.contract_exempt_count = 2;
+        r.total_loc = 1000;
+        // 2 exemptions per 1000 LoC = 2.00 / KLoC.
+        assert_eq!(r.exempt_density_per_kloc(), 2.0);
+    }
+
+    #[test]
+    fn test_exempt_density_sub_kloc() {
+        let mut r = ProvabilityReport::default();
+        r.contract_exempt_count = 1;
+        r.total_loc = 500;
+        // 1 exemption in 500 LoC = 2.00 / KLoC.
+        assert_eq!(r.exempt_density_per_kloc(), 2.0);
+    }
+
+    #[test]
+    fn test_exempt_density_zero_exemptions() {
+        let mut r = ProvabilityReport::default();
+        r.contract_exempt_count = 0;
+        r.total_loc = 1000;
+        assert_eq!(r.exempt_density_per_kloc(), 0.0);
+    }
+
+    #[test]
+    fn test_contract_exempt_detected_on_function() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "#[contract_exempt]\nfun bypass() { 1 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.contract_exempt_count, 1);
+    }
+
+    #[test]
+    fn test_contract_exempt_not_counted_for_other_attrs() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "#[bronze]\nfun f() { 1 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        assert_eq!(r.contract_exempt_count, 0);
     }
 
     #[test]

@@ -48,6 +48,19 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-007] §14.5 F2 escape-hatch density tracking**: `ruchy tier`
+  now counts `#[contract_exempt]` attributes and LoC per file, reports
+  density as exemptions per KLoC. Target per §14.5: ≤ 0.5; falsifies if
+  > 5. New summary section:
+    exemptions (F2):
+      #[contract_exempt]: N
+      density / KLoC:     X.XX
+  ProvabilityReport gained `contract_exempt_count`, `total_loc`, and
+  `exempt_density_per_kloc()`. 6 new handler tests covering density
+  calculation, empty-LoC edge case, sub-KLoC (exemptions scale),
+  zero-exemptions, detection on functions, and ignoring other attrs.
+  Total handler tests: 28/28 passing. CLI test gate (--fail-exempt-density)
+  is a future sprint once baseline density is known.
 - **[PROVABILITY-006] `--fail-under-f1 N` CI gate**: Third CI gate on
   `ruchy tier`. Exits status 1 with "§14.5 F1 breach" when the
   non-trivial-contract percentage falls below the threshold. Skipped

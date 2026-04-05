@@ -54,6 +54,7 @@
 | §14.10.6 totality rule CI gate (`--fail-on-totality-violation`) | DONE | Same detection but exits status 1 with "§14.10.6 breach" message. 13 CLI tests. Gates violations at CI level. |
 | §14.5 F1 trivial-contract detection | DONE (syntactic approximation) | `ruchy tier` detects `requires true`/`ensures true` as trivial, reports non-trivial vs trivial counts + `non_trivial_pct`. SMT-based tautology detection is a future sprint. 6 new handler tests. |
 | §14.5 F1 CI gate (`--fail-under-f1 N`) | DONE | Third CI gate on `ruchy tier`: exits status 1 with "§14.5 F1 breach" if non-trivial contract pct < N. Skipped when no contract-bearing functions exist. 3 new CLI tests. |
+| §14.5 F2 escape-hatch density tracking | DONE | `ruchy tier` counts `#[contract_exempt]` attributes + LoC per file; reports density per KLoC. Target ≤ 0.5 (falsifies if > 5). 6 new handler tests (density calc, empty LoC, sub-KLoC, zero-exempt, detection, other-attrs-ignored). |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---
