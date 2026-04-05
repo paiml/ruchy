@@ -67,6 +67,7 @@ ruchy tier src/ --by-file --sort-by bronze --top 10
 | `--top <N>` | Limit `--by-file` to N entries after sorting | none |
 | `--parse-timeout-ms <MS>` | Per-file parse timeout (resilience vs parser hangs) | `5000` |
 | `--baseline <FILE>` | Regression gate: compare against stored baseline JSON | none |
+| `--markdown` | GitHub-flavored markdown report (for PR comments/summaries) | `false` |
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |
@@ -131,6 +132,36 @@ Single-line object with 21 keys, stable schema:
  "diff_exempt_density_per_kloc":0.00,"total_marked":18,"partial_marked":128,
  "totality_unmarked":41,"totality_violations":0,"pub_bronze":2,
  "parse_errors":0}
+```
+
+### Markdown Report (`--markdown`)
+
+Renders a PR-ready report with status badges:
+
+```markdown
+## §14.5 Provability Tier Report
+
+**Files scanned:** 42 (3128 LoC, 187 functions)
+
+### Tier Distribution
+| Tier | Count | % |
+|------|------:|--:|
+| Bronze   | 47 | 25.1% |
+| Silver   | 128 | 68.4% |
+| ...
+
+### §14.5 Falsifier Scorecard
+| Metric | Value | Status |
+|--------|------:|:------:|
+| F1 non-trivial % | 94.3% | 🟡 WARN |
+| F2 exempt / KLoC | 0.96 | 🟡 WARN |
+| F4 pub Bronze | 2 | 🟡 WARN |
+| F11 diff_exempt / KLoC | 0.00 | 🟢 OK |
+```
+
+Usage in GitHub Actions:
+```yaml
+- run: ruchy tier src/ --markdown >> $GITHUB_STEP_SUMMARY
 ```
 
 ### Per-File Table (`--by-file`)

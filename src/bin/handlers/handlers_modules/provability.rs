@@ -360,6 +360,87 @@ impl ProvabilityReport {
         rows
     }
 
+    /// Emit a GitHub-flavored markdown report suitable for PR summaries.
+    #[must_use]
+    pub fn to_markdown(&self) -> String {
+        let sc = self.falsifier_scorecard();
+        let badge = |s: FalsifierStatus| -> &'static str {
+            match s {
+                FalsifierStatus::Ok => "🟢 OK",
+                FalsifierStatus::Warn => "🟡 WARN",
+                FalsifierStatus::Fail => "🔴 FAIL",
+                FalsifierStatus::NotApplicable => "⚪ N/A",
+            }
+        };
+        let mut out = String::new();
+        out.push_str("## §14.5 Provability Tier Report\n\n");
+        out.push_str(&format!(
+            "**Files scanned:** {} ({} LoC, {} functions)\n\n",
+            self.files_scanned, self.total_loc, self.functions_total
+        ));
+        // Tier distribution
+        out.push_str("### Tier Distribution\n\n");
+        out.push_str("| Tier | Count | % |\n|------|------:|--:|\n");
+        let pct_of = |n: usize| -> f64 {
+            if self.functions_total == 0 {
+                0.0
+            } else {
+                (n as f64 / self.functions_total as f64) * 100.0
+            }
+        };
+        out.push_str(&format!(
+            "| Bronze   | {} | {:.1}% |\n",
+            self.bronze,
+            pct_of(self.bronze)
+        ));
+        out.push_str(&format!(
+            "| Silver   | {} | {:.1}% |\n",
+            self.silver,
+            pct_of(self.silver)
+        ));
+        out.push_str(&format!(
+            "| Gold     | {} | {:.1}% |\n",
+            self.gold,
+            pct_of(self.gold)
+        ));
+        out.push_str(&format!(
+            "| Platinum | {} | {:.1}% |\n",
+            self.platinum,
+            pct_of(self.platinum)
+        ));
+        out.push_str(&format!("| **non-Bronze** | | **{:.1}%** |\n\n", self.non_bronze_pct()));
+        // Falsifier scorecard
+        out.push_str("### §14.5 Falsifier Scorecard\n\n");
+        out.push_str("| Metric | Value | Status |\n|--------|------:|:------:|\n");
+        out.push_str(&format!(
+            "| F1 non-trivial % | {:.1}% | {} |\n",
+            self.non_trivial_pct(),
+            badge(sc.f1)
+        ));
+        out.push_str(&format!(
+            "| F2 exempt / KLoC | {:.2} | {} |\n",
+            self.exempt_density_per_kloc(),
+            badge(sc.f2)
+        ));
+        out.push_str(&format!(
+            "| F4 pub Bronze | {} | {} |\n",
+            self.pub_bronze_count(),
+            badge(sc.f4)
+        ));
+        out.push_str(&format!(
+            "| F11 diff_exempt / KLoC | {:.2} | {} |\n\n",
+            self.diff_exempt_density_per_kloc(),
+            badge(sc.f11)
+        ));
+        // Parse health
+        if self.parse_errors > 0 || self.parse_timeouts > 0 {
+            out.push_str("### Parser Health\n\n");
+            out.push_str(&format!("- Parse errors: {}\n", self.parse_errors));
+            out.push_str(&format!("- Parse timeouts: {}\n\n", self.parse_timeouts));
+        }
+        out
+    }
+
     /// Extract a baseline snapshot for regression tracking.
     #[must_use]
     pub fn baseline_snapshot(&self) -> BaselineSnapshot {
@@ -851,10 +932,13 @@ pub fn handle_provability_command(
     top: Option<usize>,
     parse_timeout_ms: u64,
     baseline: Option<&Path>,
+    markdown: bool,
 ) -> Result<()> {
     let raw = scan_with_timeout(path, parse_timeout_ms)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
-    if json {
+    if markdown {
+        print!("{}", report.to_markdown());
+    } else if json {
         println!("{}", report.to_json());
         if list {
             println!("{}", report.functions_to_json());
@@ -1590,6 +1674,50 @@ mod tests {
         assert!(j.contains("\"f2\":"));
         assert!(j.contains("\"f4\":"));
         assert!(j.contains("\"f11\":"));
+    }
+
+    #[test]
+    fn test_markdown_contains_header_and_tables() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "pub fun a() { 1 }\nfun b() requires x > 0 { 2 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        r.total_loc = 100;
+        let md = r.to_markdown();
+        assert!(md.contains("## §14.5 Provability Tier Report"));
+        assert!(md.contains("### Tier Distribution"));
+        assert!(md.contains("### §14.5 Falsifier Scorecard"));
+        assert!(md.contains("| Bronze"));
+        assert!(md.contains("| F1 non-trivial %"));
+    }
+
+    #[test]
+    fn test_markdown_uses_status_badges() {
+        let mut r = ProvabilityReport::default();
+        classify_source("pub fun a() { 1 }", Path::new("t.ruchy"), &mut r);
+        r.total_loc = 100;
+        let md = r.to_markdown();
+        // 1 pub Bronze → F4 should be WARN (yellow circle)
+        assert!(md.contains("🟡 WARN"));
+        // F2/F11 should be OK (green)
+        assert!(md.contains("🟢 OK"));
+    }
+
+    #[test]
+    fn test_markdown_shows_parser_health_section_only_when_nonzero() {
+        let r_clean = ProvabilityReport::default();
+        let md_clean = r_clean.to_markdown();
+        assert!(!md_clean.contains("### Parser Health"));
+
+        let r_bad = ProvabilityReport {
+            parse_errors: 1,
+            ..Default::default()
+        };
+        let md_bad = r_bad.to_markdown();
+        assert!(md_bad.contains("### Parser Health"));
+        assert!(md_bad.contains("Parse errors: 1"));
     }
 
     #[test]

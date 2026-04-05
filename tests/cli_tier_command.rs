@@ -169,6 +169,40 @@ fn test_tier_by_file_human_output() {
 }
 
 #[test]
+fn test_tier_markdown_output_has_headers() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--markdown")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("## §14.5 Provability Tier Report"));
+    assert!(stdout.contains("### Tier Distribution"));
+    assert!(stdout.contains("### §14.5 Falsifier Scorecard"));
+}
+
+#[test]
+fn test_tier_markdown_suppresses_human_summary() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }").unwrap();
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--markdown")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // Markdown format replaces the human "Provability tier scan:" prefix
+    assert!(!stdout.contains("Provability tier scan:"));
+}
+
+#[test]
 fn test_tier_baseline_creates_file_on_first_run() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();

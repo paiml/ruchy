@@ -48,6 +48,13 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-021] `ruchy tier --markdown` PR-ready reports**: Emits
+  GitHub-flavored markdown with tier distribution table, §14.5 falsifier
+  scorecard with 🟢/🟡/🔴/⚪ status badges, and a parser-health section
+  shown only when there are parse_errors or parse_timeouts. Drop straight
+  into PR comments or GitHub Actions step summaries:
+    ruchy tier src/ --markdown >> \$GITHUB_STEP_SUMMARY
+  3 new handler tests + 2 new CLI tests. 84/84 handler, 42/42 CLI tier.
 - **[PROVABILITY-020] `ruchy tier --baseline <file>` regression gate**:
   CI-friendly baseline comparison. First run captures scan metrics to a
   JSON file; subsequent runs compare and exit 1 if any metric regresses.

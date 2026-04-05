@@ -990,6 +990,9 @@ enum Commands {
         /// Baseline JSON file for regression comparison (created if missing)
         #[arg(long, value_name = "FILE")]
         baseline: Option<std::path::PathBuf>,
+        /// Emit GitHub-flavored markdown report (for PR summaries)
+        #[arg(long)]
+        markdown: bool,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]
