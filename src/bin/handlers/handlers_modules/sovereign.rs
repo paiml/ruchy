@@ -6,6 +6,7 @@
 //! Handlers use stdlib bridge types (forjar_bridge, simular_bridge, bashrs_bridge)
 //! to provide structured output rather than raw println stubs.
 
+use anyhow::Context;
 use std::path::Path;
 
 use ruchy::stdlib::bashrs_bridge::{PurifyResult, ShellTarget};
@@ -321,7 +322,12 @@ pub fn handle_purify(path: &Path, fix: bool, verbose: bool) -> anyhow::Result<()
 // ============================================================================
 
 /// Handle `ruchy contracts sync <path>`.
+///
+/// Scans `path` for Ruchy source files, groups contracted functions by
+/// source file, and writes one YAML manifest per source to `output/`.
+/// The manifest filename derives from the source path with `/` → `_`.
 pub fn handle_contracts_sync(path: &Path, output: &Path, verbose: bool) -> anyhow::Result<()> {
+    use std::collections::BTreeMap;
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
@@ -329,10 +335,69 @@ pub fn handle_contracts_sync(path: &Path, output: &Path, verbose: bool) -> anyho
     if verbose {
         println!("  Scanning for contract annotations (requires/ensures/invariant)...");
     }
+    let report = crate::handlers::handlers_modules::provability::scan(path)?;
+
+    // Group contracted functions by their source file.
+    let mut by_file: BTreeMap<
+        std::path::PathBuf,
+        Vec<&crate::handlers::handlers_modules::provability::ClassifiedFunction>,
+    > = BTreeMap::new();
+    for f in &report.functions {
+        if f.has_non_trivial_contract {
+            by_file.entry(f.file.clone()).or_default().push(f);
+        }
+    }
+
+    // Make sure the output directory exists.
+    std::fs::create_dir_all(output)
+        .with_context(|| format!("creating {}", output.display()))?;
+
+    let mut manifests_written = 0usize;
+    let mut contracts_total = 0usize;
+    for (src_file, fns) in &by_file {
+        let stem = manifest_stem(src_file);
+        let manifest_path = output.join(format!("{stem}.yaml"));
+        let yaml = render_contract_manifest(src_file, fns);
+        std::fs::write(&manifest_path, yaml)
+            .with_context(|| format!("writing {}", manifest_path.display()))?;
+        if verbose {
+            println!("    wrote {} ({} contract(s))", manifest_path.display(), fns.len());
+        }
+        manifests_written += 1;
+        contracts_total += fns.len();
+    }
     println!("  Output directory: {}", output.display());
-    println!("  0 contracts found, 0 manifests generated.");
-    println!("  Tip: Add contracts to functions with `ruchy suggest-contracts`");
+    println!(
+        "  {contracts_total} contract(s) found, {manifests_written} manifest(s) generated."
+    );
     Ok(())
+}
+
+/// Convert a source path into a filename-safe manifest stem.
+/// `src/math/utils.ruchy` → `src_math_utils_ruchy`.
+fn manifest_stem(src_file: &Path) -> String {
+    src_file
+        .to_string_lossy()
+        .trim_start_matches("./")
+        .trim_start_matches('/')
+        .replace(['/', '\\', '.'], "_")
+}
+
+/// Render a single YAML manifest for one source file.
+fn render_contract_manifest(
+    src_file: &Path,
+    fns: &[&crate::handlers::handlers_modules::provability::ClassifiedFunction],
+) -> String {
+    let mut out = String::new();
+    out.push_str(&format!("source: \"{}\"\n", src_file.display()));
+    out.push_str("contracts:\n");
+    for f in fns {
+        out.push_str(&format!("  - name: \"{}\"\n", f.name));
+        out.push_str(&format!("    tier: \"{}\"\n", f.tier.label()));
+        out.push_str(&format!("    totality: \"{}\"\n", f.totality.label()));
+        out.push_str(&format!("    is_pub: {}\n", f.is_pub));
+    }
+    out
 }
 
 /// Handle `ruchy contracts list <path>`.
@@ -619,6 +684,83 @@ mod tests {
     fn test_contracts_check_with_threshold() {
         let f = temp_file();
         assert!(handle_contracts_check(f.path(), Some(80.0)).is_ok());
+    }
+
+    #[test]
+    fn test_contracts_sync_generates_yaml_manifest() {
+        let src = tempfile::tempdir().unwrap();
+        let out = tempfile::tempdir().unwrap();
+        let sf = src.path().join("a.ruchy");
+        std::fs::write(
+            &sf,
+            "fun plain() { 1 }\nfun with_c() requires x > 0 { 2 }",
+        )
+        .unwrap();
+
+        assert!(handle_contracts_sync(src.path(), out.path(), false).is_ok());
+
+        // One .yaml manifest should exist.
+        let entries: Vec<_> = std::fs::read_dir(out.path())
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| p.extension().and_then(|s| s.to_str()) == Some("yaml"))
+            .collect();
+        assert_eq!(entries.len(), 1);
+        let content = std::fs::read_to_string(&entries[0]).unwrap();
+        assert!(content.contains("source:"));
+        assert!(content.contains("contracts:"));
+        assert!(content.contains("with_c"));
+        // Functions without contracts are NOT emitted.
+        assert!(!content.contains("plain"));
+    }
+
+    #[test]
+    fn test_contracts_sync_no_contracts_yields_no_files() {
+        let src = tempfile::tempdir().unwrap();
+        let out = tempfile::tempdir().unwrap();
+        std::fs::write(src.path().join("a.ruchy"), "fun just_plain() { 1 }").unwrap();
+
+        assert!(handle_contracts_sync(src.path(), out.path(), false).is_ok());
+
+        let yaml_count = std::fs::read_dir(out.path())
+            .unwrap()
+            .filter(|e| {
+                e.as_ref()
+                    .ok()
+                    .and_then(|de| de.path().extension().and_then(|s| s.to_str()).map(String::from))
+                    == Some("yaml".to_string())
+            })
+            .count();
+        assert_eq!(yaml_count, 0);
+    }
+
+    #[test]
+    fn test_contracts_sync_creates_output_dir_if_missing() {
+        let src = tempfile::tempdir().unwrap();
+        let parent = tempfile::tempdir().unwrap();
+        let out = parent.path().join("does_not_exist_yet");
+        std::fs::write(
+            src.path().join("a.ruchy"),
+            "fun f() requires n > 0 { 1 }",
+        )
+        .unwrap();
+
+        assert!(!out.exists());
+        assert!(handle_contracts_sync(src.path(), &out, false).is_ok());
+        assert!(out.exists());
+    }
+
+    #[test]
+    fn test_manifest_stem_replaces_separators_and_dots() {
+        assert_eq!(
+            manifest_stem(Path::new("src/math/utils.ruchy")),
+            "src_math_utils_ruchy"
+        );
+        assert_eq!(
+            manifest_stem(Path::new("./src/a.ruchy")),
+            "src_a_ruchy"
+        );
+        assert_eq!(manifest_stem(Path::new("a.ruchy")), "a_ruchy");
     }
 
     #[test]

@@ -48,6 +48,30 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-025] `ruchy contracts sync` writes real YAML manifests**:
+  Replaces the stub "0 contracts found, 0 manifests generated" with
+  real manifest generation. Groups contracted functions by source file
+  and writes one YAML manifest per source:
+
+    # contracts/src_foo_ruchy.yaml
+    source: "src/foo.ruchy"
+    contracts:
+      - name: "validate"
+        tier: "silver"
+        totality: "(unmarked)"
+        is_pub: true
+
+  Manifest stem derives from source path (`/` → `_`). Creates output
+  directory if missing. Functions without contracts are elided.
+  `--verbose` lists each written manifest + contract count.
+
+  Serves as the data feed for downstream provable-contracts tooling
+  per §14.7 Escape-Hatch Policy and §14.10.5 Refinement Tickets.
+
+  New helpers: `manifest_stem()` + `render_contract_manifest()`.
+  4 new sovereign tests (manifest generation, no-contracts yields no
+  files, output dir auto-created, manifest_stem path transformation).
+  40/40 sovereign tests passing.
 - **[PROVABILITY-024] `ruchy contracts check/list` backed by real scanner**:
   Previously both were stubs that always reported "0 functions". Now
   backed by the tier scanner infrastructure:
