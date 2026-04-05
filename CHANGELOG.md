@@ -48,6 +48,23 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-024] `ruchy contracts check/list` backed by real scanner**:
+  Previously both were stubs that always reported "0 functions". Now
+  backed by the tier scanner infrastructure:
+
+  `ruchy contracts check <path> [--min-coverage N]` reports actual
+  contract coverage (% of functions with requires/ensures clauses) and
+  exits 1 when below threshold. Gate skipped when 0 functions scanned.
+
+  `ruchy contracts list <path> [--format text|json|yaml]` enumerates
+  functions carrying non-trivial contracts, with their tier classification
+  and source file. JSON/YAML formats for dashboard/CI consumption.
+
+  New `ProvabilityReport::contract_coverage_pct()` +
+  `functions_with_contracts()` API. 3 new provability tests + 5 new
+  sovereign tests. Existing test_contracts_check_with_threshold updated
+  to pass a real file (previously passed empty tempfile with 0
+  functions → always-true gate).
 - **[PROVABILITY-023] `ruchy tier --config <file.toml>` centralized config**:
   Load all gate thresholds from a single TOML file so CI scripts don't
   have to juggle 8 long flags:

@@ -710,6 +710,23 @@ impl ProvabilityReport {
             .collect()
     }
 
+    /// Count of functions with at least one requires/ensures clause.
+    #[must_use]
+    pub fn functions_with_contracts(&self) -> usize {
+        self.non_trivial_contracts + self.trivial_contracts
+    }
+
+    /// Contract coverage: percentage of functions that carry any
+    /// requires/ensures clause (trivial or non-trivial). Returns 0.0
+    /// when the report scanned no functions.
+    #[must_use]
+    pub fn contract_coverage_pct(&self) -> f64 {
+        if self.functions_total == 0 {
+            return 0.0;
+        }
+        (self.functions_with_contracts() as f64 / self.functions_total as f64) * 100.0
+    }
+
     /// §14.5 F4 proxy: count of Bronze-tier `pub` functions.
     /// After release 5.2, stdlib `pub` functions must not be Bronze.
     #[must_use]
@@ -1798,6 +1815,34 @@ mod tests {
         assert!(j.contains("\"f2\":"));
         assert!(j.contains("\"f4\":"));
         assert!(j.contains("\"f11\":"));
+    }
+
+    #[test]
+    fn test_contract_coverage_pct_zero_functions_returns_zero() {
+        let r = ProvabilityReport::default();
+        assert_eq!(r.contract_coverage_pct(), 0.0);
+    }
+
+    #[test]
+    fn test_contract_coverage_pct_counts_both_trivial_and_nontrivial() {
+        let mut r = ProvabilityReport::default();
+        classify_source(
+            "fun a() { 1 }\nfun b() requires true { 2 }\nfun c() requires x > 0 { 3 }",
+            Path::new("t.ruchy"),
+            &mut r,
+        );
+        // 3 functions, 2 with contracts (trivial + non-trivial) → 66.67%.
+        assert_eq!(r.functions_total, 3);
+        assert_eq!(r.functions_with_contracts(), 2);
+        assert!((r.contract_coverage_pct() - 66.666).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_functions_with_contracts_sums_trivial_and_nontrivial() {
+        let mut r = ProvabilityReport::default();
+        r.non_trivial_contracts = 5;
+        r.trivial_contracts = 2;
+        assert_eq!(r.functions_with_contracts(), 7);
     }
 
     #[test]

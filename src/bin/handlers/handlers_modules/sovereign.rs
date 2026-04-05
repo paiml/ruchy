@@ -340,21 +340,88 @@ pub fn handle_contracts_list(path: &Path, format: &str) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    println!("[ruchy contracts list] {} (format={format})", path.display());
-    println!("  0 functions with contracts found.");
+    let report = crate::handlers::handlers_modules::provability::scan(path)?;
+    let with_contracts: Vec<_> = report
+        .functions
+        .iter()
+        .filter(|f| f.has_non_trivial_contract)
+        .collect();
+    match format {
+        "json" => {
+            // Emit a JSON array of {name, file, tier} objects.
+            let mut out = String::from("[");
+            for (i, f) in with_contracts.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
+                }
+                out.push_str(&format!(
+                    "{{\"name\":\"{}\",\"file\":\"{}\",\"tier\":\"{}\"}}",
+                    f.name.replace('"', "\\\""),
+                    f.file.to_string_lossy().replace('"', "\\\""),
+                    f.tier.label(),
+                ));
+            }
+            out.push(']');
+            println!("{out}");
+        }
+        "yaml" => {
+            println!("contracts:");
+            for f in &with_contracts {
+                println!("  - name: \"{}\"", f.name);
+                println!("    file: \"{}\"", f.file.display());
+                println!("    tier: \"{}\"", f.tier.label());
+            }
+            if with_contracts.is_empty() {
+                println!("  []");
+            }
+        }
+        _ => {
+            // Default text format.
+            println!("[ruchy contracts list] {} (format={format})", path.display());
+            if with_contracts.is_empty() {
+                println!("  0 functions with (non-trivial) contracts found.");
+            } else {
+                println!(
+                    "  {} function(s) with non-trivial contracts:",
+                    with_contracts.len()
+                );
+                for f in &with_contracts {
+                    println!("    {:<10} {} ({})", f.tier.label(), f.name, f.file.display());
+                }
+            }
+        }
+    }
     Ok(())
 }
 
 /// Handle `ruchy contracts check <path>`.
+///
+/// Scans the target for `fun` definitions and reports contract coverage
+/// = percentage of functions carrying at least one `requires`/`ensures`
+/// clause. Exits non-zero if `min_coverage` is specified and not met.
 pub fn handle_contracts_check(path: &Path, min_coverage: Option<f64>) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
+    let report = crate::handlers::handlers_modules::provability::scan(path)?;
     let threshold = min_coverage.unwrap_or(0.0);
+    let actual = report.contract_coverage_pct();
+    let with = report.functions_with_contracts();
+    let total = report.functions_total;
     println!("[ruchy contracts check] {}", path.display());
-    println!("  Contract coverage: 0.0% (0/0 functions)");
+    println!(
+        "  Contract coverage: {actual:.1}% ({with}/{total} functions)"
+    );
     if threshold > 0.0 {
         println!("  Threshold: {threshold:.1}%");
+        // Coverage gate only meaningful when there's something to cover.
+        if total > 0 && actual < threshold {
+            anyhow::bail!(
+                "contract coverage {:.1}% is below threshold {:.1}%",
+                actual,
+                threshold
+            );
+        }
     }
     Ok(())
 }
@@ -552,6 +619,61 @@ mod tests {
     fn test_contracts_check_with_threshold() {
         let f = temp_file();
         assert!(handle_contracts_check(f.path(), Some(80.0)).is_ok());
+    }
+
+    #[test]
+    fn test_contracts_check_counts_real_functions() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("a.ruchy");
+        std::fs::write(
+            &p,
+            "fun a() { 1 }\nfun b() requires x > 0 { 2 }\nfun c() ensures r > 0 { 3 }",
+        )
+        .unwrap();
+        // 2 of 3 have contracts → 66.7%.
+        // No threshold → always OK.
+        assert!(handle_contracts_check(&p, None).is_ok());
+        // Threshold 50% → passes.
+        assert!(handle_contracts_check(&p, Some(50.0)).is_ok());
+        // Threshold 80% → fails.
+        assert!(handle_contracts_check(&p, Some(80.0)).is_err());
+    }
+
+    #[test]
+    fn test_contracts_check_zero_functions_skips_gate() {
+        // Empty-body file (0 fun decls) → gate is skipped even at 100%.
+        let f = temp_file();
+        assert!(handle_contracts_check(f.path(), Some(100.0)).is_ok());
+    }
+
+    #[test]
+    fn test_contracts_list_text_reports_functions() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("a.ruchy");
+        std::fs::write(
+            &p,
+            "fun plain() { 1 }\nfun with_req() requires n > 0 { 2 }",
+        )
+        .unwrap();
+        // Only returns Ok; we don't assert on stdout here, but the call
+        // path exercises the scanner + filter logic.
+        assert!(handle_contracts_list(&p, "text").is_ok());
+    }
+
+    #[test]
+    fn test_contracts_list_json_format() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("a.ruchy");
+        std::fs::write(&p, "fun f() requires x > 0 { 1 }").unwrap();
+        assert!(handle_contracts_list(&p, "json").is_ok());
+    }
+
+    #[test]
+    fn test_contracts_list_yaml_format() {
+        let tmp = tempfile::tempdir().unwrap();
+        let p = tmp.path().join("a.ruchy");
+        std::fs::write(&p, "fun f() requires x > 0 { 1 }").unwrap();
+        assert!(handle_contracts_list(&p, "yaml").is_ok());
     }
 
     #[test]
