@@ -566,6 +566,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             public_only,
             fail_pub_bronze_above,
             fail_diff_exempt_density_above,
+            by_file,
         } => {
             crate::handlers::handlers_modules::provability::handle_provability_command(
                 &path,
@@ -578,6 +579,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
                 public_only,
                 fail_pub_bronze_above,
                 fail_diff_exempt_density_above,
+                by_file,
             )
         }
         crate::Commands::Contracts(cmd) => {

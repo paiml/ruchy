@@ -97,6 +97,31 @@ pub struct ProvabilityReport {
     pub functions: Vec<ClassifiedFunction>,
 }
 
+/// Per-file tier breakdown, sortable by worst-tier distribution.
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
+pub struct FileTierCounts {
+    pub bronze: usize,
+    pub silver: usize,
+    pub gold: usize,
+    pub platinum: usize,
+}
+
+impl FileTierCounts {
+    #[must_use]
+    pub fn total(&self) -> usize {
+        self.bronze + self.silver + self.gold + self.platinum
+    }
+
+    fn bump(&mut self, tier: Tier) {
+        match tier {
+            Tier::Bronze => self.bronze += 1,
+            Tier::Silver => self.silver += 1,
+            Tier::Gold => self.gold += 1,
+            Tier::Platinum => self.platinum += 1,
+        }
+    }
+}
+
 impl ProvabilityReport {
     fn record_tier(&mut self, tier: Tier) {
         self.functions_total += 1;
@@ -148,6 +173,40 @@ impl ProvabilityReport {
             return 0.0;
         }
         (self.diff_exempt_count as f64 * 1000.0) / self.total_loc as f64
+    }
+
+    /// Per-file tier counts. Returns a vector sorted by file path
+    /// (ascending) for deterministic output.
+    #[must_use]
+    pub fn by_file(&self) -> Vec<(PathBuf, FileTierCounts)> {
+        use std::collections::BTreeMap;
+        let mut map: BTreeMap<PathBuf, FileTierCounts> = BTreeMap::new();
+        for f in &self.functions {
+            map.entry(f.file.clone()).or_default().bump(f.tier);
+        }
+        map.into_iter().collect()
+    }
+
+    /// Emit per-file breakdown as a single-line JSON array of objects.
+    #[must_use]
+    pub fn by_file_to_json(&self) -> String {
+        let mut out = String::from("[");
+        for (i, (path, counts)) in self.by_file().iter().enumerate() {
+            if i > 0 {
+                out.push(',');
+            }
+            out.push_str(&format!(
+                "{{\"file\":\"{}\",\"bronze\":{},\"silver\":{},\"gold\":{},\"platinum\":{},\"total\":{}}}",
+                escape_json(&path.to_string_lossy()),
+                counts.bronze,
+                counts.silver,
+                counts.gold,
+                counts.platinum,
+                counts.total(),
+            ));
+        }
+        out.push(']');
+        out
     }
 
     /// Emit the list of classified functions as a single-line JSON array.
@@ -482,6 +541,7 @@ pub fn handle_provability_command(
     public_only: bool,
     fail_pub_bronze_above: Option<usize>,
     fail_diff_exempt_density_above: Option<f64>,
+    by_file: bool,
 ) -> Result<()> {
     let raw = scan(path)?;
     let report = if public_only { raw.filter_to_pub() } else { raw };
@@ -489,6 +549,9 @@ pub fn handle_provability_command(
         println!("{}", report.to_json());
         if list {
             println!("{}", report.functions_to_json());
+        }
+        if by_file {
+            println!("{}", report.by_file_to_json());
         }
     } else {
         println!("Provability tier scan: {}", path.display());
@@ -503,6 +566,24 @@ pub fn handle_provability_command(
                     if f.is_pub { "pub" } else { "" },
                     f.name,
                     f.file.display()
+                );
+            }
+        }
+        if by_file {
+            println!("\nper-file tier breakdown:");
+            println!(
+                "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
+                "bronze", "silver", "gold", "platinum", "total", "file"
+            );
+            for (path, c) in report.by_file() {
+                println!(
+                    "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
+                    c.bronze,
+                    c.silver,
+                    c.gold,
+                    c.platinum,
+                    c.total(),
+                    path.display()
                 );
             }
         }
@@ -1069,6 +1150,61 @@ mod tests {
         let s = r.summary();
         assert!(s.contains("functions: 1"));
         assert!(s.contains("silver:"));
+    }
+
+    #[test]
+    fn test_by_file_groups_functions_by_path() {
+        let mut r = ProvabilityReport::default();
+        classify_source("pub fun a() { 1 }\nfun b() { 2 }", Path::new("x.ruchy"), &mut r);
+        classify_source("fun c() requires x > 0 { 3 }", Path::new("y.ruchy"), &mut r);
+        let bf = r.by_file();
+        assert_eq!(bf.len(), 2);
+        // Sorted by path: x.ruchy before y.ruchy
+        assert_eq!(bf[0].0, PathBuf::from("x.ruchy"));
+        assert_eq!(bf[0].1.bronze, 2);
+        assert_eq!(bf[0].1.silver, 0);
+        assert_eq!(bf[0].1.total(), 2);
+        assert_eq!(bf[1].0, PathBuf::from("y.ruchy"));
+        assert_eq!(bf[1].1.silver, 1);
+        assert_eq!(bf[1].1.total(), 1);
+    }
+
+    #[test]
+    fn test_by_file_empty_returns_empty_vec() {
+        let r = ProvabilityReport::default();
+        assert!(r.by_file().is_empty());
+    }
+
+    #[test]
+    fn test_by_file_to_json_produces_valid_array() {
+        let mut r = ProvabilityReport::default();
+        classify_source("fun a() { 1 }", Path::new("t.ruchy"), &mut r);
+        let j = r.by_file_to_json();
+        assert!(j.starts_with('['));
+        assert!(j.ends_with(']'));
+        assert!(j.contains("\"file\":\"t.ruchy\""));
+        assert!(j.contains("\"bronze\":1"));
+        assert!(j.contains("\"total\":1"));
+    }
+
+    #[test]
+    fn test_by_file_to_json_empty_is_empty_array() {
+        let r = ProvabilityReport::default();
+        assert_eq!(r.by_file_to_json(), "[]");
+    }
+
+    #[test]
+    fn test_file_tier_counts_bump_and_total() {
+        let mut c = FileTierCounts::default();
+        c.bump(Tier::Bronze);
+        c.bump(Tier::Silver);
+        c.bump(Tier::Silver);
+        c.bump(Tier::Gold);
+        assert_eq!(c.bronze, 1);
+        assert_eq!(c.silver, 2);
+        assert_eq!(c.gold, 1);
+        assert_eq!(c.platinum, 0);
+        assert_eq!(c.total(), 4);
     }
 
     #[test]

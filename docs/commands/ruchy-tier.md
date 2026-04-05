@@ -59,6 +59,7 @@ ruchy tier src/ --public-only
 | `--json` | Single-line JSON output (21 keys) | `false` |
 | `--list` | Enumerate each function with tier + `pub` marker | `false` |
 | `--public-only` | Restrict scan to `pub fn` only | `false` |
+| `--by-file` | Show per-file tier breakdown (table + JSON array) | `false` |
 | `--fail-under <PCT>` | Exit 1 if `non_bronze_pct` < PCT | none |
 | `--fail-under-f1 <PCT>` | Exit 1 if F1 `non_trivial_pct` < PCT | none |
 | `--fail-exempt-density-above <PER_KLOC>` | Exit 1 if F2 density > K | none |
@@ -111,6 +112,22 @@ Single-line object with 21 keys, stable schema:
  "diff_exempt_density_per_kloc":0.00,"total_marked":18,"partial_marked":128,
  "totality_unmarked":41,"totality_violations":0,"pub_bronze":2,
  "parse_errors":0}
+```
+
+### Per-File Table (`--by-file`)
+
+```
+per-file tier breakdown:
+  bronze silver gold   platinum total   file
+  2      0      0      0        2       src/a.ruchy
+  0      1      0      0        1       src/b.ruchy
+```
+
+Pair with `--json` to emit a second JSON line:
+
+```json
+[{"file":"src/a.ruchy","bronze":2,"silver":0,"gold":0,"platinum":0,"total":2},
+ {"file":"src/b.ruchy","bronze":0,"silver":1,"gold":0,"platinum":0,"total":1}]
 ```
 
 ### Per-Function JSON (`--json --list`)

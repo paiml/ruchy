@@ -146,6 +146,52 @@ fn test_tier_list_marks_pub_functions() {
 }
 
 #[test]
+fn test_tier_by_file_human_output() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }\nfun y() { 2 }").unwrap();
+    fs::write(
+        tmp.path().join("b.ruchy"),
+        "fun z() requires i > 0 { 1 }",
+    )
+    .unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--by-file")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("per-file tier breakdown"));
+    assert!(stdout.contains("a.ruchy"));
+    assert!(stdout.contains("b.ruchy"));
+}
+
+#[test]
+fn test_tier_by_file_json_emits_second_array() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }").unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--json")
+        .arg("--by-file")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut lines = stdout.lines();
+    let aggr = lines.next().unwrap();
+    let by_file = lines.next().unwrap();
+    assert!(aggr.starts_with('{'));
+    assert!(by_file.starts_with('['));
+    assert!(by_file.contains("\"bronze\":1"));
+    assert!(by_file.contains("\"total\":1"));
+}
+
+#[test]
 fn test_tier_json_list_emits_functions_array() {
     let tmp = TempDir::new().unwrap();
     fs::write(

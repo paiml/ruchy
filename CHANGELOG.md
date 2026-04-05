@@ -48,6 +48,14 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-016] `ruchy tier --by-file` per-file breakdown**:
+  Shows tier distribution per file — actionable triage for remediation.
+  Human output: tab-aligned table with bronze/silver/gold/platinum/total
+  columns. `--json --by-file` emits a second JSON line with an array of
+  `{file, bronze, silver, gold, platinum, total}` objects, sorted by file
+  path (BTreeMap) for deterministic output. New `FileTierCounts` type,
+  `ProvabilityReport::by_file()` + `by_file_to_json()` methods. 5 new
+  handler tests + 2 new CLI tests. 55/55 handler, 33/33 CLI tier.
 - **[PROVABILITY-015] §14.5 F11 CI gate (`--fail-diff-exempt-density-above K`)**:
   Sixth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F11 breach" if
   `#[diff_exempt]` density/KLoC > K. Mirrors --fail-exempt-density-above

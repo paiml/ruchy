@@ -975,6 +975,9 @@ enum Commands {
         /// Fail if #[diff_exempt] density > K per KLoC (§14.5 F11 gate)
         #[arg(long, value_name = "PER_KLOC")]
         fail_diff_exempt_density_above: Option<f64>,
+        /// Show per-file tier breakdown (paired with --json emits by_file array)
+        #[arg(long)]
+        by_file: bool,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]
