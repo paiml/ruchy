@@ -326,7 +326,12 @@ pub fn handle_purify(path: &Path, fix: bool, verbose: bool) -> anyhow::Result<()
 /// Scans `path` for Ruchy source files, groups contracted functions by
 /// source file, and writes one YAML manifest per source to `output/`.
 /// The manifest filename derives from the source path with `/` → `_`.
-pub fn handle_contracts_sync(path: &Path, output: &Path, verbose: bool) -> anyhow::Result<()> {
+pub fn handle_contracts_sync(
+    path: &Path,
+    output: &Path,
+    verbose: bool,
+    exclude: &[String],
+) -> anyhow::Result<()> {
     use std::collections::BTreeMap;
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
@@ -335,7 +340,9 @@ pub fn handle_contracts_sync(path: &Path, output: &Path, verbose: bool) -> anyho
     if verbose {
         println!("  Scanning for contract annotations (requires/ensures/invariant)...");
     }
-    let report = crate::handlers::handlers_modules::provability::scan(path)?;
+    let report = crate::handlers::handlers_modules::provability::scan_with_options(
+        path, 5000, exclude,
+    )?;
 
     // Group contracted functions by their source file.
     let mut by_file: BTreeMap<
@@ -401,11 +408,18 @@ fn render_contract_manifest(
 }
 
 /// Handle `ruchy contracts list <path>`.
-pub fn handle_contracts_list(path: &Path, format: &str, pub_only: bool) -> anyhow::Result<()> {
+pub fn handle_contracts_list(
+    path: &Path,
+    format: &str,
+    pub_only: bool,
+    exclude: &[String],
+) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    let report = crate::handlers::handlers_modules::provability::scan(path)?;
+    let report = crate::handlers::handlers_modules::provability::scan_with_options(
+        path, 5000, exclude,
+    )?;
     let with_contracts: Vec<_> = report
         .functions
         .iter()
@@ -481,11 +495,14 @@ pub fn handle_contracts_check(
     path: &Path,
     min_coverage: Option<f64>,
     pub_only: bool,
+    exclude: &[String],
 ) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    let raw = crate::handlers::handlers_modules::provability::scan(path)?;
+    let raw = crate::handlers::handlers_modules::provability::scan_with_options(
+        path, 5000, exclude,
+    )?;
     let report = if pub_only { raw.filter_to_pub() } else { raw };
     let threshold = min_coverage.unwrap_or(0.0);
     let actual = report.contract_coverage_pct();
@@ -521,11 +538,14 @@ pub fn handle_suggest_contracts(
     format: &str,
     verbose: bool,
     pub_only: bool,
+    exclude: &[String],
 ) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    let report = crate::handlers::handlers_modules::provability::scan(path)?;
+    let report = crate::handlers::handlers_modules::provability::scan_with_options(
+        path, 5000, exclude,
+    )?;
     // Uncontracted = Bronze tier (by §14.2 definition).
     let uncontracted: Vec<_> = report
         .functions
@@ -778,31 +798,31 @@ mod tests {
     #[test]
     fn test_contracts_sync() {
         let f = temp_file();
-        assert!(handle_contracts_sync(f.path(), Path::new("contracts"), false).is_ok());
+        assert!(handle_contracts_sync(f.path(), Path::new("contracts"), false, &[]).is_ok());
     }
 
     #[test]
     fn test_contracts_sync_verbose() {
         let f = temp_file();
-        assert!(handle_contracts_sync(f.path(), Path::new("contracts"), true).is_ok());
+        assert!(handle_contracts_sync(f.path(), Path::new("contracts"), true, &[]).is_ok());
     }
 
     #[test]
     fn test_contracts_list() {
         let f = temp_file();
-        assert!(handle_contracts_list(f.path(), "text", false).is_ok());
+        assert!(handle_contracts_list(f.path(), "text", false, &[]).is_ok());
     }
 
     #[test]
     fn test_contracts_check_no_threshold() {
         let f = temp_file();
-        assert!(handle_contracts_check(f.path(), None, false).is_ok());
+        assert!(handle_contracts_check(f.path(), None, false, &[]).is_ok());
     }
 
     #[test]
     fn test_contracts_check_with_threshold() {
         let f = temp_file();
-        assert!(handle_contracts_check(f.path(), Some(80.0), false).is_ok());
+        assert!(handle_contracts_check(f.path(), Some(80.0), false, &[]).is_ok());
     }
 
     #[test]
@@ -816,7 +836,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(handle_contracts_sync(src.path(), out.path(), false).is_ok());
+        assert!(handle_contracts_sync(src.path(), out.path(), false, &[]).is_ok());
 
         // One .yaml manifest should exist.
         let entries: Vec<_> = std::fs::read_dir(out.path())
@@ -839,7 +859,7 @@ mod tests {
         let out = tempfile::tempdir().unwrap();
         std::fs::write(src.path().join("a.ruchy"), "fun just_plain() { 1 }").unwrap();
 
-        assert!(handle_contracts_sync(src.path(), out.path(), false).is_ok());
+        assert!(handle_contracts_sync(src.path(), out.path(), false, &[]).is_ok());
 
         let yaml_count = std::fs::read_dir(out.path())
             .unwrap()
@@ -865,7 +885,7 @@ mod tests {
         .unwrap();
 
         assert!(!out.exists());
-        assert!(handle_contracts_sync(src.path(), &out, false).is_ok());
+        assert!(handle_contracts_sync(src.path(), &out, false, &[]).is_ok());
         assert!(out.exists());
     }
 
@@ -893,18 +913,18 @@ mod tests {
         .unwrap();
         // 2 of 3 have contracts → 66.7%.
         // No threshold → always OK.
-        assert!(handle_contracts_check(&p, None, false).is_ok());
+        assert!(handle_contracts_check(&p, None, false, &[]).is_ok());
         // Threshold 50% → passes.
-        assert!(handle_contracts_check(&p, Some(50.0), false).is_ok());
+        assert!(handle_contracts_check(&p, Some(50.0), false, &[]).is_ok());
         // Threshold 80% → fails.
-        assert!(handle_contracts_check(&p, Some(80.0), false).is_err());
+        assert!(handle_contracts_check(&p, Some(80.0), false, &[]).is_err());
     }
 
     #[test]
     fn test_contracts_check_zero_functions_skips_gate() {
         // Empty-body file (0 fun decls) → gate is skipped even at 100%.
         let f = temp_file();
-        assert!(handle_contracts_check(f.path(), Some(100.0), false).is_ok());
+        assert!(handle_contracts_check(f.path(), Some(100.0), false, &[]).is_ok());
     }
 
     #[test]
@@ -918,7 +938,7 @@ mod tests {
         .unwrap();
         // Only returns Ok; we don't assert on stdout here, but the call
         // path exercises the scanner + filter logic.
-        assert!(handle_contracts_list(&p, "text", false).is_ok());
+        assert!(handle_contracts_list(&p, "text", false, &[]).is_ok());
     }
 
     #[test]
@@ -926,7 +946,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let p = tmp.path().join("a.ruchy");
         std::fs::write(&p, "fun f() requires x > 0 { 1 }").unwrap();
-        assert!(handle_contracts_list(&p, "json", false).is_ok());
+        assert!(handle_contracts_list(&p, "json", false, &[]).is_ok());
     }
 
     #[test]
@@ -934,19 +954,19 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let p = tmp.path().join("a.ruchy");
         std::fs::write(&p, "fun f() requires x > 0 { 1 }").unwrap();
-        assert!(handle_contracts_list(&p, "yaml", false).is_ok());
+        assert!(handle_contracts_list(&p, "yaml", false, &[]).is_ok());
     }
 
     #[test]
     fn test_suggest_contracts() {
         let f = temp_file();
-        assert!(handle_suggest_contracts(f.path(), "text", false, false).is_ok());
+        assert!(handle_suggest_contracts(f.path(), "text", false, false, &[]).is_ok());
     }
 
     #[test]
     fn test_suggest_contracts_verbose() {
         let f = temp_file();
-        assert!(handle_suggest_contracts(f.path(), "yaml", true, false).is_ok());
+        assert!(handle_suggest_contracts(f.path(), "yaml", true, false, &[]).is_ok());
     }
 
     #[test]
@@ -957,7 +977,7 @@ mod tests {
             "fun needs_contract() { 1 }\nfun has_one() requires x > 0 { 2 }",
         )
         .unwrap();
-        assert!(handle_suggest_contracts(tmp.path(), "text", false, false).is_ok());
+        assert!(handle_suggest_contracts(tmp.path(), "text", false, false, &[]).is_ok());
     }
 
     #[test]
@@ -968,7 +988,7 @@ mod tests {
             "pub fun needs_it() { 1 }",
         )
         .unwrap();
-        assert!(handle_suggest_contracts(tmp.path(), "json", false, false).is_ok());
+        assert!(handle_suggest_contracts(tmp.path(), "json", false, false, &[]).is_ok());
     }
 
     #[test]
@@ -979,7 +999,7 @@ mod tests {
             "fun needs_it() { 1 }",
         )
         .unwrap();
-        assert!(handle_suggest_contracts(tmp.path(), "yaml", false, false).is_ok());
+        assert!(handle_suggest_contracts(tmp.path(), "yaml", false, false, &[]).is_ok());
     }
 
     #[test]
@@ -987,7 +1007,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let p = tmp.path().join("a.ruchy");
         std::fs::write(&p, "fun f() requires x > 0 { 1 }").unwrap();
-        assert!(handle_contracts_list(&p, "markdown", false).is_ok());
+        assert!(handle_contracts_list(&p, "markdown", false, &[]).is_ok());
     }
 
     #[test]
@@ -995,7 +1015,7 @@ mod tests {
         let tmp = tempfile::tempdir().unwrap();
         let p = tmp.path().join("a.ruchy");
         std::fs::write(&p, "fun f() { 1 }").unwrap();
-        assert!(handle_contracts_list(&p, "markdown", false).is_ok());
+        assert!(handle_contracts_list(&p, "markdown", false, &[]).is_ok());
     }
 
     #[test]
@@ -1006,13 +1026,13 @@ mod tests {
             "pub fun api() { 1 }\nfun helper() { 2 }",
         )
         .unwrap();
-        assert!(handle_suggest_contracts(tmp.path(), "markdown", false, false).is_ok());
+        assert!(handle_suggest_contracts(tmp.path(), "markdown", false, false, &[]).is_ok());
     }
 
     #[test]
     fn test_suggest_contracts_markdown_empty_path_ok() {
         let tmp = tempfile::tempdir().unwrap();
-        assert!(handle_suggest_contracts(tmp.path(), "markdown", false, false).is_ok());
+        assert!(handle_suggest_contracts(tmp.path(), "markdown", false, false, &[]).is_ok());
     }
 
     #[test]
@@ -1023,7 +1043,7 @@ mod tests {
             "pub fun exposed() { 1 }\nfun internal() { 2 }",
         )
         .unwrap();
-        assert!(handle_suggest_contracts(tmp.path(), "json", false, true).is_ok());
+        assert!(handle_suggest_contracts(tmp.path(), "json", false, true, &[]).is_ok());
     }
 
     #[test]
@@ -1034,7 +1054,7 @@ mod tests {
             "pub fun api() requires x > 0 { 1 }\nfun helper() requires y > 0 { 2 }",
         )
         .unwrap();
-        assert!(handle_contracts_list(tmp.path(), "json", true).is_ok());
+        assert!(handle_contracts_list(tmp.path(), "json", true, &[]).is_ok());
     }
 
     #[test]
@@ -1052,21 +1072,21 @@ mod tests {
         )
         .unwrap();
         // With pub_only and 60% threshold: 50% < 60% → err.
-        assert!(handle_contracts_check(tmp.path(), Some(60.0), true).is_err());
+        assert!(handle_contracts_check(tmp.path(), Some(60.0), true, &[]).is_err());
         // Without pub_only and 60% threshold: 75% >= 60% → ok.
-        assert!(handle_contracts_check(tmp.path(), Some(60.0), false).is_ok());
+        assert!(handle_contracts_check(tmp.path(), Some(60.0), false, &[]).is_ok());
     }
 
     #[test]
     fn test_suggest_contracts_empty_dir_yaml_ok() {
         let tmp = tempfile::tempdir().unwrap();
         // No .ruchy files → empty yaml array.
-        assert!(handle_suggest_contracts(tmp.path(), "yaml", false, false).is_ok());
+        assert!(handle_suggest_contracts(tmp.path(), "yaml", false, false, &[]).is_ok());
     }
 
     #[test]
     fn test_contracts_sync_missing_path() {
-        assert!(handle_contracts_sync(Path::new("/nonexistent"), Path::new("out"), false).is_err());
+        assert!(handle_contracts_sync(Path::new("/nonexistent"), Path::new("out"), false, &[]).is_err());
     }
 
     #[test]

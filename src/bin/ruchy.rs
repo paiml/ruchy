@@ -1020,6 +1020,9 @@ enum Commands {
         /// Restrict suggestions to `pub` functions (§14.5 F4 surface)
         #[arg(long)]
         pub_only: bool,
+        /// Exclude .ruchy files whose path contains PATTERN (repeatable)
+        #[arg(long, value_name = "PATTERN")]
+        exclude: Vec<String>,
     },
 }
 
@@ -1266,6 +1269,9 @@ enum ContractsCommands {
         /// Show verbose output
         #[arg(long)]
         verbose: bool,
+        /// Exclude .ruchy files whose path contains PATTERN (repeatable)
+        #[arg(long, value_name = "PATTERN")]
+        exclude: Vec<String>,
     },
     /// List all contracts in a file/project
     List {
@@ -1277,6 +1283,9 @@ enum ContractsCommands {
         /// Restrict listing to `pub` functions (§14.5 F4 surface)
         #[arg(long)]
         pub_only: bool,
+        /// Exclude .ruchy files whose path contains PATTERN (repeatable)
+        #[arg(long, value_name = "PATTERN")]
+        exclude: Vec<String>,
     },
     /// Verify contract coverage for all functions
     Check {
@@ -1288,6 +1297,9 @@ enum ContractsCommands {
         /// Scope coverage to `pub` functions only (§14.5 F4 surface)
         #[arg(long)]
         pub_only: bool,
+        /// Exclude .ruchy files whose path contains PATTERN (repeatable)
+        #[arg(long, value_name = "PATTERN")]
+        exclude: Vec<String>,
     },
 }
 

@@ -601,20 +601,20 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
         crate::Commands::Contracts(cmd) => {
             use crate::handlers::handlers_modules::sovereign::*;
             match cmd {
-                crate::ContractsCommands::Sync { path, output, verbose } => {
-                    handle_contracts_sync(&path, &output, verbose)
+                crate::ContractsCommands::Sync { path, output, verbose, exclude } => {
+                    handle_contracts_sync(&path, &output, verbose, &exclude)
                 }
-                crate::ContractsCommands::List { path, format, pub_only } => {
-                    handle_contracts_list(&path, &format, pub_only)
+                crate::ContractsCommands::List { path, format, pub_only, exclude } => {
+                    handle_contracts_list(&path, &format, pub_only, &exclude)
                 }
-                crate::ContractsCommands::Check { path, min_coverage, pub_only } => {
-                    handle_contracts_check(&path, min_coverage, pub_only)
+                crate::ContractsCommands::Check { path, min_coverage, pub_only, exclude } => {
+                    handle_contracts_check(&path, min_coverage, pub_only, &exclude)
                 }
             }
         }
-        crate::Commands::SuggestContracts { path, format, verbose, pub_only } => {
+        crate::Commands::SuggestContracts { path, format, verbose, pub_only, exclude } => {
             crate::handlers::handlers_modules::sovereign::handle_suggest_contracts(
-                &path, &format, verbose, pub_only,
+                &path, &format, verbose, pub_only, &exclude,
             )
         }
         _ => {

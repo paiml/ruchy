@@ -47,6 +47,13 @@ rolling in the integration gate for rc.1.
   `QuoteStrategy` with injection-proof quoting (16 tests)
 
 ### Added
+- **[PROVABILITY-035] `--exclude` across all Pillar-1 commands**: Propagates
+  the `--exclude <PATTERN>` flag from `ruchy tier` to all four contracts
+  commands (`ruchy contracts sync/list/check`, `ruchy suggest-contracts`)
+  so teams get uniform UX for skipping test fixtures, vendored code, or
+  generated files. All four commands now accept repeated `--exclude`
+  flags, backed by the same `scan_with_options()` API. 101 total
+  sovereign + tier tests passing.
 - **[PROVABILITY-034] `ruchy tier --exclude <PATTERN>`**: Skip files
   whose full path contains the pattern. Repeatable flag for multiple
   patterns. Use cases: test-fixtures (`--exclude broken`), vendored
