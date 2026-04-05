@@ -48,6 +48,17 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-002] `ruchy tier` CI gate + per-function listing**: Two
+  flags landed on `ruchy tier`:
+    - `--fail-under N`: exits with error code 1 if `non_bronze_pct < N`,
+      emitting a clear "F1 falsifier breach" message. This makes the F1
+      metric directly enforceable in CI pipelines.
+    - `--list`: enumerates every classified function with its tier, file,
+      and name — actionable remediation for teams that need to know
+      which functions to contract next.
+  Function-name extraction added to the AST visitor. 4 new CLI tests
+  covering: --list enumeration, --fail-under breach (exit 1), threshold
+  met (exit 0), and zero-threshold edge case.
 - **[PROVABILITY-001] `ruchy tier <path>` CLI subcommand**: scans a file
   or directory of `.ruchy` files, classifies every function by §14.2 tier
   (Bronze/Silver/Gold/Platinum), and emits a distribution report. Supports

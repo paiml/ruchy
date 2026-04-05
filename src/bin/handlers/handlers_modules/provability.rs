@@ -12,6 +12,14 @@ use std::path::{Path, PathBuf};
 use ruchy::provability::{tier_of_function, Tier};
 use ruchy::{ExprKind, Parser};
 
+/// A single classified function.
+#[derive(Debug, Clone)]
+pub struct ClassifiedFunction {
+    pub file: PathBuf,
+    pub name: String,
+    pub tier: Tier,
+}
+
 /// Aggregate tier counts for a directory scan.
 #[derive(Debug, Default, Clone)]
 pub struct ProvabilityReport {
@@ -22,6 +30,8 @@ pub struct ProvabilityReport {
     pub gold: usize,
     pub platinum: usize,
     pub parse_errors: usize,
+    /// Per-function classifications (populated when caller needs detail).
+    pub functions: Vec<ClassifiedFunction>,
 }
 
 impl ProvabilityReport {
@@ -95,24 +105,38 @@ fn collect_ruchy_files(path: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-fn classify_source(src: &str, report: &mut ProvabilityReport) {
+fn classify_source(src: &str, file: &Path, report: &mut ProvabilityReport) {
     let mut parser = Parser::new(src);
     let Ok(expr) = parser.parse() else {
         report.parse_errors += 1;
         return;
     };
-    visit_expr(&expr, report);
+    visit_expr(&expr, file, report);
 }
 
-fn visit_expr(expr: &ruchy::Expr, report: &mut ProvabilityReport) {
+fn function_name(expr: &ruchy::Expr) -> Option<&str> {
+    match &expr.kind {
+        ExprKind::Function { name, .. } => Some(name.as_str()),
+        _ => None,
+    }
+}
+
+fn visit_expr(expr: &ruchy::Expr, file: &Path, report: &mut ProvabilityReport) {
     if matches!(expr.kind, ExprKind::Function { .. }) {
         if let Some(tier) = tier_of_function(expr) {
             report.record_tier(tier);
+            if let Some(name) = function_name(expr) {
+                report.functions.push(ClassifiedFunction {
+                    file: file.to_path_buf(),
+                    name: name.to_string(),
+                    tier,
+                });
+            }
         }
     }
     if let ExprKind::Block(exprs) = &expr.kind {
         for e in exprs {
-            visit_expr(e, report);
+            visit_expr(e, file, report);
         }
     }
 }
@@ -126,13 +150,18 @@ pub fn scan(path: &Path) -> Result<ProvabilityReport> {
         let src = std::fs::read_to_string(file)
             .with_context(|| format!("reading {}", file.display()))?;
         report.files_scanned += 1;
-        classify_source(&src, &mut report);
+        classify_source(&src, file, &mut report);
     }
     Ok(report)
 }
 
-/// CLI entry point for `ruchy provability <path>`.
-pub fn handle_provability_command(path: &Path, json: bool) -> Result<()> {
+/// CLI entry point for `ruchy tier <path>`.
+pub fn handle_provability_command(
+    path: &Path,
+    json: bool,
+    list: bool,
+    fail_under: Option<f64>,
+) -> Result<()> {
     let report = scan(path)?;
     if json {
         println!(
@@ -149,6 +178,23 @@ pub fn handle_provability_command(path: &Path, json: bool) -> Result<()> {
     } else {
         println!("Provability tier scan: {}", path.display());
         println!("{}", report.summary());
+        if list {
+            println!("\nfunctions:");
+            for f in &report.functions {
+                println!("  {:<10} {} ({})", f.tier.label(), f.name, f.file.display());
+            }
+        }
+    }
+    // Apply --fail-under gate (F1 CI enforcement).
+    if let Some(threshold) = fail_under {
+        let actual = report.non_bronze_pct();
+        if actual < threshold {
+            anyhow::bail!(
+                "non-bronze-pct {:.2}% is below threshold {:.2}% (F1 falsifier breach)",
+                actual,
+                threshold
+            );
+        }
     }
     Ok(())
 }
@@ -184,7 +230,7 @@ mod tests {
     #[test]
     fn test_classify_source_bare_fn_is_bronze() {
         let mut r = ProvabilityReport::default();
-        classify_source("fun f() { 1 }", &mut r);
+        classify_source("fun f() { 1 }", Path::new("test.ruchy"), &mut r);
         assert_eq!(r.functions_total, 1);
         assert_eq!(r.bronze, 1);
     }
@@ -194,6 +240,7 @@ mod tests {
         let mut r = ProvabilityReport::default();
         classify_source(
             "fun a() { 1 }\nfun b() { 2 }\n#[bronze]\nfun c() { 3 }",
+            Path::new("test.ruchy"),
             &mut r,
         );
         assert_eq!(r.functions_total, 3);
@@ -203,7 +250,7 @@ mod tests {
     #[test]
     fn test_classify_source_unparseable_increments_errors() {
         let mut r = ProvabilityReport::default();
-        classify_source("this is not valid ruchy @#$%", &mut r);
+        classify_source("this is not valid ruchy @#$%", Path::new("test.ruchy"), &mut r);
         assert_eq!(r.parse_errors, 1);
         assert_eq!(r.functions_total, 0);
     }

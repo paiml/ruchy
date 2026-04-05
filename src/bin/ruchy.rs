@@ -951,6 +951,12 @@ enum Commands {
         /// Emit JSON instead of human-readable text
         #[arg(long)]
         json: bool,
+        /// List each classified function with its tier
+        #[arg(long)]
+        list: bool,
+        /// Fail (exit non-zero) if non-bronze pct < N (F1 CI gate)
+        #[arg(long, value_name = "PCT")]
+        fail_under: Option<f64>,
     },
     /// Contract management (Pillar 1: Correctness)
     #[command(subcommand)]

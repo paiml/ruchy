@@ -49,6 +49,7 @@
 | §14.2 Tier classification runtime | DONE | `src/provability/tier.rs` ships `Tier`/`TierInputs`/`classify` (15 lib tests + 2 integration tests). Enforces spec precedence: @platinum-without-full-stack degrades, @gold-without-contracts degrades to Bronze. |
 | §14.2 AST-to-Tier bridge | DONE | `src/provability/from_ast.rs` ships `tier_of_function(&Expr)` — parsed Ruchy source → Tier. 8 lib + 4 integration tests. Enables future `ruchy provability` CLI subcommand. |
 | §14.5 F1 metric instrument (`ruchy tier`) | DONE | CLI subcommand scans a directory, reports tier distribution (text or JSON). Raw input to F1/F4 falsifier metrics. 9 unit + 6 CLI integration tests. |
+| §14.5 F1 CI gate (`ruchy tier --fail-under N`) | DONE | `--fail-under` makes F1 threshold enforceable in CI; `--list` enumerates each function with its tier for actionable remediation. 9 unit + 10 CLI integration tests. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---

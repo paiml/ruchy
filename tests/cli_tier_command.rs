@@ -95,6 +95,80 @@ fn test_tier_ignores_non_ruchy_files() {
 }
 
 #[test]
+fn test_tier_list_flag_enumerates_functions() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun alpha() { 1 }\n#[bronze]\nfun beta() { 2 }",
+    )
+    .unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--list")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("alpha"), "must list `alpha`: {stdout}");
+    assert!(stdout.contains("beta"), "must list `beta`: {stdout}");
+}
+
+#[test]
+fn test_tier_fail_under_breach_exits_nonzero() {
+    let tmp = TempDir::new().unwrap();
+    // Three Bronze functions -> non_bronze_pct = 0.0
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun a() { 1 }\nfun b() { 2 }\nfun c() { 3 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-under")
+        .arg("50")
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("F1 falsifier breach"));
+}
+
+#[test]
+fn test_tier_fail_under_threshold_met_exits_zero() {
+    let tmp = TempDir::new().unwrap();
+    // All Silver -> non_bronze_pct = 100.0
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "fun a() requires true ensures true { 1 }\nfun b() requires true { 2 }",
+    )
+    .unwrap();
+
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-under")
+        .arg("50")
+        .assert()
+        .success();
+}
+
+#[test]
+fn test_tier_fail_under_zero_always_passes() {
+    // Even 0% non-bronze should pass with threshold 0.0
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }").unwrap();
+    ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--fail-under")
+        .arg("0")
+        .assert()
+        .success();
+}
+
+#[test]
 fn test_tier_empty_directory() {
     let tmp = TempDir::new().unwrap();
     let output = ruchy_cmd()
