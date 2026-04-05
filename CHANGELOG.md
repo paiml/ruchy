@@ -48,6 +48,16 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-008] `ruchy tier --json` extended to all §14.5 metrics**:
+  JSON output now emits 18 keys in a single-line object — the complete
+  §14.5 metric surface. Enables CI dashboards, trend tracking, and
+  cross-repo rollups. Keys: files, loc, functions, bronze, silver, gold,
+  platinum, non_bronze_pct, non_trivial_contracts, trivial_contracts,
+  non_trivial_pct, contract_exempt, exempt_density_per_kloc, total_marked,
+  partial_marked, totality_unmarked, totality_violations, parse_errors.
+  Extracted into `ProvabilityReport::to_json()` method for reuse. 3 new
+  handler tests (key coverage, single-line format, correct values).
+  Handler tests: 31/31 passing.
 - **[PROVABILITY-007] §14.5 F2 escape-hatch density tracking**: `ruchy tier`
   now counts `#[contract_exempt]` attributes and LoC per file, reports
   density as exemptions per KLoC. Target per §14.5: ≤ 0.5; falsifies if

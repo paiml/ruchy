@@ -102,6 +102,51 @@ impl ProvabilityReport {
         (self.contract_exempt_count as f64 * 1000.0) / self.total_loc as f64
     }
 
+    /// Emit the full report as a single-line JSON object for dashboards.
+    #[must_use]
+    pub fn to_json(&self) -> String {
+        format!(
+            "{{\
+\"files\":{},\
+\"loc\":{},\
+\"functions\":{},\
+\"bronze\":{},\
+\"silver\":{},\
+\"gold\":{},\
+\"platinum\":{},\
+\"non_bronze_pct\":{:.2},\
+\"non_trivial_contracts\":{},\
+\"trivial_contracts\":{},\
+\"non_trivial_pct\":{:.2},\
+\"contract_exempt\":{},\
+\"exempt_density_per_kloc\":{:.2},\
+\"total_marked\":{},\
+\"partial_marked\":{},\
+\"totality_unmarked\":{},\
+\"totality_violations\":{},\
+\"parse_errors\":{}\
+}}",
+            self.files_scanned,
+            self.total_loc,
+            self.functions_total,
+            self.bronze,
+            self.silver,
+            self.gold,
+            self.platinum,
+            self.non_bronze_pct(),
+            self.non_trivial_contracts,
+            self.trivial_contracts,
+            self.non_trivial_pct(),
+            self.contract_exempt_count,
+            self.exempt_density_per_kloc(),
+            self.total_marked,
+            self.partial_marked,
+            self.totality_unmarked,
+            self.totality_violations().len(),
+            self.parse_errors,
+        )
+    }
+
     fn record_totality(&mut self, totality: Totality) {
         match totality {
             Totality::Total => self.total_marked += 1,
@@ -307,17 +352,7 @@ pub fn handle_provability_command(
 ) -> Result<()> {
     let report = scan(path)?;
     if json {
-        println!(
-            "{{\"files\":{},\"functions\":{},\"bronze\":{},\"silver\":{},\"gold\":{},\"platinum\":{},\"non_bronze_pct\":{:.2},\"parse_errors\":{}}}",
-            report.files_scanned,
-            report.functions_total,
-            report.bronze,
-            report.silver,
-            report.gold,
-            report.platinum,
-            report.non_bronze_pct(),
-            report.parse_errors,
-        );
+        println!("{}", report.to_json());
     } else {
         println!("Provability tier scan: {}", path.display());
         println!("{}", report.summary());
@@ -676,6 +711,63 @@ mod tests {
             &mut r,
         );
         assert_eq!(r.contract_exempt_count, 0);
+    }
+
+    #[test]
+    fn test_to_json_contains_all_metric_keys() {
+        let mut r = ProvabilityReport::default();
+        r.record_tier(Tier::Silver);
+        r.record_tier(Tier::Gold);
+        r.record_totality(Totality::Total);
+        r.total_loc = 500;
+        r.contract_exempt_count = 1;
+        r.non_trivial_contracts = 1;
+        r.trivial_contracts = 1;
+        let j = r.to_json();
+        // §14.5 metric keys
+        for key in [
+            "files",
+            "loc",
+            "functions",
+            "bronze",
+            "silver",
+            "gold",
+            "platinum",
+            "non_bronze_pct",
+            "non_trivial_contracts",
+            "trivial_contracts",
+            "non_trivial_pct",
+            "contract_exempt",
+            "exempt_density_per_kloc",
+            "total_marked",
+            "partial_marked",
+            "totality_unmarked",
+            "totality_violations",
+            "parse_errors",
+        ] {
+            assert!(j.contains(key), "JSON missing key `{key}`: {j}");
+        }
+    }
+
+    #[test]
+    fn test_to_json_is_single_line() {
+        let r = ProvabilityReport::default();
+        let j = r.to_json();
+        assert!(!j.contains('\n'), "JSON must be single-line: {j}");
+    }
+
+    #[test]
+    fn test_to_json_includes_correct_values() {
+        let mut r = ProvabilityReport::default();
+        r.record_tier(Tier::Silver);
+        r.record_tier(Tier::Silver);
+        r.record_tier(Tier::Bronze);
+        r.total_loc = 100;
+        let j = r.to_json();
+        assert!(j.contains("\"silver\":2"));
+        assert!(j.contains("\"bronze\":1"));
+        assert!(j.contains("\"functions\":3"));
+        assert!(j.contains("\"loc\":100"));
     }
 
     #[test]
