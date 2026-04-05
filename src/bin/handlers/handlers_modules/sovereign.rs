@@ -492,16 +492,77 @@ pub fn handle_contracts_check(path: &Path, min_coverage: Option<f64>) -> anyhow:
 }
 
 /// Handle `ruchy suggest-contracts <path>`.
+///
+/// Enumerates functions *without* contracts — the migration to-do list
+/// for §14.9. Output formats: text (default), json, yaml. Suggestions
+/// are signature-level scaffolding (empty requires/ensures stubs) that
+/// authors fill in. Actual contract *content* suggestion is future
+/// work (spec §14.9 targets ≥80% acceptance rate by 5.1).
 pub fn handle_suggest_contracts(path: &Path, format: &str, verbose: bool) -> anyhow::Result<()> {
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    println!("[ruchy suggest-contracts] {} (format={format})", path.display());
+    let report = crate::handlers::handlers_modules::provability::scan(path)?;
+    // Uncontracted = Bronze tier (by §14.2 definition).
+    let uncontracted: Vec<_> = report
+        .functions
+        .iter()
+        .filter(|f| !f.has_non_trivial_contract)
+        .collect();
     if verbose {
-        println!("  Analyzing function signatures and bodies...");
+        println!(
+            "[ruchy suggest-contracts] scanned {} files ({} functions, {} uncontracted)",
+            report.files_scanned,
+            report.functions_total,
+            uncontracted.len()
+        );
     }
-    println!("  0 functions analyzed, 0 suggestions generated.");
-    println!("  Tip: Use --format yaml to generate contract manifests directly.");
+    match format {
+        "json" => {
+            let mut out = String::from("[");
+            for (i, f) in uncontracted.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
+                }
+                out.push_str(&format!(
+                    "{{\"name\":\"{}\",\"file\":\"{}\",\"is_pub\":{}}}",
+                    f.name.replace('"', "\\\""),
+                    f.file.to_string_lossy().replace('"', "\\\""),
+                    f.is_pub,
+                ));
+            }
+            out.push(']');
+            println!("{out}");
+        }
+        "yaml" => {
+            println!("suggestions:");
+            if uncontracted.is_empty() {
+                println!("  []");
+            }
+            for f in &uncontracted {
+                println!("  - name: \"{}\"", f.name);
+                println!("    file: \"{}\"", f.file.display());
+                println!("    is_pub: {}", f.is_pub);
+                println!("    suggested_requires: \"\"  # fill in precondition");
+                println!("    suggested_ensures: \"\"   # fill in postcondition");
+            }
+        }
+        _ => {
+            println!("[ruchy suggest-contracts] {} (format={format})", path.display());
+            println!(
+                "  {} function(s) without contracts ({} total):",
+                uncontracted.len(),
+                report.functions_total
+            );
+            for f in &uncontracted {
+                let vis = if f.is_pub { "pub " } else { "" };
+                println!("    {vis}fun {} ({})", f.name, f.file.display());
+            }
+            if !uncontracted.is_empty() {
+                println!("\n  Tip: Use --format yaml to generate contract-manifest scaffolding.");
+            }
+        }
+    }
     Ok(())
 }
 
@@ -828,6 +889,46 @@ mod tests {
     fn test_suggest_contracts_verbose() {
         let f = temp_file();
         assert!(handle_suggest_contracts(f.path(), "yaml", true).is_ok());
+    }
+
+    #[test]
+    fn test_suggest_contracts_lists_uncontracted_text() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("a.ruchy"),
+            "fun needs_contract() { 1 }\nfun has_one() requires x > 0 { 2 }",
+        )
+        .unwrap();
+        assert!(handle_suggest_contracts(tmp.path(), "text", false).is_ok());
+    }
+
+    #[test]
+    fn test_suggest_contracts_json_format() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("a.ruchy"),
+            "pub fun needs_it() { 1 }",
+        )
+        .unwrap();
+        assert!(handle_suggest_contracts(tmp.path(), "json", false).is_ok());
+    }
+
+    #[test]
+    fn test_suggest_contracts_yaml_format() {
+        let tmp = tempfile::tempdir().unwrap();
+        std::fs::write(
+            tmp.path().join("a.ruchy"),
+            "fun needs_it() { 1 }",
+        )
+        .unwrap();
+        assert!(handle_suggest_contracts(tmp.path(), "yaml", false).is_ok());
+    }
+
+    #[test]
+    fn test_suggest_contracts_empty_dir_yaml_ok() {
+        let tmp = tempfile::tempdir().unwrap();
+        // No .ruchy files → empty yaml array.
+        assert!(handle_suggest_contracts(tmp.path(), "yaml", false).is_ok());
     }
 
     #[test]

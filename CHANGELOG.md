@@ -48,6 +48,20 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-026] `ruchy suggest-contracts` lists uncontracted fns**:
+  Replaces the stub "0 functions analyzed" with a real migration to-do
+  list per §14.9. Enumerates functions without contracts (Bronze tier)
+  in three formats:
+
+    text: human-readable "pub fun validate (src/foo.ruchy)"
+    json: array of {name, file, is_pub} objects
+    yaml: scaffolding with suggested_requires/ensures stubs to fill in
+
+  The YAML mode produces contract-manifest scaffolding that authors
+  fill in during migration to Silver/Gold tiers. Actual contract
+  *content* inference (the §14.9 80% acceptance goal) is future work.
+
+  5 new sovereign tests. 44/44 sovereign tests passing.
 - **[PROVABILITY-025] `ruchy contracts sync` writes real YAML manifests**:
   Replaces the stub "0 contracts found, 0 manifests generated" with
   real manifest generation. Groups contracted functions by source file
