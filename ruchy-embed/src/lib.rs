@@ -105,6 +105,8 @@ pub enum Value {
     List(Vec<Value>),
     /// Fixed-arity heterogeneous collection (maps to `RuchyValue::Tuple`).
     Tuple(Vec<Value>),
+    /// String-keyed map (maps to `RuchyValue::Object`).
+    Map(Vec<(String, Value)>),
     None,
 }
 
@@ -300,6 +302,13 @@ fn embed_to_ruchy(v: &Value) -> RuchyValue {
             let arr: Vec<RuchyValue> = xs.iter().map(embed_to_ruchy).collect();
             RuchyValue::Tuple(arr.into())
         }
+        Value::Map(entries) => {
+            let map: std::collections::HashMap<String, RuchyValue> = entries
+                .iter()
+                .map(|(k, v)| (k.clone(), embed_to_ruchy(v)))
+                .collect();
+            RuchyValue::Object(std::sync::Arc::new(map))
+        }
         Value::None => RuchyValue::Nil,
     }
 }
@@ -315,6 +324,15 @@ fn ruchy_to_embed(v: RuchyValue) -> Value {
         }
         RuchyValue::Tuple(xs) => {
             Value::Tuple(xs.iter().cloned().map(ruchy_to_embed).collect())
+        }
+        RuchyValue::Object(entries) => {
+            let mut pairs: Vec<(String, Value)> = entries
+                .iter()
+                .map(|(k, v)| (k.clone(), ruchy_to_embed(v.clone())))
+                .collect();
+            // Stable ordering for deterministic tests.
+            pairs.sort_by(|a, b| a.0.cmp(&b.0));
+            Value::Map(pairs)
         }
         RuchyValue::Nil => Value::None,
         other => Value::String(format!("{other:?}")),
