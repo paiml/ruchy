@@ -60,6 +60,7 @@
 | §14.5 F11 tracking (`#[diff_exempt]` density) | DONE (reporter) | Parallels F2: counts `#[diff_exempt]` escape hatches for §14.10.4 differential gate. Baseline density observable BEFORE §14.10.4 gate ships. 4 new handler tests. JSON output now 20 keys. |
 | §14.5 F4 proxy: `pub_bronze` count + `--public-only` filter | DONE | `ruchy tier` now tracks Bronze-tier `pub` functions (F4 metric: "stdlib Bronze count → 0 after 5.2"). `--public-only` restricts the scan to `pub` fns — the surface area that matters for §14.5 F4. 5 new handler tests + 2 new CLI tests. JSON output now 21 keys. |
 | §14.5 F4 CI gate (`--fail-pub-bronze-above N`) | DONE | Fifth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F4 breach" when `pub_bronze > N`. Combines cleanly with `--public-only`. 1 new handler test + 3 new CLI tests. |
+| §14.5 F4 summary + list UX | DONE | `ruchy tier` human summary now includes `public API (F4 proxy): pub Bronze: N`. `--list` output marks `pub` functions with a `pub` column. 1 new handler test + 2 new CLI tests. |
 | Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
 
 ---

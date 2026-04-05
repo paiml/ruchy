@@ -48,6 +48,12 @@ rolling in the integration gate for rc.1.
 
 ### Changed
 - Workspace version bumped to 5.0.0-beta.1 (from 5.0.0-alpha.1)
+- **[PROVABILITY-013] §14.5 F4 summary + list UX**: `ruchy tier` human
+  summary now prints a "public API (F4 proxy)" section with the
+  `pub Bronze: N` count. `--list` output adds a `pub` column so operators
+  can eyeball which listed functions are public API vs private helpers.
+  1 new handler test + 2 new CLI tests. 26/26 CLI tier tests passing,
+  46/46 handler tests passing.
 - **[PROVABILITY-012] §14.5 F4 CI gate (`--fail-pub-bronze-above N`)**:
   Fifth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F4 breach" if
   `pub_bronze` count exceeds N. Teams set `--fail-pub-bronze-above 0` to

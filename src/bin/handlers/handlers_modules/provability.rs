@@ -240,7 +240,7 @@ impl ProvabilityReport {
     #[must_use]
     pub fn summary(&self) -> String {
         format!(
-            "files: {}\nloc: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\nexemptions (F2):\n  #[contract_exempt]: {}\n  density / KLoC:     {:.2}\ndiff exemptions (F11):\n  #[diff_exempt]: {}\n  density / KLoC: {:.2}\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
+            "files: {}\nloc: {}\nfunctions: {}\n  bronze:   {} ({:.1}%)\n  silver:   {} ({:.1}%)\n  gold:     {} ({:.1}%)\n  platinum: {} ({:.1}%)\nnon-bronze: {:.1}%\ncontract triviality (F1):\n  non-trivial: {}\n  trivial:     {}\n  non-trivial %: {:.1}%\nexemptions (F2):\n  #[contract_exempt]: {}\n  density / KLoC:     {:.2}\ndiff exemptions (F11):\n  #[diff_exempt]: {}\n  density / KLoC: {:.2}\npublic API (F4 proxy):\n  pub Bronze: {}\ntotality:\n  @total:    {}\n  @partial:  {}\n  unmarked:  {}\nparse errors: {}",
             self.files_scanned,
             self.total_loc,
             self.functions_total,
@@ -260,6 +260,7 @@ impl ProvabilityReport {
             self.exempt_density_per_kloc(),
             self.diff_exempt_count,
             self.diff_exempt_density_per_kloc(),
+            self.pub_bronze_count(),
             self.total_marked,
             self.partial_marked,
             self.totality_unmarked,
@@ -445,9 +446,10 @@ pub fn handle_provability_command(
             println!("\nfunctions:");
             for f in &report.functions {
                 println!(
-                    "  {:<10} {:<10} {} ({})",
+                    "  {:<10} {:<10} {:<4} {} ({})",
                     f.tier.label(),
                     f.totality.label(),
+                    if f.is_pub { "pub" } else { "" },
                     f.name,
                     f.file.display()
                 );
@@ -1003,5 +1005,14 @@ mod tests {
         let s = r.summary();
         assert!(s.contains("functions: 1"));
         assert!(s.contains("silver:"));
+    }
+
+    #[test]
+    fn test_summary_contains_pub_bronze_section() {
+        let mut r = ProvabilityReport::default();
+        classify_source("pub fun a() { 1 }", Path::new("t.ruchy"), &mut r);
+        let s = r.summary();
+        assert!(s.contains("public API (F4 proxy)"));
+        assert!(s.contains("pub Bronze: 1"));
     }
 }

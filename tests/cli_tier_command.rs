@@ -116,6 +116,47 @@ fn test_tier_list_flag_enumerates_functions() {
 }
 
 #[test]
+fn test_tier_list_marks_pub_functions() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(
+        tmp.path().join("a.ruchy"),
+        "pub fun exposed() { 1 }\nfun hidden() { 2 }",
+    )
+    .unwrap();
+
+    let output = ruchy_cmd()
+        .arg("tier")
+        .arg(tmp.path())
+        .arg("--list")
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // `pub` marker must appear on the `exposed` line
+    let exposed_line = stdout
+        .lines()
+        .find(|l| l.contains("exposed"))
+        .expect("exposed should be listed");
+    assert!(exposed_line.contains("pub"), "exposed line: {exposed_line}");
+    let hidden_line = stdout
+        .lines()
+        .find(|l| l.contains("hidden"))
+        .expect("hidden should be listed");
+    assert!(!hidden_line.contains("pub"), "hidden line: {hidden_line}");
+}
+
+#[test]
+fn test_tier_summary_contains_pub_bronze_line() {
+    let tmp = TempDir::new().unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "pub fun a() { 1 }").unwrap();
+    let output = ruchy_cmd().arg("tier").arg(tmp.path()).output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("public API (F4 proxy)"));
+    assert!(stdout.contains("pub Bronze: 1"));
+}
+
+#[test]
 fn test_tier_fail_under_breach_exits_nonzero() {
     let tmp = TempDir::new().unwrap();
     // Three Bronze functions -> non_bronze_pct = 0.0
