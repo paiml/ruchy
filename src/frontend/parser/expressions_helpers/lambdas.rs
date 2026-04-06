@@ -944,6 +944,7 @@ mod tests {
                         | "in"
                         | "as"
                         | "is"
+                        | "ask"
                         | "self"
                         | "super"
                         | "mod"
@@ -999,6 +1000,7 @@ mod tests {
                             | "in"
                             | "as"
                             | "is"
+                            | "ask"
                             | "self"
                             | "super"
                             | "mod"
@@ -1031,8 +1033,8 @@ mod tests {
             let keywords = vec![
                 "fn", "fun", "let", "var", "if", "else", "for", "while", "loop", "match", "break",
                 "continue", "return", "async", "await", "try", "catch", "throw", "in", "as", "is",
-                "self", "super", "mod", "use", "pub", "const", "static", "mut", "ref", "type",
-                "struct", "enum", "trait", "impl",
+                "ask", "self", "super", "mod", "use", "pub", "const", "static", "mut", "ref",
+                "type", "struct", "enum", "trait", "impl",
             ];
             for kw in &keywords {
                 // Simulate the filter predicate
@@ -1058,6 +1060,7 @@ mod tests {
                         | "in"
                         | "as"
                         | "is"
+                        | "ask"
                         | "self"
                         | "super"
                         | "mod"
@@ -1101,6 +1104,7 @@ mod tests {
                         | "in"
                         | "as"
                         | "is"
+                        | "ask"
                         | "self"
                         | "super"
                         | "mod"
