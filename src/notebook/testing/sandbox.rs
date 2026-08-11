@@ -685,12 +685,14 @@ struct MemoryLimiter {
     memory_limit: usize,
 }
 impl wasmtime::ResourceLimiter for MemoryLimiter {
+    // wasmtime 47 narrowed ResourceLimiter's error type from anyhow::Error to
+    // wasmtime::Error. The bodies are unchanged; only the signature moved.
     fn memory_growing(
         &mut self,
         _current: usize,
         desired: usize,
         _max: Option<usize>,
-    ) -> anyhow::Result<bool> {
+    ) -> wasmtime::Result<bool> {
         Ok(desired <= self.memory_limit)
     }
     fn table_growing(
@@ -698,7 +700,7 @@ impl wasmtime::ResourceLimiter for MemoryLimiter {
         _current: usize,
         _desired: usize,
         _max: Option<usize>,
-    ) -> anyhow::Result<bool> {
+    ) -> wasmtime::Result<bool> {
         Ok(true)
     }
 }
