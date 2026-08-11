@@ -28,3 +28,29 @@ jobs:
       repo: ${{ github.event.repository.name }}
     secrets: inherit
 
+
+  # The paiml org ruleset "Green Main — unified gate enforcement" requires a
+  # status context named exactly `gate`. Repos that define their CI jobs
+  # directly (e.g. paiml/infra) emit that name naturally. ruchy CALLS the
+  # reusable sovereign-ci workflow, so its aggregate job reports as `ci / gate`
+  # — a different context — and the required `gate` check therefore NEVER
+  # appeared on any ruchy PR. The requirement was permanently unsatisfiable:
+  # every PR sat at mergeStateStatus=BLOCKED with "the base branch policy
+  # prohibits the merge", and the only way anything landed was an admin bypass.
+  #
+  # This job re-exports the reusable workflow's verdict under the org's
+  # expected name. It does not weaken the gate: it fails whenever the called
+  # workflow does not succeed. Modelled on paiml/infra's ci.yml gate job.
+  gate:
+    name: gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [ci]
+    steps:
+      - name: Check called workflow result
+        run: |
+          if [ "${{ needs.ci.result }}" != "success" ]; then
+            echo "::error::sovereign-ci did not succeed (result: ${{ needs.ci.result }})"
+            exit 1
+          fi
+          echo "sovereign-ci succeeded"
