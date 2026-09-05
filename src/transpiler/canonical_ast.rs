@@ -134,180 +134,206 @@ impl AstNormalizer {
     pub fn normalize(&mut self, expr: &Expr) -> CoreExpr {
         self.desugar_and_convert(expr)
     }
-    /// Desugar surface syntax and convert to core form with De Bruijn indices
-    #[allow(clippy::too_many_lines)] // Complex but necessary for complete desugaring
+    /// Desugar surface syntax and convert to core form with De Bruijn indices.
+    ///
+    /// One arm per surface construct; each arm delegates to a `convert_*` helper so
+    /// the dispatch stays flat (PMAT-099 split of a cognitive-26 function).
     fn desugar_and_convert(&mut self, expr: &Expr) -> CoreExpr {
         match &expr.kind {
             ExprKind::Literal(lit) => Self::convert_literal(lit),
-            ExprKind::Identifier(name) => {
-                if let Some(idx) = self.context.lookup(name) {
-                    CoreExpr::Var(idx)
-                } else {
-                    // Free variable - this shouldn't happen in well-formed programs
-                    // For REPL, we might want to handle this differently
-                    panic!("Unbound variable: {name}");
-                }
-            }
-            ExprKind::Binary { left, op, right } => {
-                use crate::frontend::ast::BinaryOp;
-                let l = self.desugar_and_convert(left);
-                let r = self.desugar_and_convert(right);
-                let prim = match op {
-                    BinaryOp::Add => PrimOp::Add,
-                    BinaryOp::Subtract => PrimOp::Sub,
-                    BinaryOp::Multiply => PrimOp::Mul,
-                    BinaryOp::Divide => PrimOp::Div,
-                    BinaryOp::Modulo => PrimOp::Mod,
-                    BinaryOp::Power => PrimOp::Pow,
-                    BinaryOp::Equal => PrimOp::Eq,
-                    BinaryOp::NotEqual => PrimOp::Ne,
-                    BinaryOp::Less => PrimOp::Lt,
-                    BinaryOp::LessEqual => PrimOp::Le,
-                    BinaryOp::Greater => PrimOp::Gt,
-                    BinaryOp::GreaterEqual => PrimOp::Ge,
-                    BinaryOp::Gt => PrimOp::Gt, // Alias for Greater
-                    BinaryOp::And => PrimOp::And,
-                    BinaryOp::Or => PrimOp::Or,
-                    BinaryOp::NullCoalesce => PrimOp::NullCoalesce,
-                    // Bitwise operations not yet in core language
-                    BinaryOp::BitwiseAnd
-                    | BinaryOp::BitwiseOr
-                    | BinaryOp::BitwiseXor
-                    | BinaryOp::LeftShift
-                    | BinaryOp::RightShift => {
-                        panic!("Bitwise operations not yet supported in core language")
-                    }
-                    // Actor operations not yet in core language
-                    BinaryOp::Send => {
-                        panic!("Actor operations not yet supported in core language")
-                    }
-                    // Containment check - not yet in core language
-                    BinaryOp::In => {
-                        panic!("Containment 'in' operator not yet supported in core language")
-                    }
-                };
-                CoreExpr::Prim(prim, vec![l, r])
-            }
+            ExprKind::Identifier(name) => self.convert_identifier(name),
+            ExprKind::Binary { left, op, right } => self.convert_binary(left, op, right),
             ExprKind::Let {
                 name, value, body, ..
-            } => {
-                let val = self.desugar_and_convert(value);
-                // Push binding for body evaluation
-                self.context.push(name.clone());
-                let bod = self.desugar_and_convert(body);
-                self.context.pop();
-                CoreExpr::Let {
-                    name: Some(name.clone()),
-                    value: Box::new(val),
-                    body: Box::new(bod),
-                }
-            }
-            ExprKind::Lambda { params, body } => {
-                // Desugar multi-param lambda to nested single-param lambdas
-                // \x y z -> body becomes \x -> \y -> \z -> body
-                let mut result = self.desugar_and_convert(body);
-                for param in params.iter().rev() {
-                    self.context.push(param.name());
-                    result = CoreExpr::Lambda {
-                        param_name: Some(param.name()),
-                        body: Box::new(result),
-                    };
-                    // Note: We don't pop here because we're building inside-out
-                }
-                // Pop all the params we pushed
-                for _ in params {
-                    self.context.pop();
-                }
-                result
-            }
+            } => self.convert_let(name, value, body),
+            ExprKind::Lambda { params, body } => self.convert_lambda(params, body),
             ExprKind::Function {
                 name, params, body, ..
-            } => {
-                // Functions become let-bound lambdas
-                // fun f(x, y) { body } becomes let f = \x y -> body
-                // First, add all parameters to the context
-                for param in params {
-                    self.context.push(param.name());
-                }
-                // Process the body with parameters in scope
-                let body_core = self.desugar_and_convert(body);
-                // Remove parameters from context
-                for _ in params {
-                    self.context.pop();
-                }
-                // Create nested lambdas for each parameter
-                let mut lambda_body = body_core;
-                for param in params.iter().rev() {
-                    lambda_body = CoreExpr::Lambda {
-                        param_name: Some(param.name()),
-                        body: Box::new(lambda_body),
-                    };
-                }
-                // Wrap in a let binding
-                // For REPL context, we might want to handle this differently
-                CoreExpr::Let {
-                    name: Some(name.clone()),
-                    value: Box::new(lambda_body),
-                    body: Box::new(CoreExpr::Literal(CoreLiteral::Unit)), // Empty body for top-level
-                }
-            }
-            ExprKind::Call { func, args } => {
-                // Desugar multi-arg call to nested applications
-                // f(a, b, c) becomes (((f a) b) c)
-                let mut result = self.desugar_and_convert(func);
-                for arg in args {
-                    let arg_core = self.desugar_and_convert(arg);
-                    result = CoreExpr::App(Box::new(result), Box::new(arg_core));
-                }
-                result
-            }
+            } => self.convert_function(name, params, body),
+            ExprKind::Call { func, args } => self.convert_call(func, args),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
-            } => {
-                let cond = self.desugar_and_convert(condition);
-                let then_b = self.desugar_and_convert(then_branch);
-                let else_b = else_branch
-                    .as_ref()
-                    .map_or(CoreExpr::Literal(CoreLiteral::Unit), |e| {
-                        self.desugar_and_convert(e)
-                    });
-                CoreExpr::Prim(PrimOp::If, vec![cond, then_b, else_b])
-            }
-            ExprKind::List(elements) => {
-                // Desugar list to array operations
-                let mut result = CoreExpr::Prim(PrimOp::ArrayNew, vec![]);
-                for elem in elements {
-                    let elem_core = self.desugar_and_convert(elem);
-                    // Each element becomes an append operation
-                    // This is simplified; real implementation would be more efficient
-                    result = CoreExpr::Prim(PrimOp::ArrayNew, vec![result, elem_core]);
-                }
-                result
-            }
-            ExprKind::Block(exprs) => {
-                // For a block, we evaluate all expressions but return only the last one
-                // This is a simplification - a full implementation would handle statements
-                if exprs.is_empty() {
-                    CoreExpr::Literal(CoreLiteral::Unit)
-                } else if exprs.len() == 1 {
-                    self.desugar_and_convert(&exprs[0])
-                } else {
-                    // For now, just return the last expression
-                    // A complete implementation would handle side effects
-                    if let Some(last) = exprs.last() {
-                        self.desugar_and_convert(last)
-                    } else {
-                        CoreExpr::Literal(CoreLiteral::Unit)
-                    }
-                }
-            }
+            } => self.convert_if(condition, then_branch, else_branch.as_deref()),
+            ExprKind::List(elements) => self.convert_list(elements),
+            ExprKind::Block(exprs) => self.convert_block(exprs),
             _ => {
-                // For now, panic on unsupported constructs
-                // In production, we'd handle all cases
+                // Unsupported constructs are a hard error in the normalizer.
                 panic!("Unsupported expression kind in normalizer: {:?}", expr.kind);
             }
+        }
+    }
+
+    /// A bound identifier becomes its De Bruijn index; an unbound one is a hard error.
+    fn convert_identifier(&mut self, name: &str) -> CoreExpr {
+        if let Some(idx) = self.context.lookup(name) {
+            CoreExpr::Var(idx)
+        } else {
+            // Free variable - this shouldn't happen in well-formed programs
+            // For REPL, we might want to handle this differently
+            panic!("Unbound variable: {name}");
+        }
+    }
+
+    /// The core primitive for a surface binary operator; operators with no core form
+    /// are a hard error.
+    fn binary_prim(op: &crate::frontend::ast::BinaryOp) -> PrimOp {
+        use crate::frontend::ast::BinaryOp;
+        match op {
+            BinaryOp::Add => PrimOp::Add,
+            BinaryOp::Subtract => PrimOp::Sub,
+            BinaryOp::Multiply => PrimOp::Mul,
+            BinaryOp::Divide => PrimOp::Div,
+            BinaryOp::Modulo => PrimOp::Mod,
+            BinaryOp::Power => PrimOp::Pow,
+            BinaryOp::Equal => PrimOp::Eq,
+            BinaryOp::NotEqual => PrimOp::Ne,
+            BinaryOp::Less => PrimOp::Lt,
+            BinaryOp::LessEqual => PrimOp::Le,
+            BinaryOp::Greater => PrimOp::Gt,
+            BinaryOp::GreaterEqual => PrimOp::Ge,
+            BinaryOp::Gt => PrimOp::Gt, // Alias for Greater
+            BinaryOp::And => PrimOp::And,
+            BinaryOp::Or => PrimOp::Or,
+            BinaryOp::NullCoalesce => PrimOp::NullCoalesce,
+            // Bitwise operations not yet in core language
+            BinaryOp::BitwiseAnd
+            | BinaryOp::BitwiseOr
+            | BinaryOp::BitwiseXor
+            | BinaryOp::LeftShift
+            | BinaryOp::RightShift => {
+                panic!("Bitwise operations not yet supported in core language")
+            }
+            // Actor operations not yet in core language
+            BinaryOp::Send => {
+                panic!("Actor operations not yet supported in core language")
+            }
+            // Containment check - not yet in core language
+            BinaryOp::In => {
+                panic!("Containment 'in' operator not yet supported in core language")
+            }
+        }
+    }
+
+    fn convert_binary(
+        &mut self,
+        left: &Expr,
+        op: &crate::frontend::ast::BinaryOp,
+        right: &Expr,
+    ) -> CoreExpr {
+        let l = self.desugar_and_convert(left);
+        let r = self.desugar_and_convert(right);
+        CoreExpr::Prim(Self::binary_prim(op), vec![l, r])
+    }
+
+    fn convert_let(&mut self, name: &str, value: &Expr, body: &Expr) -> CoreExpr {
+        let val = self.desugar_and_convert(value);
+        // Push binding for body evaluation
+        self.context.push(name.to_string());
+        let bod = self.desugar_and_convert(body);
+        self.context.pop();
+        CoreExpr::Let {
+            name: Some(name.to_string()),
+            value: Box::new(val),
+            body: Box::new(bod),
+        }
+    }
+
+    /// `\x y z -> body` becomes `\x -> \y -> \z -> body`.
+    fn convert_lambda(&mut self, params: &[crate::frontend::ast::Param], body: &Expr) -> CoreExpr {
+        let mut result = self.desugar_and_convert(body);
+        for param in params.iter().rev() {
+            self.context.push(param.name());
+            result = CoreExpr::Lambda {
+                param_name: Some(param.name()),
+                body: Box::new(result),
+            };
+            // Note: We don't pop here because we're building inside-out
+        }
+        // Pop all the params we pushed
+        for _ in params {
+            self.context.pop();
+        }
+        result
+    }
+
+    /// `fun f(x, y) { body }` becomes `let f = \x y -> body` (unit body at top level).
+    fn convert_function(
+        &mut self,
+        name: &str,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+    ) -> CoreExpr {
+        // First, add all parameters to the context
+        for param in params {
+            self.context.push(param.name());
+        }
+        // Process the body with parameters in scope
+        let body_core = self.desugar_and_convert(body);
+        // Remove parameters from context
+        for _ in params {
+            self.context.pop();
+        }
+        // Create nested lambdas for each parameter
+        let mut lambda_body = body_core;
+        for param in params.iter().rev() {
+            lambda_body = CoreExpr::Lambda {
+                param_name: Some(param.name()),
+                body: Box::new(lambda_body),
+            };
+        }
+        // Wrap in a let binding
+        // For REPL context, we might want to handle this differently
+        CoreExpr::Let {
+            name: Some(name.to_string()),
+            value: Box::new(lambda_body),
+            body: Box::new(CoreExpr::Literal(CoreLiteral::Unit)), // Empty body for top-level
+        }
+    }
+
+    /// `f(a, b, c)` becomes `(((f a) b) c)`.
+    fn convert_call(&mut self, func: &Expr, args: &[Expr]) -> CoreExpr {
+        let mut result = self.desugar_and_convert(func);
+        for arg in args {
+            let arg_core = self.desugar_and_convert(arg);
+            result = CoreExpr::App(Box::new(result), Box::new(arg_core));
+        }
+        result
+    }
+
+    fn convert_if(
+        &mut self,
+        condition: &Expr,
+        then_branch: &Expr,
+        else_branch: Option<&Expr>,
+    ) -> CoreExpr {
+        let cond = self.desugar_and_convert(condition);
+        let then_b = self.desugar_and_convert(then_branch);
+        let else_b = else_branch.map_or(CoreExpr::Literal(CoreLiteral::Unit), |e| {
+            self.desugar_and_convert(e)
+        });
+        CoreExpr::Prim(PrimOp::If, vec![cond, then_b, else_b])
+    }
+
+    /// A list literal becomes a chain of `ArrayNew` primitives (one per element).
+    fn convert_list(&mut self, elements: &[Expr]) -> CoreExpr {
+        let mut result = CoreExpr::Prim(PrimOp::ArrayNew, vec![]);
+        for elem in elements {
+            let elem_core = self.desugar_and_convert(elem);
+            // Each element becomes an append operation
+            // This is simplified; real implementation would be more efficient
+            result = CoreExpr::Prim(PrimOp::ArrayNew, vec![result, elem_core]);
+        }
+        result
+    }
+
+    /// A block lowers to its last expression (unit when empty); earlier expressions
+    /// are not represented in core form.
+    fn convert_block(&mut self, exprs: &[Expr]) -> CoreExpr {
+        match exprs.last() {
+            None => CoreExpr::Literal(CoreLiteral::Unit),
+            Some(last) => self.desugar_and_convert(last),
         }
     }
     fn convert_literal(lit: &Literal) -> CoreExpr {
@@ -320,7 +346,8 @@ impl AstNormalizer {
             Literal::Byte(b) => CoreLiteral::Integer(i64::from(*b)), // Represent byte as integer in canonical AST
             Literal::Unit => CoreLiteral::Unit,
             Literal::Null => CoreLiteral::Unit,
-            Literal::Atom(_) => CoreLiteral::Unit, // TODO: Support atoms in canonical AST
+            // Atoms have no core-form representation yet and lower to Unit (PMAT-109).
+            Literal::Atom(_) => CoreLiteral::Unit,
         })
     }
 }

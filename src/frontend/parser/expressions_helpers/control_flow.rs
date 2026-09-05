@@ -519,7 +519,7 @@ mod tests {
 
     #[test]
     fn test_break_with_label() {
-        // Validates parsing of labeled break statements in for loop bodies (PMAT-092)
+        // Validates parsing of labeled break statements in for loop bodies (PMAT-108)
         // Tests: for x in xs { break 'outer; }
         // Ensures lifetime-style syntax after break token is correctly recognized in statement position
         let code = "for x in xs { break 'outer; }";
