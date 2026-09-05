@@ -72,11 +72,7 @@ fn test_pillar_2_compute_transpile_surface() {
     // Basic numeric script must transpile; SIMD lowering is opt-in and
     // exercised by dedicated trueno bridge tests.
     let (_dir, path) = write_script("let x = 1 + 2\n");
-    ruchy_cmd()
-        .arg("transpile")
-        .arg(&path)
-        .assert()
-        .success();
+    ruchy_cmd().arg("transpile").arg(&path).assert().success();
 }
 
 // ============================================================================
@@ -107,11 +103,7 @@ fn test_pillar_3_infrastructure_infra_subcommands() {
 
 #[test]
 fn test_pillar_4_scripting_purify_cli_available() {
-    ruchy_cmd()
-        .arg("purify")
-        .arg("--help")
-        .assert()
-        .success();
+    ruchy_cmd().arg("purify").arg("--help").assert().success();
 }
 
 // ============================================================================
@@ -190,7 +182,12 @@ fn test_pillar_8_testing_probar_flags_registered() {
     // discover them without grepping source.
     let output = ruchy_cmd().arg("test").arg("--help").output().unwrap();
     let help = String::from_utf8_lossy(&output.stdout);
-    for flag in ["--probar", "--playbook", "--visual-regression", "--mutations"] {
+    for flag in [
+        "--probar",
+        "--playbook",
+        "--visual-regression",
+        "--mutations",
+    ] {
         assert!(
             help.contains(flag),
             "test --help must advertise {flag}, got: {help}"

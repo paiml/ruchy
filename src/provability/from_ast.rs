@@ -105,9 +105,7 @@ mod tests {
 
     #[test]
     fn test_decorator_names_reads_all_attributes() {
-        let f = first_function_in_block(parse(
-            "#[bronze]\n#[verified]\n#[total]\nfun f() { 1 }",
-        ));
+        let f = first_function_in_block(parse("#[bronze]\n#[verified]\n#[total]\nfun f() { 1 }"));
         let names = decorator_names(&f);
         assert!(names.contains(&"bronze"));
         assert!(names.contains(&"verified"));

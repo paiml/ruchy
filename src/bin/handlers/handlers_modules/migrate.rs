@@ -64,7 +64,9 @@ impl MigrateResult {
     pub fn summary(&self) -> String {
         format!(
             "Migration complete: {} files scanned, {} files modified, {} identifiers renamed.",
-            self.files_scanned, self.files_modified, self.renames.len()
+            self.files_scanned,
+            self.files_modified,
+            self.renames.len()
         )
     }
 }
@@ -100,6 +102,24 @@ fn collect_ruchy_files_recursive(dir: &Path, files: &mut Vec<PathBuf>) {
 /// keyword in its syntactic position (e.g., `requires` after `fun` declaration
 /// is a contract keyword, not an identifier).
 fn is_identifier_usage(line: &str, start: usize, word: &str) -> bool {
+    let (before, after) = split_around_word(line, start, word);
+
+    // Check word boundaries
+    if !is_whole_word(before, after, start) {
+        return false;
+    }
+
+    // Contract keywords after fun declaration are NOT identifiers
+    let trimmed_before = before.trim_end();
+    if is_contract_keyword_position(word, trimmed_before) {
+        return false;
+    }
+
+    is_binding_position(trimmed_before, after)
+}
+
+/// Split `line` into the text before `start` and the text after the `word` at `start`.
+fn split_around_word<'a>(line: &'a str, start: usize, word: &str) -> (&'a str, &'a str) {
     let before = &line[..start];
     let after_end = start + word.len();
     let after = if after_end < line.len() {
@@ -107,41 +127,40 @@ fn is_identifier_usage(line: &str, start: usize, word: &str) -> bool {
     } else {
         ""
     };
+    (before, after)
+}
 
-    // Check word boundaries
-    if start > 0 {
-        let prev_char = before.chars().next_back().unwrap_or(' ');
-        if prev_char.is_alphanumeric() || prev_char == '_' {
-            return false;
-        }
+/// Check that the word occupies a whole token: no alphanumeric or `_` on either side.
+fn is_whole_word(before: &str, after: &str, start: usize) -> bool {
+    if start > 0 && is_word_char(before.chars().next_back().unwrap_or(' ')) {
+        return false;
     }
-    if let Some(next_char) = after.chars().next() {
-        if next_char.is_alphanumeric() || next_char == '_' {
-            return false;
-        }
-    }
+    !after.chars().next().is_some_and(is_word_char)
+}
 
-    // Contract keywords after fun declaration are NOT identifiers
-    let trimmed_before = before.trim_end();
+/// Check whether `c` may appear inside an identifier.
+fn is_word_char(c: char) -> bool {
+    c.is_alphanumeric() || c == '_'
+}
+
+/// Check whether a contract keyword sits in keyword position rather than identifier position.
+/// A keyword at the start of a line or after `:`, `{` or `)` is syntax, not a name.
+fn is_contract_keyword_position(word: &str, trimmed_before: &str) -> bool {
     let contract_keywords = ["requires", "ensures", "invariant", "decreases"];
-    if contract_keywords.contains(&word) {
-        // If this appears at the start of a line or after a colon/brace, it's a keyword
-        if trimmed_before.is_empty()
-            || trimmed_before.ends_with(':')
-            || trimmed_before.ends_with('{')
-            || trimmed_before.ends_with(')')
-        {
-            return false;
-        }
+    if !contract_keywords.contains(&word) {
+        return false;
     }
+    trimmed_before.is_empty()
+        || trimmed_before.ends_with(':')
+        || trimmed_before.ends_with('{')
+        || trimmed_before.ends_with(')')
+}
 
-    // `let X = ...` or `X = ...` or `fun foo(X: ...)` patterns → identifier
-    let is_assignment = after.trim_start().starts_with('=')
-        || after.trim_start().starts_with(':');
-    let is_let_binding = trimmed_before.ends_with("let")
-        || trimmed_before.ends_with("var");
-    let is_param = trimmed_before.ends_with('(')
-        || trimmed_before.ends_with(',');
+/// Check for the `let X = ...`, `X = ...`, `X: ...` and `fun foo(X: ...)` shapes.
+fn is_binding_position(trimmed_before: &str, after: &str) -> bool {
+    let is_assignment = after.trim_start().starts_with('=') || after.trim_start().starts_with(':');
+    let is_let_binding = trimmed_before.ends_with("let") || trimmed_before.ends_with("var");
+    let is_param = trimmed_before.ends_with('(') || trimmed_before.ends_with(',');
 
     is_assignment || is_let_binding || is_param
 }
@@ -162,9 +181,7 @@ fn scan_file(path: &Path) -> Vec<MigrateRename> {
             continue;
         }
         for (&keyword, &replacement) in &rename_map {
-            scan_line_for_keyword(
-                path, line, line_idx, keyword, replacement, &mut renames,
-            );
+            scan_line_for_keyword(path, line, line_idx, keyword, replacement, &mut renames);
         }
     }
     renames
@@ -200,10 +217,8 @@ fn apply_renames_to_content(content: &str, renames: &[MigrateRename]) -> String 
     let mut result = String::with_capacity(content.len());
 
     for (line_idx, line) in content.lines().enumerate() {
-        let line_renames: Vec<&MigrateRename> = renames
-            .iter()
-            .filter(|r| r.line == line_idx + 1)
-            .collect();
+        let line_renames: Vec<&MigrateRename> =
+            renames.iter().filter(|r| r.line == line_idx + 1).collect();
 
         if line_renames.is_empty() {
             result.push_str(line);
@@ -314,7 +329,11 @@ mod tests {
         writeln!(f, "print(signal)").expect("write");
 
         let renames = scan_file(&file);
-        assert!(renames.len() >= 2, "expected >=2 renames, got {}", renames.len());
+        assert!(
+            renames.len() >= 2,
+            "expected >=2 renames, got {}",
+            renames.len()
+        );
         assert!(renames.iter().any(|r| r.original == "signal"));
         assert!(renames.iter().any(|r| r.original == "yield"));
     }
@@ -322,15 +341,13 @@ mod tests {
     #[test]
     fn test_apply_renames() {
         let content = "let signal = 42\nlet x = signal + 1\n";
-        let renames = vec![
-            MigrateRename {
-                file: PathBuf::from("test.ruchy"),
-                line: 1,
-                column: 5,
-                original: "signal".to_string(),
-                replacement: "signal_val".to_string(),
-            },
-        ];
+        let renames = vec![MigrateRename {
+            file: PathBuf::from("test.ruchy"),
+            line: 1,
+            column: 5,
+            original: "signal".to_string(),
+            replacement: "signal_val".to_string(),
+        }];
         let result = apply_renames_to_content(content, &renames);
         assert!(result.contains("let signal_val = 42"));
     }

@@ -425,11 +425,7 @@ mod tests {
 
     #[test]
     fn test_shell_script_new() {
-        let script = ShellScript::new(
-            ShellTarget::default(),
-            "echo hello",
-            "test.ruchy",
-        );
+        let script = ShellScript::new(ShellTarget::default(), "echo hello", "test.ruchy");
         assert_eq!(script.source, "test.ruchy");
         assert_eq!(script.line_count(), 1);
     }

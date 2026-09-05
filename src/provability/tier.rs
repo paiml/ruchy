@@ -198,20 +198,14 @@ mod tests {
 
     #[test]
     fn test_classify_gold_decorator_plus_contract_is_gold() {
-        assert_eq!(
-            classify(&inputs(vec!["gold"], true, true)),
-            Tier::Gold
-        );
+        assert_eq!(classify(&inputs(vec!["gold"], true, true)), Tier::Gold);
     }
 
     #[test]
     fn test_classify_gold_decorator_without_contract_is_bronze() {
         // A @gold claim without contracts degrades. We refuse to give
         // the label without backing.
-        assert_eq!(
-            classify(&inputs(vec!["gold"], false, false)),
-            Tier::Bronze
-        );
+        assert_eq!(classify(&inputs(vec!["gold"], false, false)), Tier::Bronze);
     }
 
     #[test]
@@ -220,7 +214,7 @@ mod tests {
             decorators: vec!["platinum"],
             has_requires: true,
             has_ensures: true,
-            has_yaml_contract: false,  // missing YAML
+            has_yaml_contract: false, // missing YAML
             has_lean_proof: false,
         };
         // Without YAML, @platinum does NOT upgrade past Silver.
@@ -240,10 +234,7 @@ mod tests {
     fn test_classify_bronze_decorator_wins_over_contracts() {
         // Explicit @bronze is a migration escape hatch: author declares
         // "I know this is Bronze", so we honor it even with contracts.
-        assert_eq!(
-            classify(&inputs(vec!["bronze"], true, true)),
-            Tier::Bronze
-        );
+        assert_eq!(classify(&inputs(vec!["bronze"], true, true)), Tier::Bronze);
     }
 
     #[test]

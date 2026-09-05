@@ -3,11 +3,11 @@
 //!
 //! Ticket: SPEC-HARDREQ-002 (first delivery slice of §14.10).
 
+use ruchy::provability::capabilities::FsMode;
 use ruchy::provability::{
     classify, declassify, tier_of_function, ClockCap, EnvCap, FsCap, NetCap, Public, RandomCap,
     RootCapability, Secret, Tier, TierInputs, Totality,
 };
-use ruchy::provability::capabilities::FsMode;
 use ruchy::Parser;
 
 // ============================================================================

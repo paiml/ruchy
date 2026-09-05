@@ -720,6 +720,184 @@ impl Interpreter {
         self.call_function(func.clone(), args)
     }
 
+    /// Dispatch a `__class_constructor__:<class>[:<ctor>]` marker string.
+    fn call_class_constructor_marker(
+        &mut self,
+        marker: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Extract class name and constructor name from the marker
+        let parts: Vec<&str> = marker
+            .strip_prefix("__class_constructor__:")
+            .expect("prefix exists due to starts_with guard")
+            .split(':')
+            .collect();
+
+        if parts.len() == 2 {
+            let class_name = parts[0];
+            let constructor_name = parts[1];
+            self.instantiate_class_with_constructor(class_name, constructor_name, args)
+        } else {
+            // Legacy format for backward compatibility
+            self.instantiate_class_with_constructor(parts[0], "new", args)
+        }
+    }
+
+    /// Dispatch a `__class_static_method__:<class>:<method>` marker string.
+    fn call_static_method_marker(
+        &mut self,
+        marker: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Extract class name and method name from the marker
+        let parts: Vec<&str> = marker
+            .strip_prefix("__class_static_method__:")
+            .expect("prefix exists due to starts_with guard")
+            .split(':')
+            .collect();
+
+        if parts.len() == 2 {
+            let class_name = parts[0];
+            let method_name = parts[1];
+            self.call_static_method(class_name, method_name, args)
+        } else {
+            Err(InterpreterError::RuntimeError(
+                "Invalid static method marker".to_string(),
+            ))
+        }
+    }
+
+    /// Dispatch a `__builtin_*` marker string to the extracted builtin module.
+    fn call_builtin_marker(
+        &mut self,
+        marker: &str,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // Delegate to extracted builtin module
+        match crate::runtime::eval_builtin::eval_builtin_function(marker, args)? {
+            Some(result) => Ok(result),
+            None => Err(InterpreterError::RuntimeError(format!(
+                "Unknown builtin function: {}",
+                marker
+            ))),
+        }
+    }
+
+    /// Check a closure call's argument count against its required/total parameter
+    /// counts. RUNTIME-DEFAULT-PARAMS: parameters carrying a default are optional.
+    fn check_closure_arity(
+        params: &[(String, Option<Arc<Expr>>)],
+        args: &[Value],
+    ) -> Result<(), InterpreterError> {
+        // Count required params (those without defaults)
+        let required_count = params
+            .iter()
+            .filter(|(_, default)| default.is_none())
+            .count();
+        let total_count = params.len();
+
+        if args.len() < required_count || args.len() > total_count {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Function expects {}-{} arguments, got {}",
+                required_count,
+                total_count,
+                args.len()
+            )));
+        }
+        Ok(())
+    }
+
+    /// Build a closure's local scope: bind provided arguments positionally and
+    /// evaluate the default expression for every parameter the caller omitted.
+    fn bind_closure_params(
+        &mut self,
+        params: &[(String, Option<Arc<Expr>>)],
+        args: &[Value],
+    ) -> Result<HashMap<String, Value>, InterpreterError> {
+        let mut local_env = HashMap::new();
+        for (i, (param_name, default_value)) in params.iter().enumerate() {
+            let value = if i < args.len() {
+                // Use provided argument
+                args[i].clone()
+            } else if let Some(default_expr) = default_value {
+                // Apply default value by evaluating the expression
+                self.eval_expr(default_expr)?
+            } else {
+                // This should never happen due to required_count check above
+                unreachable!("Missing required parameter");
+            };
+            local_env.insert(param_name.clone(), value);
+        }
+        Ok(local_env)
+    }
+
+    /// Evaluate a closure body, converting an early `Return` into a plain value.
+    ///
+    /// BOOK-200-01 FIX: If body is a Block, evaluate statements directly without
+    /// pushing an additional scope. The function already has its parameter scope
+    /// (`local_env`), and pushing another scope would cause lambdas to capture the
+    /// wrong environment.
+    fn eval_closure_body(&mut self, body: &Expr) -> Result<Value, InterpreterError> {
+        match &body.kind {
+            crate::frontend::ast::ExprKind::Block(statements) => {
+                // Evaluate block statements directly without pushing new scope
+                match crate::runtime::eval_control_flow_new::eval_block_expr(statements, |e| {
+                    self.eval_expr(e)
+                }) {
+                    Err(InterpreterError::Return(val)) => Ok(val),
+                    other => other,
+                }
+            }
+            _ => match self.eval_expr(body) {
+                Err(InterpreterError::Return(val)) => Ok(val),
+                other => other,
+            },
+        }
+    }
+
+    /// Call a `Value::Closure`: check recursion depth and arity, push the captured
+    /// environment then the parameter scope, evaluate the body, and unwind both.
+    fn call_closure(
+        &mut self,
+        params: &[(String, Option<Arc<Expr>>)],
+        body: &Expr,
+        env: Rc<RefCell<HashMap<String, Value>>>,
+        args: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        // [RUNTIME-001] CHECK RECURSION DEPTH BEFORE ENTERING
+        crate::runtime::eval_function::check_recursion_depth()?;
+
+        // RUNTIME-DEFAULT-PARAMS: Check argument count with default parameter support
+        if let Err(e) = Self::check_closure_arity(params, args) {
+            crate::runtime::eval_function::decrement_depth();
+            return Err(e);
+        }
+
+        // ISSUE-119: ROOT CAUSE #3 FIX - Push captured environment first
+        // This allows variable lookups to find captured variables
+        self.env_stack.push(env); // Push captured environment (Rc::clone)
+
+        // Create NEW empty HashMap for function's local scope (parameters)
+        // RUNTIME-DEFAULT-PARAMS: Bind provided arguments + apply defaults for missing args
+        let local_env = self.bind_closure_params(params, args)?;
+
+        // Push local scope on top (parameters shadow outer variables)
+        self.env_push(local_env);
+
+        // Evaluate function body
+        // Catch InterpreterError::Return and extract value (early return support)
+        let result = self.eval_closure_body(body);
+
+        // ISSUE-119: Pop BOTH environments (local scope + captured environment)
+        self.env_pop(); // Pop local scope
+        self.env_pop(); // Pop captured environment
+
+        // [RUNTIME-001] ALWAYS DECREMENT, EVEN ON ERROR
+        crate::runtime::eval_function::decrement_depth();
+
+        result
+    }
+
     /// Call a function with given arguments
     pub(crate) fn call_function(
         &mut self,
@@ -728,39 +906,10 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         match func {
             Value::String(ref s) if s.starts_with("__class_constructor__:") => {
-                // Extract class name and constructor name from the marker
-                let parts: Vec<&str> = s
-                    .strip_prefix("__class_constructor__:")
-                    .expect("prefix exists due to starts_with guard")
-                    .split(':')
-                    .collect();
-
-                if parts.len() == 2 {
-                    let class_name = parts[0];
-                    let constructor_name = parts[1];
-                    self.instantiate_class_with_constructor(class_name, constructor_name, args)
-                } else {
-                    // Legacy format for backward compatibility
-                    self.instantiate_class_with_constructor(parts[0], "new", args)
-                }
+                self.call_class_constructor_marker(s, args)
             }
             Value::String(ref s) if s.starts_with("__class_static_method__:") => {
-                // Extract class name and method name from the marker
-                let parts: Vec<&str> = s
-                    .strip_prefix("__class_static_method__:")
-                    .expect("prefix exists due to starts_with guard")
-                    .split(':')
-                    .collect();
-
-                if parts.len() == 2 {
-                    let class_name = parts[0];
-                    let method_name = parts[1];
-                    self.call_static_method(class_name, method_name, args)
-                } else {
-                    Err(InterpreterError::RuntimeError(
-                        "Invalid static method marker".to_string(),
-                    ))
-                }
+                self.call_static_method_marker(s, args)
             }
             Value::String(ref s) if s.starts_with("__struct_constructor__:") => {
                 // Extract struct name from the marker
@@ -776,95 +925,14 @@ impl Interpreter {
                     .expect("prefix exists due to starts_with guard");
                 self.instantiate_actor_with_args(actor_name, args)
             }
-            Value::String(s) if s.starts_with("__builtin_") => {
-                // Delegate to extracted builtin module
-                match crate::runtime::eval_builtin::eval_builtin_function(&s, args)? {
-                    Some(result) => Ok(result),
-                    None => Err(InterpreterError::RuntimeError(format!(
-                        "Unknown builtin function: {}",
-                        s
-                    ))),
-                }
+            Value::String(ref s) if s.starts_with("__builtin_") => {
+                self.call_builtin_marker(s, args)
             }
-            Value::Closure { params, body, env } => {
-                // [RUNTIME-001] CHECK RECURSION DEPTH BEFORE ENTERING
-                crate::runtime::eval_function::check_recursion_depth()?;
-
-                // RUNTIME-DEFAULT-PARAMS: Check argument count with default parameter support
-                // Count required params (those without defaults)
-                let required_count = params
-                    .iter()
-                    .filter(|(_, default)| default.is_none())
-                    .count();
-                let total_count = params.len();
-
-                if args.len() < required_count || args.len() > total_count {
-                    crate::runtime::eval_function::decrement_depth();
-                    return Err(InterpreterError::RuntimeError(format!(
-                        "Function expects {}-{} arguments, got {}",
-                        required_count,
-                        total_count,
-                        args.len()
-                    )));
-                }
-
-                // ISSUE-119: ROOT CAUSE #3 FIX - Push captured environment first
-                // This allows variable lookups to find captured variables
-                self.env_stack.push(env); // Push captured environment (Rc::clone)
-
-                // Create NEW empty HashMap for function's local scope (parameters)
-                let mut local_env = HashMap::new();
-
-                // RUNTIME-DEFAULT-PARAMS: Bind provided arguments + apply defaults for missing args
-                for (i, (param_name, default_value)) in params.iter().enumerate() {
-                    let value = if i < args.len() {
-                        // Use provided argument
-                        args[i].clone()
-                    } else if let Some(default_expr) = default_value {
-                        // Apply default value by evaluating the expression
-                        self.eval_expr(default_expr)?
-                    } else {
-                        // This should never happen due to required_count check above
-                        unreachable!("Missing required parameter");
-                    };
-                    local_env.insert(param_name.clone(), value);
-                }
-
-                // Push local scope on top (parameters shadow outer variables)
-                self.env_push(local_env);
-
-                // Evaluate function body
-                // Catch InterpreterError::Return and extract value (early return support)
-                // BOOK-200-01 FIX: If body is a Block, evaluate statements directly
-                // without pushing an additional scope. The function already has its
-                // parameter scope (local_env), and pushing another scope would cause
-                // lambdas to capture the wrong environment.
-                let result = match &body.kind {
-                    crate::frontend::ast::ExprKind::Block(statements) => {
-                        // Evaluate block statements directly without pushing new scope
-                        match crate::runtime::eval_control_flow_new::eval_block_expr(
-                            statements,
-                            |e| self.eval_expr(e),
-                        ) {
-                            Err(InterpreterError::Return(val)) => Ok(val),
-                            other => other,
-                        }
-                    }
-                    _ => match self.eval_expr(&body) {
-                        Err(InterpreterError::Return(val)) => Ok(val),
-                        other => other,
-                    },
-                };
-
-                // ISSUE-119: Pop BOTH environments (local scope + captured environment)
-                self.env_pop(); // Pop local scope
-                self.env_pop(); // Pop captured environment
-
-                // [RUNTIME-001] ALWAYS DECREMENT, EVEN ON ERROR
-                crate::runtime::eval_function::decrement_depth();
-
-                result
-            }
+            Value::Closure {
+                ref params,
+                ref body,
+                ref env,
+            } => self.call_closure(params, body, Rc::clone(env), args),
             Value::Object(ref obj) => {
                 // Check if this is a struct or actor definition being called as a constructor
                 if let Some(Value::String(type_str)) = obj.get("__type") {
@@ -1034,6 +1102,47 @@ impl Interpreter {
         self.eval_unary_op(op, &operand_val)
     }
 
+    /// Issue #79: resolve `EnumName::Variant as <int>` straight from the AST,
+    /// before the operand is evaluated, so a direct enum literal casts to its
+    /// discriminant rather than being evaluated as a field access.
+    fn try_cast_enum_literal(&self, expr: &Expr, target_type: &str) -> Option<Value> {
+        if !matches!(target_type, "i32" | "i64" | "isize") {
+            return None;
+        }
+        let ExprKind::FieldAccess { object, field } = &expr.kind else {
+            return None;
+        };
+        let ExprKind::Identifier(enum_name) = &object.kind else {
+            return None;
+        };
+        // Direct enum literal: LogLevel::Info as i32
+        self.lookup_enum_discriminant(enum_name, field)
+            .map(Value::Integer)
+    }
+
+    /// Cast a runtime enum variant to its integer discriminant by looking the
+    /// enum definition up in the environment.
+    fn cast_enum_variant_to_int(
+        &self,
+        enum_name: &str,
+        variant_name: &str,
+    ) -> Result<Value, InterpreterError> {
+        // Lookup enum definition in environment
+        if let Some(Value::Object(enum_def)) = self.get_variable(enum_name) {
+            if let Some(Value::Object(variants)) = enum_def.get("__variants") {
+                if let Some(Value::Object(variant_info)) = variants.get(variant_name) {
+                    if let Some(Value::Integer(disc)) = variant_info.get("discriminant") {
+                        return Ok(Value::Integer(*disc));
+                    }
+                }
+            }
+        }
+        Err(InterpreterError::TypeError(format!(
+            "Cannot cast enum variant {}::{} to integer: enum definition not found",
+            enum_name, variant_name
+        )))
+    }
+
     /// Evaluate type cast expression (as operator)
     ///
     /// # Complexity
@@ -1045,15 +1154,8 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         // Special case: Enum variant to integer (Issue #79)
         // Must extract enum name from AST BEFORE evaluating expression
-        if matches!(target_type, "i32" | "i64" | "isize") {
-            if let ExprKind::FieldAccess { object, field } = &expr.kind {
-                if let ExprKind::Identifier(enum_name) = &object.kind {
-                    // Direct enum literal: LogLevel::Info as i32
-                    if let Some(disc) = self.lookup_enum_discriminant(enum_name, field) {
-                        return Ok(Value::Integer(disc));
-                    }
-                }
-            }
+        if let Some(v) = self.try_cast_enum_literal(expr, target_type) {
+            return Ok(v);
         }
 
         // Standard case: Evaluate expression first, then cast
@@ -1081,22 +1183,7 @@ impl Interpreter {
                     ..
                 },
                 "i32" | "i64" | "isize",
-            ) => {
-                // Lookup enum definition in environment
-                if let Some(Value::Object(enum_def)) = self.get_variable(&enum_name) {
-                    if let Some(Value::Object(variants)) = enum_def.get("__variants") {
-                        if let Some(Value::Object(variant_info)) = variants.get(&variant_name) {
-                            if let Some(Value::Integer(disc)) = variant_info.get("discriminant") {
-                                return Ok(Value::Integer(*disc));
-                            }
-                        }
-                    }
-                }
-                Err(InterpreterError::TypeError(format!(
-                    "Cannot cast enum variant {}::{} to integer: enum definition not found",
-                    enum_name, variant_name
-                )))
-            }
+            ) => self.cast_enum_variant_to_int(&enum_name, &variant_name),
 
             // Unsupported cast
             (val, target) => Err(InterpreterError::TypeError(format!(
@@ -1725,9 +1812,9 @@ impl Interpreter {
         name: &str,
         args: &[Value],
     ) -> Result<Value, InterpreterError> {
-        let func = self.get_variable(name).ok_or_else(|| {
-            InterpreterError::RuntimeError(format!("undefined function: {name}"))
-        })?;
+        let func = self
+            .get_variable(name)
+            .ok_or_else(|| InterpreterError::RuntimeError(format!("undefined function: {name}")))?;
         self.call_function(func, args)
     }
 
@@ -1871,6 +1958,68 @@ impl Interpreter {
         }
     }
 
+    /// Resolve `Type::member` against a Class definition: a static method marker
+    /// takes precedence over a constructor marker.
+    fn resolve_class_member(
+        info: &HashMap<String, Value>,
+        type_name: &str,
+        method_name: &str,
+    ) -> Option<Value> {
+        // Check for static method
+        if let Some(Value::Object(ref methods)) = info.get("__methods") {
+            if let Some(Value::Object(ref meta)) = methods.get(method_name) {
+                if matches!(meta.get("is_static"), Some(Value::Bool(true))) {
+                    return Some(Value::from_string(format!(
+                        "__class_static_method__:{type_name}:{method_name}"
+                    )));
+                }
+            }
+        }
+        // Check for constructor
+        if let Some(Value::Object(ref ctors)) = info.get("__constructors") {
+            if ctors.contains_key(method_name) {
+                return Some(Value::from_string(format!(
+                    "__class_constructor__:{type_name}:{method_name}"
+                )));
+            }
+        }
+        None
+    }
+
+    /// Resolve `Struct::new`. OPT-022: a user-defined `new` bound anywhere in
+    /// scope wins over the synthesized struct-constructor marker.
+    fn resolve_struct_new(&self, name: &str, type_name: &str) -> Value {
+        // OPT-022: Check for user-defined "new" method FIRST
+        for inner_env in self.env_stack.iter().rev() {
+            if let Some(method_value) = inner_env.borrow().get(name) {
+                return method_value.clone();
+            }
+        }
+        Value::from_string(format!("__struct_constructor__:{type_name}"))
+    }
+
+    /// Resolve `type_name::method_name` against one candidate type definition.
+    fn resolve_qualified_in_type(
+        &self,
+        info: &HashMap<String, Value>,
+        name: &str,
+        type_name: &str,
+        method_name: &str,
+    ) -> Option<Value> {
+        let Some(Value::String(ref type_str)) = info.get("__type") else {
+            return None;
+        };
+        let type_str: &str = type_str.as_ref();
+        match (type_str, method_name) {
+            ("Class", _) => Self::resolve_class_member(info, type_name, method_name),
+            ("Struct", "new") => Some(self.resolve_struct_new(name, type_name)),
+            ("Actor", "new") => Some(Value::from_string(format!(
+                "__actor_constructor__:{type_name}"
+            ))),
+            _ => None,
+        }
+    }
+
     /// Resolve a qualified name like "Point::new" or "Rectangle::square".
     ///
     /// Returns `Some(Value)` with the appropriate constructor/method marker,
@@ -1885,49 +2034,11 @@ impl Interpreter {
 
         for env_ref in self.env_stack.iter().rev() {
             let env = env_ref.borrow();
-            let Some(value) = env.get(type_name) else {
+            let Some(Value::Object(ref info)) = env.get(type_name) else {
                 continue;
             };
-            let Value::Object(ref info) = value else {
-                continue;
-            };
-            let Some(Value::String(ref type_str)) = info.get("__type") else {
-                continue;
-            };
-
-            if type_str.as_ref() == "Class" {
-                // Check for static method
-                if let Some(Value::Object(ref methods)) = info.get("__methods") {
-                    if let Some(Value::Object(ref meta)) = methods.get(method_name) {
-                        if matches!(meta.get("is_static"), Some(Value::Bool(true))) {
-                            return Some(Value::from_string(format!(
-                                "__class_static_method__:{type_name}:{method_name}"
-                            )));
-                        }
-                    }
-                }
-                // Check for constructor
-                if let Some(Value::Object(ref ctors)) = info.get("__constructors") {
-                    if ctors.contains_key(method_name) {
-                        return Some(Value::from_string(format!(
-                            "__class_constructor__:{type_name}:{method_name}"
-                        )));
-                    }
-                }
-            } else if type_str.as_ref() == "Struct" && method_name == "new" {
-                // OPT-022: Check for user-defined "new" method FIRST
-                for inner_env in self.env_stack.iter().rev() {
-                    if let Some(method_value) = inner_env.borrow().get(name) {
-                        return Some(method_value.clone());
-                    }
-                }
-                return Some(Value::from_string(format!(
-                    "__struct_constructor__:{type_name}"
-                )));
-            } else if type_str.as_ref() == "Actor" && method_name == "new" {
-                return Some(Value::from_string(format!(
-                    "__actor_constructor__:{type_name}"
-                )));
+            if let Some(v) = self.resolve_qualified_in_type(info, name, type_name, method_name) {
+                return Some(v);
             }
         }
         None

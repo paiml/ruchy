@@ -86,9 +86,7 @@ pub fn handle_mcp_command(
     _verbose: bool,
     _config: Option<&Path>,
 ) -> Result<()> {
-    eprintln!("Error: MCP support not enabled");
-    eprintln!("Rebuild with: cargo build --features mcp");
-    std::process::exit(1);
+    anyhow::bail!("MCP support not enabled. Rebuild with: cargo build --features mcp")
 }
 
 #[cfg(test)]
@@ -106,8 +104,15 @@ mod tests {
     #[test]
     #[cfg(not(feature = "mcp"))]
     fn test_handle_mcp_command_no_feature() {
-        // When mcp feature is disabled, the command should fail
-        // Note: The function calls process::exit, so we can't easily test it
+        // Without the mcp feature the command must fail with an error the caller can
+        // report (main prints it and exits 1) — never by exiting the process itself,
+        // which killed every test binary that touched this function (PMAT-104).
+        let err = handle_mcp_command("test-server", false, 3600, 0.8, 10, false, None)
+            .expect_err("mcp stub must return Err without the mcp feature");
+        assert!(
+            err.to_string().contains("MCP support not enabled"),
+            "unexpected error text: {err}"
+        );
     }
 
     #[test]

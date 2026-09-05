@@ -343,12 +343,8 @@ fn ruchy_to_embed(v: RuchyValue) -> Value {
         RuchyValue::Float(f) => Value::Float(f),
         RuchyValue::Bool(b) => Value::Bool(b),
         RuchyValue::String(s) => Value::String(s.to_string()),
-        RuchyValue::Array(xs) => {
-            Value::List(xs.iter().cloned().map(ruchy_to_embed).collect())
-        }
-        RuchyValue::Tuple(xs) => {
-            Value::Tuple(xs.iter().cloned().map(ruchy_to_embed).collect())
-        }
+        RuchyValue::Array(xs) => Value::List(xs.iter().cloned().map(ruchy_to_embed).collect()),
+        RuchyValue::Tuple(xs) => Value::Tuple(xs.iter().cloned().map(ruchy_to_embed).collect()),
         RuchyValue::Object(entries) => {
             let mut pairs: Vec<(String, Value)> = entries
                 .iter()

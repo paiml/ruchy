@@ -165,7 +165,10 @@ mod tests {
         let result = try_lower_array_binary(&left, BinaryOp::Add, &right, &le, &re);
         assert!(result.is_some());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("add_f32"), "Expected add_f32, got: {tokens}");
+        assert!(
+            tokens.contains("add_f32"),
+            "Expected add_f32, got: {tokens}"
+        );
     }
 
     #[test]
@@ -177,7 +180,10 @@ mod tests {
         let result = try_lower_array_binary(&left, BinaryOp::Subtract, &right, &le, &re);
         assert!(result.is_some());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("sub_f32"), "Expected sub_f32, got: {tokens}");
+        assert!(
+            tokens.contains("sub_f32"),
+            "Expected sub_f32, got: {tokens}"
+        );
     }
 
     #[test]
@@ -189,7 +195,10 @@ mod tests {
         let result = try_lower_array_binary(&left, BinaryOp::Multiply, &right, &le, &re);
         assert!(result.is_some());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("mul_f32"), "Expected mul_f32, got: {tokens}");
+        assert!(
+            tokens.contains("mul_f32"),
+            "Expected mul_f32, got: {tokens}"
+        );
     }
 
     #[test]
@@ -201,6 +210,9 @@ mod tests {
         let result = try_lower_array_binary(&left, BinaryOp::Divide, &right, &le, &re);
         assert!(result.is_some());
         let tokens = result.unwrap().to_string();
-        assert!(tokens.contains("div_f32"), "Expected div_f32, got: {tokens}");
+        assert!(
+            tokens.contains("div_f32"),
+            "Expected div_f32, got: {tokens}"
+        );
     }
 }

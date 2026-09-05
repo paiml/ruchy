@@ -207,9 +207,13 @@ mod tests {
 
     #[test]
     fn test_parse_source_empty() {
-        let source = "";
-        let result = parse_source(source);
-        assert!(result.is_ok()); // Empty source is valid (produces unit)
+        // An empty program is a syntax error in every shipped version (4.2.1 and 5.0):
+        // `ruchy check/transpile/run` all report "Empty program" and exit 1.
+        let err = parse_source("").expect_err("empty source must be rejected");
+        assert!(
+            format!("{err:#}").contains("Empty program"),
+            "unexpected error: {err:#}"
+        );
     }
 
     #[test]

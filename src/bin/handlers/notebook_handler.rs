@@ -126,7 +126,11 @@ mod tests {
     fn test_handle_notebook_command_no_feature() {
         let result = handle_notebook_command(None, 8080, false, "127.0.0.1");
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("notebook feature"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .to_lowercase()
+            .contains("notebook feature"));
     }
 
     #[test]

@@ -162,21 +162,17 @@ mod tests {
         let _ = result;
     }
 
+    // PMAT-104: watch mode is an unbounded `loop { sleep; poll }` by design, so
+    // `handle_test_command(.., watch = true, ..)` never returns and a test that
+    // called it could never finish - it blocked the whole `--bin ruchy` target.
+    // These tests cover the two halves that watch mode is actually made of:
+    // the setup (banner + initial run) and one poll iteration.
     #[test]
     fn test_handle_test_command_watch_mode() {
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_test_command(
-            Some(temp_dir.path().to_path_buf()),
-            true, // watch
-            false,
-            None,
-            false,
-            "text",
-            1,
-            0.0,
-            "text",
-        );
-        let _ = result;
+        std::fs::write(temp_dir.path().join("a.ruchy"), "let x = 1\n").unwrap();
+        // Setup performs the initial test run and must return.
+        super::super::handlers_modules::test::start_watch_mode(temp_dir.path(), false, None);
     }
 
     #[test]
@@ -239,23 +235,58 @@ mod tests {
 
     #[test]
     fn test_handle_watch_and_test_basic() {
+        use std::time::{Duration, SystemTime};
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_watch_and_test(temp_dir.path(), false, None);
-        let _ = result;
+        std::fs::write(temp_dir.path().join("a.ruchy"), "let x = 1\n").unwrap();
+        // A modification newer than `last_modified` must trigger a re-run.
+        let mut last_modified = SystemTime::now() - Duration::from_secs(60);
+        let rerun = super::super::handlers_modules::test::run_watch_iteration(
+            temp_dir.path(),
+            false,
+            None,
+            &mut last_modified,
+        );
+        assert!(rerun, "a newer modification time must re-run the tests");
+        assert!(last_modified > SystemTime::now() - Duration::from_secs(60));
     }
 
     #[test]
     fn test_handle_watch_and_test_verbose() {
+        use std::time::{Duration, SystemTime};
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_watch_and_test(temp_dir.path(), true, None);
-        let _ = result;
+        std::fs::write(temp_dir.path().join("a.ruchy"), "let x = 1\n").unwrap();
+        let mut last_modified = SystemTime::now() - Duration::from_secs(60);
+        let rerun = super::super::handlers_modules::test::run_watch_iteration(
+            temp_dir.path(),
+            true, // verbose
+            None,
+            &mut last_modified,
+        );
+        assert!(rerun);
     }
 
     #[test]
     fn test_handle_watch_and_test_with_filter() {
+        use std::time::{Duration, SystemTime};
         let temp_dir = TempDir::new().unwrap();
-        let result = handle_watch_and_test(temp_dir.path(), false, Some("test_*"));
-        let _ = result;
+        std::fs::write(temp_dir.path().join("a.ruchy"), "let x = 1\n").unwrap();
+        let mut last_modified = SystemTime::now() - Duration::from_secs(60);
+        let rerun = super::super::handlers_modules::test::run_watch_iteration(
+            temp_dir.path(),
+            false,
+            Some("test_*"),
+            &mut last_modified,
+        );
+        assert!(rerun);
+        // A poll whose modification time has not advanced must not re-run.
+        let mut future = SystemTime::now() + Duration::from_secs(3600);
+        let rerun_again = super::super::handlers_modules::test::run_watch_iteration(
+            temp_dir.path(),
+            false,
+            Some("test_*"),
+            &mut future,
+        );
+        assert!(!rerun_again, "no newer modification must not re-run");
     }
 
     #[test]

@@ -9,6 +9,7 @@
 use anyhow::Context;
 use std::path::Path;
 
+use crate::handlers::handlers_modules::provability::ClassifiedFunction;
 use ruchy::stdlib::bashrs_bridge::{PurifyResult, ShellTarget};
 use ruchy::stdlib::forjar_bridge::{InfraPlan, InfraState};
 use ruchy::stdlib::simular_bridge::{SimConfig, SimResult};
@@ -254,10 +255,7 @@ pub fn handle_model_load(file: &Path) -> anyhow::Result<()> {
 /// Handle `ruchy model export <file>`.
 pub fn handle_model_export(file: &Path, format: &str) -> anyhow::Result<()> {
     verify_file_exists(file, "model export")?;
-    println!(
-        "[ruchy model export] {} (format={format})",
-        file.display()
-    );
+    println!("[ruchy model export] {} (format={format})", file.display());
     println!("  Export complete.");
     Ok(())
 }
@@ -307,7 +305,10 @@ pub fn handle_purify(path: &Path, fix: bool, verbose: bool) -> anyhow::Result<()
 
     let result = PurifyResult::clean();
     if fix && result.fixable_remaining() > 0 {
-        println!("  Auto-fix mode: {} fixable issues", result.fixable_remaining());
+        println!(
+            "  Auto-fix mode: {} fixable issues",
+            result.fixable_remaining()
+        );
     }
     println!("  {}", result.summary());
 
@@ -340,9 +341,8 @@ pub fn handle_contracts_sync(
     if verbose {
         println!("  Scanning for contract annotations (requires/ensures/invariant)...");
     }
-    let report = crate::handlers::handlers_modules::provability::scan_with_options(
-        path, 5000, exclude,
-    )?;
+    let report =
+        crate::handlers::handlers_modules::provability::scan_with_options(path, 5000, exclude)?;
 
     // Group contracted functions by their source file.
     let mut by_file: BTreeMap<
@@ -356,8 +356,7 @@ pub fn handle_contracts_sync(
     }
 
     // Make sure the output directory exists.
-    std::fs::create_dir_all(output)
-        .with_context(|| format!("creating {}", output.display()))?;
+    std::fs::create_dir_all(output).with_context(|| format!("creating {}", output.display()))?;
 
     let mut manifests_written = 0usize;
     let mut contracts_total = 0usize;
@@ -368,15 +367,17 @@ pub fn handle_contracts_sync(
         std::fs::write(&manifest_path, yaml)
             .with_context(|| format!("writing {}", manifest_path.display()))?;
         if verbose {
-            println!("    wrote {} ({} contract(s))", manifest_path.display(), fns.len());
+            println!(
+                "    wrote {} ({} contract(s))",
+                manifest_path.display(),
+                fns.len()
+            );
         }
         manifests_written += 1;
         contracts_total += fns.len();
     }
     println!("  Output directory: {}", output.display());
-    println!(
-        "  {contracts_total} contract(s) found, {manifests_written} manifest(s) generated."
-    );
+    println!("  {contracts_total} contract(s) found, {manifests_written} manifest(s) generated.");
     Ok(())
 }
 
@@ -417,9 +418,8 @@ pub fn handle_contracts_list(
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    let report = crate::handlers::handlers_modules::provability::scan_with_options(
-        path, 5000, exclude,
-    )?;
+    let report =
+        crate::handlers::handlers_modules::provability::scan_with_options(path, 5000, exclude)?;
     let with_contracts: Vec<_> = report
         .functions
         .iter()
@@ -463,13 +463,21 @@ pub fn handle_contracts_list(
                 println!("\n| Tier | Function | File |");
                 println!("|------|----------|------|");
                 for f in &with_contracts {
-                    println!("| {} | `{}` | {} |", f.tier.label(), f.name, f.file.display());
+                    println!(
+                        "| {} | `{}` | {} |",
+                        f.tier.label(),
+                        f.name,
+                        f.file.display()
+                    );
                 }
             }
         }
         _ => {
             // Default text format.
-            println!("[ruchy contracts list] {} (format={format})", path.display());
+            println!(
+                "[ruchy contracts list] {} (format={format})",
+                path.display()
+            );
             if with_contracts.is_empty() {
                 println!("  0 functions with (non-trivial) contracts found.");
             } else {
@@ -478,7 +486,12 @@ pub fn handle_contracts_list(
                     with_contracts.len()
                 );
                 for f in &with_contracts {
-                    println!("    {:<10} {} ({})", f.tier.label(), f.name, f.file.display());
+                    println!(
+                        "    {:<10} {} ({})",
+                        f.tier.label(),
+                        f.name,
+                        f.file.display()
+                    );
                 }
             }
         }
@@ -500,18 +513,15 @@ pub fn handle_contracts_check(
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    let raw = crate::handlers::handlers_modules::provability::scan_with_options(
-        path, 5000, exclude,
-    )?;
+    let raw =
+        crate::handlers::handlers_modules::provability::scan_with_options(path, 5000, exclude)?;
     let report = if pub_only { raw.filter_to_pub() } else { raw };
     let threshold = min_coverage.unwrap_or(0.0);
     let actual = report.contract_coverage_pct();
     let with = report.functions_with_contracts();
     let total = report.functions_total;
     println!("[ruchy contracts check] {}", path.display());
-    println!(
-        "  Contract coverage: {actual:.1}% ({with}/{total} functions)"
-    );
+    println!("  Contract coverage: {actual:.1}% ({with}/{total} functions)");
     if threshold > 0.0 {
         println!("  Threshold: {threshold:.1}%");
         // Coverage gate only meaningful when there's something to cover.
@@ -524,6 +534,106 @@ pub fn handle_contracts_check(
         }
     }
     Ok(())
+}
+
+/// Emit the uncontracted-function list as a JSON array.
+fn print_suggestions_json(uncontracted: &[&ClassifiedFunction]) {
+    let mut out = String::from("[");
+    for (i, f) in uncontracted.iter().enumerate() {
+        if i > 0 {
+            out.push(',');
+        }
+        out.push_str(&format!(
+            "{{\"name\":\"{}\",\"file\":\"{}\",\"is_pub\":{}}}",
+            f.name.replace('"', "\\\""),
+            f.file.to_string_lossy().replace('"', "\\\""),
+            f.is_pub,
+        ));
+    }
+    out.push(']');
+    println!("{out}");
+}
+
+/// Emit the uncontracted-function list as a YAML contract-manifest scaffold.
+fn print_suggestions_yaml(uncontracted: &[&ClassifiedFunction]) {
+    println!("suggestions:");
+    if uncontracted.is_empty() {
+        println!("  []");
+    }
+    for f in uncontracted {
+        println!("  - name: \"{}\"", f.name);
+        println!("    file: \"{}\"", f.file.display());
+        println!("    is_pub: {}", f.is_pub);
+        println!("    suggested_requires: \"\"  # fill in precondition");
+        println!("    suggested_ensures: \"\"   # fill in postcondition");
+    }
+}
+
+/// Emit one markdown priority section: a heading and a function/file table.
+fn print_markdown_priority_section(heading: &str, fns: &[&&ClassifiedFunction]) {
+    if fns.is_empty() {
+        return;
+    }
+    println!("{heading}");
+    println!("| Function | File |");
+    println!("|----------|------|");
+    for f in fns {
+        println!("| `{}` | {} |", f.name, f.file.display());
+    }
+}
+
+/// Emit the uncontracted-function list as a markdown migration tasklist,
+/// public API first (the §14.5 F4 proxy), then internal functions.
+fn print_suggestions_markdown(uncontracted: &[&ClassifiedFunction]) {
+    let pub_fns: Vec<_> = uncontracted.iter().filter(|f| f.is_pub).collect();
+    let priv_fns: Vec<_> = uncontracted.iter().filter(|f| !f.is_pub).collect();
+    println!(
+        "## Contract Migration Tasklist ({} uncontracted)",
+        uncontracted.len()
+    );
+    if uncontracted.is_empty() {
+        println!("\n_All functions already carry contracts. ✅_");
+        return;
+    }
+    print_markdown_priority_section(
+        &format!(
+            "\n### Priority 1: Public API ({} functions, F4 proxy)\n",
+            pub_fns.len()
+        ),
+        &pub_fns,
+    );
+    print_markdown_priority_section(
+        &format!(
+            "\n### Priority 2: Internal ({} functions)\n",
+            priv_fns.len()
+        ),
+        &priv_fns,
+    );
+}
+
+/// Emit the uncontracted-function list in the default human-readable format.
+fn print_suggestions_text(
+    path: &Path,
+    format: &str,
+    uncontracted: &[&ClassifiedFunction],
+    functions_total: usize,
+) {
+    println!(
+        "[ruchy suggest-contracts] {} (format={format})",
+        path.display()
+    );
+    println!(
+        "  {} function(s) without contracts ({} total):",
+        uncontracted.len(),
+        functions_total
+    );
+    for f in uncontracted {
+        let vis = if f.is_pub { "pub " } else { "" };
+        println!("    {vis}fun {} ({})", f.name, f.file.display());
+    }
+    if !uncontracted.is_empty() {
+        println!("\n  Tip: Use --format yaml to generate contract-manifest scaffolding.");
+    }
 }
 
 /// Handle `ruchy suggest-contracts <path>`.
@@ -543,9 +653,8 @@ pub fn handle_suggest_contracts(
     if !path.exists() {
         anyhow::bail!("Path not found: {}", path.display());
     }
-    let report = crate::handlers::handlers_modules::provability::scan_with_options(
-        path, 5000, exclude,
-    )?;
+    let report =
+        crate::handlers::handlers_modules::provability::scan_with_options(path, 5000, exclude)?;
     // Uncontracted = Bronze tier (by §14.2 definition).
     let uncontracted: Vec<_> = report
         .functions
@@ -562,84 +671,10 @@ pub fn handle_suggest_contracts(
         );
     }
     match format {
-        "json" => {
-            let mut out = String::from("[");
-            for (i, f) in uncontracted.iter().enumerate() {
-                if i > 0 {
-                    out.push(',');
-                }
-                out.push_str(&format!(
-                    "{{\"name\":\"{}\",\"file\":\"{}\",\"is_pub\":{}}}",
-                    f.name.replace('"', "\\\""),
-                    f.file.to_string_lossy().replace('"', "\\\""),
-                    f.is_pub,
-                ));
-            }
-            out.push(']');
-            println!("{out}");
-        }
-        "yaml" => {
-            println!("suggestions:");
-            if uncontracted.is_empty() {
-                println!("  []");
-            }
-            for f in &uncontracted {
-                println!("  - name: \"{}\"", f.name);
-                println!("    file: \"{}\"", f.file.display());
-                println!("    is_pub: {}", f.is_pub);
-                println!("    suggested_requires: \"\"  # fill in precondition");
-                println!("    suggested_ensures: \"\"   # fill in postcondition");
-            }
-        }
-        "markdown" => {
-            let pub_fns: Vec<_> = uncontracted.iter().filter(|f| f.is_pub).collect();
-            let priv_fns: Vec<_> = uncontracted.iter().filter(|f| !f.is_pub).collect();
-            println!(
-                "## Contract Migration Tasklist ({} uncontracted)",
-                uncontracted.len()
-            );
-            if uncontracted.is_empty() {
-                println!("\n_All functions already carry contracts. ✅_");
-            } else {
-                if !pub_fns.is_empty() {
-                    println!(
-                        "\n### Priority 1: Public API ({} functions, F4 proxy)\n",
-                        pub_fns.len()
-                    );
-                    println!("| Function | File |");
-                    println!("|----------|------|");
-                    for f in &pub_fns {
-                        println!("| `{}` | {} |", f.name, f.file.display());
-                    }
-                }
-                if !priv_fns.is_empty() {
-                    println!(
-                        "\n### Priority 2: Internal ({} functions)\n",
-                        priv_fns.len()
-                    );
-                    println!("| Function | File |");
-                    println!("|----------|------|");
-                    for f in &priv_fns {
-                        println!("| `{}` | {} |", f.name, f.file.display());
-                    }
-                }
-            }
-        }
-        _ => {
-            println!("[ruchy suggest-contracts] {} (format={format})", path.display());
-            println!(
-                "  {} function(s) without contracts ({} total):",
-                uncontracted.len(),
-                report.functions_total
-            );
-            for f in &uncontracted {
-                let vis = if f.is_pub { "pub " } else { "" };
-                println!("    {vis}fun {} ({})", f.name, f.file.display());
-            }
-            if !uncontracted.is_empty() {
-                println!("\n  Tip: Use --format yaml to generate contract-manifest scaffolding.");
-            }
-        }
+        "json" => print_suggestions_json(&uncontracted),
+        "yaml" => print_suggestions_yaml(&uncontracted),
+        "markdown" => print_suggestions_markdown(&uncontracted),
+        _ => print_suggestions_text(path, format, &uncontracted, report.functions_total),
     }
     Ok(())
 }
@@ -651,10 +686,7 @@ pub fn handle_suggest_contracts(
 /// Verify a file exists before processing.
 fn verify_file_exists(file: &Path, cmd: &str) -> anyhow::Result<()> {
     if !file.exists() {
-        anyhow::bail!(
-            "[ruchy {cmd}] File not found: {}",
-            file.display()
-        );
+        anyhow::bail!("[ruchy {cmd}] File not found: {}", file.display());
     }
     Ok(())
 }
@@ -662,6 +694,17 @@ fn verify_file_exists(file: &Path, cmd: &str) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A path that does not exist on any host. `/nonexistent` is a real directory on
+    /// some developer machines, which made the missing-path tests environment-dependent
+    /// (PMAT-104).
+    fn missing_path() -> std::path::PathBuf {
+        static N: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let p = std::env::temp_dir().join(format!("ruchy-missing-{}-{n}", std::process::id()));
+        assert!(!p.exists(), "{} unexpectedly exists", p.display());
+        p
+    }
     use tempfile::NamedTempFile;
 
     fn temp_file() -> NamedTempFile {
@@ -778,7 +821,7 @@ mod tests {
 
     #[test]
     fn test_purify_missing_path() {
-        let result = handle_purify(Path::new("/nonexistent"), false, false);
+        let result = handle_purify(&missing_path(), false, false);
         assert!(result.is_err());
     }
 
@@ -830,11 +873,7 @@ mod tests {
         let src = tempfile::tempdir().unwrap();
         let out = tempfile::tempdir().unwrap();
         let sf = src.path().join("a.ruchy");
-        std::fs::write(
-            &sf,
-            "fun plain() { 1 }\nfun with_c() requires x > 0 { 2 }",
-        )
-        .unwrap();
+        std::fs::write(&sf, "fun plain() { 1 }\nfun with_c() requires x > 0 { 2 }").unwrap();
 
         assert!(handle_contracts_sync(src.path(), out.path(), false, &[]).is_ok());
 
@@ -864,10 +903,12 @@ mod tests {
         let yaml_count = std::fs::read_dir(out.path())
             .unwrap()
             .filter(|e| {
-                e.as_ref()
-                    .ok()
-                    .and_then(|de| de.path().extension().and_then(|s| s.to_str()).map(String::from))
-                    == Some("yaml".to_string())
+                e.as_ref().ok().and_then(|de| {
+                    de.path()
+                        .extension()
+                        .and_then(|s| s.to_str())
+                        .map(String::from)
+                }) == Some("yaml".to_string())
             })
             .count();
         assert_eq!(yaml_count, 0);
@@ -878,11 +919,7 @@ mod tests {
         let src = tempfile::tempdir().unwrap();
         let parent = tempfile::tempdir().unwrap();
         let out = parent.path().join("does_not_exist_yet");
-        std::fs::write(
-            src.path().join("a.ruchy"),
-            "fun f() requires n > 0 { 1 }",
-        )
-        .unwrap();
+        std::fs::write(src.path().join("a.ruchy"), "fun f() requires n > 0 { 1 }").unwrap();
 
         assert!(!out.exists());
         assert!(handle_contracts_sync(src.path(), &out, false, &[]).is_ok());
@@ -895,10 +932,7 @@ mod tests {
             manifest_stem(Path::new("src/math/utils.ruchy")),
             "src_math_utils_ruchy"
         );
-        assert_eq!(
-            manifest_stem(Path::new("./src/a.ruchy")),
-            "src_a_ruchy"
-        );
+        assert_eq!(manifest_stem(Path::new("./src/a.ruchy")), "src_a_ruchy");
         assert_eq!(manifest_stem(Path::new("a.ruchy")), "a_ruchy");
     }
 
@@ -931,11 +965,7 @@ mod tests {
     fn test_contracts_list_text_reports_functions() {
         let tmp = tempfile::tempdir().unwrap();
         let p = tmp.path().join("a.ruchy");
-        std::fs::write(
-            &p,
-            "fun plain() { 1 }\nfun with_req() requires n > 0 { 2 }",
-        )
-        .unwrap();
+        std::fs::write(&p, "fun plain() { 1 }\nfun with_req() requires n > 0 { 2 }").unwrap();
         // Only returns Ok; we don't assert on stdout here, but the call
         // path exercises the scanner + filter logic.
         assert!(handle_contracts_list(&p, "text", false, &[]).is_ok());
@@ -983,22 +1013,14 @@ mod tests {
     #[test]
     fn test_suggest_contracts_json_format() {
         let tmp = tempfile::tempdir().unwrap();
-        std::fs::write(
-            tmp.path().join("a.ruchy"),
-            "pub fun needs_it() { 1 }",
-        )
-        .unwrap();
+        std::fs::write(tmp.path().join("a.ruchy"), "pub fun needs_it() { 1 }").unwrap();
         assert!(handle_suggest_contracts(tmp.path(), "json", false, false, &[]).is_ok());
     }
 
     #[test]
     fn test_suggest_contracts_yaml_format() {
         let tmp = tempfile::tempdir().unwrap();
-        std::fs::write(
-            tmp.path().join("a.ruchy"),
-            "fun needs_it() { 1 }",
-        )
-        .unwrap();
+        std::fs::write(tmp.path().join("a.ruchy"), "fun needs_it() { 1 }").unwrap();
         assert!(handle_suggest_contracts(tmp.path(), "yaml", false, false, &[]).is_ok());
     }
 
@@ -1086,7 +1108,7 @@ mod tests {
 
     #[test]
     fn test_contracts_sync_missing_path() {
-        assert!(handle_contracts_sync(Path::new("/nonexistent"), Path::new("out"), false, &[]).is_err());
+        assert!(handle_contracts_sync(&missing_path(), Path::new("out"), false, &[]).is_err());
     }
 
     #[test]

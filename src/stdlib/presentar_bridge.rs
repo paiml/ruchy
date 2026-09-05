@@ -147,10 +147,7 @@ pub enum Widget {
         color: Color,
     },
     /// Text input field.
-    Input {
-        placeholder: String,
-        value: String,
-    },
+    Input { placeholder: String, value: String },
     /// Container with padding and optional background.
     Container {
         child: Box<Widget>,
@@ -289,7 +286,10 @@ mod tests {
     #[test]
     fn test_widget_text() {
         let w = Widget::text("Hello");
-        if let Widget::Text { content, font_size, .. } = &w {
+        if let Widget::Text {
+            content, font_size, ..
+        } = &w
+        {
             assert_eq!(content, "Hello");
             assert!((font_size - 16.0).abs() < 1e-5);
         } else {
@@ -309,11 +309,11 @@ mod tests {
 
     #[test]
     fn test_widget_column() {
-        let col = Widget::column(vec![
-            Widget::text("A"),
-            Widget::text("B"),
-        ]);
-        if let Widget::Column { children, spacing, .. } = &col {
+        let col = Widget::column(vec![Widget::text("A"), Widget::text("B")]);
+        if let Widget::Column {
+            children, spacing, ..
+        } = &col
+        {
             assert_eq!(children.len(), 2);
             assert!((spacing - 8.0).abs() < 1e-5);
         } else {
@@ -335,10 +335,7 @@ mod tests {
     fn test_widget_count() {
         let tree = Widget::column(vec![
             Widget::text("Title"),
-            Widget::row(vec![
-                Widget::button("A"),
-                Widget::button("B"),
-            ]),
+            Widget::row(vec![Widget::button("A"), Widget::button("B")]),
         ]);
         assert_eq!(tree.widget_count(), 5); // column + text + row + 2 buttons
     }

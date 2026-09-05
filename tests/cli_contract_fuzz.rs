@@ -21,7 +21,10 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
+
+mod support;
 use std::fs;
+use support::assert_args_accepted;
 use tempfile::TempDir;
 
 /// Helper: Create ruchy command
@@ -102,12 +105,14 @@ fn cli_fuzz_custom_iterations() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "iter_test.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(&file)
-        .arg("--iterations")
-        .arg("100") // Custom iteration count
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("fuzz")
+            .arg(&file)
+            .arg("--iterations")
+            .arg("100") // Custom iteration count
+            .assert(),
+    );
     // Just verify the command accepts iteration parameter
 }
 
@@ -134,14 +139,16 @@ fn cli_fuzz_custom_timeout() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "timeout_test.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(&file)
-        .arg("--timeout")
-        .arg("500") // 500ms timeout
-        .arg("--iterations")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("fuzz")
+            .arg(&file)
+            .arg("--timeout")
+            .arg("500") // 500ms timeout
+            .arg("--iterations")
+            .arg("10")
+            .assert(),
+    );
     // Just verify the command accepts timeout parameter
 }
 
@@ -225,14 +232,16 @@ fn cli_fuzz_output_to_file() {
     let file = create_temp_file(&temp, "output_test.ruchy", "let x = 42\n");
     let output_file = temp.path().join("fuzz_report.txt");
 
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(&file)
-        .arg("--output")
-        .arg(&output_file)
-        .arg("--iterations")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("fuzz")
+            .arg(&file)
+            .arg("--output")
+            .arg(&output_file)
+            .arg("--iterations")
+            .arg("10")
+            .assert(),
+    );
 
     // Note: File may or may not be created depending on cargo-fuzz availability
 }
@@ -281,13 +290,15 @@ fn cli_fuzz_verbose_flag() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "verbose.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(&file)
-        .arg("--verbose")
-        .arg("--iterations")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("fuzz")
+            .arg(&file)
+            .arg("--verbose")
+            .arg("--iterations")
+            .arg("10")
+            .assert(),
+    );
     // Just verify verbose flag is accepted
 }
 
@@ -329,12 +340,14 @@ println(factorial(5))
 ",
     );
 
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(&file)
-        .arg("--iterations")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("fuzz")
+            .arg(&file)
+            .arg("--iterations")
+            .arg("10")
+            .assert(),
+    );
     // Complex program should be accepted
 }
 
@@ -362,12 +375,14 @@ fn cli_fuzz_zero_iterations() {
     let file = create_temp_file(&temp, "zero_iter.ruchy", "let x = 42\n");
 
     // Zero iterations might be valid (no tests run) or invalid
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(&file)
-        .arg("--iterations")
-        .arg("0")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("fuzz")
+            .arg(&file)
+            .arg("--iterations")
+            .arg("0")
+            .assert(),
+    );
     // Just verify command handles this case
 }
 
@@ -377,12 +392,14 @@ fn cli_fuzz_very_large_iterations() {
     let file = create_temp_file(&temp, "large_iter.ruchy", "let x = 42\n");
 
     // Large number of iterations (would take very long)
-    ruchy_cmd()
-        .arg("fuzz")
-        .arg(&file)
-        .arg("--iterations")
-        .arg("1000000000") // 1 billion iterations
-        .timeout(std::time::Duration::from_secs(2))
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("fuzz")
+            .arg(&file)
+            .arg("--iterations")
+            .arg("1000000000") // 1 billion iterations
+            .timeout(std::time::Duration::from_secs(2))
+            .assert(),
+    );
     // Timeout will kill it, but tests CLI accepts the parameter
 }

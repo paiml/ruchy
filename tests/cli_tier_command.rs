@@ -149,11 +149,7 @@ fn test_tier_list_marks_pub_functions() {
 fn test_tier_by_file_human_output() {
     let tmp = TempDir::new().unwrap();
     fs::write(tmp.path().join("a.ruchy"), "fun x() { 1 }\nfun y() { 2 }").unwrap();
-    fs::write(
-        tmp.path().join("b.ruchy"),
-        "fun z() requires i > 0 { 1 }",
-    )
-    .unwrap();
+    fs::write(tmp.path().join("b.ruchy"), "fun z() requires i > 0 { 1 }").unwrap();
 
     let output = ruchy_cmd()
         .arg("tier")
@@ -335,8 +331,10 @@ fn test_tier_exclude_multiple_patterns_stack() {
     let output = ruchy_cmd()
         .arg("tier")
         .arg(tmp.path())
-        .arg("--exclude").arg("vendor")
-        .arg("--exclude").arg("tests")
+        .arg("--exclude")
+        .arg("vendor")
+        .arg("--exclude")
+        .arg("tests")
         .arg("--json")
         .output()
         .unwrap();
@@ -479,7 +477,10 @@ fn test_tier_by_file_sort_by_bronze_puts_worst_first() {
     // b.ruchy (3 Bronze) should come before a.ruchy (1 Bronze)
     let b_pos = by_file_line.find("b.ruchy").unwrap();
     let a_pos = by_file_line.find("a.ruchy").unwrap();
-    assert!(b_pos < a_pos, "worst file should come first: {by_file_line}");
+    assert!(
+        b_pos < a_pos,
+        "worst file should come first: {by_file_line}"
+    );
 }
 
 #[test]
@@ -680,11 +681,7 @@ fn test_tier_fail_on_totality_violation_passes_on_silver_unmarked() {
     // Silver functions without @total are NOT violations — §14.10.6 only
     // applies to Gold/Platinum.
     let tmp = TempDir::new().unwrap();
-    fs::write(
-        tmp.path().join("a.ruchy"),
-        "fun f() requires true { 1 }",
-    )
-    .unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun f() requires true { 1 }").unwrap();
 
     ruchy_cmd()
         .arg("tier")
@@ -925,11 +922,7 @@ fn test_tier_fail_pub_bronze_above_zero_blocks_any_pub_bronze() {
 #[test]
 fn test_tier_public_only_without_pub_reports_zero() {
     let tmp = TempDir::new().unwrap();
-    fs::write(
-        tmp.path().join("a.ruchy"),
-        "fun a() { 1 }\nfun b() { 2 }",
-    )
-    .unwrap();
+    fs::write(tmp.path().join("a.ruchy"), "fun a() { 1 }\nfun b() { 2 }").unwrap();
     let output = ruchy_cmd()
         .arg("tier")
         .arg(tmp.path())
