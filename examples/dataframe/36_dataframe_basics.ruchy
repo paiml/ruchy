@@ -1,0 +1,40 @@
+// 36_dataframe_basics.ruchy - Deterministic DataFrame golden example [PMAT-101]
+//
+// Builds a small typed DataFrame, selects a column, and prints a fixed set of
+// scalar facts. Every printed line is deterministic so tests/dataframe_golden.rs
+// can assert the exact stdout.
+
+fn main() {
+    let df = df![
+        "name" => ["alice", "bob", "carol"],
+        "age" => [30, 25, 35],
+        "score" => [90, 82, 77]
+    ]
+
+    let rows = df.rows()
+    let cols = df.columns()
+    println(f"rows={rows}")
+    println(f"cols={cols}")
+
+    let names = df.column_names()
+    let first_col = names[0]
+    let last_col = names[2]
+    println(f"first_col={first_col}")
+    println(f"last_col={last_col}")
+
+    let ages = df.select("age")
+    let age_cols = ages.columns()
+    let age_rows = ages.rows()
+    println(f"selected_cols={age_cols}")
+    println(f"selected_rows={age_rows}")
+
+    let name0 = df.get("name", 0)
+    let age2 = df.get("age", 2)
+    let score1 = df.get("score", 1)
+    println(f"name0={name0}")
+    println(f"age2={age2}")
+    println(f"score1={score1}")
+
+    let age_sum = ages.sum()
+    println(f"age_sum={age_sum}")
+}

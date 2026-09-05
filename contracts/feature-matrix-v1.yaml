@@ -1,0 +1,80 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Feature-matrix build contract for Ruchy: every advertised cargo feature set must compile"
+  crate: "ruchy"
+  references:
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z8 (PMAT-101)"
+
+equations:
+  feature_matrix_builds:
+    formula: "∀ F ∈ {default, all, minimal}: check(ruchy, F) = 0"
+    domain: "F ∈ {default, all-features, no-default-features+minimal}"
+    invariants:
+      - "The dataframe feature (polars + arrow) compiles against the locked polars-core 0.55.2"
+      - "No advertised feature set is silently broken by CI running default features only"
+
+  dataframe_null_preservation:
+    formula: "∀ s ∈ Series: arrow_to_dataframe(dataframe_to_arrow(s)) = s"
+    domain: "s ∈ Series over {Int32, Int64, Float64, Boolean, String}"
+    invariants:
+      - "ChunkedArray iteration yields Option<T>; a null never becomes a default value"
+
+proof_obligations:
+  - type: completeness
+    property: "Every advertised feature set compiles"
+    formal: "cargo check exits 0 for default, --all-features and --no-default-features --features minimal"
+    applies_to: all
+
+  - type: roundtrip
+    property: "Polars → Arrow → Polars preserves values and nulls"
+    formal: "arrow_to_dataframe ∘ dataframe_to_arrow = id"
+    applies_to: "src/backend/arrow_integration.rs"
+
+  - type: roundtrip
+    property: "CSV write then read preserves a two-row frame"
+    formal: "read_csv ∘ write_csv = id on shape and column names"
+    applies_to: "src/stdlib/dataframe.rs"
+
+falsification_tests:
+  - id: FALSIFY-FEATMATRIX-001
+    rule: "Feature matrix builds"
+    test: "test_pmat_101_example_basics_exact_stdout"
+    prediction: "verified"
+    if_fails: "Contract violation — the dataframe feature does not compile or its output drifted"
+
+  - id: FALSIFY-FEATMATRIX-002
+    rule: "Deterministic dataframe example output"
+    test: "test_pmat_101_example_basics_is_deterministic"
+    prediction: "verified"
+    if_fails: "Contract violation — dataframe example output is nondeterministic"
+
+  - id: FALSIFY-FEATMATRIX-003
+    rule: "CSV round-trip preserves a two-row frame"
+    test: "test_pmat_101_csv_roundtrip_preserves_two_row_frame"
+    prediction: "verified"
+    if_fails: "Contract violation — polars csv read/write drifted"
+
+  - id: FALSIFY-FEATMATRIX-004
+    rule: "Arrow round-trip preserves nulls"
+    test: "test_pmat_101_arrow_roundtrip_preserves_nulls"
+    prediction: "verified"
+    if_fails: "Contract violation — a null was silently materialised as a default value"
+
+kani_harnesses:
+  - id: KANI-FEATMATRIX-001
+    obligation: PO-FEATMATRIX-001
+    property: "Arrow round-trip null preservation"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_arrow_roundtrip_nulls
+
+qa_gate:
+  id: QA-FEATMATRIX
+  name: "feature matrix contract"
+  min_coverage: 0.90
+  max_complexity: 20
+  required_tests:
+    - "test_pmat_101_example_basics_exact_stdout"
+    - "test_pmat_101_csv_roundtrip_preserves_two_row_frame"
+    - "test_pmat_101_arrow_roundtrip_preserves_nulls"

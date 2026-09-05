@@ -6769,6 +6769,7 @@ dependencies = [
  "notify 8.2.0",
  "pmcp",
  "polars",
+ "polars-io",
  "predicates",
  "presentar",
  "prettyplease",

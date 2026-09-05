@@ -275,9 +275,9 @@ simulation = ["dep:simular"]
 shell-target = ["dep:bashrs"]
 minimal = []  # Users can use --no-default-features --features minimal for core only
 # DataFrame via trueno-db (default - uses Trueno SIMD backend)
-dataframe = ["polars", "arrow"]
+dataframe = ["polars", "polars-io", "arrow"]
 # Legacy polars compatibility layer (spec Section 4.2 - NOT default)
-polars-compat = ["polars", "arrow"]
+polars-compat = ["polars", "polars-io", "arrow"]
 testing = ["proptest"]
 stub_tests = []  # Enable stub tests for incomplete features (development only)
 notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http", "wasmparser", "wasmtime"]
@@ -332,6 +332,7 @@ clap = { version = "4.5", features = ["derive"] }
 regex = "1.11"
 # DataFrame support
 polars = { version = "0.55", default-features = false, features = ["lazy"], optional = true }
+polars-io = { version = "0.55", default-features = false, features = ["csv"], optional = true }
 arrow = { version = "54.0", optional = true }
 # WebAssembly support
 uuid = { version = "1.18", features = ["v4", "js"] }

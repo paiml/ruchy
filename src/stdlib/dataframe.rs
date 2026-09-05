@@ -7,6 +7,10 @@
 //! **Feature**: Only available when compiled with `--features dataframe`
 
 use polars::prelude::*;
+// polars re-exports the CSV reader/writer only under its own `csv` meta-feature, which
+// drags polars-stream and the cloud object_store chain (quick-xml advisories) into the
+// graph; ruchy depends on polars-io's csv feature directly instead (PMAT-101).
+use polars_io::prelude::{CsvReadOptions, CsvWriter, SerReader, SerWriter};
 use std::fs::File;
 
 /// Create `DataFrame` from column name-value pairs
@@ -59,7 +63,7 @@ pub fn from_columns(columns: Vec<(&str, Vec<i64>)>) -> Result<DataFrame, String>
         })
         .collect();
 
-    DataFrame::new(cols).map_err(|e| e.to_string())
+    DataFrame::new_infer_height(cols).map_err(|e| e.to_string())
 }
 
 /// Read CSV file into `DataFrame`
