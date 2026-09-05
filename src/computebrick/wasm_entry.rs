@@ -6,12 +6,12 @@
 use wasm_bindgen::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
+use web_sys::CanvasRenderingContext2d;
 
 use super::api;
-use super::canvas::{CellBuffer, Color, Rect};
+use super::canvas::CellBuffer;
 use super::widgets::Brick;
-use super::{GraphMode, WidgetKind, WidgetSpec};
+use super::WidgetSpec;
 
 /// WASM-compatible widget container.
 #[cfg(target_arch = "wasm32")]
@@ -57,8 +57,6 @@ impl WasmWidget {
     /// Render to a Canvas2D context.
     #[wasm_bindgen]
     pub fn render_to_canvas(&mut self, ctx: &CanvasRenderingContext2d, width: u32, height: u32) {
-        use super::canvas::Canvas;
-
         // Resize buffer if needed
         let char_width = 8.0;
         let char_height = 16.0;
@@ -99,8 +97,6 @@ impl WasmWidget {
     /// Get widget as string (for terminal/text output).
     #[wasm_bindgen]
     pub fn to_string(&mut self) -> String {
-        use super::canvas::Canvas;
-
         self.buffer.clear();
         self.inner.layout(self.buffer.bounds());
         self.inner.paint(&mut self.buffer);
@@ -133,14 +129,8 @@ pub fn create_widget_from_json(json: &str) -> Result<WasmWidget, JsValue> {
     })
 }
 
-/// Initialize WASM module.
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(start)]
-pub fn wasm_init() {
-    // Set panic hook for better error messages
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
-}
+// The module start hook lives in src/wasm_bindings.rs (`wasm_init`); a second
+// `#[wasm_bindgen(start)]` here exported the same symbol twice (PMAT-129).
 
 // Non-WASM stubs for testing
 #[cfg(not(target_arch = "wasm32"))]
@@ -168,8 +158,6 @@ impl WasmWidget {
     }
 
     pub fn to_string(&mut self) -> String {
-        use super::canvas::Canvas;
-
         self.buffer.clear();
         self.inner.layout(self.buffer.bounds());
         self.inner.paint(&mut self.buffer);

@@ -1729,7 +1729,7 @@ e2e-install-deps:
 # Build WASM module for browser (with minimal features - no tokio)
 wasm-build:
 	@echo "🔨 Building WASM module..."
-	wasm-pack build --target web --out-dir pkg -- --no-default-features --features wasm-compile
+	RUSTFLAGS='--cfg getrandom_backend="wasm_js"' wasm-pack build --target web --out-dir pkg -- --no-default-features --features wasm-compile
 	@echo "✅ WASM module built: pkg/ruchy_bg.wasm"
 
 wasm-deploy: wasm-build

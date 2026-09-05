@@ -7,7 +7,7 @@
 #
 # Stages, in order:
 #   1 tests        cargo test --lib -p ruchy
-#   2 features     clippy x3 feature sets + fmt (CI toolchain) + cargo audit
+#   2 features     clippy x3 feature sets + wasm32 build + fmt (CI toolchain) + cargo audit
 #   3 verbs        verb surface derived from the BUILT binary, each run on tests/golden/
 #   4 differential three-way vs the 4.2.1 baseline over examples/ + sibling corpora
 #   5 clean_room   cargo package -> extract -> --locked and unlocked builds, fresh CARGO_HOME
@@ -213,12 +213,32 @@ clippy_run() {
 }
 
 stage_features() {
-    hdr "STAGE 2/8  features -- clippy x3, fmt, audit"
-    local d a m fmt_exit audit_exit
+    hdr "STAGE 2/8  features -- clippy x3, wasm32 build, fmt, audit"
+    local d a m w fmt_exit audit_exit
 
     clippy_run default; d=$?
     clippy_run all --all-features; a=$?
     clippy_run minimal --no-default-features --features minimal; m=$?
+
+    # wasm32: the release workflow's Build WASM job (PMAT-129/130). getrandom 0.3 (via
+    # aprender-core's rand 0.9) needs the wasm_js backend both as a feature (Cargo.toml,
+    # wasm32 table) and as a cfg flag; the flag is set here exactly as release.yml sets it.
+    if ! rustup target list --installed 2> /dev/null | grep -qx 'wasm32-unknown-unknown'; then
+        say "  installing the wasm32-unknown-unknown target ..."
+        rustup target add wasm32-unknown-unknown > "$WORK/wasm32-target.log" 2>&1 || true
+    fi
+    if rustup target list --installed 2> /dev/null | grep -qx 'wasm32-unknown-unknown'; then
+        say "  build (wasm32-unknown-unknown, --no-default-features --features wasm-compile) ..."
+        (cd "$ROOT" && RUSTFLAGS='--cfg getrandom_backend="wasm_js"' command cargo build --lib \
+            --target wasm32-unknown-unknown --no-default-features --features wasm-compile) \
+            > "$WORK/wasm32.log" 2>&1
+        w=$?
+        [ "$w" -eq 0 ] || tail -20 "$WORK/wasm32.log"
+        say "  wasm32 exit=$w"
+    else
+        w=127
+        say "  wasm32-unknown-unknown target unavailable -- the wasm build FAILS the stage (never skipped silently)"
+    fi
 
     if rustup run "$CI_TOOLCHAIN" cargo --version > /dev/null 2>&1; then
         (cd "$ROOT" && command cargo "+$CI_TOOLCHAIN" fmt --all -- --check) > "$WORK/fmt.log" 2>&1
@@ -243,14 +263,14 @@ stage_features() {
     fi
 
     local status="PASS"
-    if [ "$d" -ne 0 ] || [ "$a" -ne 0 ] || [ "$m" -ne 0 ] || [ "$fmt_exit" -ne 0 ] || [ "$audit_exit" -ne 0 ]; then
+    if [ "$d" -ne 0 ] || [ "$a" -ne 0 ] || [ "$m" -ne 0 ] || [ "$w" -ne 0 ] || [ "$fmt_exit" -ne 0 ] || [ "$audit_exit" -ne 0 ]; then
         status="FAIL"
     fi
-    jq -n --arg s "$status" --argjson d "$d" --argjson a "$a" --argjson m "$m" \
+    jq -n --arg s "$status" --argjson d "$d" --argjson a "$a" --argjson m "$m" --argjson w "$w" \
         --argjson f "$fmt_exit" --argjson au "$audit_exit" \
-        '{status: $s, default: $d, all: $a, minimal: $m, fmt: $f, audit: $au}' \
+        '{status: $s, default: $d, all: $a, minimal: $m, wasm32: $w, fmt: $f, audit: $au}' \
         > "$STAGES/features.json"
-    report features "$status" "default=$d all=$a minimal=$m fmt=$fmt_exit audit=$audit_exit"
+    report features "$status" "default=$d all=$a minimal=$m wasm32=$w fmt=$fmt_exit audit=$audit_exit"
 }
 
 # --------------------------------------------------------------------------------------
