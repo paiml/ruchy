@@ -3,3 +3,5 @@
 # A check_regression or run_regression NOT listed here fails the differential stage.
 # The list is expected to be empty at release: PMAT-095 (Z4) migrates the in-repo file
 # that collides with the seven newly reserved words.
+examples/24_math_science.ruchy PMAT-095 reserved-word collision: 4.2.1 parses it, HEAD rejects it at line 254 (Expected RightBrace); Z4 migrates the file
+../ruchyruchy/validation/tests/test_property_framework.ruchy PMAT-095 reserved-word collision in the ruchyruchy corpus: 4.2.1 parses it, HEAD rejects it at line 317 (Expected RightBrace, found Let)

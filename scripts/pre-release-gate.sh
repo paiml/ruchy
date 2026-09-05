@@ -588,7 +588,7 @@ stage_differential() {
          run_stdout_diffs: ($sd | lines),
          known_breaks: ($kb | split(" ") | map(select(length > 0))),
          known_fixes: ($kf | split(" ") | map(select(length > 0))),
-         unlisted_regressions: ($ub | lines), unlisted_stdout_diffs: ($uf | lines),
+         unlisted_regressions: ($ub | lines | unique), unlisted_stdout_diffs: ($uf | lines | unique),
          nondeterministic: ($nd | lines),
          fixed: $fixed, both_fail: $bf,
          compiled_compared: $cc, compiled_skipped_budget: $cs}
@@ -666,9 +666,9 @@ stage_clean_room() {
     local home1 locked_exit
     home1=$(mktemp -d "$WORK/cargohome1.XXXX")
     (cd "$src" && env -u CARGO_TARGET_DIR CARGO_HOME="$home1" \
-        command cargo build --release --locked) > "$WORK/cleanroom-locked.log" 2>&1
+        cargo build --release --locked) > "$WORK/cleanroom-locked.log" 2>&1
     locked_exit=$?
-    [ "$locked_exit" -eq 0 ] || tail -25 "$WORK/cleanroom-locked.log"
+    [ "$locked_exit" -eq 0 ] || { cp "$WORK/cleanroom-locked.log" "$EVIDENCE_DIR/" 2>/dev/null; tail -25 "$WORK/cleanroom-locked.log"; }
     say "  clean-room --locked exit=$locked_exit"
 
     local bin_version=""
@@ -684,9 +684,9 @@ stage_clean_room() {
     local src2="$ex2/ruchy-$version"
     home2=$(mktemp -d "$WORK/cargohome2.XXXX")
     (cd "$src2" && env -u CARGO_TARGET_DIR CARGO_HOME="$home2" \
-        command cargo build --release) > "$WORK/cleanroom-unlocked.log" 2>&1
+        cargo build --release) > "$WORK/cleanroom-unlocked.log" 2>&1
     unlocked_exit=$?
-    [ "$unlocked_exit" -eq 0 ] || tail -25 "$WORK/cleanroom-unlocked.log"
+    [ "$unlocked_exit" -eq 0 ] || { cp "$WORK/cleanroom-unlocked.log" "$EVIDENCE_DIR/" 2>/dev/null; tail -25 "$WORK/cleanroom-unlocked.log"; }
     say "  clean-room unlocked exit=$unlocked_exit"
 
     local bin_version2=""
@@ -836,7 +836,31 @@ print_summary() {
 # main
 # --------------------------------------------------------------------------------------
 
+ONLY=""
+
+should_run() {
+    [ -z "$ONLY" ] && return 0
+    printf '%s' ",$ONLY," | grep -q ",$1,"
+}
+
+fill_unrun_stages() {
+    local st
+    for st in tests features verbs differential transpile clean_room package satd; do
+        [ -f "$STAGES/$st.json" ] && continue
+        jq -n --arg o "$ONLY" \
+            '{status: "FAIL", reason: ("not run (--only " + $o + "); this stage was not measured")}' \
+            > "$STAGES/$st.json"
+    done
+}
+
 main() {
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --only) ONLY="$2"; shift 2 ;;
+            --only=*) ONLY="${1#--only=}"; shift ;;
+            *) say "FATAL: unknown argument: $1"; exit 2 ;;
+        esac
+    done
     need jq
     need sha256sum
     need timeout
@@ -855,12 +879,13 @@ main() {
     say "  config    $CONFIG"
     say "  started   $(date -Is)"
 
-    stage_tests
-    stage_features
-    stage_verbs
-    stage_differential
-    stage_clean_room
-    stage_satd
+    should_run tests && stage_tests
+    should_run features && stage_features
+    should_run verbs && stage_verbs
+    should_run differential && stage_differential
+    should_run clean_room && stage_clean_room
+    should_run satd && stage_satd
+    fill_unrun_stages
     stage_receipt
 
     if print_summary; then
