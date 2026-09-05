@@ -1,0 +1,63 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Package hygiene contract for the published ruchy crate (PMAT-092)"
+  crate: "ruchy"
+  references:
+    - "Cargo reference, The Manifest Format: include and exclude fields"
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z1"
+
+equations:
+  package_hygiene:
+    formula: "∀p ∈ package_files(HEAD): ':' ∉ p ∧ top(p) ∈ include_allowlist"
+    domain: "p ∈ output of `cargo package --list -p ruchy`"
+    invariants:
+      - "No packaged path contains ':' (Windows checkout and tarball extraction both fail on it)"
+      - "No quarantine directory (tests.disabled, tests_disabled_for_mutation, tests_temp_disabled_for_sprint7_mutation) exists in the tree"
+      - "No .pmat-work, docs/ or scratch directory is packaged"
+  lockfile_shipped:
+    formula: "Cargo.lock ∈ package_files(HEAD)"
+    domain: "binary package"
+    invariants:
+      - "cargo auto-includes Cargo.lock for packages with a [[bin]] target regardless of `include`; `cargo install --locked` depends on it"
+
+proof_obligations:
+  - type: completeness
+    property: "Every packaged path is allowlisted and colon-free"
+    formal: "package_files(HEAD) ⊆ allowlist_matches ∧ ∀p: ':' ∉ p"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RELEASE-HYGIENE-001
+    rule: "No tracked path contains ':'"
+    test: "test_pmat_092_git_tracked_paths_no_colon"
+    prediction: "verified"
+    if_fails: "Contract violation — a colon path is tracked; Windows nightly and cargo install on Windows break"
+  - id: FALSIFY-RELEASE-HYGIENE-002
+    rule: "Quarantine directories are gone"
+    test: "test_pmat_092_quarantine_dirs_not_present"
+    prediction: "verified"
+    if_fails: "Contract violation — a fourth quarantine dir, or a restored one, ships in the crate"
+  - id: FALSIFY-RELEASE-HYGIENE-003
+    rule: "Manifest declares an include allowlist"
+    test: "test_pmat_092_cargo_toml_package_declares_include"
+    prediction: "verified"
+    if_fails: "Contract violation — exclude-list mode lets new scratch dirs into the crate silently"
+
+kani_harnesses:
+  - id: KANI-RELEASE-HYGIENE-001
+    obligation: PO-RELEASE-HYGIENE-001
+    property: "No packaged path contains a colon"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_release_hygiene
+
+qa_gate:
+  id: QA-RELEASE-HYGIENE
+  name: "release package hygiene"
+  min_coverage: 0.90
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_092_git_tracked_paths_no_colon"
+    - "test_pmat_092_quarantine_dirs_not_present"
+    - "test_pmat_092_cargo_toml_package_declares_include"
