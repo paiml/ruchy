@@ -240,6 +240,7 @@ include = [
     "static/notebook.html",
     "golden_traces/**",
     "notebooks/**",
+    "!**/*.proptest-regressions",
 ]
 
 autobins = false
