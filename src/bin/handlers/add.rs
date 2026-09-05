@@ -165,6 +165,7 @@ edition = "2021"
 
     #[test]
     fn test_verify_cargo_project_missing_cargo_toml() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -188,6 +189,7 @@ edition = "2021"
 
     #[test]
     fn test_verify_cargo_project_success() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let (_temp_dir, project_path) = create_test_project();
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -223,6 +225,7 @@ edition = "2021"
     // Property-based test: verify_cargo_project is idempotent
     #[test]
     fn test_verify_cargo_project_idempotent() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let (_temp_dir, project_path) = create_test_project();
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -253,6 +256,7 @@ edition = "2021"
 
     #[test]
     fn test_handle_add_command_no_cargo_toml() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -271,6 +275,7 @@ edition = "2021"
 
     #[test]
     fn test_handle_add_command_verbose() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -286,6 +291,7 @@ edition = "2021"
 
     #[test]
     fn test_handle_add_command_dev_flag() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -317,6 +323,7 @@ edition = "2021"
 
     #[test]
     fn test_verify_cargo_project_in_nested_dir() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -334,6 +341,7 @@ edition = "2021"
 
     #[test]
     fn test_handle_add_all_parameters() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 

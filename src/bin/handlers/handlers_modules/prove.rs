@@ -6,7 +6,7 @@ use super::prove_helpers::{
 };
 use anyhow::Result;
 use ruchy::proving::{InteractiveProver, ProverSession};
-use std::io::{self, Write};
+use std::io::{self, BufRead, Write};
 /// Handle interactive theorem prover - refactored with ≤10 complexity
 pub fn handle_prove_command(
     file: Option<&std::path::Path>,
@@ -19,6 +19,45 @@ pub fn handle_prove_command(
     counterexample: bool,
     verbose: bool,
     format: &str,
+) -> Result<()> {
+    let stdin = io::stdin();
+    let mut reader = stdin.lock();
+    handle_prove_command_with_input(
+        file,
+        backend,
+        ml_suggestions,
+        timeout,
+        script,
+        export,
+        check,
+        counterexample,
+        verbose,
+        format,
+        &mut reader,
+    )
+}
+
+/// Handle interactive theorem prover, reading prover commands from `reader`.
+///
+/// Split out of [`handle_prove_command`] so the interactive loop can be driven
+/// from a test (or any non-tty source) instead of the process stdin.
+///
+/// # Errors
+/// Returns an error if the backend cannot be configured, the proof file or
+/// script cannot be loaded, or the proof cannot be exported.
+#[allow(clippy::too_many_arguments)]
+pub fn handle_prove_command_with_input(
+    file: Option<&std::path::Path>,
+    backend: &str,
+    ml_suggestions: bool,
+    timeout: u64,
+    script: Option<&std::path::Path>,
+    export: Option<&std::path::Path>,
+    check: bool,
+    counterexample: bool,
+    verbose: bool,
+    format: &str,
+    reader: &mut impl BufRead,
 ) -> Result<()> {
     if verbose {
         println!("🔍 Starting interactive prover with backend: {}", backend);
@@ -38,7 +77,7 @@ pub fn handle_prove_command(
     }
     // Run interactive session if not in check mode
     if !check {
-        run_interactive_session(&mut prover, ml_suggestions, export, format, verbose)?;
+        run_interactive_session(&mut prover, ml_suggestions, export, format, verbose, reader)?;
     }
     Ok(())
 }
@@ -54,12 +93,14 @@ fn handle_file_proving(
     verify_proofs_from_ast(&ast, file_path, format, counterexample, verbose)
 }
 /// Run interactive prover session
+#[allow(clippy::too_many_arguments)]
 fn run_interactive_session(
     prover: &mut InteractiveProver,
     ml_suggestions: bool,
     export: Option<&std::path::Path>,
     format: &str,
     verbose: bool,
+    reader: &mut impl BufRead,
 ) -> Result<()> {
     println!("🚀 Starting Ruchy Interactive Prover");
     println!("Type 'help' for available commands\n");
@@ -67,7 +108,12 @@ fn run_interactive_session(
     // Main interactive loop
     loop {
         prompt_user()?;
-        let input = read_user_input()?;
+        // EOF (Ctrl-D, or a closed/piped stdin) ends the session. Treating it as
+        // an empty line here would spin the loop forever (PMAT-104).
+        let Some(input) = read_user_input(reader)? else {
+            println!();
+            break;
+        };
         if input.is_empty() {
             continue;
         }
@@ -91,11 +137,16 @@ fn prompt_user() -> Result<()> {
     io::stdout().flush()?;
     Ok(())
 }
-/// Read input from user
-fn read_user_input() -> Result<String> {
+/// Read one prover command from `reader`.
+///
+/// Returns `Ok(None)` at end of input so callers can distinguish EOF from a
+/// blank line.
+fn read_user_input(reader: &mut impl BufRead) -> Result<Option<String>> {
     let mut input = String::new();
-    io::stdin().read_line(&mut input)?;
-    Ok(input.trim().to_string())
+    if reader.read_line(&mut input)? == 0 {
+        return Ok(None);
+    }
+    Ok(Some(input.trim().to_string()))
 }
 
 #[cfg(test)]
@@ -374,6 +425,36 @@ mod tests {
     }
 
     // ========== Interactive Session Tests ==========
+    // PMAT-104: the interactive prover must terminate on EOF (Ctrl-D or piped
+    // input). Before this fix `read_user_input` returned Ok("") at EOF and the
+    // loop `continue`d, spinning forever at 100% CPU.
+    #[test]
+    fn test_pmat_104_interactive_session_terminates_on_eof() {
+        let mut input = std::io::Cursor::new(Vec::new());
+        let result = handle_prove_command_with_input(
+            None, "default", false, 30, None, None, false, false, false, "text", &mut input,
+        );
+        assert!(result.is_ok(), "EOF must end the session cleanly");
+    }
+
+    #[test]
+    fn test_pmat_104_interactive_session_blank_lines_then_eof_terminates() {
+        let mut input = std::io::Cursor::new(b"\n   \n\n".to_vec());
+        let result = handle_prove_command_with_input(
+            None, "default", false, 30, None, None, false, false, false, "text", &mut input,
+        );
+        assert!(result.is_ok(), "blank lines then EOF must end the session");
+    }
+
+    #[test]
+    fn test_pmat_104_interactive_session_quit_command_exits() {
+        let mut input = std::io::Cursor::new(b"quit\n".to_vec());
+        let result = handle_prove_command_with_input(
+            None, "default", false, 30, None, None, false, false, false, "text", &mut input,
+        );
+        assert!(result.is_ok(), "`quit` must end the session");
+    }
+
     // Note: Testing interactive sessions is challenging due to stdin/stdout interaction
     // These tests focus on the setup and configuration aspects
 

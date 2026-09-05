@@ -694,6 +694,17 @@ fn verify_file_exists(file: &Path, cmd: &str) -> anyhow::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A path that does not exist on any host. `/nonexistent` is a real directory on
+    /// some developer machines, which made the missing-path tests environment-dependent
+    /// (PMAT-104).
+    fn missing_path() -> std::path::PathBuf {
+        static N: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+        let n = N.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let p = std::env::temp_dir().join(format!("ruchy-missing-{}-{n}", std::process::id()));
+        assert!(!p.exists(), "{} unexpectedly exists", p.display());
+        p
+    }
     use tempfile::NamedTempFile;
 
     fn temp_file() -> NamedTempFile {
@@ -810,7 +821,7 @@ mod tests {
 
     #[test]
     fn test_purify_missing_path() {
-        let result = handle_purify(Path::new("/nonexistent"), false, false);
+        let result = handle_purify(&missing_path(), false, false);
         assert!(result.is_err());
     }
 
@@ -1097,9 +1108,7 @@ mod tests {
 
     #[test]
     fn test_contracts_sync_missing_path() {
-        assert!(
-            handle_contracts_sync(Path::new("/nonexistent"), Path::new("out"), false, &[]).is_err()
-        );
+        assert!(handle_contracts_sync(&missing_path(), Path::new("out"), false, &[]).is_err());
     }
 
     #[test]

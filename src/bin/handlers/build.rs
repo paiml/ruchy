@@ -145,6 +145,7 @@ mod tests {
 
     #[test]
     fn test_verify_cargo_project_missing_cargo_toml() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -168,6 +169,7 @@ mod tests {
 
     #[test]
     fn test_verify_cargo_project_success() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let (_temp_dir, project_path) = create_test_project();
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -197,6 +199,7 @@ mod tests {
     // Property-based test: verify_cargo_project is idempotent
     #[test]
     fn test_verify_cargo_project_idempotent() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let (_temp_dir, project_path) = create_test_project();
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -233,6 +236,7 @@ mod tests {
 
     #[test]
     fn test_run_cargo_build_no_project() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -259,6 +263,7 @@ mod tests {
 
     #[test]
     fn test_run_cargo_build_verbose() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -285,6 +290,7 @@ mod tests {
 
     #[test]
     fn test_handle_build_command_no_cargo() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 
@@ -300,6 +306,7 @@ mod tests {
 
     #[test]
     fn test_handle_build_command_release_mode() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         // Just verify the function signature works
         // Actual build test is expensive
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
@@ -314,6 +321,7 @@ mod tests {
 
     #[test]
     fn test_handle_build_command_all_options() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir = TempDir::new().expect("Failed to create temp dir");
         let _original_dir = env::current_dir().expect("Failed to get current dir");
 

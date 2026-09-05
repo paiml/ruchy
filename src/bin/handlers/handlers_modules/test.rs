@@ -72,11 +72,12 @@ fn run_tests(
     println!("\n✅ All tests passed!");
     Ok(())
 }
-/// Handle watch mode
-fn handle_watch_mode(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
+/// Print the watch-mode banner and perform the initial test run.
+///
+/// Split out of [`handle_watch_mode`] (PMAT-104) so the non-looping part of
+/// watch mode can be tested; the loop itself never returns by design.
+pub(crate) fn start_watch_mode(path: &Path, verbose: bool, filter: Option<&str>) {
     use colored::Colorize;
-    use std::thread;
-    use std::time::Duration;
     println!(
         "{} Watching {} for test changes...",
         "👁".bright_cyan(),
@@ -85,34 +86,59 @@ fn handle_watch_mode(path: &Path, verbose: bool, filter: Option<&str>) -> Result
     println!("Press Ctrl+C to stop watching\n");
     // Initial test run
     let _ = run_tests(path, verbose, filter, false, "text", 1, 0.0, "text");
+}
+
+/// Run a single watch-mode poll: re-run the tests if anything changed since
+/// `last_modified`, updating it in place.
+///
+/// Returns `true` when a change was detected and the tests were re-run. This is
+/// the body of the watch loop, extracted (PMAT-104) so it can be tested without
+/// entering the loop.
+pub(crate) fn run_watch_iteration(
+    path: &Path,
+    verbose: bool,
+    filter: Option<&str>,
+    last_modified: &mut std::time::SystemTime,
+) -> bool {
+    use colored::Colorize;
+    let current_modified = get_latest_modification(path);
+    if current_modified <= *last_modified {
+        return false;
+    }
+    *last_modified = current_modified;
+    println!("\n{} Files changed, running tests...", "→".bright_cyan());
+    let _ = run_tests(path, verbose, filter, false, "text", 1, 0.0, "text");
+    true
+}
+
+/// Handle watch mode
+fn handle_watch_mode(path: &Path, verbose: bool, filter: Option<&str>) -> Result<()> {
+    use std::thread;
+    use std::time::Duration;
+    start_watch_mode(path, verbose, filter);
     // Watch for changes
     let mut last_modified = get_latest_modification(path);
     loop {
         thread::sleep(Duration::from_millis(1000));
-        let current_modified = get_latest_modification(path);
-        if current_modified > last_modified {
-            last_modified = current_modified;
-            println!("\n{} Files changed, running tests...", "→".bright_cyan());
-            let _ = run_tests(path, verbose, filter, false, "text", 1, 0.0, "text");
-        }
+        run_watch_iteration(path, verbose, filter, &mut last_modified);
     }
 }
+/// Modification time of a directory entry if it is a `.ruchy` file, else `None`.
+fn ruchy_file_mtime(entry: &std::fs::DirEntry) -> Option<std::time::SystemTime> {
+    let path = entry.path().canonicalize().ok()?;
+    if path.extension().and_then(|ext| ext.to_str()) != Some("ruchy") {
+        return None;
+    }
+    std::fs::metadata(&path).ok()?.modified().ok()
+}
+
 /// Get latest modification time in directory
 fn get_latest_modification(path: &Path) -> std::time::SystemTime {
-    use std::fs;
     let mut latest = std::time::SystemTime::now();
-    if let Ok(entries) = fs::read_dir(path) {
-        for entry in entries.flatten() {
-            if let Ok(path) = entry.path().canonicalize() {
-                if path.extension().and_then(|ext| ext.to_str()) == Some("ruchy") {
-                    if let Ok(metadata) = fs::metadata(&path) {
-                        if let Ok(modified) = metadata.modified() {
-                            if modified > latest {
-                                latest = modified;
-                            }
-                        }
-                    }
-                }
+    if let Ok(entries) = std::fs::read_dir(path) {
+        for modified in entries.flatten().filter_map(|e| ruchy_file_mtime(&e)) {
+            if modified > latest {
+                latest = modified;
             }
         }
     }
@@ -175,6 +201,7 @@ mod tests {
     // ========== Test Command Handler Tests ==========
     #[test]
     fn test_handle_test_command_default_path() {
+        let _cwd = crate::handlers::test_support::cwd_lock();
         let temp_dir =
             create_test_directory_with_files().expect("Failed to create test directory with files");
 
@@ -385,29 +412,6 @@ mod tests {
 
         // Test should complete without panicking
         assert!(result.is_ok() || result.is_err());
-    }
-
-    // ========== Watch Mode Tests ==========
-    #[test]
-
-    fn test_handle_watch_mode_setup() {
-        let _temp_dir =
-            create_test_directory_with_files().expect("Failed to create test directory with files");
-
-        // We can't easily test the full watch mode (infinite loop),
-        // but we can test that it doesn't panic on initial setup
-        // This test would need to be run manually or with a timeout mechanism
-
-        // For now, just test that the function exists and can be called
-        // In a real test environment, you'd use a timeout or separate thread
-
-        // Note: This test is marked as  to prevent infinite loop in CI
-        let _result = std::panic::catch_unwind(|| {
-            std::thread::spawn(move || {
-                std::thread::sleep(Duration::from_millis(10)); // Short sleep
-                std::process::exit(0); // Exit quickly to avoid infinite loop
-            });
-        });
     }
 
     // ========== File Modification Tests ==========

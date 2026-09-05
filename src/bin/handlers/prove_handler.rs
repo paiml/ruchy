@@ -82,7 +82,21 @@ pub fn verify_proofs_from_ast(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Cursor;
     use tempfile::TempDir;
+
+    // PMAT-104: `handle_prove_command` with `file: None` and `check: false`
+    // enters the interactive prover, which reads the *process* stdin. Under
+    // `cargo test` that never returns, so every such test blocked the whole
+    // `--bin ruchy` target. These tests exercise the same handler through
+    // `handle_prove_command_with_input`, which takes the reader explicitly, so
+    // the real interactive path is still covered but terminates at EOF.
+    use super::super::handlers_modules::prove::handle_prove_command_with_input;
+
+    /// An interactive session that is immediately at end of input.
+    fn eof_input() -> Cursor<Vec<u8>> {
+        Cursor::new(Vec::new())
+    }
 
     #[test]
     fn test_prove_handler_stub() {
@@ -94,10 +108,20 @@ mod tests {
 
     #[test]
     fn test_handle_prove_command_no_file() {
-        let result = handle_prove_command(
-            None, "default", false, 30, None, None, false, false, false, "text",
+        let result = handle_prove_command_with_input(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -114,16 +138,28 @@ mod tests {
             false,
             "text",
         );
-        let _ = result;
+        assert!(
+            result.is_err(),
+            "proving a file that does not exist must be an error"
+        );
     }
 
     #[test]
     fn test_handle_prove_command_with_ml_suggestions() {
-        let result = handle_prove_command(
-            None, "default", true, // ml_suggestions
-            60, None, None, false, false, false, "text",
+        let result = handle_prove_command_with_input(
+            None,
+            "default",
+            true, // ml_suggestions
+            60,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -132,43 +168,81 @@ mod tests {
             None, "default", false, 30, None, None, true, // check
             false, false, "text",
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_prove_command_counterexample() {
-        let result = handle_prove_command(
-            None, "default", false, 30, None, None, false, true, // counterexample
-            false, "text",
+        let result = handle_prove_command_with_input(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            true, // counterexample
+            false,
+            "text",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_prove_command_verbose() {
-        let result = handle_prove_command(
-            None, "default", false, 30, None, None, false, false, true, // verbose
+        let result = handle_prove_command_with_input(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            true, // verbose
             "text",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_prove_command_json_format() {
-        let result = handle_prove_command(
-            None, "default", false, 30, None, None, false, false, false, "json",
+        let result = handle_prove_command_with_input(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "json",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_prove_command_various_backends() {
         let backends = ["default", "z3", "smt", "custom"];
         for backend in &backends {
-            let result = handle_prove_command(
-                None, backend, false, 30, None, None, false, false, false, "text",
+            let result = handle_prove_command_with_input(
+                None,
+                backend,
+                false,
+                30,
+                None,
+                None,
+                false,
+                false,
+                false,
+                "text",
+                &mut eof_input(),
             );
-            let _ = result;
+            assert!(result.is_ok(), "backend {backend} must be accepted");
         }
     }
 
@@ -176,10 +250,20 @@ mod tests {
     fn test_handle_prove_command_various_timeouts() {
         let timeouts = [1, 10, 30, 60, 300, 3600];
         for timeout in &timeouts {
-            let result = handle_prove_command(
-                None, "default", false, *timeout, None, None, false, false, false, "text",
+            let result = handle_prove_command_with_input(
+                None,
+                "default",
+                false,
+                *timeout,
+                None,
+                None,
+                false,
+                false,
+                false,
+                "text",
+                &mut eof_input(),
             );
-            let _ = result;
+            assert!(result.is_ok(), "timeout {timeout} must be accepted");
         }
     }
 
@@ -188,7 +272,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let script_path = temp_dir.path().join("proof_script.txt");
         std::fs::write(&script_path, "intro\napply simplify").unwrap();
-        let result = handle_prove_command(
+        let result = handle_prove_command_with_input(
             None,
             "default",
             false,
@@ -199,15 +283,16 @@ mod tests {
             false,
             false,
             "text",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_prove_command_with_export() {
         let temp_dir = TempDir::new().unwrap();
         let export_path = temp_dir.path().join("proof_export.txt");
-        let result = handle_prove_command(
+        let result = handle_prove_command_with_input(
             None,
             "default",
             false,
@@ -218,8 +303,13 @@ mod tests {
             false,
             false,
             "text",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
+        assert!(
+            export_path.exists(),
+            "an export path must be written when the session ends"
+        );
     }
 
     #[test]
@@ -239,7 +329,7 @@ mod tests {
             true,
             "json",
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     // ===== EXTREME TDD Round 153 - Prove Handler Tests =====
@@ -261,16 +351,25 @@ mod tests {
             false,
             "text",
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_prove_command_zero_timeout() {
-        let result = handle_prove_command(
-            None, "default", false, 0, // zero timeout
-            None, None, false, false, false, "text",
+        let result = handle_prove_command_with_input(
+            None,
+            "default",
+            false,
+            0, // zero timeout
+            None,
+            None,
+            false,
+            false,
+            false,
+            "text",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -282,14 +381,35 @@ mod tests {
             true, // verbose
             "json",
         );
-        let _ = result;
+        assert!(result.is_ok());
     }
 
     #[test]
     fn test_handle_prove_command_xml_format() {
-        let result = handle_prove_command(
-            None, "default", false, 30, None, None, false, false, false, "xml",
+        let result = handle_prove_command_with_input(
+            None,
+            "default",
+            false,
+            30,
+            None,
+            None,
+            false,
+            false,
+            false,
+            "xml",
+            &mut eof_input(),
         );
-        let _ = result;
+        assert!(result.is_ok());
+    }
+
+    /// The interactive session must also honour an explicit `quit` command
+    /// coming from a non-tty reader, not just EOF.
+    #[test]
+    fn test_handle_prove_command_quit_from_reader() {
+        let mut input = Cursor::new(b"help\nquit\n".to_vec());
+        let result = handle_prove_command_with_input(
+            None, "default", false, 30, None, None, false, false, false, "text", &mut input,
+        );
+        assert!(result.is_ok());
     }
 }

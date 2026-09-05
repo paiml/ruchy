@@ -113,3 +113,21 @@ pub(crate) use transpile_handler::parse_source;
 
 #[cfg(test)]
 mod tests;
+
+/// Shared support for the handler unit tests (PMAT-104).
+#[cfg(test)]
+pub(crate) mod test_support {
+    use std::sync::{Mutex, MutexGuard, PoisonError};
+
+    static CWD_LOCK: Mutex<()> = Mutex::new(());
+
+    /// Serialize tests that change the process-wide current directory.
+    ///
+    /// The cwd is global to the test binary: two such tests on different threads
+    /// corrupt each other's view of the filesystem, which showed up as
+    /// `handlers::build` / `handlers::add` tests failing at random once the target
+    /// could run to completion. Hold the returned guard for the whole test.
+    pub(crate) fn cwd_lock() -> MutexGuard<'static, ()> {
+        CWD_LOCK.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+}
