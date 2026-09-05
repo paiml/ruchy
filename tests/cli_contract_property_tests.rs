@@ -20,7 +20,10 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
+
+mod support;
 use std::fs;
+use support::assert_args_accepted;
 use tempfile::TempDir;
 
 /// Helper: Create ruchy command
@@ -44,12 +47,14 @@ fn cli_property_tests_valid_file() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "simple.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--cases")
-        .arg("10") // Very few cases for speed
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--cases")
+            .arg("10") // Very few cases for speed
+            .assert(),
+    );
     // Just verify command runs
 }
 
@@ -89,12 +94,14 @@ fn cli_property_tests_custom_cases() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "cases_test.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--cases")
-        .arg("100") // Custom case count
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--cases")
+            .arg("100") // Custom case count
+            .assert(),
+    );
 }
 
 #[test]
@@ -116,14 +123,16 @@ fn cli_property_tests_with_seed() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "seed_test.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--cases")
-        .arg("10")
-        .arg("--seed")
-        .arg("12345") // Reproducible seed
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--cases")
+            .arg("10")
+            .arg("--seed")
+            .arg("12345") // Reproducible seed
+            .assert(),
+    );
 }
 
 // ============================================================================
@@ -135,14 +144,16 @@ fn cli_property_tests_text_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "text_format.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--format")
-        .arg("text")
-        .arg("--cases")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--format")
+            .arg("text")
+            .arg("--cases")
+            .arg("10")
+            .assert(),
+    );
 }
 
 #[test]
@@ -150,14 +161,16 @@ fn cli_property_tests_json_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "json_format.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--format")
-        .arg("json")
-        .arg("--cases")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--format")
+            .arg("json")
+            .arg("--cases")
+            .arg("10")
+            .assert(),
+    );
 }
 
 #[test]
@@ -165,14 +178,16 @@ fn cli_property_tests_markdown_format() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "markdown_format.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--format")
-        .arg("markdown")
-        .arg("--cases")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--format")
+            .arg("markdown")
+            .arg("--cases")
+            .arg("10")
+            .assert(),
+    );
 }
 
 // ============================================================================
@@ -185,14 +200,16 @@ fn cli_property_tests_output_to_file() {
     let file = create_temp_file(&temp, "output_test.ruchy", "let x = 42\n");
     let output_file = temp.path().join("property_report.txt");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--output")
-        .arg(&output_file)
-        .arg("--cases")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--output")
+            .arg(&output_file)
+            .arg("--cases")
+            .arg("10")
+            .assert(),
+    );
 }
 
 // ============================================================================
@@ -241,13 +258,15 @@ fn cli_property_tests_verbose_flag() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "verbose.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--verbose")
-        .arg("--cases")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--verbose")
+            .arg("--cases")
+            .arg("10")
+            .assert(),
+    );
 }
 
 // ============================================================================
@@ -288,12 +307,14 @@ println(factorial(5))
 ",
     );
 
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--cases")
-        .arg("10")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--cases")
+            .arg("10")
+            .assert(),
+    );
 }
 
 // ============================================================================
@@ -324,12 +345,14 @@ fn cli_property_tests_zero_cases() {
     let file = create_temp_file(&temp, "zero_cases.ruchy", "let x = 42\n");
 
     // Zero cases might be valid (no tests run) or invalid
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--cases")
-        .arg("0")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--cases")
+            .arg("0")
+            .assert(),
+    );
     // Just verify command handles this case
 }
 
@@ -339,12 +362,14 @@ fn cli_property_tests_very_large_cases() {
     let file = create_temp_file(&temp, "large_cases.ruchy", "let x = 42\n");
 
     // Large number of cases (would take very long)
-    ruchy_cmd()
-        .arg("property-tests")
-        .arg(&file)
-        .arg("--cases")
-        .arg("1000000")
-        .timeout(std::time::Duration::from_secs(2))
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("property-tests")
+            .arg(&file)
+            .arg("--cases")
+            .arg("1000000")
+            .timeout(std::time::Duration::from_secs(2))
+            .assert(),
+    );
     // Timeout will kill it, but tests CLI accepts the parameter
 }

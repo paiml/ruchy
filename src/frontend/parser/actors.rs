@@ -407,7 +407,10 @@ mod tests {
         use crate::frontend::Parser;
         // Regression guard: a closed actor body still parses.
         let result = Parser::new("actor Counter { count: i32 = 0 }").parse();
-        assert!(result.is_ok(), "well-formed actor must still parse: {result:?}");
+        assert!(
+            result.is_ok(),
+            "well-formed actor must still parse: {result:?}"
+        );
     }
 
     #[test]

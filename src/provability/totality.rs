@@ -103,10 +103,7 @@ mod tests {
     #[test]
     fn test_from_decorator() {
         assert_eq!(Totality::from_decorator("total"), Some(Totality::Total));
-        assert_eq!(
-            Totality::from_decorator("partial"),
-            Some(Totality::Partial)
-        );
+        assert_eq!(Totality::from_decorator("partial"), Some(Totality::Partial));
         assert_eq!(Totality::from_decorator("verified"), None);
         assert_eq!(Totality::from_decorator("gold"), None);
     }

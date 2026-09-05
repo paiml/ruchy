@@ -97,9 +97,7 @@ fn test_embed_008_sovereign_examples_transpile_without_unsafe() {
         // Only check files matching a sovereign prefix AND explicitly listed
         // as 5.0 content (contracts / sovereign_platform / migration_demo /
         // simd_arrays / embedding).
-        let is_sovereign_50 = sovereign_prefixes
-            .iter()
-            .any(|p| name.starts_with(p))
+        let is_sovereign_50 = sovereign_prefixes.iter().any(|p| name.starts_with(p))
             && (name.contains("contracts")
                 || name.contains("sovereign")
                 || name.contains("migration")

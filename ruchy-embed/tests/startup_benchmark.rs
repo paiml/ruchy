@@ -50,10 +50,7 @@ fn test_embed_006_startup_time_is_reported() {
     // non-default value (Engine records startup_time via Instant::elapsed).
     let engine = Engine::new();
     let t = engine.startup_time();
-    assert!(
-        t > Duration::ZERO,
-        "startup_time() must be > 0, got {t:?}"
-    );
+    assert!(t > Duration::ZERO, "startup_time() must be > 0, got {t:?}");
     // And reasonable even in debug mode (generous upper bound).
     assert!(
         t < Duration::from_secs(1),

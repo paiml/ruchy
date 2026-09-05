@@ -19,7 +19,10 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
+
+mod support;
 use std::fs;
+use support::assert_args_accepted;
 use tempfile::TempDir;
 
 /// Helper: Create ruchy command
@@ -167,12 +170,14 @@ fn cli_mutations_custom_timeout() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "timeout_test.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("mutations")
-        .arg(&file)
-        .arg("--timeout")
-        .arg("5") // 5 second timeout
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("mutations")
+            .arg(&file)
+            .arg("--timeout")
+            .arg("5") // 5 second timeout
+            .assert(),
+    );
     // Just verify the command accepts timeout parameter
 }
 
@@ -200,14 +205,16 @@ fn cli_mutations_output_to_file() {
     let file = create_temp_file(&temp, "output_test.ruchy", "let x = 42\n");
     let output_file = temp.path().join("mutations_report.txt");
 
-    ruchy_cmd()
-        .arg("mutations")
-        .arg(&file)
-        .arg("--output")
-        .arg(&output_file)
-        .arg("--timeout")
-        .arg("1")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("mutations")
+            .arg(&file)
+            .arg("--output")
+            .arg(&output_file)
+            .arg("--timeout")
+            .arg("1")
+            .assert(),
+    );
 
     // Note: File may or may not be created depending on cargo-mutants availability
 }
@@ -221,14 +228,16 @@ fn cli_mutations_min_coverage_threshold() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "coverage_test.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("mutations")
-        .arg(&file)
-        .arg("--min-coverage")
-        .arg("0.75")
-        .arg("--timeout")
-        .arg("1")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("mutations")
+            .arg(&file)
+            .arg("--min-coverage")
+            .arg("0.75")
+            .arg("--timeout")
+            .arg("1")
+            .assert(),
+    );
     // Just verify the command accepts min-coverage parameter
 }
 
@@ -272,13 +281,15 @@ fn cli_mutations_verbose_flag() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "verbose.ruchy", "let x = 42\n");
 
-    ruchy_cmd()
-        .arg("mutations")
-        .arg(&file)
-        .arg("--verbose")
-        .arg("--timeout")
-        .arg("1")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("mutations")
+            .arg(&file)
+            .arg("--verbose")
+            .arg("--timeout")
+            .arg("1")
+            .assert(),
+    );
     // Just verify verbose flag is accepted
 }
 
@@ -321,12 +332,14 @@ println(factorial(5))
 ",
     );
 
-    ruchy_cmd()
-        .arg("mutations")
-        .arg(&file)
-        .arg("--timeout")
-        .arg("1")
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("mutations")
+            .arg(&file)
+            .arg("--timeout")
+            .arg("1")
+            .assert(),
+    );
     // Complex program should be accepted
 }
 

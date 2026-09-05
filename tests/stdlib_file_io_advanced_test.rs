@@ -9,7 +9,10 @@
 
 use assert_cmd::Command;
 use predicates::prelude::*;
+
+mod support;
 use std::io::Write;
+use support::assert_args_accepted;
 use tempfile::{NamedTempFile, TempDir};
 
 fn ruchy_cmd() -> Command {
@@ -156,7 +159,7 @@ println("Delete attempted")
 "#;
 
     // Should either succeed silently or return error - depends on implementation
-    ruchy_cmd().arg("-e").arg(code).assert();
+    assert_args_accepted(ruchy_cmd().arg("-e").arg(code).assert());
     // Don't assert success/failure - implementation may vary
 }
 

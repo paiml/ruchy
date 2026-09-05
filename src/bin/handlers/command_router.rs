@@ -521,7 +521,9 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             use crate::handlers::handlers_modules::sovereign::*;
             match cmd {
                 crate::WidgetCommands::Serve { file, port } => handle_widget_serve(&file, port),
-                crate::WidgetCommands::Build { file, output } => handle_widget_build(&file, &output),
+                crate::WidgetCommands::Build { file, output } => {
+                    handle_widget_build(&file, &output)
+                }
                 crate::WidgetCommands::Test { path } => handle_widget_test(&path),
                 crate::WidgetCommands::Inspect { file } => handle_widget_inspect(&file),
             }
@@ -533,7 +535,9 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
                 crate::AprCommands::Serve { file, port } => handle_apr_serve(&file, port),
                 crate::AprCommands::Quantize { file, bits } => handle_apr_quantize(&file, bits),
                 crate::AprCommands::Inspect { file } => handle_apr_inspect(&file),
-                crate::AprCommands::Bench { file, iterations } => handle_apr_bench(&file, iterations),
+                crate::AprCommands::Bench { file, iterations } => {
+                    handle_apr_bench(&file, iterations)
+                }
                 crate::AprCommands::Eval { file, data } => handle_apr_eval(&file, &data),
             }
         }
@@ -542,7 +546,9 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             match cmd {
                 crate::ModelCommands::Save { name, output } => handle_model_save(&name, &output),
                 crate::ModelCommands::Load { file } => handle_model_load(&file),
-                crate::ModelCommands::Export { file, format } => handle_model_export(&file, &format),
+                crate::ModelCommands::Export { file, format } => {
+                    handle_model_export(&file, &format)
+                }
                 crate::ModelCommands::Import { file } => handle_model_import(&file),
                 crate::ModelCommands::Inspect { file } => handle_model_inspect(&file),
                 crate::ModelCommands::Verify { file } => handle_model_verify(&file),
@@ -575,48 +581,59 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
             fail_on_scorecard,
             config,
             exclude,
-        } => {
-            crate::handlers::handlers_modules::provability::handle_provability_command(
-                &path,
-                json,
-                list,
-                fail_under,
-                fail_on_totality_violation,
-                fail_under_f1,
-                fail_exempt_density_above,
-                public_only,
-                fail_pub_bronze_above,
-                fail_diff_exempt_density_above,
-                by_file,
-                &sort_by,
-                top,
-                parse_timeout_ms,
-                baseline.as_deref(),
-                markdown,
-                fail_on_scorecard.as_deref(),
-                config.as_deref(),
-                &exclude,
-            )
-        }
+        } => crate::handlers::handlers_modules::provability::handle_provability_command(
+            &path,
+            json,
+            list,
+            fail_under,
+            fail_on_totality_violation,
+            fail_under_f1,
+            fail_exempt_density_above,
+            public_only,
+            fail_pub_bronze_above,
+            fail_diff_exempt_density_above,
+            by_file,
+            &sort_by,
+            top,
+            parse_timeout_ms,
+            baseline.as_deref(),
+            markdown,
+            fail_on_scorecard.as_deref(),
+            config.as_deref(),
+            &exclude,
+        ),
         crate::Commands::Contracts(cmd) => {
             use crate::handlers::handlers_modules::sovereign::*;
             match cmd {
-                crate::ContractsCommands::Sync { path, output, verbose, exclude } => {
-                    handle_contracts_sync(&path, &output, verbose, &exclude)
-                }
-                crate::ContractsCommands::List { path, format, pub_only, exclude } => {
-                    handle_contracts_list(&path, &format, pub_only, &exclude)
-                }
-                crate::ContractsCommands::Check { path, min_coverage, pub_only, exclude } => {
-                    handle_contracts_check(&path, min_coverage, pub_only, &exclude)
-                }
+                crate::ContractsCommands::Sync {
+                    path,
+                    output,
+                    verbose,
+                    exclude,
+                } => handle_contracts_sync(&path, &output, verbose, &exclude),
+                crate::ContractsCommands::List {
+                    path,
+                    format,
+                    pub_only,
+                    exclude,
+                } => handle_contracts_list(&path, &format, pub_only, &exclude),
+                crate::ContractsCommands::Check {
+                    path,
+                    min_coverage,
+                    pub_only,
+                    exclude,
+                } => handle_contracts_check(&path, min_coverage, pub_only, &exclude),
             }
         }
-        crate::Commands::SuggestContracts { path, format, verbose, pub_only, exclude } => {
-            crate::handlers::handlers_modules::sovereign::handle_suggest_contracts(
-                &path, &format, verbose, pub_only, &exclude,
-            )
-        }
+        crate::Commands::SuggestContracts {
+            path,
+            format,
+            verbose,
+            pub_only,
+            exclude,
+        } => crate::handlers::handlers_modules::sovereign::handle_suggest_contracts(
+            &path, &format, verbose, pub_only, &exclude,
+        ),
         _ => {
             eprintln!("Command not yet implemented");
             Ok(())

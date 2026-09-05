@@ -212,10 +212,7 @@ mod tests {
         let snap = SimSnapshot {
             step: 100,
             time: 0.1,
-            variables: vec![
-                ("x".to_string(), 1.5),
-                ("y".to_string(), -0.3),
-            ],
+            variables: vec![("x".to_string(), 1.5), ("y".to_string(), -0.3)],
         };
         assert_eq!(snap.get("x"), Some(1.5));
         assert_eq!(snap.get("y"), Some(-0.3));

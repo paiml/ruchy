@@ -46,5 +46,9 @@ fn test_compiler_001_compile_succeeds_with_cargo_target_dir_set() {
         .assert()
         .success();
 
-    assert!(out.exists(), "compiled binary must exist at {}", out.display());
+    assert!(
+        out.exists(),
+        "compiled binary must exist at {}",
+        out.display()
+    );
 }

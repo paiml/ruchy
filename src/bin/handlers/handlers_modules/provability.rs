@@ -39,10 +39,18 @@ impl BaselineSnapshot {
         for (name, base, cur) in &[
             ("bronze", self.bronze, current.bronze),
             ("pub_bronze", self.pub_bronze, current.pub_bronze),
-            ("contract_exempt", self.contract_exempt, current.contract_exempt),
+            (
+                "contract_exempt",
+                self.contract_exempt,
+                current.contract_exempt,
+            ),
             ("diff_exempt", self.diff_exempt, current.diff_exempt),
             ("parse_errors", self.parse_errors, current.parse_errors),
-            ("parse_timeouts", self.parse_timeouts, current.parse_timeouts),
+            (
+                "parse_timeouts",
+                self.parse_timeouts,
+                current.parse_timeouts,
+            ),
             (
                 "totality_violations",
                 self.totality_violations,
@@ -59,8 +67,16 @@ impl BaselineSnapshot {
         }
         // Percentages that should not decrease.
         for (name, base, cur) in &[
-            ("non_trivial_pct", self.non_trivial_pct, current.non_trivial_pct),
-            ("non_bronze_pct", self.non_bronze_pct, current.non_bronze_pct),
+            (
+                "non_trivial_pct",
+                self.non_trivial_pct,
+                current.non_trivial_pct,
+            ),
+            (
+                "non_bronze_pct",
+                self.non_bronze_pct,
+                current.non_bronze_pct,
+            ),
         ] {
             // Tolerate 0.01% rounding noise.
             if *cur + 0.01 < *base {
@@ -196,8 +212,7 @@ impl TierConfig {
     pub fn load(path: &Path) -> Result<Self> {
         let raw = std::fs::read_to_string(path)
             .with_context(|| format!("reading config {}", path.display()))?;
-        toml::from_str::<Self>(&raw)
-            .with_context(|| format!("parsing config {}", path.display()))
+        toml::from_str::<Self>(&raw).with_context(|| format!("parsing config {}", path.display()))
     }
 }
 
@@ -304,10 +319,7 @@ impl FalsifierScorecard {
 
     /// Return (label, status) for each breached metric at-or-above `level`.
     #[must_use]
-    pub fn breached_metrics(
-        &self,
-        level: FalsifierStatus,
-    ) -> Vec<(&'static str, FalsifierStatus)> {
+    pub fn breached_metrics(&self, level: FalsifierStatus) -> Vec<(&'static str, FalsifierStatus)> {
         let pairs = [
             ("F1", self.f1),
             ("F2", self.f2),
@@ -486,7 +498,10 @@ impl ProvabilityReport {
             self.platinum,
             pct_of(self.platinum)
         ));
-        out.push_str(&format!("| **non-Bronze** | | **{:.1}%** |\n\n", self.non_bronze_pct()));
+        out.push_str(&format!(
+            "| **non-Bronze** | | **{:.1}%** |\n\n",
+            self.non_bronze_pct()
+        ));
         // Falsifier scorecard
         out.push_str("### §14.5 Falsifier Scorecard\n\n");
         out.push_str("| Metric | Value | Status |\n|--------|------:|:------:|\n");
@@ -852,10 +867,7 @@ fn classify_source(src: &str, file: &Path, report: &mut ProvabilityReport) {
 /// `Some(expr)` on success, `None` if the parser errored, `Err(())` if
 /// the parser exceeded `timeout_ms` milliseconds (treated as a hang /
 /// parser infinite loop).
-fn parse_with_timeout(
-    src: &str,
-    timeout_ms: u64,
-) -> Result<Option<ruchy::Expr>, ()> {
+fn parse_with_timeout(src: &str, timeout_ms: u64) -> Result<Option<ruchy::Expr>, ()> {
     use std::sync::mpsc;
     use std::time::Duration;
     let (tx, rx) = mpsc::sync_channel::<Option<ruchy::Expr>>(1);
@@ -931,16 +943,15 @@ fn expr_evaluates_to_true(e: &ruchy::Expr) -> bool {
         // Direct: `true`
         ExprKind::Literal(Literal::Bool(true)) => true,
         // Double-negation: `!false`, `!!true`
-        ExprKind::Unary { op: UnaryOp::Not, operand } => expr_evaluates_to_false(operand),
+        ExprKind::Unary {
+            op: UnaryOp::Not,
+            operand,
+        } => expr_evaluates_to_false(operand),
         // Binary: constant comparisons + trivial logic
         ExprKind::Binary { op, left, right } => match op {
             // Logical: short-circuit tautologies
-            BinaryOp::And => {
-                expr_evaluates_to_true(left) && expr_evaluates_to_true(right)
-            }
-            BinaryOp::Or => {
-                expr_evaluates_to_true(left) || expr_evaluates_to_true(right)
-            }
+            BinaryOp::And => expr_evaluates_to_true(left) && expr_evaluates_to_true(right),
+            BinaryOp::Or => expr_evaluates_to_true(left) || expr_evaluates_to_true(right),
             // Reflexivity: `x == x` on the same identifier
             BinaryOp::Equal => {
                 same_identifier(left, right) || const_cmp(left, right, op) == Some(true)
@@ -962,7 +973,10 @@ fn expr_evaluates_to_true(e: &ruchy::Expr) -> bool {
 fn expr_evaluates_to_false(e: &ruchy::Expr) -> bool {
     match &e.kind {
         ExprKind::Literal(Literal::Bool(false)) => true,
-        ExprKind::Unary { op: UnaryOp::Not, operand } => expr_evaluates_to_true(operand),
+        ExprKind::Unary {
+            op: UnaryOp::Not,
+            operand,
+        } => expr_evaluates_to_true(operand),
         ExprKind::Binary { op, left, right } => match op {
             BinaryOp::Equal => const_cmp(left, right, op) == Some(false),
             BinaryOp::NotEqual
@@ -971,12 +985,8 @@ fn expr_evaluates_to_false(e: &ruchy::Expr) -> bool {
             | BinaryOp::Greater
             | BinaryOp::GreaterEqual
             | BinaryOp::Gt => const_cmp(left, right, op) == Some(false),
-            BinaryOp::And => {
-                expr_evaluates_to_false(left) || expr_evaluates_to_false(right)
-            }
-            BinaryOp::Or => {
-                expr_evaluates_to_false(left) && expr_evaluates_to_false(right)
-            }
+            BinaryOp::And => expr_evaluates_to_false(left) || expr_evaluates_to_false(right),
+            BinaryOp::Or => expr_evaluates_to_false(left) && expr_evaluates_to_false(right),
             _ => false,
         },
         _ => false,
@@ -1129,16 +1139,352 @@ pub fn scan_with_options(
     let mut report = ProvabilityReport::default();
     for file in &files {
         let path_str = file.to_string_lossy();
-        if exclude_patterns.iter().any(|p| path_str.contains(p.as_str())) {
+        if exclude_patterns
+            .iter()
+            .any(|p| path_str.contains(p.as_str()))
+        {
             continue;
         }
-        let src = std::fs::read_to_string(file)
-            .with_context(|| format!("reading {}", file.display()))?;
+        let src =
+            std::fs::read_to_string(file).with_context(|| format!("reading {}", file.display()))?;
         report.files_scanned += 1;
         report.total_loc += src.lines().count();
         classify_source_with_timeout(&src, file, &mut report, timeout_ms);
     }
     Ok(report)
+}
+
+/// Gate thresholds after merging CLI flags with the optional config file.
+struct ResolvedGates {
+    fail_under: Option<f64>,
+    fail_on_totality_violation: bool,
+    fail_under_f1: Option<f64>,
+    fail_exempt_density_above: Option<f64>,
+    fail_pub_bronze_above: Option<usize>,
+    fail_diff_exempt_density_above: Option<f64>,
+    fail_on_scorecard: Option<String>,
+}
+
+/// Merge CLI gate flags with the config file. CLI flag values take precedence: a
+/// CLI value wins only if it is Some / true; None / false falls back to the
+/// config file value. Booleans use OR semantics (either source enables the gate).
+#[allow(clippy::too_many_arguments)]
+fn resolve_gates(
+    config_path: Option<&Path>,
+    fail_under: Option<f64>,
+    fail_on_totality_violation: bool,
+    fail_under_f1: Option<f64>,
+    fail_exempt_density_above: Option<f64>,
+    fail_pub_bronze_above: Option<usize>,
+    fail_diff_exempt_density_above: Option<f64>,
+    fail_on_scorecard: Option<&str>,
+) -> Result<ResolvedGates> {
+    let config = if let Some(p) = config_path {
+        TierConfig::load(p)?
+    } else {
+        TierConfig::default()
+    };
+    Ok(ResolvedGates {
+        fail_under: fail_under.or(config.gates.fail_under),
+        fail_on_totality_violation: fail_on_totality_violation
+            || config.gates.fail_on_totality_violation.unwrap_or(false),
+        fail_under_f1: fail_under_f1.or(config.gates.fail_under_f1),
+        fail_exempt_density_above: fail_exempt_density_above
+            .or(config.gates.fail_exempt_density_above),
+        fail_pub_bronze_above: fail_pub_bronze_above.or(config.gates.fail_pub_bronze_above),
+        fail_diff_exempt_density_above: fail_diff_exempt_density_above
+            .or(config.gates.fail_diff_exempt_density_above),
+        fail_on_scorecard: fail_on_scorecard
+            .map(str::to_string)
+            .or(config.gates.fail_on_scorecard.clone()),
+    })
+}
+
+/// Print the per-function listing under the text renderer.
+fn print_function_list(report: &ProvabilityReport) {
+    println!("\nfunctions:");
+    for f in &report.functions {
+        println!(
+            "  {:<10} {:<10} {:<4} {} ({})",
+            f.tier.label(),
+            f.totality.label(),
+            if f.is_pub { "pub" } else { "" },
+            f.name,
+            f.file.display()
+        );
+    }
+}
+
+/// Print the per-file tier breakdown table under the text renderer.
+fn print_by_file_table(report: &ProvabilityReport, sort_by: &str, top: Option<usize>) {
+    println!("\nper-file tier breakdown:");
+    println!(
+        "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
+        "bronze", "silver", "gold", "platinum", "total", "file"
+    );
+    for (path, c) in report.by_file_sorted(sort_by, top) {
+        println!(
+            "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
+            c.bronze,
+            c.silver,
+            c.gold,
+            c.platinum,
+            c.total(),
+            path.display()
+        );
+    }
+}
+
+/// Report the §14.10.6 totality rule: Gold/Platinum functions MUST be @total.
+fn print_totality_violations(report: &ProvabilityReport) {
+    let violations = report.totality_violations();
+    if violations.is_empty() {
+        return;
+    }
+    eprintln!(
+        "\n§14.10.6 violations: {} Gold/Platinum function(s) lack @total:",
+        violations.len()
+    );
+    for f in &violations {
+        eprintln!(
+            "  {} ({}) is {} but has {}",
+            f.name,
+            f.file.display(),
+            f.tier.label(),
+            f.totality.label()
+        );
+    }
+}
+
+/// Print the JSON rendering: summary object, then the optional listings.
+fn render_report_json(
+    report: &ProvabilityReport,
+    list: bool,
+    by_file: bool,
+    sort_by: &str,
+    top: Option<usize>,
+) {
+    println!("{}", report.to_json());
+    if list {
+        println!("{}", report.functions_to_json());
+    }
+    if by_file {
+        println!("{}", report.by_file_to_json_sorted(sort_by, top));
+    }
+}
+
+/// Print the human-readable rendering: header, summary, scorecard, optional
+/// listings, then any §14.10.6 totality violations.
+fn render_report_text(
+    report: &ProvabilityReport,
+    path: &Path,
+    list: bool,
+    by_file: bool,
+    sort_by: &str,
+    top: Option<usize>,
+) {
+    println!("Provability tier scan: {}", path.display());
+    println!("{}", report.summary());
+    let sc = report.falsifier_scorecard();
+    println!(
+        "§14.5 scorecard: F1:{} F2:{} F4:{} F11:{}",
+        sc.f1.label(),
+        sc.f2.label(),
+        sc.f4.label(),
+        sc.f11.label()
+    );
+    if list {
+        print_function_list(report);
+    }
+    if by_file {
+        print_by_file_table(report, sort_by, top);
+    }
+    print_totality_violations(report);
+}
+
+/// Dispatch the report to the requested output format.
+#[allow(clippy::too_many_arguments)]
+fn render_report(
+    report: &ProvabilityReport,
+    path: &Path,
+    json: bool,
+    markdown: bool,
+    list: bool,
+    by_file: bool,
+    sort_by: &str,
+    top: Option<usize>,
+) {
+    if markdown {
+        print!("{}", report.to_markdown());
+    } else if json {
+        render_report_json(report, list, by_file, sort_by, top);
+    } else {
+        render_report_text(report, path, list, by_file, sort_by, top);
+    }
+}
+
+/// Apply the `--fail-under` gate (F1 CI enforcement).
+fn gate_fail_under(report: &ProvabilityReport, fail_under: Option<f64>) -> Result<()> {
+    if let Some(threshold) = fail_under {
+        let actual = report.non_bronze_pct();
+        if actual < threshold {
+            anyhow::bail!(
+                "non-bronze-pct {:.2}% is below threshold {:.2}% (F1 falsifier breach)",
+                actual,
+                threshold
+            );
+        }
+    }
+    Ok(())
+}
+
+/// Apply the `--fail-on-totality-violation` gate (§14.10.6 CI enforcement).
+fn gate_totality(report: &ProvabilityReport, enabled: bool) -> Result<()> {
+    if enabled {
+        let violations = report.totality_violations();
+        if !violations.is_empty() {
+            anyhow::bail!(
+                "{} Gold/Platinum function(s) lack @total (§14.10.6 breach)",
+                violations.len()
+            );
+        }
+    }
+    Ok(())
+}
+
+/// Apply the `--fail-under-f1` gate (§14.5 F1 CI enforcement). F1 is only
+/// meaningful when at least one function has a contract.
+fn gate_fail_under_f1(report: &ProvabilityReport, fail_under_f1: Option<f64>) -> Result<()> {
+    if let Some(threshold) = fail_under_f1 {
+        let with_contracts = report.non_trivial_contracts + report.trivial_contracts;
+        if with_contracts > 0 {
+            let actual = report.non_trivial_pct();
+            if actual < threshold {
+                anyhow::bail!(
+                    "non-trivial contract pct {:.2}% is below threshold {:.2}% (§14.5 F1 breach)",
+                    actual,
+                    threshold
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Apply the `--fail-exempt-density-above` gate (§14.5 F2 CI enforcement). F2 is
+/// only meaningful when at least some LoC has been scanned.
+fn gate_exempt_density(report: &ProvabilityReport, ceiling: Option<f64>) -> Result<()> {
+    if let Some(ceiling) = ceiling {
+        if report.total_loc > 0 {
+            let actual = report.exempt_density_per_kloc();
+            if actual > ceiling {
+                anyhow::bail!(
+                    "#[contract_exempt] density {:.2}/KLoC exceeds ceiling {:.2}/KLoC (§14.5 F2 breach)",
+                    actual,
+                    ceiling
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Apply the `--fail-pub-bronze-above` gate (§14.5 F4 proxy CI enforcement).
+fn gate_pub_bronze(report: &ProvabilityReport, ceiling: Option<usize>) -> Result<()> {
+    if let Some(ceiling) = ceiling {
+        let actual = report.pub_bronze_count();
+        if actual > ceiling {
+            anyhow::bail!(
+                "pub Bronze count {} exceeds ceiling {} (§14.5 F4 breach)",
+                actual,
+                ceiling
+            );
+        }
+    }
+    Ok(())
+}
+
+/// Apply the `--fail-diff-exempt-density-above` gate (§14.5 F11 CI enforcement).
+fn gate_diff_exempt_density(report: &ProvabilityReport, ceiling: Option<f64>) -> Result<()> {
+    if let Some(ceiling) = ceiling {
+        if report.total_loc > 0 {
+            let actual = report.diff_exempt_density_per_kloc();
+            if actual > ceiling {
+                anyhow::bail!(
+                    "#[diff_exempt] density {:.2}/KLoC exceeds ceiling {:.2}/KLoC (§14.5 F11 breach)",
+                    actual,
+                    ceiling
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Apply the `--fail-on-scorecard` gate (§14.5 scorecard CI enforcement).
+fn gate_scorecard(report: &ProvabilityReport, level_str: Option<&str>) -> Result<()> {
+    if let Some(level_str) = level_str {
+        let level = FalsifierStatus::parse_level(level_str).ok_or_else(|| {
+            anyhow::anyhow!(
+                "invalid --fail-on-scorecard level `{}`: expected `warn` or `fail`",
+                level_str
+            )
+        })?;
+        let sc = report.falsifier_scorecard();
+        let breaches = sc.breached_metrics(level);
+        if !breaches.is_empty() {
+            let summary: Vec<String> = breaches
+                .iter()
+                .map(|(k, s)| format!("{k}:{}", s.label()))
+                .collect();
+            anyhow::bail!(
+                "§14.5 scorecard breach at level={}: {}",
+                level.label(),
+                summary.join(" ")
+            );
+        }
+    }
+    Ok(())
+}
+
+/// Apply every CI gate in declaration order, bailing on the first breach.
+fn apply_gates(report: &ProvabilityReport, gates: &ResolvedGates) -> Result<()> {
+    gate_fail_under(report, gates.fail_under)?;
+    gate_totality(report, gates.fail_on_totality_violation)?;
+    gate_fail_under_f1(report, gates.fail_under_f1)?;
+    gate_exempt_density(report, gates.fail_exempt_density_above)?;
+    gate_pub_bronze(report, gates.fail_pub_bronze_above)?;
+    gate_diff_exempt_density(report, gates.fail_diff_exempt_density_above)?;
+    gate_scorecard(report, gates.fail_on_scorecard.as_deref())
+}
+
+/// Compare the current scan against an on-disk baseline (§14.5 regression gate).
+/// A missing baseline file is captured rather than compared.
+fn compare_against_baseline(report: &ProvabilityReport, baseline_path: &Path) -> Result<()> {
+    let current_snap = report.baseline_snapshot();
+    if !baseline_path.exists() {
+        // First run: capture baseline.
+        let pretty =
+            serde_json::to_string_pretty(&current_snap).with_context(|| "serializing baseline")?;
+        std::fs::write(baseline_path, pretty)
+            .with_context(|| format!("writing baseline {}", baseline_path.display()))?;
+        eprintln!("baseline captured: {}", baseline_path.display());
+        return Ok(());
+    }
+    let raw = std::fs::read_to_string(baseline_path)
+        .with_context(|| format!("reading baseline {}", baseline_path.display()))?;
+    let baseline_snap: BaselineSnapshot = serde_json::from_str(&raw)
+        .with_context(|| format!("parsing baseline {}", baseline_path.display()))?;
+    let regs = baseline_snap.regressions_vs(&current_snap);
+    if regs.is_empty() {
+        eprintln!("baseline OK: no regressions vs {}", baseline_path.display());
+        return Ok(());
+    }
+    eprintln!("\nbaseline regressions vs {}:", baseline_path.display());
+    for r in &regs {
+        eprintln!("  {} : {} → {}", r.metric, r.baseline, r.current);
+    }
+    anyhow::bail!("{} baseline regression(s) detected", regs.len());
 }
 
 /// CLI entry point for `ruchy tier <path>`.
@@ -1164,222 +1510,29 @@ pub fn handle_provability_command(
     config_path: Option<&Path>,
     exclude_patterns: &[String],
 ) -> Result<()> {
-    // Load config file, if any. CLI flag values take precedence: a CLI
-    // value wins only if it is Some / true; None / false falls back
-    // to the config file value.
-    let config = if let Some(p) = config_path {
-        TierConfig::load(p)?
-    } else {
-        TierConfig::default()
-    };
-    let fail_under = fail_under.or(config.gates.fail_under);
-    let fail_under_f1 = fail_under_f1.or(config.gates.fail_under_f1);
-    let fail_exempt_density_above =
-        fail_exempt_density_above.or(config.gates.fail_exempt_density_above);
-    let fail_diff_exempt_density_above =
-        fail_diff_exempt_density_above.or(config.gates.fail_diff_exempt_density_above);
-    let fail_pub_bronze_above = fail_pub_bronze_above.or(config.gates.fail_pub_bronze_above);
-    // For booleans: OR semantics (either CLI or config enables the gate).
-    let fail_on_totality_violation =
-        fail_on_totality_violation || config.gates.fail_on_totality_violation.unwrap_or(false);
-    // For fail_on_scorecard: CLI string wins; fall back to config string.
-    let config_scorecard = config.gates.fail_on_scorecard.clone();
-    let fail_on_scorecard_effective: Option<&str> = fail_on_scorecard.or(config_scorecard.as_deref());
+    let gates = resolve_gates(
+        config_path,
+        fail_under,
+        fail_on_totality_violation,
+        fail_under_f1,
+        fail_exempt_density_above,
+        fail_pub_bronze_above,
+        fail_diff_exempt_density_above,
+        fail_on_scorecard,
+    )?;
 
     let raw = scan_with_options(path, parse_timeout_ms, exclude_patterns)?;
-    let report = if public_only { raw.filter_to_pub() } else { raw };
-    if markdown {
-        print!("{}", report.to_markdown());
-    } else if json {
-        println!("{}", report.to_json());
-        if list {
-            println!("{}", report.functions_to_json());
-        }
-        if by_file {
-            println!("{}", report.by_file_to_json_sorted(sort_by, top));
-        }
+    let report = if public_only {
+        raw.filter_to_pub()
     } else {
-        println!("Provability tier scan: {}", path.display());
-        println!("{}", report.summary());
-        let sc = report.falsifier_scorecard();
-        println!(
-            "§14.5 scorecard: F1:{} F2:{} F4:{} F11:{}",
-            sc.f1.label(),
-            sc.f2.label(),
-            sc.f4.label(),
-            sc.f11.label()
-        );
-        if list {
-            println!("\nfunctions:");
-            for f in &report.functions {
-                println!(
-                    "  {:<10} {:<10} {:<4} {} ({})",
-                    f.tier.label(),
-                    f.totality.label(),
-                    if f.is_pub { "pub" } else { "" },
-                    f.name,
-                    f.file.display()
-                );
-            }
-        }
-        if by_file {
-            println!("\nper-file tier breakdown:");
-            println!(
-                "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
-                "bronze", "silver", "gold", "platinum", "total", "file"
-            );
-            for (path, c) in report.by_file_sorted(sort_by, top) {
-                println!(
-                    "  {:<6} {:<6} {:<6} {:<8} {:<6}  {}",
-                    c.bronze,
-                    c.silver,
-                    c.gold,
-                    c.platinum,
-                    c.total(),
-                    path.display()
-                );
-            }
-        }
-        // §14.10.6 totality rule enforcement: Gold/Platinum MUST be @total.
-        let violations = report.totality_violations();
-        if !violations.is_empty() {
-            eprintln!(
-                "\n§14.10.6 violations: {} Gold/Platinum function(s) lack @total:",
-                violations.len()
-            );
-            for f in &violations {
-                eprintln!(
-                    "  {} ({}) is {} but has {}",
-                    f.name,
-                    f.file.display(),
-                    f.tier.label(),
-                    f.totality.label()
-                );
-            }
-        }
-    }
-    // Apply --fail-under gate (F1 CI enforcement).
-    if let Some(threshold) = fail_under {
-        let actual = report.non_bronze_pct();
-        if actual < threshold {
-            anyhow::bail!(
-                "non-bronze-pct {:.2}% is below threshold {:.2}% (F1 falsifier breach)",
-                actual,
-                threshold
-            );
-        }
-    }
-    // Apply --fail-on-totality-violation gate (§14.10.6 CI enforcement).
-    if fail_on_totality_violation {
-        let violations = report.totality_violations();
-        if !violations.is_empty() {
-            anyhow::bail!(
-                "{} Gold/Platinum function(s) lack @total (§14.10.6 breach)",
-                violations.len()
-            );
-        }
-    }
-    // Apply --fail-under-f1 gate (§14.5 F1 CI enforcement).
-    if let Some(threshold) = fail_under_f1 {
-        // F1 is only meaningful when at least one function has a contract.
-        let with_contracts = report.non_trivial_contracts + report.trivial_contracts;
-        if with_contracts > 0 {
-            let actual = report.non_trivial_pct();
-            if actual < threshold {
-                anyhow::bail!(
-                    "non-trivial contract pct {:.2}% is below threshold {:.2}% (§14.5 F1 breach)",
-                    actual,
-                    threshold
-                );
-            }
-        }
-    }
-    // Apply --fail-exempt-density-above gate (§14.5 F2 CI enforcement).
-    if let Some(ceiling) = fail_exempt_density_above {
-        // F2 is only meaningful when at least some LoC has been scanned.
-        if report.total_loc > 0 {
-            let actual = report.exempt_density_per_kloc();
-            if actual > ceiling {
-                anyhow::bail!(
-                    "#[contract_exempt] density {:.2}/KLoC exceeds ceiling {:.2}/KLoC (§14.5 F2 breach)",
-                    actual,
-                    ceiling
-                );
-            }
-        }
-    }
-    // Apply --fail-pub-bronze-above gate (§14.5 F4 proxy CI enforcement).
-    if let Some(ceiling) = fail_pub_bronze_above {
-        let actual = report.pub_bronze_count();
-        if actual > ceiling {
-            anyhow::bail!(
-                "pub Bronze count {} exceeds ceiling {} (§14.5 F4 breach)",
-                actual,
-                ceiling
-            );
-        }
-    }
-    // Apply --fail-diff-exempt-density-above gate (§14.5 F11 CI enforcement).
-    if let Some(ceiling) = fail_diff_exempt_density_above {
-        if report.total_loc > 0 {
-            let actual = report.diff_exempt_density_per_kloc();
-            if actual > ceiling {
-                anyhow::bail!(
-                    "#[diff_exempt] density {:.2}/KLoC exceeds ceiling {:.2}/KLoC (§14.5 F11 breach)",
-                    actual,
-                    ceiling
-                );
-            }
-        }
-    }
-    // Apply --fail-on-scorecard gate (§14.5 scorecard CI enforcement).
-    if let Some(level_str) = fail_on_scorecard_effective {
-        let level = FalsifierStatus::parse_level(level_str).ok_or_else(|| {
-            anyhow::anyhow!(
-                "invalid --fail-on-scorecard level `{}`: expected `warn` or `fail`",
-                level_str
-            )
-        })?;
-        let sc = report.falsifier_scorecard();
-        let breaches = sc.breached_metrics(level);
-        if !breaches.is_empty() {
-            let summary: Vec<String> = breaches
-                .iter()
-                .map(|(k, s)| format!("{k}:{}", s.label()))
-                .collect();
-            anyhow::bail!(
-                "§14.5 scorecard breach at level={}: {}",
-                level.label(),
-                summary.join(" ")
-            );
-        }
-    }
-    // Baseline comparison (§14.5 regression gate).
+        raw
+    };
+
+    render_report(&report, path, json, markdown, list, by_file, sort_by, top);
+    apply_gates(&report, &gates)?;
+
     if let Some(baseline_path) = baseline {
-        let current_snap = report.baseline_snapshot();
-        if baseline_path.exists() {
-            let raw = std::fs::read_to_string(baseline_path)
-                .with_context(|| format!("reading baseline {}", baseline_path.display()))?;
-            let baseline_snap: BaselineSnapshot = serde_json::from_str(&raw)
-                .with_context(|| format!("parsing baseline {}", baseline_path.display()))?;
-            let regs = baseline_snap.regressions_vs(&current_snap);
-            if regs.is_empty() {
-                eprintln!("baseline OK: no regressions vs {}", baseline_path.display());
-            } else {
-                eprintln!("\nbaseline regressions vs {}:", baseline_path.display());
-                for r in &regs {
-                    eprintln!("  {} : {} → {}", r.metric, r.baseline, r.current);
-                }
-                anyhow::bail!("{} baseline regression(s) detected", regs.len());
-            }
-        } else {
-            // First run: capture baseline.
-            let pretty = serde_json::to_string_pretty(&current_snap)
-                .with_context(|| "serializing baseline")?;
-            std::fs::write(baseline_path, pretty)
-                .with_context(|| format!("writing baseline {}", baseline_path.display()))?;
-            eprintln!("baseline captured: {}", baseline_path.display());
-        }
+        compare_against_baseline(&report, baseline_path)?;
     }
     Ok(())
 }
@@ -1435,7 +1588,11 @@ mod tests {
     #[test]
     fn test_classify_source_unparseable_increments_errors() {
         let mut r = ProvabilityReport::default();
-        classify_source("this is not valid ruchy @#$%", Path::new("test.ruchy"), &mut r);
+        classify_source(
+            "this is not valid ruchy @#$%",
+            Path::new("test.ruchy"),
+            &mut r,
+        );
         assert_eq!(r.parse_errors, 1);
         assert_eq!(r.functions_total, 0);
     }
@@ -1491,11 +1648,7 @@ mod tests {
     #[test]
     fn test_classify_source_records_partial_marker() {
         let mut r = ProvabilityReport::default();
-        classify_source(
-            "#[partial]\nfun f() { 1 }",
-            Path::new("test.ruchy"),
-            &mut r,
-        );
+        classify_source("#[partial]\nfun f() { 1 }", Path::new("test.ruchy"), &mut r);
         assert_eq!(r.partial_marked, 1);
         assert_eq!(r.total_marked, 0);
     }
@@ -1593,30 +1746,40 @@ mod tests {
 
     #[test]
     fn test_trivial_constant_string_equal_detected() {
-        assert!(!first_fn_has_non_trivial("fun f() requires \"a\" == \"a\" { 1 }"));
+        assert!(!first_fn_has_non_trivial(
+            "fun f() requires \"a\" == \"a\" { 1 }"
+        ));
     }
 
     #[test]
     fn test_trivial_reflexive_identity_detected() {
         // `x == x` is tautology regardless of x.
-        assert!(!first_fn_has_non_trivial("fun f(x: i32) requires x == x { 1 }"));
+        assert!(!first_fn_has_non_trivial(
+            "fun f(x: i32) requires x == x { 1 }"
+        ));
     }
 
     #[test]
     fn test_trivial_true_and_true_detected() {
-        assert!(!first_fn_has_non_trivial("fun f() requires true && true { 1 }"));
+        assert!(!first_fn_has_non_trivial(
+            "fun f() requires true && true { 1 }"
+        ));
     }
 
     #[test]
     fn test_trivial_true_or_anything_detected() {
         // `true || x` is always true; detectable without knowing x.
-        assert!(!first_fn_has_non_trivial("fun f(x: bool) requires true || x { 1 }"));
+        assert!(!first_fn_has_non_trivial(
+            "fun f(x: bool) requires true || x { 1 }"
+        ));
     }
 
     #[test]
     fn test_nontrivial_inequality_on_identifier_still_nontrivial() {
         // `x > 0` genuinely constrains x; must remain non-trivial.
-        assert!(first_fn_has_non_trivial("fun f(x: i32) requires x > 0 { 1 }"));
+        assert!(first_fn_has_non_trivial(
+            "fun f(x: i32) requires x > 0 { 1 }"
+        ));
     }
 
     #[test]
@@ -1629,7 +1792,9 @@ mod tests {
     #[test]
     fn test_nontrivial_different_identifiers_not_reflexive() {
         // `x == y` is not reflexive (different names).
-        assert!(first_fn_has_non_trivial("fun f(x: i32, y: i32) requires x == y { 1 }"));
+        assert!(first_fn_has_non_trivial(
+            "fun f(x: i32, y: i32) requires x == y { 1 }"
+        ));
     }
 
     #[test]
@@ -1738,11 +1903,7 @@ mod tests {
     #[test]
     fn test_contract_exempt_not_counted_for_other_attrs() {
         let mut r = ProvabilityReport::default();
-        classify_source(
-            "#[bronze]\nfun f() { 1 }",
-            Path::new("t.ruchy"),
-            &mut r,
-        );
+        classify_source("#[bronze]\nfun f() { 1 }", Path::new("t.ruchy"), &mut r);
         assert_eq!(r.contract_exempt_count, 0);
     }
 
@@ -2276,11 +2437,19 @@ fail_on_scorecard = "warn"
     fn test_regressions_vs_detects_bronze_increase() {
         let base = BaselineSnapshot {
             bronze: 3,
-            silver: 0, gold: 0, platinum: 0, pub_bronze: 0,
-            non_trivial_pct: 0.0, non_bronze_pct: 0.0,
-            exempt_density_per_kloc: 0.0, diff_exempt_density_per_kloc: 0.0,
-            contract_exempt: 0, diff_exempt: 0,
-            parse_errors: 0, parse_timeouts: 0, totality_violations: 0,
+            silver: 0,
+            gold: 0,
+            platinum: 0,
+            pub_bronze: 0,
+            non_trivial_pct: 0.0,
+            non_bronze_pct: 0.0,
+            exempt_density_per_kloc: 0.0,
+            diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 0,
+            diff_exempt: 0,
+            parse_errors: 0,
+            parse_timeouts: 0,
+            totality_violations: 0,
         };
         let cur = BaselineSnapshot { bronze: 5, ..base };
         let regs = base.regressions_vs(&cur);
@@ -2293,13 +2462,25 @@ fail_on_scorecard = "warn"
     #[test]
     fn test_regressions_vs_detects_pct_decrease() {
         let base = BaselineSnapshot {
-            bronze: 0, silver: 0, gold: 0, platinum: 0, pub_bronze: 0,
-            non_trivial_pct: 95.0, non_bronze_pct: 0.0,
-            exempt_density_per_kloc: 0.0, diff_exempt_density_per_kloc: 0.0,
-            contract_exempt: 0, diff_exempt: 0,
-            parse_errors: 0, parse_timeouts: 0, totality_violations: 0,
+            bronze: 0,
+            silver: 0,
+            gold: 0,
+            platinum: 0,
+            pub_bronze: 0,
+            non_trivial_pct: 95.0,
+            non_bronze_pct: 0.0,
+            exempt_density_per_kloc: 0.0,
+            diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 0,
+            diff_exempt: 0,
+            parse_errors: 0,
+            parse_timeouts: 0,
+            totality_violations: 0,
         };
-        let cur = BaselineSnapshot { non_trivial_pct: 80.0, ..base };
+        let cur = BaselineSnapshot {
+            non_trivial_pct: 80.0,
+            ..base
+        };
         let regs = base.regressions_vs(&cur);
         assert_eq!(regs.len(), 1);
         assert_eq!(regs[0].metric, "non_trivial_pct");
@@ -2308,31 +2489,57 @@ fail_on_scorecard = "warn"
     #[test]
     fn test_regressions_vs_ignores_tiny_pct_noise() {
         let base = BaselineSnapshot {
-            bronze: 0, silver: 0, gold: 0, platinum: 0, pub_bronze: 0,
-            non_trivial_pct: 95.0, non_bronze_pct: 0.0,
-            exempt_density_per_kloc: 0.0, diff_exempt_density_per_kloc: 0.0,
-            contract_exempt: 0, diff_exempt: 0,
-            parse_errors: 0, parse_timeouts: 0, totality_violations: 0,
+            bronze: 0,
+            silver: 0,
+            gold: 0,
+            platinum: 0,
+            pub_bronze: 0,
+            non_trivial_pct: 95.0,
+            non_bronze_pct: 0.0,
+            exempt_density_per_kloc: 0.0,
+            diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 0,
+            diff_exempt: 0,
+            parse_errors: 0,
+            parse_timeouts: 0,
+            totality_violations: 0,
         };
         // Within 0.01 tolerance → no regression.
-        let cur = BaselineSnapshot { non_trivial_pct: 94.995, ..base };
+        let cur = BaselineSnapshot {
+            non_trivial_pct: 94.995,
+            ..base
+        };
         assert!(base.regressions_vs(&cur).is_empty());
     }
 
     #[test]
     fn test_regressions_vs_improvement_not_regression() {
         let base = BaselineSnapshot {
-            bronze: 10, silver: 0, gold: 0, platinum: 0, pub_bronze: 3,
-            non_trivial_pct: 50.0, non_bronze_pct: 20.0,
-            exempt_density_per_kloc: 2.0, diff_exempt_density_per_kloc: 0.0,
-            contract_exempt: 5, diff_exempt: 0,
-            parse_errors: 2, parse_timeouts: 0, totality_violations: 1,
+            bronze: 10,
+            silver: 0,
+            gold: 0,
+            platinum: 0,
+            pub_bronze: 3,
+            non_trivial_pct: 50.0,
+            non_bronze_pct: 20.0,
+            exempt_density_per_kloc: 2.0,
+            diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 5,
+            diff_exempt: 0,
+            parse_errors: 2,
+            parse_timeouts: 0,
+            totality_violations: 1,
         };
         // Everything is improved.
         let cur = BaselineSnapshot {
-            bronze: 5, pub_bronze: 0, non_trivial_pct: 90.0,
-            non_bronze_pct: 60.0, exempt_density_per_kloc: 0.5,
-            contract_exempt: 1, parse_errors: 0, totality_violations: 0,
+            bronze: 5,
+            pub_bronze: 0,
+            non_trivial_pct: 90.0,
+            non_bronze_pct: 60.0,
+            exempt_density_per_kloc: 0.5,
+            contract_exempt: 1,
+            parse_errors: 0,
+            totality_violations: 0,
             ..base
         };
         assert!(base.regressions_vs(&cur).is_empty());
@@ -2341,11 +2548,20 @@ fail_on_scorecard = "warn"
     #[test]
     fn test_baseline_snapshot_roundtrips_via_serde() {
         let s = BaselineSnapshot {
-            bronze: 5, silver: 3, gold: 1, platinum: 0, pub_bronze: 2,
-            non_trivial_pct: 87.5, non_bronze_pct: 44.4,
-            exempt_density_per_kloc: 1.2, diff_exempt_density_per_kloc: 0.0,
-            contract_exempt: 3, diff_exempt: 0,
-            parse_errors: 1, parse_timeouts: 0, totality_violations: 0,
+            bronze: 5,
+            silver: 3,
+            gold: 1,
+            platinum: 0,
+            pub_bronze: 2,
+            non_trivial_pct: 87.5,
+            non_bronze_pct: 44.4,
+            exempt_density_per_kloc: 1.2,
+            diff_exempt_density_per_kloc: 0.0,
+            contract_exempt: 3,
+            diff_exempt: 0,
+            parse_errors: 1,
+            parse_timeouts: 0,
+            totality_violations: 0,
         };
         let json = serde_json::to_string(&s).unwrap();
         let parsed: BaselineSnapshot = serde_json::from_str(&json).unwrap();
@@ -2437,7 +2653,11 @@ fail_on_scorecard = "warn"
     #[test]
     fn test_by_file_groups_functions_by_path() {
         let mut r = ProvabilityReport::default();
-        classify_source("pub fun a() { 1 }\nfun b() { 2 }", Path::new("x.ruchy"), &mut r);
+        classify_source(
+            "pub fun a() { 1 }\nfun b() { 2 }",
+            Path::new("x.ruchy"),
+            &mut r,
+        );
         classify_source("fun c() requires x > 0 { 3 }", Path::new("y.ruchy"), &mut r);
         let bf = r.by_file();
         assert_eq!(bf.len(), 2);
@@ -2550,7 +2770,14 @@ fail_on_scorecard = "warn"
             is_pub: true,
         };
         let j = cf.to_json();
-        for key in ["name", "file", "tier", "totality", "pub", "non_trivial_contract"] {
+        for key in [
+            "name",
+            "file",
+            "tier",
+            "totality",
+            "pub",
+            "non_trivial_contract",
+        ] {
             assert!(j.contains(key), "missing key `{key}`: {j}");
         }
         assert!(j.contains("\"pub\":true"));
