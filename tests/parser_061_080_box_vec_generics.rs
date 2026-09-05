@@ -9,7 +9,7 @@
 // 5. Test interpreter correctness (ruchy -e)
 // 6. Test nested/complex scenarios
 //
-// Requirements from docs/execution/roadmap.yaml:
+// Requirements from docs/roadmaps/roadmap.yaml:
 // - PARSER-061: Box<T> support (v3.96.0 - already implemented)
 // - PARSER-080: Vec<T> support (v3.96.0 - already implemented)
 // - Tests document that both features work correctly

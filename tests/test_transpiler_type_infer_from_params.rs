@@ -111,7 +111,7 @@ fun pass_through(x: i32) {
 
 /// Test 5: Full compilation test - f64 function must compile and execute
 /// TRANSPILER-TYPE-INFER-EXPR: Currently FAILING - needs full expression type inference
-/// Ticket: See docs/execution/roadmap.yaml TRANSPILER-TYPE-INFER-EXPR
+/// Ticket: See docs/roadmaps/roadmap.yaml TRANSPILER-TYPE-INFER-EXPR
 #[test]
 fn test_transpiler_type_infer_005_f64_compile_execute() {
     let code = r#"

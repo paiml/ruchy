@@ -112,7 +112,7 @@ fi
 
 # 6. Documentation synchronization
 echo -n "  Documentation check... "
-if [ -f "docs/execution/roadmap.md" ] && [ -f "CHANGELOG.md" ]; then
+if [ -f "docs/roadmaps/roadmap.yaml" ] && [ -f "CHANGELOG.md" ]; then
     echo "✅"
 else
     echo "⚠️"

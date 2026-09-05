@@ -7,7 +7,7 @@ echo "🔍 Ruchy Quality Gates - Checking documentation synchronization..."
 
 # Documentation files that MUST be updated with code changes
 REQUIRED_DOCS=(
-    "docs/execution/roadmap.md"
+    "docs/roadmaps/roadmap.yaml"
     "docs/execution/quality-gates.md"
     "docs/architecture/decisions/"
     "CHANGELOG.md"
@@ -34,7 +34,7 @@ if git diff --cached --name-only | grep -qE '\.(rs|ruchy)$'; then
         done
         echo ""
         echo "💡 Quick fix:"
-        echo "   1. Update docs/execution/roadmap.md with task status"
+        echo "   1. Update docs/roadmaps/roadmap.yaml with task status"
         echo "   2. Add ADR if architectural decision made"
         echo "   3. Update CHANGELOG.md with feature/fix"
         exit 1
@@ -42,9 +42,9 @@ if git diff --cached --name-only | grep -qE '\.(rs|ruchy)$'; then
 fi
 
 # Verify roadmap.md structure
-if git diff --cached --name-only | grep -q "docs/execution/roadmap.md"; then
+if git diff --cached --name-only | grep -q "docs/roadmaps/roadmap.yaml"; then
     # Check for task IDs and completion markers
-    ROADMAP=$(git show :docs/execution/roadmap.md 2>/dev/null || cat docs/execution/roadmap.md)
+    ROADMAP=$(git show :docs/roadmaps/roadmap.yaml 2>/dev/null || cat docs/roadmaps/roadmap.yaml)
     
     # Ensure task ID format (RUCHY-XXXX)
     if ! echo "$ROADMAP" | grep -qE 'RUCHY-[0-9]{4}'; then
