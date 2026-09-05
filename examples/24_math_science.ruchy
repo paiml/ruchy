@@ -238,10 +238,10 @@ fn main() {
     let sample_rate = 1000
     let duration = 1
     let t = [i / sample_rate for i in 0..(sample_rate * duration)]
-    let signal = t.map(t => sin(2 * math::PI * 50 * t) + 0.5 * sin(2 * math::PI * 120 * t))
+    let signal_val = t.map(t => sin(2 * math::PI * 50 * t) + 0.5 * sin(2 * math::PI * 120 * t))
 
     // Apply FFT
-    let frequencies = math::fft(signal)
+    let frequencies = math::fft(signal_val)
     let power_spectrum = frequencies.map(f => f.abs() * f.abs())
 
     println(f"Dominant frequencies detected")

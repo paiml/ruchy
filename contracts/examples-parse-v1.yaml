@@ -1,0 +1,52 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Examples-parse contract for Ruchy 4.x -> 5.0 keyword migration (PMAT-095)"
+  crate: "ruchy"
+  references:
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z4"
+
+equations:
+  examples_parse:
+    formula: "∀ f ∈ manifest: parse(f) ≠ ⊥"
+    domain: "f ∈ tests/fixtures/examples_manifest.txt"
+    invariants:
+      - "Every manifest entry is a real file under examples/"
+      - "Every manifest entry parses successfully via `ruchy check`"
+      - "The manifest contains no duplicate entries"
+
+proof_obligations:
+  - type: completeness
+    property: "All manifested examples parse"
+    formal: "∀ f ∈ manifest: ruchy check f exits 0"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-EXAMPLES-PARSE-001
+    rule: "Examples-parse completeness"
+    test: "test_pmat_095_all_manifest_examples_parse"
+    prediction: "verified"
+    if_fails: "Contract violation — a manifested example no longer parses"
+  - id: FALSIFY-EXAMPLES-PARSE-002
+    rule: "Manifest integrity"
+    test: "test_pmat_095_manifest_no_duplicates_and_files_exist"
+    prediction: "verified"
+    if_fails: "Contract violation — manifest has duplicates or missing files"
+
+kani_harnesses:
+  - id: KANI-EXAMPLES-PARSE-001
+    obligation: PO-EXAMPLES-PARSE-001
+    property: "Manifest parse totality"
+    bound: 155
+    strategy: bounded_int
+    harness: verify_examples_parse
+
+qa_gate:
+  id: QA-EXAMPLES-PARSE
+  name: "examples-parse contract"
+  min_coverage: 1.00
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_095_all_manifest_examples_parse"
+    - "test_pmat_095_manifest_no_duplicates_and_files_exist"
+    - "test_pmat_095_math_science_parses_post_migration"
