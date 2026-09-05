@@ -10,7 +10,8 @@ use std::process::Command;
 
 /// Property: All recursive fibonacci implementations produce correct output
 #[test]
-#[rustfmt::skip]fn prop_recursive_fib_deterministic() {
+#[rustfmt::skip]
+fn prop_recursive_fib_deterministic() {
     proptest!(|(n in 0u32..15)| {
                                                                                     let script = format!(r"
 fun fib(n) {{
@@ -61,7 +62,8 @@ println(fib({n}))
 
 /// Property: Parameter substitution works for all valid identifiers
 #[test]
-#[rustfmt::skip]fn prop_parameter_substitution_consistent() {
+#[rustfmt::skip]
+fn prop_parameter_substitution_consistent() {
     proptest!(|(a in 1i32..100, b in 1i32..100)| {
                                                                                     let script = format!(r"
 fun max(x, y) {{
@@ -93,7 +95,8 @@ println(max({a}, {b}))
 
 /// Property: Transpiled recursive code has no undefined variables
 #[test]
-#[rustfmt::skip]fn prop_no_undefined_variables_in_transpiled_code() {
+#[rustfmt::skip]
+fn prop_no_undefined_variables_in_transpiled_code() {
     proptest!(|(n in 1u32..20)| {
                                                                                     let script = format!(r"
 fun factorial(n) {{
@@ -140,7 +143,8 @@ println(factorial({n}))
 
 /// Property: Nested recursion (binary operators) works correctly
 #[test]
-#[rustfmt::skip]fn prop_nested_recursion_binary_ops() {
+#[rustfmt::skip]
+fn prop_nested_recursion_binary_ops() {
     proptest!(|(n in 1u32..10)| {
                                                                                     let script = format!(r"
 fun fib(n) {{

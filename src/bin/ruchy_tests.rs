@@ -539,3 +539,46 @@ fn test_handle_command_dispatch_run() {
     );
     assert!(result.is_ok());
 }
+
+// PMAT-104 (pre-merge quorum on #204): the two dispatch-routing tests removed in
+// e9d8365e started the notebook server / ran `cargo add` in the current directory
+// and could never finish. These cover the same `handle_advanced_command` arms with
+// inputs that make the handler return before doing either.
+#[test]
+fn test_handle_advanced_command_notebook_routes_missing_file_to_error() {
+    let missing = std::env::temp_dir().join(format!(
+        "ruchy-pmat104-notebook-missing-{}.ruchy",
+        std::process::id()
+    ));
+    let command = Commands::Notebook {
+        file: Some(missing.clone()),
+        port: 8080,
+        open: false,
+        host: "127.0.0.1".to_string(),
+    };
+    let result = handle_advanced_command(command);
+    assert!(
+        result.is_err(),
+        "Notebook with a missing file must be routed to the handler and fail: {missing:?}"
+    );
+}
+
+#[test]
+fn test_handle_advanced_command_add_routes_outside_project_to_error() {
+    let _cwd = crate::handlers::test_support::cwd_lock();
+    let temp_dir = tempfile::TempDir::new().expect("temp dir");
+    let original = std::env::current_dir().expect("cwd");
+    std::env::set_current_dir(temp_dir.path()).expect("chdir to temp dir");
+    let command = Commands::Add {
+        package: "test_package".to_string(),
+        version: Some("1.0.0".to_string()),
+        dev: false,
+        registry: "https://ruchy.dev/registry".to_string(),
+    };
+    let result = handle_advanced_command(command);
+    std::env::set_current_dir(original).expect("restore cwd");
+    assert!(
+        result.is_err(),
+        "Add outside a Cargo project must be routed to the handler and fail"
+    );
+}

@@ -11,7 +11,8 @@ use proptest::prelude::*;
 
 /// Property test: Enum discriminants convert correctly to i32
 #[test]
-#[rustfmt::skip]fn test_property_runtime_092_enum_to_i32() {
+#[rustfmt::skip]
+fn test_property_runtime_092_enum_to_i32() {
     proptest!(|(disc0 in 0i64..10, disc1 in 10i64..20)| {
                                                                                     let code = format!(r"
 enum TestEnum {{
@@ -41,7 +42,8 @@ fun main() {{
 
 /// Property test: Enum casts in arithmetic expressions
 #[test]
-#[rustfmt::skip]fn test_property_runtime_092_enum_arithmetic() {
+#[rustfmt::skip]
+fn test_property_runtime_092_enum_arithmetic() {
     proptest!(|(disc in 0i64..100, add_val in 1i64..10)| {
                                                                                     let code = format!(r"
 enum Value {{
@@ -67,7 +69,8 @@ fun main() {{
 
 /// Property test: Multiple enum variables with different discriminants
 #[test]
-#[rustfmt::skip]fn test_property_runtime_092_multiple_variables() {
+#[rustfmt::skip]
+fn test_property_runtime_092_multiple_variables() {
     proptest!(|(d0 in 0i64..10, d1 in 10i64..20, d2 in 20i64..30)| {
                                                                                     let code = format!(r"
 enum Status {{
@@ -99,7 +102,8 @@ fun main() {{
 
 /// Property test: Enum cast to different integer types (i32, i64, isize)
 #[test]
-#[rustfmt::skip]fn test_property_runtime_092_multiple_int_types() {
+#[rustfmt::skip]
+fn test_property_runtime_092_multiple_int_types() {
     proptest!(|(disc in 0i64..1000)| {
                                                                                     let code = format!(r"
 enum Value {{
@@ -130,7 +134,8 @@ fun main() {{
 
 /// Property test: Enum casts preserve discriminant values through operations
 #[test]
-#[rustfmt::skip]fn test_property_runtime_092_discriminant_preservation() {
+#[rustfmt::skip]
+fn test_property_runtime_092_discriminant_preservation() {
     proptest!(|(disc in 0i64..50)| {
                                                                                     let code = format!(r"
 enum Priority {{

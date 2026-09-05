@@ -10,7 +10,8 @@ use std::process::Command;
 
 /// Property: All builtin functions evaluate arguments exactly ONCE
 #[test]
-#[rustfmt::skip]fn prop_builtin_single_evaluation() {
+#[rustfmt::skip]
+fn prop_builtin_single_evaluation() {
     // Only test builtins that accept integer arguments
     // len() requires string/array/dataframe - excluded
     let builtins = vec!["println", "print", "typeof", "str"];
@@ -60,7 +61,8 @@ println(counter)
 
 /// Property: Nested builtin calls maintain single-evaluation
 #[test]
-#[rustfmt::skip]fn prop_nested_builtins_single_evaluation() {
+#[rustfmt::skip]
+fn prop_nested_builtins_single_evaluation() {
     proptest!(|(_n in 1i32..50)| {
                                                                                     let script = r"
 let mut calls = 0
@@ -99,7 +101,8 @@ println(calls)
 
 /// Property: Multiple builtin calls accumulate correctly
 #[test]
-#[rustfmt::skip]fn prop_sequential_builtin_calls_accumulate() {
+#[rustfmt::skip]
+fn prop_sequential_builtin_calls_accumulate() {
     proptest!(|(count in 1usize..20)| {
                                                                                     // Generate N sequential println calls
                                                                                     let mut calls = String::new();
@@ -159,7 +162,8 @@ println(counter)
 
 /// Property: Builtin functions with multiple arguments evaluate each exactly once
 #[test]
-#[rustfmt::skip]fn prop_multi_arg_builtins_single_eval_per_arg() {
+#[rustfmt::skip]
+fn prop_multi_arg_builtins_single_eval_per_arg() {
     proptest!(|(a in 1i32..100, b in 1i32..100)| {
                                                                                     let script = format!(r"
 let mut counter_a = 0
@@ -201,7 +205,8 @@ println(counter_b)
 
 /// Property: Deterministic output across repeated runs
 #[test]
-#[rustfmt::skip]fn prop_builtin_calls_deterministic() {
+#[rustfmt::skip]
+fn prop_builtin_calls_deterministic() {
     proptest!(|(_n in 1i32..50)| {
                                                                                     let script = r"
 let mut counter = 0
