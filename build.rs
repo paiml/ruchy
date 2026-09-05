@@ -54,11 +54,10 @@ struct Binding {
     status: String,
 }
 
-/// `../../provable-contracts/contracts/ruchy/binding.yaml`, relative to this crate.
+/// `../provable-contracts/contracts/ruchy/binding.yaml` — the sibling checkout next to this
+/// repository (the layout both developers and sovereign-ci use).
 fn binding_manifest_path() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .parent()
-        .unwrap_or(std::path::Path::new("."))
         .parent()
         .unwrap_or(std::path::Path::new("."))
         .join("provable-contracts/contracts/ruchy/binding.yaml")
