@@ -1,0 +1,80 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Release workflow contract: the publish job can only go green by publishing (PMAT-093)"
+  crate: "ruchy"
+  references:
+    - "GitHub Actions workflow syntax: jobs.<job_id>.needs, jobs.<job_id>.steps[*].continue-on-error"
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z2"
+
+equations:
+  publish_not_theater:
+    formula: "∀step ∈ publish-crates: continue_on_error(step) = false ∧ ∀publish(pkg) ∈ publish-crates: pkg ∈ workspace.members"
+    domain: "steps of jobs.publish-crates in .github/workflows/release.yml"
+    invariants:
+      - "No step of the workflow is wrapped in continue-on-error"
+      - "Every `cargo publish -p <pkg>` names a member of [workspace] members"
+      - "The token comes from a secret that exists (CARGO_REGISTRY_TOKEN), not CRATES_TOKEN"
+  publish_after_build:
+    formula: "needs(publish-crates) ⊇ {create-release, build-binaries, build-wasm}"
+    domain: "jobs.publish-crates.needs"
+    invariants:
+      - "A broken binary or WASM build blocks the crates.io publish"
+  prerelease_from_tag:
+    formula: "prerelease(create-release) = contains(tag, '-')"
+    domain: "jobs.create-release"
+    invariants:
+      - "v5.0.0-beta.2 is a GitHub pre-release; v5.0.0 is not"
+
+proof_obligations:
+  - type: completeness
+    property: "Every publish step is real and gated"
+    formal: "publish_not_theater ∧ publish_after_build ∧ prerelease_from_tag"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RELEASE-WORKFLOW-001
+    rule: "No continue-on-error"
+    test: "test_pmat_093_no_continue_on_error_anywhere"
+    prediction: "verified"
+    if_fails: "Contract violation — a masked step can report green without publishing"
+  - id: FALSIFY-RELEASE-WORKFLOW-002
+    rule: "Publish targets are workspace members"
+    test: "test_pmat_093_every_cargo_publish_targets_a_workspace_member"
+    prediction: "verified"
+    if_fails: "Contract violation — a phantom package is published"
+  - id: FALSIFY-RELEASE-WORKFLOW-003
+    rule: "Publish waits for the builds"
+    test: "test_pmat_093_publish_job_needs_the_build_jobs"
+    prediction: "verified"
+    if_fails: "Contract violation — a crate can ship while its binaries fail to build"
+  - id: FALSIFY-RELEASE-WORKFLOW-004
+    rule: "The token secret exists"
+    test: "test_pmat_093_publish_uses_only_the_existing_registry_secret"
+    prediction: "verified"
+    if_fails: "Contract violation — cargo publish runs with an empty token"
+  - id: FALSIFY-RELEASE-WORKFLOW-005
+    rule: "Pre-release tags are pre-releases"
+    test: "test_pmat_093_prerelease_flag_is_derived_from_the_tag"
+    prediction: "verified"
+    if_fails: "Contract violation — a beta is presented as the latest stable release"
+
+kani_harnesses:
+  - id: KANI-RELEASE-WORKFLOW-001
+    obligation: PO-RELEASE-WORKFLOW-001
+    property: "publish_not_theater"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_release_workflow
+
+qa_gate:
+  id: QA-RELEASE-WORKFLOW
+  name: "release workflow contract"
+  min_coverage: 0.90
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_093_no_continue_on_error_anywhere"
+    - "test_pmat_093_every_cargo_publish_targets_a_workspace_member"
+    - "test_pmat_093_publish_job_needs_the_build_jobs"
+    - "test_pmat_093_publish_uses_only_the_existing_registry_secret"
+    - "test_pmat_093_prerelease_flag_is_derived_from_the_tag"
