@@ -19,6 +19,10 @@ fn test_sources() -> Vec<(PathBuf, String)> {
         .flatten()
         .map(|entry| entry.path())
         .filter(|path| path.extension().is_some_and(|ext| ext == "rs"))
+        .filter(|path| {
+            path.file_name()
+                .is_some_and(|name| name != "feature_gate_lint.rs")
+        })
         .collect();
     files.sort();
     files
@@ -66,18 +70,40 @@ fn ungated_repl_uses(path: &Path, src: &str) -> Vec<String> {
         .collect()
 }
 
-/// `....assert();` as a bare statement discards a `#[must_use]` value, which
-/// is a clippy error under `-D warnings` once the target's feature is on.
-fn is_bare_assert_statement(line: &str) -> bool {
-    let code = line.split("//").next().unwrap_or_default().trim();
-    code.ends_with(".assert();") && !code.contains("let ") && !code.contains('=')
+/// Index of the first line of the statement that ends at `idx`: the line after
+/// the nearest earlier line that closes a statement or block, or is blank.
+fn statement_start(lines: &[&str], idx: usize) -> usize {
+    (0..idx)
+        .rev()
+        .find(|&i| {
+            let code = lines[i].split("//").next().unwrap_or_default().trim();
+            code.is_empty() || code.ends_with(';') || code.ends_with('{') || code.ends_with('}')
+        })
+        .map_or(0, |i| i + 1)
+}
+
+/// A statement that ends in `.assert();` and neither binds nor otherwise
+/// consumes the `assert_cmd::assert::Assert` it produces discards a
+/// `#[must_use]` value: a clippy error under `-D warnings` once the target's
+/// feature is on. Only `assert_cmd` chains count (mockito's `Mock::assert`
+/// returns unit).
+fn is_bare_assert_statement(lines: &[&str], idx: usize) -> bool {
+    let last = lines[idx].split("//").next().unwrap_or_default().trim();
+    if !last.ends_with(".assert();") {
+        return false;
+    }
+    let statement = lines[statement_start(lines, idx)..=idx].join("\n");
+    let from_assert_cmd = statement.contains("ruchy_cmd(")
+        || statement.contains("cargo_bin")
+        || statement.contains("Command::");
+    from_assert_cmd && !statement.contains("let ") && !statement.contains(" = ")
 }
 
 fn bare_assert_statements(path: &Path, src: &str) -> Vec<String> {
-    src.lines()
-        .enumerate()
-        .filter(|(_, line)| is_bare_assert_statement(line))
-        .map(|(idx, line)| format!("{}:{}: {}", path.display(), idx + 1, line.trim()))
+    let lines: Vec<&str> = src.lines().collect();
+    (0..lines.len())
+        .filter(|&idx| is_bare_assert_statement(&lines, idx))
+        .map(|idx| format!("{}:{}: {}", path.display(), idx + 1, lines[idx].trim()))
         .collect()
 }
 
@@ -125,9 +151,77 @@ fn test_pmat_113_lint_discriminates_gated_from_ungated_repl_uses() {
 
 #[test]
 fn test_pmat_112_lint_discriminates_bare_from_consumed_asserts() {
-    assert!(is_bare_assert_statement("        .assert(); // times out"));
-    assert!(is_bare_assert_statement("    cmd.assert();"));
-    assert!(!is_bare_assert_statement("            .assert(),"));
-    assert!(!is_bare_assert_statement("    let out = cmd.assert();"));
-    assert!(!is_bare_assert_statement("        .assert()"));
+    let bare = [
+        "fn t() {",
+        "    ruchy_cmd()",
+        "        .arg(\"x\")",
+        "        .assert(); // times out",
+        "}",
+    ];
+    assert!(is_bare_assert_statement(&bare, 3));
+    let bound = [
+        "fn t() {",
+        "    let out = ruchy_cmd()",
+        "        .arg(\"x\")",
+        "        .assert();",
+        "}",
+    ];
+    assert!(!is_bare_assert_statement(&bound, 3));
+    let wrapped = [
+        "    assert_args_accepted(",
+        "        ruchy_cmd()",
+        "            .assert(),",
+        "    );",
+    ];
+    assert!(!is_bare_assert_statement(&wrapped, 2));
+    let mockito = [
+        "    let mock = server.mock(\"GET\", \"/\");",
+        "    mock.assert();",
+    ];
+    assert!(!is_bare_assert_statement(&mockito, 1));
+}
+
+/// The `[[bin]]` block of the ruchy binary in the crate manifest.
+fn ruchy_bin_block() -> String {
+    let manifest = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+        .expect("Cargo.toml is readable");
+    manifest
+        .split("[[bin]]")
+        .skip(1)
+        .map(|block| block.split("\n[").next().unwrap_or_default())
+        .find(|block| block.contains("name = \"ruchy\""))
+        .expect("Cargo.toml declares [[bin]] ruchy")
+        .to_string()
+}
+
+/// `minimal` is the core library only; the binary is a REPL-driven CLI, so it
+/// must say so instead of failing to compile under `--features minimal`.
+#[test]
+fn test_pmat_113_ruchy_binary_requires_the_repl_feature() {
+    let block = ruchy_bin_block();
+    let required = block
+        .lines()
+        .find(|line| line.trim_start().starts_with("required-features"))
+        .unwrap_or_default();
+    assert!(
+        required.contains("\"repl\""),
+        "[[bin]] ruchy must declare required-features = [\"repl\"]; found: {required:?}"
+    );
+}
+
+/// And the default build must still produce the binary.
+#[test]
+fn test_pmat_113_default_features_enable_repl() {
+    let manifest = fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+        .expect("Cargo.toml is readable");
+    let batteries = manifest
+        .lines()
+        .find(|line| line.starts_with("batteries-included"))
+        .expect("batteries-included feature");
+    let default = manifest
+        .lines()
+        .find(|line| line.starts_with("default"))
+        .expect("default feature");
+    assert!(default.contains("\"batteries-included\""), "{default}");
+    assert!(batteries.contains("\"repl\""), "{batteries}");
 }
