@@ -1,80 +1,64 @@
 {
   "version": "3.37.0",
-  "created_at": "2026-09-05T12:19:59.295853082Z",
+  "created_at": "2026-09-05T13:19:21.816434786Z",
   "git_context": null,
   "files": {
     "./build.rs": {
       "content_hash": [
-        70,
-        149,
-        202,
-        45,
-        104,
-        125,
-        166,
-        195,
-        6,
-        63,
-        225,
-        119,
-        71,
-        183,
-        57,
-        202,
-        70,
-        39,
-        119,
-        108,
-        207,
-        69,
-        105,
-        62,
-        81,
-        34,
+        114,
+        21,
+        79,
+        175,
+        230,
+        247,
+        83,
+        206,
+        174,
+        26,
+        65,
+        196,
+        227,
         72,
+        168,
+        231,
+        112,
         235,
-        158,
-        60,
-        11,
-        60
+        121,
+        188,
+        243,
+        2,
+        125,
+        37,
+        125,
+        65,
+        35,
+        196,
+        218,
+        236,
+        127,
+        49
       ],
       "score": {
-        "structural_complexity": 20.4,
+        "structural_complexity": 25.0,
         "semantic_complexity": 20.0,
         "duplication_ratio": 20.0,
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
-        "entropy_score": 7.5,
-        "total": 93.545456,
-        "grade": "A",
+        "entropy_score": 6.5,
+        "total": 96.81818,
+        "grade": "A+",
         "confidence": 1.0,
         "language": "Rust",
         "file_path": "./build.rs",
         "penalties_applied": [
           {
-            "source_metric": "StructuralComplexity",
-            "amount": 1.0,
-            "applied_to": [
-              "StructuralComplexity"
-            ],
-            "issue": "Deep nesting: 5 levels"
-          },
-          {
             "source_metric": "Duplication",
-            "amount": 2.5,
+            "amount": 3.5,
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 5 duplicate code patterns"
-          },
-          {
-            "source_metric": "StructuralComplexity",
-            "amount": 3.6000001,
-            "applied_to": [
-              "StructuralComplexity"
-            ],
-            "issue": "High cognitive complexity: 27"
+            "issue": "Found 7 duplicate code patterns"
           }
         ],
         "critical_defects_count": 0,
@@ -77756,10 +77740,10 @@
   },
   "summary": {
     "total_files": 950,
-    "avg_score": 91.09847,
+    "avg_score": 91.10191,
     "grade_distribution": {
-      "A+": 378,
-      "A": 377,
+      "A+": 379,
+      "A": 376,
       "A-": 31,
       "B+": 31,
       "B": 70,

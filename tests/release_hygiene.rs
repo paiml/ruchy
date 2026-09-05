@@ -85,16 +85,43 @@ fn test_pmat_092_cargo_toml_package_declares_include() {
     );
 }
 
+/// Only the colon-containing `.pmat-work/` scratch directories (the ones that
+/// break Windows checkout) are required to be untracked. Other `.pmat-work/`
+/// paths (e.g. ticket-scoped receipts without a colon) are out of scope here;
+/// they are excluded from the crates.io tarball simply by not appearing in
+/// `[package] include`.
 #[test]
-fn test_pmat_092_pmat_work_not_tracked() {
+fn test_pmat_092_pmat_work_colon_dirs_not_tracked() {
     let files = git_ls_files();
     let offenders: Vec<&String> = files
         .iter()
-        .filter(|p| p.starts_with(".pmat-work/"))
+        .filter(|p| p.starts_with(".pmat-work/") && p.contains(':'))
         .collect();
     assert!(
         offenders.is_empty(),
-        ".pmat-work/ scratch files must not be tracked by git: {offenders:?}"
+        ".pmat-work/ colon-named scratch directories must not be tracked by git: {offenders:?}"
+    );
+}
+
+#[test]
+fn test_pmat_092_pmat_work_not_in_package_list() {
+    let output = Command::new(env!("CARGO"))
+        .args(["package", "--list", "-p", "ruchy"])
+        .output()
+        .expect("failed to run cargo package --list");
+    assert!(
+        output.status.success(),
+        "cargo package --list failed: {}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let files = String::from_utf8_lossy(&output.stdout);
+    let offenders: Vec<&str> = files
+        .lines()
+        .filter(|l| l.starts_with(".pmat-work/"))
+        .collect();
+    assert!(
+        offenders.is_empty(),
+        ".pmat-work/ files must not be in the packaged file list: {offenders:?}"
     );
 }
 
