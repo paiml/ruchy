@@ -1,0 +1,40 @@
+2026-09-05T15:05:48+02:00
+=== perf_002c_dead_code_elimination ===
+test test_perf_002c_dce_async_function_not_eliminated ... FAILED
+test result: FAILED. 9 passed; 1 failed; 5 ignored; 0 measured; 0 filtered out; finished in 2.63s
+=== probar_wasm_tests ===
+=== property_eval_builtin ===
+test test_compute_hash ... FAILED
+test result: FAILED. 123 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+=== quality_001_self_receiver ===
+test test_quality_001_04_owned_self_consuming ... FAILED
+test test_quality_001_05_mixed_receiver_types ... FAILED
+test property_tests::prop_owned_self_preserved ... FAILED
+test property_tests::prop_mixed_receivers ... FAILED
+test result: FAILED. 7 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.42s
+=== readme_validation ===
+test test_readme_required_sections ... FAILED
+test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+=== runtime_builtins_core ===
+test test_bug_syntax_001_attribute_error_message ... FAILED
+test result: FAILED. 4 passed; 1 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+=== sqlite_001_parser_grammar ===
+test test_sqlite_163_associated_types ... FAILED
+test result: FAILED. 912 passed; 1 failed; 537 ignored; 0 measured; 0 filtered out; finished in 0.98s
+=== stdlib005_compute_hash ===
+test test_compute_hash_empty_file ... FAILED
+test test_compute_hash_known_md5 ... FAILED
+test test_compute_hash_basic ... FAILED
+test result: FAILED. 4 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+=== tooling_002_renacer_integration ===
+test test_tooling_002_01_renacer_installed ... FAILED
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+=== transpiler_defect_015_mutable_string_function_scope_GREEN ===
+test test_defect_015_04_string_field_concatenation_RED ... FAILED
+test result: FAILED. 1 passed; 1 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.12s
+=== doctests ===
+test src/wasm/wit.rs - wasm::wit::WitGenerator::generate (line 345) ... FAILED
+test src/wasm/wit.rs - wasm::wit::WitGenerator::new_with_config (line 315) ... FAILED
+test src/stdlib/trueno_bridge.rs - stdlib::trueno_bridge::kahan_sum (line 53) ... FAILED
+test result: FAILED. 245 passed; 194 failed; 282 ignored; 0 measured; 0 filtered out; finished in 13.47s
+2026-09-05T15:07:11+02:00

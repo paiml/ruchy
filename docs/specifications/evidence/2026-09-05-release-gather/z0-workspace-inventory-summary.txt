@@ -1,0 +1,59 @@
+# PMAT-106 inventory: cargo test --workspace --no-fail-fast on the Z0 branch (PMAT-102-clippy-must-use @ 0b689acb + fold-ins in the working tree)
+
+targets ok: 425   targets FAILED: 24   EXIT=101
+
+## Failing targets
+- tests/bug_032_range_function_not_transpiled.rs :: 8 passed; 1 failed; 0 ignored
+     test_bug_032_red_range_in_expression
+- tests/bug_033_test_attribute_invalid_rust.rs :: 2 passed; 5 failed; 0 ignored
+     test_bug_033_red_transpiled_output_format test_bug_033_red_property_tests_command test_bug_033_red_multiple_tests test_bug_033_red_test_with_complex_description test_bug_033_red_test_with_description
+- tests/cli_contract_prove.rs :: 2 passed; 1 failed; 0 ignored
+     test_prove_missing_file
+- tests/cli_contract_sovereign.rs :: 32 passed; 3 failed; 0 ignored
+     test_contracts_check_with_threshold test_infra_destroy_missing_file test_version_is_5_0
+- tests/cli_interactive_validation.rs :: 1 passed; 13 failed; 2 ignored
+     cli_accepts_stdin_input cli_handles_memory_intensive_operations cli_error_messages_are_actionable cli_handles_long_running_scripts cli_undefined_variable_error_is_clear non_tty_omits_interactive_features cli_supports_output_redirection cli_run_command_executes_file cli_eval_flag_executes_inline cli_test_command_runs_tests repl_interactive_arithmetic repl_interactive_error_recovery repl_detects_interactive_tty
+- tests/cli_unify_003_comprehensive_suite.rs :: 57 passed; 1 failed; 2 ignored
+     test_072_tool_notebook
+- tests/http_server_cli.rs :: 2 passed; 11 failed; 3 ignored
+     test_red_ruchy_serve_requires_directory test_red_ruchy_serve_shows_startup_message test_http002_mime_wasm test_http003_wasm_coep_header test_red_ruchy_serve_starts_server test_http003_html_coop_header test_http002_mime_json test_http002_mime_css test_http002_mime_html test_http002_mime_javascript test_http003_wasm_coop_header
+- tests/http_watch_mode.rs :: 7 passed; 2 failed; 0 ignored
+     test_graceful_shutdown_on_sigterm test_serve_with_watch_starts_successfully
+- tests/issue_113_transpiler_type_inference.rs :: 6 passed; 2 failed; 0 ignored
+     test_issue_113_bug_3_vector_return_type test_issue_113_full_reproducer_bench_008
+- tests/issue_114_usize_casting.rs :: 7 passed; 1 failed; 2 ignored
+     test_issue_114_usize_bench_008_end_to_end
+- tests/lang_comp_suite.rs :: 139 passed; 25 failed; 23 ignored
+     lang_comp::pattern_matching::test_langcomp_009_04_destructuring_example_file lang_comp::data_structures::test_langcomp_006_03_tuples_example_file lang_comp::data_structures::test_langcomp_006_01_arrays_example_file lang_comp::ranges::test_langcomp_011_01_basic_ranges_example_file lang_comp::type_annotations::test_langcomp_007_01_basic_types_example_file lang_comp::type_annotations::test_langcomp_007_03_collection_types_example_file lang_comp::data_structures::test_langcomp_006_04_destructuring_example_file lang_comp::ranges::test_langcomp_011_03_range_variables_example_file lang_comp::met
+- tests/parser_094_path_separator.rs :: 6 passed; 4 failed; 0 ignored
+     test_parser_094_module_function_call_simple test_parser_094_module_function_with_args test_parser_094_issue_137_reproduction test_parser_094_nested_module_path
+- tests/parser_094_property_tests.rs :: 3 passed; 2 failed; 0 ignored
+     property_module_paths_preserve_colon_colon property_nested_module_paths_preserve_all_colons
+- tests/parser_defect_010_trait_associated_types.rs :: 5 passed; 2 failed; 1 ignored
+     test_parser_010_book_example test_parser_010_default_implementation
+- tests/perf_002c_dead_code_elimination.rs :: 9 passed; 1 failed; 5 ignored
+     test_perf_002c_dce_async_function_not_eliminated
+- tests/property_eval_builtin.rs :: 123 passed; 1 failed; 0 ignored
+     test_compute_hash
+- tests/quality_001_self_receiver.rs :: 7 passed; 4 failed; 0 ignored
+     test_quality_001_04_owned_self_consuming test_quality_001_05_mixed_receiver_types property_tests::prop_owned_self_preserved property_tests::prop_mixed_receivers
+- tests/readme_validation.rs :: 11 passed; 1 failed; 0 ignored
+     test_readme_required_sections
+- tests/runtime_builtins_core.rs :: 4 passed; 1 failed; 2 ignored
+     test_bug_syntax_001_attribute_error_message
+- tests/sqlite_001_parser_grammar.rs :: 912 passed; 1 failed; 537 ignored
+     test_sqlite_163_associated_types
+- tests/stdlib005_compute_hash.rs :: 4 passed; 3 failed; 0 ignored
+     test_compute_hash_empty_file test_compute_hash_known_md5 test_compute_hash_basic
+- tests/tooling_002_renacer_integration.rs :: 7 passed; 1 failed; 0 ignored
+     test_tooling_002_01_renacer_installed
+- tests/transpiler_defect_015_mutable_string_function_scope_GREEN.rs :: 1 passed; 1 failed; 7 ignored
+     test_defect_015_04_string_field_concatenation_RED
+- tests/probar_wasm_tests.rs :: 245 passed; 194 failed; 282 ignored
+     src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::is_dataframe_expr (line 320) src/backend/transpiler/codegen_minimal.rs - backend::transpiler::codegen_minimal::MinimalCodeGen::gen_expr (line 12) src/backend/transpiler/codegen_minimal.rs - backend::transpiler::codegen_minimal::MinimalCodeGen::gen_program (line 315) src/backend/transpiler/actors.rs - backend::transpiler::actors::Transpiler::transpile_send (line 129) src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::transpile_dataframe_method (line 163) src/backend/transpiler/a
+
+## Attribution against plain main (same test files run on main in ruchy-wt-197base)
+see main-integration-failures-triage.log (14 files, all identical failures on main) and main-integration-failures-triage-2.log (10 further files + doctests)
+
+## Attribution result (2026-09-05, test names only, doctests compared by summary counts)
+Non-doctest failing tests on the Z0 branch: 87. The same 24 test files on plain main: 87 failing tests. Z0-only: 0; main-only: 0. Doctests: 245 passed / 194 failed / 282 ignored on both. Every inventory failure is pre-existing at main; none is introduced by PMAT-102..107.

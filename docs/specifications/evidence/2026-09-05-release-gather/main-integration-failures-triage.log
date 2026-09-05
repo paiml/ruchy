@@ -1,0 +1,103 @@
+2026-09-05T14:52:26+02:00
+=== parser_defect_010_trait_associated_types ===
+test test_parser_010_book_example ... FAILED
+test test_parser_010_default_implementation ... FAILED
+test result: FAILED. 5 passed; 2 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+=== lang_comp_suite ===
+test lang_comp::pattern_matching::test_langcomp_009_04_destructuring_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_01_basic_ranges_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_03_tuples_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_01_string_methods_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_04_destructuring_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_02_array_methods_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_01_basic_types_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_03_range_variables_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_04_chaining_methods_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_02_dictionaries_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_03_collection_types_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_03_integer_methods_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_01_arrays_example_file ... FAILED
+test lang_comp::pattern_matching::test_langcomp_009_03_tuple_patterns_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_04_range_patterns_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_02_range_iteration_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_02_option_type_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_01_result_type_example_file ... FAILED
+test lang_comp::pattern_matching::test_langcomp_009_01_literal_patterns_example_file ... FAILED
+test lang_comp::closures::test_langcomp_010_01_basic_closures_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_04_type_inference_example_file ... FAILED
+test lang_comp::pattern_matching::test_langcomp_009_02_variable_patterns_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_02_function_types_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_03_try_catch_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_04_error_propagation_example_file ... FAILED
+test result: FAILED. 139 passed; 25 failed; 23 ignored; 0 measured; 0 filtered out; finished in 9.34s
+=== parser_094_path_separator ===
+test test_parser_094_module_function_call_simple ... FAILED
+test test_parser_094_issue_137_reproduction ... FAILED
+test test_parser_094_module_function_with_args ... FAILED
+test test_parser_094_nested_module_path ... FAILED
+test result: FAILED. 6 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+=== cli_contract_sovereign ===
+test test_infra_destroy_missing_file ... FAILED
+test test_contracts_check_with_threshold ... FAILED
+test test_version_is_5_0 ... FAILED
+test result: FAILED. 32 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+=== cli_interactive_validation ===
+test cli_accepts_stdin_input ... FAILED
+test cli_handles_memory_intensive_operations ... FAILED
+test cli_error_messages_are_actionable ... FAILED
+test cli_handles_long_running_scripts ... FAILED
+test non_tty_omits_interactive_features ... FAILED
+test cli_undefined_variable_error_is_clear ... FAILED
+test cli_supports_output_redirection ... FAILED
+test cli_eval_flag_executes_inline ... FAILED
+test cli_run_command_executes_file ... FAILED
+test repl_interactive_arithmetic ... FAILED
+test repl_interactive_error_recovery ... FAILED
+test repl_detects_interactive_tty ... FAILED
+test cli_test_command_runs_tests ... FAILED
+test result: FAILED. 1 passed; 13 failed; 2 ignored; 0 measured; 0 filtered out; finished in 5.11s
+=== cli_contract_prove ===
+test test_prove_missing_file ... FAILED
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+=== issue_114_usize_casting ===
+test test_issue_114_usize_bench_008_end_to_end ... FAILED
+test result: FAILED. 7 passed; 1 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.05s
+=== parser_094_property_tests ===
+test property_module_paths_preserve_colon_colon ... FAILED
+test property_nested_module_paths_preserve_all_colons ... FAILED
+test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+=== http_server_cli ===
+test test_red_ruchy_serve_requires_directory ... FAILED
+test test_red_ruchy_serve_shows_startup_message ... FAILED
+test test_http002_mime_javascript ... FAILED
+test test_http003_html_coop_header ... FAILED
+test test_http002_mime_json ... FAILED
+test test_http003_wasm_coep_header ... FAILED
+test test_http002_mime_css ... FAILED
+test test_http002_mime_html ... FAILED
+test test_red_ruchy_serve_starts_server ... FAILED
+test test_http002_mime_wasm ... FAILED
+test test_http003_wasm_coop_header ... FAILED
+test result: FAILED. 2 passed; 11 failed; 3 ignored; 0 measured; 0 filtered out; finished in 1.02s
+=== bug_033_test_attribute_invalid_rust ===
+test test_bug_033_red_transpiled_output_format ... FAILED
+test test_bug_033_red_property_tests_command ... FAILED
+test test_bug_033_red_test_with_complex_description ... FAILED
+test test_bug_033_red_test_with_description ... FAILED
+test test_bug_033_red_multiple_tests ... FAILED
+test result: FAILED. 2 passed; 5 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+=== issue_113_transpiler_type_inference ===
+test test_issue_113_bug_3_vector_return_type ... FAILED
+test test_issue_113_full_reproducer_bench_008 ... FAILED
+test result: FAILED. 6 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+=== http_watch_mode ===
+test test_graceful_shutdown_on_sigterm ... FAILED
+test test_serve_with_watch_starts_successfully ... FAILED
+test result: FAILED. 7 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.00s
+=== cli_unify_003_comprehensive_suite ===
+test test_072_tool_notebook ... FAILED
+test result: FAILED. 57 passed; 1 failed; 2 ignored; 0 measured; 0 filtered out; finished in 6.92s
+=== bug_032_range_function_not_transpiled ===
+test test_bug_032_red_range_in_expression ... FAILED
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+2026-09-05T14:54:22+02:00

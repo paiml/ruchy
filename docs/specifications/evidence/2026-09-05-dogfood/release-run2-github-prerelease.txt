@@ -1,0 +1,1 @@
+prerelease=true assets=ruchy-5.0.0-beta.2-wasm-checksums.txt, ruchy-5.0.0-beta.2.js, ruchy-5.0.0-beta.2.wasm, ruchy-5.0.0-beta.2_bg.wasm.d.ts, ruchy-darwin-amd64, ruchy-darwin-arm64, ruchy-linux-amd64, ruchy-windows-amd64.exe https://github.com/paiml/ruchy/releases/tag/v5.0.0-beta.2

@@ -1,0 +1,15 @@
+2026-09-05T20:10:40.1121703Z   CARGO_REGISTRY_TOKEN: ***
+2026-09-05T20:10:42.7536333Z [1m[92m   Verifying[0m ruchy v5.0.0-beta.2 (/home/runner/work/ruchy/ruchy)
+2026-09-05T20:10:43.4030571Z [1m[92m  Downloaded[0m getrandom v0.3.4
+2026-09-05T20:10:43.5184006Z [1m[92m  Downloaded[0m thiserror v2.0.20
+2026-09-05T20:10:43.5436238Z [1m[92m  Downloaded[0m thiserror-impl v2.0.20
+2026-09-05T20:10:43.5464038Z [1m[92m  Downloaded[0m sha2 v0.10.9
+2026-09-05T20:10:49.9914030Z [1m[92m   Compiling[0m serde_derive v1.0.229
+2026-09-05T20:10:57.2440584Z [1m[92m   Compiling[0m thiserror v2.0.20
+2026-09-05T20:10:59.4681806Z [1m[92m   Compiling[0m thiserror-impl v2.0.20
+2026-09-05T20:12:11.7833056Z [1m[92m    Finished[0m `dev` profile [unoptimized + debuginfo] target(s) in 1m 31s
+2026-09-05T20:12:11.8434142Z [1m[92m   Uploading[0m ruchy v5.0.0-beta.2 (/home/runner/work/ruchy/ruchy)
+2026-09-05T20:12:12.3123015Z [1m[91merror[0m: failed to publish ruchy v5.0.0-beta.2 to registry at https://crates.io
+2026-09-05T20:12:12.3123679Z Caused by:
+2026-09-05T20:12:12.3124139Z   the remote server responded with an error (status 403 Forbidden): authentication failed
+2026-09-05T20:12:12.3329822Z ##[error]Process completed with exit code 101.

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# A_9 (plan §2 Z9): crates.io has 5.0.0-beta.2 and a fresh rust:1.91-slim container installs it,
+# locked and with fresh resolution. Exit 0 iff both hold. No repo state is touched.
+set -u
+V=5.0.0-beta.2
+echo "== crates.io versions =="
+if curl -s -H 'User-Agent: ruchy-release-gate (paiml)' https://crates.io/api/v1/crates/ruchy/versions \
+   | jq -e --arg v "$V" '.versions[] | select(.num == $v) | {num, yanked, created_at}'; then
+  echo "crates.io: $V present"
+else
+  echo "crates.io: $V ABSENT"; exit 1
+fi
+echo "== fresh container: rust:1.91-slim =="
+docker run --rm rust:1.91-slim sh -c '
+  set -e
+  apt-get update -qq >/dev/null && apt-get install -y -qq pkg-config libssl-dev >/dev/null
+  echo "-- cargo install ruchy --version '"$V"' --locked"
+  cargo install ruchy --version '"$V"' --locked 2>&1 | tail -3
+  ruchy --version
+  echo "-- cargo install ruchy --version '"$V"' --force (fresh resolution)"
+  cargo install ruchy --version '"$V"' --force 2>&1 | tail -3
+  ruchy --version
+  printf "fun main() { println(\"beta2 ok\") }\nmain()\n" > /tmp/t.ruchy
+  ruchy run /tmp/t.ruchy
+'
