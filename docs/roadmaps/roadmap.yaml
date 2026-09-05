@@ -2280,3 +2280,41 @@ roadmap:
   - tests
   - jidoka
   notes: null
+- id: PMAT-105
+  github_issue: null
+  item_type: task
+  title: RUSTSEC-H2-DATA-FRAMES - cargo deny advisories red on main (h2 unbounded empty DATA frames), blocks ci/lint deny step
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T12:40:57Z
+  updated: 2026-09-05T12:40:57Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - deps
+  - security
+  notes: null
+- id: PMAT-106
+  github_issue: null
+  item_type: task
+  title: 'INTEGRATION-TESTS-RED-AT-MAIN - cargo test --workspace fails on pre-existing RED integration tests (first: bug_032_range_function_not_transpiled); full --no-fail-fast inventory needed'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T12:40:57Z
+  updated: 2026-09-05T12:40:57Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - tests
+  - jidoka
+  notes: null

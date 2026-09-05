@@ -1,0 +1,32 @@
+2026-09-05T14:23:13+02:00
+     Running unittests src/lib.rs (/mnt/nvme-raid0/targets/ruchy/debug/deps/ruchy-ce1ac3d1220e64dd)
+test result: ok. 20510 passed; 0 failed; 108 ignored; 0 measured; 0 filtered out; finished in 18.26s
+     Running unittests src/bin/ruchy.rs (/mnt/nvme-raid0/targets/ruchy/debug/deps/ruchy-e6539d2c0b80ca6d)
+test result: ok. 954 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.73s
+     Running tests/array_each_method.rs (/mnt/nvme-raid0/targets/ruchy/debug/deps/array_each_method-e4551c005b8b651a)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/book_compat_001_lifetime_annotations.rs (/mnt/nvme-raid0/targets/ruchy/debug/deps/book_compat_001_lifetime_annotations-fcf7cfde07f4999d)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/bug_003_array_index_assignment.rs (/mnt/nvme-raid0/targets/ruchy/debug/deps/bug_003_array_index_assignment-a33648e7e9ef700e)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.29s
+     Running tests/bug_031_fmt_corruption.rs (/mnt/nvme-raid0/targets/ruchy/debug/deps/bug_031_fmt_corruption-e5a47722281abf52)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/bug_032_range_function_not_transpiled.rs (/mnt/nvme-raid0/targets/ruchy/debug/deps/bug_032_range_function_not_transpiled-05182a405fdd0b8a)
+test test_bug_032_red_range_in_expression ... FAILED
+thread 'test_bug_032_red_range_in_expression' (1333455) panicked at tests/bug_032_range_function_not_transpiled.rs:135:10:
+error[E0599]: no method named `iter` found for struct `std::ops::Range<Idx>` in the current scope
+error: aborting due to 1 previous error
+error[E0599]: no method named `iter` found for struct `std::ops::Range<Idx>` in the current scope
+error: aborting due to 1 previous error
+error[E0599]: no method named `iter` found for struct `std::ops::Range<Idx>` in the current scope
+error: aborting due to 1 previous error
+error[E0599]: no method named `iter` found for struct `std::ops::Range<Idx>` in the current scope
+error: aborting due to 1 previous error
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+error: test failed, to rerun pass `-p ruchy --test bug_032_range_function_not_transpiled`
+
+real	1m25.114s
+user	7m29.738s
+sys	5m55.077s
+EXIT=101
+2026-09-05T14:24:38+02:00

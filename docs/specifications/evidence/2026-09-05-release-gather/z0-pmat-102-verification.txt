@@ -33,3 +33,19 @@ fail CI's 1.97.1 `cargo fmt --all -- --check`. The tree-wide `cargo fmt --all` a
 The pre-commit complexity gate independently refused the fmt-only touches of four files because they hold six pre-existing
 functions over the per-function limits (cognitive 34–64; cyclomatic 35) — recorded as B20 in the plan.
 Z0 = 24 must_use sites + tests/support/mod.rs + benches/transpiler.rs, verified under both rustc 1.98 (local stable) and 1.97.1 (CI).
+
+## Z0b / PMAT-103 (worker opus aa120d044a3ef3ab2, then orchestrator re-run)
+Six functions over the hook's per-function limits (the brief named five; the worker found resolve_qualified_name at cognitive 68 with the hook's own command):
+  is_identifier_usage 18/34 -> 3/6 · handle_provability_command 35/64 -> 3/2 · handle_suggest_contracts 9/36 -> 5/4 · call_function 15/37 -> 8/8 · eval_type_cast 8/36 -> 3/4 · resolve_qualified_name 13/68 -> 4/11
+Orchestrator re-run: complexity gate 0 violations on all four files; RED proof on `git show main:<file>` copies = 1/3/1/3 violations; fmt CLEAN (1.97.1 and 1.98); clippy exit 0; cargo test --lib 20510 passed.
+Worker-run differential: examples/ 154 files, HEAD release vs new debug binary run stdout+exit: 153 identical, 1 differs (09_async_await.ruchy) — shown to differ run-to-run on the unmodified binary too (HashMap field order).
+Commit 34a53fa6 (with PMAT-102).
+
+## Z0c / PMAT-104 (worker opus a32af0dbc875a35fe partial, finished by orchestrator)
+Bin unit-test target: at main it never completed (test_handle_watch_mode_setup -> thread -> process::exit(0) after 10 ms; cargo saw exit 0 after 639-666 of 952 tests).
+After removing it the target exposed: 2 non-hermetic /nonexistent tests (the dir exists on this host), 1 case-sensitive assertion, 1 wrong expectation (empty program), 18 blocking tests (11 prover interactive loop on process stdin, 4 watch-mode infinite loop, 3 dispatch tests that scanned the repo / started the notebook server / ran cargo add), and, once those ran, a cwd race across 17 tests in build.rs/add.rs/test.rs.
+Orchestrator re-run after fixes: cargo test -p ruchy --bin ruchy -> 954 passed 0 failed 0 ignored (parallel 1.73 s; --test-threads=1 5.2 s); clippy exit 0; fmt CLEAN both toolchains; complexity gate 0 violations on every staged file (get_latest_modification 28 -> split). No #[ignore] added. Commit e9d8365e.
+Side measurement: `ruchy prove < /dev/null` -> 4.2.1 exit 124 (hang), HEAD exit 0.
+
+## Z0d / PMAT-094 item (a) (orchestrator)
+Cargo.toml [dev-dependencies] provable-contracts = "0.3.1" (crates.io). cargo check --tests -p ruchy exit 0 (tests/contract_traits.rs is the only consumer). cargo +1.97.1 fmt --all -- --check CLEAN. Root cause it removes: CI's `cargo fmt --all -- --check` also formats path dependencies, and the freshly cloned sibling fails rustfmt in the 1.97.1 container (…/provable-contracts/examples/doc_integrity.rs) — every PR's ci/lint was red for that. Commit b2d3557b. PR #204.
