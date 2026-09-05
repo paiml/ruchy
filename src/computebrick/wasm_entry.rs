@@ -57,8 +57,6 @@ impl WasmWidget {
     /// Render to a Canvas2D context.
     #[wasm_bindgen]
     pub fn render_to_canvas(&mut self, ctx: &CanvasRenderingContext2d, width: u32, height: u32) {
-        use super::canvas::Canvas;
-
         // Resize buffer if needed
         let char_width = 8.0;
         let char_height = 16.0;
@@ -99,8 +97,6 @@ impl WasmWidget {
     /// Get widget as string (for terminal/text output).
     #[wasm_bindgen]
     pub fn to_string(&mut self) -> String {
-        use super::canvas::Canvas;
-
         self.buffer.clear();
         self.inner.layout(self.buffer.bounds());
         self.inner.paint(&mut self.buffer);
@@ -162,8 +158,6 @@ impl WasmWidget {
     }
 
     pub fn to_string(&mut self) -> String {
-        use super::canvas::Canvas;
-
         self.buffer.clear();
         self.inner.layout(self.buffer.bounds());
         self.inner.paint(&mut self.buffer);

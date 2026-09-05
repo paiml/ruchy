@@ -270,8 +270,8 @@ fn test_pmat_100_manifest_readers_read_package_and_inline_versions() {
 
 /// PMAT-129: the wasm32 dependency table must carry what the wasm build of the
 /// root crate needs: getrandom 0.3 with `wasm_js` (rand 0.9 via aprender-core),
-/// `serde-wasm-bindgen` (used by `src/wasm_bindings.rs`), and the two web-sys
-/// canvas features the computebrick entry imports.
+/// `serde-wasm-bindgen` (used by `src/wasm_bindings.rs`), and the web-sys
+/// canvas context feature the computebrick entry imports.
 #[test]
 fn test_pmat_129_wasm32_dependency_table_is_complete() {
     let manifest: toml::Table = read(&manifest_dir().join("Cargo.toml"))
@@ -312,10 +312,8 @@ fn test_pmat_129_wasm32_dependency_table_is_complete() {
         .and_then(|f| f.as_array())
         .map(|a| a.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>())
         .unwrap_or_default();
-    for needed in ["CanvasRenderingContext2d", "HtmlCanvasElement"] {
-        assert!(
-            web_sys.contains(&needed),
-            "web-sys must enable {needed}; got {web_sys:?}"
-        );
-    }
+    assert!(
+        web_sys.contains(&"CanvasRenderingContext2d"),
+        "web-sys must enable CanvasRenderingContext2d (src/computebrick/wasm_entry.rs); got {web_sys:?}"
+    );
 }
