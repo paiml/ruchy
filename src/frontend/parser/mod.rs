@@ -437,7 +437,7 @@ fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Opti
             // PARSER-081 FIX: Don't treat `[` as array indexing after literals, struct literals, let statements, or standalone function calls
             // This prevents `let y = 2 [x, y]`, `let p = Point{...} [x]`, and `let result = foo() [1, 2]` from being parsed as indexing
             // PARSER-086: Extended to fix block-level let with function call followed by array literal
-            // PARSER-XXX: Extended to include Await and Try expressions
+            // PARSER (commit d83bac83): Extended to include Await and Try expressions in non-indexing check
             if matches!(
                 left.kind,
                 ExprKind::Literal(_)
@@ -652,7 +652,7 @@ fn handle_decrement_operator(state: &mut ParserState, left: Expr) -> Result<Expr
 }
 /// Check if ? is for ternary operator (not try operator)
 fn is_ternary_operator(state: &mut ParserState) -> bool {
-    // PARSER-XXX: Use same logic as is_try_operator_not_ternary
+    // Delegates to is_try_operator_not_ternary and inverts result (PARSER (commit d83bac83))
     // Returns true if this IS a ternary operator (has `:` at same level)
     // Returns false if this is a try operator (no `:` found)
     !is_try_operator_not_ternary(state)
@@ -912,7 +912,7 @@ fn is_valid_ternary_start(token: &Token, min_prec: i32, ternary_prec: i32) -> bo
 }
 
 /// Check if this is a try operator rather than ternary (complexity: 5, cognitive: 5)
-/// PARSER-XXX: Scan ahead to find `:` at same nesting level for ternary detection
+/// Scans ahead to find `:` at same nesting level for ternary detection (PARSER (commit d83bac83))
 /// Returns true if this is definitely a try operator, false if it could be ternary
 fn is_statement_keyword(token: &Token) -> bool {
     matches!(

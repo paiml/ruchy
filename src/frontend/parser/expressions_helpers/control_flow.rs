@@ -519,9 +519,9 @@ mod tests {
 
     #[test]
     fn test_break_with_label() {
-        // Root cause: Parser gets confused when lifetime token appears in statement position within for loop
-        // Error: "Expected RightBrace, found Break" suggests statement parsing consumes tokens incorrectly
-        // Workaround: Use break without label, or use while loops which work correctly
+        // Validates parsing of labeled break statements in for loop bodies (PMAT-108)
+        // Tests: for x in xs { break 'outer; }
+        // Ensures lifetime-style syntax after break token is correctly recognized in statement position
         let code = "for x in xs { break 'outer; }";
         let result = Parser::new(code).parse();
         assert!(result.is_ok(), "Break with label should parse successfully");
