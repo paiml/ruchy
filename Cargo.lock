@@ -6001,6 +6001,8 @@ dependencies = [
 [[package]]
 name = "provable-contracts"
 version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "49c4074b55824441df3872f57aecaeb69902a568dabffb59da9b15533a91cca4"
 dependencies = [
  "provable-contracts-macros 0.3.1",
  "regex",
@@ -6035,6 +6037,8 @@ dependencies = [
 [[package]]
 name = "provable-contracts-macros"
 version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a6bb7beb246ab375bc516720bcab5c5c2b93adb63115e785454a5424ba89fc0"
 dependencies = [
  "proc-macro2",
  "quote",
