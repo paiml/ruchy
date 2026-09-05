@@ -1,0 +1,75 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Expression dispatch contract for the Ruchy transpiler"
+  crate: "ruchy"
+  references:
+    - "Pierce, Types and Programming Languages, 2002"
+
+equations:
+  dispatch_totality:
+    formula: "∀e ∈ Expr: transpile_expr(e) ∈ Ok ∪ Err"
+    domain: "e ∈ Expr, e.kind ∈ ExprKind (93 variants)"
+    invariants:
+      - "Every ExprKind variant reaches a transpile_* handler"
+      - "No ExprKind variant reaches ⊥ (panic, abort, or divergence)"
+    preconditions:
+      - "expr is a well-formed Expr node"
+    postconditions:
+      - "result is Ok(TokenStream) or Err(TranspileError), never ⊥"
+    lean_theorem: "Theorems.Dispatch_totality"
+
+  dispatch_determinism:
+    formula: "transpile_expr(e) = transpile_expr(e)"
+    domain: "e ∈ Expr, e.kind ∈ ExprKind (93 variants)"
+    invariants:
+      - "Dispatch reads no mutable global state"
+    preconditions:
+      - "expr is a well-formed Expr node"
+    postconditions:
+      - "two calls on the same Expr render the same Result"
+    lean_theorem: "Theorems.Dispatch_determinism"
+
+proof_obligations:
+  - type: completeness
+    property: "Every ExprKind variant is dispatched to a handler"
+    formal: "∀e ∈ Expr: transpile_expr(e) ∈ Ok ∪ Err"
+    applies_to: all
+  - type: determinism
+    property: "Dispatch is a function of the Expr alone"
+    formal: "transpile_expr(e) = transpile_expr(e)"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-TRANSPILE-DISPATCH-001
+    rule: "Transpile dispatch totality"
+    test: "test_pmat_097_transpile_dispatch_totality_all_variants"
+    prediction: "verified"
+    if_fails: "Contract violation — an ExprKind variant panics in transpile_expr"
+  - id: FALSIFY-TRANSPILE-DISPATCH-002
+    rule: "Transpile dispatch determinism"
+    test: "test_pmat_097_transpile_dispatch_determinism_all_variants"
+    prediction: "verified"
+    if_fails: "Contract violation — transpile_expr depends on hidden state"
+  - id: FALSIFY-TRANSPILE-DISPATCH-003
+    rule: "Variant coverage is exhaustive"
+    test: "test_pmat_097_variants_exhaustive_over_exprkind"
+    prediction: "verified"
+    if_fails: "A new ExprKind variant is untested — coverage of the domain is stale"
+
+kani_harnesses:
+  - id: KANI-TRANSPILE-DISPATCH-001
+    obligation: PO-TRANSPILE-DISPATCH-001
+    property: "Transpile dispatch totality"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_transpile_dispatch_totality
+
+qa_gate:
+  id: QA-TRANSPILE-DISPATCH
+  name: "transpile dispatch contract"
+  min_coverage: 0.90
+  max_complexity: 20
+  required_tests:
+    - "test_pmat_097_transpile_dispatch_totality_all_variants"
+    - "test_pmat_097_transpile_dispatch_determinism_all_variants"
