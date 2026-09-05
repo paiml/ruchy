@@ -214,3 +214,56 @@ fn test_pmat_094_lockfile_has_no_yanked_chacha20() {
         "Cargo.lock has no chacha20 package block; the test would be vacuous"
     );
 }
+
+/// First `key = "value"` at column 0 (the `[package]` field), or empty.
+fn top_level_string(manifest: &str, key: &str) -> String {
+    manifest
+        .lines()
+        .filter_map(|line| line.strip_prefix(key))
+        .filter_map(|rest| rest.trim_start().strip_prefix('='))
+        .map(|rest| rest.trim().trim_matches('"').to_string())
+        .next()
+        .unwrap_or_default()
+}
+
+/// `version = "…"` inside the inline table of `dep = { … }`, or empty.
+fn inline_dependency_version(manifest: &str, dep: &str) -> String {
+    manifest
+        .lines()
+        .filter(|line| line.starts_with(&format!("{dep} = {{")))
+        .filter_map(|line| line.split("version = \"").nth(1))
+        .filter_map(|rest| rest.split('"').next())
+        .map(str::to_string)
+        .next()
+        .unwrap_or_default()
+}
+
+/// PMAT-100: `ruchy-wasm` is published right after `ruchy` and must depend on
+/// the version being published; the two crates carry one version number.
+#[test]
+fn test_pmat_100_ruchy_wasm_tracks_the_workspace_version() {
+    let root = read(&manifest_dir().join("Cargo.toml"));
+    let wasm = read(&manifest_dir().join("ruchy-wasm/Cargo.toml"));
+    let version = top_level_string(&root, "version");
+    assert!(!version.is_empty(), "root [package] version missing");
+    assert_eq!(
+        top_level_string(&wasm, "version"),
+        version,
+        "ruchy-wasm version"
+    );
+    assert_eq!(
+        inline_dependency_version(&wasm, "ruchy"),
+        version,
+        "ruchy-wasm must depend on the ruchy version being published"
+    );
+}
+
+#[test]
+fn test_pmat_100_manifest_readers_read_package_and_inline_versions() {
+    let root =
+        "[package]\nname = \"x\"\nversion = \"1.2.3\"\n\n[dependencies]\nversion-sort = \"0.1\"\n";
+    assert_eq!(top_level_string(root, "version"), "1.2.3");
+    let wasm = "ruchy = { version = \"1.2.3\", path = \"..\", default-features = false }\n";
+    assert_eq!(inline_dependency_version(wasm, "ruchy"), "1.2.3");
+    assert_eq!(inline_dependency_version(wasm, "other"), "");
+}
