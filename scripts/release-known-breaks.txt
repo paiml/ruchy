@@ -1,0 +1,5 @@
+# PMAT-096 -- corpus files that regress from the 4.2.1 baseline at HEAD.
+# Format: <path relative to the repo root> <ticket-id> <reason>
+# A check_regression or run_regression NOT listed here fails the differential stage.
+# The list is expected to be empty at release: PMAT-095 (Z4) migrates the in-repo file
+# that collides with the seven newly reserved words.

@@ -1,0 +1,4 @@
+# PMAT-096 -- corpus files whose `run` stdout intentionally differs from the 4.2.1
+# baseline at HEAD (a behaviour fix, not a regression).
+# Format: <path relative to the repo root> <ticket-id> <reason>
+# A run_stdout_diff NOT listed here fails the differential stage.
