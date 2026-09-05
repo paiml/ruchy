@@ -193,7 +193,9 @@ Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) gui
 
 ## MSRV
 
-Minimum Supported Rust Version: **1.75**
+Minimum Supported Rust Version: **1.91** — the aprender monorepo crates (`aprender`,
+`aprender-core`, `aprender-compute` 0.65) declare `rust-version = 1.91`, so the workspace
+cannot honestly claim less [PMAT-094].
 
 ## See Also
 
