@@ -1,5 +1,7 @@
 # Ruchy 5.0.0-beta.2 — release plan
 
+> **Status (as-built, 2026-09-05): STOPPED(publish-token).** Every zero and ratchet ticket is merged (Z0–Z9, R1, Z5a–Z5c, PMAT-119); the dogfood gate says `go` (8/8 stages, `evidence/2026-09-05-dogfood/receipt.json`); the tag `v5.0.0-beta.2` and its GitHub prerelease exist on 59c7453b; `cargo publish` was refused with 403 Forbidden (invalid `CARGO_REGISTRY_TOKEN`). Resume path: §6 B43. Plan history: v1 (P1) → v2 (after the P2 quorum) → v3 (this document, §7e as-built).
+
 | Field | Value |
 |---|---|
 | Plan version | **v2** (post-quorum; v1 was pre-quorum) → v3 as-built |
@@ -298,6 +300,24 @@ that turns its gate red** · routing.
 - **PR**: #212.
 
 
+### Z5b · PMAT-127 + PMAT-128 · CLEAN-ROOM PACKAGING (jidoka — found by gate run 3 on `main`)
+
+- **Found by**: Z5 stage 5 on a clean `main` tree: `cargo package -p ruchy` exit 101 (B39).
+- **Changes**: `Cargo.toml` include negates `!**/*.proptest-regressions`; `scripts/pre-release-gate.sh` stage 5 packages and lists from a detached worktree of HEAD (the packaged set is what a fresh clone and `release.yml` see), removing the worktree after the package stage on both paths; `tests/release_hygiene.rs` RED test for the negation. PMAT-128 records the pre-existing bashrs errors.
+- **A_5b**: `./scripts/pre-release-gate.sh --only clean_room,package` with an ignored `tests/*.proptest-regressions` present → both PASS (measured: package files=1446, colon_paths=0, has_lock=true; clean_room locked=0 unlocked=0).
+- **DoD mutation** (measured): the previous script on the same tree is gate run 3's exit 101 (`receipt-run3-no-go-proptest-artifacts.json`); removing the negation turns `test_pmat_127_include_negates_proptest_regressions` red.
+- **Routing**: direct. **PR**: #215.
+
+
+### Z5c · PMAT-129 + PMAT-130 (+ PMAT-131) · WASM32 BUILD (jidoka — found by the first `release.yml` run)
+
+- **Found by**: `release.yml` Build WASM on the `v5.0.0-beta.2` tag (B42); the gate had said `go` because nothing built for wasm32.
+- **Changes**: `Cargo.toml` wasm32 table (getrandom 0.3 `wasm_js`, `serde-wasm-bindgen`, web-sys `CanvasRenderingContext2d`); serde derives on the widget-spec types; one `wasm_bindgen(start)` hook; `&mut self` where `Transpiler::transpile` needs it; `RUSTFLAGS` in `release.yml` and `make wasm-build`; gate stage 2 builds the lib for wasm32 (receipt field `wasm32`); RED lints in `release_manifest_lint` and `release_workflow_lint`; README note for `ruchy-wasm` builders.
+- **A_5c**: `RUSTFLAGS='--cfg getrandom_backend="wasm_js"' cargo build --lib --target wasm32-unknown-unknown --no-default-features --features wasm-compile` → Finished (measured; was: getrandom backend error, then 7 compile errors, then a duplicate `wasm_init` symbol); `./scripts/pre-release-gate.sh --only features` → PASS with `wasm32=0`.
+- **DoD mutation** (measured): the previous manifest on the same tree fails at `getrandom`; removing the rustflag from the workflow step turns `test_pmat_129_wasm_build_step_selects_the_getrandom_wasm_js_backend` red; the pre-fix manifest turns `test_pmat_129_wasm32_dependency_table_is_complete` red.
+- **Routing**: direct. **Quorum**: §7d. **PR**: #216.
+
+
 ### Z6 · PMAT-097 · CONTRACTS-DISPATCH
 
 - **Why**: `contracts/` holds 2 contracts against 472 kLOC and neither covers the two
@@ -465,6 +485,18 @@ silent cap.
 6. Verify with A_9 (crates.io API + fresh `rust:1.91-slim` container, locked and unlocked).
 7. Write plan v3 (as-built), `docs/audits/impl-PMAT-091-receipt.md`, and a ticket per receipt `warn`.
 
+### §5 as run
+
+| Step | Result |
+|---|---|
+| 1 | Z0–Z8, R1, PMAT-119, Z5a, Z5, Z5b merged; `main` green on `gate` |
+| 2 | gate run 1: no-go (dirty tree, B41); run 2: stopped before stage 5 to clean the tree; run 3: no-go (`cargo package` exit 101, B39); run 4: **go** — 8/8 stages PASS (`receipt.json`, head 889e65d1); 27 warns in four classes, each ticketed: help-only verbs ×20 → PMAT-123, missing `tooling-with-ruchy` corpus → PMAT-124, baseline nondeterminism ×5 (`04_collections`, `06_error_handling`, `09_async_await`, two repl-demos files) → PMAT-125, compile budget (101 examples not compile-compared) → PMAT-126 |
+| 3 | Z9 PR #214: `Merge #214` → `main` 58718e1d, `version = "5.0.0-beta.2"` |
+| 4 | tag: `v5.0.0-beta.2` (annotated) first on 58718e1d → run 33985050186 failed in Build WASM (B42), publish skipped, nothing reached crates.io; the prerelease (four binary assets) and the tag were deleted; re-tagged on 59c7453b (after #216) and pushed → run 33988801263 |
+| 5 | `release.yml` run 33988801263 (tag on 59c7453b): create-release, four binaries and Build WASM green; publish-crates **failed at `cargo publish -p ruchy` with 403 Forbidden: authentication failed** (B43, PMAT-132). Stop the line per the prompt; nothing published |
+| 6 | A_9 not run: `5.0.0-beta.2` is absent from crates.io. The script is filed as `evidence/2026-09-05-dogfood/a9-verify-fresh-container.sh.txt` for the resume |
+| 7 | plan v3 (this document), `docs/audits/impl-PMAT-091-receipt.md`, warn tickets PMAT-123…126 |
+
 ## §6 Blockers (andons — appended, never resolved silently)
 
 | # | Andon | Handling |
@@ -503,6 +535,12 @@ silent cap.
 | B35 | `contracts/.pv/cache/lint/*.json` (pv lint cache) is tracked on `main`; every `pv lint` run dirties the tree and blocked one rebase (Z5) | PMAT-122 untracks it and ignores `.pv/`; not folded into a release PR (unrelated churn) |
 | B36 | `timeout N command cargo …` runs nothing in bash (`timeout` cannot exec the `command` builtin) and prints no error, so two verification steps (Z8 all-features check, PMAT-112 clippy site list) produced empty output that read as a pass | every cargo invocation in the receipts uses `$HOME/.cargo/bin/cargo`; the Z8 head was re-verified before merge (`SerReader`/`SerWriter` imports were still missing at that point — the empty run had hidden a real red) |
 | B37 | `Cargo.toml` and `CHANGELOG.md` already say `5.0.0-beta.1` (dated 2026-04-04) but no `v5.0.0-beta.1` tag exists and crates.io `max_version` is `4.2.1` (measured 2026-09-05): beta.1 was never published | beta.2 is the first 5.0 line that ships; the CHANGELOG keeps the beta.1 entry as history and beta.2 states that beta.1 was not released; the 4.2.1 → beta.2 API delta in §1 already measures against the last published crate |
+| B38 | An untracked symlink `paiml-mcp-agent-toolkit → /home/noah/src/paiml-mcp-agent-toolkit` appeared in the repo root during P4 (created by dispatched tooling, not by hand) and dirtied the tree for the clean-room stage | the link was removed (target untouched); lane briefs gain "create no files in the repo"; jidoka row filed |
+| B39 | Gate run 3 on a clean tree: `cargo package -p ruchy` exit 101 — 24 gitignored `tests/*.proptest-regressions` artifacts of earlier property-test runs match `tests/**`, and cargo 1.98 reports included-or-not untracked files as uncommitted even when git ignores them (a fresh clone never has them, so the release workflow was never at risk) | PMAT-127 (#215): include negates `!**/*.proptest-regressions` (five tracked artifacts also leave the crate); the gate packages and lists from `git worktree add --detach HEAD`; measured `--only clean_room,package` PASS with an ignored artifact present (`receipt-pmat-127-only-clean-room-package.json`) |
+| B40 | `bashrs lint scripts/pre-release-gate.sh`: 13 errors (SC1087 on jq filter strings, DET002 timestamps, SEC010 `cd` paths), identical on `main`; Z5's A_5 listed bashrs but the errors were accepted silently | PMAT-128; not folded into the release (the script's behaviour is measured by its receipts, not by bashrs) |
+| B41 | Gate run 1 on `main` was refused at the clean-room stage by untracked local artifacts (`.pmat-work/<ticket>/contract.json` for the P3 tickets, `.claude/agent-memory/`, an uncommitted evidence dir, an empty `docs/audits/`) | the contract files and evidence were committed to the plan branch (contracts for earlier tickets were already tracked); agent memory and the receipt dir are excluded locally; `receipt-run1-no-go-dirty-tree.json` kept |
+| B42 | The first `release.yml` run for `v5.0.0-beta.2` (33985050186) failed in Build WASM and skipped publish-crates (as #205 requires). Build WASM has never passed on any tag (v4.2.1 failed there, v4.2.0 skipped it). Five whys: aprender-core 0.65 is non-optional since #207 → its rand 0.9 pulls getrandom 0.3 → on wasm32 getrandom 0.3 needs the `wasm_js` feature and `--cfg getrandom_backend="wasm_js"` → the repo configured only getrandom 0.2 → nothing ever built the root crate for wasm32 (CI builds native default features; the gate had no wasm32 stage), so its own wasm module had also drifted (missing web-sys features, dev-only `serde-wasm-bindgen`, `WidgetSpec` without `Deserialize`, `&self` transpile calls, two `wasm_bindgen(start)` hooks) | PMAT-129 (#216): manifest, code, workflow rustflag, Makefile; PMAT-130 (same PR): the gate's features stage builds the lib for wasm32 with the same flag (never skipped silently); PMAT-131: three pre-existing wasm32-only warnings. The tag and the prerelease created by the failed run are removed and re-created on the fixed `main` (§5 as run) |
+| B43 | **Stop the line (publish token).** `release.yml` run 33988801263 on the re-tagged 59c7453b: create-release ✓, four binaries ✓, Build WASM ✓; `Publish ruchy` verified and uploaded the crate and crates.io answered `403 Forbidden: authentication failed` — the `CARGO_REGISTRY_TOKEN` secret exists (masked in the log) but is not a valid publishing token. Nothing reached crates.io (`max_version` 4.2.1); `ruchy-wasm` publish skipped; the GitHub prerelease with its assets stands | PMAT-132 (owner: Noah — a crates.io API token with publish-update scope from an owner of `ruchy` and `ruchy-wasm`, stored as `CARGO_REGISTRY_TOKEN`). Resume: `gh run rerun 33988801263 --failed` re-runs only publish-crates against the already built tag; then A_9 (`evidence/2026-09-05-dogfood/a9-verify-fresh-container.sh.txt`). No local publish was attempted: the prompt names a publish-token failure as a stop, and the token is not the orchestrator's to mint |
 | B24 | **Read-only agy review lanes mutated the repository**: during the P4 review of #202/#203 (13:50–13:54) the lanes ran `git checkout` of the PR branches in the main checkout (HEAD reflog), which removed the three worktrees' metadata under `.git/worktrees/` and left a staged change behind; `writes=false`/`--sandbox` did not prevent it | main checkout restored to the plan branch; worktrees recreated with their uncommitted files preserved (rsync from the orphaned directories); nothing lost. Every later lane prompt forbids `git checkout/switch/worktree/stash/reset` explicitly and uses `git show <ref>:<path>`/`git diff a...b` only; recorded for the skill's lane doctrine |
 | B22 | **The `ruchy` bin unit-test target (952 tests) has never run to completion**: `test_handle_watch_mode_setup` spawned a thread that called `std::process::exit(0)` after 10 ms — cargo saw exit 0 and reported success after ~640–666 of 952 tests every time. With it removed, the target exposes: 2 tests asserting `/nonexistent` is absent (it exists on this host), 1 case-sensitive assertion bug (`notebook feature`), 1 wrong expectation (`parse_source("")` is an error in 4.2.1 and HEAD alike), 2 further failures (`test_handle_test_dispatch_with_filter`, `test_run_cargo_build_no_project`), and **18 tests that block forever** (11 `prove_handler`, 4 watch-mode, 3 dispatch in `ruchy.rs`) | all under PMAT-104, commit `e9d8365e` on the Z0 PR: killer deleted, mcp stub returns `Err`, prover loop takes a reader and ends on EOF, watch mode split into testable halves, 17 cwd-mutating tests serialized behind `handlers::test_support::cwd_lock()`, hermetic paths, three assertions corrected, two vacuous dispatch tests removed → **954 passed, 0 failed, 0 ignored**, identical single-threaded; no `#[ignore]` added. Measured on the side: `ruchy prove < /dev/null` **hangs on 4.2.1 (exit 124) and exits 0 at HEAD** — a user-facing fix already on `main`, to be named in the beta.2 CHANGELOG |
 
@@ -533,13 +571,15 @@ Raw outputs: `docs/specifications/evidence/2026-09-05-quorum-p4-z0/`, `…-quoru
 | #211 Z6 | PASS ×3 | — | — |
 | #210 PMAT-119 | FAIL ×3 | `true`, `false`, `unsafe` added; measured against every `token("word")` in the lexer (77 words), nothing missing | `is`/`ref` over-exclusion is harmless |
 
-## §7d Pre-PR review quorum for #212 (PMAT-112/113) — folded
+## §7d Pre-PR review quorums for #212 (PMAT-112/113) and #216 (PMAT-129/130) — folded
 
 Raw outputs: `/run/user/1000/paiml-implement/agy/p4-pmat-113/lane-{1,2,3}.json` (3 `grillme` lanes, `writes=false`; agy conversations `66e1826d`, `46ed1739`, `aac60f51`), copied to `docs/specifications/evidence/2026-09-05-quorum-p4-pmat-113/`.
+#216: `docs/specifications/evidence/2026-09-05-quorum-p4-pmat-129/lane-{1,2,3}.json` (agy conversations `7c362972`, `2c00a203`, `01037295`).
 
 | PR | Lane verdicts | Accepted (folded) | Rejected (reason) |
 |---|---|---|---|
 | #212 PMAT-112/113 | FAIL / do-not-implement / FAIL (all three: `required-features` semantics correct, nothing drops from the default run) | the first lint was unsound both ways — comment and `return cmd.assert();` false positives, glob/multi-line/`runtime::{self}` false negatives — rewritten: comments (line and block) and strings stripped, whole-word identifiers taken from `src/runtime/repl` declarations (so `wasm::ReplOutput` does not count), item gates cover the whole function body, `cfg(all(…))` forms and `[[test]]` `required-features` honoured; the contract now lists all ten tests; PR text corrected to seven item gates | lane 2's "massive out-of-scope deletions" is a two-dot-diff artifact (`git diff --name-status origin/main...HEAD`: 2 added, 13 modified, 0 deleted); `examples/wasm_compile`'s `required-features = ["notebook"]` predates the PR; no lane produced evidence of running the lint (all soundness findings were code-reading claims, re-run by the orchestrator: the hardened lint found two further real cases, `tests/repl_thread_safety.rs` block comment and `examples/test_println_stdout.rs` wasm names) |
+| #216 PMAT-129/130 | PASS / FAIL (accept-with-fixes) / PASS — all three: the getrandom 0.3 `wasm_js` target dependency plus the cfg flag is the right mechanism, native unaffected, the panic hook is still set by `wasm_bindings::wasm_init`, wasm-bindgen accepts `&mut self` with unchanged JS signatures, exit 127 fails the stage | unused imports the removed start hook left behind (`HtmlCanvasElement`, `Color`, `Rect`, `GraphMode`, `WidgetKind`, three `Canvas`) removed and web-sys narrowed to `CanvasRenderingContext2d`; `ruchy-wasm/README.md` states the rustflag downstream wasm32 builders need; PMAT-131 for the three pre-existing wasm32-only warnings | lane 2's "the RED lints are GREEN" measured HEAD after the fix commit (RED commit 3fc164c7 precedes it); lane 2's "ruchy-wasm now fails to build for wasm32 out of the box" is not a regression — it could never build while the root crate could not, and no CI job builds it for wasm32 |
 
 ## §7e As-built (P3), measured at merge
 
@@ -555,9 +595,11 @@ Raw outputs: `/run/user/1000/paiml-implement/agy/p4-pmat-113/lane-{1,2,3}.json` 
 | PMAT-119 | #210 | `Merge #210` | identifier proptests green with the full 77-word blocklist | `true` removed from the blocklist → proptest regression red | recovered from the pre-session stash (#196) |
 | Z6 PMAT-097 | #211 | `Merge #211` | 93 dispatch variants, wildcard-free match | a variant removed → non-exhaustive match compile error | macros not wired: PMAT-116 |
 | Z8 PMAT-101 | #208 | `Merge #208` | `check --all-features --locked` clean; golden 4/4; `cargo audit` clean; `quick-xml` absent from the graph | `ChunkedArray::iter` null → default → golden red | csv taken from `polars-io` directly (B32); merged main into the branch (B33) |
-| Z5a PMAT-112/113 | #212 | pending gate | `clippy --all-targets … minimal` clean; lint 10/10 | see Z5a | jidoka ticket, not in v2 |
-| Z5 PMAT-096 | #213 | pending gate | script parses; 6 own commits after rebasing past the superseded Z8 commits | schema test red without `clean_room` | first full run happens on `main` after #212 and #213 merge (§5 step 2) |
-| Z9 PMAT-100 | — | not started | — | — | waits on the receipt |
+| Z5a PMAT-112/113 | #212 | `Merge #212` | `clippy --all-targets … minimal` clean; lint 10/10 | see Z5a | jidoka ticket, not in v2 |
+| Z5 PMAT-096 | #213 | `Merge #213` | script parses; 6 own commits after rebasing past the superseded Z8 commits | schema test red without `clean_room` | runs 1–4 on `main`: §5 as run |
+| Z5b PMAT-127/128 | #215 | `Merge #215` | `--only clean_room,package` PASS with an ignored artifact present | previous script on the same tree: exit 101 (run 3) | jidoka ticket, not in v2 |
+| Z5c PMAT-129/130 | #216 | `Merge #216` (59c7453b) | wasm32 lib build Finished; gate `--only features` PASS (`wasm32=0`); lints 8/8 + 7/7 | pre-fix manifest → getrandom error; rustflag removed → workflow lint red | jidoka ticket, not in v2; found after the receipt said go |
+| Z9 PMAT-100 | #214 | `Merge #214` (58718e1d) | manifest test RED on the old manifests → GREEN; `cargo metadata --locked` clean; tag pushed | old ruchy-wasm dep version → test red | CHANGELOG states beta.1 was never published (B37) |
 
 
 ## §7 Quorum log (P2) — folded into v2

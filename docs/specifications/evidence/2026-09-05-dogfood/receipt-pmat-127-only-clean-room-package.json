@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "version": "5.0.0-beta.1",
+  "head": "137b00906b2464f44c1b16fcf3f4b2967a698858",
+  "baseline": "4.2.1",
+  "stages": {
+    "tests": {
+      "status": "FAIL",
+      "reason": "not run (--only clean_room,package); this stage was not measured"
+    },
+    "features": {
+      "status": "FAIL",
+      "reason": "not run (--only clean_room,package); this stage was not measured"
+    },
+    "verbs": {
+      "status": "FAIL",
+      "reason": "not run (--only clean_room,package); this stage was not measured"
+    },
+    "differential": {
+      "status": "FAIL",
+      "reason": "not run (--only clean_room,package); this stage was not measured"
+    },
+    "transpile": {
+      "status": "FAIL",
+      "reason": "not run (--only clean_room,package); this stage was not measured"
+    },
+    "clean_room": {
+      "status": "PASS",
+      "locked_exit": 0,
+      "unlocked_exit": 0,
+      "binary_version": "5.0.0-beta.1",
+      "unlocked_binary_version": "5.0.0-beta.1",
+      "expected_version": "5.0.0-beta.1",
+      "locked_binary_present": true,
+      "unlocked_binary_present": true
+    },
+    "package": {
+      "status": "PASS",
+      "files": 1446,
+      "bytes_compressed": 3319703,
+      "colon_paths": 0,
+      "has_lock": true
+    },
+    "satd": {
+      "status": "FAIL",
+      "reason": "not run (--only clean_room,package); this stage was not measured"
+    }
+  },
+  "warns": [],
+  "verdict": "no-go"
+}

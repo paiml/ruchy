@@ -1,0 +1,18 @@
+{"repo":"ruchy","ticket":"PMAT-091","phase":"P0 gather","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; turn counts not preserved across context compaction"}
+{"repo":"ruchy","ticket":"PMAT-091","phase":"P1 plan","mode":"direct","est":null,"actual":null,"basis":"first-run[U]"}
+{"repo":"ruchy","ticket":"PMAT-091","phase":"P2 quorum","mode":"delegate:agy grillme x3","est":null,"actual":null,"basis":"first-run[U]"}
+{"repo":"ruchy","ticket":"PMAT-102","phase":"Z0","mode":"worker+direct","est":null,"actual":null,"basis":"first-run[U]; PR #204"}
+{"repo":"ruchy","ticket":"PMAT-092","phase":"Z1","mode":"worker","est":null,"actual":null,"basis":"first-run[U]; PR #202"}
+{"repo":"ruchy","ticket":"PMAT-095","phase":"Z4","mode":"worker","est":null,"actual":null,"basis":"first-run[U]; PR #203"}
+{"repo":"ruchy","ticket":"PMAT-093","phase":"Z2","mode":"worker","est":null,"actual":null,"basis":"first-run[U]; PR #205"}
+{"repo":"ruchy","ticket":"PMAT-098","phase":"Z7","mode":"worker","est":null,"actual":null,"basis":"first-run[U]; PR #206"}
+{"repo":"ruchy","ticket":"PMAT-094","phase":"Z3","mode":"worker","est":null,"actual":null,"basis":"first-run[U]; PR #207"}
+{"repo":"ruchy","ticket":"PMAT-099","phase":"R1","mode":"worker","est":null,"actual":null,"basis":"first-run[U]; PR #209"}
+{"repo":"ruchy","ticket":"PMAT-119","phase":"keyword blocklist","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #210"}
+{"repo":"ruchy","ticket":"PMAT-097","phase":"Z6","mode":"worker","est":null,"actual":null,"basis":"first-run[U]; PR #211"}
+{"repo":"ruchy","ticket":"PMAT-101","phase":"Z8","mode":"worker+direct","est":null,"actual":null,"basis":"first-run[U]; PR #208"}
+{"repo":"ruchy","ticket":"PMAT-113","phase":"Z5a","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #212"}
+{"repo":"ruchy","ticket":"PMAT-096","phase":"Z5","mode":"worker+direct","est":null,"actual":null,"basis":"first-run[U]; PR #213"}
+{"repo":"ruchy","ticket":"PMAT-127","phase":"Z5b","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #215"}
+{"repo":"ruchy","ticket":"PMAT-100","phase":"Z9","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #214"}
+{"repo":"ruchy","ticket":"PMAT-129","phase":"Z5c","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #216"}

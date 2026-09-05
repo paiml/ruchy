@@ -1,0 +1,8 @@
+run 33988801263 (tag v5.0.0-beta.2 on 59c7453b): completed/failure
+  Create Release: success
+  Build Binaries (windows-latest, x86_64-pc-windows-msvc, windows-amd64.exe): success
+  Build WASM: success
+  Build Binaries (macos-latest, x86_64-apple-darwin, darwin-amd64): success
+  Build Binaries (ubuntu-latest, x86_64-unknown-linux-gnu, linux-amd64): success
+  Build Binaries (macos-latest, aarch64-apple-darwin, darwin-arm64): success
+  Publish to crates.io: failure
