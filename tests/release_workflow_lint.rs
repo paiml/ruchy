@@ -77,12 +77,29 @@ fn job_run_scripts(job: &Value) -> String {
         .join("\n")
 }
 
+/// Every step of every job, as (job id, step index, step).
+fn all_steps() -> Vec<(String, usize, Value)> {
+    let yml = release_yml();
+    let jobs = yml["jobs"].as_mapping().expect("jobs mapping");
+    let mut out = Vec::new();
+    for (job_id, job) in jobs {
+        for (i, step) in job["steps"].as_sequence().into_iter().flatten().enumerate() {
+            out.push((job_id.as_str().unwrap().to_string(), i, step.clone()));
+        }
+    }
+    out
+}
+
 #[test]
-fn test_pmat_093_no_continue_on_error_anywhere() {
-    let text = release_yml_text();
+fn test_pmat_093_no_step_is_masked_with_continue_on_error() {
+    let masked: Vec<String> = all_steps()
+        .into_iter()
+        .filter(|(_, _, step)| !step["continue-on-error"].is_null())
+        .map(|(job, i, step)| format!("{job}#{i} {}", step["name"].as_str().unwrap_or("?")))
+        .collect();
     assert!(
-        !text.contains("continue-on-error"),
-        "release.yml must not mask any step with continue-on-error"
+        masked.is_empty(),
+        "steps carrying a continue-on-error key can report green without doing their job: {masked:?}"
     );
 }
 

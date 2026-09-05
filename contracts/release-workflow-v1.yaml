@@ -35,7 +35,7 @@ proof_obligations:
 falsification_tests:
   - id: FALSIFY-RELEASE-WORKFLOW-001
     rule: "No continue-on-error"
-    test: "test_pmat_093_no_continue_on_error_anywhere"
+    test: "test_pmat_093_no_step_is_masked_with_continue_on_error"
     prediction: "verified"
     if_fails: "Contract violation — a masked step can report green without publishing"
   - id: FALSIFY-RELEASE-WORKFLOW-002
@@ -73,7 +73,7 @@ qa_gate:
   min_coverage: 0.90
   max_complexity: 10
   required_tests:
-    - "test_pmat_093_no_continue_on_error_anywhere"
+    - "test_pmat_093_no_step_is_masked_with_continue_on_error"
     - "test_pmat_093_every_cargo_publish_targets_a_workspace_member"
     - "test_pmat_093_publish_job_needs_the_build_jobs"
     - "test_pmat_093_publish_uses_only_the_existing_registry_secret"

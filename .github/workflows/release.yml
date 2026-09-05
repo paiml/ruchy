@@ -150,7 +150,7 @@ jobs:
   # Publish to crates.io (PMAT-093).
   # Runs only after the binaries and the WASM package built, publishes the two
   # workspace members that are on crates.io in dependency order, and fails loudly:
-  # no continue-on-error, no phantom packages, and the secret that actually exists.
+  # no masked steps, no phantom packages, and the secret that actually exists.
   publish-crates:
     name: Publish to crates.io
     runs-on: ubuntu-latest
