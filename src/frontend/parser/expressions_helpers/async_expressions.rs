@@ -892,45 +892,97 @@ mod tests {
         ///
         /// Keywords like "fn", "if", "let" would cause parser failures.
         /// This strategy filters them out for property test validity.
+        /// All lowercase keywords/tokens from lexer.rs that match `[a-z]+`.
+        /// Must stay in sync with Token variants. Incomplete lists cause
+        /// sporadic proptest failures (e.g., "ask", "df", "handler").
+        const KEYWORDS: &[&str] = &[
+            // core
+            "fn",
+            "fun",
+            "let",
+            "var",
+            "if",
+            "else",
+            "for",
+            "while",
+            "loop",
+            "match",
+            "break",
+            "continue",
+            "return",
+            "async",
+            "await",
+            "try",
+            "catch",
+            "throw",
+            "in",
+            "as",
+            "is",
+            "self",
+            "super",
+            "mod",
+            "use",
+            "pub",
+            "const",
+            "static",
+            "mut",
+            "ref",
+            "type",
+            "struct",
+            "enum",
+            "trait",
+            "impl",
+            "df",
+            // actor system
+            "actor",
+            "spawn",
+            "effect",
+            "handle",
+            "handler",
+            "receive",
+            "send",
+            "ask",
+            // OOP / type system
+            "class",
+            "property",
+            "private",
+            "protected",
+            "sealed",
+            "final",
+            "abstract",
+            "mixin",
+            "operator",
+            "interface",
+            "implements",
+            "override",
+            "extend",
+            // module / import
+            "module",
+            "export",
+            "import",
+            "from",
+            "with",
+            "default",
+            "crate",
+            // control flow / misc
+            "finally",
+            "where",
+            "lazy",
+            "null",
+            // contracts (Ruchy 5.0)
+            "requires",
+            "ensures",
+            "invariant",
+            "decreases",
+            // sovereign platform (Ruchy 5.0)
+            "infra",
+            "signal",
+            "yield",
+        ];
+
         fn valid_identifier() -> impl Strategy<Value = String> {
-            "[a-z]+".prop_filter("Must not be a keyword", |s| {
-                !matches!(
-                    s.as_str(),
-                    "fn" | "fun"
-                        | "let"
-                        | "var"
-                        | "if"
-                        | "else"
-                        | "for"
-                        | "while"
-                        | "loop"
-                        | "match"
-                        | "break"
-                        | "continue"
-                        | "return"
-                        | "async"
-                        | "await"
-                        | "try"
-                        | "catch"
-                        | "throw"
-                        | "in"
-                        | "as"
-                        | "is"
-                        | "self"
-                        | "super"
-                        | "mod"
-                        | "use"
-                        | "pub"
-                        | "const"
-                        | "static"
-                        | "mut"
-                        | "ref"
-                        | "type"
-                        | "struct"
-                        | "enum"
-                        | "trait"
-                        | "impl"
-                )
+            "[a-z]+".prop_filter("Must not be a keyword or reserved word", |s| {
+                !KEYWORDS.contains(&s.as_str())
             })
         }
 
