@@ -861,11 +861,15 @@ mod tests {
         /// Keywords like "fn", "if", "let" would cause parser failures.
         /// This strategy filters them out for property test validity.
         fn valid_identifier() -> impl Strategy<Value = String> {
+            // Filter ALL tokens from the lexer that would be lexed as keywords.
+            // This must stay in sync with Token variants in lexer.rs.
+            // Incomplete lists cause sporadic proptest failures (e.g., "ask", "df").
             prop::string::string_regex("[a-zA-Z_][a-zA-Z0-9_]*")
                 .unwrap()
-                .prop_filter("Must not be a keyword", |s| {
+                .prop_filter("Must not be a keyword or reserved word", |s| {
                     !matches!(
                         s.as_str(),
+                        // Core keywords
                         "fn" | "fun"
                             | "let"
                             | "var"
@@ -900,6 +904,63 @@ mod tests {
                             | "enum"
                             | "trait"
                             | "impl"
+                            // DataFrame token
+                            | "df"
+                            // Actor system keywords
+                            | "actor"
+                            | "spawn"
+                            | "effect"
+                            | "handle"
+                            | "handler"
+                            | "receive"
+                            | "send"
+                            | "ask"
+                            // OOP / type system keywords
+                            | "class"
+                            | "property"
+                            | "private"
+                            | "protected"
+                            | "sealed"
+                            | "final"
+                            | "abstract"
+                            | "mixin"
+                            | "operator"
+                            | "interface"
+                            | "implements"
+                            | "override"
+                            | "extend"
+                            // Module / import keywords
+                            | "module"
+                            | "export"
+                            | "import"
+                            | "from"
+                            | "with"
+                            | "default"
+                            | "crate"
+                            // Control flow / error handling
+                            | "finally"
+                            | "where"
+                            | "lazy"
+                            | "null"
+                            // Contract keywords (Ruchy 5.0)
+                            | "requires"
+                            | "ensures"
+                            | "invariant"
+                            | "decreases"
+                            // Sovereign platform keywords (Ruchy 5.0)
+                            | "infra"
+                            | "signal"
+                            | "yield"
+                            // Capitalized tokens (lexed as keywords, not identifiers)
+                            | "Ok"
+                            | "Err"
+                            | "Some"
+                            | "None"
+                            | "Result"
+                            | "Option"
+                            // Boolean literals
+                            | "true"
+                            | "false"
                     )
                 })
         }
