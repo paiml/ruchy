@@ -675,13 +675,19 @@ stage_clean_room() {
     (cd "$src" && env -u CARGO_TARGET_DIR CARGO_HOME="$home1" \
         cargo build --release --locked) > "$WORK/cleanroom-locked.log" 2>&1
     locked_exit=$?
-    [ "$locked_exit" -eq 0 ] || { cp "$WORK/cleanroom-locked.log" "$EVIDENCE_DIR/" 2>/dev/null; tail -25 "$WORK/cleanroom-locked.log"; }
+    mkdir -p "$EVIDENCE_DIR"
+    cp "$WORK/cleanroom-locked.log" "$EVIDENCE_DIR/" 2> /dev/null
+    [ "$locked_exit" -eq 0 ] || tail -25 "$WORK/cleanroom-locked.log"
     say "  clean-room --locked exit=$locked_exit"
 
-    local bin_version=""
+    local bin_version="" bin_present=false
     if [ -x "$src/target/release/ruchy" ]; then
+        bin_present=true
         bin_version=$("$src/target/release/ruchy" --version 2>&1 | awk '{print $NF}')
         say "  clean-room binary reports version: $bin_version"
+    else
+        say "  clean-room --locked build left no binary at $src/target/release/ruchy"
+        find "$src/target/release" -maxdepth 1 -type f 2>&1 | head -5
     fi
 
     say "  clean-room build 2/2: unlocked (fresh resolution), fresh CARGO_HOME ..."
@@ -693,12 +699,17 @@ stage_clean_room() {
     (cd "$src2" && env -u CARGO_TARGET_DIR CARGO_HOME="$home2" \
         cargo build --release) > "$WORK/cleanroom-unlocked.log" 2>&1
     unlocked_exit=$?
-    [ "$unlocked_exit" -eq 0 ] || { cp "$WORK/cleanroom-unlocked.log" "$EVIDENCE_DIR/" 2>/dev/null; tail -25 "$WORK/cleanroom-unlocked.log"; }
+    cp "$WORK/cleanroom-unlocked.log" "$EVIDENCE_DIR/" 2> /dev/null
+    [ "$unlocked_exit" -eq 0 ] || tail -25 "$WORK/cleanroom-unlocked.log"
     say "  clean-room unlocked exit=$unlocked_exit"
 
-    local bin_version2=""
+    local bin_version2="" bin_present2=false
     if [ -x "$src2/target/release/ruchy" ]; then
+        bin_present2=true
         bin_version2=$("$src2/target/release/ruchy" --version 2>&1 | awk '{print $NF}')
+        say "  clean-room unlocked binary reports version: $bin_version2"
+    else
+        say "  clean-room unlocked build left no binary at $src2/target/release/ruchy"
     fi
 
     local status="PASS"
@@ -708,8 +719,10 @@ stage_clean_room() {
     fi
     jq -n --arg s "$status" --argjson l "$locked_exit" --argjson u "$unlocked_exit" \
         --arg bv "$bin_version" --arg bv2 "$bin_version2" --arg v "$version" \
+        --argjson bp "$bin_present" --argjson bp2 "$bin_present2" \
         '{status: $s, locked_exit: $l, unlocked_exit: $u, binary_version: $bv,
-          unlocked_binary_version: $bv2, expected_version: $v}' \
+          unlocked_binary_version: $bv2, expected_version: $v,
+          locked_binary_present: $bp, unlocked_binary_present: $bp2}' \
         > "$STAGES/clean_room.json"
     report clean_room "$status" \
         "locked=$locked_exit unlocked=$unlocked_exit version=$bin_version/$bin_version2 expected=$version"
