@@ -13,9 +13,13 @@ const REPL_GATE: &str = "#[cfg(feature = \"repl\")]";
 const FILE_GATE_PREFIX: &str = "#![cfg(feature = ";
 
 fn test_sources() -> Vec<(PathBuf, String)> {
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    sources_in("tests")
+}
+
+fn sources_in(dir: &str) -> Vec<(PathBuf, String)> {
+    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(dir);
     let mut files: Vec<PathBuf> = fs::read_dir(&dir)
-        .expect("tests/ directory is readable")
+        .expect("source directory is readable")
         .flatten()
         .map(|entry| entry.path())
         .filter(|path| path.extension().is_some_and(|ext| ext == "rs"))
@@ -224,4 +228,72 @@ fn test_pmat_113_default_features_enable_repl() {
         .expect("default feature");
     assert!(default.contains("\"batteries-included\""), "{default}");
     assert!(batteries.contains("\"repl\""), "{batteries}");
+}
+
+fn manifest() -> String {
+    fs::read_to_string(Path::new(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml"))
+        .expect("Cargo.toml is readable")
+}
+
+/// Value of `key = ...` inside one manifest table, or empty.
+fn toml_field(block: &str, key: &str) -> String {
+    block
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix(key))
+        .filter_map(|rest| rest.trim_start().strip_prefix('='))
+        .map(|value| value.trim().to_string())
+        .next()
+        .unwrap_or_default()
+}
+
+/// `[[example]]` / `[[bench]]` tables as (name, required-features) pairs.
+fn manifest_targets(manifest: &str, kind: &str) -> Vec<(String, String)> {
+    manifest
+        .split(&format!("[[{kind}]]"))
+        .skip(1)
+        .map(|block| block.split("\n[").next().unwrap_or_default())
+        .map(|block| {
+            (
+                toml_field(block, "name"),
+                toml_field(block, "required-features"),
+            )
+        })
+        .collect()
+}
+
+fn target_requires_repl(manifest: &str, kind: &str, stem: &str) -> bool {
+    manifest_targets(manifest, kind)
+        .iter()
+        .any(|(name, required)| name.trim_matches('"') == stem && required.contains("\"repl\""))
+}
+
+fn repl_targets_without_required_features(manifest: &str, dir: &str, kind: &str) -> Vec<String> {
+    sources_in(dir)
+        .iter()
+        .filter(|(_, src)| src.lines().any(line_references_repl))
+        .map(|(path, _)| path.file_stem().unwrap_or_default().to_string_lossy().into_owned())
+        .filter(|stem| !target_requires_repl(manifest, kind, stem))
+        .map(|stem| format!("{dir}/{stem}.rs: add [[{kind}]] name = \"{stem}\" with required-features = [\"repl\"]"))
+        .collect()
+}
+
+/// Examples and benches cannot be cfg-gated (an empty crate has no `main`),
+/// so a REPL-dependent one must be declared with `required-features` and is
+/// then skipped, not broken, under `--features minimal`.
+#[test]
+fn test_pmat_113_repl_examples_and_benches_declare_required_features() {
+    let manifest = manifest();
+    let mut violations = repl_targets_without_required_features(&manifest, "examples", "example");
+    violations.extend(repl_targets_without_required_features(
+        &manifest, "benches", "bench",
+    ));
+    assert!(violations.is_empty(), "{}", violations.join("\n"));
+}
+
+#[test]
+fn test_pmat_113_manifest_target_parser_reads_name_and_required_features() {
+    let manifest = "[[example]]\nname = \"a\"\nrequired-features = [\"repl\"]\n\n[[example]]\nname = \"b\"\n\n[dependencies]\nx = \"1\"\n";
+    assert!(target_requires_repl(manifest, "example", "a"));
+    assert!(!target_requires_repl(manifest, "example", "b"));
+    assert!(!target_requires_repl(manifest, "bench", "a"));
 }
