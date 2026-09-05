@@ -1,0 +1,43 @@
+=== spike v2 (facades, --all-features): 13 errors, locations ===
+      2    --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/frame/dataframe.rs:119:12
+      1   --> src/stdlib/dataframe.rs:82:5
+      1    --> src/stdlib/dataframe.rs:62:5
+      1    --> src/stdlib/dataframe.rs:109:5
+      1   --> src/stdlib/aprender_bridge.rs:87:27
+      1    --> src/stdlib/aprender_bridge.rs:102:5
+      1    --> src/oracle/mod.rs:859:19
+      1    --> src/backend/arrow_integration.rs:95:48
+      1    --> src/backend/arrow_integration.rs:90:47
+      1    --> src/backend/arrow_integration.rs:85:47
+      1    --> src/backend/arrow_integration.rs:80:47
+      1    --> src/backend/arrow_integration.rs:55:5
+      1   --> src/backend/arrow_integration.rs:25:22
+      1    --> src/backend/arrow_integration.rs:100:48
+      1    --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-train-0.65.2/src/lib.rs:87:9
+      1   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:69:9
+      1    --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:349:11
+      1    --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:345:11
+      1    --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:341:37
+      1    --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:341:25
+--- per-file ---
+      7 src/backend/arrow_integration.rs
+      5 /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs
+      3 src/stdlib/dataframe.rs
+      2 src/stdlib/aprender_bridge.rs
+      2 /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/frame/dataframe.rs
+      1 src/oracle/mod.rs
+      1 /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-train-0.65.2/src/lib.rs
+--- error lines ---
+error[E0432]: unresolved import `entrenar::citl`
+error[E0432]: unresolved import `aprender::format::quantize`
+error[E0432]: unresolved imports `aprender::format::load_verified`, `aprender::format::save_signed`, `aprender::format::SigningKey`, `aprender::format
+error[E0599]: no method named `get_columns` found for reference `&polars::prelude::DataFrame` in the current scope
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::Int32Type>`, but its trait bounds were not satisfied
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::Int64Type>`, but its trait bounds were not satisfied
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::Float64Type>`, but its trait bounds were not satisfied
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::BooleanType>`, but its trait bounds were not satisfied
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<StringType>`, but its trait bounds were not satisfied
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+error[E0433]: cannot find type `CsvReadOptions` in this scope
+error[E0433]: cannot find type `CsvWriter` in this scope

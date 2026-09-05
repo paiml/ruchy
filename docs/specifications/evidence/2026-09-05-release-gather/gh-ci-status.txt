@@ -1,0 +1,18 @@
+=== gh run list main ===
+completed	failure	Nightly Binary Release	Nightly Binary Release	main	schedule	33953988345	6m30s	2026-09-05T07:58:27Z
+completed	failure	Nightly Bench	Nightly Bench	main	schedule	33860453587	38m19s	2026-09-04T09:52:09Z
+completed	failure	Nightly Binary Release	Nightly Binary Release	main	schedule	33853165496	8m41s	2026-09-04T08:23:02Z
+completed	cancelled	Nightly Bench	Nightly Bench	main	schedule	33742089438	2h24m44s	2026-09-03T10:01:51Z
+completed	failure	Nightly Binary Release	Nightly Binary Release	main	schedule	33733446683	10m18s	2026-09-03T08:27:27Z
+completed	failure	Nightly Bench	Nightly Bench	main	schedule	33616257292	1h21m0s	2026-09-02T09:49:59Z
+completed	failure	Nightly Binary Release	Nightly Binary Release	main	schedule	33607959359	8m20s	2026-09-02T08:17:51Z
+completed	failure	Nightly Bench	Nightly Bench	main	schedule	33497023373	23m47s	2026-09-01T10:21:47Z
+
+=== branch protection / rulesets for main ===
+[{"type":"non_fast_forward","ruleset_source_type":"Organization","ruleset_source":"paiml","ruleset_id":13878864},{"type":"pull_request","parameters":{"required_approving_review_count":0,"dismiss_stale_reviews_on_push":false,"required_reviewers":[],"require_code_owner_review":false,"require_last_push_approval":false,"required_review_thread_resolution":false,"require_extra_approval_for_unattributed_changes":true,"allowed_merge_methods":["merge","squash","rebase"]},"ruleset_source_type":"Organization","ruleset_source":"paiml","ruleset_id":13878864},{"type":"required_status_checks","parameters":{"strict_required_status_checks_policy":false,"do_not_enforce_on_create":true,"required_status_checks":[{"context":"gate"}]},"ruleset_source_type":"Organization","ruleset_source":"paiml","ruleset_id":13878864}]
+=== gh release list ===
+Nightly Build (712870dfe491284da7b2bdcb5b343ccf04775c70)	Pre-release	nightly	2026-03-29T04:59:21Z
+Release v4.2.1	Latest	v4.2.1	2026-02-10T14:33:01Z
+Release v4.2.0		v4.2.0	2026-02-01T19:57:28Z
+v4.0.1 - Quality & Maintenance Release		v4.0.1	2026-01-12T22:16:04Z
+Ruchy 4.0.0 - Book 2.0 Quality Release		v4.0.0	2026-01-10T20:24:15Z

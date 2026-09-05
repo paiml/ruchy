@@ -1,0 +1,1201 @@
+     Running unittests src/lib.rs (ruchy-c84b62d7e4304600)
+test result: ok. 20510 passed; 0 failed; 108 ignored; 0 measured; 0 filtered out; finished in 34.96s
+     Running unittests src/bin/ruchy.rs (ruchy-c7b0c5fa463a9338)
+test result: ok. 956 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.70s
+     Running tests/array_each_method.rs (array_each_method-76970e8a2fd2ea45)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/book_compat_001_lifetime_annotations.rs (book_compat_001_lifetime_annotations-759799bd74ec121f)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/bug_003_array_index_assignment.rs (bug_003_array_index_assignment-787874898b406128)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+     Running tests/bug_031_fmt_corruption.rs (bug_031_fmt_corruption-0a6471fdf356b442)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/bug_032_range_function_not_transpiled.rs (bug_032_range_function_not_transpiled-8321b01842a2ab93)
+test test_bug_032_red_range_in_expression ... FAILED
+test result: FAILED. 8 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+error: test failed, to rerun pass `-p ruchy --test bug_032_range_function_not_transpiled`
+     Running tests/bug_033_test_attribute_invalid_rust.rs (bug_033_test_attribute_invalid_rust-906fa896ca54f9f2)
+test test_bug_033_red_transpiled_output_format ... FAILED
+test test_bug_033_red_property_tests_command ... FAILED
+test test_bug_033_red_multiple_tests ... FAILED
+test test_bug_033_red_test_with_complex_description ... FAILED
+test test_bug_033_red_test_with_description ... FAILED
+test result: FAILED. 2 passed; 5 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+error: test failed, to rerun pass `-p ruchy --test bug_033_test_attribute_invalid_rust`
+     Running tests/bug_034_lint_false_positives_built_ins.rs (bug_034_lint_false_positives_built_ins-70cca29367882d56)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/bug_035_type_inference_wrong_types.rs (bug_035_type_inference_wrong_types-ea81386dfe433e56)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/bug_036_coverage_reports_zero.rs (bug_036_coverage_reports_zero-c8934cf3f7c9a74a)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.58s
+     Running tests/bug_037_test_assertions_dont_fail.rs (bug_037_test_assertions_dont_fail-3b1f79b4808688df)
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/bytecode_performance_validation.rs (bytecode_performance_validation-bd11c376c5fd5520)
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.22s
+     Running tests/cargo_001_build_transpiler.rs (cargo_001_build_transpiler-12ad982256555803)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.20s
+     Running tests/cargo_002_project_template.rs (cargo_002_project_template-da76c52f795b2653)
+test result: ok. 10 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.68s
+     Running tests/cargo_add_integration.rs (cargo_add_integration-a7cdba1955c91f15)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.75s
+     Running tests/cargo_build_integration.rs (cargo_build_integration-3d6f7da783abd7c8)
+test result: ok. 1 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cargo_e2e_workflow.rs (cargo_e2e_workflow-a3200eda96e80c06)
+test result: ok. 0 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/class_property_tests.rs (class_property_tests-5977c2e6dacd2360)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests/cli_contract_actor_observe.rs (cli_contract_actor_observe-6ae8bbaa25409832)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_add.rs (cli_contract_add-d55d101991a91132)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_ast.rs (cli_contract_ast-d8ad60349adf3480)
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_bench.rs (cli_contract_bench-0650e53cae34544f)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/cli_contract_build.rs (cli_contract_build-5c80318306d86507)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.14s
+     Running tests/cli_contract_check.rs (cli_contract_check-e7d8f99bb89892d7)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_compile.rs (cli_contract_compile-7ed16611137da27c)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/cli_contract_coverage.rs (cli_contract_coverage-b54ee6013638fc17)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_dataflow_debug.rs (cli_contract_dataflow_debug-ee04a5fa21fa25c7)
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_doc.rs (cli_contract_doc-d2b8dc626fcff72a)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fmt.rs (cli_contract_fmt-56ac20acbe32dec4)
+test result: ok. 37 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/cli_contract_fmt_comments.rs (cli_contract_fmt_comments-b1473394b58949d8)
+test result: ok. 0 passed; 0 failed; 12 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_fmt_config.rs (cli_contract_fmt_config-b6a1de2665f84c7f)
+test result: ok. 6 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fmt_exprkind.rs (cli_contract_fmt_exprkind-ea82b2b5321081ef)
+test result: ok. 10 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fmt_exprkind_phase2.rs (cli_contract_fmt_exprkind_phase2-78508a969e7c2809)
+test result: ok. 11 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fmt_exprkind_phase3.rs (cli_contract_fmt_exprkind_phase3-162f9f3e5ccea26c)
+test result: ok. 11 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fmt_exprkind_phase4.rs (cli_contract_fmt_exprkind_phase4-12def1bade394b59)
+test result: ok. 13 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fmt_exprkind_phase5.rs (cli_contract_fmt_exprkind_phase5-25bd717147b5d035)
+test result: ok. 7 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fmt_ignore.rs (cli_contract_fmt_ignore-3cb42695a2d2e14f)
+test result: ok. 2 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_fuzz.rs (cli_contract_fuzz-2a874a0ee0f236d7)
+test result: ok. 16 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 2.01s
+     Running tests/cli_contract_lint.rs (cli_contract_lint-4e4e4e350337fbaa)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_mcp.rs (cli_contract_mcp-3ad69b9e22d973f1)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_mutations.rs (cli_contract_mutations-a8a8e9d947e557da)
+test result: ok. 13 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 1.60s
+     Running tests/cli_contract_new.rs (cli_contract_new-174df3dbad9aa3e1)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/cli_contract_notebook.rs (cli_contract_notebook-47a511877c6e9f85)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_optimize.rs (cli_contract_optimize-c30fe0dd55179bb1)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_parse.rs (cli_contract_parse-1879bac201e89cb9)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_property_tests.rs (cli_contract_property_tests-629a75508f3bf54c)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.01s
+     Running tests/cli_contract_provability.rs (cli_contract_provability-c00de67e703c02c2)
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/cli_contract_prove.rs (cli_contract_prove-d052b156dab4142f)
+test test_prove_missing_file ... FAILED
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+error: test failed, to rerun pass `-p ruchy --test cli_contract_prove`
+     Running tests/cli_contract_publish.rs (cli_contract_publish-47fd2acaf85032f1)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_quality_gate.rs (cli_contract_quality_gate-392f1d545c8fa5bb)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_repl.rs (cli_contract_repl-cff79f9744912163)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_replay_to_tests.rs (cli_contract_replay_to_tests-b8ae923feae66d80)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_run.rs (cli_contract_run-270b81d8265e1aaf)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_runtime.rs (cli_contract_runtime-f14400bc4dbb1936)
+test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/cli_contract_score.rs (cli_contract_score-2c24c1b06b9c0f95)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_sovereign.rs (cli_contract_sovereign-209f6d624e55a76f)
+test test_contracts_check_with_threshold ... FAILED
+test test_infra_destroy_missing_file ... FAILED
+test test_version_is_5_0 ... FAILED
+test result: FAILED. 32 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+error: test failed, to rerun pass `-p ruchy --test cli_contract_sovereign`
+     Running tests/cli_contract_test.rs (cli_contract_test-8003698197279a5d)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/cli_contract_transpile.rs (cli_contract_transpile-0c973dab9e3c421d)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_contract_wasm.rs (cli_contract_wasm-3df253e49368fae0)
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/cli_eval_flags_comprehensive.rs (cli_eval_flags_comprehensive-6a8bec95ef419c50)
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/cli_interactive_validation.rs (cli_interactive_validation-b364033743458ae6)
+test cli_accepts_stdin_input ... FAILED
+test cli_handles_memory_intensive_operations ... FAILED
+test cli_error_messages_are_actionable ... FAILED
+test cli_handles_long_running_scripts ... FAILED
+test cli_undefined_variable_error_is_clear ... FAILED
+test non_tty_omits_interactive_features ... FAILED
+test cli_supports_output_redirection ... FAILED
+test cli_run_command_executes_file ... FAILED
+test cli_eval_flag_executes_inline ... FAILED
+test cli_test_command_runs_tests ... FAILED
+test repl_interactive_arithmetic ... FAILED
+test repl_interactive_error_recovery ... FAILED
+test repl_detects_interactive_tty ... FAILED
+test result: FAILED. 1 passed; 13 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.12s
+error: test failed, to rerun pass `-p ruchy --test cli_interactive_validation`
+     Running tests/cli_testing_tools.rs (cli_testing_tools-3962cdd0e11570cd)
+test result: ok. 6 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 32.24s
+     Running tests/cli_tier_command.rs (cli_tier_command-dc1ee89f5eb65dba)
+test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/cli_trace_flag.rs (cli_trace_flag-28ab0ad3561b1fd7)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_unify_001_default_command.rs (cli_unify_001_default_command-7c0fad4f5a13563d)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/cli_unify_002_run_command.rs (cli_unify_002_run_command-92e413f047b60c8a)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/cli_unify_003_comprehensive_suite.rs (cli_unify_003_comprehensive_suite-953927e95bdea7bb)
+test test_072_tool_notebook ... FAILED
+test result: FAILED. 57 passed; 1 failed; 2 ignored; 0 measured; 0 filtered out; finished in 6.90s
+error: test failed, to rerun pass `-p ruchy --test cli_unify_003_comprehensive_suite`
+     Running tests/cli_unify_003_property_tests.rs (cli_unify_003_property_tests-16c80372779524fd)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 96.75s
+     Running tests/cli_unify_005_example_validation.rs (cli_unify_005_example_validation-54ff6f24a2bed4d9)
+test result: ok. 14 passed; 0 failed; 18 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/compiler_cargo_target_dir.rs (compiler_cargo_target_dir-5cf203924b9c4b5a)
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/comprehensive_class_styles.rs (comprehensive_class_styles-a229ce63a1425243)
+test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/contract_traits.rs (contract_traits-4058dd1e99d63431)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/critical_regressions.rs (critical_regressions-21ecf7e34f8364e4)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/critical_repl_features.rs (critical_repl_features-6acc43e300a44ab7)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/critical_transpiler_regression_test.rs (critical_transpiler_regression_test-5829ca4431d126c8)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/dataframe_001_transpilation_tdd.rs (dataframe_001_transpilation_tdd-f3a1aaa474f8b990)
+test result: ok. 6 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.35s
+     Running tests/dataframe_access_defects.rs (dataframe_access_defects-d1155ca06d0456e0)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/dataframe_aggregations_tdd.rs (dataframe_aggregations_tdd-9b10db5c3e62778e)
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/dataframe_filter_properties.rs (dataframe_filter_properties-58f9f6ebd1bf5d2e)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 9.18s
+     Running tests/dataframe_parsing_test.rs (dataframe_parsing_test-eac99304a63c9d4e)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/dataframe_sort_properties.rs (dataframe_sort_properties-4ac88f58a9ab1b6f)
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.50s
+     Running tests/dataframe_validation.rs (dataframe_validation-5688bd33651665e4)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/debugger_014_phase_2_values.rs (debugger_014_phase_2_values-48090100073f6aab)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/debugger_014_phase_3_types.rs (debugger_014_phase_3_types-b0f76bd890f651f6)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/debugger_014_trace_depth.rs (debugger_014_trace_depth-476b8236164bc7f5)
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/debugger_014_trace_output.rs (debugger_014_trace_output-edb06fc9ef464ddf)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/defect_closure_return.rs (defect_closure_return-ceae9d5588a906fd)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/defect_compile_main_call.rs (defect_compile_main_call-e4e79ea97930ae19)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 16.30s
+     Running tests/defect_consecutive_for.rs (defect_consecutive_for-e7227c274eea7898)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/defect_enum_ok_reserved.rs (defect_enum_ok_reserved-48aa3f2ce0c9625f)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.46s
+     Running tests/defect_parser_006_attributes_in_blocks.rs (defect_parser_006_attributes_in_blocks-8caa56f7ec5b27bd)
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/defect_parser_007_struct_inline_comments.rs (defect_parser_007_struct_inline_comments-0da3e19e53a8b4e0)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/defect_struct_001_field_mutation.rs (defect_struct_001_field_mutation-41ac3a47ac7aec0d)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/defect_wasm_tuple_types.rs (defect_wasm_tuple_types-00dc203d9a3400a1)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/enum_runtime.rs (enum_runtime-dcf2b08d1da20f63)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/essential_tools_validation.rs (essential_tools_validation-9d9e5ed0a667947a)
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/eval_builtin_comprehensive.rs (eval_builtin_comprehensive-a61c120f449c9b44)
+test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/eval_builtin_conversions.rs (eval_builtin_conversions-b6f601e9675ff648)
+test result: ok. 43 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests/evaluator_002_method_chaining_with_indexing.rs (evaluator_002_method_chaining_with_indexing-f76d435a76f90f9a)
+test result: ok. 0 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/example_titanic_dataframe.rs (example_titanic_dataframe-21d349afd2212a4a)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/examples_integration.rs (examples_integration-2202d372512d8e19)
+test result: ok. 5 passed; 0 failed; 27 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/feature_088_string_int_concatenation.rs (feature_088_string_int_concatenation-1121e8047a417707)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/feature_089_string_as_bytes.rs (feature_089_string_as_bytes-59457bef6a201441)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/fifteen_tool_validation.rs (fifteen_tool_validation-c5feb523fc355372)
+test result: ok. 15 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/formatter_088_macro_preservation.rs (formatter_088_macro_preservation-b31580fcbd62e193)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+     Running tests/formatter_data_loss_regression.rs (formatter_data_loss_regression-213a6d35e07d30c8)
+test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/formatter_issue_60.rs (formatter_issue_60-475d16b1dd91a04f)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/fuzz_pattern_match.rs (fuzz_pattern_match-8c2c671ee52e0279)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/http_002_d_html_methods.rs (http_002_d_html_methods-7539865c6cc76c1b)
+test result: ok. 11 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/http_server_cli.rs (http_server_cli-70c37a0ba0eaa31d)
+test test_red_ruchy_serve_requires_directory ... FAILED
+test test_red_ruchy_serve_shows_startup_message ... FAILED
+test test_http002_mime_wasm ... FAILED
+test test_http003_wasm_coep_header ... FAILED
+test test_red_ruchy_serve_starts_server ... FAILED
+test test_http003_html_coop_header ... FAILED
+test test_http002_mime_json ... FAILED
+test test_http002_mime_css ... FAILED
+test test_http002_mime_html ... FAILED
+test test_http002_mime_javascript ... FAILED
+test test_http003_wasm_coop_header ... FAILED
+test result: FAILED. 2 passed; 11 failed; 3 ignored; 0 measured; 0 filtered out; finished in 1.07s
+error: test failed, to rerun pass `-p ruchy --test http_server_cli`
+     Running tests/http_watch_mode.rs (http_watch_mode-d4658cfd476278dc)
+test test_graceful_shutdown_on_sigterm ... FAILED
+test test_serve_with_watch_starts_successfully ... FAILED
+test result: FAILED. 7 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.00s
+error: test failed, to rerun pass `-p ruchy --test http_watch_mode`
+     Running tests/issue_040_mutable_match_test.rs (issue_040_mutable_match_test-47cb86f7379c7a58)
+test result: ok. 1 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_059_module_imports.rs (issue_059_module_imports-fdf196a49aaf0444)
+test result: ok. 17 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/issue_086_determinism_investigation.rs (issue_086_determinism_investigation-3a4596b8daf4f407)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_086_verify_fix.rs (issue_086_verify_fix-26fa1f1deaa29142)
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests/issue_088_module_imports.rs (issue_088_module_imports-2e0340f56cc92be0)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_089_stdlib_imports_in_modules.rs (issue_089_stdlib_imports_in_modules-41e44a9ca5897145)
+test result: ok. 0 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_090_std_fs_namespace.rs (issue_090_std_fs_namespace-e988e24ccfc28c06)
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_090_std_fs_runtime.rs (issue_090_std_fs_runtime-d1815d6008356314)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.46s
+     Running tests/issue_091_powf_error_message.rs (issue_091_powf_error_message-e8fb0e8a59f6996a)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_092_std_env_namespace.rs (issue_092_std_env_namespace-58e37196dcb3bcbe)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_094_string_slicing.rs (issue_094_string_slicing-d710bc48a4942bc0)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_096_std_env.rs (issue_096_std_env-7faac7a2585e3e14)
+test result: ok. 5 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_097_try_operator.rs (issue_097_try_operator-35195d7b2c2fbbe1)
+test result: ok. 0 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_099_provability_score.rs (issue_099_provability_score-136529de0a83a092)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_100_bench_command.rs (issue_100_bench_command-a1ae9fdb868b05d6)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/issue_101_doc_command.rs (issue_101_doc_command-adec41d7b4573b3a)
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_102_optimize_command.rs (issue_102_optimize_command-d94d0848a420a87d)
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_103_compile_macros_modules.rs (issue_103_compile_macros_modules-0833d3a5d9dabc45)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/issue_103_match_return.rs (issue_103_match_return-a1b786574a65ad30)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/issue_104_actor_observe_command.rs (issue_104_actor_observe_command-d6ed9bdb5f47193e)
+test result: ok. 13 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_105_dataflow_debug_command.rs (issue_105_dataflow_debug_command-bcd0492e55668803)
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/issue_106_mod_declarations.rs (issue_106_mod_declarations-b6dd711266d71c07)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/issue_113_transpiler_type_inference.rs (issue_113_transpiler_type_inference-dc49dd72bb713022)
+test test_issue_113_bug_3_vector_return_type ... FAILED
+test test_issue_113_full_reproducer_bench_008 ... FAILED
+test result: FAILED. 6 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+error: test failed, to rerun pass `-p ruchy --test issue_113_transpiler_type_inference`
+     Running tests/issue_114_string_return_type_inference.rs (issue_114_string_return_type_inference-68dbdd85f931b05b)
+test result: ok. 7 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/issue_114_usize_casting.rs (issue_114_usize_casting-0f2804fb5accbaf0)
+test test_issue_114_usize_bench_008_end_to_end ... FAILED
+test result: FAILED. 7 passed; 1 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.06s
+error: test failed, to rerun pass `-p ruchy --test issue_114_usize_casting`
+     Running tests/issue_116_file_methods.rs (issue_116_file_methods-199572325e44d1e7)
+test result: ok. 6 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_116_file_open.rs (issue_116_file_open-5c8c8e385a142181)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_116_property_tests.rs (issue_116_property_tests-c82f29b3c2009f9f)
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.42s
+     Running tests/issue_117_json_parse_function.rs (issue_117_json_parse_function-5944ded545718df6)
+test result: ok. 0 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_117_json_parsing.rs (issue_117_json_parsing-01c2d8e6d0b50f55)
+test result: ok. 3 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_119_double_evaluation.rs (issue_119_double_evaluation-2a719729b8cd80c5)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_119_global_mutable_state.rs (issue_119_global_mutable_state-74cf7c8be864fc48)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.29s
+     Running tests/issue_119_property_tests.rs (issue_119_property_tests-96b7f0f6d53fad17)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.06s
+     Running tests/issue_121_read_file_unwrapped.rs (issue_121_read_file_unwrapped-7d28ad7d4eff37e8)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_128_function_inlining_dce_bug.rs (issue_128_function_inlining_dce_bug-fda9cc5ff94ae07e)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/issue_128_property_tests.rs (issue_128_property_tests-0ff28f1297106347)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.54s
+     Running tests/issue_131_parse_json_alias.rs (issue_131_parse_json_alias-af45ad57696a0020)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_131_property_tests.rs (issue_131_property_tests-770b3ac09d8fc502)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.57s
+     Running tests/issue_141_unnecessary_braces.rs (issue_141_unnecessary_braces-f21fb5bfc896fec2)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_143_unicode_char_boundary_crash.rs (issue_143_unicode_char_boundary_crash-e84a6ad3ffd1b2bc)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_147_duplicate_pub.rs (issue_147_duplicate_pub-b475641743da8e2e)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/issue_148_oop_methods.rs (issue_148_oop_methods-1b1fb9a7be178a80)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/issue_155_vec_syntax.rs (issue_155_vec_syntax-a33f45b847147930)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+     Running tests/issue_163_windows_line_endings.rs (issue_163_windows_line_endings-1792cb342ab01037)
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/issue_168_hexadecimal.rs (issue_168_hexadecimal-bdeed82e901dc90a)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/jit_002_control_flow.rs (jit_002_control_flow-cfafb8b35e08787d)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_003_operators.rs (jit_003_operators-35c3e9c869e5237d)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_004_logical_operators.rs (jit_004_logical_operators-f06827c38d686af0)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_005_loops.rs (jit_005_loops-1e2815e652483ca7)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_005b_continue.rs (jit_005b_continue-1283c15b7ce4a77b)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_006_arrays.rs (jit_006_arrays-6d442657b3eb10df)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_007_tuples.rs (jit_007_tuples-5a143d862879a663)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_008_return.rs (jit_008_return-ce9d4fda717de22e)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/jit_009_match.rs (jit_009_match-3b8dd6bf56aa739d)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/lang_comp_suite.rs (lang_comp_suite-f089553204cc6a39)
+test lang_comp::pattern_matching::test_langcomp_009_04_destructuring_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_03_tuples_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_01_arrays_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_01_basic_ranges_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_01_basic_types_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_03_collection_types_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_04_destructuring_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_03_range_variables_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_04_chaining_methods_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_02_array_methods_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_01_string_methods_example_file ... FAILED
+test lang_comp::data_structures::test_langcomp_006_02_dictionaries_example_file ... FAILED
+test lang_comp::pattern_matching::test_langcomp_009_03_tuple_patterns_example_file ... FAILED
+test lang_comp::methods::test_langcomp_008_03_integer_methods_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_04_range_patterns_example_file ... FAILED
+test lang_comp::ranges::test_langcomp_011_02_range_iteration_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_02_option_type_example_file ... FAILED
+test lang_comp::pattern_matching::test_langcomp_009_01_literal_patterns_example_file ... FAILED
+test lang_comp::closures::test_langcomp_010_01_basic_closures_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_01_result_type_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_04_type_inference_example_file ... FAILED
+test lang_comp::pattern_matching::test_langcomp_009_02_variable_patterns_example_file ... FAILED
+test lang_comp::type_annotations::test_langcomp_007_02_function_types_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_03_try_catch_example_file ... FAILED
+test lang_comp::error_handling::test_langcomp_012_04_error_propagation_example_file ... FAILED
+test result: FAILED. 139 passed; 25 failed; 23 ignored; 0 measured; 0 filtered out; finished in 10.68s
+error: test failed, to rerun pass `-p ruchy --test lang_comp_suite`
+     Running tests/lint_008_format_variables.rs (lint_008_format_variables-7ccbe064a6dec944)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/linter_086_forward_references.rs (linter_086_forward_references-5e9d100628e6e395)
+test result: ok. 2 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/match_enum.rs (match_enum-72194457e09a2ba3)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/match_nested_enum.rs (match_nested_enum-94a020f94366e341)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/matrix_001_simple_arithmetic_native.rs (matrix_001_simple_arithmetic_native-160b4526c5408fb6)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+     Running tests/matrix_002_csv_workflow_native.rs (matrix_002_csv_workflow_native-8ef5902d3558cfc0)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+     Running tests/matrix_003_statistical_analysis_native.rs (matrix_003_statistical_analysis_native-1e98cec74563bbb5)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+     Running tests/matrix_004_time_series_native.rs (matrix_004_time_series_native-63875c03d076e14e)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+     Running tests/notebook_book_validation.rs (notebook_book_validation-a3312af80807e503)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/notebook_validation.rs (notebook_validation-6f8a1ec767237994)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/opt_004_semantic_equivalence.rs (opt_004_semantic_equivalence-8aff16c9b5229cd9)
+test result: ok. 110 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/opt_010_performance_validation.rs (opt_010_performance_validation-78879a96e6cc5e39)
+test result: ok. 3 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 13.70s
+     Running tests/opt_022_inline_caching.rs (opt_022_inline_caching-14505aa0303d32b2)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/opt_codegen_004_inline_expansion.rs (opt_codegen_004_inline_expansion-b449405345546ec4)
+test result: ok. 3 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/opt_codegen_004_property_tests.rs (opt_codegen_004_property_tests-9343d42e5b37c8fe)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/opt_global_001_pgo.rs (opt_global_001_pgo-b92a65ac0d9f704b)
+test result: ok. 2 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/optimization_001_compile_optimize.rs (optimization_001_compile_optimize-a90428c6d6573910)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.23s
+     Running tests/oracle_004_auto_train_cli.rs (oracle_004_auto_train_cli-fe18eae3062c5cc1)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+     Running tests/oracle_auto_train.rs (oracle_auto_train-ccbd7cfde704df9c)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/oracle_cli_commands.rs (oracle_cli_commands-07687830f7dbe4bd)
+test result: ok. 15 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/oracle_integration.rs (oracle_integration-634c0856ebf1fdfb)
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/oracle_mlops_training.rs (oracle_mlops_training-4651f4859936d1bd)
+test result: ok. 40 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/p0_book_002_file_operations.rs (p0_book_002_file_operations-47892255fa936659)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/p0_book_003_systems_programming.rs (p0_book_003_systems_programming-24a5bca235611c60)
+test result: ok. 6 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/p0_book_004_network_programming.rs (p0_book_004_network_programming-d32d360607728092)
+test result: ok. 4 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/p0_book_005_performance_optimization.rs (p0_book_005_performance_optimization-690b7fc4d63eaa15)
+test result: ok. 4 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/p0_book_006_advanced_patterns.rs (p0_book_006_advanced_patterns-301f8aa411bfa2cb)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/p0_critical_features.rs (p0_critical_features-a22748564852661d)
+test result: ok. 15 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 7.35s
+     Running tests/p0_lint_false_positives.rs (p0_lint_false_positives-24c0889b21475011)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_053_hash_comments.rs (parser_053_hash_comments-d170eb8e084a4f9e)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_054_inline_comments.rs (parser_054_inline_comments-f11fc0b8577818e1)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_060_module_resolution.rs (parser_060_module_resolution-e24dc35aaded7e2b)
+test result: ok. 19 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_061_080_box_vec_generics.rs (parser_061_080_box_vec_generics-7ab4ebc5139d5f2c)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_061_080_properties.rs (parser_061_080_properties-aca9098b3cab7489)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.49s
+     Running tests/parser_061_box_generic_enum.rs (parser_061_box_generic_enum-f412ad610b23c2e2)
+test result: ok. 2 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_062_comments_after_control_flow.rs (parser_062_comments_after_control_flow-dc77fe0188a4bc54)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_067_struct_pattern_test.rs (parser_067_struct_pattern_test-bae182a7c34b77c2)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_068_bang_negation_issue_54.rs (parser_068_bang_negation_issue_54-18b4bd11b4327d3f)
+test result: ok. 10 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_069_turbofish_issue_26.rs (parser_069_turbofish_issue_26-b1327210bbe842a6)
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_070_path_turbofish.rs (parser_070_path_turbofish-ec828082b59b1c9b)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_071_guard_external_vars.rs (parser_071_guard_external_vars-d73a276090bd338a)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_072_single_quoted_strings.rs (parser_072_single_quoted_strings-0b19e455b8fe74da)
+test result: ok. 6 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_073_const_declarations.rs (parser_073_const_declarations-0d2a1ec5d068a03e)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_074_pub_crate_visibility.rs (parser_074_pub_crate_visibility-164dc34cb44766f3)
+test result: ok. 9 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_075_nested_block_comments.rs (parser_075_nested_block_comments-6b00651c19a81baa)
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_076_unary_plus.rs (parser_076_unary_plus-eb4cf771dbd5cdb1)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_081_array_literals_with_identifiers.rs (parser_081_array_literals_with_identifiers-e478e6ff09edf4a8)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_084_while_hashmap_insert.rs (parser_084_while_hashmap_insert-a10b15978c19f793)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_085_function_pointers.rs (parser_085_function_pointers-e692ea58171aae9c)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_087_method_params.rs (parser_087_method_params-43a749fa9e1467e3)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_089_ref_param_match.rs (parser_089_ref_param_match-652218c3fce86aed)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_092_vec_macro.rs (parser_092_vec_macro-a4080b41746796d2)
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_093_mod_declarations.rs (parser_093_mod_declarations-3f2130fba5fc3e6c)
+test result: ok. 0 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_094_path_separator.rs (parser_094_path_separator-631a23362778d943)
+test test_parser_094_module_function_call_simple ... FAILED
+test test_parser_094_module_function_with_args ... FAILED
+test test_parser_094_issue_137_reproduction ... FAILED
+test test_parser_094_nested_module_path ... FAILED
+test result: FAILED. 6 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+error: test failed, to rerun pass `-p ruchy --test parser_094_path_separator`
+     Running tests/parser_094_property_tests.rs (parser_094_property_tests-14081b16cda42b7d)
+test property_module_paths_preserve_colon_colon ... FAILED
+test property_nested_module_paths_preserve_all_colons ... FAILED
+test result: FAILED. 3 passed; 2 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+error: test failed, to rerun pass `-p ruchy --test parser_094_property_tests`
+     Running tests/parser_095_grouped_imports.rs (parser_095_grouped_imports-790d8f0acb7ed829)
+test result: ok. 7 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_096_stdlib_stubs.rs (parser_096_stdlib_stubs-733beb3f9bd7489c)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_147_pub_methods_in_struct.rs (parser_147_pub_methods_in_struct-ac4f63bf2fa36211)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/parser_actor_state_block_regression.rs (parser_actor_state_block_regression-1c35c67b97b4badb)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_attribute_syntax.rs (parser_attribute_syntax-095ae489c780ee9f)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_class_coverage.rs (parser_class_coverage-1818b42d0c143058)
+test result: ok. 50 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_collections_comprehensive.rs (parser_collections_comprehensive-db59235828609bae)
+test result: ok. 32 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.11s
+     Running tests/parser_comprehensive.rs (parser_comprehensive-49e123ffe4cc48d7)
+test result: ok. 69 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/parser_defect_001_blank_line_let_mut.rs (parser_defect_001_blank_line_let_mut-ef1c06caf887fd7c)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_002_raw_strings.rs (parser_defect_002_raw_strings-19f2993ea86a294b)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_005_let_else.rs (parser_defect_005_let_else-6bc22b9e375b030a)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_006_impl_trait.rs (parser_defect_006_impl_trait-4ac01446afc98fef)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_007_where_clause.rs (parser_defect_007_where_clause-db76dbcf8f2ce550)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_defect_008_tuple_destructure.rs (parser_defect_008_tuple_destructure-b6c9dc45aa9e7436)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_009_enum_struct_variant.rs (parser_defect_009_enum_struct_variant-daacdc86c9390540)
+test result: ok. 8 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_010_trait_associated_types.rs (parser_defect_010_trait_associated_types-63085f91a22fa65b)
+test test_parser_010_book_example ... FAILED
+test test_parser_010_default_implementation ... FAILED
+test result: FAILED. 5 passed; 2 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+error: test failed, to rerun pass `-p ruchy --test parser_defect_010_trait_associated_types`
+     Running tests/parser_defect_011_impl_generics.rs (parser_defect_011_impl_generics-ce9d308d4b0cd7ba)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_012_fstring_empty_placeholders.rs (parser_defect_012_fstring_empty_placeholders-e29cb43374c7d493)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_013_coloncolon_imports.rs (parser_defect_013_coloncolon_imports-af9a38b9baff2767)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_014_impl_generic_target.rs (parser_defect_014_impl_generic_target-ec32f8bd88958460)
+test result: ok. 1 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 1.20s
+     Running tests/parser_defect_015_pub_mod.rs (parser_defect_015_pub_mod-7a6255000109f83d)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_016_pub_visibility.rs (parser_defect_016_pub_visibility-6319a2b9a08c970b)
+test result: ok. 9 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.51s
+     Running tests/parser_defect_017_use_keywords.rs (parser_defect_017_use_keywords-aa844b7aa88702bf)
+test result: ok. 10 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.47s
+     Running tests/parser_defect_018_dict_in_function_call.rs (parser_defect_018_dict_in_function_call-bb29e2d02c4bfed7)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_018_enum_variant_struct_literal.rs (parser_defect_018_enum_variant_struct_literal-3be97aa7f3cd8a8c)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.24s
+     Running tests/parser_defect_053_line_continuation.rs (parser_defect_053_line_continuation-7d0d62ca07819496)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_defect_054_multiple_leading_comments.rs (parser_defect_054_multiple_leading_comments-0f088d05044d8021)
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_defect_comment_attribution.rs (parser_defect_comment_attribution-5655ff387c648592)
+test result: ok. 0 passed; 0 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_expressions_unit.rs (parser_expressions_unit-98a3d391b33c9efa)
+test result: ok. 24 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_functions_comprehensive.rs (parser_functions_comprehensive-521211989002c921)
+test result: ok. 46 passed; 0 failed; 11 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/parser_inline_comments_enum.rs (parser_inline_comments_enum-dd2a24d4c1a437a1)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_issue_39_match_if_else.rs (parser_issue_39_match_if_else-6963d15cc22e681c)
+test result: ok. 2 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/parser_mod_comprehensive.rs (parser_mod_comprehensive-952c14f5fd9b5a8c)
+test result: ok. 36 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests/parser_nested_if_array_bug.rs (parser_nested_if_array_bug-6c79bcc0c876e17e)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/parser_patterns_comprehensive.rs (parser_patterns_comprehensive-ac9f136747fa5694)
+test result: ok. 34 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests/pattern_guards_test.rs (pattern_guards_test-1af2b249e115f84c)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/perf_002_constant_folding.rs (perf_002_constant_folding-440886d450c9eba9)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.29s
+     Running tests/perf_002_phase3_show_profile_info.rs (perf_002_phase3_show_profile_info-5ee00b0e1b8b59d8)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/perf_002_phase4_pgo_automation.rs (perf_002_phase4_pgo_automation-72129dc4ee9e7db4)
+test result: ok. 2 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 0.16s
+     Running tests/perf_002_profile_optimization.rs (perf_002_profile_optimization-3d1040a90bdf208d)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/perf_002b_constant_propagation.rs (perf_002b_constant_propagation-a6e64d21f5e388d3)
+test result: ok. 12 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.31s
+     Running tests/perf_002c_dead_code_elimination.rs (perf_002c_dead_code_elimination-6873a62efec871c6)
+test test_perf_002c_dce_async_function_not_eliminated ... FAILED
+test result: FAILED. 9 passed; 1 failed; 5 ignored; 0 measured; 0 filtered out; finished in 2.69s
+error: test failed, to rerun pass `-p ruchy --test perf_002c_dead_code_elimination`
+     Running tests/priority_3_eval_control_flow.rs (priority_3_eval_control_flow-03c37fb39234fbe2)
+test result: ok. 40 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/probar_wasm_modules.rs (probar_wasm_modules-dfe6a9cd0c56d2db)
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/probar_wasm_qa.rs (probar_wasm_qa-5684269d7a6a53e4)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/probar_worker_harness.rs (probar_worker_harness-9b82334319020b1b)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/profiling_001_binary_profiling.rs (profiling_001_binary_profiling-a084a49df510de0d)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+     Running tests/property_arc_refactor.rs (property_arc_refactor-670ffcec7c57b594)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/property_attribute_parsing.rs (property_attribute_parsing-6236f2b257b7df26)
+test result: ok. 9 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/property_enum_cast.rs (property_enum_cast-6802964c78d9c358)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.35s
+     Running tests/property_eval_builtin.rs (property_eval_builtin-2372bfbc1d349351)
+test test_compute_hash ... FAILED
+test result: FAILED. 123 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+error: test failed, to rerun pass `-p ruchy --test property_eval_builtin`
+     Running tests/property_import_parsing.rs (property_import_parsing-0bf292cd7b1601da)
+test result: ok. 11 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/property_jit_002.rs (property_jit_002-9709a1e651481599)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/property_module_parsing.rs (property_module_parsing-02916b39a956b06f)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/property_range_parsing.rs (property_range_parsing-d242c6f78044bc57)
+test result: ok. 17 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/property_roundtrip.rs (property_roundtrip-cd2e58f86f4f46ff)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/property_string_interpolation.rs (property_string_interpolation-a37acfef0d6300cb)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/property_type_parsing.rs (property_type_parsing-0f4d769f8f92f718)
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests/provability_api.rs (provability_api-d55cf4da742a2e5a)
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/qa_026_interpreter_scoping.rs (qa_026_interpreter_scoping-6843f50d850cc37a)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/qa_026_scoping_divergence.rs (qa_026_scoping_divergence-f28b386e407a3be8)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/qa_061_070_stdlib_imports.rs (qa_061_070_stdlib_imports-10c46e1d96eb8357)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/qa_081_090_wasm_automation.rs (qa_081_090_wasm_automation-ed0765a47feba964)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/quality_001_self_receiver.rs (quality_001_self_receiver-6dbccd86ae2963cf)
+test test_quality_001_04_owned_self_consuming ... FAILED
+test test_quality_001_05_mixed_receiver_types ... FAILED
+test property_tests::prop_owned_self_preserved ... FAILED
+test property_tests::prop_mixed_receivers ... FAILED
+test result: FAILED. 7 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 7.46s
+error: test failed, to rerun pass `-p ruchy --test quality_001_self_receiver`
+     Running tests/quality_015_lint_function_false_positives.rs (quality_015_lint_function_false_positives-9a37328b95708646)
+test result: ok. 11 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 48.77s
+     Running tests/quality_formatter_002_semantic_preservation.rs (quality_formatter_002_semantic_preservation-fa0a0e79deca3fde)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/readme_validation.rs (readme_validation-2a194b3fb61effa0)
+test test_readme_required_sections ... FAILED
+test result: FAILED. 11 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+error: test failed, to rerun pass `-p ruchy --test readme_validation`
+     Running tests/regression_076_vec_new_hang.rs (regression_076_vec_new_hang-f94ca85f6f5b5a94)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/regression_077_logger_hang.rs (regression_077_logger_hang-c0556854dcbede8f)
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/regression_077_string_support.rs (regression_077_string_support-c9c4f9aa82946a39)
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/regression_079_enum_cast.rs (regression_079_enum_cast-bfb2365d8e068d73)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/regression_080_stdin_input.rs (regression_080_stdin_input-ced19ff35596b029)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/regression_081_exit_codes.rs (regression_081_exit_codes-63e06803421ad5a2)
+test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/regression_082_chrono_utc.rs (regression_082_chrono_utc-8c6f0abfa69259b7)
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/regression_083_format_macro.rs (regression_083_format_macro-6839cd0bf2032902)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/regression_085_command_execution.rs (regression_085_command_execution-4c473d2ca95374c2)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/regression_087_complex_enum_matches.rs (regression_087_complex_enum_matches-8b01c59f60504b74)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/repl_005_loop_output.rs (repl_005_loop_output-4a7716d7ce3769a8)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/repl_thread_safety.rs (repl_thread_safety-695a15d081a92593)
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_001_macro_invocation.rs (runtime_001_macro_invocation-d184b23bfe0266c3)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_002_structs_tdd.rs (runtime_002_structs_tdd-dee51ad6e4ee1186)
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+     Running tests/runtime_003_classes_tdd.rs (runtime_003_classes_tdd-dea47d86258958a4)
+test result: ok. 11 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_038_variable_collision.rs (runtime_038_variable_collision-31f76b7d88a694d8)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_062_vec_macro.rs (runtime_062_vec_macro-f5e100f4201b2325)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_083_return_in_if_block.rs (runtime_083_return_in_if_block-02d80205dbf0490e)
+test result: ok. 0 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_090_command_output.rs (runtime_090_command_output-dc9e76b3ce181d1e)
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_098_class_constructor_returns.rs (runtime_098_class_constructor_returns-b0d6502831d7fc8d)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_099_mutable_method_state.rs (runtime_099_mutable_method_state-d35f075a1c9ee00f)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_baseline_audit.rs (runtime_baseline_audit-6f3fa36646066420)
+test result: ok. 4 passed; 0 failed; 11 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_box_operations.rs (runtime_box_operations-acdeb0efff262cdc)
+test result: ok. 0 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_builtins_core.rs (runtime_builtins_core-587c154b2fe79091)
+test test_bug_syntax_001_attribute_error_message ... FAILED
+test result: FAILED. 4 passed; 1 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+error: test failed, to rerun pass `-p ruchy --test runtime_builtins_core`
+     Running tests/runtime_builtins_core_comprehensive.rs (runtime_builtins_core_comprehensive-ceb920dd11d36a26)
+test result: ok. 90 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/runtime_default_params.rs (runtime_default_params-adbac6f7175b8425)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_interpreter_advanced.rs (runtime_interpreter_advanced-336b09aecb203853)
+test result: ok. 43 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/runtime_interpreter_comprehensive.rs (runtime_interpreter_comprehensive-02047538fbb0536f)
+test result: ok. 55 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/runtime_interpreter_integration.rs (runtime_interpreter_integration-5ffd83328b6f70fd)
+test result: ok. 16 passed; 0 failed; 20 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_interpreter_value_types.rs (runtime_interpreter_value_types-988c3d15187e85dc)
+test result: ok. 56 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests/runtime_issue_148_struct_mut_self.rs (runtime_issue_148_struct_mut_self-2e119e432259efd7)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/runtime_loop_mut_tuple_return.rs (runtime_loop_mut_tuple_return-36ebf121f232855d)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_main_function_eval.rs (runtime_main_function_eval-0cb43248c43b4dae)
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/runtime_string_nth_method.rs (runtime_string_nth_method-f2267521eafda6de)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/sovereign_binary_size_budget.rs (sovereign_binary_size_budget-e7fd96fe49ca7298)
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/sovereign_migrate_4to5_e2e.rs (sovereign_migrate_4to5_e2e-4980a0cd165220e4)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/sovereign_nine_pillar_acceptance.rs (sovereign_nine_pillar_acceptance-4b3586d600a0680e)
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/sovereign_zero_unsafe_transpile.rs (sovereign_zero_unsafe_transpile-99ee9ebf7b765669)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests/spec_001_three_mode_validation.rs (spec_001_three_mode_validation-63d26c0ed7de748d)
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.33s
+     Running tests/sqlite_001_parser_grammar.rs (sqlite_001_parser_grammar-70c1efd4db2accc9)
+test test_sqlite_163_associated_types ... FAILED
+test result: FAILED. 912 passed; 1 failed; 537 ignored; 0 measured; 0 filtered out; finished in 0.99s
+error: test failed, to rerun pass `-p ruchy --test sqlite_001_parser_grammar`
+     Running tests/sqlite_002_type_soundness.rs (sqlite_002_type_soundness-7c1ab99aaa35e1fa)
+test result: ok. 22 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.07s
+     Running tests/sqlite_003_metamorphic_testing.rs (sqlite_003_metamorphic_testing-cd37c8748941ab5b)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.59s
+     Running tests/sqlite_004_runtime_anomalies.rs (sqlite_004_runtime_anomalies-eb80add4c710be99)
+test result: ok. 55 passed; 0 failed; 1245 ignored; 0 measured; 0 filtered out; finished in 0.12s
+     Running tests/stabilization_regression_suite.rs (stabilization_regression_suite-af0831b45d7d6d19)
+test result: ok. 17 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/std_001_fs.rs (std_001_fs-70e52041db55c34f)
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/std_002_http.rs (std_002_http-ca54f5b31cd33e79)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/std_003_json.rs (std_003_json-aa9e0b9425d62897)
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/std_004_path.rs (std_004_path-64188130005875eb)
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/std_005_env.rs (std_005_env-2acabe6054aa8336)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/std_006_process.rs (std_006_process-f100575cb6037029)
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/std_007_dataframe.rs (std_007_dataframe-f4f0c37fda5d94d6)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/std_008_time.rs (std_008_time-330cd19291a191b2)
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.83s
+     Running tests/std_009_logging.rs (std_009_logging-4ba5bc7bbb90511f)
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/std_010_regex.rs (std_010_regex-4c5253fd05f32e79)
+test result: ok. 31 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+     Running tests/stdlib005_compute_hash.rs (stdlib005_compute_hash-0b5eb48cb0b388a2)
+test test_compute_hash_empty_file ... FAILED
+test test_compute_hash_known_md5 ... FAILED
+test test_compute_hash_basic ... FAILED
+test result: FAILED. 4 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+error: test failed, to rerun pass `-p ruchy --test stdlib005_compute_hash`
+     Running tests/stdlib005_walk_parallel.rs (stdlib005_walk_parallel-cf09f8ad4500203c)
+test result: ok. 6 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/stdlib_003_time.rs (stdlib_003_time-4b096a704a9d8d3b)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/stdlib_concat_flatten_test.rs (stdlib_concat_flatten_test-b9a42816e6daf334)
+test result: ok. 0 passed; 0 failed; 9 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_dataframe_integration.rs (stdlib_dataframe_integration-2941737bea1a28a5)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_defect_001_env_args.rs (stdlib_defect_001_env_args-33b65ef546323e58)
+test result: ok. 4 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.12s
+     Running tests/stdlib_defect_002_split_method.rs (stdlib_defect_002_split_method-e2c01f703b836af4)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.14s
+     Running tests/stdlib_dir_walk_test.rs (stdlib_dir_walk_test-dfefeec32312c242)
+test result: ok. 29 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/stdlib_env.rs (stdlib_env-6e973f2322957cbf)
+test result: ok. 20 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/stdlib_env_functions.rs (stdlib_env_functions-35f7f7569d5c9c94)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.18s
+     Running tests/stdlib_env_integration.rs (stdlib_env_integration-d574b31de94ebac4)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_env_var.rs (stdlib_env_var-c667ac6f1a85fab1)
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/stdlib_file_io_advanced_test.rs (stdlib_file_io_advanced_test-7aa3d7e49d7056c8)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_file_io_test.rs (stdlib_file_io_test-30539fe10c5496c7)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_fs_functions.rs (stdlib_fs_functions-e7ebcd0488db580f)
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_hashset_ops_test.rs (stdlib_hashset_ops_test-3f17710e7438ec75)
+test result: ok. 0 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_html_test.rs (stdlib_html_test-d55088b126acf6d4)
+test result: ok. 0 passed; 0 failed; 15 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_http_builtins.rs (stdlib_http_builtins-5cf708b781013522)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_json_functions.rs (stdlib_json_functions-d2fd6b992909ff0b)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_logging.rs (stdlib_logging-1f2d1224b62ae846)
+test result: ok. 21 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/stdlib_logging_integration.rs (stdlib_logging_integration-33eecd393321dfd2)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_math_advanced_test.rs (stdlib_math_advanced_test-d5c11799628a3705)
+test result: ok. 16 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_path_functions.rs (stdlib_path_functions-b8f03829147ac403)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_process.rs (stdlib_process-d7afc650f212aa93)
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.21s
+     Running tests/stdlib_process_integration.rs (stdlib_process_integration-81073b20cda5b867)
+test result: ok. 13 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_regex.rs (stdlib_regex-7d0117179373ba1c)
+test result: ok. 26 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.17s
+     Running tests/stdlib_regex_integration.rs (stdlib_regex_integration-9807cdc5e51e88a9)
+test result: ok. 32 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+     Running tests/stdlib_string_array_methods_test.rs (stdlib_string_array_methods_test-133131d67c4c2fbe)
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_substring_sort_join_test.rs (stdlib_substring_sort_join_test-1db83a05e6bfdf87)
+test result: ok. 0 passed; 0 failed; 10 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/stdlib_time.rs (stdlib_time-e8f2ef7dfb8b0419)
+test result: ok. 34 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 14.27s
+     Running tests/stdlib_time_integration.rs (stdlib_time_integration-110160149dc22a7b)
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+     Running tests/stdlib_type_conversions_test.rs (stdlib_type_conversions_test-357798f2e8efa99b)
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/stdlib_unique_test.rs (stdlib_unique_test-9234b0753f46c843)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/string_enumerate_test.rs (string_enumerate_test-36db49f8d0f18304)
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/string_interpolation_repl_fix.rs (string_interpolation_repl_fix-4e816057c089b8f2)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/string_methods_case_test.rs (string_methods_case_test-bd0aa7768b0d56d8)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.47s
+     Running tests/string_methods_complete_coverage.rs (string_methods_complete_coverage-67f595f051434878)
+test result: ok. 14 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/systematic_tool_validation.rs (systematic_tool_validation-d7aab6afa1311e51)
+test result: ok. 29 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 8.39s
+     Running tests/test_issue_140_time_micros_compile.rs (test_issue_140_time_micros_compile-4b9aeed69e115619)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/test_transpiler_type_infer_from_params.rs (test_transpiler_type_infer_from_params-e9b2d4ee3e698d8f)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/tool_defect_001_enum_struct_recognition_RED.rs (tool_defect_001_enum_struct_recognition_RED-e106bac948a364e1)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.82s
+     Running tests/tool_feature_001_ruchy_publish_RED.rs (tool_feature_001_ruchy_publish_RED-b846a7e427a566d3)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/tooling_002_renacer_integration.rs (tooling_002_renacer_integration-dd2df621e0291fda)
+test test_tooling_002_01_renacer_installed ... FAILED
+test result: FAILED. 7 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+error: test failed, to rerun pass `-p ruchy --test tooling_002_renacer_integration`
+     Running tests/transpiler_001_integer_arithmetic.rs (transpiler_001_integer_arithmetic-d3f4b621b09ea818)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/transpiler_006_time_micros.rs (transpiler_006_time_micros-ca0ffe0b17f37bd2)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/transpiler_007_empty_vec_type_inference.rs (transpiler_007_empty_vec_type_inference-8fea80afe7a80190)
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/transpiler_007_method_mangling.rs (transpiler_007_method_mangling-5fcc404c4b1253d1)
+test result: ok. 3 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/transpiler_007_property_tests.rs (transpiler_007_property_tests-ca2b93e0b7856835)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/transpiler_008_pub_visibility.rs (transpiler_008_pub_visibility-d6cdce7ac6d59871)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/transpiler_009_standalone_functions.rs (transpiler_009_standalone_functions-9c8139fb9c41346b)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/transpiler_011_nested_field_access.rs (transpiler_011_nested_field_access-1e7bce1faead50f7)
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_078_str_type_handling.rs (transpiler_078_str_type_handling-44e6dd16f27fb44b)
+test result: ok. 9 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/transpiler_079_class_constructors.rs (transpiler_079_class_constructors-8ab0a2b3c7fae105)
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/transpiler_147_impl_blocks.rs (transpiler_147_impl_blocks-c1908888795eb14d)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+     Running tests/transpiler_deadlock_fix.rs (transpiler_deadlock_fix-4615fe2241dde164)
+test result: ok. 11 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 19.43s
+     Running tests/transpiler_defect_001_string_type_annotation.rs (transpiler_defect_001_string_type_annotation-f268e01bcc0d3037)
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/transpiler_defect_002_integer_type_suffixes.rs (transpiler_defect_002_integer_type_suffixes-cc178beb502804b5)
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/transpiler_defect_003_to_string_method.rs (transpiler_defect_003_to_string_method-bf93e398d4a1f464)
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests/transpiler_defect_004_let_else.rs (transpiler_defect_004_let_else-d03db24080ef2269)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/transpiler_defect_005_namespaced_types.rs (transpiler_defect_005_namespaced_types-37ed3d8918e5c6a5)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/transpiler_defect_008_enum_scoping.rs (transpiler_defect_008_enum_scoping-5bbc99784711cb09)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/transpiler_defect_010_mutable_string_inference.rs (transpiler_defect_010_mutable_string_inference-29cfd1c24a780c63)
+test result: ok. 10 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 23.88s
+     Running tests/transpiler_defect_011_pattern_trait.rs (transpiler_defect_011_pattern_trait-0a3140633f5027ba)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+     Running tests/transpiler_defect_012_string_return_GREEN.rs (transpiler_defect_012_string_return_GREEN-b186a59b7f4515e0)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/transpiler_defect_013_vec_index_string_GREEN.rs (transpiler_defect_013_vec_index_string_GREEN-8331aaf49fe7e4f7)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/transpiler_defect_014_ownership_clone_GREEN.rs (transpiler_defect_014_ownership_clone_GREEN-a21890fb634e7ef8)
+test result: ok. 2 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests/transpiler_defect_015_mutable_string_function_scope_GREEN.rs (transpiler_defect_015_mutable_string_function_scope_GREEN-bfcc27c95998fa93)
+test test_defect_015_04_string_field_concatenation_RED ... FAILED
+test result: FAILED. 1 passed; 1 failed; 7 ignored; 0 measured; 0 filtered out; finished in 0.12s
+error: test failed, to rerun pass `-p ruchy --test transpiler_defect_015_mutable_string_function_scope_GREEN`
+     Running tests/transpiler_defect_016_b_function_call_string_GREEN.rs (transpiler_defect_016_b_function_call_string_GREEN-2ddb99742025df57)
+test result: ok. 0 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_defect_016_c_match_arm_string_GREEN.rs (transpiler_defect_016_c_match_arm_string_GREEN-dbf1991b60ec3047)
+test result: ok. 2 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/transpiler_defect_016_string_field_borrowing_GREEN.rs (transpiler_defect_016_string_field_borrowing_GREEN-93d5f7ed38851721)
+test result: ok. 2 passed; 0 failed; 4 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests/transpiler_defect_017_array_to_vec_GREEN.rs (transpiler_defect_017_array_to_vec_GREEN-4814f01e2e796926)
+test result: ok. 3 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.10s
+     Running tests/transpiler_defect_018_moved_value_loop_GREEN.rs (transpiler_defect_018_moved_value_loop_GREEN-99dfde6b82c65b9f)
+test result: ok. 0 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_defect_018_nested_loop_ownership_GREEN.rs (transpiler_defect_018_nested_loop_ownership_GREEN-62e48392e50d134c)
+test result: ok. 1 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/transpiler_defect_df_001_dataframe_transpilation.rs (transpiler_defect_df_001_dataframe_transpilation-f73291b119c21379)
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_empty_array_type_inference.rs (transpiler_empty_array_type_inference-be78dcff17b85d50)
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_global_let_mut.rs (transpiler_global_let_mut-b541d69a07a5f8e3)
+test result: ok. 6 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/transpiler_mod_comprehensive.rs (transpiler_mod_comprehensive-a29b711f1800c283)
+test result: ok. 28 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/transpiler_numeric_field_access.rs (transpiler_numeric_field_access-ed890124649f21be)
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+     Running tests/transpiler_param_inference_arrays.rs (transpiler_param_inference_arrays-5e94a63d2f043703)
+test result: ok. 6 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_param_type_inference.rs (transpiler_param_type_inference-09e542aefee5aa4f)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_parser_077_attribute_spacing.rs (transpiler_parser_077_attribute_spacing-806d652247e1732e)
+test result: ok. 1 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_property_comprehensive.rs (transpiler_property_comprehensive-d94832b008938625)
+test result: ok. 2 passed; 0 failed; 6 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/transpiler_pub_fun_preservation.rs (transpiler_pub_fun_preservation-a37c0edf3a516bc6)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/transpiler_regression_suite.rs (transpiler_regression_suite-4fd875047c5e2c08)
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/transpiler_scope_global_mut.rs (transpiler_scope_global_mut-7d72e23b03017a34)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.09s
+     Running tests/transpiler_statements_cli_comprehensive.rs (transpiler_statements_cli_comprehensive-0cbe9bcf6841a7ea)
+test result: ok. 37 passed; 0 failed; 3 ignored; 0 measured; 0 filtered out; finished in 0.08s
+     Running tests/transpiler_statements_comprehensive.rs (transpiler_statements_comprehensive-2392643881747725)
+test result: ok. 25 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s
+     Running tests/transpiler_type_inference_comprehensive.rs (transpiler_type_inference_comprehensive-a73467ec06886546)
+test result: ok. 23 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/transpiler_types_comprehensive.rs (transpiler_types_comprehensive-b199d3334b714697)
+test result: ok. 24 passed; 0 failed; 8 ignored; 0 measured; 0 filtered out; finished in 0.07s
+     Running tests/try_catch_syntax_test.rs (try_catch_syntax_test-54efb9b8f94b6add)
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/vm_coverage_001_005.rs (vm_coverage_001_005-68ede4fb4e3454b6)
+test result: ok. 49 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+     Running tests/wasm_memory_model.rs (wasm_memory_model-39e3307be92e2938)
+test result: ok. 17 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+     Running tests/wasm_memory_property_tests.rs (wasm_memory_property_tests-6efa95ac26e1c507)
+test result: ok. 15 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.30s
+     Running tests/wasm_repl_evaluation_test.rs (wasm_repl_evaluation_test-5ddbcc67c959c4fe)
+test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+     Running unittests src/lib.rs (ruchy_embed-0bba4068325e9198)
+test result: ok. 24 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/hot_reload.rs (hot_reload-c2a34454647f990a)
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/startup_benchmark.rs (startup_benchmark-ce8873a9ac6cabb9)
+test result: ok. 1 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/value_containers.rs (value_containers-1e48bd9a30f5efac)
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/value_map.rs (value_map-d47c80d95f230062)
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running unittests src/lib.rs (ruchy_wasm-88db77e51dab5f9b)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_51_nested_scopes.rs (issue_51_nested_scopes-96ad96dfc95cf833)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/issue_52_attributes.rs (issue_52_attributes-176755ffaef54b20)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+     Running tests/probar_wasm_tests.rs (probar_wasm_tests-5e7e466f6714212a)
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+test src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::is_dataframe_expr (line 320) ... FAILED
+test src/backend/transpiler/codegen_minimal.rs - backend::transpiler::codegen_minimal::MinimalCodeGen::gen_expr (line 12) ... FAILED
+test src/backend/transpiler/codegen_minimal.rs - backend::transpiler::codegen_minimal::MinimalCodeGen::gen_program (line 315) ... FAILED
+test src/backend/transpiler/actors.rs - backend::transpiler::actors::Transpiler::transpile_send (line 129) ... FAILED
+test src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::transpile_dataframe_method (line 163) ... FAILED
+test src/backend/transpiler/actors.rs - backend::transpiler::actors::Transpiler::transpile_command (line 187) ... FAILED
+test src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::transpile_dataframe_operation (line 66) ... FAILED
+test src/backend/transpiler/actors.rs - backend::transpiler::actors::Transpiler::transpile_ask (line 151) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_assign (line 113) ... FAILED
+test src/backend/module_resolver.rs - backend::module_resolver::ModuleResolver::resolve_imports (line 98) ... FAILED
+test src/backend/module_loader.rs - backend::module_loader::ParsedModule::name (line 336) ... FAILED
+test src/backend/module_loader.rs - backend::module_loader::ParsedModule::has_dependencies (line 360) ... FAILED
+test src/backend/transpiler/dataframe_builder.rs - backend::transpiler::dataframe_builder::Transpiler::transpile_dataframe_builder (line 18) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_assign (line 126) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_array_init (line 484) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_post_increment (line 443) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_pre_decrement (line 457) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_pre_increment (line 429) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_post_decrement (line 471) ... FAILED
+test src/backend/compiler.rs - backend::compiler::compile_source_to_binary_with_context (line 118) - compile ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_compound_assign (line 315) ... FAILED
+test src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_async_block (line 65) ... FAILED
+test src/backend/transpiler/dataframe_builder.rs - backend::transpiler::dataframe_builder::Transpiler::is_dataframe_builder (line 112) ... FAILED
+test src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_string_interpolation (line 73) ... FAILED
+test src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_object_literal (line 129) ... FAILED
+test src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_async_lambda (line 82) ... FAILED
+test src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_await (line 23) ... FAILED
+test src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_throw (line 99) ... FAILED
+test src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_struct_literal (line 179) ... FAILED
+test src/backend/transpiler/expressions_helpers/field_access.rs - backend::transpiler::expressions::expressions_helpers::field_access::Transpiler::transpile_slice (line 232) ... FAILED
+test src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_range (line 106) ... FAILED
+test src/backend/transpiler/expressions_helpers/field_access.rs - backend::transpiler::expressions::expressions_helpers::field_access::Transpiler::transpile_index_access (line 206) ... FAILED
+test src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_tuple (line 91) ... FAILED
+test src/bench/mod.rs - bench (line 9) - compile ... FAILED
+test src/error_recovery_enhanced.rs - error_recovery_enhanced::ErrorRecoveryContext::recovery_statistics (line 228) ... FAILED
+test src/middleend/environment.rs - middleend::environment::TypeEnv::bind (line 80) ... FAILED
+test src/frontend/parser/utils_helpers/string_interpolation.rs - frontend::parser::utils::utils_helpers::string_interpolation::parse_string_interpolation (line 12) ... FAILED
+test src/middleend/environment.rs - middleend::environment::TypeEnv::extend (line 105) ... FAILED
+test src/middleend/environment.rs - middleend::environment::TypeEnv::free_vars (line 120) ... FAILED
+test src/middleend/environment.rs - middleend::environment::TypeEnv::lookup (line 92) ... FAILED
+test src/middleend/infer.rs - middleend::infer::InferenceContext::apply (line 1329) ... FAILED
+test src/middleend/environment.rs - middleend::environment::TypeEnv::generalize (line 143) ... FAILED
+test src/middleend/infer.rs - middleend::infer::InferenceContext::solve (line 1316) ... FAILED
+test src/middleend/mir/optimize.rs - middleend::mir::optimize::DeadCodeElimination::new (line 31) ... FAILED
+test src/middleend/mir/builder.rs - middleend::mir::builder::MirBuilder::new (line 22) ... FAILED
+test src/middleend/mir/lower.rs - middleend::mir::lower::LoweringContext::new (line 24) ... FAILED
+test src/middleend/mir/optimize.rs - middleend::mir::optimize::DeadCodeElimination::new (line 39) ... FAILED
+test src/middleend/mir/optimize.rs - middleend::mir::optimize::DeadCodeElimination::new (line 23) ... FAILED
+test src/middleend/unify.rs - middleend::unify::Unifier::apply (line 40) ... FAILED
+test src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::incomplete_if_expr (line 227) ... FAILED
+test src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::malformed_let_binding (line 200) ... FAILED
+test src/middleend/unify.rs - middleend::unify::Unifier::unify (line 60) ... FAILED
+test src/middleend/unify.rs - middleend::unify::Unifier::substitution (line 27) ... FAILED
+test src/middleend/unify.rs - middleend::unify::Unifier::solve (line 149) ... FAILED
+test src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::missing_function_name (line 128) ... FAILED
+test src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::is_sync_token (line 280) ... FAILED
+test src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::should_continue (line 255) ... FAILED
+test src/parser/error_recovery.rs - parser::error_recovery::RecoveryRules::select_strategy (line 309) ... FAILED
+test src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 78) ... FAILED
+test src/parser/error_recovery.rs - parser::error_recovery::RecoveryRules::synthesize_ast (line 340) ... FAILED
+test src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 102) ... FAILED
+test src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 86) ... FAILED
+test src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 94) ... FAILED
+test src/proving/counterexample.rs - proving::counterexample::Counterexample::add_assignment (line 119) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::get_available_tactics (line 91) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::new (line 18) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::apply_tactic (line 104) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::new (line 26) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::set_timeout (line 51) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::load_script (line 77) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::new (line 34) ... FAILED
+test src/proving/refinement.rs - proving::refinement::LiquidTypeInference::add_constraint (line 491) ... FAILED
+test src/proving/refinement.rs - proving::refinement::LiquidTypeInference::infer (line 454) ... FAILED
+test src/proving/prover.rs - proving::prover::InteractiveProver::set_ml_suggestions (line 64) ... FAILED
+test src/proving/refinement.rs - proving::refinement::RefinementChecker::declare_var (line 288) ... FAILED
+test src/proving/refinement.rs - proving::refinement::RefinementChecker::set_backend (line 275) ... FAILED
+test src/proving/refinement.rs - proving::refinement::RefinementChecker::check_invariant (line 379) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtQuery::add_assumption (line 276) ... FAILED
+test src/bench/stats.rs - bench::stats::Statistics::std_dev (line 147) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtSolver::new (line 62) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtQuery::add_var (line 263) ... FAILED
+test src/proving/refinement.rs - proving::refinement::RefinementType::bounded_int (line 41) ... FAILED
+test src/proving/smt.rs - proving::smt::ProofAutomation::prove_implication (line 367) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtSolver::new (line 46) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtSolver::declare_fun (line 106) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtSolver::declare_var (line 92) ... FAILED
+test src/proving/smt.rs - proving::smt::ProofAutomation::prove_equivalence (line 381) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtSolver::assert (line 123) ... FAILED
+test src/proving/tactics.rs - proving::tactics::TacticLibrary::all_tactics (line 102) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtSolver::new (line 54) ... FAILED
+test src/proving/tactics.rs - proving::tactics::TacticLibrary::default (line 44) ... FAILED
+test src/proving/smt.rs - proving::smt::SmtSolver::set_timeout (line 79) ... FAILED
+test src/quality/formatter.rs - quality::formatter::Formatter::format (line 61) ... FAILED
+test src/quality/coverage.rs - quality::coverage::CoverageCollector::collect (line 202) - compile ... FAILED
+test src/quality/coverage.rs - quality::coverage::FileCoverage::branch_coverage_percentage (line 48) ... FAILED
+test src/quality/coverage.rs - quality::coverage::CoverageReport::add_file (line 144) ... FAILED
+test src/quality/coverage.rs - quality::coverage::CoverageCollector::with_source_dir (line 187) ... FAILED
+test src/quality/gates.rs - quality::gates::QualityGateEnforcer::new (line 166) ... FAILED
+test src/quality/gates.rs - quality::gates::QualityGateEnforcer::enforce_gates (line 203) ... FAILED
+test src/quality/gates.rs - quality::gates::QualityGateEnforcer::load_config (line 178) ... FAILED
+test src/quality/coverage.rs - quality::coverage::FileCoverage::line_coverage_percentage (line 23) ... FAILED
+test src/quality/linter.rs - quality::linter::Linter::set_rules (line 177) ... FAILED
+test src/quality/linter.rs - quality::linter::Linter::lint (line 217) ... FAILED
+test src/quality/linter.rs - quality::linter::Linter::auto_fix (line 772) ... FAILED
+test src/quality/mod.rs - quality (line 30) ... FAILED
+test src/quality/mod.rs - quality::QualityGates::check (line 242) ... FAILED
+test src/quality/ruchy_coverage.rs - quality::ruchy_coverage::RuchyCoverage::new (line 24) ... FAILED
+test src/quality/mod.rs - quality::QualityGates::with_thresholds (line 210) ... FAILED
+test src/quality/mod.rs - quality (line 58) - compile ... FAILED
+test src/quality/scoring.rs - quality::scoring::DependencyTracker::is_stale (line 196) ... FAILED
+test src/quality/mod.rs - quality::QualityGates::update_metrics (line 225) ... FAILED
+test src/quality/mod.rs - quality (line 73) - compile ... FAILED
+test src/quality/ruchy_coverage.rs - quality::ruchy_coverage::RuchyCoverage::line_coverage (line 52) ... FAILED
+test src/quality/ruchy_coverage.rs - quality::ruchy_coverage::RuchyCoverage::new (line 32) ... FAILED
+test src/quality/scoring.rs - quality::scoring::Grade::from_score (line 54) ... FAILED
+test src/runtime/actor.rs - runtime::actor::ActorRef::ask (line 64) ... FAILED
+test src/runtime/actor.rs - runtime::actor::ActorContext::find_actor (line 246) ... FAILED
+test src/runtime/actor.rs - runtime::actor::ActorRef::send (line 39) ... FAILED
+test src/runtime/assessment.rs - runtime::assessment::GradeReport::add_task_grade (line 670) ... FAILED
+test src/runtime/assessment.rs - runtime::assessment::GradeReport::mark_invalid (line 656) ... FAILED
+test src/runtime/assessment.rs - runtime::assessment::GradingEngine::grade_submission (line 220) ... FAILED
+test src/runtime/actor.rs - runtime::actor::ActorContext::stop_child (line 205) ... FAILED
+test src/runtime/eval_array.rs - runtime::eval_array::eval_array_concat (line 454) ... FAILED
+test src/runtime/eval_array.rs - runtime::eval_array::eval_array_difference (line 576) ... FAILED
+test src/runtime/eval_array.rs - runtime::eval_array::eval_array_enumerate (line 213) ... FAILED
+test src/runtime/completion.rs - runtime::completion::CompletionKind::prefix (line 39) ... FAILED
+test src/runtime/completion.rs - runtime::completion::CompletionEngine::get_completions (line 153) ... FAILED
+test src/runtime/eval_array.rs - runtime::eval_array::eval_array_flatten (line 476) ... FAILED
+test src/runtime/eval_array.rs - runtime::eval_array::eval_array_union (line 503) ... FAILED
+test src/runtime/eval_array.rs - runtime::eval_array::eval_array_intersection (line 543) ... FAILED
+test src/runtime/eval_array.rs - runtime::eval_array::eval_array_sort (line 613) ... FAILED
+test src/runtime/eval_string_methods.rs - runtime::eval_string_methods::eval_string_as_bytes (line 275) ... FAILED
+test src/runtime/eval_string_methods.rs - runtime::eval_string_methods::eval_string_format (line 310) ... FAILED
+test src/runtime/inspect.rs - runtime::inspect::Inspector::consume_budget (line 221) ... FAILED
+test src/runtime/eval_builtin.rs - runtime::eval_builtin::eval_timestamp (line 925) ... FAILED
+test src/runtime/inspect.rs - runtime::inspect::Inspector::with_style (line 165) ... FAILED
+test src/runtime/lazy.rs - runtime::lazy::LazyIterator::collect (line 233) ... FAILED
+test src/runtime/lazy.rs - runtime::lazy::LazyIterator::from_vec (line 152) ... FAILED
+test src/runtime/lazy.rs - runtime::lazy::LazyValue::computed (line 39) ... FAILED
+test src/runtime/lazy.rs - runtime::lazy::LazyIterator::take (line 193) ... FAILED
+test src/runtime/lazy.rs - runtime::lazy::LazyIterator::skip (line 211) ... FAILED
+test src/runtime/magic.rs - runtime::magic::MagicRegistry::is_magic (line 71) ... FAILED
+test src/runtime/mod.rs - runtime (line 30) - compile ... FAILED
+test src/runtime/magic.rs - runtime::magic::MagicRegistry::execute (line 84) ... FAILED
+test src/runtime/magic.rs - runtime::magic::MagicRegistry::register (line 58) ... FAILED
+test src/reporting/ascii.rs - reporting::ascii::sparkline (line 188) ... FAILED
+test src/runtime/mod.rs - runtime (line 39) ... FAILED
+test src/runtime/safe_arena.rs - runtime::safe_arena::SafeArena::new (line 32) ... FAILED
+test src/runtime/safe_arena.rs - runtime::safe_arena::SafeArena::new (line 24) ... FAILED
+test src/runtime/safe_arena.rs - runtime::safe_arena::SafeArena::reset (line 66) ... FAILED
+test src/runtime/transaction.rs - runtime::transaction::TransactionalState::arena (line 301) ... FAILED
+test src/runtime/transaction.rs - runtime::transaction::TransactionalState::new (line 79) ... FAILED
+test src/runtime/transaction.rs - runtime::transaction::TransactionalState::new (line 87) ... FAILED
+test src/runtime/transaction.rs - runtime::transaction::TransactionalState::new (line 71) ... FAILED
+test src/runtime/transaction.rs - runtime::transaction::TransactionLog::log (line 395) ... FAILED
+test src/quality/formatter_config.rs - quality::formatter_config::FormatterConfig::from_toml (line 117) ... FAILED
+test src/runtime/transaction.rs - runtime::transaction::TransactionalState::begin_transaction (line 106) ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::copy (line 184) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs (line 7) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::create_dir_all (line 118) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::read_dir (line 229) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::read (line 73) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::metadata (line 254) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::create_dir (line 96) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::remove_dir (line 162) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::read_to_string (line 28) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::write (line 51) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::remove_file (line 140) - compile ... FAILED
+test src/stdlib/fs.rs - stdlib::fs::rename (line 207) - compile ... FAILED
+test src/stdlib/html.rs - stdlib::html::HtmlDocument::query_selector (line 110) ... FAILED
+test src/stdlib/html.rs - stdlib::html::HtmlDocument::select (line 88) ... FAILED
+test src/stdlib/html.rs - stdlib::html::HtmlElement::html (line 288) ... FAILED
+test src/stdlib/html.rs - stdlib::html::HtmlElement::text (line 249) ... FAILED
+test src/stdlib/html.rs - stdlib::html::HtmlElement::attr (line 264) ... FAILED
+test src/runtime/interpreter_control_flow.rs - runtime::interpreter_control_flow::Interpreter::eval_assign (line 382) ... FAILED
+test src/transpiler/canonical_ast.rs - transpiler::canonical_ast::AstNormalizer::normalize (line 127) ... FAILED
+test src/transpiler/canonical_ast.rs - transpiler::canonical_ast::CoreExpr::is_normalized (line 332) ... FAILED
+test src/transpiler/canonical_ast.rs - transpiler::canonical_ast::CoreExpr::is_closed (line 351) ... FAILED
+test src/transpiler/provenance.rs - transpiler::provenance::ProvenanceTracker::finish (line 135) ... FAILED
+test src/transpiler/provenance.rs - transpiler::provenance::TraceDiffer::find_divergence (line 224) ... FAILED
+test src/transpiler/reference_interpreter.rs - transpiler::reference_interpreter::Environment::lookup (line 94) ... FAILED
+test src/utils/common_patterns.rs - utils::common_patterns::ProgressIndicator::finish (line 235) ... FAILED
+test src/transpiler/reference_interpreter.rs - transpiler::reference_interpreter::Environment::push (line 69) ... FAILED
+test src/wasm/component.rs - wasm::component::ComponentBuilder::add_source (line 351) ... FAILED
+test src/wasm/deployment.rs - wasm::deployment::Deployer::new (line 167) ... FAILED
+test src/wasm/demo_converter.rs - wasm::demo_converter::NotebookCell::code (line 22) ... FAILED
+test src/transpiler/reference_interpreter.rs - transpiler::reference_interpreter::ReferenceInterpreter::get_trace (line 422) ... FAILED
+test src/wasm/component.rs - wasm::component::ComponentBuilder::new_with_config (line 332) ... FAILED
+test src/wasm/deployment.rs - wasm::deployment::Deployer::add_artifact (line 183) ... FAILED
+test src/wasm/wit.rs - wasm::wit::WitGenerator::generate (line 345) ... FAILED
+test src/wasm/wit.rs - wasm::wit::WitGenerator::add_type_mapping (line 444) ... FAILED
+test src/wasm/portability.rs - wasm::portability::PortabilityAnalyzer::new_with_config (line 277) ... FAILED
+test src/wasm/wit.rs - wasm::wit::WitGenerator::new_with_config (line 315) ... FAILED
+test src/stdlib/trueno_bridge.rs - stdlib::trueno_bridge::kahan_sum (line 53) ... FAILED
+test result: FAILED. 245 passed; 194 failed; 282 ignored; 0 measured; 0 filtered out; finished in 13.59s
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+EXIT=101
+2026-09-05T14:53:27+02:00

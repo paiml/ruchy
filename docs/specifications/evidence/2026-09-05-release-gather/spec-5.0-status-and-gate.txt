@@ -1,0 +1,100 @@
+=== spec: Implementation Status table (lines 7-78) ===
+### Implementation Status (Ground Truth as of 2026-04-05)
+
+| Milestone | Status | Evidence |
+|-----------|--------|----------|
+| Version bump 5.0.0-alpha.1 | DONE | `ruchy --version` → 5.0.0-alpha.1 |
+| Parser: 7 new keywords | DONE | All 7 reserved in lexer (Token enum) and parser. 3 keyword reservation tests. |
+| Parser: infra/signal/yield expressions | DONE | InfraBlock, Signal, Yield AST nodes parsed. 5 parser tests. |
+| Unified decorator grammar | DONE (4.x) | `@decorator` and `#[attribute]` both parse |
+| Feature gates (infra/simulation/shell-target) | DONE | Cargo.toml feature definitions |
+| Optional deps (forjar/simular/bashrs) | DONE | Added as optional, feature-gated |
+| New CLI subcommands | DONE | prove/infra/sim/widget/apr/model/purify/migrate-4to5/contracts/suggest-contracts all registered |
+| CLI handler routing | DONE | All sovereign commands dispatched in command_router.rs (23 handler tests) |
+| CLI integration tests | DONE | 29 assert_cmd tests for sovereign commands |
+| Transpiler: contract → debug_assert! | DONE (Silver) | requires/ensures emit debug_assert! macros. 6 transpiler tests. |
+| Transpiler: infra/signal/yield | DONE | InfraBlock→block, Signal→Signal::new(), Yield→yield |
+| trueno 0.16.5 upgrade | PARTIAL | 0.16.5 in Cargo.lock, spec says 0.16.5 |
+| ruchy-embed Engine API | DONE | Engine: new/eval/compile/load_file/load_source/call/reset. 15 tests + 2 doctests. |
+| Stdlib bridges (forjar/simular/bashrs) | DONE | Bridge modules with types, builders, tests (24 tests). Feature-gated re-exports. |
+| migrate-4to5 tool | DONE | Scans/renames keyword conflicts, dry-run support, 12 tests |
+| 5.0 Examples | DONE | 30_contracts.ruchy, 31_sovereign_platform.ruchy, 32_migration_demo.ruchy |
+| CHANGELOG 5.0 section | DONE | Full release notes for 5.0.0-alpha.1 |
+| Test command: probar flags | DONE | --probar, --playbook, --visual-regression, --mutations registered |
+| Contracts CLI (sync/list/check) | DONE | 3 subcommands + suggest-contracts + 8 handler tests |
+| Alpha.1 gate: all 4.x tests pass | DONE | 20,429 lib tests pass, 0 failures |
+| Alpha.2: trueno bridge expansion | DONE | 44 public functions (was 11), 44 tests. sub/div/fma/norms/trig/ML activations. |
+| Alpha.2: array SIMD lowering module | DONE | array_simd.rs: try_lower_array_binary(), 10 tests. Lowers list+list to trueno. |
+| Alpha.3: ruchy-embed sandboxing | DONE | Sandbox struct (timeout/recursion/fs/net/env). Engine::with_sandbox(). 21 tests. |
+| Alpha.3: startup time tracking | DONE | Engine::startup_time(). Verified < 5ms target documented. |
+| Criterion #2: release-mode startup < 5ms verified | DONE | ruchy-embed/tests/startup_benchmark.rs passes under `cargo test --release -- --ignored` |
+| Alpha.3: yield/signal/infra in interpreter | DONE | Yield→Return(val), Signal→eval initial, InfraBlock→eval body. 20,456 tests pass. |
+| 5.0 Examples (5 files) | DONE | 30_contracts, 31_sovereign_platform, 32_migration_demo, 33_simd_arrays, 34_embedding |
+| Beta.1: aprender ML pipeline types | DONE | TrainingConfig, InferenceConfig, PipelineStage, TrainingResult. 19 tests. |
+| Beta.1: presentar widget types | DONE | Widget (Column/Row/Text/Button/Input/Container), Alignment, RenderTarget. 31 tests. |
+| Beta.2: shell transpilation types | DONE | ShellScript, ShellVar, QuoteStrategy. Injection-proof quoting. 16 tests. |
+| Version bump to 5.0.0-beta.1 | DONE | Workspace + ruchy-wasm bumped 2026-04-04 |
+| RC.1: 9-pillar acceptance gate | DONE | 16 integration tests in sovereign_nine_pillar_acceptance.rs (all passing) |
+| Criterion #12: migrate-4to5 synthetic 4.x e2e | DONE | 4 tests in sovereign_migrate_4to5_e2e.rs covering all 7 keywords (all passing) |
+| Criterion #11: zero unsafe in transpile output | DONE | 2 tests in sovereign_zero_unsafe_transpile.rs (required + sovereign examples, all passing) |
+| Criterion #6: binary size (default) under +20% | DONE | 8.45 MB measured (target: <14.19 MB). 40% headroom. Automated in sovereign_binary_size_budget.rs. |
+| §14.10.1 Secret<T>/Public<T> runtime skeleton | DONE | `src/provability/secret.rs` ships Secret/Public/declassify (4 lib tests + 3 integration tests). Static lint pass scheduled for SECRET-002. |
+| §14.10.2 RootCapability + 5 scoped caps runtime skeleton | DONE | `src/provability/capabilities.rs` ships Root/Fs/Net/Env/Clock/RandomCap (5 lib tests + 4 integration tests). Static enforcement scheduled for CAP-002. |
+| §14.10.3 Totality enum runtime skeleton | DONE | `src/provability/totality.rs` ships Total/Partial/Corecursive/Unknown + from_decorator (5 lib tests + 3 integration tests). Analyzer scheduled for TOTAL-002. |
+| §14.2 Tier classification runtime | DONE | `src/provability/tier.rs` ships `Tier`/`TierInputs`/`classify` (15 lib tests + 2 integration tests). Enforces spec precedence: @platinum-without-full-stack degrades, @gold-without-contracts degrades to Bronze. |
+| §14.2 AST-to-Tier bridge | DONE | `src/provability/from_ast.rs` ships `tier_of_function(&Expr)` — parsed Ruchy source → Tier. 8 lib + 4 integration tests. Enables future `ruchy provability` CLI subcommand. |
+| §14.5 F1 metric instrument (`ruchy tier`) | DONE | CLI subcommand scans a directory, reports tier distribution (text or JSON). Raw input to F1/F4 falsifier metrics. 9 unit + 6 CLI integration tests. |
+| §14.5 F1 CI gate (`ruchy tier --fail-under N`) | DONE | `--fail-under` makes F1 threshold enforceable in CI; `--list` enumerates each function with its tier for actionable remediation. 9 unit + 10 CLI integration tests. |
+| §14.10.6 totality rule warning (`ruchy tier`) | DONE | Detects Gold/Platinum functions that lack `@total`/`@corecursive` and prints §14.10.6 violations to stderr. Summary now includes totality breakdown. 16 handler tests + 10 CLI tests. |
+| §14.10.6 totality rule CI gate (`--fail-on-totality-violation`) | DONE | Same detection but exits status 1 with "§14.10.6 breach" message. 13 CLI tests. Gates violations at CI level. |
+| §14.5 F1 trivial-contract detection | DONE (syntactic approximation) | `ruchy tier` detects `requires true`/`ensures true` as trivial, reports non-trivial vs trivial counts + `non_trivial_pct`. SMT-based tautology detection is a future sprint. 6 new handler tests. |
+| §14.5 F1 CI gate (`--fail-under-f1 N`) | DONE | Third CI gate on `ruchy tier`: exits status 1 with "§14.5 F1 breach" if non-trivial contract pct < N. Skipped when no contract-bearing functions exist. 3 new CLI tests. |
+| §14.5 F2 escape-hatch density tracking | DONE | `ruchy tier` counts `#[contract_exempt]` attributes + LoC per file; reports density per KLoC. Target ≤ 0.5 (falsifies if > 5). 6 new handler tests (density calc, empty LoC, sub-KLoC, zero-exempt, detection, other-attrs-ignored). |
+| `ruchy tier --json` dashboard-ready output | DONE | Single-line JSON emits all 18 §14.5 metrics (files, loc, tier counts, F1 triviality, F2 exemptions, totality, violations, parse errors). Enables CI dashboards + trend tracking. 3 new handler tests. |
+| §14.5 F2 CI gate (`--fail-exempt-density-above K`) | DONE | Fourth CI gate on `ruchy tier`: exits status 1 with "§14.5 F2 breach" if exempt density/KLoC > K. Skipped when no LoC scanned. 3 new CLI tests. |
+| §14.5 F11 tracking (`#[diff_exempt]` density) | DONE (reporter) | Parallels F2: counts `#[diff_exempt]` escape hatches for §14.10.4 differential gate. Baseline density observable BEFORE §14.10.4 gate ships. 4 new handler tests. JSON output now 20 keys. |
+| §14.5 F4 proxy: `pub_bronze` count + `--public-only` filter | DONE | `ruchy tier` now tracks Bronze-tier `pub` functions (F4 metric: "stdlib Bronze count → 0 after 5.2"). `--public-only` restricts the scan to `pub` fns — the surface area that matters for §14.5 F4. 5 new handler tests + 2 new CLI tests. JSON output now 21 keys. |
+| §14.5 F4 CI gate (`--fail-pub-bronze-above N`) | DONE | Fifth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F4 breach" when `pub_bronze > N`. Combines cleanly with `--public-only`. 1 new handler test + 3 new CLI tests. |
+| §14.5 F4 summary + list UX | DONE | `ruchy tier` human summary now includes `public API (F4 proxy): pub Bronze: N`. `--list` output marks `pub` functions with a `pub` column. 1 new handler test + 2 new CLI tests. |
+| `ruchy tier --json --list` emits per-function JSON | DONE | Dashboards can now ingest per-function records (name, file, tier, totality, pub, non_trivial_contract) via a second JSON line. `ClassifiedFunction::to_json()` + JSON-escaping of names/paths. 4 new handler tests + 2 new CLI tests. |
+| §14.5 F11 CI gate (`--fail-diff-exempt-density-above K`) | DONE | Sixth CI gate on `ruchy tier`. Exits status 1 with "§14.5 F11 breach" when `#[diff_exempt]` density/KLoC > K. Mirrors --fail-exempt-density-above. Skipped when no LoC scanned. 3 new CLI tests. |
+| `ruchy tier --by-file` per-file tier breakdown | DONE | Dashboard feature: human table + `[{"file":...,"bronze":N,"silver":N,"gold":N,"platinum":N,"total":N}]` JSON array when paired with `--json`. Sorted by file path (BTreeMap) for deterministic output. New `FileTierCounts` type + `ProvabilityReport::by_file()`/`by_file_to_json()`. 5 new handler tests + 2 new CLI tests. |
+| `ruchy tier --by-file --sort-by --top` | DONE | Floats worst files first for triage. `--sort-by file\|bronze\|silver\|gold\|platinum\|total` (descending for non-file columns, path tie-breaker). `--top N` truncates. Unknown sort keys fall back to `file`. 4 new handler tests + 2 new CLI tests. |
+| §14.5 falsifier scorecard (OK/WARN/FAIL per metric) | DONE | `ruchy tier` summary now ends with a single-line §14.5 scorecard: `F1:OK F2:WARN F4:WARN F11:OK`. F1: <50% FAIL / <95% WARN / ≥95% OK. F2: >5/KLoC FAIL / >0.5 WARN / ≤0.5 OK. F4: 0 OK / else WARN. F11: 0 OK / else WARN. N/A when metric cannot be evaluated (e.g., no contracts). JSON output adds `scorecard: {f1, f2, f4, f11}` nested object. 10 new handler tests + 2 new CLI tests. |
+| `ruchy tier` per-file parse timeout (resilience) | DONE | Scanner now runs each file's parse in a worker thread with a 5s default timeout (configurable via `--parse-timeout-ms`). Protects against parser infinite-loops (discovered by dogfooding: examples/21_concurrency.ruchy hangs parser). Timeouts tracked in new `parse_timeouts` field of report + JSON. Dogfood scan of `examples/` (183 files) now completes in <2s despite hang. 5 new handler tests. |
+| `ruchy tier --baseline <file>` regression gate | DONE | CI-friendly regression detection: first run captures baseline JSON, subsequent runs compare and exit non-zero on metric regressions (bronze/pub_bronze/errors increase, non_trivial/non_bronze pct decrease, densities increase). 0.01 tolerance on percentages/densities to ignore rounding noise. New `BaselineSnapshot` + `Regression` types + `regressions_vs()` method. 7 new handler tests + 3 new CLI tests. |
+| `ruchy tier --markdown` PR-ready reports | DONE | GitHub-flavored markdown output with tier distribution table, F-metric scorecard with 🟢/🟡/🔴/⚪ badges, parser-health section (only when issues). Suitable for CI PR comments via `${ruchy tier src/ --markdown} >> $GITHUB_STEP_SUMMARY`. 3 new handler tests + 2 new CLI tests. |
+| §14.5 scorecard CI gate (`--fail-on-scorecard warn\|fail`) | DONE | Eighth CI gate on `ruchy tier`. Exits status 1 with "§14.5 scorecard breach" when any metric is at-or-above the selected severity level. `FalsifierStatus::severity()` numeric ordering + `parse_level()` case-insensitive parser. Accepts warn/warning/fail/error spellings. 6 new handler tests + 3 new CLI tests. |
+| `ruchy tier --config <file.toml>` centralized config | DONE | Loads gate thresholds from a TOML file with `[gates]` section. CLI flags take precedence (Option::or semantics for scalars, boolean OR for flags). Missing or malformed file errors cleanly with path context. New `TierConfig` + `TierConfigGates` serde structs. 5 new handler tests + 3 new CLI tests. |
+| `ruchy contracts check/list` wired to real scanner | DONE | Previously stub commands that always reported 0 functions. Now backed by the tier scanner (reuses `provability::scan()`). `contracts check` reports real coverage % and enforces `--min-coverage` threshold (skipped when 0 functions). `contracts list` supports text/json/yaml formats and shows per-function tier + file. 3 new provability tests + 5 new sovereign tests. |
+| `ruchy contracts sync` wired to real YAML emitter | DONE | Previously a stub. Now groups contracted functions by source file and writes one YAML manifest per source (`src_foo_ruchy.yaml` naming). Manifest schema: `source`, `contracts: [{name, tier, totality, is_pub}]`. Creates output directory if missing. Functions without contracts are elided. 4 new sovereign tests. |
+| `ruchy suggest-contracts` wired to real uncontracted lister | DONE | Previously a stub ("0 functions analyzed"). Now enumerates Bronze-tier functions (those lacking contracts) in text/json/yaml formats. YAML mode emits stub `suggested_requires`/`suggested_ensures` fields for authors to fill in. Serves as the §14.9 migration to-do list. 5 new sovereign tests. |
+| Criterion #4: ruchy-book examples compile | PARTIAL | 15/16 critical chapters pass on 5.0.0-beta.1 (ch18 DataFrames failing — pre-existing, see DATAFRAMES-001). COMPILER-001 fix landed: ruchy compile now honours CARGO_TARGET_DIR. |
+
+
+=== spec: current status / RC gate / known blockers (1027-1070) ===
+### Current status on 5.0.0-beta.1 (2026-04-05)
+
+| # | Repo | Status | Notes |
+|---|------|--------|-------|
+| B1 | `ruchy-book` | PARTIAL | 15/16 critical chapters pass. ch18 DataFrames blocked by DATAFRAMES-001 (pre-existing transpiler defect, not 5.0 regression). |
+| B2 | `ruchy-cookbook` | PARTIAL (77%) | 35/45 sampled `.ruchy` files pass. Recipe test-file parsing (`Expected RightBrace, found Let`) blocks the rest — separate pre-existing issue. Improved from 42% to 77% via PARSER-ATTR-001. |
+| B3 | `ruchy-cli-tools-book` | PASS (100%) | 12/12 sampled files pass. |
+| B4 | `tooling-with-ruchy` | SKIPPED (empty) | Repo has only README; no .ruchy corpus yet. |
+| B5 | `ruchy-repl-demos` | PASS (100%) | 50/50 sampled files pass. |
+| B6 | `rosetta-ruchy` | PASS (98%) | 49/50 sampled files pass. 1 pre-existing failure. |
+| B7 | `ruchyruchy` | PASS (92%) | 46/50 sampled files pass. 4 pre-existing failures in debugger test corpus. |
+
+### Gate for RC.1 → 5.0.0
+
+RC.1 cannot be tagged until **all seven** book repos report either PASS or
+a documented, ticketed, separate-from-5.0 failure. Missing validation
+(UNVALIDATED) blocks the release.
+
+### Known blockers
+
+| Ticket | Repo | Description | Scope |
+|--------|------|-------------|-------|
+| DATAFRAMES-001 | ruchy-book ch18 | `df!` macro emits `HashMap<String,Vec<String>>` but transpiled code calls `.lazy()` expecting a Polars DataFrame | Transpiler DataFrame type inference rework — pre-existing, not a 5.0 regression |
+| COMPILER-001 | ruchy-book (all compile-requiring chapters) | `ruchy compile` ignored `CARGO_TARGET_DIR` → "Expected binary not found" | **FIXED** in 5.0.0-beta.1 (`tests/compiler_cargo_target_dir.rs`) |
+| PARSER-ATTR-001 | ruchy-cookbook + every 5.0 attribute user | Parser bail!'d on `#[...]` with "Attributes are not supported", contradicting spec Section 3 (unified decorator grammar) | **FIXED** in 5.0.0-beta.1 (`tests/parser_attribute_syntax.rs`). Moves cookbook from 42% → 77%. |

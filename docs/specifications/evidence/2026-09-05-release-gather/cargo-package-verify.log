@@ -1,0 +1,22 @@
+2026-09-05T11:12:06+02:00
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/noah/src/ruchy/ruchy-wasm/Cargo.toml
+workspace: /home/noah/src/ruchy/Cargo.toml
+    Blocking waiting for file lock on package cache
+   Packaging ruchy v5.0.0-beta.1 (/home/noah/src/ruchy)
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Updating crates.io index
+warning: package `chacha20 v0.10.1` in Cargo.lock is yanked in registry `crates-io`
+  |
+  = help: consider updating to a version that is not yanked
+    Packaged 2882 files, 38.9MiB (7.8MiB compressed)
+   Verifying ruchy v5.0.0-beta.1 (/home/noah/src/ruchy)
+    Blocking waiting for file lock on package cache
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 53.08s
+
+real	0m53.169s
+user	2m8.379s
+sys	0m34.421s
+EXIT=0
+2026-09-05T11:12:59+02:00

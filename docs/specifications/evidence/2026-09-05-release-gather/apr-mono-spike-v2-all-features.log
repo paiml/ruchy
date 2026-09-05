@@ -1,0 +1,261 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/apr-spike/ruchy-wasm/Cargo.toml
+workspace: /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/apr-spike/Cargo.toml
+    Updating crates.io index
+     Locking 9 packages to latest compatible versions
+    Updating alimentar v0.2.8 -> v0.4.0
+      Adding bashrs v6.68.0
+      Adding bashrs v7.0.1
+    Updating forjar v1.12.3 -> v1.25.1
+      Adding forjar-contracts v0.31.2
+      Adding forjar-contracts-macros v0.31.2
+      Adding ureq v3.4.0
+      Adding ureq-proto v0.6.1
+      Adding utf8-zero v0.8.1
+error[E0432]: unresolved import `entrenar::citl`
+   --> src/oracle/mod.rs:859:19
+    |
+859 | pub use entrenar::citl::{
+    |                   ^^^^ could not find `citl` in `entrenar`
+    |
+note: found an item that was configured out
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-train-0.65.2/src/lib.rs:87:9
+    |
+ 86 | #[cfg(feature = "citl")]
+    |       ---------------- the item is gated behind the `citl` feature
+ 87 | pub mod citl;
+    |         ^^^^
+
+error[E0432]: unresolved import `aprender::format::quantize`
+  --> src/stdlib/aprender_bridge.rs:87:27
+   |
+87 | pub use aprender::format::quantize::{
+   |                           ^^^^^^^^ could not find `quantize` in `format`
+   |
+note: found an item that was configured out
+  --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:69:9
+   |
+68 | #[cfg(feature = "format-quantize")]
+   |       --------------------------- the item is gated behind the `format-quantize` feature
+69 | pub mod quantize;
+   |         ^^^^^^^^
+
+error[E0432]: unresolved imports `aprender::format::load_verified`, `aprender::format::save_signed`, `aprender::format::SigningKey`, `aprender::format::VerifyingKey`, `aprender::format::PUBLIC_KEY_SIZE`, `aprender::format::SIGNATURE_SIZE`
+   --> src/stdlib/aprender_bridge.rs:102:5
+    |
+102 |     load_verified, save_signed, SigningKey, VerifyingKey, PUBLIC_KEY_SIZE, SIGNATURE_SIZE,
+    |     ^^^^^^^^^^^^^  ^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^ no `SIGNATURE_SIZE` in `format`
+    |     |              |            |           |             |
+    |     |              |            |           |             no `PUBLIC_KEY_SIZE` in `format`
+    |     |              |            |           no `VerifyingKey` in `format`
+    |     |              |            no `SigningKey` in `format`
+    |     |              no `save_signed` in `format`
+    |     no `load_verified` in `format`
+    |
+note: found an item that was configured out
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:341:25
+    |
+340 | #[cfg(feature = "format-signing")]
+    |       -------------------------- the item is gated behind the `format-signing` feature
+341 | pub use ed25519_dalek::{SigningKey, VerifyingKey};
+    |                         ^^^^^^^^^^
+note: found an item that was configured out
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:341:37
+    |
+340 | #[cfg(feature = "format-signing")]
+    |       -------------------------- the item is gated behind the `format-signing` feature
+341 | pub use ed25519_dalek::{SigningKey, VerifyingKey};
+    |                                     ^^^^^^^^^^^^
+note: found an item that was configured out
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:349:11
+    |
+348 | #[cfg(feature = "format-signing")]
+    |       -------------------------- the item is gated behind the `format-signing` feature
+349 | pub const PUBLIC_KEY_SIZE: usize = 32;
+    |           ^^^^^^^^^^^^^^^
+note: found an item that was configured out
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/aprender-core-0.65.2/src/format/mod.rs:345:11
+    |
+344 | #[cfg(feature = "format-signing")]
+    |       -------------------------- the item is gated behind the `format-signing` feature
+345 | pub const SIGNATURE_SIZE: usize = 64;
+    |           ^^^^^^^^^^^^^^
+
+error[E0599]: no method named `get_columns` found for reference `&polars::prelude::DataFrame` in the current scope
+  --> src/backend/arrow_integration.rs:25:22
+   |
+25 |     for column in df.get_columns() {
+   |                      ^^^^^^^^^^^
+   |
+help: there is a method `columns` with a similar name
+   |
+25 -     for column in df.get_columns() {
+25 +     for column in df.columns() {
+   |
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+   --> src/backend/arrow_integration.rs:55:5
+    |
+ 55 |     polars::prelude::DataFrame::new(series_vec)
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ---------- argument #1 of type `usize` is missing
+    |
+note: associated function defined here
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/frame/dataframe.rs:119:12
+    |
+119 |     pub fn new(height: usize, columns: Vec<Column>) -> PolarsResult<Self> {
+    |            ^^^
+help: provide the argument
+    |
+ 55 |     polars::prelude::DataFrame::new(/* usize */, series_vec)
+    |                                     ++++++++++++
+
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::Int32Type>`, but its trait bounds were not satisfied
+   --> src/backend/arrow_integration.rs:80:47
+    |
+ 80 |             let values: Vec<Option<i32>> = ca.into_iter().collect();
+    |                                               ^^^^^^^^^
+    |
+   ::: /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/chunked_array/mod.rs:137:1
+    |
+137 | pub struct ChunkedArray<T: PolarsDataType> {
+    | ------------------------------------------ doesn't satisfy `ChunkedArray<polars::prelude::Int32Type>: Iterator` or `_: IntoIterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `&ChunkedArray<polars::prelude::Int32Type>: Iterator`
+            which is required by `&ChunkedArray<polars::prelude::Int32Type>: IntoIterator`
+            `&&ChunkedArray<polars::prelude::Int32Type>: Iterator`
+            which is required by `&&ChunkedArray<polars::prelude::Int32Type>: IntoIterator`
+            `&mut &ChunkedArray<polars::prelude::Int32Type>: Iterator`
+            which is required by `&mut &ChunkedArray<polars::prelude::Int32Type>: IntoIterator`
+            `ChunkedArray<polars::prelude::Int32Type>: Iterator`
+            which is required by `ChunkedArray<polars::prelude::Int32Type>: IntoIterator`
+            `&mut ChunkedArray<polars::prelude::Int32Type>: Iterator`
+            which is required by `&mut ChunkedArray<polars::prelude::Int32Type>: IntoIterator`
+
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::Int64Type>`, but its trait bounds were not satisfied
+   --> src/backend/arrow_integration.rs:85:47
+    |
+ 85 |             let values: Vec<Option<i64>> = ca.into_iter().collect();
+    |                                               ^^^^^^^^^
+    |
+   ::: /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/chunked_array/mod.rs:137:1
+    |
+137 | pub struct ChunkedArray<T: PolarsDataType> {
+    | ------------------------------------------ doesn't satisfy `ChunkedArray<polars::prelude::Int64Type>: Iterator` or `_: IntoIterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `&ChunkedArray<polars::prelude::Int64Type>: Iterator`
+            which is required by `&ChunkedArray<polars::prelude::Int64Type>: IntoIterator`
+            `&&ChunkedArray<polars::prelude::Int64Type>: Iterator`
+            which is required by `&&ChunkedArray<polars::prelude::Int64Type>: IntoIterator`
+            `&mut &ChunkedArray<polars::prelude::Int64Type>: Iterator`
+            which is required by `&mut &ChunkedArray<polars::prelude::Int64Type>: IntoIterator`
+            `ChunkedArray<polars::prelude::Int64Type>: Iterator`
+            which is required by `ChunkedArray<polars::prelude::Int64Type>: IntoIterator`
+            `&mut ChunkedArray<polars::prelude::Int64Type>: Iterator`
+            which is required by `&mut ChunkedArray<polars::prelude::Int64Type>: IntoIterator`
+
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::Float64Type>`, but its trait bounds were not satisfied
+   --> src/backend/arrow_integration.rs:90:47
+    |
+ 90 |             let values: Vec<Option<f64>> = ca.into_iter().collect();
+    |                                               ^^^^^^^^^
+    |
+   ::: /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/chunked_array/mod.rs:137:1
+    |
+137 | pub struct ChunkedArray<T: PolarsDataType> {
+    | ------------------------------------------ doesn't satisfy `_: IntoIterator` or `_: Iterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `&ChunkedArray<polars::prelude::Float64Type>: Iterator`
+            which is required by `&ChunkedArray<polars::prelude::Float64Type>: IntoIterator`
+            `&&ChunkedArray<polars::prelude::Float64Type>: Iterator`
+            which is required by `&&ChunkedArray<polars::prelude::Float64Type>: IntoIterator`
+            `&mut &ChunkedArray<polars::prelude::Float64Type>: Iterator`
+            which is required by `&mut &ChunkedArray<polars::prelude::Float64Type>: IntoIterator`
+            `ChunkedArray<polars::prelude::Float64Type>: Iterator`
+            which is required by `ChunkedArray<polars::prelude::Float64Type>: IntoIterator`
+            `&mut ChunkedArray<polars::prelude::Float64Type>: Iterator`
+            which is required by `&mut ChunkedArray<polars::prelude::Float64Type>: IntoIterator`
+
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<polars::prelude::BooleanType>`, but its trait bounds were not satisfied
+   --> src/backend/arrow_integration.rs:95:48
+    |
+ 95 |             let values: Vec<Option<bool>> = ca.into_iter().collect();
+    |                                                ^^^^^^^^^
+    |
+   ::: /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/chunked_array/mod.rs:137:1
+    |
+137 | pub struct ChunkedArray<T: PolarsDataType> {
+    | ------------------------------------------ doesn't satisfy `_: IntoIterator` or `_: Iterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `&ChunkedArray<polars::prelude::BooleanType>: Iterator`
+            which is required by `&ChunkedArray<polars::prelude::BooleanType>: IntoIterator`
+            `&&ChunkedArray<polars::prelude::BooleanType>: Iterator`
+            which is required by `&&ChunkedArray<polars::prelude::BooleanType>: IntoIterator`
+            `&mut &ChunkedArray<polars::prelude::BooleanType>: Iterator`
+            which is required by `&mut &ChunkedArray<polars::prelude::BooleanType>: IntoIterator`
+            `ChunkedArray<polars::prelude::BooleanType>: Iterator`
+            which is required by `ChunkedArray<polars::prelude::BooleanType>: IntoIterator`
+            `&mut ChunkedArray<polars::prelude::BooleanType>: Iterator`
+            which is required by `&mut ChunkedArray<polars::prelude::BooleanType>: IntoIterator`
+
+error[E0599]: the method `into_iter` exists for reference `&ChunkedArray<StringType>`, but its trait bounds were not satisfied
+   --> src/backend/arrow_integration.rs:100:48
+    |
+100 |             let values: Vec<Option<&str>> = ca.into_iter().collect();
+    |                                                ^^^^^^^^^
+    |
+   ::: /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/chunked_array/mod.rs:137:1
+    |
+137 | pub struct ChunkedArray<T: PolarsDataType> {
+    | ------------------------------------------ doesn't satisfy `ChunkedArray<StringType>: IntoIterator` or `ChunkedArray<StringType>: Iterator`
+    |
+    = note: the following trait bounds were not satisfied:
+            `&ChunkedArray<StringType>: Iterator`
+            which is required by `&ChunkedArray<StringType>: IntoIterator`
+            `&&ChunkedArray<StringType>: Iterator`
+            which is required by `&&ChunkedArray<StringType>: IntoIterator`
+            `&mut &ChunkedArray<StringType>: Iterator`
+            which is required by `&mut &ChunkedArray<StringType>: IntoIterator`
+            `ChunkedArray<StringType>: Iterator`
+            which is required by `ChunkedArray<StringType>: IntoIterator`
+            `&mut ChunkedArray<StringType>: Iterator`
+            which is required by `&mut ChunkedArray<StringType>: IntoIterator`
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+   --> src/stdlib/dataframe.rs:62:5
+    |
+ 62 |     DataFrame::new(cols).map_err(|e| e.to_string())
+    |     ^^^^^^^^^^^^^^ ---- argument #1 of type `usize` is missing
+    |
+note: associated function defined here
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/frame/dataframe.rs:119:12
+    |
+119 |     pub fn new(height: usize, columns: Vec<Column>) -> PolarsResult<Self> {
+    |            ^^^
+help: provide the argument
+    |
+ 62 |     DataFrame::new(/* usize */, cols).map_err(|e| e.to_string())
+    |                    ++++++++++++
+
+error[E0433]: cannot find type `CsvReadOptions` in this scope
+  --> src/stdlib/dataframe.rs:82:5
+   |
+82 |     CsvReadOptions::default()
+   |     ^^^^^^^^^^^^^^ use of undeclared type `CsvReadOptions`
+
+error[E0433]: cannot find type `CsvWriter` in this scope
+   --> src/stdlib/dataframe.rs:109:5
+    |
+109 |     CsvWriter::new(&mut file)
+    |     ^^^^^^^^^ use of undeclared type `CsvWriter`
+
+Some errors have detailed explanations: E0061, E0432, E0433, E0599.
+For more information about an error, try `rustc --explain E0061`.
+error: could not compile `ruchy` (lib) due to 13 previous errors
+EXIT=101
+2026-09-05T11:22:16+02:00
+error count:
+15

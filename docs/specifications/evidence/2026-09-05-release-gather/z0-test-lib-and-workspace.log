@@ -1,0 +1,9 @@
+2026-09-05T12:44:25+02:00
+test result: ok. 20510 passed; 0 failed; 108 ignored; 0 measured; 0 filtered out; finished in 5.27s
+
+real	0m20.392s
+user	0m43.555s
+sys	0m13.799s
+EXIT=0
+2026-09-05T12:44:45+02:00
+=== cargo test --workspace (gate_cmd) ===

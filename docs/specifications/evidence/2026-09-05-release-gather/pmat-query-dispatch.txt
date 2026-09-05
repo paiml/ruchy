@@ -1,0 +1,813 @@
+=== transpiler dispatch ===
+Building index for "."...
+  This may take 1-3 minutes for large repos (progress below).
+  Indexing... 500 files  Indexing... 1000 files  Indexed 1437 files
+Computing annotations for 8741 functions...
+  Git churn: 588 files with commits (max=192)
+  Clones: 563 functions with duplicates
+  Diversity: 589 files analyzed
+  Faults: 1308 functions with patterns
+  Applied: churn=8740, clones=563, diversity=8741, faults=1308
+  Index built: 8741 functions in 5.9s
+  SQLite index saved: 8741 functions, 124315 call edges, 19.2 MB
+Index saved to "./.pmat/context.idx"
+Index: 8741 functions in 1437 files (avg TDG: 96.9)
+src/backend/transpiler/mod.rs:375-378 │ transpile │ TDG: A+ │ O(1)
+   C:1 │ L:60 │ ★8.2 │ ↓94 │ 127c 66% │ 🐛2:EXPECT
+   /// Transpiles an expression to a `TokenStream`  # Examples  ``` use ruchy::{Transpiler, Parser};  le...
+   calls: TokenStream, Transpiler, Parser, ast, transpile, (+9 more) │ ← compile_program, transpile, compile_and_run, (+8 more)
+⚠️  EXPECT
+⚠️  UNWRAP
+ 375│ /// Transpiles an expression to a `TokenStream`
+ 376│     ///
+ 377│     /// # Examples
+ 378│     ///
+ 379│     /// ```
+ 380│     /// use ruchy::{Transpiler, Parser};
+ 381│     ///
+ 382│     /// let mut parser = Parser::new("42");
+ 383│     /// let ast = parser.parse().expect("Failed to parse");
+ 384│     ///
+ 385│     /// let mut transpiler = Transpiler::new();
+ 386│     /// let result = transpiler.transpile(&ast);
+ 387│     /// assert!(result.is_ok());
+ 388│     /// ```
+ 389│     ///
+ 390│     /// # Errors
+ 391│     ///
+ 392│     /// Transpiles a Ruchy AST expression to Rust tokens.
+ 393│     ///
+ 394│     /// This is the main entry point for code generation. It takes a Ruchy
+ 395│     /// AST expression and produces a `TokenStream` representing equivalent
+ 396│     /// Rust code that can be compiled and executed.
+ 397│     ///
+ 398│     /// # Arguments
+ 399│     ///
+ 400│     /// * `expr` - The AST expression to transpile
+ 401│     ///
+ 402│     /// # Returns
+ 403│     ///
+ 404│     /// A `TokenStream` containing the generated Rust code.
+ 405│     ///
+ 406│     /// # Errors
+ 407│     ///
+ 408│     /// Returns an error if:
+ 409│     /// - The AST contains unsupported language features
+ 410│     /// - Type inference fails
+ 411│     /// - Invalid code patterns are detected
+ 412│     ///
+ 413│     /// # Examples
+ 414│     ///
+ 415│     /// ```ignore
+ 416│     /// use ruchy::{Parser, Transpiler};
+ 417│     ///
+ 418│     /// let mut parser = Parser::new("fn double(x: int) { x * 2 }");
+ 419│     /// let ast = parser.parse().unwrap();
+ 420│     ///
+ 421│     /// let mut transpiler = Transpiler::new();
+ 422│     /// let tokens = transpiler.transpile(&ast).unwrap();
+ 423│     ///
+ 424│     /// // Convert to string for compilation
+ 425│     /// let rust_code = tokens.to_string();
+ 426│     /// ```
+ 427│     /// TRANSPILER-009 FIX: Changed to call `transpile_to_program()` instead of `transpile_expr()`
+ 428│     /// Root Cause: `transpile_expr()` treats Block as an expression and wraps in braces { ... }
+ 429│     /// which produces invalid Rust when the Block contains top-level items (functions/structs/etc)
+ 430│     /// Fix: Always use `transpile_to_program()` which properly handles top-level items
+ 431│     pub fn transpile(&mut self, expr: &Expr) -> Result<TokenStream> {
+ 432│         contract_pre_configuration!();
+ 433│         self.transpile_to_program(expr)
+ 434│     }
+
+src/backend/transpiler/expr_dispatcher.rs:86-175 │ transpile_expr │ TDG: B+ │ O(1)
+   C:9 │ L:101 │ ★5.4 │ ↓180 │ 3c
+   /// Main expression transpilation dispatcher  Routes expressions to specialized handlers based on Exp...
+   calls: ExprKind, label, Expr, TokenStream, Actor, (+13 more) │ ← transpile_import_program, transpile_module_declaration, transpile_statement_only_block, (+8 more)
+  86│ /// Main expression transpilation dispatcher
+  87│     ///
+  88│     /// Routes expressions to specialized handlers based on ExprKind.
+  89│     /// This keeps the main dispatch logic centralized while delegating
+  90│     /// complex transpilation to focused sub-modules.
+  91│     ///
+  92│     /// # Panics
+  93│     ///
+  94│     /// Panics if label names cannot be parsed as valid Rust tokens
+  95│     ///
+  96│     /// Complexity: 6 (within Toyota Way limits)
+  97│     pub fn transpile_expr(&self, expr: &Expr) -> Result<TokenStream> {
+  98│         use ExprKind::{
+  99│             Actor, ActorQuery, ActorSend, ArrayInit, Ask, Assign, AsyncBlock, AsyncLambda, Await,
+ 100│             Binary, Call, Class, Command, CompoundAssign, DataFrame, DataFrameOperation,
+ 101│             DictComprehension, Effect, Err, FieldAccess, For, Function, Handle, Identifier, If,
+ 102│             IfLet, IndexAccess, Lambda, List, ListComprehension, Literal, Loop, Macro, Match,
+ 103│             MethodCall, None, ObjectLiteral, Ok, PostDecrement, PostIncrement, PreDecrement,
+ 104│             PreIncrement, QualifiedName, Range, Send, Set, SetComprehension, Slice, Some, Spawn,
+ 105│             StringInterpolation, Struct, StructLiteral, Throw, Try, TryCatch, Tuple, TupleStruct,
+ 106│             TypeCast, Unary, While, WhileLet,
+ 107│         };
+ 108│ 
+ 109│         // Dispatch to specialized handlers to keep complexity below 10
+ 110│         match &expr.kind {
+ 111│             // Basic expressions
+ 112│             Literal(_)
+ 113│             | Identifier(_)
+ 114│             | QualifiedName { .. }
+ 115│             | StringInterpolation { .. }
+ 116│             | TypeCast { .. } => self.transpile_basic_expr(expr),
+ 117│ 
+ 118│             // Operators and control flow
+ 119│             Binary { .. }
+ 120│             | Unary { .. }
+ 121│             | Assign { .. }
+ 122│             | CompoundAssign { .. }
+ 123│             | PreIncrement { .. }
+ 124│             | PostIncrement { .. }
+ 125│             | PreDecrement { .. }
+ 126│             | PostDecrement { .. }
+ 127│             | Await { .. }
+ 128│             | Spawn { .. }
+ 129│             | AsyncBlock { .. }
+ 130│             | AsyncLambda { .. }
+ 131│             | If { .. }
+ 132│             | IfLet { .. }
+ 133│             | Match { .. }
+ 134│             | For { .. }
+ 135│             | While { .. }
+ 136│             | WhileLet { .. }
+ 137│             | Loop { .. }
+ 138│             | TryCatch { .. } => self.transpile_operator_control_expr(expr),
+ 139│ 
+ 140│             // Functions
+ 141│             Function { .. } | Lambda { .. } | Call { .. } | MethodCall { .. } | Macro { .. } => {
+ 142│                 self.transpile_function_expr(expr)
+ 143│             }
+ 144│ 
+ 145│             // Structures
+ 146│             Struct { .. }
+ 147│             | TupleStruct { .. }
+ 148│             | Class { .. }
+ 149│             | StructLiteral { .. }
+ 150│             | ObjectLiteral { .. }
+ 151│             | FieldAccess { .. }
+ 152│             | IndexAccess { .. }
+ 153│             | Slice { .. } => self.transpile_struct_expr(expr),
+ 154│ 
+ 155│             // Data and error handling
+ 156│             DataFrame { .. }
+ 157│             | DataFrameOperation { .. }
+ 158│             | List(_)
+ 159│             | Set(_)
+ 160│             | ArrayInit { .. }
+ 161│             | Tuple(_)
+ 162│             | ListComprehension { .. }
+ 163│             | SetComprehension { .. }
+ 164│             | DictComprehension { .. }
+ 165│             | Range { .. }
+ 166│             | Throw { .. }
+ 167│             | Ok { .. }
+ 168│             | Err { .. }
+ 169│             | Some { .. }
+ 170│             | None
+ 171│             | Try { .. } => self.transpile_data_error_expr(expr),
+ 172│ 
+ 173│             // Actor system and process execution
+ 174│             Actor { .. }
+ 175│             | Effect { .. }
+ 176│             | Handle { .. }
+ 177│             | Send { .. }
+ 178│             | Ask { .. }
+ 179│             | ActorSend { .. }
+ 180│             | ActorQuery { .. }
+ 181│             | Command { .. } => self.transpile_actor_expr(expr),
+ 182│ 
+ 183│             // Everything else
+ 184│             _ => self.transpile_misc_expr(expr),
+ 185│         }
+ 186│     }
+
+src/backend/transpiler/program_transpiler.rs:556-572 │ transpile_expression_program │ TDG: A+ │ O(1)
+   C:3 │ L:19 │ ↓2 │ 11c │ 🔄22%
+   /// Transpile expression program (single expression, not a block) Complexity: 5 (within Toyota Way li...
+   calls: block, Expr, TokenStream, all, ExprKind, (+4 more) │ ← transpile_to_program_with_context, transpile_program_block
+ 556│ /// Transpile expression program (single expression, not a block)
+ 557│     /// Complexity: 5 (within Toyota Way limits)
+ 558│     fn transpile_expression_program(
+ 559│         &self,
+ 560│         expr: &Expr,
+ 561│         needs_polars: bool,
+ 562│         needs_hashmap: bool,
+ 563│     ) -> Result<TokenStream> {
+ 564│         // Check if all expressions are statements
+ 565│         if let ExprKind::Block(exprs) = &expr.kind {
+ 566│             let all_statements = exprs.iter().all(Self::is_statement_expr);
+ 567│             if all_statements {
+ 568│                 return self.wrap_statement_in_main(exprs, needs_polars, needs_hashmap);
+ 569│             }
+ 570│         }
+ 571│ 
+ 572│         let body = self.transpile_expr(expr)?;
+ 573│         self.wrap_in_main_with_result_printing(body, needs_polars, needs_hashmap)
+ 574│     }
+
+src/backend/transpiler/expressions_helpers/collections.rs:112-125 │ transpile_range │ TDG: A+ │ O(1)
+   C:2 │ L:23 │ ↓1 │ 15c
+   /// Transpiles range expressions # Examples  ``` use ruchy::backend::transpiler::expressions::transpi...
+   calls: range, Expr, TokenStream, transpile_expr │ ← transpile_data_only_expr
+ 112│ /// Transpiles range expressions
+ 113│     /// # Examples
+ 114│     ///
+ 115│     /// ```
+ 116│     /// use ruchy::backend::transpiler::expressions::transpile_range;
+ 117│     ///
+ 118│     /// let result = transpile_range(true);
+ 119│     /// assert_eq!(result, Ok(true));
+ 120│     /// ```
+ 121│     pub fn transpile_range(
+ 122│         &self,
+ 123│         start: &Expr,
+ 124│         end: &Expr,
+ 125│         inclusive: bool,
+ 126│     ) -> Result<TokenStream> {
+ 127│         let start_tokens = self.transpile_expr(start)?;
+ 128│         let end_tokens = self.transpile_expr(end)?;
+ 129│         if inclusive {
+ 130│             Ok(quote! { #start_tokens..=#end_tokens })
+ 131│         } else {
+ 132│             Ok(quote! { #start_tokens..#end_tokens })
+ 133│         }
+ 134│     }
+
+src/backend/transpiler/patterns.rs:27-50 │ transpile_match │ TDG: A │ O(n)
+   C:7 │ L:41 │ ↓3 │ 21c │ 🐛1:EXPECT
+   /// Transpiles match expressions  # Examples  ``` use ruchy::{Transpiler, Parser};  let mut transpile...
+   calls: Transpiler, Parser, ast, transpile, succeed, (+6 more) │ ← transpile_control_flow_only_expr, benchmark_control_flow_transpilation
+⚠️  EXPECT
+  27│ /// Transpiles match expressions
+  28│     ///
+  29│     /// # Examples
+  30│     ///
+  31│     /// ```
+  32│     /// use ruchy::{Transpiler, Parser};
+  33│     ///
+  34│     /// let mut transpiler = Transpiler::new();
+  35│     /// let mut parser = Parser::new(r#"match x { 1 => "one", _ => "other" }"#);
+  36│     /// let ast = parser.parse().expect("Failed to parse");
+  37│     ///
+  38│     /// let result = transpiler.transpile(&ast).expect("transpilation should succeed in doctest");
+  39│     /// let code = result.to_string();
+  40│     /// assert!(code.contains("match"));
+  41│     /// assert!(code.contains("1"));
+  42│     /// assert!(code.contains("_"));
+  43│     /// ```
+  44│     pub fn transpile_match(&self, expr: &Expr, arms: &[MatchArm]) -> Result<TokenStream> {
+  45│         let expr_tokens = self.transpile_expr(expr)?;
+  46│         let mut arm_tokens = Vec::new();
+  47│         for arm in arms {
+  48│             let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
+  49│             let body_tokens = self.transpile_expr(&arm.body)?;
+  50│             // Handle pattern guards if present
+  51│             if let Some(guard_expr) = &arm.guard {
+  52│                 let guard_tokens = self.transpile_expr(guard_expr)?;
+  53│                 arm_tokens.push(quote! {
+  54│                     #pattern_tokens if #guard_tokens => #body_tokens
+  55│                 });
+  56│             } else {
+  57│                 arm_tokens.push(quote! {
+  58│                     #pattern_tokens => #body_tokens
+  59│                 });
+  60│             }
+  61│         }
+  62│         Ok(quote! {
+  63│             match #expr_tokens {
+  64│                 #(#arm_tokens,)*
+  65│             }
+  66│         })
+  67│     }
+
+src/backend/transpiler/expressions.rs:132-163 │ transpile_assign │ TDG: A │ O(1)
+   C:5 │ L:54 │ ↓2 │ 60c 31% │ 🐛3:CLONE
+   /// Transpiles binary operations # Examples  ``` use ruchy::backend::transpiler::Transpiler; use ruch...
+   calls: binary, Transpiler, ast, Expr, BinaryOp, (+8 more) │ ← transpile_operator_only_expr
+⚠️  CLONE
+⚠️  EXPECT
+⚠️  UNWRAP
+ 132│ /// Transpiles binary operations
+ 133│     /// # Examples
+ 134│     ///
+ 135│     /// ```
+ 136│     /// use ruchy::backend::transpiler::Transpiler;
+ 137│     /// use ruchy::frontend::ast::{Expr, BinaryOp};
+ 138│     ///
+ 139│     /// let mut transpiler = Transpiler::new();
+ 140│     /// let left = Expr::literal(1.into());
+ 141│     /// let right = Expr::literal(2.into());
+ 142│     /// let result = transpiler.transpile_binary(&left, BinaryOp::Add, &right);
+ 143│     /// assert!(result.is_ok());
+ 144│     /// ```
+ 145│     /// Transpiles assignment
+ 146│     /// # Examples
+ 147│     ///
+ 148│     /// ```
+ 149│     /// use ruchy::backend::transpiler::expressions::transpile_assign;
+ 150│     ///
+ 151│     /// let result = transpile_assign(());
+ 152│     /// assert_eq!(result, Ok(()));
+ 153│     /// ```
+ 154│     pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
+ 155│         // DEADLOCK FIX (Issue #132): Check if assigning to a global that's also in value
+ 156│         // If so, use single-lock pattern to avoid deadlock
+ 157│         if let ExprKind::Identifier(target_name) = &target.kind {
+ 158│             if self
+ 159│                 .global_vars
+ 160│                 .read()
+ 161│                 .expect("rwlock should not be poisoned")
+ 162│                 .contains(target_name)
+ 163│             {
+ 164│                 // Target is a global - check if value also references it
+ 165│                 if Self::expr_references_var(value, target_name) {
+ 166│                     // DEADLOCK SCENARIO: counter = counter + 1
+ 167│                     // Generate single-lock pattern:
+ 168│                     //   { let mut guard = counter.lock().unwrap(); *guard = *guard + 1; }
+ 169│                     return self.transpile_assign_global_self_ref(target_name, value);
+ 170│                 }
+ 171│             }
+ 172│         }
+ 173│ 
+ 174│         // Standard assignment (no deadlock risk)
+ 175│         let value_tokens = self.transpile_expr(value)?;
+ 176│ 
+ 177│         // BUG-003: Handle IndexAccess specially for lvalue (no .clone())
+ 178│         if let ExprKind::IndexAccess { .. } = &target.kind {
+ 179│             let target_tokens = self.transpile_index_lvalue(target)?;
+ 180│             Ok(quote! { #target_tokens = #value_tokens })
+ 181│         } else {
+ 182│             let target_tokens = self.transpile_expr(target)?;
+ 183│             Ok(quote! { #target_tokens = #value_tokens })
+ 184│         }
+ 185│     }
+
+src/backend/transpiler/expressions_helpers/field_access.rs:238-267 │ transpile_slice │ TDG: A │ O(1)
+   C:6 │ L:39 │ ↓2 │ 22c
+   /// Transpiles slice access `(array[start:end])` # Examples  ``` use ruchy::backend::transpiler::expr...
+   calls: slice, Expr, TokenStream, transpile_expr, range │ ← transpile_struct_expr
+ 238│ /// Transpiles slice access `(array[start:end])`
+ 239│     /// # Examples
+ 240│     ///
+ 241│     /// ```
+ 242│     /// use ruchy::backend::transpiler::expressions::transpile_slice;
+ 243│     ///
+ 244│     /// let result = transpile_slice(());
+ 245│     /// assert_eq!(result, Ok(()));
+ 246│     /// ```
+ 247│     pub fn transpile_slice(
+ 248│         &self,
+ 249│         object: &Expr,
+ 250│         start: Option<&Expr>,
+ 251│         end: Option<&Expr>,
+ 252│     ) -> Result<TokenStream> {
+ 253│         let obj_tokens = self.transpile_expr(object)?;
+ 254│         match (start, end) {
+ 255│             (None, None) => {
+ 256│                 // Full slice [..]
+ 257│                 Ok(quote! { &#obj_tokens[..] })
+ 258│             }
+ 259│             (None, Some(end)) => {
+ 260│                 // Slice from beginning [..end]
+ 261│                 let end_tokens = self.transpile_expr(end)?;
+ 262│                 Ok(quote! { &#obj_tokens[..#end_tokens as usize] })
+ 263│             }
+ 264│             (Some(start), None) => {
+ 265│                 // Slice to end [start..]
+ 266│                 let start_tokens = self.transpile_expr(start)?;
+ 267│                 Ok(quote! { &#obj_tokens[#start_tokens as usize..] })
+ 268│             }
+ 269│             (Some(start), Some(end)) => {
+ 270│                 // Full range slice [start..end]
+ 271│                 let start_tokens = self.transpile_expr(start)?;
+ 272│                 let end_tokens = self.transpile_expr(end)?;
+ 273│                 Ok(quote! { &#obj_tokens[#start_tokens as usize..#end_tokens as usize] })
+ 274│             }
+ 275│         }
+ 276│     }
+
+src/backend/transpiler/expressions_helpers/async_ops.rs:29-32 │ transpile_await │ TDG: A+ │ O(1)
+   C:1 │ L:13 │ ↓2 │ 8c
+   /// Transpiles await expressions # Examples  ``` use ruchy::backend::transpiler::expressions::transpi...
+   calls: Expr, TokenStream, transpile_expr │ ← transpile_operator_only_expr
+  29│ /// Transpiles await expressions
+  30│     /// # Examples
+  31│     ///
+  32│     /// ```
+  33│     /// use ruchy::backend::transpiler::expressions::transpile_await;
+  34│     ///
+  35│     /// let result = transpile_await(());
+  36│     /// assert_eq!(result, Ok(()));
+  37│     /// ```
+  38│     pub fn transpile_await(&self, expr: &Expr) -> Result<TokenStream> {
+  39│         let expr_tokens = self.transpile_expr(expr)?;
+  40│         Ok(quote! { #expr_tokens.await })
+  41│     }
+
+src/backend/transpiler/expressions_helpers/async_ops.rs:105-110 │ transpile_throw │ TDG: A+ │ O(1)
+   C:1 │ L:15 │ ↓2 │ 8c │ 🐛1:PANIC
+   /// Transpiles throw expressions (panic in Rust) # Examples  ``` use ruchy::backend::transpiler::expr...
+   calls: Expr, TokenStream, transpile_expr │ ← transpile_error_only_expr
+⚠️  PANIC
+ 105│ /// Transpiles throw expressions (panic in Rust)
+ 106│     /// # Examples
+ 107│     ///
+ 108│     /// ```
+ 109│     /// use ruchy::backend::transpiler::expressions::transpile_throw;
+ 110│     ///
+ 111│     /// let result = transpile_throw(());
+ 112│     /// assert_eq!(result, Ok(()));
+ 113│     /// ```
+ 114│     pub fn transpile_throw(&self, expr: &Expr) -> Result<TokenStream> {
+ 115│         let expr_tokens = self.transpile_expr(expr)?;
+ 116│         Ok(quote! {
+ 117│             panic!(#expr_tokens)
+ 118│         })
+ 119│     }
+
+src/backend/transpiler/expressions_helpers/async_ops.rs:88-95 │ transpile_async_lambda │ TDG: A+ │ O(1)
+   C:1 │ L:17 │ ↓2 │ 8c
+   /// Transpiles async lambda expressions to Rust async closures # Examples  ``` use ruchy::backend::tr...
+   calls: lambda, Expr, TokenStream, transpile_expr │ ← transpile_operator_only_expr
+  88│ /// Transpiles async lambda expressions to Rust async closures
+  89│     /// # Examples
+  90│     ///
+  91│     /// ```
+  92│     /// use ruchy::backend::transpiler::expressions::transpile_async_lambda;
+  93│     ///
+  94│     /// let result = transpile_async_lambda(());
+  95│     /// assert_eq!(result, Ok(()));
+  96│     /// ```
+  97│     pub fn transpile_async_lambda(&self, params: &[String], body: &Expr) -> Result<TokenStream> {
+  98│         let param_idents: Vec<proc_macro2::Ident> =
+  99│             params.iter().map(|p| format_ident!("{}", p)).collect();
+ 100│ 
+ 101│         let body_tokens = self.transpile_expr(body)?;
+ 102│ 
+ 103│         Ok(quote! { |#(#param_idents),*| async move { #body_tokens } })
+ 104│     }
+
+src/backend/transpiler/ast_analysis.rs:38-42 │ analyze_mutability │ TDG: A+ │ O(n)
+   C:2 │ L:22 │ ↓2 │ 9c │ 🔄28%
+   /// Analyzes expressions to determine which variables need mutable bindings.  This performs a static ...
+   calls: bindings, pass, code, analyze, Transpiler, (+2 more) │ ← transpile_to_program, transpile_to_program_with_context
+  38│ /// Analyzes expressions to determine which variables need mutable bindings.
+  39│     ///
+  40│     /// This performs a static analysis pass over the AST to identify variables
+  41│     /// that are assigned to after their initial declaration, marking them as
+  42│     /// requiring `mut` in the generated Rust code.
+  43│     ///
+  44│     /// # Arguments
+  45│     ///
+  46│     /// * `exprs` - The expressions to analyze for mutability
+  47│     ///
+  48│     /// # Examples
+  49│     ///
+  50│     /// ```ignore
+  51│     /// let mut transpiler = Transpiler::new();
+  52│     /// transpiler.analyze_mutability(&ast_expressions);
+  53│     /// assert!(transpiler.mutable_vars.contains("counter"));
+  54│     /// ```
+  55│     pub fn analyze_mutability(&mut self, exprs: &[Expr]) {
+  56│         for expr in exprs {
+  57│             self.analyze_expr_mutability(expr);
+  58│         }
+  59│     }
+
+
+Building document index...Documents: 629 scanned, 628 indexed, 0 cached
+
+-- Document Results --
+
+  1. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+        /// >>>Transpiles<<< slice access `(array[start:end])` # Examples  ``` use ruchy::backend::>>>transpiler::expr<<<...
+   calls: slice, Expr, TokenStream, >>>transpile_expr<<<, range │ ← >>>trans...
+  2. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...configuration!();
+ 433│         self.>>>transpile<<<_to_program(expr)
+ 434│     }
+
+src/backend/>>>transpiler/expr<<<_>>>dispatcher<<<.rs:86-175 │ >>>transpile_expr<<< │ TDG: B+ │ O(1)
+   ...
+  3. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...A+ │ O(1)
+   C:2 │ L:23 │ ↓1 │ 15c
+   /// >>>Transpiles<<< range >>>expressions<<< # Examples  ``` use ruchy::backend::>>>transpiler<<<::>>>expressions<<<::transpi...
+   calls: range, Exp...
+  4. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...target_tokens = self.>>>transpile<<<_index_lvalue(target)?;
+ 180│             Ok(quote! { #target_tokens = #value_tokens })
+ 181│         } else {
+ 182│             let target_tokens = self.>...
+  5. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...self.>>>transpile_expr<<<(body)?;
+ 102│ 
+ 103│         Ok(quote! { |#(#param_idents),*| async move { #body_tokens } })
+ 104│     }
+
+src/backend/>>>transpiler<<</ast_analysis.rs:38-42 │ anal...
+  6. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+       88│     /// Routes >>>expressions<<< to specialized handlers based on ExprKind.
+  89│     /// This keeps the main >>>dispatch<<< logic centralized while delegating
+  90│     /// complex >>>tra...
+  7. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-comply.txt
+     ...39)
+    src/backend/>>>transpiler<<</>>>expressions<<<.rs:216 >>>transpile_expr<<<_for_guard [F] (complexity: 37)
+    examples/score_examples.rs:10 build_examples [F] (complexity: 36)
+    ... and 8...
+
+Found 7 document matches
+query profile: 6672ms total
+  load_index: 6222ms ANDON
+  source_load: 0ms
+  query: 12ms
+  enrich: 0ms
+  git_history: 0ms
+  output: 0ms
+  docs: 437ms
+
+=== interpreter dispatch ===
+Loading index from "./.pmat/context.idx"...
+Checking for incremental updates...
+Incremental update: 1437 mtime-skipped, 0 checksum-reused, 0 re-parsed
+Index: 8741 functions in 1437 files (avg TDG: 96.9)
+src/runtime/eval_expr.rs:16-46 │ eval_expr_kind │ TDG: A │ O(1)
+   C:7 │ L:35 │ ★1.1 │ 18c │ 🔄29% │ 🐛1:CLONE
+   /// Main expression evaluation dispatcher  # Complexity Cyclomatic complexity: 9 (within Toyota Way l...
+   calls: name, Function, Value, Expr, ExprKind, (+8 more) │ ← eval_expr, eval_expr_kind
+⚠️  CLONE
+  16│ /// Main expression evaluation dispatcher
+  17│ ///
+  18│ /// # Complexity
+  19│ /// Cyclomatic complexity: 9 (within Toyota Way limits)
+  20│ pub fn eval_expr_kind<F>(
+  21│     expr_kind: &ExprKind,
+  22│     _eval_expr: F,
+  23│     mut lookup_variable: impl FnMut(&str) -> Result<Value, InterpreterError>,
+  24│     mut eval_function: impl FnMut(
+  25│         &Option<String>,
+  26│         &[crate::frontend::Param],
+  27│         &Expr,
+  28│     ) -> Result<Value, InterpreterError>,
+  29│     mut eval_lambda: impl FnMut(&[crate::frontend::Param], &Expr) -> Result<Value, InterpreterError>,
+  30│ ) -> Result<Value, InterpreterError>
+  31│ where
+  32│     F: FnMut(&Expr) -> Result<Value, InterpreterError>,
+  33│ {
+  34│     match expr_kind {
+  35│         // Basic expressions - inlined for performance
+  36│         ExprKind::Literal(lit) => Ok(eval_literal(lit)),
+  37│         ExprKind::Identifier(name) => lookup_variable(name),
+  38│ 
+  39│         // Functions and lambdas
+  40│         ExprKind::Function {
+  41│             name, params, body, ..
+  42│         } => eval_function(&Some(name.clone()), params, body),
+  43│         ExprKind::Lambda { params, body } => eval_lambda(params, body),
+  44│ 
+  45│         // Delegated to caller for complex operations
+  46│         _ => Err(InterpreterError::RuntimeError(
+  47│             "Expression requires interpreter context".to_string(),
+  48│         )),
+  49│     }
+  50│ }
+
+src/runtime/interpreter.rs:219-254 │ eval_expr_kind │ TDG: B+ │ O(1)
+   C:12 │ L:53 │ ★1.1 │ 🔥192c 100% │ 🔄18%
+   /// Evaluate an expression kind directly.  This is the core dispatch function for the interpreter. It...
+   calls: binary, unary, matches, Function, Value, (+14 more) │ ← eval_expr, eval_expr_kind
+ 219│ /// Evaluate an expression kind directly.
+ 220│     ///
+ 221│     /// This is the core dispatch function for the interpreter. It pattern-matches
+ 222│     /// on the `ExprKind` and delegates to specialized evaluation functions.
+ 223│     ///
+ 224│     /// The function is organized into logical groups:
+ 225│     /// - Basic expressions (literals, identifiers)
+ 226│     /// - Operations (binary, unary, calls)
+ 227│     /// - Functions (definitions, lambdas)
+ 228│     /// - Control flow (if, for, while, match)
+ 229│     /// - Data structures (lists, tuples, arrays)
+ 230│     /// - Assignments
+ 231│     ///
+ 232│     /// # Errors
+ 233│     ///
+ 234│     /// Returns an error if the expression evaluation fails or if the expression
+ 235│     /// type is not yet implemented.
+ 236│     pub(crate) fn eval_expr_kind(
+ 237│         &mut self,
+ 238│         expr_kind: &ExprKind,
+ 239│     ) -> Result<Value, InterpreterError> {
+ 240│         match expr_kind {
+ 241│             // Simple expressions (complexity: 2)
+ 242│             ExprKind::Literal(_) | ExprKind::Identifier(_) => self.eval_simple_expr(expr_kind),
+ 243│ 
+ 244│             // Operations (complexity: 2)
+ 245│             ExprKind::Binary { .. }
+ 246│             | ExprKind::Unary { .. }
+ 247│             | ExprKind::Call { .. }
+ 248│             | ExprKind::MethodCall { .. }
+ 249│             | ExprKind::DataFrameOperation { .. }
+ 250│             | ExprKind::IndexAccess { .. }
+ 251│             | ExprKind::FieldAccess { .. }
+ 252│             | ExprKind::TypeCast { .. } => self.eval_operation_expr(expr_kind),
+ 253│ 
+ 254│             // Functions (complexity: 2)
+ 255│             ExprKind::Function { .. } | ExprKind::Lambda { .. } => {
+ 256│                 self.eval_function_expr(expr_kind)
+ 257│             }
+ 258│ 
+ 259│             // Control flow (complexity: 1)
+ 260│             kind if Self::is_control_flow_expr(kind) => self.eval_control_flow_expr(kind),
+ 261│ 
+ 262│             // Data structures (complexity: 1)
+ 263│             kind if Self::is_data_structure_expr(kind) => self.eval_data_structure_expr(kind),
+ 264│ 
+ 265│             // Assignments (complexity: 1)
+ 266│             kind if Self::is_assignment_expr(kind) => self.eval_assignment_expr(kind),
+ 267│ 
+ 268│             // Other expressions (complexity: 1)
+ 269│             _ => self.eval_misc_expr(expr_kind),
+ 270│         }
+ 271│     }
+
+src/runtime/interpreter_methods_dispatch.rs:242-262 │ eval_message_expr │ TDG: A │ O(1)
+   C:5 │ L:23 │ ★1.1 │ 8c │ 🐛1:CLONE
+   /// Evaluate a message expression - if it's an undefined identifier, treat as message name Complexity...
+   calls: eval_expr, name, Message, evaluate, Value, (+6 more) │ ← eval_actor_send, eval_actor_query, eval_binary_expr
+⚠️  CLONE
+ 242│ /// Evaluate a message expression - if it's an undefined identifier, treat as message name
+ 243│     /// Complexity: ≤5
+ 244│     pub(crate) fn eval_message_expr(&mut self, message: &Expr) -> Result<Value, InterpreterError> {
+ 245│         match &message.kind {
+ 246│             ExprKind::Identifier(name) => {
+ 247│                 // Try to evaluate as variable first
+ 248│                 if let Ok(val) = self.lookup_variable(name) {
+ 249│                     Ok(val)
+ 250│                 } else {
+ 251│                     // Treat as a zero-argument message constructor
+ 252│                     let mut msg_obj = HashMap::new();
+ 253│                     msg_obj.insert(
+ 254│                         "__type".to_string(),
+ 255│                         Value::from_string("Message".to_string()),
+ 256│                     );
+ 257│                     msg_obj.insert("type".to_string(), Value::from_string(name.clone()));
+ 258│                     msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
+ 259│                     Ok(Value::Object(Arc::new(msg_obj)))
+ 260│                 }
+ 261│             }
+ 262│             _ => self.eval_expr(message),
+ 263│         }
+ 264│     }
+
+src/runtime/interpreter_misc_eval.rs:474-501 │ eval_pipeline_stage │ TDG: A+ │ O(1)
+   C:4 │ L:29 │ ★1.1 │ 5c
+   /// Evaluate a single pipeline stage
+   calls: eval_expr, call, matches, evaluate, args, (+12 more) │ ← eval_pipeline
+ 474│ /// Evaluate a single pipeline stage
+ 475│ fn eval_pipeline_stage(
+ 476│     interp: &mut Interpreter,
+ 477│     current_value: Value,
+ 478│     stage: &crate::frontend::ast::PipelineStage,
+ 479│ ) -> Result<Value, InterpreterError> {
+ 480│     // PIPELINE-001: Check if stage is an identifier that could be a method
+ 481│     if let ExprKind::Identifier(method_name) = &stage.op.kind {
+ 482│         // First, try to look up as a user-defined function (Closure)
+ 483│         let is_user_function = interp
+ 484│             .lookup_variable(method_name)
+ 485│             .map(|v| matches!(v, Value::Closure { .. }))
+ 486│             .unwrap_or(false);
+ 487│ 
+ 488│         if is_user_function {
+ 489│             let func_val = interp.lookup_variable(method_name)?;
+ 490│             interp.call_function(func_val, &[current_value])
+ 491│         } else {
+ 492│             // Not a user function - try calling as a method on current_value
+ 493│             interp.dispatch_method_call(&current_value, method_name, &[], true)
+ 494│         }
+ 495│     } else if let ExprKind::Call { func, args } = &stage.op.kind {
+ 496│         eval_pipeline_call_stage(interp, current_value, func, args)
+ 497│     } else {
+ 498│         // Other expression types - evaluate as function and call with current_value
+ 499│         let func_val = interp.eval_expr(&stage.op)?;
+ 500│         interp.call_function(func_val, &[current_value])
+ 501│     }
+ 502│ }
+
+src/runtime/interpreter_misc_eval.rs:504-539 │ eval_pipeline_call_stage │ TDG: A+ │ O(1)
+   C:3 │ L:37 │ ★1.1 │ 5c
+   /// Evaluate a pipeline stage that is a function call
+   calls: eval_expr, call, matches, evaluate, extend, (+12 more) │ ← eval_pipeline_stage
+ 504│ /// Evaluate a pipeline stage that is a function call
+ 505│ fn eval_pipeline_call_stage(
+ 506│     interp: &mut Interpreter,
+ 507│     current_value: Value,
+ 508│     func: &Expr,
+ 509│     args: &[Expr],
+ 510│ ) -> Result<Value, InterpreterError> {
+ 511│     if let ExprKind::Identifier(method_name) = &func.kind {
+ 512│         // Check if it's a user-defined function (Closure)
+ 513│         let is_user_function = interp
+ 514│             .lookup_variable(method_name)
+ 515│             .map(|v| matches!(v, Value::Closure { .. }))
+ 516│             .unwrap_or(false);
+ 517│ 
+ 518│         if is_user_function {
+ 519│             // It's a user function call - prepend current_value to args
+ 520│             let func_val = interp.lookup_variable(method_name)?;
+ 521│             let arg_values: Result<Vec<_>, _> =
+ 522│                 args.iter().map(|arg| interp.eval_expr(arg)).collect();
+ 523│             let mut all_args = vec![current_value];
+ 524│             all_args.extend(arg_values?);
+ 525│             interp.call_function(func_val, &all_args)
+ 526│         } else {
+ 527│             // It's a method call with args: arr |> filter(pred) -> arr.filter(pred)
+ 528│             let arg_values: Result<Vec<_>, _> =
+ 529│                 args.iter().map(|arg| interp.eval_expr(arg)).collect();
+ 530│             interp.dispatch_method_call(&current_value, method_name, &arg_values?, args.is_empty())
+ 531│         }
+ 532│     } else {
+ 533│         // Complex function expression - evaluate and call with current_value as first arg
+ 534│         let func_val = interp.eval_expr(func)?;
+ 535│         let arg_values: Result<Vec<_>, _> = args.iter().map(|arg| interp.eval_expr(arg)).collect();
+ 536│         let mut all_args = vec![current_value];
+ 537│         all_args.extend(arg_values?);
+ 538│         interp.call_function(func_val, &all_args)
+ 539│     }
+ 540│ }
+
+
+Building document index...Documents: 629 scanned, 1 indexed, 627 cached
+
+-- Document Results --
+
+  1. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...This is the core >>>dispatch<<< function for the >>>interpreter<<<. It...
+   calls: binary, unary, matches, Function, Value, (+14 more) │ ← >>>eval<<<_expr, >>>eval<<<_expr_kind
+ 219│ /// >>>...
+  2. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...Result<Vec<_>, _> =
+ 529│                 args.iter().map(|arg| interp.>>>eval<<<_expr(arg)).collect();
+ 530│             interp.>>>dispatch<<<_method_call(&current_value, method_name, &arg_val...
+  3. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...1)
+ 269│             _ => self.>>>eval<<<_misc_expr(expr_kind),
+ 270│         }
+ 271│     }
+
+src/runtime/>>>interpreter<<<_methods_>>>dispatch<<<.rs:242-262 │ >>>eval<<<_message_expr │ TD...
+  4. [MD] ● docs/specifications/pmat-integration-findings-report.md § Top 10 Issues with Peer-Reviewed Annotations
+     ...Note that `src/runtime/>>>eval<<<_builtin.rs` already exists (4,073 lines) - this suggests an incomplete prior decomposition attempt.
+>
+> **Suggested Fix**:
+> ```
+> src/runtime/
+> ├── >>>inte...
+
+Found 4 document matches
+
+=== CLI command dispatch ===
+Loading index from "./.pmat/context.idx"...
+Checking for incremental updates...
+Incremental update: 1437 mtime-skipped, 0 checksum-reused, 0 re-parsed
+Index: 8741 functions in 1437 files (avg TDG: 96.9)
+src/bin/handlers/command_router.rs:60-74 │ handle_complex_command │ TDG: A+ │ O(1)
+   C:4 │ L:20 │ ★1.1 │ 26c
+   /// Handle complex commands that require special routing  This function routes CLI commands to their ...
+   calls: Commands, dispatch_analysis, dispatch_tooling, all, command │ ← handle_advanced_command
+  60│ /// Handle complex commands that require special routing
+  61│ ///
+  62│ /// This function routes CLI commands to their appropriate handlers based on
+  63│ /// the command variant. It serves as the central dispatcher for all complex
+  64│ /// commands in the Ruchy CLI.
+  65│ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
+  66│     match command {
+  67│         // Analysis commands
+  68│         cmd @ (crate::Commands::Ast { .. }
+  69│         | crate::Commands::Provability { .. }
+  70│         | crate::Commands::Runtime { .. }
+  71│         | crate::Commands::Score { .. }
+  72│         | crate::Commands::QualityGate { .. }
+  73│         | crate::Commands::Fmt { .. }
+  74│         | crate::Commands::Lint { .. }
+  75│         | crate::Commands::Coverage { .. }) => dispatch_analysis(cmd),
+  76│         // Interactive and tooling commands
+  77│         cmd => dispatch_tooling(cmd),
+  78│     }
+  79│ }
+
+
+Building document index...Documents: 629 scanned, 1 indexed, 627 cached
+
+-- Document Results --
+
+  1. [TXT] ● docs/specifications/evidence/2026-09-05-release-gather/pmat-query-dispatch.txt
+     ...A+ │ O(1)
+   C:4 │ L:20 │ ★1.1 │ 26c
+   /// >>>Handle complex commands<<< that require special routing  This function routes >>>CLI<<< >>>commands<<< to their ...
+   calls: >>>Commands<<<...
+
+Found 1 document match

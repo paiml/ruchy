@@ -1,0 +1,57 @@
+=== interpreter dispatch hits ===
+src/backend/transpiler/mod.rs:375-378 │ transpile │ TDG: A+ │ O(1)
+src/backend/transpiler/expr_dispatcher.rs:86-175 │ transpile_expr │ TDG: B+ │ O(1)
+src/backend/transpiler/program_transpiler.rs:556-572 │ transpile_expression_program │ TDG: A+ │ O(1)
+src/backend/transpiler/expressions_helpers/collections.rs:112-125 │ transpile_range │ TDG: A+ │ O(1)
+src/backend/transpiler/patterns.rs:27-50 │ transpile_match │ TDG: A │ O(n)
+src/backend/transpiler/expressions.rs:132-163 │ transpile_assign │ TDG: A │ O(1)
+src/backend/transpiler/expressions_helpers/field_access.rs:238-267 │ transpile_slice │ TDG: A │ O(1)
+src/backend/transpiler/expressions_helpers/async_ops.rs:29-32 │ transpile_await │ TDG: A+ │ O(1)
+src/backend/transpiler/expressions_helpers/async_ops.rs:105-110 │ transpile_throw │ TDG: A+ │ O(1)
+src/backend/transpiler/expressions_helpers/async_ops.rs:88-95 │ transpile_async_lambda │ TDG: A+ │ O(1)
+src/backend/transpiler/ast_analysis.rs:38-42 │ analyze_mutability │ TDG: A+ │ O(n)
+src/backend/>>>transpiler/expr<<<_>>>dispatcher<<<.rs:86-175 │ >>>transpile_expr<<< │ TDG: B+ │ O(1)
+src/backend/>>>transpiler<<</ast_analysis.rs:38-42 │ anal...
+src/runtime/eval_expr.rs:16-46 │ eval_expr_kind │ TDG: A │ O(1)
+src/runtime/interpreter.rs:219-254 │ eval_expr_kind │ TDG: B+ │ O(1)
+src/runtime/interpreter_methods_dispatch.rs:242-262 │ eval_message_expr │ TDG: A │ O(1)
+src/runtime/interpreter_misc_eval.rs:474-501 │ eval_pipeline_stage │ TDG: A+ │ O(1)
+src/runtime/interpreter_misc_eval.rs:504-539 │ eval_pipeline_call_stage │ TDG: A+ │ O(1)
+src/runtime/>>>interpreter<<<_methods_>>>dispatch<<<.rs:242-262 │ >>>eval<<<_message_expr │ TD...
+src/bin/handlers/command_router.rs:60-74 │ handle_complex_command │ TDG: A+ │ O(1)
+
+=== nightly bench lint detail ===
+bench / lint	UNKNOWN STEP	2026-09-04T09:54:57.3180037Z [36;1m    echo "::error::Critical sibling $repo missing — builds will fail"[0m
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:19.7355409Z (node:383) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.4063569Z Diff in /__w/ruchy/ruchy/ruchy-embed/src/lib.rs:343:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.4324390Z Diff in /__w/ruchy/ruchy/ruchy-embed/tests/startup_benchmark.rs:50:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.6833855Z Diff in /__w/ruchy/ruchy/src/bin/handlers/command_router.rs:521:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.7093350Z Diff in /__w/ruchy/ruchy/src/bin/handlers/command_router.rs:533:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.7105192Z Diff in /__w/ruchy/ruchy/src/bin/handlers/command_router.rs:542:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.7208805Z Diff in /__w/ruchy/ruchy/src/bin/handlers/command_router.rs:575:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.7299896Z Diff in /__w/ruchy/ruchy/src/bin/handlers/command_router.rs:604:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.7634260Z Diff in /__w/ruchy/ruchy/src/bin/handlers/handlers_modules/migrate.rs:64:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.8474139Z Diff in /__w/ruchy/ruchy/src/bin/handlers/handlers_modules/migrate.rs:136:
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:53.9494308Z Diff in /__w/ruchy/ruchy/src/bin/handlers/handlers_modules/migrate.rs:162:
+
+=== nightly-bench.yml lint step ===
+
+=== nightly.yml checkout step (colon path) ===
+41-            use_cross: false
+42-
+43-    steps:
+44:      - uses: actions/checkout@v4
+45-
+46-      - name: Checkout provable-contracts (path dep)
+47:        uses: actions/checkout@v4
+48-        with:
+49-          repository: paiml/provable-contracts
+50-          path: provable-contracts
+--
+94-    runs-on: ubuntu-latest
+95-
+96-    steps:
+97:      - uses: actions/checkout@v4
+98-
+99-      - name: Download all artifacts
+100-        uses: actions/download-artifact@v4

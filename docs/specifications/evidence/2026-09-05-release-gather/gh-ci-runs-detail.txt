@@ -1,0 +1,40 @@
+=== last CI workflow runs on main ===
+completed	success	fix(build): track generated_contracts.rs — a clean checkout could not…	CI	main	push	31494372313	11m42s	2026-08-11T13:05:08Z
+completed	success	fix(deps): clear ALL 21 RUSTSEC advisories — no exemptions (#199)	CI	main	push	31490693572	8m23s	2026-08-11T12:19:52Z
+completed	success	fix: add "ask" to proptest keyword blocklist + update lru (Refs #196)	CI	main	push	24031768794	6m39s	2026-04-06T12:27:20Z
+completed	success	fix: nightly — add provable-contracts sibling checkout (Refs paiml/in…	CI	main	push	24031375459	6m10s	2026-04-06T12:14:11Z
+completed	failure	feat(cli): --exclude across all Pillar-1 commands [PROVABILITY-035]	CI	main	push	24005364011	11m34s	2026-04-05T16:12:45Z
+
+=== last CI run on any branch ===
+completed	success	fix(build): track generated_contracts.rs — a clean checkout could not…	CI	main	push	31494372313	11m42s	2026-08-11T13:05:08Z
+completed	success	fix(build): track generated_contracts.rs — a clean checkout could not build	CI	fix/generated-contracts-reproducible	pull_request	31493196617	13m1s	2026-08-11T12:50:49Z
+completed	success	fix(deps): clear ALL 21 RUSTSEC advisories — no exemptions (#199)	CI	main	push	31490693572	8m23s	2026-08-11T12:19:52Z
+
+=== nightly binary release failure (33953988345) ===
+Build x86_64-pc-windows-msvc	UNKNOWN STEP	2026-09-05T07:58:40.7718407Z ##[error]error: invalid path '.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/contract.json'
+Build x86_64-pc-windows-msvc	UNKNOWN STEP	2026-09-05T07:58:40.7756915Z ##[error]The process 'C:\Program Files\Git\bin\git.exe' failed with exit code 128
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:37.4982558Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:37.5138190Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:37.5288768Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:37.5381501Z [36;1m  curl --proto '=https' --tlsv1.2 --retry 10 --retry-connrefused --location --silent --show-error --fail https://sh.rustup.rs | sh -s -- --default-toolchain none -y[0m
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:37.5417876Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:37.5557021Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:46.0160123Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:46.0424397Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:46.0819915Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:46.0935433Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:46.1055568Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:46.1370942Z ##[start-action display=Work around spurious network errors in curl 8.0;id=__dtolnay_rust-toolchain.__run_9]
+Build x86_64-unknown-linux-gnu	UNKNOWN STEP	2026-09-05T07:58:46.1430141Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+
+=== nightly bench failure (33860453587) ===
+bench / lint	UNKNOWN STEP	2026-09-04T09:54:57.3015812Z [36;1m      echo "::warning::$repo fetch failed — re-cloning"[0m
+bench / lint	UNKNOWN STEP	2026-09-04T09:54:57.3021482Z [36;1m      rm -rf "$repo"  # Clean failed clone before retry[0m
+bench / lint	UNKNOWN STEP	2026-09-04T09:54:57.3180037Z [36;1m    echo "::error::Critical sibling $repo missing — builds will fail"[0m
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:59.8574181Z -            InterpreterError::RuntimeError(format!("undefined function: {name}"))
+bench / lint	UNKNOWN STEP	2026-09-04T09:55:59.8844130Z +            .ok_or_else(|| InterpreterError::RuntimeError(format!("undefined function: {name}")))?;
+bench / lint	UNKNOWN STEP	2026-09-04T09:56:01.9516899Z -                                                                                    .expect("ruchy execution failed");
+bench / lint	UNKNOWN STEP	2026-09-04T09:56:01.9522151Z +                                                                                        .expect("ruchy execution failed");
+bench / lint	UNKNOWN STEP	2026-09-04T09:56:02.0448558Z -                                                                                    .expect("ruchy execution failed");
+bench / lint	UNKNOWN STEP	2026-09-04T09:56:02.0464601Z +                                                                                        .expect("ruchy execution failed");
+bench / lint	UNKNOWN STEP	2026-09-04T09:56:02.0640063Z -                                                                                    .expect("ruchy execution failed");

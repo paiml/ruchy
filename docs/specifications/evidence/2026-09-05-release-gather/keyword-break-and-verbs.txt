@@ -1,0 +1,23 @@
+=== 7 reserved keywords as identifiers: 4.2.1 vs HEAD (check exit) ===
+requires   4.2.1=0 HEAD=1  ✗ /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/
+ensures    4.2.1=0 HEAD=1  ✗ /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/
+invariant  4.2.1=0 HEAD=1  ✗ /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/
+decreases  4.2.1=0 HEAD=1  ✗ /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/
+infra      4.2.1=0 HEAD=1  ✗ /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/
+signal     4.2.1=0 HEAD=1  ✗ /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/
+yield      4.2.1=0 HEAD=1  ✗ /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/
+
+=== also as function param / field ===
+param signal   4.2.1=0 HEAD=1
+param yield    4.2.1=0 HEAD=1
+param infra    4.2.1=0 HEAD=1
+
+=== HEAD verb surface vs 4.2.1 ===
+HEAD verbs: 47  4.2.1 verbs: 37
+added in HEAD: apr contracts infra migrate-4to5 model purify sim suggest-contracts tier widget 
+removed in HEAD: 
+
+=== transpile output diff on examples/ (both check-pass) ===
+awk: fatal: cannot open file `docs/specifications/evidence/2026-09-05-release-gather/differential-check-4.2.1-vs-head.csv' for reading: No such file or directory
+identical: 0  differs: 0  transpile-failed(either): 0
+differing files (first 15):

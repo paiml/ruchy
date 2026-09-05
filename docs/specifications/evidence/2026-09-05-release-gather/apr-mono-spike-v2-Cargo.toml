@@ -1,0 +1,578 @@
+[workspace]
+members = [
+    ".",
+    "ruchy-wasm",
+    "ruchy-embed",
+]
+exclude = ["fuzz"]
+resolver = "2"
+
+[workspace.lints.rust]
+unsafe_code = "warn"  # Changed from "forbid" for DEFECT-001-B CallFrame Send impl
+unsafe_op_in_unsafe_fn = "warn"
+unreachable_pub = "allow"  # 153 items across codebase; fix incrementally
+dead_code = "allow"  # Large codebase with intentionally unused items for future use
+missing_docs = "allow"
+mismatched_lifetime_syntaxes = "allow"
+
+[workspace.lints.clippy]
+# Correctness
+correctness = { level = "deny", priority = -1 }
+suspicious = { level = "deny", priority = -1 }
+complexity = { level = "allow", priority = -1 }
+perf = { level = "allow", priority = -1 }
+style = { level = "allow", priority = -1 }
+pedantic = { level = "allow", priority = -1 }
+# Override specific perf lints that are too strict (priority 10 overrides category and clippy::all)
+arc_with_non_send_sync = { level = "allow", priority = 10 }  # Value enum contains non-Send types (HtmlDocument, Expr in closures) - single-threaded code
+
+# Specific lints to deny  
+enum_glob_use = "allow"
+unimplemented = "allow"
+todo = "allow"
+dbg_macro = "deny"
+
+# Additional pedantic lints
+cast_lossless = "allow"
+cast_possible_truncation = "allow"
+cast_possible_wrap = "allow"
+cast_precision_loss = "allow"  # Tests can cast for demonstration
+cast_sign_loss = "allow"
+checked_conversions = "allow"
+cloned_instead_of_copied = "allow"
+cognitive_complexity = "allow"  # Test functions can be complex
+default_trait_access = "allow"  # Tests can use Default::default() explicitly
+doc_markdown = "allow"
+empty_enum = "allow"
+enum_variant_names = "allow"
+expl_impl_clone_on_copy = "allow"
+explicit_deref_methods = "allow"
+explicit_into_iter_loop = "allow"
+explicit_iter_loop = "allow"
+filter_map_next = "allow"
+flat_map_option = "allow"
+float_cmp = "allow"  # Tests can compare floats for exact values
+float_cmp_const = "allow"
+fn_params_excessive_bools = "allow"
+from_iter_instead_of_collect = "allow"
+if_not_else = "allow"
+implicit_clone = "allow"
+implicit_hasher = "allow"
+implicit_saturating_sub = "allow"
+inconsistent_struct_constructor = "allow"
+inefficient_to_string = "allow"
+inline_always = "allow"
+invalid_upcast_comparisons = "allow"
+items_after_statements = "allow"
+large_digit_groups = "allow"
+large_stack_arrays = "allow"
+large_types_passed_by_value = "allow"
+let_unit_value = "allow"
+linkedlist = "allow"
+macro_use_imports = "allow"
+manual_assert = "allow"
+manual_instant_elapsed = "allow"
+manual_let_else = "allow"
+manual_ok_or = "allow"
+manual_string_new = "allow"
+map_flatten = "allow"
+map_unwrap_or = "allow"
+match_bool = "allow"
+match_same_arms = "allow"
+match_wild_err_arm = "allow"
+match_wildcard_for_single_variants = "allow"
+maybe_infinite_iter = "allow"
+mismatching_type_param_order = "allow"
+missing_errors_doc = "allow"
+missing_fields_in_debug = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+mut_mut = "allow"
+naive_bytecount = "allow"
+needless_bitwise_bool = "allow"
+needless_continue = "allow"
+needless_for_each = "allow"
+needless_pass_by_value = "allow"
+needless_raw_string_hashes = "allow"
+negative_feature_names = "allow"
+no_effect_underscore_binding = "allow"
+no_mangle_with_rust_abi = "allow"
+option_option = "allow"
+pub_without_shorthand = "allow"
+range_minus_one = "allow"
+range_plus_one = "allow"
+rc_buffer = "allow"
+rc_mutex = "allow"
+redundant_clone = "allow"
+redundant_closure_for_method_calls = "allow"
+redundant_else = "allow"
+redundant_feature_names = "allow"
+redundant_pub_crate = "allow"
+ref_binding_to_reference = "allow"
+ref_option_ref = "allow"
+return_self_not_must_use = "allow"
+same_functions_in_if_condition = "allow"
+semicolon_if_nothing_returned = "allow"
+should_panic_without_expect = "allow"
+similar_names = "allow"
+single_match_else = "allow"
+stable_sort_primitive = "allow"
+string_add = "allow"
+string_add_assign = "allow"
+struct_excessive_bools = "allow"
+struct_field_names = "allow"
+too_many_lines = "allow"
+trait_duplication_in_bounds = "allow"
+transmute_ptr_to_ptr = "allow"
+trivially_copy_pass_by_ref = "allow"
+type_repetition_in_bounds = "allow"
+unchecked_time_subtraction = "allow"
+unicode_not_nfc = "allow"
+uninlined_format_args = "allow"
+unnecessary_box_returns = "allow"
+unnecessary_join = "allow"
+unnecessary_wraps = "allow"
+unnested_or_patterns = "allow"
+unreadable_literal = "allow"
+unused_async = "allow"
+unused_self = "allow"
+used_underscore_binding = "allow"
+verbose_bit_mask = "allow"
+verbose_file_reads = "allow"
+wildcard_imports = "allow"
+zero_sized_map_values = "allow"
+
+# Cargo lints
+cargo_common_metadata = "allow"
+
+# Allow some things that are too strict
+module_inception = "allow"
+# Allow test-related patterns as specified in CLAUDE.md
+unwrap_used = "allow"  # Tests can use unwrap for clarity
+expect_used = "allow"  # Tests can use expect for clarity
+panic = "allow"        # Tests can panic
+print_stdout = "allow" # Examples and tests can print
+print_stderr = "allow" # Examples and tests can print
+empty_line_after_doc_comments = "allow"  # Documentation formatting flexibility
+approx_constant = "allow"
+single_char_pattern = "allow"
+useless_vec = "allow"
+unnecessary_cast = "allow"
+option_if_let_else = "allow"
+format_push_string = "allow"  # Tests can use format! for clarity
+absurd_extreme_comparisons = "allow"  # Tests can check edge cases
+unnecessary_to_owned = "allow"  # Tests can be explicit
+assertions_on_constants = "allow"  # Tests assert expected constants
+overly_complex_bool_expr = "allow"  # Tests can have complex conditions
+
+[workspace.package]
+version = "5.0.0-beta.1"
+edition = "2021"
+authors = ["Noah Gift"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/paiml/ruchy"
+homepage = "https://github.com/paiml/ruchy"
+documentation = "https://docs.rs/ruchy"
+rust-version = "1.75"
+
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Parsing
+logos = "0.15"
+pest = "2.8"
+pest_derive = "2.8"
+
+# Code generation
+syn = { version = "2.0", features = ["full", "extra-traits", "visit-mut"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+prettyplease = "0.2"
+
+# JIT Compilation (Cranelift) - JIT-001
+cranelift = "0.125"
+cranelift-codegen = "0.125"
+cranelift-frontend = "0.125"
+cranelift-jit = "0.125"
+cranelift-module = "0.125"
+cranelift-native = "0.125"
+target-lexicon = "0.12"
+
+# REPL
+rustyline = "17.0"
+rustyline-derive = "0.11"
+
+# Testing
+proptest = "1.7"
+criterion = "0.7"
+insta = { version = "1.43", features = ["yaml"] }
+quickcheck = "1.0"
+quickcheck_macros = "1.1"
+
+[package]
+name = "ruchy"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "A systems scripting language that transpiles to idiomatic Rust with extreme quality engineering"
+readme = "README.md"
+keywords = ["language", "compiler", "transpiler", "rust", "scripting"]
+categories = ["compilers", "development-tools", "parser-implementations"]
+exclude = ["src/bin/ruchy-coverage.rs", "src/bin/ruchy-lsp.rs", "coverage/", "node_modules/", "docs/specifications/", "tests/tdd_*", "scripts/", "target/", ".profraw", ".profdata", ".vscode/", ".idea/", ".pmat", "proptest-regressions/"]
+
+autobins = false
+
+[[bin]]
+name = "ruchy"
+path = "src/bin/ruchy.rs"
+
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false
+
+[lints]
+workspace = true
+
+[features]
+default = ["batteries-included"]
+batteries-included = ["wasm-compile", "markdown", "repl", "watch-mode"]
+# Full feature set including all sovereign stack deps and heavy optional features
+full = ["batteries-included", "sovereign-stack", "notebook", "http-client"]
+# Sovereign AI Stack extensions (opt-in to reduce dep count per CB-081)
+sovereign-stack = ["training", "data-loading", "widgets", "visualization"]
+training = ["dep:entrenar"]
+data-loading = ["dep:alimentar"]
+widgets = ["dep:presentar"]
+visualization = ["dep:trueno-viz"]
+# Ruchy 5.0 Sovereign Platform pillars (optional)
+infra = ["dep:forjar"]
+simulation = ["dep:simular"]
+shell-target = ["dep:bashrs"]
+minimal = []  # Users can use --no-default-features --features minimal for core only
+# DataFrame via trueno-db (default - uses Trueno SIMD backend)
+dataframe = ["polars", "arrow"]
+# Legacy polars compatibility layer (spec Section 4.2 - NOT default)
+polars-compat = ["polars", "arrow"]
+testing = ["proptest"]
+stub_tests = []  # Enable stub tests for incomplete features (development only)
+notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http", "wasmparser", "wasmtime"]
+mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
+wasm-compile = []  # WASM compilation is always available via wasm-encoder
+# JIT Compilation feature (JIT-001) - CRITICAL P0
+jit = ["dep:cranelift", "dep:cranelift-codegen", "dep:cranelift-jit", "dep:cranelift-module", "dep:cranelift-native"]
+# Optional features for minimal builds (DEPENDENCY-CLEANUP Sprint v3.109.0)
+http-client = ["dep:reqwest"]
+markdown = ["dep:pulldown-cmark"]
+repl = ["dep:rustyline"]
+watch-mode = ["dep:notify"]
+
+[dependencies]
+rand = "0.8"
+
+# Sovereign AI Stack Core - trueno-aprender-stdlib-core-language-spec.md v2.0
+# trueno and aprender are always required; others are feature-gated (CB-081 dep reduction)
+trueno = { package = "aprender-compute", version = "0.65", default-features = false }  # Pillar 1: CPU SIMD only (no wgpu)
+aprender = { version = "0.65" }  # Pillar 4: ML + quantization + signing
+# Optional sovereign stack extensions (enabled via `sovereign-stack` feature)
+alimentar = { version = "0.4", optional = true }      # Pillar 2: Data loading
+entrenar = { package = "aprender-train", version = "0.65", optional = true }  # CITL, training
+trueno-viz = { package = "aprender-viz", version = "0.65", optional = true }    # Pillar 5: Visualization
+presentar = { version = "0.3.4", optional = true }      # Pillar 6: Notebook widgets
+# Ruchy 5.0 Sovereign Platform pillars (optional)
+forjar = { version = "1.25", default-features = false, optional = true }  # Pillar 3: Infrastructure as Code
+simular = { package = "aprender-simulate", version = "0.65", default-features = false, optional = true } # Pillar 7: Simulation engine
+bashrs = { version = "7.0", default-features = false, optional = true } # Pillar 4: Shell transpilation
+wasm-encoder = "0.207.0"
+glob = "0.3"
+walkdir = "2.5"  # STDLIB-005: Directory traversal
+rayon = "1.11"  # STDLIB-005: Parallel directory walking
+anyhow = { workspace = true }
+thiserror = { workspace = true }
+serde.workspace = true
+serde_json.workspace = true
+tracing = { workspace = true }
+logos = { workspace = true }
+syn = { workspace = true }
+quote = { workspace = true }
+proc-macro2 = { workspace = true }
+prettyplease = { workspace = true }
+clap = { version = "4.5", features = ["derive"] }
+regex = "1.11"
+# DataFrame support
+polars = { version = "0.55", default-features = false, features = ["lazy"], optional = true }
+arrow = { version = "54.0", optional = true }
+# WebAssembly support
+uuid = { version = "1.18", features = ["v4", "js"] }
+# JIT Compilation (optional for minimal builds) - JIT-001 P0-CRITICAL
+cranelift = { workspace = true, optional = true }
+cranelift-codegen = { workspace = true, optional = true }
+cranelift-jit = { workspace = true, optional = true }
+cranelift-module = { workspace = true, optional = true }
+cranelift-native = { workspace = true, optional = true }
+# MCP Integration (optional for WASM compatibility)
+pmcp = { version = "1.3.0", features = ["full"], optional = true }
+tokio = { version = "1.47", features = ["rt", "rt-multi-thread", "io-std", "io-util", "net", "sync", "time", "macros"], optional = true }
+tokio-util = { version = "0.7", features = ["rt"], optional = true }
+async-trait = { version = "0.1", optional = true }
+# Snapshot testing
+sha2 = "0.10"
+toml = "0.9"
+chrono = { version = "0.4", features = ["serde"] }
+# LSP support (optional for WASM compatibility)
+tower-lsp = { version = "0.20", optional = true }
+# Notebook support (optional)
+axum = { version = "0.8", features = ["macros"], optional = true }
+tower = { version = "0.4", features = ["util"], optional = true }
+tower-http = { version = "0.5", features = ["cors", "fs", "set-header"], optional = true }
+# Compilation support
+tempfile = "3.21"
+proptest = { version = "1.7", optional = true }
+# HTTP client support (STD-002) - optional for minimal builds
+reqwest = { version = "0.12", features = ["blocking"], optional = true }
+# HTML parsing support (HTTP-002-C) - native implementation
+html5ever = "0.27"
+markup5ever_rcdom = "0.3"
+# Notebook support
+wasmparser = { version = "0.244.0", optional = true }
+wasmtime = { version = "47.0.3", optional = true }
+# Markdown parsing - optional for minimal builds
+pulldown-cmark = { version = "0.9", optional = true }
+
+# Platform-specific dependencies for non-WASM targets
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rustyline = { workspace = true, optional = true }
+colored = "3.0"
+walkdir = "2.5"
+notify = { version = "8.2", optional = true }
+local-ip-address = "0.6"  # Network IP detection for serve command
+
+# Unix-specific dependencies for process management
+[target.'cfg(unix)'.dependencies]
+nix = { version = "0.29", features = ["signal", "process"] }
+signal-hook = "0.3"  # Graceful shutdown handling
+
+# WASM-specific dependencies
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+console_error_panic_hook = "0.1"
+web-sys = "0.3"
+# WASM-compatible tokio without networking
+tokio = { version = "1.47", features = ["macros", "rt", "time"], optional = true }
+
+[dev-dependencies]
+provable-contracts = "0.3.1"
+proptest = { workspace = true }
+criterion = { workspace = true }
+insta = { workspace = true }
+tracing-subscriber = { workspace = true }
+quickcheck = { workspace = true }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
+serde_json = "1.0"
+serde_yaml = "0.9.34"
+assert_cmd = "2.0"
+predicates = "3.1"
+rexpect = "0.5"
+tempfile = "3.21"
+quickcheck_macros = { workspace = true }
+walkdir = "2.5"
+httpmock = "0.8"
+nix = { version = "0.29", features = ["signal", "process"] }
+# TDD Web testing dependencies
+axum = { version = "0.8", features = ["macros"] }
+tower = { version = "0.4", features = ["util"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+# Probar: GUI coverage, Playwright-compatible testing, WASM worker harness
+jugar-probar = "1.0.4"
+
+# WASM QA Framework dependencies (following spec)
+wasm-bindgen-test = "0.3"
+arbitrary = { version = "1.3", features = ["derive"] }
+serde-wasm-bindgen = "0.6"
+
+[[bench]]
+name = "parser"
+harness = false
+
+[[bench]]
+name = "transpiler"
+harness = false
+
+[[bench]]
+name = "parser_benchmarks"
+harness = false
+
+[[bench]]
+name = "interpreter_benchmarks"
+harness = false
+
+[[bench]]
+name = "transpiler_benchmarks"
+harness = false
+
+[[bench]]
+name = "performance_v3_13"
+harness = false
+
+[[example]]
+name = "wasm_compile"
+required-features = ["notebook"]
+
+[[bench]]
+name = "wasm_performance"
+harness = false
+
+[[bench]]
+name = "bytecode_vm_performance"
+harness = false
+
+[[bench]]
+name = "matrix_data_science_benchmarks"
+harness = false
+
+# Commented out due to compilation errors
+# [[bench]]
+# name = "shared_session_performance"
+# harness = false
+
+# ⚡ [BUILD-TIME-002] Dev Profile Optimization (same strategy as test profile)
+# CRITICAL: Reduces cargo build from slow to fast with parallel compilation
+[profile.dev]
+opt-level = 0              # No optimization for dev builds (faster compile)
+lto = false                # Disable link-time optimization (faster linking)
+codegen-units = 256        # ← CRITICAL: Maximum parallelization!
+incremental = true         # ← CRITICAL: Reuse previous builds!
+
+# ⚡ [BUILD-TIME-001] Test Profile Optimization (copied from paiml-mcp-agent-toolkit)
+# CRITICAL: Reduces test compilation from 10+ minutes to ~1-2 minutes
+# Strategy: Maximum parallelization + incremental compilation
+[profile.test]
+opt-level = 0              # No optimization for test code (faster compile)
+lto = false                # Disable link-time optimization (faster linking)
+codegen-units = 256        # ← CRITICAL: Maximum parallelization!
+incremental = true         # ← CRITICAL: Reuse previous builds!
+
+[profile.test.package."*"]
+opt-level = 0              # No optimization for dependencies in tests
+
+# ⚡ [PERF-001] DEFAULT CHANGED: Speed-first optimization (BREAKING CHANGE v3.174.0)
+# Was: opt="z" (size) → Now: opt=3 (speed) - 28% faster!
+# Migration: Use --profile release-tiny for embedded/size-constrained environments
+[profile.release]
+opt-level = 3              # MAXIMUM speed (changed from "z")
+lto = "fat"               # Full link-time optimization
+codegen-units = 1         # Single codegen unit (best optimization)
+strip = true              # Remove debug symbols
+panic = "abort"           # No unwinding overhead
+overflow-checks = false   # No runtime overflow checks (faster)
+debug-assertions = false  # No debug assertions
+incremental = false       # Disable incremental for better optimization
+
+# Profiling profile for flamegraph/perf analysis
+[profile.profiling]
+inherits = "release"
+debug = true             # Enable debug symbols for profiling tools (flamegraph, perf)
+strip = false            # Keep debug symbols for profiling
+
+# WASM QA Framework profiles (following spec)
+[profile.coverage]
+inherits = "test"
+opt-level = 0
+debug = 2
+debug-assertions = true
+overflow-checks = true
+lto = false
+panic = 'abort'
+incremental = false
+codegen-units = 1  # Deterministic coverage
+
+# Separate profile for WASM testing
+[profile.wasm-test]
+inherits = "test"
+opt-level = "s"  # Size optimization for faster browser loading
+lto = true           # Enable Link Time Optimization
+codegen-units = 1    # Single codegen unit for better optimization
+strip = true         # Strip symbols for smaller size
+
+# [PERF-002] DIST: Distribution binaries (speed-first, Phase 2 fix v3.212.0)
+# Was: opt-level="z" (size) → Now: opt-level=3 (speed) - 15x faster!
+# Rationale: Distribution binaries should prioritize performance over minimal size
+# For size-constrained deployments, use --profile release-tiny explicitly
+[profile.release-dist]
+inherits = "release"
+opt-level = 3              # MAXIMUM speed (changed from "z" for PERF-002)
+lto = "fat"                # Full link-time optimization
+codegen-units = 1          # Single codegen unit (best optimization)
+strip = true               # Remove debug symbols
+panic = "abort"            # No unwinding overhead
+overflow-checks = false    # No runtime overflow checks (faster)
+debug-assertions = false   # No debug assertions
+incremental = false        # Disable incremental for better optimization
+
+# [PERF-001] ULTRA: Maximum performance + PGO (Profile-Guided Optimization)
+# Target: < 1.10ms on BENCH-007 (10-15% faster than release)
+# Binary size: ~520KB
+# Usage: Two-step PGO build
+#   Step 1: RUSTFLAGS="-C profile-generate=/tmp/pgo" cargo build --profile release-ultra
+#   Step 2: Run benchmarks to collect profile data
+#   Step 3: RUSTFLAGS="-C profile-use=/tmp/pgo" cargo build --profile release-ultra
+# Recommended RUSTFLAGS: -C target-cpu=native -C embed-bitcode=yes
+[profile.release-ultra]
+inherits = "release"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+
+# [PERF-001] TINY: Embedded/size-constrained environments (preserves old behavior)
+# Target: <100KB binary (same as v3.173.0 default)
+# Speed: ~1.80ms on BENCH-007 (still 9.2x faster than Python!)
+# Usage: cargo build --profile release-tiny
+#        ruchy compile --profile release-tiny script.ruchy
+[profile.release-tiny]
+inherits = "release"
+opt-level = "z"            # Optimize for SIZE (not speed)
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[package.metadata.cargo-machete]
+ignored = [
+    "insta",            # Dev dependency for snapshot testing
+    "quickcheck",       # Dev dependency for property testing
+    "quickcheck_macros", # Dev dependency for property testing
+    "arbitrary",        # Dev dependency for fuzzing
+    "tracing-subscriber", # Dev dependency for debugging
+    "wasm-bindgen-test", # Dev dependency for WASM testing
+    "web-sys",          # Dev dependency for WASM testing
+    "getrandom",        # Required for rand in WASM
+]
+
+[package.metadata.release]
+shared-version = true
+
+[[package.metadata.release.pre-release-replacements]]
+file = "CHANGELOG.md"
+search = "## \\[Unreleased\\]"
+replace = "## [{{version}}] - {{date}}"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--generate-link-to-definition"]
+
+[build-dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_yaml_ng = "0.10"

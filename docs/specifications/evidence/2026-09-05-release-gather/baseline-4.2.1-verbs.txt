@@ -1,0 +1,6 @@
+-rwxrwxr-x 1 noah noah 10536224 Sep  5 11:09 /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/ruchy-4.2.1/bin/ruchy
+ruchy 4.2.1
+exit=0
+=== 4.2.1 --help verbs ===
+repl new build parse transpile run compile check test notebook serve coverage ast provability runtime score quality-gate fmt doc bench lint add publish mcp optimize actor:observe dataflow:debug wasm prove replay-to-tests property-tests mutations fuzz oracle hunt report help 
+verb count: 37

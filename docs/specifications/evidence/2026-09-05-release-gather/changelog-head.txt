@@ -1,0 +1,61 @@
+=== CHANGELOG head ===
+# Changelog
+
+All notable changes to the Ruchy programming language will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [5.0.0-beta.1] - 2026-04-04
+
+### Sovereign Platform: Beta Progression
+
+Beta.1 and Beta.2 milestones landed on top of the alpha baseline. This tag promotes
+the cumulative alpha.1/alpha.2/alpha.3/beta.1/beta.2 work to a single beta pre-release,
+rolling in the integration gate for rc.1.
+
+### Added
+- **Nine-Pillar acceptance test suite**: 16 integration tests verifying keyword
+  reservations, CLI dispatch, and transpile surface for all 9 pillars ([EMBED-001])
+- **migrate-4to5 e2e acceptance**: 4 tests building a synthetic 4.x project with
+  all 7 keyword conflicts and verifying dry-run + apply behaviour ([EMBED-002])
+- **Pillar 9 sub-spec**: `docs/specifications/ruchy-embed-pillar9-integration.md`
+  documents the Engine API, sandbox model, Graduate Workflow contract, and
+  acceptance criteria (previously marked "to be created" in Appendix A)
+- **Hot-reload integration test** ([EMBED-005]): `ruchy-embed/tests/hot_reload.rs`
+  verifies EMBED-A5 (edit file on disk, observe new behaviour on reload)
+- **Release-mode startup benchmark** ([EMBED-006]): `ruchy-embed/tests/startup_benchmark.rs`
+  validates Success Criterion #2 — `Engine::new()` completes in < 5ms on x86_64 release
+- **Binary size budget gate** ([EMBED-009]): `tests/sovereign_binary_size_budget.rs`
+  validates Success Criterion #6 — release binary stays under 14.19 MB
+  (12.4 MB 4.x baseline + 20%). Currently 8.45 MB (40% headroom).
+- **Zero-unsafe transpile gate** ([EMBED-008]): `tests/sovereign_zero_unsafe_transpile.rs`
+  verifies Success Criterion #11 — transpiled output contains no `unsafe {`,
+  `unsafe fn`, `unsafe trait`, or `unsafe impl`. Covers 7 required examples
+  plus all 5 sovereign 5.0 examples.
+- **Sandbox builder completion**: `Sandbox::with_net()`, `Sandbox::with_env()`,
+  and `Sandbox::strict()` (tight-limit preset) — completes the capability API
+  symmetry. 3 new unit tests.
+- **Container marshaling** ([EMBED-007]): `Value::List` / `Value::Tuple` /
+  `Value::Map` variants added to ruchy-embed with lossless bidirectional
+  conversion to `RuchyValue::Array` / `RuchyValue::Tuple` / `RuchyValue::Object`;
+  9 tests including nested, heterogeneous, and list-in-map
+- **aprender ML pipeline types** (beta.1): `TrainingConfig`, `InferenceConfig`,
+  `PipelineStage`, `TrainingResult` (19 tests)
+- **presentar widget types** (beta.1): Widget (Column/Row/Text/Button/Input/Container),
+  Alignment, RenderTarget (31 tests)
+- **bashrs shell transpilation types** (beta.2): `ShellScript`, `ShellVar`,
+  `QuoteStrategy` with injection-proof quoting (16 tests)
+
+### Added
+- **[PROVABILITY-035] `--exclude` across all Pillar-1 commands**: Propagates
+  the `--exclude <PATTERN>` flag from `ruchy tier` to all four contracts
+  commands (`ruchy contracts sync/list/check`, `ruchy suggest-contracts`)
+  so teams get uniform UX for skipping test fixtures, vendored code, or
+  generated files. All four commands now accept repeated `--exclude`
+  flags, backed by the same `scan_with_options()` API. 101 total
+  sovereign + tier tests passing.
+- **[PROVABILITY-034] `ruchy tier --exclude <PATTERN>`**: Skip files
+  whose full path contains the pattern. Repeatable flag for multiple
+  patterns. Use cases: test-fixtures (`--exclude broken`), vendored
+  code (`--exclude vendor/`), generated files (`--exclude target/`).

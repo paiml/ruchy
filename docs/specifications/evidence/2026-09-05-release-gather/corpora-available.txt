@@ -1,0 +1,13 @@
+=== sibling book repos present locally ===
+ruchy-book               .ruchy files:   239  last commit: 2026-04-05
+ruchy-cookbook           .ruchy files:    37  last commit: 2025-11-09
+ruchy-cli-tools-book     .ruchy files:    15  last commit: 2025-10-15
+tooling-with-ruchy       MISSING
+ruchy-repl-demos         .ruchy files:    76  last commit: 2025-10-15
+rosetta-ruchy            .ruchy files:   198  last commit: 2026-04-04
+ruchyruchy               .ruchy files:   538  last commit: 2026-04-03
+
+=== examples/ corpus ===
+183
+=== tests/ .ruchy fixtures ===
+11

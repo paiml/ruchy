@@ -1,0 +1,16 @@
+.github/workflows/ci.yml:8:#   security: cargo audit (ubuntu-latest, continue-on-error)
+.github/workflows/release.yml:159:        continue-on-error: true
+.github/workflows/release.yml:164:        continue-on-error: true
+--- ruchy-cli refs ---
+.github/workflows/release.yml:162:      - name: Publish ruchy-cli
+.github/workflows/release.yml:163:        run: cargo publish --package ruchy-cli --token ${{ secrets.CRATES_TOKEN }}
+--- workflow files ---
+benchmarks.yml
+ci.yml
+miri.yml
+nightly-bench.yml
+nightly.yml
+pr-gate.yml
+README-quality-metrics.md
+release.yml
+security.yml

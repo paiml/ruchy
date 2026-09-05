@@ -1,0 +1,33 @@
+=== tests_disabled_for_mutation ===
+total 356
+drwxrwxr-x  2 noah noah  4096 Oct 13  2025 .
+drwxrwxr-x 44 noah noah 77824 Sep  5 11:00 ..
+-rw-rw-r--  1 noah noah 10973 Oct 13  2025 advanced_pattern_matching.rs.disabled
+-rw-rw-r--  1 noah noah   300 Oct 13  2025 advanced_pattern_matching.rs.NEEDS_REWRITE
+-rw-rw-r--  1 noah noah 23455 Oct 13  2025 binary_ops_coverage_tdd.rs.disabled
+-rw-rw-r--  1 noah noah 12233 Oct 13  2025 extreme_tdd_interpreter_boost.rs.disabled
+-rw-rw-r--  1 noah noah   300 Oct 13  2025 extreme_tdd_interpreter_boost.rs.NEEDS_REWRITE
+-rw-rw-r--  1 noah noah 17095 Oct 13  2025 extreme_tdd_performance.rs.disabled
+-rw-rw-r--  1 noah noah 20936 Oct 13  2025 interpreter_eval_expr_kind_tdd.rs.disabled
+24
+=== tests.disabled (sample) ===
+acceptance_wasm_test.rs
+actors_simple_coverage.rs
+actor_system_tests.rs
+actor_tests.rs
+advanced_integration_tests.rs
+277
+=== tests_temp_disabled_for_sprint7_mutation (sample) ===
+acceptance_wasm_test.rs
+actor_extreme_tdd_tests.rs
+actors_simple_coverage.rs
+actor_system_tests.rs
+actor_tests.rs
+463
+=== overlap: same basenames in tests/ vs quarantine ===
+tests ∩ sprint7: 2
+tests ∩ tests.disabled: 8
+tests.disabled ∩ sprint7: 265
+=== are quarantine dirs referenced in Cargo.toml / Makefile / CI? ===
+=== [[test]] entries with path= ===
+0

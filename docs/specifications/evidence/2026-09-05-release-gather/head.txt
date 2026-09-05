@@ -1,0 +1,1 @@
+3a665f36edc170694159746aa1f9bffec4f4a007 2026-08-11 15:05:04 +0200 fix(build): track generated_contracts.rs — a clean checkout could not build (#200)

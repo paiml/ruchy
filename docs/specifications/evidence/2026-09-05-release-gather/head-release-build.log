@@ -1,0 +1,16 @@
+2026-09-05T11:12:06+02:00
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/noah/src/ruchy/ruchy-wasm/Cargo.toml
+workspace: /home/noah/src/ruchy/Cargo.toml
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `release` profile [optimized] target(s) in 1m 24s
+
+real	1m24.148s
+user	5m47.577s
+sys	0m29.336s
+EXIT=0
+2026-09-05T11:13:30+02:00
+-rwxrwxr-x 2 noah noah 10656832 Sep  5 11:13 /mnt/nvme-raid0/targets/ruchy-release/release/ruchy

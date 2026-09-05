@@ -1,0 +1,30 @@
+=== cargo tree -e normal --depth 1 -p ruchy (default features) ===
+ruchy v5.0.0-beta.1 (/home/noah/src/ruchy)
+├── aprender v0.27.8
+├── trueno v0.16.5
+exit=
+direct normal deps (default): 33
+
+=== --all-features ===
+  Downloaded simular v0.3.1
+├── alimentar v0.2.8
+├── aprender v0.27.8
+├── bashrs v6.66.2
+├── entrenar v0.7.13
+├── forjar v1.12.3
+├── pmcp v1.20.0
+├── presentar v0.3.4
+├── simular v0.3.1
+├── trueno v0.16.5
+├── trueno-viz v0.1.27
+direct normal deps (all-features): 59
+
+=== workspace member dep direction ===
+ruchy-embed/Cargo.toml:10:ruchy = { path = "..", default-features = false }
+ruchy-wasm/Cargo.toml:16:ruchy = { version = "5.0.0-alpha.1", path = "..", default-features = false, features = ["wasm-compile"] }
+
+=== git status (lock touched?) ===
+?? docs/specifications/evidence/
+=== .cargo/config.toml tracked? ===
+.cargo/mutants.toml
+.gitignore:117:.cargo/config.toml	.cargo/config.toml

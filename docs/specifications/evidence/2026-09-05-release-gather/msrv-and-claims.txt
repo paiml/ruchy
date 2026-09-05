@@ -1,0 +1,33 @@
+=== max declared rust-version across resolved graph (default features) ===
+trueno-gemm-codegen	1.89
+trueno	1.89
+trueno	1.89
+aprender	1.89
+image	1.88.0
+httpmock	1.88.0
+home	1.88
+wasip2	1.87.0
+
+=== ruchy declared ===
+177:rust-version = "1.75"
+
+=== README rust/MSRV/install claims ===
+55:cargo install ruchy
+159:cargo install ruchy --features mcp
+194:## MSRV
+
+=== CHANGELOG headings ===
+8:## [5.0.0-beta.1] - 2026-04-04
+561:## [5.0.0-alpha.1] - 2026-04-04
+588:## [Unreleased - 4.x]
+605:## [4.2.1] - 2026-02-10
+623:## [4.2.0] - 2026-02-01
+
+=== include_str!/include_bytes! of non-src paths ===
+      1 include_str!("../test_cases.txt")
+      1 include_str!("../../static/notebook.html")
+      1 include_str!("../examples/lang_comp/03-control-flow/02_match.ruchy")
+      1 include_str!("../corpus/large.ruchy")
+      1 include_str!("../benchmarks/suite.ruchy")
+      1 include_str!("../benchmarks/baseline.rs")
+      1 include_str!("../assets/notebook.html")
