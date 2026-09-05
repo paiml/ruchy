@@ -14,21 +14,17 @@ fn test_pmat_098_single_roadmap_file_enforced() {
     let git_files =
         String::from_utf8(output.stdout).expect("git ls-files output is not valid UTF-8");
 
-    // Find all roadmap.yaml files (not .lock) outside docs/archive/ and outside ruchy-wasm/
+    // Find all roadmap.yaml files (not .lock) outside docs/archive/
     let roadmap_files: Vec<&str> = git_files
         .lines()
-        .filter(|path| {
-            path.ends_with("roadmap.yaml")
-                && !path.contains("docs/archive/")
-                && !path.contains("ruchy-wasm/")
-        })
+        .filter(|path| path.ends_with("roadmap.yaml") && !path.contains("docs/archive/"))
         .collect();
 
-    // Assert exactly one roadmap.yaml exists outside archive and ruchy-wasm
+    // Assert exactly one roadmap.yaml exists outside archive
     assert_eq!(
         roadmap_files.len(),
         1,
-        "Expected exactly one roadmap.yaml outside docs/archive/ and ruchy-wasm/, found: {:?}",
+        "Expected exactly one roadmap.yaml outside docs/archive/, found: {:?}",
         roadmap_files
     );
 
