@@ -6,12 +6,12 @@
 use wasm_bindgen::prelude::*;
 
 #[cfg(target_arch = "wasm32")]
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement};
+use web_sys::CanvasRenderingContext2d;
 
 use super::api;
-use super::canvas::{CellBuffer, Color, Rect};
+use super::canvas::CellBuffer;
 use super::widgets::Brick;
-use super::{GraphMode, WidgetKind, WidgetSpec};
+use super::WidgetSpec;
 
 /// WASM-compatible widget container.
 #[cfg(target_arch = "wasm32")]

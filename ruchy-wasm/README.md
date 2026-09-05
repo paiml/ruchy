@@ -24,6 +24,8 @@ npm install ruchy-wasm
 curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
 # Build the WASM package
+# getrandom 0.3 (pulled in through aprender-core) needs the wasm_js backend on wasm32:
+export RUSTFLAGS='--cfg getrandom_backend="wasm_js"'
 wasm-pack build --target web
 
 # For bundler environments (webpack, vite, etc.)
