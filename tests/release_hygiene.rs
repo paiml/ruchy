@@ -145,3 +145,28 @@ fn test_pmat_092_cargo_lock_present_in_package_list() {
         "Cargo.lock must be present in the packaged file list"
     );
 }
+
+/// PMAT-127: proptest writes `*.proptest-regressions` files next to failing
+/// property tests. They are gitignored, five old ones are tracked, and
+/// `tests/**` would ship all of them; the allowlist must negate them so the
+/// crate never carries test-run artifacts.
+#[test]
+fn test_pmat_127_include_negates_proptest_regressions() {
+    let cargo_toml = std::fs::read_to_string("Cargo.toml").expect("failed to read Cargo.toml");
+    let value: toml::Table = cargo_toml
+        .parse::<toml::Table>()
+        .expect("failed to parse Cargo.toml");
+    let include = value
+        .get("package")
+        .and_then(|p| p.get("include"))
+        .and_then(|i| i.as_array())
+        .expect("[package] include allowlist");
+    let negates = include
+        .iter()
+        .filter_map(|v| v.as_str())
+        .any(|pattern| pattern == "!**/*.proptest-regressions");
+    assert!(
+        negates,
+        "[package] include must contain \"!**/*.proptest-regressions\"; got {include:?}"
+    );
+}

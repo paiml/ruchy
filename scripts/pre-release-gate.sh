@@ -35,6 +35,7 @@ GOLDEN_DIR="$ROOT/tests/golden"
 EVIDENCE_DIR="$ROOT/docs/specifications/evidence/$(date +%Y-%m-%d)-dogfood"
 RECEIPT="$EVIDENCE_DIR/receipt.json"
 TARGET_DIR="${CARGO_TARGET_DIR:-$ROOT/target}"
+PKGTREE=""   # detached worktree of HEAD used by clean_room + package (PMAT-127)
 
 if [ "${1:-}" = "--worker-diff" ]; then
     WORK=""
@@ -638,8 +639,14 @@ stage_clean_room() {
         return 0
     fi
 
-    say "  cargo package -p ruchy (with verification build) ..."
-    (cd "$ROOT" && command cargo package -p ruchy) > "$WORK/package.log" 2>&1
+    # Package from a detached worktree of HEAD: the packaged set is exactly what a fresh
+    # clone (and the release workflow) sees, and gitignored artifacts of local test runs
+    # (*.proptest-regressions, PMAT-127) cannot trip cargo's dirty check. tree_dirt above
+    # still guarantees HEAD == working tree for tracked files; --allow-dirty is never used.
+    PKGTREE="$WORK/pkgtree"
+    say "  cargo package -p ruchy from a detached worktree of HEAD (with verification build) ..."
+    (cd "$ROOT" && git worktree add --detach --quiet "$PKGTREE" HEAD) > "$WORK/package.log" 2>&1 \
+        && (cd "$PKGTREE" && command cargo package -p ruchy --target-dir "$TARGET_DIR") >> "$WORK/package.log" 2>&1
     local pkg_exit=$?
     if [ "$pkg_exit" -ne 0 ]; then
         tail -25 "$WORK/package.log"
@@ -653,10 +660,12 @@ stage_clean_room() {
             > "$STAGES/package.json"
         report clean_room FAIL "cargo package -p ruchy exit=$pkg_exit"
         report package FAIL "cargo package -p ruchy exit=$pkg_exit"
+        (cd "$ROOT" && git worktree remove --force "$PKGTREE") > /dev/null 2>&1 || true
         return 0
     fi
 
     stage_package "$version"
+    (cd "$ROOT" && git worktree remove --force "$PKGTREE") > /dev/null 2>&1 || true
 
     local crate="$TARGET_DIR/package/ruchy-$version.crate"
     local ex="$WORK/cleanroom"
@@ -733,7 +742,7 @@ stage_package() {
     local version="$1"
     local crate="$TARGET_DIR/package/ruchy-$version.crate"
     local listing="$WORK/pkg-list.txt"
-    (cd "$ROOT" && command cargo package --list -p ruchy) > "$listing" 2> "$WORK/pkg-list.err"
+    (cd "${PKGTREE:-$ROOT}" && command cargo package --list -p ruchy --target-dir "$TARGET_DIR") > "$listing" 2> "$WORK/pkg-list.err"
     local list_exit=$?
     if [ "$list_exit" -ne 0 ] || [ ! -f "$crate" ]; then
         tail -10 "$WORK/pkg-list.err"
