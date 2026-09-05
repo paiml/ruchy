@@ -1,0 +1,59 @@
+=== include_str targets on disk ===
+test_cases.txt               
+static/notebook.html         ./static/notebook.html 
+assets/notebook.html         
+corpus/large.ruchy           
+benchmarks/suite.ruchy       
+benchmarks/baseline.rs       
+
+=== top-level dirs and tracked counts ===
+    794 docs
+    598 src
+    501 tests_temp_disabled_for_sprint7_mutation
+    480 tests
+    299 examples
+    277 tests.disabled
+     70 scripts
+     24 tests_disabled_for_mutation
+     24 proptest-regressions
+     24 fuzz
+     16 benches
+     14 golden_traces
+     12 .github
+     11 ruchy-wasm
+      9 .pmat-work
+      8 .ruchy-tier-baselines
+      6 ruchy-embed
+      5 qa_sandbox
+      4 .pmat
+      4 notebooks
+      4 contracts
+      3 static
+      2 .ruchy
+      2 .dvc
+      2 .config
+
+=== tests referencing golden_traces / .ruchy-tier-baselines / qa_sandbox / notebooks ===
+golden_traces          1
+.ruchy-tier-baselines  0
+qa_sandbox             0
+notebooks              5
+docs/                  73
+
+=== pmat analyze satd surface ===
+      --strict
+      --fail-on-violation
+      --exclude <EXCLUDE>
+
+=== LICENSE/README fields ===
+173:license = "MIT OR Apache-2.0"
+174:repository = "https://github.com/paiml/ruchy"
+175:homepage = "https://github.com/paiml/ruchy"
+176:documentation = "https://docs.rs/ruchy"
+223:license.workspace = true
+224:repository.workspace = true
+226:readme = "README.md"
+227:keywords = ["language", "compiler", "transpiler", "rust", "scripting"]
+228:categories = ["compilers", "development-tools", "parser-implementations"]
+LICENSE
+LICENSE-MIT

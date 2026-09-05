@@ -8,10 +8,10 @@
 
 ## IMPORTANT: Roadmap Single Source of Truth
 
-**✅ ALWAYS USE `docs/execution/roadmap.yaml`** - This is the ONLY roadmap file
-   - **DELETED**: `docs/execution/roadmap.md` (removed 2025-10-20)
-   - **Rationale**: Maintaining duplicate .md file caused confusion and merge conflicts
-   - **Migration**: All roadmap data now lives exclusively in YAML format
+**✅ ALWAYS USE `docs/roadmaps/roadmap.yaml`** - This is the single source of truth (written by `pmat work`)
+   - **ARCHIVED**: `docs/roadmaps/roadmap.yaml` (historical narrative, frozen 2025-12-09, see docs/archive/roadmap-execution-frozen-2025-12-09.yaml)
+   - **Rationale**: The execution roadmap is now exclusively managed by `pmat work` in YAML format
+   - **Historical Reference**: The former narrative roadmap is preserved read-only for reference purposes
    - **Benefits**: Machine-readable, programmatically accessible, prevents drift
 
 ## CRITICAL: Contract-First Design
@@ -259,7 +259,7 @@ fn process_data(items: Vec<Item>) -> Result<Output> {
 **MANDATORY RESPONSE PROTOCOL**:
 1. 🛑 **STOP THE LINE**: Halt ALL other work immediately
 2. 🔍 **ROOT CAUSE ANALYSIS**: Five Whys + GENCHI GENBUTSU (go and see)
-3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml ([PARSER-XXX], [TRANSPILER-XXX], etc.)
+3. 📋 **CREATE TICKET**: Add to docs/roadmaps/roadmap.yaml ([PARSER-XXX], [TRANSPILER-XXX], etc.)
 4. ✅ **EXTREME TDD FIX** (RED→GREEN→REFACTOR→VALIDATE):
    - **RED**: Write 6-8 comprehensive failing tests covering all bug patterns (tests MUST fail initially)
    - **GREEN**: Minimal fix with ≤10 complexity helpers (make tests pass)
@@ -304,7 +304,7 @@ RESULT: BENCH-003 unblocked, end-to-end pipeline working
 **CORRECT RESPONSE** (MANDATORY):
 1. 🛑 **STOP THE LINE**: Halt current work immediately
 2. 🔍 **INVESTIGATE**: Use GENCHI GENBUTSU to verify feature is truly missing (don't assume!)
-3. 📋 **CREATE TICKET**: Add to docs/execution/roadmap.yaml with format: [FEATURE-XXX]
+3. 📋 **CREATE TICKET**: Add to docs/roadmaps/roadmap.yaml with format: [FEATURE-XXX]
 4. ✅ **EXTREME TDD IMPLEMENTATION**:
    - **RED**: Write tests for the missing feature FIRST (they will fail)
    - **GREEN**: Implement the feature minimally to pass tests
@@ -520,7 +520,7 @@ If Claude session hangs during `cargo run` or `ruchy` execution:
 ```yaml
 Navigation:
 1. SPECIFICATION.md     # What to build (reference)
-2. docs/execution/roadmap.yaml  # Strategic priorities and current tasks
+2. docs/roadmaps/roadmap.yaml  # Strategic priorities and current tasks
 3. docs/execution/      # Tactical work breakdown
 4. ../ruchy-book/INTEGRATION.md  # Book compatibility tracking
 5. CHANGELOG.md         # Version history and release notes
@@ -549,7 +549,7 @@ Navigation:
 
 ### Roadmap and Ticket Tracking
 
-Every commit MUST reference a ticket ID from `docs/execution/roadmap.yaml`
+Every commit MUST reference a ticket ID from `docs/roadmaps/roadmap.yaml`
 
 **Ticket Formats**: QUALITY-XXX, PARSER-XXX, DF-XXX, WASM-XXX
 

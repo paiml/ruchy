@@ -1,0 +1,15 @@
+=== lane-2 claim re-measure: rust_version of migration targets ===
+aprender/0.65.2            rust_version=1.91 yanked=false
+aprender-core/0.65.2       rust_version=1.91 yanked=false
+aprender-compute/0.65.2    rust_version=1.91 yanked=false
+aprender-train/0.65.2      rust_version=1.87 yanked=false
+aprender-viz/0.65.2        rust_version=1.75 yanked=false
+aprender-simulate/0.65.2   rust_version=1.82.0 yanked=false
+alimentar/0.4.0            rust_version=1.75 yanked=false
+presentar/0.3.4            rust_version=1.75 yanked=false
+forjar/1.25.1              rust_version=1.89.0 yanked=false
+bashrs/7.0.1               rust_version=null yanked=false
+provable-contracts/0.3.1   rust_version=1.85 yanked=false
+
+=== lane claim: is Cargo.lock in the current package list? ===
+1

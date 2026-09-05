@@ -174,7 +174,7 @@ license = "MIT OR Apache-2.0"
 repository = "https://github.com/paiml/ruchy"
 homepage = "https://github.com/paiml/ruchy"
 documentation = "https://docs.rs/ruchy"
-rust-version = "1.75"
+rust-version = "1.91"
 
 [workspace.dependencies]
 anyhow = "1.0"
@@ -296,17 +296,24 @@ rand = "0.8"
 
 # Sovereign AI Stack Core - trueno-aprender-stdlib-core-language-spec.md v2.0
 # trueno and aprender are always required; others are feature-gated (CB-081 dep reduction)
-trueno = { version = "0.16", default-features = false }  # Pillar 1: CPU SIMD only (no wgpu)
-aprender = { version = "0.27", default-features = false, features = ["format-quantize", "format-signing"] }  # Pillar 4: ML + quantization + signing
+# APR-MONO [PMAT-094]: the crates.io crates `trueno`, `entrenar`, `simular` and
+# `trueno-viz` are deprecated facades of the aprender monorepo; the live crates are
+# `aprender-compute`, `aprender-train`, `aprender-simulate` and `aprender-viz`. The
+# dependency KEYS are kept so `trueno::` / `entrenar::` paths keep compiling.
+trueno = { package = "aprender-compute", version = "0.65", default-features = false }  # Pillar 1: CPU SIMD only (no gpu/cuda)
+aprender = { version = "0.65", default-features = false }  # Pillar 4: ML
+# `aprender-core`'s [lib] name is `aprender` (same as the facade), so the key must be a
+# real rename or rustc sees two `--extern aprender` candidates (E0464).
+aprender_core = { package = "aprender-core", version = "0.65", default-features = false, features = ["format-quantize", "format-signing"] }  # quantization + signing (the aprender facade cannot turn these on)
 # Optional sovereign stack extensions (enabled via `sovereign-stack` feature)
-alimentar = { version = "0.2.5", optional = true }      # Pillar 2: Data loading
-entrenar = { version = "0.7", features = ["citl"], optional = true }  # CITL, training
-trueno-viz = { version = "0.1.23", optional = true }    # Pillar 5: Visualization
-presentar = { version = "0.3.1", optional = true }      # Pillar 6: Notebook widgets
+alimentar = { version = "0.4", optional = true }        # Pillar 2: Data loading
+entrenar = { package = "aprender-train", version = "0.65", features = ["citl"], optional = true }  # CITL, training
+trueno-viz = { package = "aprender-viz", version = "0.65", optional = true }  # Pillar 5: Visualization
+presentar = { version = "0.3.4", optional = true }      # Pillar 6: Notebook widgets
 # Ruchy 5.0 Sovereign Platform pillars (optional)
-forjar = { version = "1.2", default-features = false, optional = true }  # Pillar 3: Infrastructure as Code
-simular = { version = "0.3", default-features = false, optional = true } # Pillar 7: Simulation engine
-bashrs = { version = "6.65", default-features = false, optional = true } # Pillar 4: Shell transpilation
+forjar = { version = "1.25", default-features = false, optional = true }  # Pillar 3: Infrastructure as Code
+simular = { package = "aprender-simulate", version = "0.65", default-features = false, optional = true } # Pillar 7: Simulation engine
+bashrs = { version = "7.0", default-features = false, optional = true } # Pillar 4: Shell transpilation
 wasm-encoder = "0.207.0"
 glob = "0.3"
 walkdir = "2.5"  # STDLIB-005: Directory traversal

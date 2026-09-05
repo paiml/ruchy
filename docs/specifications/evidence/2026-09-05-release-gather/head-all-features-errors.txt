@@ -1,0 +1,21 @@
+=== HEAD --all-features: errors ===
+      2 error[E0433]: cannot find type `_` in this scope
+      1 error[E0061]: this function takes 2 arguments but 1 argument was supplied
+      1 error: could not compile `_` (lib) due to 10 previous errors
+--- first error with location ---
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+   --> src/stdlib/dataframe.rs:62:5
+    |
+ 62 |     DataFrame::new(cols).map_err(|e| e.to_string())
+    |     ^^^^^^^^^^^^^^ ---- argument #1 of type `usize` is missing
+    |
+note: associated function defined here
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/polars-core-0.55.2/src/frame/dataframe.rs:119:12
+    |
+--
+error[E0433]: cannot find type `CsvReadOptions` in this scope
+  --> src/stdlib/dataframe.rs:82:5
+   |
+82 |     CsvReadOptions::default()
+   |     ^^^^^^^^^^^^^^ use of undeclared type `CsvReadOptions`
+

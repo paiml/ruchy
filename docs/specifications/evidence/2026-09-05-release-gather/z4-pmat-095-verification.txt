@@ -1,0 +1,21 @@
+# Z4 / PMAT-095 verification (branch PMAT-095-examples-migrate-4to5, worktree /home/noah/src/ruchy-wt-PMAT-095, PR #203)
+
+Commits on top of the cherry-picked Z0 e04fa1d1:
+  62c8fe98 test(examples): RED - manifest of 155 examples that must ruchy check
+  48a828e3 fix(examples): migrate 24_math_science.ruchy 4.x -> 5.0 keywords
+  8d771a64 feat(contracts): examples-parse-v1 completeness contract
+
+Worker-claimed vs orchestrator re-run:
+  ruchy migrate-4to5 examples/ (HEAD binary)          worker: renamed exactly one identifier, `signal` -> `signal_val`, examples/24_math_science.ruchy lines 241 and 244; no other file touched
+  4.2.1 `run` of ORIGINAL vs HEAD `run` of MIGRATED    worker: stdout byte-identical, exit 0 both   (quorum lane 3 asked for original-vs-migrated, which is what was compared)
+  A_4: ruchy check examples/24 && cargo test --test examples_must_parse   worker: exit 0 (3 passed)   orchestrator: 3 passed on the recreated worktree (during the mutation run: baseline 3 passed, then 2 failed under mutation)
+  pv validate / pv lint contracts/                      worker: exit 0 / exit 0
+  gate_cmd cargo test --workspace                       worker: red for the PMAT-104 reasons (bin unit tests), lib target 20510 passed; not re-run here (Z0 PR carries the fix)
+
+DoD mutation (orchestrator, measured, 2026-09-05):
+  git checkout main -- examples/24_math_science.ruchy   -> signal_val occurrences 0
+  cargo test --test examples_must_parse                 -> test_pmat_095_math_science_parses_post_migration FAILED, test_pmat_095_all_manifest_examples_parse FAILED; 1 passed 2 failed; exit 101
+  git checkout HEAD -- examples/24_math_science.ruchy   -> restored (2 occurrences)
+  The plan's original wording `git checkout HEAD~1 -- <file>` is vacuous on this 3-commit branch (quorum lane 3); the plan now names `main`.
+
+Quorum P4 (3 grillme lanes, sonnet delegate): FAIL / PASS / FAIL — accepted: the DoD wording; rejected: "omits the semantic check" (performed, byte-identical; a per-example golden test duplicates Z5's run-output differential).

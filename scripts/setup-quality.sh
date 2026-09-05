@@ -15,11 +15,11 @@ fi
 
 # Create required documentation structure
 mkdir -p docs/execution docs/quality docs/architecture/decisions
-touch docs/execution/roadmap.md docs/execution/quality-gates.md
+touch docs/roadmaps/roadmap.yaml docs/execution/quality-gates.md
 
 # Initialize roadmap template if not exists
-if [ ! -s docs/execution/roadmap.md ]; then
-    cat > docs/execution/roadmap.md << 'EOF'
+if [ ! -s docs/roadmaps/roadmap.yaml ]; then
+    cat > docs/roadmaps/roadmap.yaml << 'EOF'
 # Ruchy Development Roadmap
 
 ## Current Sprint: 2025-Q1

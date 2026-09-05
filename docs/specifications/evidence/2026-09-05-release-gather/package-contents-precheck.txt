@@ -1,0 +1,37 @@
+=== [package] include/exclude ===
+12:exclude = ["src/bin/ruchy-coverage.rs", "src/bin/ruchy-lsp.rs", "coverage/", "node_modules/", "docs/specifications/", "tests/tdd_*", "scripts/", "target/", ".profraw", ".profdata", ".vscode/", ".idea/", ".pmat", "proptest-regressions/"]
+(none)
+
+=== Cargo.lock provable-contracts at HEAD ===
+6002:name = "provable-contracts"
+6003-version = "0.3.1"
+6004-dependencies = [
+6005- "provable-contracts-macros 0.3.1",
+6006- "regex",
+
+=== sizes ===
+5.5M	tests
+2.7M	tests.disabled
+276K	tests_disabled_for_mutation
+5.7M	tests_temp_disabled_for_sprint7_mutation
+13M	docs
+1.6M	examples
+148K	benches
+git ls-files total: 3244
+tracked files with ':' in path: 7
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/contract.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/falsification/receipt-2026-04-04T10-56-08.892547310+00-00.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/rescue/rescue-401fd3b5-0fa9-4ee9-91c8-0dc2b7a81aff.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/rescue/rescue-9661972a-524e-40bf-8abf-46de2b8598aa.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/rescue/rescue-98316633-f53a-444f-89ed-d25353cca0c2.json
+
+=== .pmat-work tracked ===
+10
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/contract.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/falsification/receipt-2026-04-04T10-56-08.892547310+00-00.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/rescue/rescue-401fd3b5-0fa9-4ee9-91c8-0dc2b7a81aff.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/rescue/rescue-9661972a-524e-40bf-8abf-46de2b8598aa.json
+.pmat-work/Apex Hunt: PDCA Cycle 20 - to_int transpilation defect/rescue/rescue-98316633-f53a-444f-89ed-d25353cca0c2.json
+.pmat-work/Apex Hunt: PDCA Cycle 21 - Default parameter transpilation/contract.json
+".pmat-work/Apex Hunt: PDCA Cycle 22 - reduce(init,fn) \342\206\222 fold transpilation/contract.json"
+.pmat-work/PMAT-089/contract.json

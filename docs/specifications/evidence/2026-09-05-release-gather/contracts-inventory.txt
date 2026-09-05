@@ -1,0 +1,48 @@
+=== contracts/ ===
+total 96
+drwxrwxr-x  3 noah noah  4096 Mar 21 15:16 .
+drwxrwxr-x 44 noah noah 77824 Sep  5 11:00 ..
+-rw-rw-r--  1 noah noah  1068 Mar 21 15:15 checkpoint-v1.yaml
+-rw-rw-r--  1 noah noah  1101 Mar 21 15:15 dispatch-v1.yaml
+drwxrwxr-x  3 noah noah  4096 Mar 21 15:16 .pv
+
+=== ../provable-contracts/contracts/ruchy/ ===
+total 40
+drwxrwxr-x  3 noah noah  4096 Apr  3 10:12 .
+drwxrwxr-x 48 noah noah 12288 Apr  6 18:15 ..
+-rw-rw-r--  1 noah noah  4071 Mar 29 09:15 binding.yaml
+-rw-rw-r--  1 noah noah  4252 Apr  3 10:05 parser-soundness-v1.yaml
+drwxrwxr-x  3 noah noah  4096 Apr  3 10:12 .pv
+-rw-rw-r--  1 noah noah  4101 Apr  3 09:50 transpile-soundness-v1.yaml
+
+=== ../provable-contracts version ===
+19:version = "0.3.1"
+31791c3 2026-08-18 contract(bashrs): SEC002 is argument-position only (GH-228, GH-229)
+
+=== contracts/ headers ===
+--- contracts/checkpoint-v1.yaml (42 lines) ---
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Prover state checkpoint contract for Ruchy"
+  crate: "ruchy"
+  references:
+    - "Paulson, Isabelle: A Generic Theorem Prover, LNCS 1994"
+
+equations:
+  state_checkpoint:
+    formula: "restore(save(prover_state)) = prover_state"
+    domain: "prover_state ∈ ProverState"
+--- contracts/dispatch-v1.yaml (42 lines) ---
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Command dispatch contract for Ruchy language CLI"
+  crate: "ruchy"
+  references:
+    - "Pierce, Types and Programming Languages, 2002"
+
+equations:
+  dispatch_completeness:
+    formula: "∀cmd ∈ Commands: dispatch(cmd) ≠ ⊥"
+    domain: "cmd ∈ enum Commands"

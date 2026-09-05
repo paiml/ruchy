@@ -1,0 +1,90 @@
+=== paiml/.github sovereign-ci.yml: lint + gate jobs ===
+1475 /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/sovereign-ci.yml
+31:        description: 'Extra args for cargo test (e.g. --features cli)'
+35:      clippy_args:
+36:        description: 'Extra args for clippy (e.g. -p my-crate)'
+38:        default: '--all-targets'
+46:        description: 'Run criterion benchmarks (slow, use for nightly only)'
+61:        description: 'cargo nextest run instead of cargo test (build-performance.md §4.3 + §7 Phase 2). 30-40% test-job speedup on large suites. Pilot repos only until F11 test-job p95 ≤ 300s verified over 7 days.'
+111:    runs-on: [self-hosted, clean-room]
+256:          # This is handled by adding -A unused-variables to the clippy step.
+264:          # This is handled by adding -A unused-variables to the clippy step.
+302:          # This is handled by adding -A unused-variables to the clippy step.
+333:            { echo "::warning::nextest failed — falling back to cargo test"; \
+334:              cargo test $TEST_SCOPE $TEST_ARGS 2>&1 || \
+335:              cargo test --lib -p "$REPO_NAME" $TEST_ARGS 2>&1 || \
+338:            cargo test $TEST_SCOPE $TEST_ARGS 2>&1 || \
+339:            cargo test --lib -p "$REPO_NAME" $TEST_ARGS 2>&1 || \
+386:    runs-on: [self-hosted, clean-room]
+503:          # This is handled by adding -A unused-variables to the clippy step.
+510:          # This is handled by adding -A unused-variables to the clippy step.
+542:          # This is handled by adding -A unused-variables to the clippy step.
+548:          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+553:        run: cargo fmt --all -- --check
+556:          CLIPPY_ARGS: ${{ inputs.clippy_args }}
+566:          cargo clippy $CLIPPY_ARGS -- -D warnings -A unused-variables 2>&1 || \
+567:          cargo clippy -p "$REPO_NAME" -- -D warnings -A unused-variables 2>&1 || \
+576:        # NOT continue-on-error. This is the fleet's only licenses+sources gate;
+634:    runs-on: [self-hosted, clean-room]
+751:          # This is handled by adding -A unused-variables to the clippy step.
+758:          # This is handled by adding -A unused-variables to the clippy step.
+790:          # This is handled by adding -A unused-variables to the clippy step.
+815:          cargo llvm-cov test $TEST_SCOPE --no-cfg-coverage --no-cfg-coverage-nightly --lcov --output-path lcov.info $TEST_ARGS 2>&1 || \
+816:          cargo llvm-cov test --lib --no-cfg-coverage --no-cfg-coverage-nightly -p "$REPO_NAME" --lcov --output-path lcov.info 2>&1 || \
+833:        #      the gate can never break the currently-green state — it only
+837:        # The gate `coverage` job result is wired into the top-level `gate` job
+844:        # failed the coverage gate for every repo that sets coverage_min.
+865:            echo "::error::coverage_min is set but lcov.info has 0 line records — refusing to pass a gate on empty data"
+939:    runs-on: [self-hosted, clean-room]
+1043:          # This is handled by adding -A unused-variables to the clippy step.
+1050:          # This is handled by adding -A unused-variables to the clippy step.
+1082:          # This is handled by adding -A unused-variables to the clippy step.
+1158:    runs-on: [self-hosted, clean-room]
+=== sovereign-ci.yml lint step (lines 548-572) ===
+          key: ${{ runner.os }}-cargo-clippy-${{ hashFiles('**/Cargo.lock') }}
+      - name: Format check
+        # Was suppressed TWICE — `|| echo` swallowed the exit code and
+        # `continue-on-error` swallowed the step — so removing either one alone
+        # changed nothing and unformatted code merged green.
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        env:
+          CLIPPY_ARGS: ${{ inputs.clippy_args }}
+          REPO_NAME: ${{ inputs.repo }}
+          RUSTC_WRAPPER: ${{ inputs.enable_sccache && 'rustc-sccache' || '' }}
+          SCCACHE_DIR: ${{ inputs.enable_sccache && '/sccache' || '' }}
+          # MUST match machines/intel/sovereign-ci/Dockerfile ENV and any repo that
+          # launches its own container against /home/noah/data/sccache. A server
+          # capped lower EVICTS the shared cache back down to its own cap, so a
+          # mixed cap is strictly worse than a uniform small one. paiml/infra#229.
+          SCCACHE_CACHE_SIZE: ${{ inputs.enable_sccache && '50G' || '' }}
+        run: |
+          cargo clippy $CLIPPY_ARGS -- -D warnings -A unused-variables 2>&1 || \
+          cargo clippy -p "$REPO_NAME" -- -D warnings -A unused-variables 2>&1 || \
+          { echo "::error::Clippy failed — check workspace path dependencies"; exit 1; }
+      - name: Record sccache stats
+        if: ${{ always() && inputs.enable_sccache }}
+        run: |
+          sccache --show-stats --stats-format json > \
+
+=== sovereign-ci.yml test step (lines 326-345) ===
+          # PMAT-159 (2026-04-20): `test_workspace: true` opts into `--workspace --lib` so
+          # workspace-member lib tests are exercised. Default stays `--lib` (root only) for
+          # back-compat: many repos have workspace members that don't build in the sovereign-ci
+          # container. Opt-in callers pair this with `test_args` exclusions as needed.
+          if [ "$USE_NEXTEST" = "true" ]; then
+            cargo nextest run $TEST_SCOPE $TEST_ARGS 2>&1 || \
+            cargo nextest run --lib -p "$REPO_NAME" $TEST_ARGS 2>&1 || \
+            { echo "::warning::nextest failed — falling back to cargo test"; \
+              cargo test $TEST_SCOPE $TEST_ARGS 2>&1 || \
+              cargo test --lib -p "$REPO_NAME" $TEST_ARGS 2>&1 || \
+              { echo "::error::Tests failed — check workspace path dependencies"; exit 1; }; }
+          else
+            cargo test $TEST_SCOPE $TEST_ARGS 2>&1 || \
+            cargo test --lib -p "$REPO_NAME" $TEST_ARGS 2>&1 || \
+            { echo "::error::Tests failed — check workspace path dependencies"; exit 1; }
+          fi
+      - name: Record sccache stats
+        if: ${{ always() && inputs.enable_sccache }}
+        run: |
+          sccache --show-stats --stats-format json > \

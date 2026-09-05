@@ -1,0 +1,579 @@
+diff --git a/proptest-regressions/frontend/parser/expressions_helpers/lambdas.txt b/proptest-regressions/frontend/parser/expressions_helpers/lambdas.txt
+index 4a337b4a..79921def 100644
+--- a/proptest-regressions/frontend/parser/expressions_helpers/lambdas.txt
++++ b/proptest-regressions/frontend/parser/expressions_helpers/lambdas.txt
+@@ -6,3 +6,4 @@
+ # everyone who runs the test benefits from these saved cases.
+ cc c601b93ef1b50f572afec6416d65a13bd537bd202f86a567ce311aa58b29259d # shrinks to p1 = "fn", p2 = "a"
+ cc f1b22d1b66a92c0e1738f517db420eb458e40931df08177f1b6f3c2014a9114e # shrinks to param = "df"
++cc ae57bf98055affe543e93d8fa1f66baad2b10fd1846af02c862d2c481bfbd1b6 # shrinks to p1 = "ask", p2 = "a"
+diff --git a/src/frontend/parser/expressions_helpers/async_expressions.rs b/src/frontend/parser/expressions_helpers/async_expressions.rs
+index c2705832..5a306965 100644
+--- a/src/frontend/parser/expressions_helpers/async_expressions.rs
++++ b/src/frontend/parser/expressions_helpers/async_expressions.rs
+@@ -893,9 +893,13 @@ mod tests {
+         /// Keywords like "fn", "if", "let" would cause parser failures.
+         /// This strategy filters them out for property test validity.
+         fn valid_identifier() -> impl Strategy<Value = String> {
+-            "[a-z]+".prop_filter("Must not be a keyword", |s| {
++            // Filter ALL lowercase tokens from the lexer that match [a-z]+.
++            // This must stay in sync with Token variants in lexer.rs.
++            // Incomplete lists cause sporadic proptest failures (e.g., "ask", "df").
++            "[a-z]+".prop_filter("Must not be a keyword or reserved word", |s| {
+                 !matches!(
+                     s.as_str(),
++                    // Core keywords
+                     "fn" | "fun"
+                         | "let"
+                         | "var"
+@@ -930,6 +934,53 @@ mod tests {
+                         | "enum"
+                         | "trait"
+                         | "impl"
++                        // DataFrame token
++                        | "df"
++                        // Actor system keywords
++                        | "actor"
++                        | "spawn"
++                        | "effect"
++                        | "handle"
++                        | "handler"
++                        | "receive"
++                        | "send"
++                        | "ask"
++                        // OOP / type system keywords
++                        | "class"
++                        | "property"
++                        | "private"
++                        | "protected"
++                        | "sealed"
++                        | "final"
++                        | "abstract"
++                        | "mixin"
++                        | "operator"
++                        | "interface"
++                        | "implements"
++                        | "override"
++                        | "extend"
++                        // Module / import keywords
++                        | "module"
++                        | "export"
++                        | "import"
++                        | "from"
++                        | "with"
++                        | "default"
++                        | "crate"
++                        // Control flow / error handling
++                        | "finally"
++                        | "where"
++                        | "lazy"
++                        | "null"
++                        // Contract keywords (Ruchy 5.0)
++                        | "requires"
++                        | "ensures"
++                        | "invariant"
++                        | "decreases"
++                        // Sovereign platform keywords (Ruchy 5.0)
++                        | "infra"
++                        | "signal"
++                        | "yield"
+                 )
+             })
+         }
+diff --git a/src/frontend/parser/expressions_helpers/identifiers.rs b/src/frontend/parser/expressions_helpers/identifiers.rs
+index 817e514c..589f79af 100644
+--- a/src/frontend/parser/expressions_helpers/identifiers.rs
++++ b/src/frontend/parser/expressions_helpers/identifiers.rs
+@@ -861,11 +861,15 @@ mod tests {
+         /// Keywords like "fn", "if", "let" would cause parser failures.
+         /// This strategy filters them out for property test validity.
+         fn valid_identifier() -> impl Strategy<Value = String> {
++            // Filter ALL tokens from the lexer that would be lexed as keywords.
++            // This must stay in sync with Token variants in lexer.rs.
++            // Incomplete lists cause sporadic proptest failures (e.g., "ask", "df").
+             prop::string::string_regex("[a-zA-Z_][a-zA-Z0-9_]*")
+                 .unwrap()
+-                .prop_filter("Must not be a keyword", |s| {
++                .prop_filter("Must not be a keyword or reserved word", |s| {
+                     !matches!(
+                         s.as_str(),
++                        // Core keywords
+                         "fn" | "fun"
+                             | "let"
+                             | "var"
+@@ -900,6 +904,63 @@ mod tests {
+                             | "enum"
+                             | "trait"
+                             | "impl"
++                            // DataFrame token
++                            | "df"
++                            // Actor system keywords
++                            | "actor"
++                            | "spawn"
++                            | "effect"
++                            | "handle"
++                            | "handler"
++                            | "receive"
++                            | "send"
++                            | "ask"
++                            // OOP / type system keywords
++                            | "class"
++                            | "property"
++                            | "private"
++                            | "protected"
++                            | "sealed"
++                            | "final"
++                            | "abstract"
++                            | "mixin"
++                            | "operator"
++                            | "interface"
++                            | "implements"
++                            | "override"
++                            | "extend"
++                            // Module / import keywords
++                            | "module"
++                            | "export"
++                            | "import"
++                            | "from"
++                            | "with"
++                            | "default"
++                            | "crate"
++                            // Control flow / error handling
++                            | "finally"
++                            | "where"
++                            | "lazy"
++                            | "null"
++                            // Contract keywords (Ruchy 5.0)
++                            | "requires"
++                            | "ensures"
++                            | "invariant"
++                            | "decreases"
++                            // Sovereign platform keywords (Ruchy 5.0)
++                            | "infra"
++                            | "signal"
++                            | "yield"
++                            // Capitalized tokens (lexed as keywords, not identifiers)
++                            | "Ok"
++                            | "Err"
++                            | "Some"
++                            | "None"
++                            | "Result"
++                            | "Option"
++                            // Boolean literals
++                            | "true"
++                            | "false"
+                     )
+                 })
+         }
+diff --git a/src/frontend/parser/expressions_helpers/lambdas.rs b/src/frontend/parser/expressions_helpers/lambdas.rs
+index 5226fd3f..57827c58 100644
+--- a/src/frontend/parser/expressions_helpers/lambdas.rs
++++ b/src/frontend/parser/expressions_helpers/lambdas.rs
+@@ -921,9 +921,13 @@ mod tests {
+         /// Keywords like "fn", "if", "let" would cause parser failures.
+         /// This strategy filters them out for property test validity.
+         fn valid_identifier() -> impl Strategy<Value = String> {
++            // Filter ALL lowercase tokens from the lexer that match [a-z]+.
++            // This must stay in sync with Token variants in lexer.rs.
++            // Incomplete lists cause sporadic proptest failures (e.g., "ask", "df").
+             "[a-z]+".prop_filter("Must not be a keyword or reserved word", |s| {
+                 !matches!(
+                     s.as_str(),
++                    // Core keywords
+                     "fn" | "fun"
+                         | "let"
+                         | "var"
+@@ -958,8 +962,53 @@ mod tests {
+                         | "enum"
+                         | "trait"
+                         | "impl"
+-                        // df is a reserved DataFrame token, not a regular identifier.
++                        // DataFrame token
+                         | "df"
++                        // Actor system keywords
++                        | "actor"
++                        | "spawn"
++                        | "effect"
++                        | "handle"
++                        | "handler"
++                        | "receive"
++                        | "send"
++                        | "ask"
++                        // OOP / type system keywords
++                        | "class"
++                        | "property"
++                        | "private"
++                        | "protected"
++                        | "sealed"
++                        | "final"
++                        | "abstract"
++                        | "mixin"
++                        | "operator"
++                        | "interface"
++                        | "implements"
++                        | "override"
++                        | "extend"
++                        // Module / import keywords
++                        | "module"
++                        | "export"
++                        | "import"
++                        | "from"
++                        | "with"
++                        | "default"
++                        | "crate"
++                        // Control flow / error handling
++                        | "finally"
++                        | "where"
++                        | "lazy"
++                        | "null"
++                        // Contract keywords (Ruchy 5.0)
++                        | "requires"
++                        | "ensures"
++                        | "invariant"
++                        | "decreases"
++                        // Sovereign platform keywords (Ruchy 5.0)
++                        | "infra"
++                        | "signal"
++                        | "yield"
+                 )
+             })
+         }
+=== UNSTAGED ===
+diff --git a/.pmat/project.toml b/.pmat/project.toml
+index cb32d8f8..95c5b960 100644
+--- a/.pmat/project.toml
++++ b/.pmat/project.toml
+@@ -1,4 +1,4 @@
+ [pmat]
+ version = "3.7.1"
+-last_compliance_check = "2026-03-22T14:06:03.410973836Z"
++last_compliance_check = "2026-07-05T09:53:39.257864199Z"
+ auto_update = false
+diff --git a/Cargo.lock b/Cargo.lock
+index 96065fa6..a0d9a2f7 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -189,7 +189,7 @@ dependencies = [
+  "half",
+  "memmap2",
+  "minijinja",
+- "provable-contracts-macros",
++ "provable-contracts-macros 0.1.1",
+  "rand 0.9.2",
+  "rand_chacha 0.9.0",
+  "rayon",
+@@ -2841,8 +2841,8 @@ dependencies = [
+  "openssl",
+  "pforge-config",
+  "pforge-runtime",
+- "provable-contracts 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
+- "provable-contracts-macros",
++ "provable-contracts 0.1.1",
++ "provable-contracts-macros 0.1.1",
+  "regex",
+  "rusqlite",
+  "rustc-hash",
+@@ -6214,8 +6214,9 @@ dependencies = [
+ [[package]]
+ name = "provable-contracts"
+ version = "0.1.1"
++source = "registry+https://github.com/rust-lang/crates.io-index"
++checksum = "d25d845cee13c0160ff2d644c8bd4b65a8487f894a827d9d0fe23d47980a9fa5"
+ dependencies = [
+- "regex",
+  "serde",
+  "serde_json",
+  "serde_yaml",
+@@ -6224,10 +6225,10 @@ dependencies = [
+ 
+ [[package]]
+ name = "provable-contracts"
+-version = "0.1.1"
+-source = "registry+https://github.com/rust-lang/crates.io-index"
+-checksum = "d25d845cee13c0160ff2d644c8bd4b65a8487f894a827d9d0fe23d47980a9fa5"
++version = "0.3.1"
+ dependencies = [
++ "provable-contracts-macros 0.3.1",
++ "regex",
+  "serde",
+  "serde_json",
+  "serde_yaml",
+@@ -6245,6 +6246,15 @@ dependencies = [
+  "syn",
+ ]
+ 
++[[package]]
++name = "provable-contracts-macros"
++version = "0.3.1"
++dependencies = [
++ "proc-macro2",
++ "quote",
++ "syn",
++]
++
+ [[package]]
+ name = "psm"
+ version = "0.1.30"
+@@ -6974,7 +6984,7 @@ dependencies = [
+  "prettyplease",
+  "proc-macro2",
+  "proptest",
+- "provable-contracts 0.1.1",
++ "provable-contracts 0.3.1",
+  "pulldown-cmark",
+  "quickcheck",
+  "quickcheck_macros",
+diff --git a/src/frontend/parser/expressions_helpers/async_expressions.rs b/src/frontend/parser/expressions_helpers/async_expressions.rs
+index 5a306965..0fccbb98 100644
+--- a/src/frontend/parser/expressions_helpers/async_expressions.rs
++++ b/src/frontend/parser/expressions_helpers/async_expressions.rs
+@@ -892,96 +892,34 @@ mod tests {
+         ///
+         /// Keywords like "fn", "if", "let" would cause parser failures.
+         /// This strategy filters them out for property test validity.
++        /// All lowercase keywords/tokens from lexer.rs that match `[a-z]+`.
++        /// Must stay in sync with Token variants. Incomplete lists cause
++        /// sporadic proptest failures (e.g., "ask", "df", "handler").
++        const KEYWORDS: &[&str] = &[
++            // core
++            "fn", "fun", "let", "var", "if", "else", "for", "while", "loop",
++            "match", "break", "continue", "return", "async", "await", "try",
++            "catch", "throw", "in", "as", "is", "self", "super", "mod", "use",
++            "pub", "const", "static", "mut", "ref", "type", "struct", "enum",
++            "trait", "impl", "df",
++            // actor system
++            "actor", "spawn", "effect", "handle", "handler", "receive", "send", "ask",
++            // OOP / type system
++            "class", "property", "private", "protected", "sealed", "final",
++            "abstract", "mixin", "operator", "interface", "implements", "override", "extend",
++            // module / import
++            "module", "export", "import", "from", "with", "default", "crate",
++            // control flow / misc
++            "finally", "where", "lazy", "null",
++            // contracts (Ruchy 5.0)
++            "requires", "ensures", "invariant", "decreases",
++            // sovereign platform (Ruchy 5.0)
++            "infra", "signal", "yield",
++        ];
++
+         fn valid_identifier() -> impl Strategy<Value = String> {
+-            // Filter ALL lowercase tokens from the lexer that match [a-z]+.
+-            // This must stay in sync with Token variants in lexer.rs.
+-            // Incomplete lists cause sporadic proptest failures (e.g., "ask", "df").
+             "[a-z]+".prop_filter("Must not be a keyword or reserved word", |s| {
+-                !matches!(
+-                    s.as_str(),
+-                    // Core keywords
+-                    "fn" | "fun"
+-                        | "let"
+-                        | "var"
+-                        | "if"
+-                        | "else"
+-                        | "for"
+-                        | "while"
+-                        | "loop"
+-                        | "match"
+-                        | "break"
+-                        | "continue"
+-                        | "return"
+-                        | "async"
+-                        | "await"
+-                        | "try"
+-                        | "catch"
+-                        | "throw"
+-                        | "in"
+-                        | "as"
+-                        | "is"
+-                        | "self"
+-                        | "super"
+-                        | "mod"
+-                        | "use"
+-                        | "pub"
+-                        | "const"
+-                        | "static"
+-                        | "mut"
+-                        | "ref"
+-                        | "type"
+-                        | "struct"
+-                        | "enum"
+-                        | "trait"
+-                        | "impl"
+-                        // DataFrame token
+-                        | "df"
+-                        // Actor system keywords
+-                        | "actor"
+-                        | "spawn"
+-                        | "effect"
+-                        | "handle"
+-                        | "handler"
+-                        | "receive"
+-                        | "send"
+-                        | "ask"
+-                        // OOP / type system keywords
+-                        | "class"
+-                        | "property"
+-                        | "private"
+-                        | "protected"
+-                        | "sealed"
+-                        | "final"
+-                        | "abstract"
+-                        | "mixin"
+-                        | "operator"
+-                        | "interface"
+-                        | "implements"
+-                        | "override"
+-                        | "extend"
+-                        // Module / import keywords
+-                        | "module"
+-                        | "export"
+-                        | "import"
+-                        | "from"
+-                        | "with"
+-                        | "default"
+-                        | "crate"
+-                        // Control flow / error handling
+-                        | "finally"
+-                        | "where"
+-                        | "lazy"
+-                        | "null"
+-                        // Contract keywords (Ruchy 5.0)
+-                        | "requires"
+-                        | "ensures"
+-                        | "invariant"
+-                        | "decreases"
+-                        // Sovereign platform keywords (Ruchy 5.0)
+-                        | "infra"
+-                        | "signal"
+-                        | "yield"
+-                )
++                !KEYWORDS.contains(&s.as_str())
+             })
+         }
+ 
+diff --git a/src/frontend/parser/expressions_helpers/lambdas.rs b/src/frontend/parser/expressions_helpers/lambdas.rs
+index 57827c58..72e11075 100644
+--- a/src/frontend/parser/expressions_helpers/lambdas.rs
++++ b/src/frontend/parser/expressions_helpers/lambdas.rs
+@@ -920,96 +920,34 @@ mod tests {
+         ///
+         /// Keywords like "fn", "if", "let" would cause parser failures.
+         /// This strategy filters them out for property test validity.
++        /// All lowercase keywords/tokens from lexer.rs that match `[a-z]+`.
++        /// Must stay in sync with Token variants. Incomplete lists cause
++        /// sporadic proptest failures (e.g., "ask", "df", "handler").
++        const KEYWORDS: &[&str] = &[
++            // core
++            "fn", "fun", "let", "var", "if", "else", "for", "while", "loop",
++            "match", "break", "continue", "return", "async", "await", "try",
++            "catch", "throw", "in", "as", "is", "self", "super", "mod", "use",
++            "pub", "const", "static", "mut", "ref", "type", "struct", "enum",
++            "trait", "impl", "df",
++            // actor system
++            "actor", "spawn", "effect", "handle", "handler", "receive", "send", "ask",
++            // OOP / type system
++            "class", "property", "private", "protected", "sealed", "final",
++            "abstract", "mixin", "operator", "interface", "implements", "override", "extend",
++            // module / import
++            "module", "export", "import", "from", "with", "default", "crate",
++            // control flow / misc
++            "finally", "where", "lazy", "null",
++            // contracts (Ruchy 5.0)
++            "requires", "ensures", "invariant", "decreases",
++            // sovereign platform (Ruchy 5.0)
++            "infra", "signal", "yield",
++        ];
++
+         fn valid_identifier() -> impl Strategy<Value = String> {
+-            // Filter ALL lowercase tokens from the lexer that match [a-z]+.
+-            // This must stay in sync with Token variants in lexer.rs.
+-            // Incomplete lists cause sporadic proptest failures (e.g., "ask", "df").
+             "[a-z]+".prop_filter("Must not be a keyword or reserved word", |s| {
+-                !matches!(
+-                    s.as_str(),
+-                    // Core keywords
+-                    "fn" | "fun"
+-                        | "let"
+-                        | "var"
+-                        | "if"
+-                        | "else"
+-                        | "for"
+-                        | "while"
+-                        | "loop"
+-                        | "match"
+-                        | "break"
+-                        | "continue"
+-                        | "return"
+-                        | "async"
+-                        | "await"
+-                        | "try"
+-                        | "catch"
+-                        | "throw"
+-                        | "in"
+-                        | "as"
+-                        | "is"
+-                        | "self"
+-                        | "super"
+-                        | "mod"
+-                        | "use"
+-                        | "pub"
+-                        | "const"
+-                        | "static"
+-                        | "mut"
+-                        | "ref"
+-                        | "type"
+-                        | "struct"
+-                        | "enum"
+-                        | "trait"
+-                        | "impl"
+-                        // DataFrame token
+-                        | "df"
+-                        // Actor system keywords
+-                        | "actor"
+-                        | "spawn"
+-                        | "effect"
+-                        | "handle"
+-                        | "handler"
+-                        | "receive"
+-                        | "send"
+-                        | "ask"
+-                        // OOP / type system keywords
+-                        | "class"
+-                        | "property"
+-                        | "private"
+-                        | "protected"
+-                        | "sealed"
+-                        | "final"
+-                        | "abstract"
+-                        | "mixin"
+-                        | "operator"
+-                        | "interface"
+-                        | "implements"
+-                        | "override"
+-                        | "extend"
+-                        // Module / import keywords
+-                        | "module"
+-                        | "export"
+-                        | "import"
+-                        | "from"
+-                        | "with"
+-                        | "default"
+-                        | "crate"
+-                        // Control flow / error handling
+-                        | "finally"
+-                        | "where"
+-                        | "lazy"
+-                        | "null"
+-                        // Contract keywords (Ruchy 5.0)
+-                        | "requires"
+-                        | "ensures"
+-                        | "invariant"
+-                        | "decreases"
+-                        // Sovereign platform keywords (Ruchy 5.0)
+-                        | "infra"
+-                        | "signal"
+-                        | "yield"
+-                )
++                !KEYWORDS.contains(&s.as_str())
+             })
+         }
+ 

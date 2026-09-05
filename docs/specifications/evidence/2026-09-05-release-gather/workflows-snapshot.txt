@@ -1,0 +1,209 @@
+=== release.yml ===
+     1	name: Release
+     2	
+     3	on:
+     4	  push:
+     5	    tags:
+     6	      - 'v*'
+     7	
+     8	env:
+     9	  CARGO_TERM_COLOR: always
+    10	
+    11	jobs:
+    12	  # Create GitHub release
+    13	  create-release:
+    14	    name: Create Release
+    15	    runs-on: ubuntu-latest
+    16	    outputs:
+    17	      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    18	    steps:
+    19	      - uses: actions/checkout@v4
+    20	      - name: Create Release
+    21	        id: create_release
+    22	        uses: actions/create-release@v1
+    23	        env:
+    24	          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    25	        with:
+    26	          tag_name: ${{ github.ref }}
+    27	          release_name: Release ${{ github.ref }}
+    28	          draft: false
+    29	          prerelease: false
+    30	
+    31	  # Build and upload binaries
+    32	  build-binaries:
+    33	    name: Build Binaries
+    34	    needs: create-release
+    35	    runs-on: ${{ matrix.os }}
+    36	    strategy:
+    37	      matrix:
+    38	        include:
+    39	          - os: ubuntu-latest
+    40	            target: x86_64-unknown-linux-gnu
+    41	            suffix: linux-amd64
+    42	          - os: macos-latest
+    43	            target: x86_64-apple-darwin
+    44	            suffix: darwin-amd64
+    45	          - os: macos-latest
+    46	            target: aarch64-apple-darwin
+    47	            suffix: darwin-arm64
+    48	          - os: windows-latest
+    49	            target: x86_64-pc-windows-msvc
+    50	            suffix: windows-amd64.exe
+    51	    steps:
+    52	      - uses: actions/checkout@v4
+    53	      - uses: dtolnay/rust-toolchain@stable
+    54	        with:
+    55	          targets: ${{ matrix.target }}
+    56	      - name: Build release binary
+    57	        run: cargo build --release --target ${{ matrix.target }}
+    58	      - name: Package binary
+    59	        shell: bash
+    60	        run: |
+    61	          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+    62	            cp target/${{ matrix.target }}/release/ruchy.exe ruchy-${{ matrix.suffix }}
+    63	          else
+    64	            cp target/${{ matrix.target }}/release/ruchy ruchy-${{ matrix.suffix }}
+    65	          fi
+    66	      - name: Upload Release Asset
+    67	        uses: actions/upload-release-asset@v1
+    68	        env:
+    69	          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    70	        with:
+    71	          upload_url: ${{ needs.create-release.outputs.upload_url }}
+    72	          asset_path: ./ruchy-${{ matrix.suffix }}
+    73	          asset_name: ruchy-${{ matrix.suffix }}
+    74	          asset_content_type: application/octet-stream
+    75	
+    76	  # Build and upload WASM artifacts
+    77	  build-wasm:
+    78	    name: Build WASM
+    79	    needs: create-release
+    80	    runs-on: ubuntu-latest
+    81	    timeout-minutes: 15
+    82	    steps:
+    83	      - uses: actions/checkout@v4
+    84	      - uses: dtolnay/rust-toolchain@stable
+    85	        with:
+    86	          targets: wasm32-unknown-unknown
+    87	      - name: Cache Rust dependencies
+    88	        uses: Swatinem/rust-cache@v2
+    89	        with:
+    90	          key: wasm-release-${{ hashFiles('**/Cargo.lock') }}
+    91	      - name: Install wasm-pack
+    92	        run: cargo install wasm-pack --locked
+    93	      - name: Build WASM package
+    94	        run: wasm-pack build --target web --no-default-features --features wasm-compile
+    95	        timeout-minutes: 10
+    96	      - name: Extract version from tag
+    97	        id: get_version
+    98	        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+    99	      - name: Rename WASM artifacts with version
+   100	        run: |
+   101	          cd pkg
+   102	          mv ruchy_bg.wasm ruchy-${{ steps.get_version.outputs.VERSION }}.wasm
+   103	          mv ruchy.js ruchy-${{ steps.get_version.outputs.VERSION }}.js
+   104	          mv ruchy_bg.wasm.d.ts ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts
+   105	      - name: Generate SHA256 checksums
+   106	        run: |
+   107	          cd pkg
+   108	          sha256sum ruchy-${{ steps.get_version.outputs.VERSION }}.wasm > checksums.txt
+   109	          sha256sum ruchy-${{ steps.get_version.outputs.VERSION }}.js >> checksums.txt
+   110	          sha256sum ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts >> checksums.txt
+   111	          cat checksums.txt
+   112	      - name: Upload WASM binary
+   113	        uses: actions/upload-release-asset@v1
+   114	        env:
+   115	          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   116	        with:
+   117	          upload_url: ${{ needs.create-release.outputs.upload_url }}
+   118	          asset_path: ./pkg/ruchy-${{ steps.get_version.outputs.VERSION }}.wasm
+   119	          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}.wasm
+   120	          asset_content_type: application/wasm
+   121	      - name: Upload JavaScript bindings
+   122	        uses: actions/upload-release-asset@v1
+   123	        env:
+   124	          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   125	        with:
+   126	          upload_url: ${{ needs.create-release.outputs.upload_url }}
+   127	          asset_path: ./pkg/ruchy-${{ steps.get_version.outputs.VERSION }}.js
+   128	          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}.js
+   129	          asset_content_type: application/javascript
+   130	      - name: Upload TypeScript definitions
+   131	        uses: actions/upload-release-asset@v1
+   132	        env:
+   133	          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   134	        with:
+   135	          upload_url: ${{ needs.create-release.outputs.upload_url }}
+   136	          asset_path: ./pkg/ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts
+   137	          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}_bg.wasm.d.ts
+   138	          asset_content_type: text/plain
+   139	      - name: Upload checksums
+   140	        uses: actions/upload-release-asset@v1
+   141	        env:
+   142	          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+   143	        with:
+   144	          upload_url: ${{ needs.create-release.outputs.upload_url }}
+   145	          asset_path: ./pkg/checksums.txt
+   146	          asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}-wasm-checksums.txt
+   147	          asset_content_type: text/plain
+   148	
+   149	  # Publish to crates.io
+   150	  publish-crates:
+   151	    name: Publish to crates.io
+   152	    runs-on: ubuntu-latest
+   153	    needs: create-release
+   154	    steps:
+   155	      - uses: actions/checkout@v4
+   156	      - uses: dtolnay/rust-toolchain@stable
+   157	      - name: Publish ruchy library
+   158	        run: cargo publish --package ruchy --token ${{ secrets.CRATES_TOKEN }}
+   159	        continue-on-error: true
+   160	      - name: Wait for library to be available
+   161	        run: sleep 30
+   162	      - name: Publish ruchy-cli
+   163	        run: cargo publish --package ruchy-cli --token ${{ secrets.CRATES_TOKEN }}
+   164	        continue-on-error: true
+=== ci.yml ===
+     1	# Sovereign CI — calls reusable workflow from paiml/.github
+     2	# Change once in paiml/.github → applies to all repos
+     3	#
+     4	# Jobs provided by sovereign-ci.yml:
+     5	#   test: cargo test --lib (self-hosted clean-room)
+     6	#   lint: cargo clippy --all-targets -- -D warnings + cargo fmt --check
+     7	#   coverage: cargo llvm-cov + codecov upload
+     8	#   security: cargo audit (ubuntu-latest, continue-on-error)
+     9	#   provenance: SLSA attest-build-provenance
+    10	#   gate: aggregates test+lint results
+    11	name: CI
+    12	
+    13	on:
+    14	  push:
+    15	    branches: [main, master]
+    16	  pull_request:
+    17	    branches: [main, master]
+    18	  workflow_dispatch:
+    19	
+    20	concurrency:
+    21	  group: ci-${{ github.event.pull_request.number || github.ref }}
+    22	  cancel-in-progress: true
+    23	
+    24	jobs:
+    25	  ci:
+    26	    uses: paiml/.github/.github/workflows/sovereign-ci.yml@main
+    27	    with:
+    28	      repo: ${{ github.event.repository.name }}
+    29	    secrets: inherit
+    30	
+
+=== pr-gate.yml (head) ===
+# PR Authorization Gate — block PRs from unauthorized contributors
+# Calls reusable workflow from paiml/.github
+name: PR Gate
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+jobs:
+  authorize:
+    uses: paiml/.github/.github/workflows/pr-gate.yml@main

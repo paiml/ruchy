@@ -1,0 +1,41 @@
+=== cargo package --list -p ruchy ===
+exit=0
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/noah/src/ruchy/ruchy-wasm/Cargo.toml
+workspace: /home/noah/src/ruchy/Cargo.toml
+files in package: 2882
+tests/ files: 480
+quarantine files: 802
+.pmat-work files: 10
+colon paths: 7
+docs/ files: 574
+examples/ files: 295
+top-level dirs:
+    597 src
+    574 docs
+    501 tests_temp_disabled_for_sprint7_mutation
+    480 tests
+    295 examples
+    277 tests.disabled
+     24 tests_disabled_for_mutation
+     16 benches
+     14 golden_traces
+     12 .github
+     10 .pmat-work
+      8 .ruchy-tier-baselines
+      5 qa_sandbox
+      4 notebooks
+      4 contracts
+
+=== cargo package --no-verify -p ruchy (clean-room precheck) ===
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/noah/src/ruchy/ruchy-wasm/Cargo.toml
+workspace: /home/noah/src/ruchy/Cargo.toml
+   Packaging ruchy v5.0.0-beta.1 (/home/noah/src/ruchy)
+    Updating crates.io index
+warning: package `chacha20 v0.10.1` in Cargo.lock is yanked in registry `crates-io`
+  |
+  = help: consider updating to a version that is not yanked
+    Packaged 2882 files, 38.9MiB (7.8MiB compressed)
+exit=
+-rw-rw-r-- 1 noah noah 8143741 Sep  5 11:09 /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/pkg-target/package/ruchy-5.0.0-beta.1.crate

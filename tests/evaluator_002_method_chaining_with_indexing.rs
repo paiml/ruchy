@@ -1,7 +1,7 @@
 #![allow(missing_docs)]
 // EVALUATOR-002: Method chaining with array indexing
 // Test ticket: tests/evaluator_002_method_chaining_with_indexing.rs
-// Traceability: docs/execution/roadmap.yaml:4465-4562
+// Traceability: docs/roadmaps/roadmap.yaml:4465-4562
 //
 // Bug: Method chaining with array indexing returns empty string
 // Example: html.select('.content')[0].text() returns "" instead of text content

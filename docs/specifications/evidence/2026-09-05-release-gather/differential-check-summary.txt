@@ -1,0 +1,14 @@
+both pass: 1104
+REGRESSION (4.2.1 ok, HEAD fail): 2
+fixed (4.2.1 fail, HEAD ok): 
+both fail: 180
+HEAD timeouts: 0  4.2.1 timeouts: 1
+ruchyruchy 1
+examples 1
+ruchy-repl-demos       total=  76 4.2.1-pass=  72 HEAD-pass=  72
+ruchyruchy             total= 538 4.2.1-pass= 425 HEAD-pass= 424
+ruchy-cli-tools-book   total=  15 4.2.1-pass=  15 HEAD-pass=  15
+rosetta-ruchy          total= 198 4.2.1-pass= 169 HEAD-pass= 169
+ruchy-cookbook         total=  37 4.2.1-pass=  35 HEAD-pass=  35
+examples               total= 183 4.2.1-pass= 155 HEAD-pass= 154
+ruchy-book             total= 239 4.2.1-pass= 235 HEAD-pass= 235

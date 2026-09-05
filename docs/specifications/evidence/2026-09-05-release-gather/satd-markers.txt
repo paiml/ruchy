@@ -1,0 +1,17 @@
+=== SATD markers (gate regex) ===
+src/bin/handlers/commands_tests.rs:487:    let (passed, message) = check_satd_gate("// TODO: fix this");
+src/bin/handlers/commands_tests.rs:494:    assert!(contains_satd_comment("// TODO: something"));
+src/bin/handlers/commands_tests.rs:501:    assert!(contains_satd_comment("// FIXME: broken"));
+src/bin/handlers/commands_tests.rs:508:    assert!(contains_satd_comment("// HACK: workaround"));
+src/bin/handlers/commands_tests.rs:578:    assert!(detect_satd_in_source("// TODO: implement"));
+src/bin/handlers/commands_tests.rs:580:    assert!(!detect_satd_in_source("/* FIXME: bug here */"));
+src/bin/handlers/commands_tests.rs:581:    assert!(detect_satd_in_source("// HACK: workaround"));
+src/frontend/parser/mod.rs:440:            // PARSER-XXX: Extended to include Await and Try expressions
+src/frontend/parser/mod.rs:655:    // PARSER-XXX: Use same logic as is_try_operator_not_ternary
+src/frontend/parser/mod.rs:915:/// PARSER-XXX: Scan ahead to find `:` at same nesting level for ternary detection
+src/frontend/parser/expressions_helpers/impls.rs:73:        // PARSER-XXX: Skip comment tokens in impl blocks
+src/frontend/parser/expressions_helpers/impls.rs:205:    // PARSER-XXX: Accept both 'fun' and 'fn' in impl blocks for consistency
+src/frontend/parser/expressions_helpers/patterns.rs:505:    // PARSER-XXX: Keywords can be used as field names in struct patterns
+src/frontend/parser/expressions_helpers/patterns.rs:560:/// PARSER-XXX: Support both ..rest (two dots) and ...rest (three dots) syntax
+src/transpiler/canonical_ast.rs:323:            Literal::Atom(_) => CoreLiteral::Unit, // TODO: Support atoms in canonical AST
+count: 15

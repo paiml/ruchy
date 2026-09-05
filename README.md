@@ -182,7 +182,7 @@ Add to Claude Desktop config:
 ## Documentation
 
 - [Language Specification](docs/SPECIFICATION.md)
-- [Development Roadmap](docs/execution/roadmap.yaml)
+- [Development Roadmap](docs/roadmaps/roadmap.yaml)
 - [Ruchy Book](https://github.com/paiml/ruchy-book) - Comprehensive guide
 - 🤖 [Coursera Hugging Face AI Development Specialization](https://www.coursera.org/specializations/hugging-face-ai-development) - Build Production AI systems with Hugging Face in Pure Rust
 
@@ -193,7 +193,9 @@ Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) gui
 
 ## MSRV
 
-Minimum Supported Rust Version: **1.75**
+Minimum Supported Rust Version: **1.91** — the aprender monorepo crates (`aprender`,
+`aprender-core`, `aprender-compute` 0.65) declare `rust-version = 1.91`, so the workspace
+cannot honestly claim less [PMAT-094].
 
 ## See Also
 

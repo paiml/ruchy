@@ -1,0 +1,20 @@
+# Z1 / PMAT-092 verification (orchestrator-run in /home/noah/src/ruchy-wt-PMAT-092, branch PMAT-092-release-pkg-hygiene)
+
+Commits (on top of the cherry-picked Z0 f731f22d):
+  53fcbaf7 test(release): add RED release hygiene tests            (worker, RED)
+  8c6e809d fix(release): package hygiene — drop quarantine dirs, colon paths, use include allowlist   (worker, GREEN)
+  7d77030c fix(release): anchor include globs, add release-hygiene contract [PMAT-092]              (orchestrator: worker hit maxTurns twice)
+
+Worker-claimed vs orchestrator re-run:
+  cargo package -p ruchy (verify build)              worker: exit 0        orchestrator: --list only (verify build re-run is Z5 stage 5)
+  cargo package --list -p ruchy                      worker: n/a           orchestrator: 1406 files; bad paths 0; Cargo.lock present; non-allowlisted: none
+                                                     (before anchoring: 1423 files, 17 docs/**/README.md + .ruchy-tier-baselines/README.md leaked in — unanchored globs match at any depth)
+  git ls-files | grep -c ':'                         worker: 0             orchestrator: 0
+  quarantine dirs                                    worker: deleted       orchestrator: absent (tests.disabled, tests_disabled_for_mutation, tests_temp_disabled_for_sprint7_mutation)
+  A_1: cargo test --test release_hygiene             worker: RED then ok   orchestrator: 7 passed, 0 failed (exit 0)
+  pv validate contracts/release-hygiene-v1.yaml      orchestrator: valid (after adding a kani_harnesses entry — pv rejects an empty list)
+  pv lint contracts/                                 orchestrator: PASS (3 contracts, 0 errors, 12 warnings)
+  gate_cmd cargo test --workspace                    not run on this branch: red at main for the PMAT-104 reasons (mcp process::exit; watch-mode test exit(0)); subset cargo test --lib -p ruchy: 20510 passed, 0 failed
+  crate size                                         worker: 3,278,838 bytes compressed (was 8,143,741)
+
+.pmat-work colon dirs: untracked with `git rm -r --cached`, `.gitignore` gains `.pmat-work/*:*`.

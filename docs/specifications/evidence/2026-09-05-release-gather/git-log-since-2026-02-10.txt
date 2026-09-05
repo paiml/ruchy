@@ -1,0 +1,184 @@
+3a665f36 fix(build): track generated_contracts.rs — a clean checkout could not build (#200)
+996d533d fix(deps): clear ALL 21 RUSTSEC advisories — no exemptions (#199)
+70576494 fix: add "ask" to proptest keyword blocklist + update lru (Refs #196)
+2c715656 fix: nightly — add provable-contracts sibling checkout (Refs paiml/infra#20)
+e6503890 feat(cli): --exclude across all Pillar-1 commands [PROVABILITY-035]
+0259f7ac feat(cli): `ruchy tier --exclude <PATTERN>` [PROVABILITY-034]
+f95b201d fix(parser): second actor-hang on `handler` keyword [PARSER-ACTOR-HANG-2]
+a6d8c1f6 feat(cli): --pub-only for contracts commands [PROVABILITY-031]
+0be41295 feat(cli): markdown format for contracts list/suggest [PROVABILITY-030]
+26c1a7df feat(make): check-tier-baselines target for corpus [PROVABILITY-029]
+d5851e2b feat(provability): beefier F1 triviality detector [PROVABILITY-028]
+f4453d18 docs(provability): §14.5 baselines for §Appendix B corpus [PROVABILITY-027]
+9598262f fix(parser): infinite loop on unclosed actor body [PARSER-ACTOR-HANG]
+9e1ee7c7 docs(5.0): session rollup PROVABILITY-011..026 + falsification
+dc15a662 feat(cli): wire `ruchy suggest-contracts` to real scanner [PROVABILITY-026]
+12c36c85 feat(cli): `ruchy contracts sync` writes real YAML manifests [PROVABILITY-025]
+bf7d69fd feat(cli): wire `ruchy contracts check/list` to real scanner [PROVABILITY-024]
+fd7abb75 feat(cli): `ruchy tier --config <file.toml>` centralized config [PROVABILITY-023]
+d2372ff2 feat(cli): --fail-on-scorecard warn|fail gate [PROVABILITY-022]
+fbdfe043 feat(cli): `ruchy tier --markdown` PR-ready reports [PROVABILITY-021]
+59e27c4a feat(cli): `ruchy tier --baseline <file>` regression gate [PROVABILITY-020]
+ae7c1206 feat(cli): `ruchy tier` per-file parse timeout [PROVABILITY-019]
+2a555808 feat(cli): §14.5 falsifier scorecard [PROVABILITY-018]
+0d80269b feat(cli): --by-file --sort-by / --top for triage [PROVABILITY-017]
+af7f6312 feat(cli): `ruchy tier --by-file` per-file tier breakdown [PROVABILITY-016]
+3c45ec4b feat(cli): --fail-diff-exempt-density-above K CI gate [PROVABILITY-015]
+bd8bf190 docs(cli): add ruchy-tier.md command reference [PROVABILITY-DOCS-001]
+eca29d27 feat(cli): `ruchy tier --json --list` per-function JSON [PROVABILITY-014]
+ee0027bd feat(cli): §14.5 F4 pub Bronze in summary + list UX [PROVABILITY-013]
+4cac18ce feat(cli): --fail-pub-bronze-above N CI gate [PROVABILITY-012]
+9e289459 feat(cli): §14.5 F4 proxy — pub_bronze tracking + --public-only [PROVABILITY-011]
+daef4eff feat(cli): §14.5 F11 #[diff_exempt] density tracking [PROVABILITY-010]
+1453b644 feat(cli): --fail-exempt-density-above K CI gate [PROVABILITY-009]
+74f2f0f1 feat(cli): extend `ruchy tier --json` to all §14.5 metrics [PROVABILITY-008]
+175dedd0 feat(cli): §14.5 F2 escape-hatch density tracking [PROVABILITY-007]
+63ee1fd9 feat(cli): --fail-under-f1 N CI gate [PROVABILITY-006]
+6af1e3e2 feat(cli): F1 trivial-contract detection in `ruchy tier` [PROVABILITY-005]
+4472a985 feat(cli): --fail-on-totality-violation CI gate [PROVABILITY-004]
+87211d0f feat(cli): §14.10.6 totality tracking in `ruchy tier` [PROVABILITY-003]
+9a190af9 feat(cli): `ruchy tier --fail-under N --list` [PROVABILITY-002]
+772f906d feat(cli): `ruchy tier <path>` — §14.2 tier distribution reporter [PROVABILITY-001]
+13f59ec8 feat(provability): AST-to-Tier bridge [TIER-002]
+958688ee feat(provability): §14.2 tier classification API [TIER-001]
+929941e2 feat(provability): §14.10 runtime skeletons [SPEC-HARDREQ-002]
+e4f61338 docs(5.0): §14.10 HARD REQUIREMENTS — port 5 features from SOTA
+7a209a87 docs(5.0): external falsification of §14 — 5 systems beat Platinum
+b9b77e49 docs(5.0): spec §14 Provability Mandate + self-falsification
+3b8bf47a fix(parser): accept #[attribute] syntax per 5.0 spec Sec 3 [PARSER-ATTR-001]
+98fae53b docs(5.0): expand Criterion #4 to all 7 paiml book repos (Appendix B)
+5f32860f fix(compiler): ruchy compile honours CARGO_TARGET_DIR [COMPILER-001]
+d75e1bf1 test(5.0): binary size budget gate [EMBED-009]
+f3941618 test(5.0): zero-unsafe transpile gate [EMBED-008]
+e2f6ae18 feat(5.0): sandbox builder completion (with_net/with_env/strict)
+2971191d feat(5.0): Map container marshaling in ruchy-embed [EMBED-007]
+24d29d65 feat(5.0): List/Tuple container marshaling in ruchy-embed [EMBED-007]
+67d8f649 perf(5.0): release-mode startup benchmark validates <5ms [EMBED-006]
+d73954c5 test(5.0): hot-reload integration test for ruchy-embed [EMBED-005]
+ccaf41bd docs(5.0): add Pillar 9 Embedding sub-spec
+eda65072 test(5.0): migrate-4to5 synthetic 4.x acceptance suite
+adc6aa5f feat(5.0): beta.1 version bump + 9-pillar acceptance gate (rc.1)
+3168353a feat(5.0): beta.1 ML pipeline + widget types, beta.2 shell transpilation
+a962cb78 feat(5.0): yield/signal/infra interpreter support + SIMD/embed examples
+d1f21f60 feat(5.0): alpha.2 trueno SIMD expansion + alpha.3 embed sandboxing
+47a8d631 docs: update 5.0 spec status — alpha.1 gate met (20,429 tests pass)
+3d532a80 feat(5.0): add probar testing flags to test command (Pillar 8)
+04e805e8 feat(5.0): contracts management + suggest-contracts CLI commands
+2f8d04e0 test(5.0): add Silver-level contract transpilation tests
+0ee6fd4f feat(5.0): add 5.0 examples + keyword reservation tests
+da62ad86 feat(5.0): ruchy-embed API + sovereign integration tests (29 CLI tests)
+1841d45c feat(5.0): migrate-4to5 tool, sovereign handlers, stdlib bridges with tests
+dab0ce73 docs: update 5.0 spec with alpha.1 implementation status
+05f969b2 feat(5.0): contract clauses now emit debug_assert! (Silver level)
+ee8c02c9 feat(5.0): add stdlib bridges for forjar, simular, bashrs
+4f583850 feat(5.0): add all sovereign platform CLI subcommands
+5e4c12db feat(5.0-alpha.1): version bump + sovereign platform keywords + feature gates
+e7296202 feat: provable contracts AST integration + cargo fmt
+aab23d06 sync: wasm_compile example, roadmap update, proptest regressions, contracts field fix
+5144cc7a falsify(specs): QA checklist + five-categories — historical annotations
+7ac17640 falsify(specs): update 4 specs with 2026-04-04 ground truth
+3195b1d8 falsify(spec): beta-release-stabilization — update with v4.2.1 ground truth
+15503b65 fix(transpiler): reduce(init, fn) now emits fold() instead of reduce()
+b9eaec64 feat(transpiler): implement default parameter transpilation
+9470ec2c fix(transpiler): .to_int()/.to_float() method calls emit valid Rust
+6781f1e0 feat(runtime): implement dir() builtin for object inspection
+939292d8 fix(specs): update formatter spec — 100% ExprKind coverage now true
+d8929f6d fix(formatter): implement Set literal formatting — last UNIMPLEMENTED gone
+fce840ec fix(specs): falsify 4 specs — add honest implementation status headers
+405f5717 feat(score): implement --explain flag with score breakdown
+989de240 fix(tests): stabilize property test suite — re-ignore flaky, keep 61 stable
+035f2e07 fix(tests): un-ignore 65 passing parser property tests
+6aca9be6 fix(specs): update atom-spec status — pattern matching now implemented
+5f32c451 fix(transpiler): implement atom literal pattern matching (was todo!)
+219f18de fix(tests): un-ignore decorator + comprehension tests — both now pass
+e5903334 fix(tests): un-ignore module pub function + html property test
+fbde09ec fix(tests): un-ignore 3 passing tests — class/struct, snapshot, ephemeral
+822eb797 fix(vm): un-ignore division/modulo-by-zero tests — error case matches
+28dc3004 fix(infer): fix unary negate, while/loop type inference (INFER-001)
+f553f0b3 fix(transpiler): handle empty blocks/params before contract assertions
+2b2cd5bb fix(deps): update cc 1.2.56 → 1.2.59 to fix ruchy-embed compilation
+c2cb2570 fix(specs): update RUNTIME-001 CLI status, trueno versions, self-hosting claims
+f9acfd93 feat(cli): add --max-depth flag to REPL for configurable recursion limit
+782adc41 fix(specs): mark CLI tier commands and notebook SharedSession as aspirational
+71f29ac6 fix(specs): mark WASM match/fstring as implemented, update stdlib-time date
+58f73edc fix(specs): update module-system and unary-operator specs to reflect implementation
+17d5701e fix(tests): correct 4 handler test assertions to match evolved parser behavior
+aa4e3b00 feat(5.0): ruchy-embed crate — embeddable scripting engine (PMAT-004)
+4996f7d0 feat(5.0): upgrade aprender 0.26 → 0.27.5 (PMAT-003)
+5b84572e feat(5.0): upgrade trueno 0.15 → 0.16.3 (PMAT-003)
+2bdcf90d feat(5.0): @decorator support on functions + unified decorator grammar (PMAT-084)
+9ace854c feat(5.0): loop contract parsing (invariant/decreases on while/for) (PMAT-001)
+bc13b92e feat(5.0): contract transpiler emission + mechanical contracts field patch (PMAT-001)
+78e27218 feat: add contract-first design enforcement to CLAUDE.md (Refs PMAT-033)
+89b20f47 chore: update TDG baseline for has_contract_coverage field
+b6c78a96 feat(5.0): add contract keywords to parser + 9-pillar spec suite (PMAT-001)
+df18e7fe chore: gitignore generated_contracts.rs — build artifact (Refs PMAT-131)
+cdee704c fix: replace stale 5858-line generated_contracts.rs with minimal stub (Refs PMAT-131)
+c7983dc4 feat: expand contract trait impls from 7/13 to 13/13
+9e7db068 feat: expand contract trait enforcement from 2 to 7 traits
+7934ec12 feat: add contract-trait enforcement test (provable-contracts Section 23)
+712870df chore: update deny.toml — explicit advisory ignores, CDLA-Permissive-2.0, allow-org
+6cb70a7f chore: cargo update vulnerable deps (RUSTSEC-2026-{0041,0044-0049,0067,0068,0007,0009})
+9931f206 chore: update deny.toml — explicit advisory ignores, CDLA-Permissive-2.0, allow-org
+599dc843 chore: update deny.toml — explicit advisory ignores, CDLA-Permissive-2.0, allow-org
+9d93eb0b ci: add PR authorization gate for org-only PRs
+7f88e674 ci: add nightly criterion benchmarks via sovereign-ci
+45210f90 ci: add keyword annotations for pmat repo-score detection
+164018a1 enforce: add AllImplemented contract binding enforcement (PMAT-078)
+79cf5034 fix: resolve clippy warnings for green CI
+3782fdf2 ci: adopt sovereign-ci.yml reusable workflow
+a0a46e3c ci: migrate to self-hosted runners for sovereignty (§2.1.1) (#193)
+81d4b193 refactor: extract helpers from examples/score_examples.rs main (48→split)
+c56ec77d refactor: decompose execute_instruction and eval_prim to fix CB-200
+58f3a14f refactor: extract helpers from analyze_expr and format_expr to reduce CB-200
+b7fe1df8 fix: delete legacy from_u8_match/name_match (dead code flagged by CB-200)
+99f63e15 refactor: replace from_u8/name match blocks with array lookups (CB-200)
+fc3a5c59 refactor: split handle_complex_command into dispatch_analysis + dispatch_tooling (CB-200)
+99d75bec feat: add provable contracts for CB-1202 compliance (Refs PMAT-149)
+4d45bc36 fix: CB-500 add critical patterns to exclude in Cargo.toml (Refs PMAT-149)
+132850ea chore: pmat comply migrate to latest version (Refs PMAT-149)
+a928fdf5 fix: replace fake cookbook link with real examples/ directory (Refs PMAT-149)
+be5b8776 fix: add docs.rs badge + cookbook link per §2.2 (Refs PMAT-149)
+d8dae773 fix: add missing README badges/sections per repo-standards §2.2 (Refs PMAT-149)
+73a512bc fix(ci): resolve 6 CI job failures — clippy, build, lint, REPL, release, coverage (Refs PMAT-149)
+0f08d589 style: apply nightly rustfmt to 33 files
+640fae5b fix: update entrenar 0.6→0.7 and use nightly rustfmt for ignore directive
+a4fd8e85 fix: remove machine-specific .cargo/config.toml (Refs PMAT-149)
+6168c57a fix: ruchy test exits non-zero when no test files found (Refs #171)
+a19cb063 chore: remove 22 stale/redundant GitHub Actions workflows
+fe7da001 fix(ci): add explicit rustup target add for cross-compilation
+d1c1f5d0 ci: add nightly binary release workflow (Closes #188)
+61d3cdb4 refactor: reduce complexity in constant_folder and return_type_helpers
+063fb92f refactor: eliminate all deep nesting (107 lines → 0) for code quality scoring
+ab08a0cb refactor: reduce deep nesting in transpiler and runtime modules
+900a9114 fix: improve code quality scores — dead_code, SAFETY docs, deep nesting
+194f72c4 chore: update dependencies to reduce outdated count
+996833ee chore: add .cargo/config.toml for build performance scoring
+73569f24 chore: reduce dependency count from 65 to 50 for Dependency Health score
+386e8c0f chore: add CHANGELOG entries and build.rs for SQI score improvement
+a9f91dcb fix: remove all #[allow(dead_code)] attributes for code quality scoring
+bb5f3004 chore: add safety lints, benchmark CI workflow
+adeecccf chore: improve quality scores (docs, hygiene, CI, pre-commit)
+f100d88b feat: add domain-specific Verus verification specs
+12e4b563 chore: add MSRV documentation, dev profile optimization, and verification specs
+cec61d2d chore: add formal verification specifications
+f89ad0af chore: add docs.rs metadata, release automation, workspace config, and hero images
+2b141861 chore: add security audit, linting configs, and README improvements
+825ce222 chore: add quality infrastructure for SQI A- compliance
+00343c50 chore: update trueno + realizar deps for stack drift fix (Refs #1)
+47a5cccc kaizen: auto-fix 177 issues in ruchy
+bc1af291 kaizen: auto-fix 177 issues in ruchy
+4b52a753 kaizen: auto-fix 177 issues in ruchy
+cbf52f17 kaizen: auto-fix 177 issues in ruchy
+7e94a978 Add Coursera AI Development Specialization link to README
+404c6ca2 chore: update Cargo.lock and pmat config for 4.2.1 (Refs CB-081)
+e18ea5c5 chore(release): bump ruchy to 4.2.1 (Refs CB-081)
+2cf9e46b refactor: split 8 test files exceeding 2000 lines into separate modules (Refs CB-081)
+b8d73cbd test: add 250+ coverage tests for VM opcodes, runtime, oracle, quality, parser, MIR, transpiler (Refs CB-081)
+2c35ab0f test: add 1000+ lines of format_expr coverage tests for uncovered ExprKind variants (Refs CB-081)
+0b6fbd47 test: add 40+ VM opcode tests, synthetic samples, valid_identifier coverage (Refs CB-081)
+6f225cae test: add 100+ coverage tests for VM opcodes, transpiler, interpreter, class constructors (Refs CB-081)
+ec0df7df test: add 260+ coverage tests for MIR lower, VM bytecode, formatter, parser, interpreter (Refs CB-081)
+bb31d1a9 test(coverage): add 180+ tests for WASM emitter, MIR, oracle, transpiler (Refs CB-081)
+2fb96f31 test(coverage): add 250+ coverage tests for parser, MIR, runtime, reporting (Refs CB-081)
+45902208 test(coverage): add 334 coverage tests across transpiler, runtime, oracle, parser

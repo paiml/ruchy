@@ -1,0 +1,14 @@
+ruchy                      ruchy = "4.2.1"    # A systems scripting language that transpiles to idiomatic Rust with extreme quality engineering
+ruchy-wasm                 ruchy-wasm = "4.2.1"    # WebAssembly bindings for Ruchy - compile Ruchy to Rust in the browser
+ruchy-embed                (not found / network error)
+trueno                     trueno = "0.19.1"    # DEPRECATED: Use aprender-compute instead. Re-exports aprender-compute for backward compatibility.
+aprender                   aprender = "0.65.2"    # Next-generation ML framework in pure Rust — `cargo install aprender` for the `apr` CLI
+entrenar                   entrenar = "0.8.1"    # DEPRECATED: Use aprender-train instead. Re-exports aprender-train for backward compatibility.
+alimentar                  alimentar = "0.4.0"    # Data Loading, Distribution and Tooling in Pure Rust
+presentar                  presentar = "0.3.4"    # WASM-first visualization and rapid application framework
+simular                    simular = "0.4.0"    # DEPRECATED: Use aprender-simulate instead. Re-exports aprender-simulate for backward compatibility.
+trueno-viz                 trueno-viz = "0.3.0"    # DEPRECATED: Use aprender-viz instead. Re-exports aprender-viz for backward compatibility.
+forjar                     forjar = "1.25.1"    # Rust-native Infrastructure as Code — bare-metal first, BLAKE3 state, provenance tracing
+bashrs                     bashrs = "7.0.1"    # Rust-to-Shell transpiler for deterministic bootstrap scripts
+provable-contracts         provable-contracts = "0.4.0"    # Compatibility facade: renamed to `aprender-contracts`, which this crate re-exports verbatim.
+provable-contracts-macros  provable-contracts-macros = "0.4.0"    # Compatibility facade: renamed to `aprender-contracts-macros`, whose proc macros this cra…

@@ -1,0 +1,86 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Clean-room and APR-MONO dependency contract for the ruchy workspace manifest"
+  crate: "ruchy"
+  references:
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §1 APR-MONO dependency decision, §2 Z3"
+
+equations:
+  no_sibling_paths:
+    formula: "∄ d ∈ deps: path(d) starts with \"../\""
+    domain: "d ∈ dependency tables of Cargo.toml"
+    invariants:
+      - "A fresh clone or a detached worktree can load the workspace manifest"
+  no_deprecated_facades:
+    formula: "∄ d ∈ deps: crate(d) ∈ {trueno, entrenar, simular, trueno-viz}"
+    domain: "d ∈ dependency tables of Cargo.toml"
+    invariants:
+      - "The deprecated crates.io facades are never consumed"
+      - "The dependency keys trueno/entrenar/simular/trueno-viz carry package = aprender-*"
+  msrv_honest:
+    formula: "rust_version(ruchy) ≥ max_d rust_version(d)"
+    domain: "d ∈ packages of `cargo metadata --format-version 1`"
+    invariants:
+      - "The declared MSRV is not below any package in the resolved graph"
+
+proof_obligations:
+  - type: safety
+    property: "No dependency escapes the workspace directory"
+    formal: "no_sibling_paths"
+    applies_to: manifest
+  - type: safety
+    property: "No deprecated aprender facade is in the dependency graph"
+    formal: "no_deprecated_facades"
+    applies_to: manifest
+  - type: completeness
+    property: "The declared MSRV covers the whole resolved graph"
+    formal: "msrv_honest"
+    applies_to: manifest
+
+falsification_tests:
+  - id: FALSIFY-CLEANROOM-001
+    rule: "No sibling path dependencies"
+    test: "test_pmat_094_no_sibling_paths_no_dependency_escapes_the_workspace"
+    prediction: "verified"
+    if_fails: "Contract violation — a fresh clone cannot load the manifest"
+  - id: FALSIFY-CLEANROOM-002
+    rule: "No deprecated facades"
+    test: "test_pmat_094_no_deprecated_facades_keys_are_renamed_onto_aprender"
+    prediction: "verified"
+    if_fails: "Contract violation — a deprecated crates.io facade is consumed"
+  - id: FALSIFY-CLEANROOM-003
+    rule: "Renamed keys point at aprender crates"
+    test: "test_pmat_094_no_deprecated_facades_renamed_keys_point_at_aprender_crates"
+    prediction: "verified"
+    if_fails: "Contract violation — a facade key lost its package = aprender-* rename"
+  - id: FALSIFY-CLEANROOM-004
+    rule: "MSRV honesty"
+    test: "test_pmat_094_msrv_honest_declared_rust_version_covers_the_graph"
+    prediction: "verified"
+    if_fails: "Contract violation — the declared rust-version is below the graph maximum"
+  - id: FALSIFY-CLEANROOM-005
+    rule: "No yanked chacha20 in the lockfile"
+    test: "test_pmat_094_lockfile_has_no_yanked_chacha20"
+    prediction: "verified"
+    if_fails: "Contract violation — the lock pins the yanked chacha20 0.10.1"
+
+kani_harnesses:
+  - id: KANI-CLEANROOM-001
+    obligation: PO-CLEANROOM-001
+    property: "MSRV comparison is a total order on (major, minor, patch)"
+    bound: 4
+    strategy: bounded_int
+    harness: verify_msrv_ordering
+
+qa_gate:
+  id: QA-CLEANROOM
+  name: "clean-room contract"
+  min_coverage: 0.90
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_094_no_sibling_paths_no_dependency_escapes_the_workspace"
+    - "test_pmat_094_no_deprecated_facades_keys_are_renamed_onto_aprender"
+    - "test_pmat_094_no_deprecated_facades_renamed_keys_point_at_aprender_crates"
+    - "test_pmat_094_msrv_honest_declared_rust_version_covers_the_graph"
+    - "test_pmat_094_lockfile_has_no_yanked_chacha20"

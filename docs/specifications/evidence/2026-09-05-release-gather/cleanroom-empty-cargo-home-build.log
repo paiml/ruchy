@@ -1,0 +1,13 @@
+2026-09-05T11:15:50+02:00
+CARGO_HOME contents before:
+0
+    Updating crates.io index
+    Finished `release` profile [optimized] target(s) in 1m 22s
+
+real	1m22.719s
+user	5m39.764s
+sys	0m31.396s
+LOCKED_EXIT=0
+-rwxrwxr-x 2 noah noah 10676800 Sep  5 11:17 /tmp/claude-1000/-home-noah-src-ruchy/338291f6-8ce5-428c-a5ec-9693f2c4ce65/scratchpad/cleanroom/target/release/ruchy
+ruchy 5.0.0-beta.1
+2026-09-05T11:17:13+02:00
