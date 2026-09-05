@@ -1006,6 +1006,10 @@ mod tests {
             "infra",
             "signal",
             "yield",
+            // literals and unsafe (lexer tokens the regex can also produce)
+            "true",
+            "false",
+            "unsafe",
         ];
 
         fn valid_identifier() -> impl Strategy<Value = String> {
