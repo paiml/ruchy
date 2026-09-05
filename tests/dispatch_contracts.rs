@@ -726,23 +726,17 @@ fn all_variants_covered(kind: &ExprKind) {
 /// `Ok(rendered)` when the call returned (`Ok` or `Err`), `Err(())` when it panicked.
 type Outcome = Result<Result<String, String>, ()>;
 
-fn silently<T>(body: impl FnOnce() -> T) -> T {
-    let previous = std::panic::take_hook();
-    std::panic::set_hook(Box::new(|_| {}));
-    let out = body();
-    std::panic::set_hook(previous);
-    out
-}
-
 fn transpile_outcome(expr: &Expr) -> Outcome {
-    silently(|| {
-        std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            Transpiler::new()
-                .transpile_expr(expr)
-                .map(|tokens| tokens.to_string())
-                .map_err(|err| err.to_string())
-        }))
-    })
+    // No panic hook is installed here on purpose. The hook is process-global
+    // and these tests run in parallel: a hook silenced by one test swallows
+    // the assertion message of another, which is exactly the message that
+    // names the offending variant.
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        Transpiler::new()
+            .transpile_expr(expr)
+            .map(|tokens| tokens.to_string())
+            .map_err(|err| err.to_string())
+    }))
     .map_err(|_| ())
 }
 
@@ -754,17 +748,15 @@ fn transpile_outcome(expr: &Expr) -> Outcome {
 fn eval_outcome(index: usize) -> Result<Result<String, String>, &'static str> {
     let (tx, rx) = mpsc::channel();
     std::thread::spawn(move || {
-        let rendered = silently(|| {
-            let (_, expr) = variants().swap_remove(index);
-            // `Display`, never `Debug`: `Value::Closure` holds an `Rc` to the
-            // environment that binds it, so the derived `Debug` recurses
-            // forever on `fun f() { 1 }` and overflows the stack. `Display`
-            // renders a closure as `<function>`.
-            Interpreter::new()
-                .eval_expr(&expr)
-                .map(|value| format!("{value}"))
-                .map_err(|err| format!("{err}"))
-        });
+        let (_, expr) = variants().swap_remove(index);
+        // `Display`, never `Debug`: `Value::Closure` holds an `Rc` to the
+        // environment that binds it, so the derived `Debug` recurses forever
+        // on `fun f() { 1 }` and overflows the stack. `Display` renders a
+        // closure as `<function>`.
+        let rendered = Interpreter::new()
+            .eval_expr(&expr)
+            .map(|value| format!("{value}"))
+            .map_err(|err| format!("{err}"));
         drop(tx.send(rendered));
     });
     match rx.recv_timeout(Duration::from_secs(30)) {
