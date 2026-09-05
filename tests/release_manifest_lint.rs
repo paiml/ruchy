@@ -190,15 +190,27 @@ fn test_pmat_094_msrv_honest_declared_rust_version_covers_the_graph() {
 #[test]
 fn test_pmat_094_lockfile_has_no_yanked_chacha20() {
     let lock = read(&manifest_dir().join("Cargo.lock"));
-    let mut lines = lock.lines().peekable();
-    while let Some(line) = lines.next() {
-        if line.trim() != "name = \"chacha20\"" {
+    // Walk each [[package]] block: the version belongs to the block that names chacha20,
+    // wherever cargo places the line inside it (quorum lane 1: do not assume "next line").
+    let mut seen = 0;
+    for block in lock.split("[[package]]") {
+        let is_chacha20 = block.lines().any(|l| l.trim() == "name = \"chacha20\"");
+        if !is_chacha20 {
             continue;
         }
-        let version = lines.peek().copied().unwrap_or("").trim().to_string();
+        seen += 1;
+        let version = block
+            .lines()
+            .find(|l| l.trim().starts_with("version = "))
+            .map(|l| l.trim().to_string())
+            .expect("chacha20 block has a version line");
         assert_ne!(
             version, "version = \"0.10.1\"",
             "chacha20 0.10.1 is yanked; run `cargo update -p chacha20`"
         );
     }
+    assert!(
+        seen >= 1,
+        "Cargo.lock has no chacha20 package block; the test would be vacuous"
+    );
 }
