@@ -1,0 +1,31 @@
+=== transpile output diff on examples/ (both check-pass): identical=138 differs=13 transpile-failed(either)=3 ===
+examples/01_basics.ruchy,differs
+examples/04_collections.ruchy,differs
+examples/06_error_handling.ruchy,differs
+examples/02_functions.ruchy,differs
+examples/13_iterators.ruchy,differs
+examples/15_modules.ruchy,transpile-fail,1,1
+examples/30_contracts.ruchy,differs
+examples/31_sovereign_platform.ruchy,differs
+examples/32_migration_demo.ruchy,differs
+examples/34_embedding.ruchy,differs
+examples/actor_chat_demo.ruchy,transpile-fail,1,1
+examples/cargo_integration/src/main.ruchy,transpile-fail,134,134
+examples/json_builtins.ruchy,differs
+examples/lang_comp/12-error-handling/01_result_type.ruchy,differs
+examples/test_functions.ruchy,differs
+examples/test_collections.ruchy,differs
+
+=== sample diff for first differing file ===
+53c53,55
+<                                                                     let num = num_str.to_int();
+---
+>                                                                     let num = num_str
+>                                                                         .parse::<i64>()
+>                                                                         .unwrap();
+60,61c62,63
+<                                                                                     float_val
+<                                                                                         .to_int();
+---
+>                                                                                     (float_val
+>                                                                                         as i64);

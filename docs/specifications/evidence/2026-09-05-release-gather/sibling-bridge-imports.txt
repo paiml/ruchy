@@ -1,0 +1,48 @@
+=== src/stdlib/trueno_bridge.rs (975 lines) ===
+      1 38:trueno::vector::Vector
+      1 37:trueno::matrix::Matrix
+=== src/stdlib/aprender_bridge.rs (566 lines) ===
+      1 93:aprender::format::gguf::
+      1 87:aprender::format::quantize::
+      1 84:aprender::serialization::SafeTensorsMetadata
+      1 81:aprender::preprocessing::PCA
+      1 48:aprender::prelude::
+      1 371:aprender::format::quantize
+      1 28:aprender::format::quantize
+      1 165:aprender::format::quantize
+      1 101:aprender::format::
+=== src/oracle/classifier.rs (1275 lines) ===
+      1 638:aprender::online::drift::DriftStatus::Drift
+      1 595:aprender::online::drift::DriftStatus
+      1 586:aprender::online::drift::DriftDetector::add_element
+      1 15:use aprender
+      1 14:use aprender
+      1 13:use aprender
+      1 131:aprender::online::drift
+=== src/oracle/hansei.rs (398 lines) ===
+      1 179:aprender::online::drift::DriftStatus
+      1 107:aprender::online::drift::DriftStatus
+=== src/oracle/mod.rs (1854 lines) ===
+      1 93:aprender::online::corpus::
+      1 932:aprender::ADWIN
+      1 929:aprender::online
+      1 867:aprender::code::
+      1 864:entrenar::distill::
+      1 859:entrenar::citl::
+      1 81:aprender::online::drift::
+      1 76:aprender::online
+      1 42:aprender::online
+      1 299:aprender::online::corpus::CorpusBuffer
+      1 28:aprender::online
+      1 14:aprender::online::drift
+
+=== other sibling bridge files ===
+entrenar: src/oracle/mod.rs
+entrenar: src/runtime/audit.rs
+alimentar: src/stdlib/alimentar_bridge.rs
+presentar: src/stdlib/presentar_bridge.rs
+trueno_viz: src/oracle/andon.rs
+trueno_viz: src/stdlib/viz_bridge.rs
+simular: src/stdlib/simular_bridge.rs
+forjar: src/stdlib/forjar_bridge.rs
+bashrs: src/stdlib/bashrs_bridge.rs

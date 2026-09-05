@@ -1,0 +1,16 @@
+=== apr-spike v1 (default features; trueno->aprender-compute 0.65, aprender->0.65): errors ===
+error[E0432]: unresolved import `aprender::format::quantize`
+  --> src/stdlib/aprender_bridge.rs:87:27
+   |
+87 | pub use aprender::format::quantize::{
+   |                           ^^^^^^^^ could not find `quantize` in `format`
+   |
+note: found an item that was configured out
+--
+error[E0432]: unresolved imports `aprender::format::load_verified`, `aprender::format::save_signed`, `aprender::format::SigningKey`, `aprender::format::VerifyingKey`, `aprender::format::PUBLIC_KEY_SIZE`, `aprender::format::SIGNATURE_SIZE`
+   --> src/stdlib/aprender_bridge.rs:102:5
+    |
+102 |     load_verified, save_signed, SigningKey, VerifyingKey, PUBLIC_KEY_SIZE, SIGNATURE_SIZE,
+    |     ^^^^^^^^^^^^^  ^^^^^^^^^^^  ^^^^^^^^^^  ^^^^^^^^^^^^  ^^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^ no `SIGNATURE_SIZE` in `format`
+    |     |              |            |           |             |
+    |     |              |            |           |             no `PUBLIC_KEY_SIZE` in `format`

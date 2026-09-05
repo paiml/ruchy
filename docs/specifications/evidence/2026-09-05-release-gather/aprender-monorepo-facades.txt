@@ -1,0 +1,56 @@
+=== aprender 0.65.2 features ===
+cli cuda cuda-batch default full inference ptx training training-gpu visualization wgpu xet zram 
+=== aprender 0.65.2 deps (sovereign) ===
+aprender-core ^0.65.2 optional=false kind=normal
+
+=== aprender-* facade crates on crates.io ===
+aprender-compute           0.65.2	2026-09-04
+aprender-train             0.65.2	2026-09-04
+aprender-viz               0.65.2	2026-09-04
+aprender-simulate          0.65.2	2026-09-04
+aprender-contracts         0.65.2	2026-09-04
+aprender-contracts-macros  0.65.2	2026-09-04
+
+=== trueno 0.16.x versions available ===
+0.16.5 0.16.4 0.16.3 0.16.2 0.16.1 0.16.0
+=== aprender 0.27.x versions available ===
+0.27.8 0.27.7 0.27.5 0.27.4 0.27.3 0.27.2 0.27.1 0.27.0
+=== trueno 0.16.5 rust-version + deps on aprender? ===
+rust_version=1.89 yanked=false
+aprender 0.27.5 rust_version=1.89 yanked=false
+
+=== facade crate features ===
+aprender-compute   chaos-basic chaos-byzantine chaos-full chaos-network cooperative-matrix cuda cuda-monitor default dhat-heap gpu gpu-wasm hardware-detect ml-tuner parallel presentar-tui tracing tui-monitor
+aprender-train     citl cpu-fallback cuda default dhat-heap gguf gpu hub hub-publish kani monitor nvml parquet ruchy-sessions server tracing tui viz wasm
+aprender-viz       db default full gpu gpu-wasm graph ml parallel svg terminal wasm
+aprender-simulate  default full proptest schema-validation tui verification wasm web z3-proofs
+alimentar-0.4.0    cli default dhat-heap doctest format-encryption format-signing format-streaming hf-hub http local mmap provenance repl s3 shuffle tokio-runtime wasm
+
+=== deprecated facades: created_at ===
+trueno/0.19.1    2026-04-08 rust_version=null
+entrenar/0.8.1   2026-04-08 rust_version=null
+simular/0.4.0    2026-04-07 rust_version=null
+trueno-viz/0.3.0 2026-04-07 rust_version=null
+=== aprender-core 0.65.2 features (name -> enables) ===
+chaos-full: chaos-network chaos-byzantine
+default: parallel
+format-compression: lz4_flex zstd apr-format/compression
+format-encryption: aes-gcm argon2 x25519-dalek hkdf sha2
+format-homomorphic: 
+format-quantize: half
+format-signing: ed25519-dalek
+
+=== aprender 0.65.2 features (name -> enables) ===
+cli: dep:apr-cli
+cuda: cli apr-cli/cuda
+cuda-batch: cli apr-cli/cuda-batch
+default: cli
+full: cli apr-cli/full
+inference: cli apr-cli/inference
+ptx: cli apr-cli/trueno-explain
+training: cli apr-cli/training
+training-gpu: cli apr-cli/training-gpu
+visualization: cli apr-cli/visualization
+wgpu: cli apr-cli/wgpu
+xet: cli apr-cli/xet
+zram: cli apr-cli/zram

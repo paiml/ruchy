@@ -1,0 +1,141 @@
+=== 5.0 spec outline ===
+7:### Implementation Status (Ground Truth as of 2026-04-05)
+79:### 2026-04-05 session rollup (PROVABILITY-011..026)
+150:## 1. Version Rationale
+184:## 2. The Nine Pillars
+206:## 3. Unified Decorator Grammar
+219:### Complete Decorator/Attribute Map
+238:### Grammar (EBNF)
+249:## 4. Parser Changes Summary
+251:### New Reserved Keywords
+263:### New Block Syntax
+272:### New Expression Forms
+280:### Migration Concern
+288:## 5. Dependency Impact
+290:### Cargo.toml Changes
+304:### Default Feature Set
+316:### Binary Size Budget
+327:## 6. CLI Architecture v5.0
+329:### New Subcommands
+368:### Subcommand Conflict Avoidance
+376:## 7. The "Graduate" Workflow
+390:### Stage 1: REPL (Interpreter)
+402:### Stage 2: Embed (ruchy-embed)
+419:### Stage 3: Compile (Transpiler)
+430:### Why This Matters
+444:## 8. Release Plan
+456:### Parallel Workstreams
+464:## 9. Breaking Changes and Migration
+466:### What Breaks from 4.x
+477:### Migration Tool
+491:### Deprecation Timeline
+502:## 10. Success Criteria
+520:### Go/No-Go Decision
+527:## 14. Provability Mandate
+533:### 14.1 Vision (bounded claim)
+553:### 14.2 The Four Tiers
+576:### 14.3 Escape-Proof Build Gate
+598:### 14.4 N-of-M Quorum for Platinum
+633:### 14.5 Falsifiability Commitments (Popper)
+653:### 14.6 Deadline Schedule
+662:### 14.7 Escape-Hatch Policy
+688:### 14.8 Why this makes Ruchy competitive
+706:### 14.F-Audit-8: Languages strictly stronger than Platinum (external falsification)
+747:### 14.10 HARD REQUIREMENTS: Adopted Features from External SOTA
+956:### 14.9 Migration Feasibility (§14.F-Audit-5 fix)
+972:## Appendix A: Cross-Reference to Sub-Specs
+992:## Appendix B: Downstream Book Repos (paiml org)
+1010:### Validation workflow
+1027:### Current status on 5.0.0-beta.1 (2026-04-05)
+1039:### Gate for RC.1 → 5.0.0
+1045:### Known blockers
+
+=== success criteria section ===
+| 5.0.0 | 2027-Q1 | Release. | Success criteria (Section 10). |
+
+### Parallel Workstreams
+
+Alpha milestones are sequential (parser changes must land first). Beta milestones can
+proceed in parallel across pillar teams. The RC phase is integration-only -- no new
+features.
+
+---
+
+## 9. Breaking Changes and Migration
+
+### What Breaks from 4.x
+
+| Category | Breaking Change | Impact | Mitigation |
+|----------|----------------|--------|------------|
+| Keywords | 7 new reserved words | Code using `requires`, `ensures`, `invariant`, `decreases`, `infra`, `signal`, `yield` as identifiers | `ruchy migrate-4to5` auto-renames |
+| Crate API | trueno 0.15 to 0.16.5 | Bridge function signatures may change | Changelog documents all changes |
+| Crate API | aprender 0.26 to 0.27.5 | Quantization API restructured | Migration guide in aprender CHANGELOG |
+| CLI | New subcommands | `ruchy prove`, `ruchy sim`, etc. may shadow user scripts | Script-first resolution (Section 6) |
+| Runtime | `yield` keyword | Cannot use `yield` as variable name | `ruchy migrate-4to5` |
+| Transpiler | Decorator grammar | Old `@decorator` usage without parens may parse differently | Warnings in 4.3 pre-release |
+
+### Migration Tool
+
+```bash
+$ ruchy migrate-4to5 src/
+Scanning 42 files...
+  src/math.ruchy:12  renamed variable `requires` -> `requires_val`
+  src/gen.ruchy:8    renamed variable `yield` -> `yield_val`
+  src/infra.ruchy:3  renamed variable `infra` -> `infra_config`
+Migration complete: 3 files modified, 3 identifiers renamed.
+```
+
+The migration tool is conservative: it only renames identifiers that conflict with new
+keywords. It does not modify semantics.
+
+### Deprecation Timeline
+
+| Version | Action |
+|---------|--------|
+| 4.3.0 | Emit warnings for identifiers that will become keywords |
+| 4.4.0 | Emit warnings for deprecated stdlib patterns |
+| 5.0-alpha.1 | Keywords reserved; old code requires migration |
+| 5.0.0 | Full break; `ruchy migrate-4to5` available |
+
+---
+
+## 10. Success Criteria
+
+| # | Criterion | Threshold | Measurement |
+|---|-----------|-----------|-------------|
+| 1 | All 9 pillar specs pass acceptance | 100% | Each spec defines its own acceptance tests |
+| 2 | ruchy-embed startup latency | < 5ms | Benchmark: `Engine::new()` on x86_64, release build |
+| 3 | Zero regressions in 4.x test suite | 0 failures | `cargo test --all-features` (existing tests) |
+| 4 | Downstream book repos compile | 100% on each book | See Appendix B: seven book repos must pass on 5.0 |
+| 5 | WASM target functional | All WASM tests pass | `cargo test --target wasm32-unknown-unknown` |
+| 6 | Binary size (default features) | < +20% vs 4.x | `ls -la target/release/ruchy` |
+| 7 | Compile time (default features) | < +30% vs 4.x | `cargo build --release --timings` |
+| 8 | TDG grade | >= A- across all new code | `pmat tdg . --min-grade A- --fail-on-violation` |
+| 9 | Test coverage | >= 80% for new pillar code | `cargo llvm-cov` |
+| 10 | Mutation coverage | >= 75% for new pillar code | `cargo mutants --file <pillar>` |
+| 11 | Zero unsafe in transpiler output | 0 occurrences | `pmat query --literal "unsafe {" --files-with-matches` |
+| 12 | `ruchy migrate-4to5` handles all keyword conflicts | 100% | Test suite with synthetic 4.x code |
+| 13 | Provability Mandate (F1-F5 in §14.5) | All 5 metrics in-range | See §14.5 falsifiability table |
+
+### Go/No-Go Decision
+
+Release 5.0.0 requires ALL 13 criteria met. Any single failure blocks the release.
+The release committee (maintainers) reviews at the RC.1 milestone.
+
+
+=== keyword conflicts ===
+12:| Parser: 7 new keywords | DONE | All 7 reserved in lexer (Token enum) and parser. 3 keyword reservation tests. |
+25:| migrate-4to5 tool | DONE | Scans/renames keyword conflicts, dry-run support, 12 tests |
+43:| Criterion #12: migrate-4to5 synthetic 4.x e2e | DONE | 4 tests in sovereign_migrate_4to5_e2e.rs covering all 7 keywords (all passing) |
+158:elevates those bridges to first-class language constructs -- new keywords, new decorator
+164:| Parser | 7 new reserved keywords (`requires`, `ensures`, `invariant`, `decreases`, `infra`, `signal`, `yield`) |
+251:### New Reserved Keywords
+253:| Keyword | Pillar | Context | Example |
+448:| 5.0-alpha.1 | 2026-Q2 | Parser: 7 new keywords + unified decorator grammar. Provable contracts Silver level. | All 4.x tests pass. New keyword parser tests green. |
+470:| Keywords | 7 new reserved words | Code using `requires`, `ensures`, `invariant`, `decreases`, `infra`, `signal`, `yield` as identifiers | `ruchy migrate-4to5` auto-renames |
+474:| Runtime | `yield` keyword | Cannot use `yield` as variable name | `ruchy migrate-4to5` |
+489:keywords. It does not modify semantics.
+495:| 4.3.0 | Emit warnings for identifiers that will become keywords |
+497:| 5.0-alpha.1 | Keywords reserved; old code requires migration |
+517:| 12 | `ruchy migrate-4to5` handles all keyword conflicts | 100% | Test suite with synthetic 4.x code |
+834:The `@total` annotation + existing `decreases` keyword prove termination:

@@ -1,0 +1,46 @@
+=== gh auth status ===
+  ✓ Logged in to github.com account noahgift (keyring)
+  - Active account: true
+  - Token: gho_************************************
+  - Token scopes: 'admin:org', 'admin:public_key', 'delete_repo', 'gist', 'repo', 'workflow'
+
+=== crates.io token present? ===
+-rw------- /home/noah/.cargo/credentials.toml
+CARGO_REGISTRY_TOKEN not in env
+
+=== gh secret CRATES_TOKEN in repo? ===
+CARGO_REGISTRY_TOKEN	2025-08-16T20:05:29Z
+CARGO_TOKEN	2025-10-04T13:39:48Z
+
+=== pv surface ===
+pv 0.63.0
+provable-contracts — papers to provable Rust kernels
+
+Usage: pv [OPTIONS] <COMMAND>
+
+Commands:
+  explain           Explain a contract in detail
+  validate          Validate a YAML kernel contract
+  check-parity      Execute cross_check_command per row of a parity-matrix contract (SEMANTIC gate)
+  scaffold          Generate Rust trait + test scaffolding from a contract
+  extract-pytorch   Extract kernel equations from `PyTorch` source into YAML
+  codegen           Generate Rust `debug_assert!()` from YAML contracts
+  kani              Generate Kani proof harnesses from a contract
+  probar            Generate probar property tests from a contract
+  status            Show contract status (equations, obligations, coverage)
+  audit             Run traceability audit on a contract
+  diff              Diff two contract versions and suggest semver bump
+  coverage          Show cross-contract obligation coverage report
+  generate          Generate all artifacts (scaffold, kani, probar) to disk
+  graph             Show contract dependency graph
+  equations         Display equations from a contract
+  lean              Generate Lean 4 definitions and theorem stubs
+  lean-status       Report Lean 4 proof status across contracts
+  proof-status      Report hierarchical proof levels (L1–L5) across contracts
+  lint              Run all contract quality gates (validate + audit + score)
+  score             Score contracts or a codebase directory
+  query             Search contracts by intent, regex, or literal match
+  invariants        Generate type invariant trait + Kani preservation harnesses
+  coq               Generate Coq theorem stubs from a contract
+  fuzz              Generate libfuzzer fuzz targets from a contract
+  mirai             Generate MIRAI annotations from a contract

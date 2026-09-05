@@ -1,0 +1,18 @@
+2026-09-05T11:20:45+02:00
+    Building ruchy v5.0.0-beta.1 (current)
+       Built [  22.076s] (current)
+     Parsing ruchy v5.0.0-beta.1 (current)
+      Parsed [   0.366s] (current)
+    Building ruchy v4.2.1 (baseline)
+       Built [  14.304s] (baseline)
+     Parsing ruchy v4.2.1 (baseline)
+      Parsed [   0.280s] (baseline)
+     Checked [   0.000s] 0 checks: 0 pass, 254 skip
+     Summary no semver update required
+    Finished [  43.523s] ruchy
+
+real	0m44.231s
+user	1m10.435s
+sys	0m14.767s
+EXIT=0
+2026-09-05T11:21:29+02:00

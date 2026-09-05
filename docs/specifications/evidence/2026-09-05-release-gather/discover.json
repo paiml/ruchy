@@ -1,0 +1,19 @@
+{
+  "agents_md": "present",
+  "clean_room": "",
+  "code_search": "pmat query",
+  "contracts_dir": "contracts",
+  "crate_kind": "3",
+  "default_branch": "main",
+  "default_branch_source": "gh (origin/HEAD unset — shallow/CI clone?)",
+  "dogfood_cmd": "",
+  "gate_cmd": "cargo test --workspace",
+  "gate_cmd_fallback": "true",
+  "head": "3a665f36edc170694159746aa1f9bffec4f4a007",
+  "quorum_tool": "agy",
+  "repo_root": "/home/noah/src/ruchy",
+  "required_check": "gate",
+  "required_check_source": "rulesets",
+  "ticketing": "pmat work",
+  "version": "5.0.0-beta.1"
+}

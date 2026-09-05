@@ -1,0 +1,20 @@
+trueno::               files: 1
+aprender::             files: 4
+entrenar::             files: 2
+alimentar::            files: 1
+presentar::            files: 1
+trueno_viz::           files: 2
+simular::              files: 1
+forjar::               files: 1
+bashrs::               files: 1
+provable_contracts     files: 0
+pmcp::                 files: 1
+
+=== trueno use sites (sample) ===
+src/stdlib/trueno_bridge.rs
+
+=== aprender use sites (sample) ===
+src/oracle/classifier.rs
+src/oracle/hansei.rs
+src/oracle/mod.rs
+src/stdlib/aprender_bridge.rs

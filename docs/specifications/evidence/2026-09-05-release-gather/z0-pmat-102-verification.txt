@@ -1,0 +1,35 @@
+# Z0 / PMAT-102 verification (orchestrator-run, worktree /home/noah/src/ruchy-wt-PMAT-102, CARGO_TARGET_DIR=/mnt/nvme-raid0/targets/ruchy)
+
+## Before the fix (HEAD 3a665f36, rustc 1.98.0)
+cargo clippy --all-targets --keep-going -- -D warnings  -> exit 101
+  17 error: unused return value of `assert_cmd::Command::assert` that must be used   (+7 in tests/cli_contract_fuzz.rs reported by the hook first)
+   4 error[E0063]: missing field `contracts` in initializer of `ruchy::Expr`         (benches/transpiler.rs:12,22,32,42)
+cargo fmt --all -- --check -> exit 1, 20 files with diffs (rustfmt 1.98 vs the August toolchain); after `cargo fmt --all`, 4 files remained
+  non-idempotent (proptest! bodies): tests/{wasm_memory_property_tests,property_enum_cast,issue_128_property_tests,issue_119_property_tests}.rs
+  — exactly the files .rustfmt.toml lists under the nightly-only `ignore`.
+clap prefix check (debug bin): --iterations -> 0, --iteration -> 2, --iterationz -> 2, --bogus -> 2
+
+## After the fix
+cargo fmt --all -- --check -> CLEAN
+cargo clippy --all-targets --keep-going -- -D warnings -> exit 0
+cargo test --test cli_contract_fuzz --test cli_contract_mutations --test cli_contract_property_tests --test stdlib_file_io_advanced_test
+  16 passed 2 ignored / 13 passed 2 ignored / 18 passed / 11 passed -> exit 0
+
+## DoD mutation (observed RED)
+perl: first `--iterations` after the first `assert_args_accepted(` -> `--iterationz`
+cargo test --test cli_contract_fuzz ->
+  assertion `left != right` failed: CLI rejected its arguments (clap usage error): Output { status: ExitStatus(unix_wait_status(512)), stdout: "",
+  stderr: "error: unexpected argument '--iterationz' found\n\n  tip: a similar argument exists: '--iterations'\n\nUsage: ruchy fuzz --iterations <ITERATIONS> <TARGET>\n..." }
+  test result: FAILED. 15 passed; 1 failed; 2 ignored  -> exit 101
+restored from backup; wraps=7, iterationz=0
+
+## Note
+An earlier mutation attempt replaced the FIRST `--iterations` in the file, which sits in an unwrapped test that asserts `.failure()`; it stayed green — that site is not covered by the helper and is not one of the 24. Recorded so the receipt does not overstate coverage.
+
+## Correction after measuring CI's toolchain
+CI's lint job runs in `localhost:5000/sovereign-ci:stable@sha256:66016caa…` and the last main run (31494372313, 2026-08-11) reports
+`rustc 1.97.1 (8bab26f4f 2026-07-14)`. The fmt drift above is therefore a LOCAL rustc-1.98 artifact: a 1.98-formatted tree would
+fail CI's 1.97.1 `cargo fmt --all -- --check`. The tree-wide `cargo fmt --all` and the `#[rustfmt::skip]` edits were dropped from Z0.
+The pre-commit complexity gate independently refused the fmt-only touches of four files because they hold six pre-existing
+functions over the per-function limits (cognitive 34–64; cyclomatic 35) — recorded as B20 in the plan.
+Z0 = 24 must_use sites + tests/support/mod.rs + benches/transpiler.rs, verified under both rustc 1.98 (local stable) and 1.97.1 (CI).

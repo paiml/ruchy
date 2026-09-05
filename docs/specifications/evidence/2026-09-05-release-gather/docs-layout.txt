@@ -1,0 +1,19 @@
+=== docs/specifications (release/plan/evidence) ===
+95per-extreme-tdd-prerelease-goal.md
+beta-release-stabilization-december-2025.md
+evidence
+ruchy-5.0-book-updates.md
+ruchy-5.0-sovereign-platform.md
+
+=== docs/specifications/evidence ===
+2026-09-05-release-gather
+
+=== docs/audits ===
+ls: cannot access 'docs/audits/': No such file or directory
+ls: cannot access 'docs/audits/impl-estimates.jsonl': No such file or directory
+
+=== .pmat/jidoka.jsonl ===
+ls: cannot access '.pmat/jidoka.jsonl': No such file or directory
+
+=== AGENTS.md head ===
+head: cannot open 'AGENTS.md' for reading: No such file or directory

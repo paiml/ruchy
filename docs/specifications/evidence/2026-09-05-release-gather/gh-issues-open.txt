@@ -1,0 +1,49 @@
+196	OPEN	fix: proptest lambda failures — 'ask' keyword not in valid_identifier blocklist		2026-04-06T12:02:24Z
+195	OPEN	fix: add version field to provable-contracts path dep		2026-04-04T20:19:32Z
+191	OPEN	CB-200: 8 below-A functions — handle_complex_command, format_expr, analyze_expr, bytecode opcode		2026-03-21T12:36:21Z
+190	OPEN	CB-200: refactor high-complexity functions below grade A		2026-03-21T10:46:45Z
+189	OPEN	Web Quality Alert - 2026-03-09	web-quality, automated, maintenance	2026-03-09T09:17:34Z
+187	OPEN	Web Quality Alert - 2026-03-02	web-quality, automated, maintenance	2026-03-02T09:17:43Z
+186	OPEN	Web Quality Alert - 2026-02-23	web-quality, automated, maintenance	2026-02-23T09:19:16Z
+185	OPEN	Web Quality Alert - 2026-02-16	web-quality, automated, maintenance	2026-02-16T09:19:18Z
+184	OPEN	Web Quality Alert - 2026-02-09	web-quality, automated, maintenance	2026-02-09T09:21:55Z
+183	OPEN	Web Quality Alert - 2026-02-02	web-quality, automated, maintenance	2026-02-02T09:17:18Z
+182	OPEN	Web Quality Alert - 2026-01-26	web-quality, automated, maintenance	2026-01-26T09:10:16Z
+181	OPEN	Web Quality Alert - 2026-01-19	web-quality, automated, maintenance	2026-01-19T09:10:04Z
+180	OPEN	Web Quality Alert - 2026-01-12	web-quality, automated, maintenance	2026-01-12T09:09:19Z
+179	OPEN	Web Quality Alert - 2026-01-05	web-quality, automated, maintenance	2026-01-05T09:08:59Z
+178	OPEN	Web Quality Alert - 2025-12-29	web-quality, automated, maintenance	2025-12-29T09:08:13Z
+177	OPEN	Web Quality Alert - 2025-12-22	web-quality, automated, maintenance	2025-12-22T09:07:44Z
+176	OPEN	Tests rely on deprecated `assert_cmd::cargo_bin` which will break on future Cargo versions		2025-12-19T08:27:32Z
+175	OPEN	Web Quality Alert - 2025-12-15	web-quality, automated, maintenance	2025-12-15T09:08:55Z
+173	OPEN	Web Quality Alert - 2025-12-08	web-quality, automated, maintenance	2025-12-08T09:07:31Z
+172	OPEN	[Enhancement] Implement Comprehensive Debugging System (Ruchy-Debug-V2)	enhancement	2025-12-07T23:17:58Z
+168	OPEN	Support hexadecimal numbers		2025-12-04T06:51:02Z
+167	OPEN	Web Quality Alert - 2025-12-01	web-quality, automated, maintenance	2025-12-01T09:07:23Z
+166	OPEN	[RUC-INT] Provide Session Export API for entrenar		2025-11-30T08:28:49Z
+165	OPEN	feat: Add CITL export for OIP integration	enhancement	2025-11-28T16:33:38Z
+164	OPEN	feat: Add ML-powered error oracle using aprender		2025-11-27T13:55:10Z
+163	OPEN	windows line ending		2025-11-27T03:58:18Z
+162	OPEN	Web Quality Alert - 2025-11-24	web-quality, automated, maintenance	2025-11-24T09:05:59Z
+155	OPEN	Transpiler generates invalid vec! syntax: comma instead of semicolon		2025-11-20T14:15:28Z
+150	OPEN	Web Quality Alert - 2025-11-17	web-quality, automated, maintenance	2025-11-17T09:06:06Z
+148	OPEN	Multi-Tool Comprehensive Testing Results - OOP Method Syntax Issues (v3.212.0)	bug, documentation	2025-11-16T11:19:37Z
+147	OPEN	[BUG] Transpiler generates duplicate 'pub' keyword from 'pub fun'	bug	2025-11-11T07:50:01Z
+146	OPEN	Web Quality Alert - 2025-11-10	web-quality, automated, maintenance	2025-11-10T09:05:33Z
+145	OPEN	Feature Request: Binary Analysis and Optimization Tooling (ruchy analyze)	enhancement	2025-11-09T13:42:56Z
+142	OPEN	Bug: BigO analysis incorrectly reports recursive fibonacci as O(n) instead of O(2^n)	bug	2025-11-05T16:22:18Z
+140	OPEN	time_micros() fix needed in 'ruchy compile' command (follow-up to #139)		2025-11-05T12:25:07Z
+138	OPEN	Feature Request: Production Profiling & Benchmarking Tools	enhancement	2025-11-05T10:22:21Z
+133	OPEN	Feature Request: Rewrite ruchy-lambda-runtime in Ruchy (once async/await lands)		2025-11-04T16:43:35Z
+131	OPEN	RFC: Add Cranelift JIT Backend for 1,500x Performance Boost		2025-11-04T09:54:11Z
+130	OPEN	[Enhancement] Add Performance Profiling Infrastructure to Ruchy		2025-11-03T14:56:32Z
+127	OPEN	Web Quality Alert - 2025-11-03	web-quality, automated, maintenance	2025-11-03T09:05:30Z
+126	OPEN	[OPT-CODEGEN-004] Inline Expansion: 10-25% Runtime Speedup		2025-11-02T22:21:21Z
+123	OPEN	BUG-004: Stack Overflow at Recursion Depth 50 (ruchyruchy interpreter)	bug	2025-11-02T22:20:41Z
+122	OPEN	PERF-003: Integrate WASM Performance Optimizations from ruchyruchy		2025-11-02T22:21:46Z
+120	OPEN	New Compiler Profiling Tool Available in ruchyruchy v1.17.0		2025-11-02T17:07:57Z
+112	OPEN	Tool Suite: Enum/Struct Support Issues (ruchy lint, score, quality-gate, mutations)		2025-11-02T22:20:59Z
+110	OPEN	ruchy doc: Minimal extraction - doesn't extract doc comments effectively		2025-10-31T18:04:47Z
+109	OPEN	ruchy quality-gate: False SATD violations and incorrect complexity for single-file architecture		2025-10-31T18:04:17Z
+108	OPEN	ruchy mutations: Finds 0 mutants in v3.155.0 code with structs/enums		2025-10-31T18:03:50Z
+107	OPEN	ruchy lint: False positives on enum/struct types in v3.155.0		2025-10-31T18:03:24Z

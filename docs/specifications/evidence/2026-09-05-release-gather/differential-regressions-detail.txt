@@ -1,0 +1,12 @@
+=== the 2 regressions (4.2.1 ok, HEAD fail) ===
+--- examples/24_math_science.ruchy (HEAD exit 1) ---
+✗ examples/24_math_science.ruchy:254: Syntax error: Expected RightBrace, found Identifier("println")
+Error: examples/24_math_science.ruchy:254: Syntax error: Expected RightBrace, found Identifier("println")
+keyword hits in file: 3
+--- ../ruchyruchy/validation/tests/test_property_framework.ruchy (HEAD exit 1) ---
+✗ ../ruchyruchy/validation/tests/test_property_framework.ruchy:317: Syntax error: Expected RightBrace, found Let
+Error: ../ruchyruchy/validation/tests/test_property_framework.ruchy:317: Syntax error: Expected RightBrace, found Let
+keyword hits in file: 4
+
+=== 4.2.1 timeout file ===
+examples/21_concurrency.ruchy

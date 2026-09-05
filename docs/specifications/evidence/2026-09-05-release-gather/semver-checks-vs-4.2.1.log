@@ -1,0 +1,81 @@
+2026-09-05T11:15:53+02:00
+    Building ruchy v5.0.0-beta.1 (current)
+       Built [  64.710s] (current)
+     Parsing ruchy v5.0.0-beta.1 (current)
+      Parsed [   0.437s] (current)
+    Building ruchy v4.2.1 (baseline)
+error: running cargo-doc on crate 'ruchy' failed with output:
+-----
+error[E0599]: no method named `dimensions` found for struct `LossCurve` in the current scope
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/entrenar-0.5.10/src/train/tui/charts/loss_curve.rs:43:14
+    |
+ 40 |           let loss_curve = LossCurve::new()
+    |  __________________________-
+ 41 | |             .add_series(MetricSeries::new("Train", Rgba::rgb(66, 133, 244)))
+ 42 | |             .add_series(MetricSeries::new("Val", Rgba::rgb(255, 128, 0)))
+ 43 | |             .dimensions(width, height)
+    | |_____________-^^^^^^^^^^
+    |
+   ::: /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/batuta-common-0.1.0/src/display.rs:279:8
+    |
+279 |       fn dimensions(mut self, width: u32, height: u32) -> Self {
+    |          ---------- the method is available for `LossCurve` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `WithDimensions` which provides `dimensions` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use trueno_viz::prelude::WithDimensions;
+    |
+help: there is a method `set_dimensions` with a similar name
+    |
+ 43 |             .set_dimensions(width, height)
+    |              ++++
+
+error[E0599]: no method named `dimensions` found for struct `LossCurve` in the current scope
+   --> /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/entrenar-0.5.10/src/train/tui/charts/loss_curve.rs:69:14
+    |
+ 66 |           self.loss_curve = LossCurve::new()
+    |  ___________________________-
+ 67 | |             .add_series(MetricSeries::new("Train", Rgba::rgb(66, 133, 244)).smoothing(factor))
+ 68 | |             .add_series(MetricSeries::new("Val", Rgba::rgb(255, 128, 0)).smoothing(factor))
+ 69 | |             .dimensions(self.width, self.height)
+    | |_____________-^^^^^^^^^^
+    |
+   ::: /home/noah/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/batuta-common-0.1.0/src/display.rs:279:8
+    |
+279 |       fn dimensions(mut self, width: u32, height: u32) -> Self {
+    |          ---------- the method is available for `LossCurve` here
+    |
+    = help: items from traits can only be used if the trait is in scope
+help: trait `WithDimensions` which provides `dimensions` is implemented but not in scope; perhaps you want to import it
+    |
+  3 + use trueno_viz::prelude::WithDimensions;
+    |
+help: there is a method `set_dimensions` with a similar name
+    |
+ 69 |             .set_dimensions(self.width, self.height)
+    |              ++++
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `entrenar` (lib) due to 2 previous errors
+
+-----
+
+error: failed to build rustdoc for crate ruchy v4.2.1
+note: this is usually due to a compilation error in the crate,
+      and is unlikely to be a bug in cargo-semver-checks
+note: the following command can be used to reproduce the error:
+      cargo new --lib example &&
+          cd example &&
+          echo '[workspace]' >> Cargo.toml &&
+          cargo add ruchy@=4.2.1 --features arrow,arrow-array,arrow-buffer,arrow-schema,async-trait,axum,batteries-included,data-loading,dataframe,default,full,http-client,jit,markdown,mcp,minimal,notebook,pmcp,polars,polars-compat,proptest,repl,sovereign-stack,stub_tests,testing,tokio,tokio-util,tower,tower-http,tower-lsp,training,visualization,wasm-compile,wasmparser,wasmtime,watch-mode,widgets &&
+          cargo check &&
+          cargo doc
+
+error: aborting due to failure to build rustdoc for crate ruchy v4.2.1
+
+real	1m48.515s
+user	7m49.889s
+sys	1m48.975s
+EXIT=101
+2026-09-05T11:17:42+02:00

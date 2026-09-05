@@ -1,0 +1,68 @@
+=== docs/roadmaps/roadmap.yaml ===
+2023 docs/roadmaps/roadmap.yaml
+aab23d06 2026-04-04
+commits since 2026-02-10: 4
+roadmap_version: '1.0'
+github_enabled: true
+github_repo: null
+roadmap:
+- id: QUALITY-002
+  github_issue: null
+  item_type: task
+  title: 'New task: QUALITY-002'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-11-21T18:54:23.631941416+00:00
+  updated: 2025-11-21T18:54:23.631941416+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: Use Oracle to improve Ruchy
+  github_issue: null
+  item_type: task
+  title: 'New task: Use Oracle to improve Ruchy'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2025-12-07T11:34:16.278912787+00:00
+  updated: 2025-12-07T11:34:16.278912787+00:00
+  spec: null
+=== docs/execution/roadmap.yaml ===
+11241 docs/execution/roadmap.yaml
+b3a65e4f 2025-12-09
+commits since 2026-02-10: 0
+# Ruchy Development Roadmap - PMAT YAML Format
+# Extreme TDD + Toyota Way + Mutation Testing Enforcement
+
+metadata:
+  version: "3.217"
+  last_updated: "2025-12-09"
+  current_sprint: "✅ COMPLETE - Test Suite Stabilization (RED-phase tests properly ignored)"
+  latest_release: "v3.211.0"
+  latest_commit_message: "[PDCA-070] Test suite stabilization - Mark RED-phase tests as ignored (11,680 passing, 2,547 skipped)"
+  latest_commit_hash: "pending"
+  current_work: "✅ PDCA-070 COMPLETE - All RED-phase tests marked with #[ignore] for features not yet implemented"
+  next_phase: "Continue with high-priority roadmap tasks (JIT-002, array type inference, or VM coverage)"
+  next_priority: "Implement GREEN phase for ignored tests (closures, module imports, try operator)"
+  test_status: "✅ All tests passing (11,680 passed, 2,547 skipped), zero regressions"
+  build_health: "✅ PERFECT - All examples/benchmarks compile, all 254 test files compile successfully"
+  benchmark_validation_status: "✅ 12/12 BENCHMARKS WORKING (100%) in run mode - All validated with ruchydbg v1.24.0"
+  perf_002_status: "✅ Phase 2, 3, & 4 COMPLETE - release-dist fixed + --show-profile-info + --pgo automation"
+  perf_002c_status: "⏸️ PAUSED - Core DCE working (9/12 tests passing = 75%), liveness analysis required for completion (~800 LOC, 3-5 days)"
+  priority_rationale: "All 12 benchmarks working in run mode! Array type inference still needed for transpile/compile. RECOMMENDATION: Fix array types OR proceed with JIT-002 (50-100x gain)"
+  benchmark_details:
+    working:
+      - "BENCH-001: File I/O ✅ (105KB, 16ms, ruchydbg validated)"
+      - "BENCH-002: Matrix multiplication (run mode ✅, transpile/compile ❌ array type inference needed - not blocking)"
+      - "BENCH-003: String concatenation ✅"
+      - "BENCH-004: Binary tree allocation ✅"
+      - "BENCH-005: Array sum ✅"
+      - "BENCH-006: File processing ✅ (read_file() works)"
+      - "BENCH-007: Fibonacci recursive ✅"
+      - "BENCH-008: Prime generation ✅"
+      - "BENCH-009: JSON parsing ✅ (parse_json() works)"

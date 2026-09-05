@@ -1,0 +1,14 @@
+=== MSRV claim test: rust-version=1.75 in Cargo.toml; try cargo +1.83.0 check (resolution only) ===
+error: failed to load manifest for workspace member `/home/noah/src/ruchy/.`
+referenced by workspace at `/home/noah/src/ruchy/Cargo.toml`
+
+Caused by:
+  failed to load manifest for dependency `provable-contracts`
+
+Caused by:
+  failed to parse manifest at `/home/noah/src/provable-contracts/crates/provable-contracts/Cargo.toml`
+
+Caused by:
+  feature `edition2024` is required
+
+exit=

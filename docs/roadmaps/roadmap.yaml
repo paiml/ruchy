@@ -2021,3 +2021,262 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: PMAT-091
+  github_issue: null
+  item_type: task
+  title: Next crates.io release - gather plan quorum build dogfood publish (2026-09-05)
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:12:13Z
+  updated: 2026-09-05T09:13:23.607931144+00:00
+  spec: null
+  acceptance_criteria:
+  - 'Process: paiml-implement unattended per ~/Downloads/ruchy-next-release-prompt.md. Hard gates: clean-room publish, ci/gate, pre-release-gate, cargo publish. Evidence: docs/specifications/evidence/2026-09-05-release-gather/'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - publish
+  - clean-room
+  notes: null
+- id: PMAT-092
+  github_issue: null
+  item_type: task
+  title: RELEASE-PKG-HYGIENE - include allowlist, delete 3 quarantine dirs, untrack colon paths
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:27:37.877455314+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - clean-room
+  - windows
+  notes: null
+- id: PMAT-093
+  github_issue: null
+  item_type: task
+  title: RELEASE-YML-THEATER - remove ruchy-cli step and continue-on-error, correct token secret, publish ruchy then ruchy-wasm, prerelease from tag
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:19:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - ci
+  notes: null
+- id: PMAT-094
+  github_issue: null
+  item_type: task
+  title: RELEASE-DEPS-CLEANROOM - dev-dep provable-contracts from crates.io, rust-version 1.89, ruchy-wasm dep version, yanked chacha20
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:19:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - clean-room
+  - deps
+  notes: null
+- id: PMAT-095
+  github_issue: null
+  item_type: task
+  title: EXAMPLES-MIGRATE-4TO5 - migrate in-repo examples that use the 7 reserved keywords, must-parse test
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:27:38.099804940+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - examples
+  notes: null
+- id: PMAT-096
+  github_issue: null
+  item_type: task
+  title: PRE-RELEASE-GATE-V2 - verb surface from binary, golden inputs, transpile diff vs 4.2.1, clean-room build, go-no-go receipt
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:19:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - dogfood
+  notes: null
+- id: PMAT-097
+  github_issue: null
+  item_type: task
+  title: CONTRACTS-DISPATCH - pv contracts for transpile_expr and eval_expr_kind dispatch totality
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:19:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - contracts
+  - transpiler
+  - interpreter
+  notes: null
+- id: PMAT-098
+  github_issue: null
+  item_type: task
+  title: ROADMAP-CONSOLIDATE - archive docs/execution/roadmap.yaml, CLAUDE.md points at docs/roadmaps/roadmap.yaml
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:19:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - docs
+  - pmat
+  notes: null
+- id: PMAT-099
+  github_issue: null
+  item_type: task
+  title: SATD-ZERO - replace 7 PARSER-XXX placeholders, 1 TODO, gate SATD stage via pmat not grep
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:19:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - quality
+  notes: null
+- id: PMAT-100
+  github_issue: null
+  item_type: task
+  title: RELEASE-PUBLISH-5.0.0-beta.2 - version bump, CHANGELOG, tag, publish via release.yml, fresh-container install check
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T09:19:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - publish
+  notes: null
+- id: PMAT-101
+  github_issue: null
+  item_type: task
+  title: DATAFRAME-POLARS-DRIFT - dataframe and polars-compat features do not compile at HEAD against locked polars-core 0.55.2 (10 errors in 2 files)
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:28:17Z
+  updated: 2026-09-05T09:28:17Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - deps
+  - dataframe
+  notes: null
+- id: PMAT-102
+  github_issue: null
+  item_type: task
+  title: CLIPPY-1.98-MUST-USE - tests/cli_contract_fuzz.rs 7 unused_must_use on assert_cmd assert under rustc 1.98, blocks ci/lint and every local commit
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T09:59:40Z
+  updated: 2026-09-05T10:00:25.389429721+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - ci
+  - jidoka
+  notes: null
+- id: PMAT-103
+  github_issue: null
+  item_type: task
+  title: COMPLEXITY-HOOK-DEBT - six functions over per-function limits block any touch of migrate.rs provability.rs sovereign.rs interpreter.rs (cognitive 34-64)
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T10:19:09Z
+  updated: 2026-09-05T10:23:09.509818860+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - quality
+  - cb-200
+  notes: null
+- id: PMAT-104
+  github_issue: null
+  item_type: task
+  title: MCP-TEST-PROCESS-EXIT - handlers::mcp_handler test calls handle_mcp_command which std::process::exit(1)s without the mcp feature, killing cargo test --workspace
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T10:44:29Z
+  updated: 2026-09-05T10:44:29Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - release
+  - tests
+  - jidoka
+  notes: null

@@ -1,0 +1,6 @@
+tests/ .rs: 456
+tests.disabled .rs: 277  (last commit: a01b9dc8 2025-10-04)
+tests_disabled_for_mutation .rs: 0  (last commit: b6119eed 2025-10-04)
+tests_temp_disabled_for_sprint7_mutation .rs: 458  (last commit: 8c38d52d 2026-01-09)
+other test-ish dirs:
+(eval):1: no matches found: test_*

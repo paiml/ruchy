@@ -1,0 +1,93 @@
+=== path deps in Cargo.toml ===
+235:path = "src/bin/ruchy.rs"
+377:provable-contracts = { path = "../provable-contracts/crates/provable-contracts" }
+
+=== sibling crate pins ===
+285:trueno = { version = "0.16", default-features = false }  # Pillar 1: CPU SIMD only (no wgpu)
+286:aprender = { version = "0.27", default-features = false, features = ["format-quantize", "format-signing"] }  # Pillar 4: ML + quantization + signing
+288:alimentar = { version = "0.2.5", optional = true }      # Pillar 2: Data loading
+289:entrenar = { version = "0.7", features = ["citl"], optional = true }  # CITL, training
+290:trueno-viz = { version = "0.1.23", optional = true }    # Pillar 5: Visualization
+291:presentar = { version = "0.3.1", optional = true }      # Pillar 6: Notebook widgets
+293:forjar = { version = "1.2", default-features = false, optional = true }  # Pillar 3: Infrastructure as Code
+294:simular = { version = "0.3", default-features = false, optional = true } # Pillar 7: Simulation engine
+295:bashrs = { version = "6.65", default-features = false, optional = true } # Pillar 4: Shell transpilation
+377:provable-contracts = { path = "../provable-contracts/crates/provable-contracts" }
+
+=== features ===
+[features]
+default = ["batteries-included"]
+batteries-included = ["wasm-compile", "markdown", "repl", "watch-mode"]
+# Full feature set including all sovereign stack deps and heavy optional features
+full = ["batteries-included", "sovereign-stack", "notebook", "http-client"]
+# Sovereign AI Stack extensions (opt-in to reduce dep count per CB-081)
+sovereign-stack = ["training", "data-loading", "widgets", "visualization"]
+training = ["dep:entrenar"]
+data-loading = ["dep:alimentar"]
+widgets = ["dep:presentar"]
+visualization = ["dep:trueno-viz"]
+# Ruchy 5.0 Sovereign Platform pillars (optional)
+infra = ["dep:forjar"]
+simulation = ["dep:simular"]
+shell-target = ["dep:bashrs"]
+minimal = []  # Users can use --no-default-features --features minimal for core only
+# DataFrame via trueno-db (default - uses Trueno SIMD backend)
+dataframe = ["polars", "arrow"]
+# Legacy polars compatibility layer (spec Section 4.2 - NOT default)
+polars-compat = ["polars", "arrow"]
+testing = ["proptest"]
+stub_tests = []  # Enable stub tests for incomplete features (development only)
+notebook = ["tokio", "tokio-util", "axum", "tower", "tower-http", "wasmparser", "wasmtime"]
+mcp = ["tokio", "tokio-util", "pmcp", "async-trait", "tower-lsp"]
+wasm-compile = []  # WASM compilation is always available via wasm-encoder
+# JIT Compilation feature (JIT-001) - CRITICAL P0
+jit = ["dep:cranelift", "dep:cranelift-codegen", "dep:cranelift-jit", "dep:cranelift-module", "dep:cranelift-native"]
+# Optional features for minimal builds (DEPENDENCY-CLEANUP Sprint v3.109.0)
+http-client = ["dep:reqwest"]
+markdown = ["dep:pulldown-cmark"]
+repl = ["dep:rustyline"]
+watch-mode = ["dep:notify"]
+
+[dependencies]
+
+=== workspace deps section ===
+[workspace.dependencies]
+anyhow = "1.0"
+thiserror = "2.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+# Parsing
+logos = "0.15"
+pest = "2.8"
+pest_derive = "2.8"
+
+# Code generation
+syn = { version = "2.0", features = ["full", "extra-traits", "visit-mut"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+prettyplease = "0.2"
+
+# JIT Compilation (Cranelift) - JIT-001
+cranelift = "0.125"
+cranelift-codegen = "0.125"
+cranelift-frontend = "0.125"
+cranelift-jit = "0.125"
+cranelift-module = "0.125"
+cranelift-native = "0.125"
+target-lexicon = "0.12"
+
+# REPL
+rustyline = "17.0"
+rustyline-derive = "0.11"
+
+# Testing
+proptest = "1.7"
+criterion = "0.7"
+insta = { version = "1.43", features = ["yaml"] }
+quickcheck = "1.0"
+quickcheck_macros = "1.1"
+
+[package]

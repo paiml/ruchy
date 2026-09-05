@@ -1,0 +1,12 @@
+=== make pre-release-gate: full result ===
+  FAIL - Coverage: 0%
+  Tests pass: 20/20 pts - PASS
+  Coverage ≥95%: 0/20 pts - 0%
+  Zero SATD: 0/10 pts - 15 markers
+  Clippy clean: 10/10 pts - PASS
+  Doc coverage: 3/10 pts - 45%
+  Property tests: 10/10 pts - PASS (132 modules)
+Final Score: 43/100
+STATUS: BLOCKED
+real	3m45.225s
+EXIT=2

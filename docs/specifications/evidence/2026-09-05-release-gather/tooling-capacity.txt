@@ -1,0 +1,95 @@
+nproc=48
+               total        used        free      shared  buff/cache   available
+Mem:             125          11           5           0         107         109
+/dev/md0         15T   11T  3.5T  75% /mnt/nvme-raid0
+--- tools ---
+error: no such command: `semver-checks`
+cargo-mutants 27.0.0
+cargo-llvm-cov 0.8.5
+cargo-deny 0.19.0
+cargo-audit-audit 0.22.1
+cargo-nextest 0.9.132 (6e4a9d6f2 2026-03-20)
+Docker version 29.4.2, build 055a478
+(eval):1: command not found: podman
+rustc 1.98.0 (88d9e12ae 2026-08-18)
+stable-x86_64-unknown-linux-gnu (active, default)
+nightly-x86_64-unknown-linux-gnu
+nightly-2025-11-21-x86_64-unknown-linux-gnu
+nightly-2026-04-03-x86_64-unknown-linux-gnu
+1.83.0-x86_64-unknown-linux-gnu
+--- pmat work surface ---
+Unified GitHub/YAML workflow management
+
+Usage: pmat work [OPTIONS] <COMMAND>
+
+Commands:
+  add             Add a new work ticket (CREATE) [aliases: new, create, a]
+  list            List all work tickets (READ) [aliases: ls, l]
+  edit            Edit an existing ticket (UPDATE) [aliases: update, e]
+  delete          Delete a work ticket (DELETE) [aliases: rm, remove, del]
+  annotate        Show unified quality annotations for a ticket [aliases: ann, quality, metrics]
+  start           Start work on a GitHub issue or YAML ticket [aliases: begin, s]
+  continue        Continue work on existing issue/ticket [aliases: cont, c, resume]
+  checkpoint      Run invariant checkpoint (DbC §4.2) [aliases: ck, cp]
+  complete        Complete work on issue/ticket [aliases: done, finish, f]
+  delegate        Delegate an active PMAT work contract to a Google Anti-Gravity agent (MACS-019) [alias: handoff]
+  falsify         Run falsification tests without completing the work item [alias: test-claims]
+  cot             Structured chain-of-thought tools: integrity check + derivation (MACS F3 / Component 31)
+  ledger          Falsification-ledger tools: hash re-verification + provenance report (MACS F1 / Component 32)
+  event           Record an agent interruption event (refusal, model switch, session restart, workflow spawn) or acknowledge one (MACS F1/E5) [alias: ev]
+  claim           Claim exclusive ownership of paths for one agent, so concurrent agents cannot silently collide on the same file (ULTRA-002) [alias: claims]
+  triage          Record and gate the coverage of a bounded triage pass: what was examined, what was acted on, and what was dropped (ULTRA-003)
+  status          Show work status [aliases: st, stat]
+  sync            Synchronize GitHub and YAML [alias: sy]
+  init            Initialize roadmap and hooks [aliases: setup, ini]
+  validate        Validate roadmap.yaml syntax and content (Part B: UX Improvements) [aliases: check, lint, v]
+  migrate         Auto-fix common roadmap.yaml issues (Part B: UX Improvements) [aliases: fix, m]
+  list-statuses   List all valid status values with descriptions [aliases: values, statuses]
+  score           Score a work contract (DBC spec 5-dimension quality + lint) [aliases: sc, quality-score]
+  codebase-score  Aggregate quality score across all work contracts (DBC spec §14.6) [aliases: cbs, portfolio]
+  help            Print this message or the help of the given subcommand(s)
+
+Options:
+      --mode <MODE>
+          Force cli or mcp mode instead of auto-detecting (`--mode mcp` starts the MCP stdio server, the same one `MCP_VERSION=1 pmat` starts)
+          
+          [possible values: cli, mcp]
+
+  -v, --verbose
+          Enable verbose output (info level)
+
+--- pmat hooks install flags ---
+      --force
+      --tdg-enforcement
+          Enable TDG quality enforcement hooks
+--- agy commands ---
+Usage of agy:
+  --add-dir                       Add a directory to the workspace (repeatable) (default [])
+  --agent                         Agent for the current CLI session
+  -c                              Short alias for --continue
+  --continue                      Continue the most recent conversation
+  --conversation                  Resume a previous conversation by ID
+  --dangerously-skip-permissions  Auto-approve all tool permission requests without prompting
+  --disable-slash-commands        Disable slash command and skill expansion in print mode
+  --effort                        Reasoning effort for the current CLI session (low|medium|high)
+  -i                              Short alias for --prompt-interactive
+  --input-format                  Input format for print mode (text, stream-json). stream-json reads one NDJSON message per line from stdin and runs a turn for each; it requires --output-format stream-json (default text)
+  --json-schema                   Optional JSON schema string or path to a schema file to enforce structured output (for stream-json, only applicable to the final result)
+  --log-file                      Override CLI log file path
+  --mode                          Set the agent execution mode for this session (accept-edits, plan)
+  --model                         Model for the current CLI session
+  --new-project                   Create a new project for this session
+  --output-format                 Output format for print mode (text, json, stream-json) (default text)
+  -p                              Short alias for --print
+  --print                         Run a single prompt non-interactively and print the response
+  --print-timeout                 Timeout for print mode wait (default 5m0s)
+  --project                       Project ID or project name for the current CLI session
+  --prompt                        Alias for --print
+  --prompt-interactive            Run an initial prompt interactively and continue the session
+  --sandbox                       Run in a sandbox with terminal restrictions enabled
+
+Available subcommands:
+  agent           List available agents
+  agents          List available agents
+  changelog       Show changelog and release notes
+  help            Show help for subcommands
