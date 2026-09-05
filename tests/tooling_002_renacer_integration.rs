@@ -6,7 +6,7 @@
 //! - Network calls (telemetry leaks)
 //! - Self-hosting bootstrap validation
 //!
-//! Reference: docs/execution/roadmap.yaml TOOLING-002
+//! Reference: docs/roadmaps/roadmap.yaml TOOLING-002
 //! Date: 2025-11-24
 
 use assert_cmd::Command;

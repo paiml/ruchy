@@ -9,7 +9,7 @@
 // 2. Verify both modes produce identical results
 // 3. Cover: literals, arithmetic, comparisons, control flow, blocks
 //
-// Requirements from docs/execution/roadmap.yaml:
+// Requirements from docs/roadmaps/roadmap.yaml:
 // - 40 integration tests comparing AST vs bytecode execution
 // - Property tests: 10K cases verifying semantic equivalence
 // - Performance: bytecode 40-60% faster than AST

@@ -1,0 +1,63 @@
+metadata:
+  version: "1.0.0"
+  author: "PMAT Implementation Team"
+  description: "Single source of truth contract for roadmap file consolidation"
+  crate: "ruchy"
+  references:
+    - "PMAT-098: Roadmap Consolidation"
+
+equations:
+  roadmap_single_source:
+    formula: "|{p ∈ tracked : basename(p) = roadmap.yaml ∧ p ∉ docs/archive}| = 1"
+    domain: "p ∈ tracked files from git ls-files"
+    invariants:
+      - "Exactly one roadmap.yaml exists outside docs/archive/"
+      - "The file is located at docs/roadmaps/roadmap.yaml"
+      - "No alternative roadmap sources in active directories"
+
+proof_obligations:
+  - type: invariant
+    property: "Single roadmap file enforced"
+    formal: "exactly one roadmap.yaml tracked outside archive"
+    applies_to: all
+  - type: completeness
+    property: "CLAUDE.md references only the active roadmap"
+    formal: "CLAUDE.md does not contain docs/execution/roadmap.yaml path"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-ROADMAP-SOT-001
+    rule: "Roadmap single source uniqueness"
+    test: "test_pmat_098_single_roadmap_file_enforced"
+    prediction: "verified"
+    if_fails: "Contract violation — multiple roadmap.yaml files exist"
+
+  - id: FALSIFY-ROADMAP-SOT-002
+    rule: "Archived roadmap path removal"
+    test: "test_pmat_098_claude_md_no_archived_roadmap_reference"
+    prediction: "verified"
+    if_fails: "Contract violation — CLAUDE.md still references archived path"
+
+  - id: FALSIFY-ROADMAP-SOT-003
+    rule: "Active roadmap reference"
+    test: "test_pmat_098_claude_md_references_single_sot"
+    prediction: "verified"
+    if_fails: "Contract violation — CLAUDE.md does not reference active roadmap"
+
+kani_harnesses:
+  - id: KANI-ROADMAP-SOT-001
+    obligation: PO-ROADMAP-SOT-001
+    property: "Roadmap file uniqueness in tracked files"
+    bound: 100
+    strategy: exhaustive
+    harness: verify_roadmap_uniqueness
+
+qa_gate:
+  id: QA-ROADMAP-SOT
+  name: "roadmap single source of truth"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - test_pmat_098_single_roadmap_file_enforced
+    - test_pmat_098_claude_md_no_archived_roadmap_reference
+    - test_pmat_098_claude_md_references_single_sot

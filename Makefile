@@ -1063,7 +1063,7 @@ check-docs:
 	    [ $$(git diff --name-only | grep -cE 'docs/|CHANGELOG.md') -eq 0 ]; then \
 	    echo "❌ Documentation update required!"; \
 	    echo "Update one of:"; \
-	    echo "  - docs/execution/roadmap.md"; \
+	    echo "  - docs/roadmaps/roadmap.yaml"; \
 	    echo "  - docs/execution/quality-gates.md"; \
 	    echo "  - CHANGELOG.md"; \
 	    exit 1; \

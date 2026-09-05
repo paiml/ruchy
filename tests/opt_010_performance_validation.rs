@@ -3,7 +3,7 @@
 // Validates that bytecode execution is faster than AST interpretation.
 // Uses simple timing measurements instead of full criterion benchmarks.
 //
-// Requirements from docs/execution/roadmap.yaml:
+// Requirements from docs/roadmaps/roadmap.yaml:
 // - Bytecode should be 40-60% faster than AST for arithmetic/loops
 // - Measure execution time for various workloads
 
