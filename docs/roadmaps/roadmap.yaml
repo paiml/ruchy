@@ -2664,3 +2664,35 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: PMAT-127
+  github_issue: null
+  item_type: task
+  title: PKG-PROPTEST-REGRESSIONS - the include allowlist packages tests/**/*.proptest-regressions (gitignored proptest artifacts); cargo package treats them as uncommitted and the clean-room stage fails on any tree where property tests have run; exclude them from the crate
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T17:32:59Z
+  updated: 2026-09-05T17:32:59Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-128
+  github_issue: null
+  item_type: task
+  title: GATE-SCRIPT-BASHRS - bashrs lint scripts/pre-release-gate.sh reports 13 errors (SC1087 on jq filter strings, DET002 timestamps in receipt paths, SEC010 cd paths); Z5 accepted them silently; fix or document each
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T17:50:21Z
+  updated: 2026-09-05T17:50:21Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
