@@ -247,6 +247,7 @@ autobins = false
 [[bin]]
 name = "ruchy"
 path = "src/bin/ruchy.rs"
+required-features = ["repl"]
 
 
 [lib]
@@ -273,7 +274,7 @@ visualization = ["dep:trueno-viz"]
 infra = ["dep:forjar"]
 simulation = ["dep:simular"]
 shell-target = ["dep:bashrs"]
-minimal = []  # Users can use --no-default-features --features minimal for core only
+minimal = []  # core library only (--no-default-features --features minimal); the ruchy binary requires the repl feature
 # DataFrame via trueno-db (default - uses Trueno SIMD backend)
 dataframe = ["polars", "arrow"]
 # Legacy polars compatibility layer (spec Section 4.2 - NOT default)

@@ -1,3 +1,4 @@
+#![cfg(feature = "repl")]
 #![cfg(test)]
 #![allow(missing_docs)]
 #![allow(warnings)]

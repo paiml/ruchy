@@ -216,11 +216,11 @@ fn test_pmat_113_default_features_enable_repl() {
         .expect("Cargo.toml is readable");
     let batteries = manifest
         .lines()
-        .find(|line| line.starts_with("batteries-included"))
+        .find(|line| line.starts_with("batteries-included ="))
         .expect("batteries-included feature");
     let default = manifest
         .lines()
-        .find(|line| line.starts_with("default"))
+        .find(|line| line.starts_with("default ="))
         .expect("default feature");
     assert!(default.contains("\"batteries-included\""), "{default}");
     assert!(batteries.contains("\"repl\""), "{batteries}");

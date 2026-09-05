@@ -1,3 +1,4 @@
+#![cfg(feature = "repl")]
 #![allow(missing_docs)]
 //! Verification test for Issue #86 fix: Run 100 iterations to verify determinism
 

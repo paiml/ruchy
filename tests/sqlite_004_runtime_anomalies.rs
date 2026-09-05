@@ -1,3 +1,4 @@
+#![cfg(feature = "repl")]
 #![allow(missing_docs)]
 #![allow(clippy::collapsible_match)]
 //! [SQLITE-TEST-004] Test Harness 1.4: Runtime Anomaly Validation Suite
