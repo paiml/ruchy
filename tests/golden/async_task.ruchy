@@ -1,0 +1,5 @@
+async fun compute(n: i32) -> i32 {
+    n * 2
+}
+
+println("async defined")

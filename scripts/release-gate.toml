@@ -1,0 +1,20 @@
+# PMAT-096 -- configuration for scripts/pre-release-gate.sh (release plan Z5 / §4).
+# Parsed with awk/sed, not a TOML library: every array must stay on ONE line, and
+# array entries of [verbs] are "verb=reason" pairs.
+
+[gate]
+ci_toolchain = "1.97.1"
+baseline_version = "4.2.1"
+satd_max = 0
+
+[differential]
+compile_budget_seconds = 300
+corpora = ["../ruchy-book", "../ruchy-cookbook", "../ruchy-cli-tools-book", "../ruchy-repl-demos", "../rosetta-ruchy", "../ruchyruchy", "../tooling-with-ruchy"]
+
+[verbs]
+help_only = ["repl=needs an interactive TTY", "new=creates a cargo project on disk", "build=needs a whole project rather than one file", "notebook=needs the notebook feature and an HTTP server", "serve=needs the notebook feature and an HTTP server", "add=mutates Cargo.toml and needs the network access", "publish=needs the network and a registry token", "mcp=needs a long-lived stdio server", "actor:observe=needs a running actor system", "dataflow:debug=needs a live dataflow session", "oracle=subcommand-only surface with no file argument", "infra=subcommand-only surface with no file argument", "sim=subcommand-only surface with no file argument", "widget=subcommand-only surface with no file argument", "apr=subcommand-only surface with no file argument", "model=subcommand-only surface with no file argument", "contracts=subcommand-only surface with no file argument", "help=meta verb that only prints usage", "replay-to-tests=needs recorded .replay session files", "fuzz=unbounded fuzzing loop, exceeds the 10s box"]
+expect_nonzero = []
+input_test = "tested.ruchy"
+input_mutations = "tested.ruchy"
+input_property_tests = "tested.ruchy"
+input_coverage = "tested.ruchy"

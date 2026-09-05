@@ -42,7 +42,7 @@ help:
 	@echo "  make prompt-coverage - Generate AI-ready coverage improvement prompt (90% strategy)"
 	@echo "  make test-coverage-quality - Show coverage & TDG quality per component"
 	@echo "  make quality-gate - Run PMAT quality checks"
-	@echo "  make pre-release-gate - Pre-release gate (95/100 minimum score)"
+	@echo "  make pre-release-gate - Pre-release gate v2 (PMAT-096): receipt.json + go/no-go"
 	@echo "  make quality-web  - Run HTML/JS linting and coverage (>80%)"
 	@echo "  make ci          - Run full CI pipeline"
 	@echo ""
@@ -911,13 +911,14 @@ quality-gate:
 	@~/.local/bin/pmat analyze --metrics complexity src/ || true
 	@echo "✓ Quality check complete"
 
-# Pre-release quality gate (Issue #170)
-# Requires 95/100 minimum score to pass
-# Scoring: Tests(20) + Coverage(20) + Mutation(20) + SATD(10) + Clippy(10) + Docs(10) + Property(10)
+# Pre-release gate v2 (PMAT-096, release plan Z5 / §4)
+# No scoring: every stage reports PASS/WARN/FAIL and writes
+# docs/specifications/evidence/<date>-dogfood/receipt.json; exits 1 on a no-go verdict.
+# RUCHY_BASELINE_BIN=<path to the 4.2.1 binary> skips the baseline cargo install.
 .PHONY: pre-release-gate
 pre-release-gate:
-	@echo "Running pre-release quality gate (95/100 minimum)..."
-	@./scripts/pre-release-gate.sh
+	@echo "Running the pre-release gate v2 (PMAT-096)..."
+	@RUCHY_BASELINE_BIN="$(RUCHY_BASELINE_BIN)" ./scripts/pre-release-gate.sh
 
 # Validate documentation accuracy (PMAT Phase 3.5 - Documentation Accuracy)
 validate-docs:

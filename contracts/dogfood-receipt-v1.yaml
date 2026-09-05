@@ -1,0 +1,82 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Dogfood receipt contract for the ruchy pre-release gate (PMAT-096)"
+  crate: "ruchy"
+  references:
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §4 (dogfood contract)"
+    - "scripts/pre-release-gate.sh (the only producer of receipt.json)"
+
+equations:
+  verdict_soundness:
+    formula: "verdict = go ⟺ ∀s ∈ stages: status(s) ≠ FAIL"
+    domain: "s ∈ {tests, features, verbs, differential, transpile, clean_room, package, satd}"
+    invariants:
+      - "Every one of the eight stages is present in the receipt"
+      - "status(s) ∈ {PASS, WARN, FAIL} for every stage"
+      - "verdict ∈ {go, no-go}"
+      - "A stage that could not be measured is FAIL with a reason, never a zero"
+
+proof_obligations:
+  - type: soundness
+    property: "A go verdict implies no failing stage"
+    formal: "verdict = go ⟹ ¬∃s: status(s) = FAIL"
+    applies_to: all
+  - type: completeness
+    property: "A failing stage implies a no-go verdict"
+    formal: "∃s: status(s) = FAIL ⟹ verdict = no-go"
+    applies_to: all
+  - type: invariant
+    property: "All eight stages and all seven top-level keys are present"
+    formal: "dom(stages) = STAGES ∧ dom(receipt) ⊇ TOP_LEVEL"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RECEIPT-001
+    rule: "Verdict soundness"
+    test: "test_pmat_096_verdict_go_with_a_failing_stage_is_rejected"
+    prediction: "verified"
+    if_fails: "Contract violation — a go verdict coexists with a FAIL stage"
+  - id: FALSIFY-RECEIPT-002
+    rule: "Verdict completeness"
+    test: "test_pmat_096_verdict_no_go_requires_a_failing_stage"
+    prediction: "verified"
+    if_fails: "Contract violation — a no-go verdict with no FAIL stage"
+  - id: FALSIFY-RECEIPT-003
+    rule: "Stage totality"
+    test: "test_pmat_096_schema_rejects_missing_clean_room_stage"
+    prediction: "verified"
+    if_fails: "Contract violation — a receipt is accepted with a stage missing"
+  - id: FALSIFY-RECEIPT-004
+    rule: "Status domain"
+    test: "test_pmat_096_schema_rejects_invalid_stage_status"
+    prediction: "verified"
+    if_fails: "Contract violation — a status outside {PASS,WARN,FAIL} is accepted"
+  - id: FALSIFY-RECEIPT-005
+    rule: "Top-level totality"
+    test: "test_pmat_096_schema_rejects_missing_top_level_key"
+    prediction: "verified"
+    if_fails: "Contract violation — a receipt is accepted with a required key missing"
+  - id: FALSIFY-RECEIPT-006
+    rule: "The gate-produced receipt satisfies its own contract"
+    test: "test_pmat_096_schema_accepts_generated_receipt"
+    prediction: "verified"
+    if_fails: "The gate emits a receipt that violates §4"
+
+kani_harnesses:
+  - id: KANI-RECEIPT-001
+    obligation: PO-RECEIPT-001
+    property: "Verdict soundness over an arbitrary status vector"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_receipt_verdict_soundness
+
+qa_gate:
+  id: QA-DOGFOOD-RECEIPT
+  name: "dogfood receipt contract"
+  min_coverage: 0.90
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_096_schema_accepts_example_fixture"
+    - "test_pmat_096_verdict_go_with_a_failing_stage_is_rejected"
+    - "test_pmat_096_verdict_no_go_requires_a_failing_stage"
