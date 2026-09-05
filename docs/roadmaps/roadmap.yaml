@@ -2064,11 +2064,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: RELEASE-YML-THEATER - remove ruchy-cli step and continue-on-error, correct token secret, publish ruchy then ruchy-wasm, prerelease from tag
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T12:53:26.490772425+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2082,11 +2082,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: RELEASE-DEPS-CLEANROOM - dev-dep provable-contracts from crates.io, rust-version 1.89, ruchy-wasm dep version, yanked chacha20
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T13:18:14.767960906+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2119,11 +2119,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: PRE-RELEASE-GATE-V2 - verb surface from binary, golden inputs, transpile diff vs 4.2.1, clean-room build, go-no-go receipt
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T13:47:42.082132229+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2137,11 +2137,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: CONTRACTS-DISPATCH - pv contracts for transpile_expr and eval_expr_kind dispatch totality
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T13:47:42.833225461+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2156,11 +2156,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: ROADMAP-CONSOLIDATE - archive docs/execution/roadmap.yaml, CLAUDE.md points at docs/roadmaps/roadmap.yaml
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T12:53:32.625777510+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2174,11 +2174,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: SATD-ZERO - replace 7 PARSER-XXX placeholders, 1 TODO, gate SATD stage via pmat not grep
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:19:38Z
+  updated: 2026-09-05T13:10:02.501318988+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2209,11 +2209,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: DATAFRAME-POLARS-DRIFT - dataframe and polars-compat features do not compile at HEAD against locked polars-core 0.55.2 (10 errors in 2 files)
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-05T09:28:17Z
-  updated: 2026-09-05T09:28:17Z
+  updated: 2026-09-05T13:18:17.597563614+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2317,4 +2317,254 @@ roadmap:
   - release
   - tests
   - jidoka
+  notes: null
+- id: PMAT-107
+  github_issue: null
+  item_type: task
+  title: BINDING-CHECK-PATH - build.rs AllImplemented binding check looked two directories up and never found the sibling manifest; gate never ran anywhere (0 CONTRACT_* env vars)
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T12:50:22Z
+  updated: 2026-09-05T12:50:22Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - contracts
+  - build
+  - jidoka
+  notes: null
+- id: PMAT-108
+  github_issue: null
+  item_type: task
+  title: 'LABELED-BREAK-IN-FOR-BODY - parser test note in control_flow.rs:524: labeled break inside for-loop body'
+  status: planned
+  priority: low
+  assigned_to: null
+  created: 2026-09-05T13:21:13Z
+  updated: 2026-09-05T13:21:13Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - parser
+  notes: null
+- id: PMAT-109
+  github_issue: null
+  item_type: task
+  title: CANONICAL-AST-ATOMS - Literal::Atom lowers to CoreLiteral::Unit in the canonical AST
+  status: planned
+  priority: low
+  assigned_to: null
+  created: 2026-09-05T13:21:13Z
+  updated: 2026-09-05T13:21:13Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - transpiler
+  notes: null
+- id: PMAT-110
+  github_issue: null
+  item_type: task
+  title: RUN-MULTI-FN-SILENT - ruchy run prints nothing and exits 0 when a script has two top-level fn items (4.2.1 and HEAD)
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T13:47:41Z
+  updated: 2026-09-05T13:47:41Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - runtime
+  - cli
+  - jidoka
+  notes: null
+- id: PMAT-111
+  github_issue: null
+  item_type: task
+  title: CI-FEATURE-MATRIX - CI builds default features only; all-features and minimal checks exist only in the local release gate
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T13:47:41Z
+  updated: 2026-09-05T13:47:41Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - ci
+  notes: null
+- id: PMAT-112
+  github_issue: null
+  item_type: task
+  title: FEATURE-GATED-TESTS-MUST-USE - tests/cli_contract_notebook.rs and cli_contract_optimize.rs discard assert_cmd assert() (clippy --all-targets --all-features red); same class as PMAT-102
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T15:03:26Z
+  updated: 2026-09-05T15:29:12.246023973+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - tests
+  - jidoka
+  notes: null
+- id: PMAT-113
+  github_issue: null
+  item_type: task
+  title: MINIMAL-FEATURES-TEST-BUILD - tests/parser_067_struct_pattern_test.rs imports ruchy::runtime::repl::Repl without cfg(feature = repl); --no-default-features --features minimal test build red
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T15:03:26Z
+  updated: 2026-09-05T15:03:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - tests
+  - jidoka
+  notes: null
+- id: PMAT-114
+  github_issue: null
+  item_type: task
+  title: PROVE-NOT-IMPLEMENTED-EXIT-0 - ruchy prove <file> prints Command not yet implemented and exits 0; a verb that pretends to succeed
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T15:03:26Z
+  updated: 2026-09-05T15:03:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - cli
+  - jidoka
+  notes: null
+- id: PMAT-115
+  github_issue: null
+  item_type: task
+  title: RUCHYRUCHY-KEYWORD-COLLISION - ../ruchyruchy/validation/tests/test_property_framework.ruchy uses a 5.0 reserved word; downstream repo must migrate (release-known-breaks.txt entry)
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T15:03:26Z
+  updated: 2026-09-05T15:03:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - downstream
+  notes: null
+- id: PMAT-116
+  github_issue: null
+  item_type: task
+  title: GENERATED-CONTRACTS-PROVENANCE - src/generated_contracts.rs was generated from ../provable-contracts/contracts (165 headers), not contracts/ as its header says; pv 0.63 codegen rewrites existing debug_assert! bodies into no-ops; needs pinned pv + source + reproducibility test
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T15:03:26Z
+  updated: 2026-09-05T15:03:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - contracts
+  - jidoka
+  notes: null
+- id: PMAT-117
+  github_issue: null
+  item_type: task
+  title: VALUE-CLOSURE-DEBUG-RECURSION - Value derives Debug and Value::Closure holds an Rc to its binding environment; format!("{:?}") on an evaluated Function recurses until stack overflow (process abort)
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-05T15:03:26Z
+  updated: 2026-09-05T15:03:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - runtime
+  - jidoka
+  notes: null
+- id: PMAT-118
+  github_issue: null
+  item_type: task
+  title: 'PROPTEST-KEYWORD-BLOCKLIST - parser proptests generate reserved words as identifiers (handler, yield, ...) and fail at random in ci/test (issue #196); complete the blocklist in lambdas/async_expressions/identifiers'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-05T15:05:06Z
+  updated: 2026-09-05T15:05:06Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - parser
+  - tests
+  - ci
+  - jidoka
+  notes: null
+- id: PMAT-119
+  github_issue: null
+  item_type: task
+  title: 'New task: PMAT-119'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T15:05:07.886328146+00:00
+  updated: 2026-09-05T15:05:07.886328146+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-120
+  github_issue: null
+  item_type: task
+  title: SATD-IN-TESTS - 32 TODO/FIXME/HACK/XXX markers under tests/*.rs, outside the src scope pmat measures; triage or ticket each
+  status: planned
+  priority: low
+  assigned_to: null
+  created: 2026-09-05T15:23:55Z
+  updated: 2026-09-05T15:23:55Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - tests
+  - quality
   notes: null
