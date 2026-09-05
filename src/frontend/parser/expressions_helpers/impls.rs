@@ -70,7 +70,7 @@ pub(in crate::frontend::parser) fn parse_impl_block(state: &mut ParserState) -> 
 
     let mut methods = Vec::new();
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _)) | None) {
-        // PARSER-XXX: Skip comment tokens in impl blocks
+        // Skips comment tokens in impl blocks (PARSER (commit d83bac83))
         while matches!(
             state.tokens.peek(),
             Some((
@@ -202,7 +202,7 @@ fn parse_impl_method(state: &mut ParserState) -> Result<ImplMethod> {
         false
     };
 
-    // PARSER-XXX: Accept both 'fun' and 'fn' in impl blocks for consistency
+    // Accepts both 'fun' and 'fn' keywords in impl blocks for consistency (PARSER (commit d83bac83))
     if !matches!(state.tokens.peek(), Some((Token::Fun | Token::Fn, _))) {
         use crate::frontend::parser::bail;
         bail!("Expected 'fun' or 'fn' keyword in impl method");

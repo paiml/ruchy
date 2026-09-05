@@ -502,7 +502,7 @@ fn parse_struct_rest_pattern(state: &mut ParserState) -> Result<bool> {
 fn parse_struct_field_pattern(
     state: &mut ParserState,
 ) -> Result<crate::frontend::ast::StructPatternField> {
-    // PARSER-XXX: Keywords can be used as field names in struct patterns
+    // Keywords can be used as field names in struct patterns (DEFECT-029)
     let field_name = match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => name.clone(),
         Some((Token::Type, _)) => "type".to_string(),
@@ -557,7 +557,7 @@ pub(in crate::frontend::parser) fn parse_list_pattern(state: &mut ParserState) -
 }
 /// Parse a single element in a list pattern
 /// Extracted to reduce complexity of `parse_list_pattern`
-/// PARSER-XXX: Support both ..rest (two dots) and ...rest (three dots) syntax
+/// Supports both ..rest (two dots) and ...rest (three dots) syntax (DEFECT-029)
 fn parse_single_list_pattern_element(state: &mut ParserState) -> Result<Pattern> {
     match state.tokens.peek() {
         Some((Token::Identifier(name), _)) => {
