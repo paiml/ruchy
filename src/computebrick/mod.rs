@@ -118,7 +118,7 @@ pub enum MouseButton {
 }
 
 /// Widget specification for serialization.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct WidgetSpec {
     pub kind: WidgetKind,
     pub bounds: Option<Rect>,
@@ -126,7 +126,7 @@ pub struct WidgetSpec {
 }
 
 /// Widget types.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum WidgetKind {
     BrailleGraph {
         data: Vec<f64>,
@@ -159,7 +159,7 @@ pub enum WidgetKind {
 }
 
 /// Graph rendering modes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum GraphMode {
     /// Braille patterns (2x4 dots per cell) - highest resolution.
     #[default]
@@ -171,7 +171,7 @@ pub enum GraphMode {
 }
 
 /// Widget styling options.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct WidgetStyle {
     pub color: Option<Color>,
     pub background: Option<Color>,
@@ -180,7 +180,7 @@ pub struct WidgetStyle {
 }
 
 /// Border styles for panels.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 pub enum BorderStyle {
     /// No border.
     #[default]

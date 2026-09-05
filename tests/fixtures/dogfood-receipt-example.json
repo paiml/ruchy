@@ -4,8 +4,19 @@
   "head": "be1b1574ab0d0f2b5b7c1c1e1f0a9f3d2c4b6a80",
   "baseline": "4.2.1",
   "stages": {
-    "tests": { "status": "PASS", "exit": 0 },
-    "features": { "status": "PASS", "default": 0, "all": 0, "minimal": 0, "fmt": 0, "audit": 0 },
+    "tests": {
+      "status": "PASS",
+      "exit": 0
+    },
+    "features": {
+      "status": "PASS",
+      "default": 0,
+      "all": 0,
+      "minimal": 0,
+      "wasm32": 0,
+      "fmt": 0,
+      "audit": 0
+    },
     "verbs": {
       "status": "PASS",
       "total": 47,
@@ -13,8 +24,22 @@
       "warn": 16,
       "fail": 0,
       "list": [
-        { "verb": "check", "mode": "golden", "input": "tests/golden/hello.ruchy", "exit": 0, "stdout_sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", "status": "PASS" },
-        { "verb": "repl", "mode": "help_only", "exit": 0, "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", "status": "WARN", "reason": "needs a TTY" }
+        {
+          "verb": "check",
+          "mode": "golden",
+          "input": "tests/golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+          "status": "PASS"
+        },
+        {
+          "verb": "repl",
+          "mode": "help_only",
+          "exit": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "WARN",
+          "reason": "needs a TTY"
+        }
       ]
     },
     "differential": {
@@ -30,13 +55,38 @@
       "both_fail": 180,
       "compiled_compared": 27,
       "compiled_skipped_budget": 0,
-      "nondeterministic": ["examples/04_collections.ruchy"]
+      "nondeterministic": [
+        "examples/04_collections.ruchy"
+      ]
     },
-    "transpile": { "status": "PASS", "identical": 138, "differs": ["examples/19_string_parameters.ruchy"] },
-    "clean_room": { "status": "PASS", "locked_exit": 0, "unlocked_exit": 0, "binary_version": "5.0.0-beta.1" },
-    "package": { "status": "PASS", "files": 2431, "bytes_compressed": 4194304, "colon_paths": 0, "has_lock": true },
-    "satd": { "status": "PASS", "count": 0, "max": 0 }
+    "transpile": {
+      "status": "PASS",
+      "identical": 138,
+      "differs": [
+        "examples/19_string_parameters.ruchy"
+      ]
+    },
+    "clean_room": {
+      "status": "PASS",
+      "locked_exit": 0,
+      "unlocked_exit": 0,
+      "binary_version": "5.0.0-beta.1"
+    },
+    "package": {
+      "status": "PASS",
+      "files": 2431,
+      "bytes_compressed": 4194304,
+      "colon_paths": 0,
+      "has_lock": true
+    },
+    "satd": {
+      "status": "PASS",
+      "count": 0,
+      "max": 0
+    }
   },
-  "warns": ["verbs: repl help-only (needs a TTY)"],
+  "warns": [
+    "verbs: repl help-only (needs a TTY)"
+  ],
   "verdict": "go"
 }

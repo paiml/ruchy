@@ -133,14 +133,8 @@ pub fn create_widget_from_json(json: &str) -> Result<WasmWidget, JsValue> {
     })
 }
 
-/// Initialize WASM module.
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(start)]
-pub fn wasm_init() {
-    // Set panic hook for better error messages
-    #[cfg(feature = "console_error_panic_hook")]
-    console_error_panic_hook::set_once();
-}
+// The module start hook lives in src/wasm_bindings.rs (`wasm_init`); a second
+// `#[wasm_bindgen(start)]` here exported the same symbol twice (PMAT-129).
 
 // Non-WASM stubs for testing
 #[cfg(not(target_arch = "wasm32"))]

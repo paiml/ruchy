@@ -389,11 +389,13 @@ signal-hook = "0.3"  # Graceful shutdown handling
 # WASM-specific dependencies
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 getrandom = { version = "0.2", features = ["js"] }
+getrandom03 = { package = "getrandom", version = "0.3", features = ["wasm_js"] }  # rand 0.9 via aprender-core (PMAT-129); needs --cfg getrandom_backend="wasm_js" too
+serde-wasm-bindgen = "0.6"  # used by src/wasm_bindings.rs; was a dev-dependency only (PMAT-129)
 js-sys = "0.3"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 console_error_panic_hook = "0.1"
-web-sys = "0.3"
+web-sys = { version = "0.3", features = ["CanvasRenderingContext2d", "HtmlCanvasElement"] }
 # WASM-compatible tokio without networking
 tokio = { version = "1.47", features = ["macros", "rt", "time"], optional = true }
 

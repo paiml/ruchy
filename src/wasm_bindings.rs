@@ -44,7 +44,7 @@ impl RuchyWasm {
     /// let result = compile("example");
     /// assert_eq!(result, Ok(()));
     /// ```
-    pub fn compile(&self, source: &str) -> Result<String, JsValue> {
+    pub fn compile(&mut self, source: &str) -> Result<String, JsValue> {
         let mut parser = Parser::new(source);
         let ast = parser
             .parse()
@@ -86,7 +86,7 @@ impl RuchyWasm {
     /// This method enables non-blocking compilation in web browsers
     #[wasm_bindgen]
     pub fn compile_async(&self, source: String) -> Promise {
-        let transpiler = self.transpiler.clone();
+        let mut transpiler = self.transpiler.clone();
         future_to_promise(async move {
             // Parse and transpile in async context
             let mut parser = Parser::new(&source);
@@ -104,7 +104,7 @@ impl RuchyWasm {
     /// Each cell compiles independently for maximum parallelism
     #[wasm_bindgen]
     pub fn compile_cells_parallel(&self, sources: &js_sys::Array) -> Promise {
-        let transpiler = self.transpiler.clone();
+        let mut transpiler = self.transpiler.clone();
         let sources: Vec<String> = sources
             .iter()
             .map(|val| val.as_string().unwrap_or_default())
@@ -173,7 +173,7 @@ impl RuchyWasm {
     /// Execute cell with performance monitoring (WASM-007)
     /// Target: <10ms execution time for typical cells
     #[wasm_bindgen]
-    pub fn execute_cell_fast(&self, source: &str) -> JsValue {
+    pub fn execute_cell_fast(&mut self, source: &str) -> JsValue {
         let start_time = js_sys::Date::now();
 
         // Fast path compilation
@@ -212,7 +212,7 @@ impl RuchyWasm {
 
     /// Benchmark cell execution performance
     #[wasm_bindgen]
-    pub fn benchmark_cell_execution(&self, iterations: usize) -> JsValue {
+    pub fn benchmark_cell_execution(&mut self, iterations: usize) -> JsValue {
         let test_cases = vec![
             "let x = 42",                          // Simple assignment
             "let y = x * 2 + 1",                   // Expression
@@ -300,7 +300,7 @@ impl WebWorkerRuntime {
             let start_time = js_sys::Date::now();
 
             // Create compiler instance for this worker
-            let compiler = RuchyWasm::new();
+            let mut compiler = RuchyWasm::new();
             let result = compiler.compile(&task_data);
 
             let end_time = js_sys::Date::now();
