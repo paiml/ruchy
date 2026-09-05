@@ -23,6 +23,9 @@ use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
 
+mod support;
+use support::assert_args_accepted;
+
 /// Helper: Create ruchy command
 fn ruchy_cmd() -> Command {
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
@@ -88,12 +91,14 @@ fn cli_notebook_validate_outputs_success_message() {
 
 #[test]
 fn cli_notebook_custom_port() {
-    ruchy_cmd()
-        .arg("notebook")
-        .arg("--port")
-        .arg("9090")
-        .timeout(std::time::Duration::from_secs(2))
-        .assert(); // Will timeout but tests port parsing
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("notebook")
+            .arg("--port")
+            .arg("9090")
+            .timeout(std::time::Duration::from_secs(2))
+            .assert(), // Will timeout but tests port parsing
+    );
 }
 
 #[test]
@@ -122,22 +127,26 @@ fn cli_notebook_port_out_of_range() {
 
 #[test]
 fn cli_notebook_custom_host() {
-    ruchy_cmd()
-        .arg("notebook")
-        .arg("--host")
-        .arg("0.0.0.0")
-        .timeout(std::time::Duration::from_secs(2))
-        .assert(); // Will timeout but tests host parsing
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("notebook")
+            .arg("--host")
+            .arg("0.0.0.0")
+            .timeout(std::time::Duration::from_secs(2))
+            .assert(), // Will timeout but tests host parsing
+    );
 }
 
 #[test]
 fn cli_notebook_localhost_host() {
-    ruchy_cmd()
-        .arg("notebook")
-        .arg("--host")
-        .arg("localhost")
-        .timeout(std::time::Duration::from_secs(2))
-        .assert();
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("notebook")
+            .arg("--host")
+            .arg("localhost")
+            .timeout(std::time::Duration::from_secs(2))
+            .assert(),
+    );
 }
 
 // ============================================================================
@@ -147,11 +156,13 @@ fn cli_notebook_localhost_host() {
 #[test]
 #[ignore = "Opens browser - slow test, run in tier3-nightly"]
 fn cli_notebook_open_browser_flag() {
-    ruchy_cmd()
-        .arg("notebook")
-        .arg("--open")
-        .timeout(std::time::Duration::from_secs(2))
-        .assert(); // Will timeout but tests --open flag
+    assert_args_accepted(
+        ruchy_cmd()
+            .arg("notebook")
+            .arg("--open")
+            .timeout(std::time::Duration::from_secs(2))
+            .assert(), // Will timeout but tests --open flag
+    );
 }
 
 // ============================================================================

@@ -1,0 +1,106 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Feature-gate contract for the test tree and the ruchy binary: every advertised feature set compiles every target it enables (PMAT-112, PMAT-113)"
+  crate: "ruchy"
+  references:
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z5 (pre-release gate, stage 2 features)"
+    - "contracts/feature-matrix-v1.yaml (PMAT-101)"
+    - "Cargo reference: [[bin]] required-features"
+
+equations:
+  minimal_compiles_every_enabled_target:
+    formula: "∀ t ∈ targets(ruchy): required_features(t) ⊆ enabled(minimal) ⇒ clippy(t, minimal) = 0"
+    domain: "cargo clippy --all-targets --no-default-features --features minimal -- -D warnings"
+    invariants:
+      - "A test target that imports ruchy::runtime::repl carries #[cfg(feature = \"repl\")] at crate or item level"
+      - "The ruchy binary declares required-features = [\"repl\"]; minimal is the core library only"
+      - "default = batteries-included enables repl, so cargo install ruchy still builds the binary"
+  no_discarded_must_use:
+    formula: "∀ s ∈ statements(tests): s = <assert_cmd chain>.assert(); ⇒ bound(s) ∨ wrapped(s, assert_args_accepted)"
+    domain: "tests/**/*.rs"
+    invariants:
+      - "cargo clippy --all-targets --all-features -- -D warnings reports no must_use error in a feature-gated test target"
+
+proof_obligations:
+  - type: completeness
+    property: "Every feature set in {default, all, minimal} compiles every target it enables"
+    formal: "minimal_compiles_every_enabled_target ∧ no_discarded_must_use"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-TEST-FEATURE-GATES-001
+    rule: "REPL tests are feature-gated"
+    test: "test_pmat_113_repl_tests_are_feature_gated"
+    prediction: "verified"
+    if_fails: "Contract violation — a test target imports the REPL without a gate and breaks the minimal build"
+  - id: FALSIFY-TEST-FEATURE-GATES-002
+    rule: "REPL examples and benches declare required-features"
+    test: "test_pmat_113_repl_examples_and_benches_declare_required_features"
+    prediction: "verified"
+    if_fails: "Contract violation — cargo clippy --all-targets --features minimal fails inside an example or bench"
+  - id: FALSIFY-TEST-FEATURE-GATES-003
+    rule: "The binary names the feature it needs"
+    test: "test_pmat_113_ruchy_binary_requires_the_repl_feature"
+    prediction: "verified"
+    if_fails: "Contract violation — cargo check --features minimal fails inside src/bin instead of skipping the binary"
+  - id: FALSIFY-TEST-FEATURE-GATES-004
+    rule: "The default build still ships the binary"
+    test: "test_pmat_113_default_features_enable_repl"
+    prediction: "verified"
+    if_fails: "Contract violation — cargo install ruchy produces no binary"
+  - id: FALSIFY-TEST-FEATURE-GATES-005
+    rule: "No discarded must_use assert"
+    test: "test_pmat_112_no_bare_assert_statements_in_tests"
+    prediction: "verified"
+    if_fails: "Contract violation — clippy --all-features turns red on a target CI never compiles"
+  - id: FALSIFY-TEST-FEATURE-GATES-006
+    rule: "The gate scan discriminates gated from ungated REPL uses"
+    test: "test_pmat_113_lint_discriminates_gated_from_ungated_repl_uses"
+    prediction: "verified"
+    if_fails: "Lint defect — a crate-level or item-level gate is not recognised, or a missing gate is"
+  - id: FALSIFY-TEST-FEATURE-GATES-007
+    rule: "The gate scan sees every import spelling and ignores comments and strings"
+    test: "test_pmat_113_lint_sees_through_import_spellings_and_ignores_prose"
+    prediction: "verified"
+    if_fails: "Lint defect — a glob, multi-line or self import evades the scan, or prose triggers it"
+  - id: FALSIFY-TEST-FEATURE-GATES-008
+    rule: "The assert scan discriminates bare from consumed values"
+    test: "test_pmat_112_lint_discriminates_bare_from_consumed_asserts"
+    prediction: "verified"
+    if_fails: "Lint defect — a bound, returned, wrapped or mockito assert is flagged, or a bare one is missed"
+  - id: FALSIFY-TEST-FEATURE-GATES-009
+    rule: "The manifest scan reads target tables"
+    test: "test_pmat_113_manifest_target_parser_reads_name_and_required_features"
+    prediction: "verified"
+    if_fails: "Lint defect — required-features on a declared target is not read"
+  - id: FALSIFY-TEST-FEATURE-GATES-010
+    rule: "REPL type names are read from the gated module"
+    test: "test_pmat_113_repl_type_names_come_from_the_gated_module"
+    prediction: "verified"
+    if_fails: "Lint defect — the scan would miss Repl, ReplState or ReplMode, or count wasm::ReplOutput"
+
+kani_harnesses:
+  - id: KANI-TEST-FEATURE-GATES-001
+    obligation: PO-TEST-FEATURE-GATES-001
+    property: "minimal_compiles_every_enabled_target"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_test_feature_gates
+
+qa_gate:
+  id: QA-TEST-FEATURE-GATES
+  name: "test feature gates contract"
+  min_coverage: 0.90
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_113_repl_tests_are_feature_gated"
+    - "test_pmat_113_repl_examples_and_benches_declare_required_features"
+    - "test_pmat_113_ruchy_binary_requires_the_repl_feature"
+    - "test_pmat_113_default_features_enable_repl"
+    - "test_pmat_112_no_bare_assert_statements_in_tests"
+    - "test_pmat_113_lint_discriminates_gated_from_ungated_repl_uses"
+    - "test_pmat_113_lint_sees_through_import_spellings_and_ignores_prose"
+    - "test_pmat_112_lint_discriminates_bare_from_consumed_asserts"
+    - "test_pmat_113_manifest_target_parser_reads_name_and_required_features"
+    - "test_pmat_113_repl_type_names_come_from_the_gated_module"

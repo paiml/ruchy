@@ -1,3 +1,4 @@
+#![cfg(feature = "repl")]
 /// RUNTIME-ISSUE-148: &mut self mutations don't persist in interpreter
 ///
 /// ROOT CAUSE: To be determined via Five Whys

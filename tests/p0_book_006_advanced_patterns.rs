@@ -1,3 +1,4 @@
+#![cfg(feature = "repl")]
 #![allow(missing_docs)]
 //! P0-BOOK-006: Advanced Patterns Test Suite
 //!

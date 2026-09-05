@@ -1,3 +1,4 @@
+#![cfg(feature = "repl")]
 #![allow(missing_docs)]
 //! PARSER-067: Struct pattern matching tests
 //!

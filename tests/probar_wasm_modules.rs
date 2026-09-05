@@ -361,6 +361,7 @@ fn test_probar_port_default_analyzer() {
 // REPL State Tests
 // =============================================================================
 
+#[cfg(feature = "repl")]
 #[test]
 fn test_probar_repl_state_new() {
     use ruchy::runtime::repl::state::ReplState;
@@ -373,6 +374,7 @@ fn test_probar_repl_state_new() {
     assert!(state.get_bindings().is_empty());
 }
 
+#[cfg(feature = "repl")]
 #[test]
 fn test_probar_repl_state_modes() {
     use ruchy::runtime::repl::state::{ReplMode, ReplState};
@@ -396,6 +398,7 @@ fn test_probar_repl_state_modes() {
     }
 }
 
+#[cfg(feature = "repl")]
 #[test]
 fn test_probar_repl_history() {
     use ruchy::runtime::repl::state::ReplState;
@@ -416,6 +419,7 @@ fn test_probar_repl_history() {
     assert_eq!(history[2], "cmd3");
 }
 
+#[cfg(feature = "repl")]
 #[test]
 fn test_probar_repl_bindings() {
     use ruchy::runtime::interpreter::Value;
@@ -435,6 +439,7 @@ fn test_probar_repl_bindings() {
     assert!(state.get_variable("z").is_none());
 }
 
+#[cfg(feature = "repl")]
 #[test]
 fn test_probar_repl_result_history() {
     use ruchy::runtime::interpreter::Value;
@@ -453,6 +458,7 @@ fn test_probar_repl_result_history() {
     assert_eq!(state.result_history_len(), 3);
 }
 
+#[cfg(feature = "repl")]
 #[test]
 fn test_probar_repl_peak_memory() {
     use ruchy::runtime::repl::state::ReplState;
@@ -473,6 +479,7 @@ fn test_probar_repl_peak_memory() {
     assert_eq!(state.get_peak_memory(), 2000);
 }
 
+#[cfg(feature = "repl")]
 #[test]
 fn test_probar_repl_snapshot_restore() {
     use ruchy::runtime::interpreter::Value;

@@ -247,6 +247,7 @@ autobins = false
 [[bin]]
 name = "ruchy"
 path = "src/bin/ruchy.rs"
+required-features = ["repl"]
 
 
 [lib]
@@ -273,7 +274,7 @@ visualization = ["dep:trueno-viz"]
 infra = ["dep:forjar"]
 simulation = ["dep:simular"]
 shell-target = ["dep:bashrs"]
-minimal = []  # Users can use --no-default-features --features minimal for core only
+minimal = []  # core library only (--no-default-features --features minimal); the ruchy binary requires the repl feature
 # DataFrame via trueno-db (default - uses Trueno SIMD backend)
 dataframe = ["polars", "polars-io", "arrow"]
 # Legacy polars compatibility layer (spec Section 4.2 - NOT default)
@@ -439,6 +440,7 @@ harness = false
 
 [[bench]]
 name = "interpreter_benchmarks"
+required-features = ["repl"]
 harness = false
 
 [[bench]]
@@ -463,6 +465,7 @@ harness = false
 
 [[bench]]
 name = "matrix_data_science_benchmarks"
+required-features = ["repl"]
 harness = false
 
 # Commented out due to compilation errors
@@ -598,3 +601,40 @@ rustdoc-args = ["--generate-link-to-definition"]
 [build-dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_yaml_ng = "0.10"
+
+[[bench]]
+name = "execution_bench"
+harness = false
+required-features = ["repl"]
+
+[[example]]
+name = "dataframe_pipeline"
+required-features = ["repl"]
+
+[[example]]
+name = "reference_demo"
+required-features = ["repl"]
+
+[[example]]
+name = "repl_control_flow"
+required-features = ["repl"]
+
+[[example]]
+name = "repl_basic_arithmetic"
+required-features = ["repl"]
+
+[[example]]
+name = "function_calls"
+required-features = ["repl"]
+
+[[example]]
+name = "test_string_methods"
+required-features = ["repl"]
+
+[[example]]
+name = "repl_variables_and_functions"
+required-features = ["repl"]
+
+[[example]]
+name = "test_mutation"
+required-features = ["repl"]
