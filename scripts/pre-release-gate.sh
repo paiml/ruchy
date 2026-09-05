@@ -424,6 +424,11 @@ known_listed() { # <file> <path>
     awk -v p="$2" '$1 == p { found = 1 } END { exit(found ? 0 : 1) }' "$1"
 }
 
+tree_dirt() {
+    (cd "$ROOT" && git status --porcelain) \
+        | grep -v 'docs/specifications/evidence/'
+}
+
 untracked_snapshot() { (cd "$ROOT" && git status --porcelain --untracked-files=all | sort); }
 
 stage_differential() {
@@ -618,8 +623,10 @@ stage_clean_room() {
     local version
     version="$CRATE_VERSION"
 
-    if [ -n "$(cd "$ROOT" && git status --porcelain)" ]; then
-        (cd "$ROOT" && git status --porcelain | head -10)
+    # the gate's own receipt directory is excluded: a previous run's evidence must not
+    # sink the next run's clean room. Everything else counts, and --allow-dirty is never used.
+    if [ -n "$(tree_dirt)" ]; then
+        tree_dirt | head -10
         jq -n '{status: "FAIL", locked_exit: null, unlocked_exit: null, binary_version: null,
                 reason: "the working tree is dirty; cargo package -p ruchy was not run"}' \
             > "$STAGES/clean_room.json"
