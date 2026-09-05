@@ -2600,3 +2600,67 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: PMAT-123
+  github_issue: null
+  item_type: task
+  title: GATE-VERBS-HELP-ONLY - 20 of 47 CLI verbs get only a --help smoke in the pre-release gate (repl new build notebook serve add publish mcp actor:observe dataflow:debug replay-to-tests fuzz oracle infra sim widget apr model contracts help); give each a real, boxed smoke or a documented reason in release-gate.toml
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T17:09:05Z
+  updated: 2026-09-05T17:09:05Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-124
+  github_issue: null
+  item_type: task
+  title: GATE-CORPUS-TOOLING-WITH-RUCHY - ../tooling-with-ruchy is not checked out next to the repo, so the differential stage skips one of the seven book corpora
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T17:09:05Z
+  updated: 2026-09-05T17:09:05Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-125
+  github_issue: null
+  item_type: task
+  title: BASELINE-NONDETERMINISM - examples/04_collections.ruchy, examples/09_async_await.ruchy and two ruchy-repl-demos files print nondeterministic output on 4.2.1 (map iteration order, task scheduling); the gate cannot compare their stdout
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T17:09:05Z
+  updated: 2026-09-05T17:09:05Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-126
+  github_issue: null
+  item_type: task
+  title: GATE-COMPILE-BUDGET - the differential compiled-binary comparison exhausted its 300s budget after 23 examples; 101 examples were not compile-compared (parallelize or raise the budget)
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T17:09:05Z
+  updated: 2026-09-05T17:09:05Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
