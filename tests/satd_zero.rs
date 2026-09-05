@@ -6,8 +6,13 @@ use walkdir::WalkDir;
 /// Walks source tree and asserts:
 /// 1. No lines match (TODO|FIXME|HACK|XXX): patterns
 /// 2. No PARSER-XXX placeholder comments anywhere in src/
+/// Scope: the non-test sources under src/, exactly what `pmat analyze satd --path src` (the
+/// release gate stage) measures. Files named *_tests.rs / *_test.rs and directories named
+/// tests/ are test sources: the SATD detector's own inputs live in
+/// src/bin/handlers/commands_tests.rs and are not debt. Markers under the top-level tests/
+/// directory are tracked separately (PMAT-120).
 #[test]
-fn test_pmat_099_satd_markers_forbidden() {
+fn test_pmat_099_no_satd_markers_in_src_non_test_files() {
     let satd_regex = Regex::new(r"(TODO|FIXME|HACK|XXX):").expect("Invalid regex");
     let parser_placeholder_regex = Regex::new(r"PARSER-XXX").expect("Invalid regex");
 
