@@ -5,6 +5,87 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0-beta.2] - 2026-09-05
+
+First 5.0 release published to crates.io. `5.0.0-beta.1` (2026-04-04, below) was
+versioned in this repository but never tagged or published; crates.io stayed at
+`4.2.1`. Release plan and evidence:
+`docs/specifications/ruchy-5.0.0-beta.2-release-plan.md`,
+`docs/specifications/evidence/2026-09-05-release-gather/`.
+
+### Breaking (against 4.2.1, the last published crate)
+- Seven words are reserved and no longer valid identifiers: `requires`, `ensures`,
+  `invariant`, `decreases`, `infra`, `signal`, `yield`. A 4.2.1 program that uses
+  any of them as a variable, parameter or field fails `ruchy check`. Migrate with
+  `ruchy migrate-4to5 <path>` (dry-run by default; renames colliding identifiers).
+  Measured over 1286 corpus files: 2 regressions, both keyword collisions
+  (`evidence/…/differential-check-summary.txt`).
+- Minimum supported Rust version is 1.91 (was 1.85), following the aprender
+  monorepo facades (#207).
+- The `ruchy` binary declares `required-features = ["repl"]`; `--no-default-features
+  --features minimal` builds the core library only. Default features are unchanged,
+  so `cargo install ruchy` still builds the binary (#212).
+
+### Added
+- `ruchy tier <path>`: §14.2 tier distribution reporter with per-file breakdown,
+  JSON and markdown output, baselines and regression gate, per-file parse timeout,
+  TOML config, `--exclude`, and CI gates `--fail-under`, `--fail-under-f1`,
+  `--fail-on-totality-violation`, `--fail-exempt-density-above`,
+  `--fail-diff-exempt-density-above`, `--fail-pub-bronze-above`,
+  `--fail-on-scorecard` ([PROVABILITY-001]…[PROVABILITY-023], [PROVABILITY-034],
+  [PROVABILITY-035], [TIER-001], [TIER-002]).
+- `ruchy contracts check|list|sync` and `ruchy suggest-contracts` wired to the real
+  contract scanner, with `--pub-only` and markdown output ([PROVABILITY-024]…
+  [PROVABILITY-026], [PROVABILITY-030], [PROVABILITY-031]).
+- §14.10 runtime skeletons for the provability pillar ([SPEC-HARDREQ-002]).
+- Parser accepts `#[attribute]` syntax per 5.0 spec §3 ([PARSER-ATTR-001]).
+- Release engineering: package `include` allowlist and hygiene tests (#202); a
+  `release.yml` publish job that can only go green by publishing — builds first,
+  `CARGO_REGISTRY_TOKEN`, index poll between `ruchy` and `ruchy-wasm`, pre-release
+  derived from the tag (#205); the pre-release gate v2 with eight measured stages
+  and a go/no-go receipt (`make pre-release-gate`, #213); dispatch totality and
+  determinism contracts for `transpile`/`eval` (#211); feature-gate lint for the
+  test tree (#212); manifest lints for clean-room, MSRV and version coherence
+  (#207, this release).
+
+### Changed
+- Dependencies come from the aprender monorepo on crates.io (`aprender-compute`,
+  `aprender-core`, `aprender-train`, `aprender-viz`, `aprender-simulate` 0.65);
+  nothing is pulled from sibling checkouts, so the crate builds from a clean
+  `CARGO_HOME` (#207). Numeric results of the PCA and matmul paths follow
+  aprender-core 0.65 (f64 accumulation, two-pass variance).
+- `dataframe` feature ported to polars-core 0.55; CSV support comes from
+  `polars-io` directly instead of polars' `csv` meta-feature (#208).
+- One roadmap: `docs/roadmaps/roadmap.yaml`; the two frozen copies live under
+  `docs/archive/` and a test enforces the single source (#206).
+- `ruchy compile` honours `CARGO_TARGET_DIR` ([COMPILER-001]).
+- `examples/24_math_science.ruchy` migrated (`signal` → `signal_val`); all 155
+  examples must `ruchy check` (#203).
+
+### Fixed
+- Parser infinite loops on an unclosed actor body and on the `handler` keyword
+  ([PARSER-ACTOR-HANG], [PARSER-ACTOR-HANG-2]).
+- `ruchy prove` no longer loops on EOF; the `ruchy` binary's own unit-test target
+  runs to completion (mcp stub, prover input, watch mode) (#204).
+- The `AllImplemented` contract-binding check in `build.rs` looked two directories
+  up and never ran (#204).
+- A clean checkout could not build: `generated_contracts.rs` is tracked (#200).
+- Identifier property tests carry the full reserved-word blocklist (#196, #210).
+- Self-admitted technical debt in `src/` is zero; placeholders became tickets (#209).
+- Clippy on Rust 1.98: `must_use` `Assert` values in CLI contract tests, six
+  functions over the complexity limit (#204, #212).
+
+### Removed
+- Quarantine directories and colon-named files that broke `cargo package` on
+  Windows and inflated the crate (#202).
+
+### Security
+- All RUSTSEC advisories cleared: `h2` 0.4.19, patched `wasmtime` 47.x,
+  `chacha20` 0.10.2 (unyanked), `quick-xml` and `object_store` no longer in the
+  dependency graph (#199, #204, #207, #208). `cargo audit` is a mandatory stage of
+  the release gate.
+
+
 ## [5.0.0-beta.1] - 2026-04-04
 
 ### Sovereign Platform: Beta Progression
