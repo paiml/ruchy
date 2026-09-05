@@ -1,0 +1,81 @@
+// 35_simd_arrays_pca.ruchy - SIMD array shapes + PCA-style statistics [PMAT-094]
+//
+// Keeps the migrated sovereign bridges on the differential's path: the float
+// array expressions below are the shapes the transpiler lowers onto
+// `ruchy::stdlib::trueno_bridge::*` (aprender-compute, formerly trueno), and the
+// covariance / principal-direction computation is the shape `aprender`'s PCA
+// consumes (aprender-core 0.65). The output is deterministic on every backend.
+
+fn main() {
+    println("=== SIMD Arrays + PCA ===")
+
+    // Vector shapes fed to the SIMD bridge.
+    let a = [1.0, 2.0, 3.0, 4.0]
+    let b = [10.0, 20.0, 30.0, 40.0]
+    println(f"a: {a}")
+    println(f"b: {b}")
+    println(f"a ++ b: {a + b}")
+
+    let mut dot_ab = 0.0
+    let mut i = 0
+    while i < a.len() {
+        dot_ab = dot_ab + a[i] * b[i]
+        i = i + 1
+    }
+    println(f"dot(a, b): {dot_ab}")
+
+    // Two correlated features; PCA starts by mean-centering them.
+    let x = [2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]
+    let y = [1.0, 3.0, 3.0, 5.0, 4.0, 6.0, 8.0, 10.0]
+
+    let mut sum_x = 0.0
+    let mut sum_y = 0.0
+    let mut j = 0
+    while j < x.len() {
+        sum_x = sum_x + x[j]
+        sum_y = sum_y + y[j]
+        j = j + 1
+    }
+    let n = x.len() as f64
+    let mean_x = sum_x / n
+    let mean_y = sum_y / n
+    println(f"mean(x): {mean_x}")
+    println(f"mean(y): {mean_y}")
+
+    // Covariance matrix of the centered features.
+    let mut var_x = 0.0
+    let mut var_y = 0.0
+    let mut cov_xy = 0.0
+    let mut k = 0
+    while k < x.len() {
+        let dx = x[k] - mean_x
+        let dy = y[k] - mean_y
+        var_x = var_x + dx * dx
+        var_y = var_y + dy * dy
+        cov_xy = cov_xy + dx * dy
+        k = k + 1
+    }
+    var_x = var_x / (n - 1.0)
+    var_y = var_y / (n - 1.0)
+    cov_xy = cov_xy / (n - 1.0)
+    println(f"var(x): {var_x}")
+    println(f"var(y): {var_y}")
+    println(f"cov(x, y): {cov_xy}")
+
+    // First principal direction: power iteration on the 2x2 covariance matrix.
+    let mut px = 1.0
+    let mut py = 0.0
+    let mut step = 0
+    while step < 40 {
+        let nx = var_x * px + cov_xy * py
+        let ny = cov_xy * px + var_y * py
+        let norm = (nx * nx + ny * ny).sqrt()
+        px = nx / norm
+        py = ny / norm
+        step = step + 1
+    }
+    println(f"PC1 (unit vector): [{px}, {py}]")
+
+    let explained = var_x * px * px + 2.0 * cov_xy * px * py + var_y * py * py
+    println(f"variance explained by PC1: {explained}")
+}
