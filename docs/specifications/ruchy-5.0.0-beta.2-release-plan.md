@@ -288,6 +288,16 @@ that turns its gate red** · routing.
   4.2.1 `run` stdout differs from HEAD's and is not in the known-fixes list → `no-go`.
 - **Routing**: subagent:opus · |M|=3 (script, Makefile, tests) · trigger Q1 → delegate plan review.
 
+### Z5a · PMAT-112 + PMAT-113 · FEATURE-SET TARGETS (jidoka — found by the first Z5 gate run)
+
+- **Found by**: Z5 stage 2 (`features`) on the Z8 tip: `clippy --all-targets --no-default-features --features minimal` red (eleven test targets, eight examples, three benches and the `ruchy` binary import `runtime::repl` unconditionally), `clippy --all-targets --all-features` red (four discarded `must_use` `Assert` values in `tests/cli_contract_notebook.rs`, a target CI never compiles).
+- **Changes**: crate-level `#![cfg(feature = "repl")]` on ten test files, item-level gates on seven REPL-state tests in `tests/probar_wasm_modules.rs`; `required-features = ["repl"]` on the `[[bin]]`, eight `[[example]]` and three `[[bench]]` tables (`minimal` is declared as the core library only; `default → batteries-included → repl` keeps `cargo install ruchy` unchanged); the four notebook asserts go through `support::assert_args_accepted`; `tests/feature_gate_lint.rs` (ten tests: statement-aware bare-`.assert()` scan, REPL-import scan over whole-word identifiers declared under `src/runtime/repl` with line/block comments and strings stripped, `required-features` scan over examples/benches/tests, manifest checks); `contracts/test-feature-gates-v1.yaml`.
+- **A_5a**: `cargo clippy --all-targets --no-default-features --features minimal -- -D warnings && cargo check -p ruchy --bin ruchy && cargo test --test feature_gate_lint` — measured green on the branch (10 passed).
+- **DoD mutation** (measured): delete the crate-level gate of `tests/parser_067_struct_pattern_test.rs` → lint red and `cargo check --test parser_067_struct_pattern_test --features minimal` red; delete the binary's `required-features` → lint red; the pre-fix manifest → examples/benches lint red with 11 violations.
+- **Routing**: direct (the sites came from the gate run; `|M| = 1`, tests/ + manifest). Quorum: §7d.
+- **PR**: #212.
+
+
 ### Z6 · PMAT-097 · CONTRACTS-DISPATCH
 
 - **Why**: `contracts/` holds 2 contracts against 472 kLOC and neither covers the two
@@ -488,6 +498,11 @@ silent cap.
 | B30 | `.pmat/baseline.json` is tracked, gitignored, and rewritten + staged by the pmat post-commit hook after every commit, so it lands in worker commits and conflicts on every rebase and merge (#203 twice, #205, #206, #207) | resolved each time by taking `main`'s copy with hooks disabled for the replay; PMAT-118 filed (stop tracking it or stop staging it) |
 | B31 | Ticket ids minted by `pmat work add` inside a worktree collide with ids minted in the main checkout (the R1 worker produced a second PMAT-091/092) | ids are minted only from the main checkout; worker briefs forbid `pmat work add` |
 | B32 | `quick-xml` 0.39 advisories (RUSTSEC-2026-0194/0195) entered via polars' `csv` meta-feature → `polars-lazy/csv` → `polars-stream` → cloud → `object_store`; `object_store` 0.13 (pinned by polars-error) cannot move | Z8 depends on `polars-io` with `csv` directly instead of the polars meta-feature, which leaves `polars-stream` and the cloud chain out of the graph; measured with `cargo tree -i quick-xml` and `cargo audit` |
+| B33 | GitHub creates no `pull_request` workflow run for a PR whose merge commit cannot be computed: #208 (Z8) and #209 (R1) conflicted with main in `Cargo.lock` after the batch merges, `gh pr checks` showed "no checks reported", mergeability stayed `UNKNOWN`, and close/reopen fired only `pull_request_target` (PR Gate) | merge `origin/main` into the branch (Z8, lock regenerated with `cargo check --all-features --locked` clean) or rebase (R1); rule for the rest of P3: after every merge to main, refresh every open PR that touches `Cargo.lock` or `Cargo.toml` before waiting on its gate |
+| B34 | `pmat work complete <id>` refuses every finished ticket ("add the missing evidence: bind equations with `--implements`, add falsification_tests") and offers only `--skip-quality`, which §3 and the skill forbid; the first call also hung the shell for two minutes | tickets stay `inprogress` in `docs/roadmaps/roadmap.yaml` with the merge recorded in §7e; PMAT-121 binds the release contracts' equations so completion is earned, not skipped |
+| B35 | `contracts/.pv/cache/lint/*.json` (pv lint cache) is tracked on `main`; every `pv lint` run dirties the tree and blocked one rebase (Z5) | PMAT-122 untracks it and ignores `.pv/`; not folded into a release PR (unrelated churn) |
+| B36 | `timeout N command cargo …` runs nothing in bash (`timeout` cannot exec the `command` builtin) and prints no error, so two verification steps (Z8 all-features check, PMAT-112 clippy site list) produced empty output that read as a pass | every cargo invocation in the receipts uses `$HOME/.cargo/bin/cargo`; the Z8 head was re-verified before merge (`SerReader`/`SerWriter` imports were still missing at that point — the empty run had hidden a real red) |
+| B37 | `Cargo.toml` and `CHANGELOG.md` already say `5.0.0-beta.1` (dated 2026-04-04) but no `v5.0.0-beta.1` tag exists and crates.io `max_version` is `4.2.1` (measured 2026-09-05): beta.1 was never published | beta.2 is the first 5.0 line that ships; the CHANGELOG keeps the beta.1 entry as history and beta.2 states that beta.1 was not released; the 4.2.1 → beta.2 API delta in §1 already measures against the last published crate |
 | B24 | **Read-only agy review lanes mutated the repository**: during the P4 review of #202/#203 (13:50–13:54) the lanes ran `git checkout` of the PR branches in the main checkout (HEAD reflog), which removed the three worktrees' metadata under `.git/worktrees/` and left a staged change behind; `writes=false`/`--sandbox` did not prevent it | main checkout restored to the plan branch; worktrees recreated with their uncommitted files preserved (rsync from the orphaned directories); nothing lost. Every later lane prompt forbids `git checkout/switch/worktree/stash/reset` explicitly and uses `git show <ref>:<path>`/`git diff a...b` only; recorded for the skill's lane doctrine |
 | B22 | **The `ruchy` bin unit-test target (952 tests) has never run to completion**: `test_handle_watch_mode_setup` spawned a thread that called `std::process::exit(0)` after 10 ms — cargo saw exit 0 and reported success after ~640–666 of 952 tests every time. With it removed, the target exposes: 2 tests asserting `/nonexistent` is absent (it exists on this host), 1 case-sensitive assertion bug (`notebook feature`), 1 wrong expectation (`parse_source("")` is an error in 4.2.1 and HEAD alike), 2 further failures (`test_handle_test_dispatch_with_filter`, `test_run_cargo_build_no_project`), and **18 tests that block forever** (11 `prove_handler`, 4 watch-mode, 3 dispatch in `ruchy.rs`) | all under PMAT-104, commit `e9d8365e` on the Z0 PR: killer deleted, mcp stub returns `Err`, prover loop takes a reader and ends on EOF, watch mode split into testable halves, 17 cwd-mutating tests serialized behind `handlers::test_support::cwd_lock()`, hermetic paths, three assertions corrected, two vacuous dispatch tests removed → **954 passed, 0 failed, 0 ignored**, identical single-threaded; no `#[ignore]` added. Measured on the side: `ruchy prove < /dev/null` **hangs on 4.2.1 (exit 124) and exits 0 at HEAD** — a user-facing fix already on `main`, to be named in the beta.2 CHANGELOG |
 
@@ -517,6 +532,33 @@ Raw outputs: `docs/specifications/evidence/2026-09-05-quorum-p4-z0/`, `…-quoru
 | #209 R1 | FAIL ×3 | the test now states its scope (non-test `src/`, what `pmat analyze satd --path src` measures); the 32 markers under `tests/` are PMAT-120 | the exclusions were read as hiding debt; they mirror pmat's classification and the only excluded file with markers is the SATD detector's own input file |
 | #211 Z6 | PASS ×3 | — | — |
 | #210 PMAT-119 | FAIL ×3 | `true`, `false`, `unsafe` added; measured against every `token("word")` in the lexer (77 words), nothing missing | `is`/`ref` over-exclusion is harmless |
+
+## §7d Pre-PR review quorum for #212 (PMAT-112/113) — folded
+
+Raw outputs: `/run/user/1000/paiml-implement/agy/p4-pmat-113/lane-{1,2,3}.json` (3 `grillme` lanes, `writes=false`; agy conversations `66e1826d`, `46ed1739`, `aac60f51`), copied to `docs/specifications/evidence/2026-09-05-quorum-p4-pmat-113/`.
+
+| PR | Lane verdicts | Accepted (folded) | Rejected (reason) |
+|---|---|---|---|
+| #212 PMAT-112/113 | FAIL / do-not-implement / FAIL (all three: `required-features` semantics correct, nothing drops from the default run) | the first lint was unsound both ways — comment and `return cmd.assert();` false positives, glob/multi-line/`runtime::{self}` false negatives — rewritten: comments (line and block) and strings stripped, whole-word identifiers taken from `src/runtime/repl` declarations (so `wasm::ReplOutput` does not count), item gates cover the whole function body, `cfg(all(…))` forms and `[[test]]` `required-features` honoured; the contract now lists all ten tests; PR text corrected to seven item gates | lane 2's "massive out-of-scope deletions" is a two-dot-diff artifact (`git diff --name-status origin/main...HEAD`: 2 added, 13 modified, 0 deleted); `examples/wasm_compile`'s `required-features = ["notebook"]` predates the PR; no lane produced evidence of running the lint (all soundness findings were code-reading claims, re-run by the orchestrator: the hardened lint found two further real cases, `tests/repl_thread_safety.rs` block comment and `examples/test_println_stdout.rs` wasm names) |
+
+## §7e As-built (P3), measured at merge
+
+| Ticket | PR | Merged as | Orchestrator re-run of A_i | DoD mutation observed red | Deviation from v2 |
+|---|---|---|---|---|---|
+| Z0 PMAT-102/103/104 (+PMAT-094 dev-dep) | #204 | `Merge #204` | clippy `--all-targets` default clean; bin test target 956 passed | `must_use` wrapper removed → clippy red | PMAT-104 (mcp/prover/watch process-exit tests) folded in; build.rs binding gate warns instead of skipping |
+| Z1 PMAT-092 | #202 | `Merge #202` | `cargo package --list` allowlist-only; 7 hygiene tests | colon-path file restored → `release_hygiene` red | — |
+| Z4 PMAT-095 | #203 | `Merge #203` | `ruchy check` on 155 examples; 3 tests | `git checkout main -- examples/24_math_science.ruchy` → 2 tests red | DoD wording names `main`, not `HEAD~1` |
+| Z2 PMAT-093 | #205 | `Merge #205` | 6 workflow-lint tests; `continue-on-error` absent | `continue-on-error: true` inserted → test red | `prerelease` derived from the tag |
+| Z7 PMAT-098 | #206 | `Merge #206` | `roadmap_single_source` green; two frozen roadmaps under `docs/archive/` | second roadmap restored → test red | README/Makefile/scripts/test comments repointed (quorum) |
+| Z3 PMAT-094 | #207 | `Merge #207` | `--locked` build from the aprender facades; manifest lint 5 tests; MSRV 1.91 | `trueno` from crates.io added → manifest lint red | "zero semantic changes" withdrawn (aprender-core 0.65 numerics), documented |
+| R1 PMAT-099 | #209 | `Merge #209` | `pmat analyze satd --path src` = 0 | a `TODO` in `src/` → test red | `tests/` markers are PMAT-120 |
+| PMAT-119 | #210 | `Merge #210` | identifier proptests green with the full 77-word blocklist | `true` removed from the blocklist → proptest regression red | recovered from the pre-session stash (#196) |
+| Z6 PMAT-097 | #211 | `Merge #211` | 93 dispatch variants, wildcard-free match | a variant removed → non-exhaustive match compile error | macros not wired: PMAT-116 |
+| Z8 PMAT-101 | #208 | `Merge #208` | `check --all-features --locked` clean; golden 4/4; `cargo audit` clean; `quick-xml` absent from the graph | `ChunkedArray::iter` null → default → golden red | csv taken from `polars-io` directly (B32); merged main into the branch (B33) |
+| Z5a PMAT-112/113 | #212 | pending gate | `clippy --all-targets … minimal` clean; lint 10/10 | see Z5a | jidoka ticket, not in v2 |
+| Z5 PMAT-096 | #213 | pending gate | script parses; 6 own commits after rebasing past the superseded Z8 commits | schema test red without `clean_room` | first full run happens on `main` after #212 and #213 merge (§5 step 2) |
+| Z9 PMAT-100 | — | not started | — | — | waits on the receipt |
+
 
 ## §7 Quorum log (P2) — folded into v2
 

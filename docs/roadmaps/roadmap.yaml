@@ -2568,3 +2568,35 @@ roadmap:
   - tests
   - quality
   notes: null
+- id: PMAT-121
+  github_issue: null
+  item_type: task
+  title: CONTRACT-BINDINGS - bind the release contracts' equations to implementations (pv --implements) so pmat work complete accepts PMAT-092..PMAT-119 without --skip-quality
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T16:38:22Z
+  updated: 2026-09-05T16:38:22Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
+- id: PMAT-122
+  github_issue: null
+  item_type: task
+  title: PV-CACHE-TRACKED - contracts/.pv/cache/lint/*.json is tracked on main; untrack it and ignore .pv/
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-05T16:38:22Z
+  updated: 2026-09-05T16:38:22Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
