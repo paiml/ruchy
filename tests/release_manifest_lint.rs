@@ -267,3 +267,55 @@ fn test_pmat_100_manifest_readers_read_package_and_inline_versions() {
     assert_eq!(inline_dependency_version(wasm, "ruchy"), "1.2.3");
     assert_eq!(inline_dependency_version(wasm, "other"), "");
 }
+
+/// PMAT-129: the wasm32 dependency table must carry what the wasm build of the
+/// root crate needs: getrandom 0.3 with `wasm_js` (rand 0.9 via aprender-core),
+/// `serde-wasm-bindgen` (used by `src/wasm_bindings.rs`), and the two web-sys
+/// canvas features the computebrick entry imports.
+#[test]
+fn test_pmat_129_wasm32_dependency_table_is_complete() {
+    let manifest: toml::Table = read(&manifest_dir().join("Cargo.toml"))
+        .parse()
+        .expect("Cargo.toml parses");
+    let deps = manifest
+        .get("target")
+        .and_then(|t| t.get("cfg(target_arch = \"wasm32\")"))
+        .and_then(|t| t.get("dependencies"))
+        .and_then(|d| d.as_table())
+        .expect("[target.'cfg(target_arch = \"wasm32\")'.dependencies] table");
+    let getrandom03 = deps
+        .values()
+        .filter_map(|v| v.as_table())
+        .find(|t| {
+            t.get("package").and_then(|p| p.as_str()) == Some("getrandom")
+                && t.get("version")
+                    .and_then(|v| v.as_str())
+                    .is_some_and(|v| v.starts_with("0.3"))
+        })
+        .expect("getrandom 0.3 declared for wasm32");
+    let features = getrandom03
+        .get("features")
+        .and_then(|f| f.as_array())
+        .map(|a| a.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>())
+        .unwrap_or_default();
+    assert!(
+        features.contains(&"wasm_js"),
+        "getrandom 0.3 needs the wasm_js feature on wasm32; got {features:?}"
+    );
+    assert!(
+        deps.contains_key("serde-wasm-bindgen"),
+        "serde-wasm-bindgen must be a wasm32 dependency, not only a dev-dependency"
+    );
+    let web_sys = deps
+        .get("web-sys")
+        .and_then(|w| w.get("features"))
+        .and_then(|f| f.as_array())
+        .map(|a| a.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>())
+        .unwrap_or_default();
+    for needed in ["CanvasRenderingContext2d", "HtmlCanvasElement"] {
+        assert!(
+            web_sys.contains(&needed),
+            "web-sys must enable {needed}; got {web_sys:?}"
+        );
+    }
+}

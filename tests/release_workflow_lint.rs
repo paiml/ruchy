@@ -175,3 +175,22 @@ fn test_pmat_093_required_status_checks_file_names_gate() {
         "required-status-checks.txt must list the `gate` context the org ruleset requires"
     );
 }
+
+/// PMAT-129: on wasm32, getrandom 0.3 (pulled by aprender-core's rand 0.9)
+/// needs the `wasm_js` backend selected through a cfg flag; without it the
+/// Build WASM job fails before `wasm-pack` gets to link anything.
+#[test]
+fn test_pmat_129_wasm_build_step_selects_the_getrandom_wasm_js_backend() {
+    let workflow = std::fs::read_to_string(".github/workflows/release.yml")
+        .expect("failed to read .github/workflows/release.yml");
+    let lines: Vec<&str> = workflow.lines().collect();
+    let step = lines
+        .iter()
+        .position(|line| line.contains("name: Build WASM package"))
+        .expect("release.yml must have a Build WASM package step");
+    let window = lines[step..lines.len().min(step + 8)].join("\n");
+    assert!(
+        window.contains("RUSTFLAGS") && window.contains("getrandom_backend=\"wasm_js\""),
+        "the Build WASM package step must set RUSTFLAGS: --cfg getrandom_backend=\"wasm_js\"; got:\n{window}"
+    );
+}
