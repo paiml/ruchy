@@ -59,7 +59,7 @@ pub fn from_columns(columns: Vec<(&str, Vec<i64>)>) -> Result<DataFrame, String>
         })
         .collect();
 
-    DataFrame::new(cols).map_err(|e| e.to_string())
+    DataFrame::new_infer_height(cols).map_err(|e| e.to_string())
 }
 
 /// Read CSV file into `DataFrame`

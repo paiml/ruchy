@@ -22,7 +22,7 @@ use polars::prelude::DataType as PolarsDataType;
 pub fn dataframe_to_arrow(df: &polars::prelude::DataFrame) -> Result<RecordBatch> {
     let mut fields = Vec::new();
     let mut arrays: Vec<ArrayRef> = Vec::new();
-    for column in df.get_columns() {
+    for column in df.columns() {
         let field = ArrowField::new(
             column.name().as_str(),
             polars_dtype_to_arrow(column.dtype())?,
@@ -52,7 +52,7 @@ pub fn arrow_to_dataframe(batch: &RecordBatch) -> Result<polars::prelude::DataFr
         let series = arrow_array_to_polars_series(field.name(), array)?;
         series_vec.push(series.into());
     }
-    polars::prelude::DataFrame::new(series_vec)
+    polars::prelude::DataFrame::new(batch.num_rows(), series_vec)
         .context("Failed to create DataFrame from Arrow RecordBatch")
 }
 /// Convert Polars `DataType` to Arrow `DataType`
@@ -77,27 +77,27 @@ fn polars_series_to_arrow(series: &polars::prelude::Series) -> Result<ArrayRef> 
     match series.dtype() {
         PolarsDataType::Int32 => {
             let ca = series.i32().context("Failed to cast to i32")?;
-            let values: Vec<Option<i32>> = ca.into_iter().collect();
+            let values: Vec<Option<i32>> = ca.iter().collect();
             Ok(Arc::new(arrow::array::Int32Array::from(values)))
         }
         PolarsDataType::Int64 => {
             let ca = series.i64().context("Failed to cast to i64")?;
-            let values: Vec<Option<i64>> = ca.into_iter().collect();
+            let values: Vec<Option<i64>> = ca.iter().collect();
             Ok(Arc::new(Int64Array::from(values)))
         }
         PolarsDataType::Float64 => {
             let ca = series.f64().context("Failed to cast to f64")?;
-            let values: Vec<Option<f64>> = ca.into_iter().collect();
+            let values: Vec<Option<f64>> = ca.iter().collect();
             Ok(Arc::new(Float64Array::from(values)))
         }
         PolarsDataType::Boolean => {
             let ca = series.bool().context("Failed to cast to bool")?;
-            let values: Vec<Option<bool>> = ca.into_iter().collect();
+            let values: Vec<Option<bool>> = ca.iter().collect();
             Ok(Arc::new(BooleanArray::from(values)))
         }
         PolarsDataType::String => {
             let ca = series.str().context("Failed to cast to string")?;
-            let values: Vec<Option<&str>> = ca.into_iter().collect();
+            let values: Vec<Option<&str>> = ca.iter().collect();
             Ok(Arc::new(StringArray::from(values)))
         }
         _ => anyhow::bail!(
@@ -651,7 +651,8 @@ mod tests {
         // Test handling of nullable columns
         let values: Vec<Option<i32>> = vec![Some(1), None, Some(3), None, Some(5)];
         let s = Series::new(PlSmallStr::from("nullable"), values);
-        let df = DataFrame::new(vec![s.into()]).expect("operation should succeed in test");
+        let df =
+            DataFrame::new_infer_height(vec![s.into()]).expect("operation should succeed in test");
 
         let batch = dataframe_to_arrow(&df).expect("operation should succeed in test");
         assert_eq!(batch.num_rows(), 5);
@@ -1298,7 +1299,8 @@ mod property_tests_arrow_integration {
             // Create DataFrame with random data
             let col_name_small = PlSmallStr::from(col_name.as_str());
             let series = Series::new(col_name_small, int_values);
-            let df = DataFrame::new(vec![series.into()]).expect("Failed to create DataFrame");
+            let df = DataFrame::new_infer_height(vec![series.into()])
+                .expect("Failed to create DataFrame");
 
             // Convert to Arrow and back - should preserve shape
             if let Ok(record_batch) = dataframe_to_arrow(&df) {
