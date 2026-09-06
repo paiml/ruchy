@@ -16,6 +16,24 @@ fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
 
+/// Every workflow file, not only release.yml: the policy is "no workflow publishes".
+fn workflow_texts() -> Vec<(String, String)> {
+    let dir = repo_root().join(".github/workflows");
+    let mut out = Vec::new();
+    for entry in fs::read_dir(&dir)
+        .expect("read .github/workflows")
+        .flatten()
+    {
+        let path = entry.path();
+        let is_yaml = path.extension().is_some_and(|e| e == "yml" || e == "yaml");
+        if is_yaml {
+            let text = fs::read_to_string(&path).expect("read workflow");
+            out.push((path.display().to_string(), text));
+        }
+    }
+    out
+}
+
 fn release_yml_text() -> String {
     fs::read_to_string(repo_root().join(".github/workflows/release.yml"))
         .expect("read .github/workflows/release.yml")
@@ -81,14 +99,16 @@ fn test_pmat_135_release_workflow_has_no_publish_job() {
         yml["jobs"]["publish-crates"].is_null(),
         "the publish-crates job must be gone: CI is the gate, the operator is the publisher"
     );
-    let offenders: Vec<String> = release_yml_text()
-        .lines()
-        .enumerate()
-        .filter(|(_, line)| {
-            let trimmed = line.trim_start();
-            !trimmed.starts_with('#') && trimmed.contains("cargo publish")
+    let offenders: Vec<String> = workflow_texts()
+        .iter()
+        .flat_map(|(name, text)| {
+            text.lines().enumerate().filter_map(move |(i, line)| {
+                let trimmed = line.trim_start();
+                let collapsed = trimmed.split_whitespace().collect::<Vec<_>>().join(" ");
+                (!trimmed.starts_with('#') && collapsed.contains("cargo publish"))
+                    .then(|| format!("{name}:{}: {}", i + 1, line.trim()))
+            })
         })
-        .map(|(i, line)| format!("release.yml:{}: {}", i + 1, line.trim()))
         .collect();
     assert!(
         offenders.is_empty(),

@@ -1,0 +1,7 @@
+name: fixture
+on: push
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - run: make crates-publish

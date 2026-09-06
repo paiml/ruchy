@@ -42,10 +42,11 @@ FIXTURES="$ROOT/tests/fixtures/release-policy"
 
 TAG=""
 ONLY=""
-GATES_DIR="$ROOT/.github/workflows"
+GATES_DIR=""   # --gates-dir <dir>: scan one directory (fixtures); default: the CI reach set below
 SELF_TEST=0
 
-PUBLISH_CMD='cargo publish'
+# Whitespace-tolerant: `cargo  publish` (two spaces) defeated a literal match (quorum on #219).
+PUBLISH_RE='cargo[[:space:]]+publish'
 
 # --------------------------------------------------------------------------------------
 # reporting
@@ -67,27 +68,77 @@ require_tool() {
 # --------------------------------------------------------------------------------------
 
 # file:line of every non-comment publish command under a directory.
-publish_hits() {
-    local dir="$1"
-    grep -rn "$PUBLISH_CMD" "$dir" 2>/dev/null | awk '
+# The workflow files under a root: .github/ when present (real repo), else every YAML
+# under the root (fixtures are flat).
+workflow_files() {
+    local root="$1"
+    if [ -d "$root/.github" ]; then
+        find "$root/.github" -type f \( -name '*.yml' -o -name '*.yaml' \) 2> /dev/null
+    else
+        find "$root" -maxdepth 3 -type f \( -name '*.yml' -o -name '*.yaml' \) 2> /dev/null
+    fi
+}
+
+# Files CI can reach from those workflows: the workflows themselves and every
+# repo script a run step names (`scripts/...`). Listed once each.
+reach_files() {
+    local root="$1" wf s
+    wf=$(workflow_files "$root")
+    printf '%s\n' "$wf"
+    printf '%s\n' "$wf" | xargs -r grep -hoE 'scripts/[A-Za-z0-9_./-]+' 2> /dev/null | sort -u | while IFS= read -r s; do
+        [ -f "$root/$s" ] && printf '%s\n' "$root/$s"
+    done
+}
+
+# A publish line: matches PUBLISH_RE, is not a comment, and is not a --dry-run.
+publish_lines() {
+    awk -v re="$PUBLISH_RE" '
         {
             rest = $0
             sub(/^[^:]*:[0-9]+:/, "", rest)
             sub(/^[ \t]+/, "", rest)
-            if (rest !~ /^#/) {
-                match($0, /^[^:]*:[0-9]+:/)
-                print substr($0, 1, RLENGTH - 1)
-            }
-        }' || true
+            if (rest ~ /^#/) next
+            if (rest !~ re) next
+            if (rest ~ /--dry-run/) next
+            match($0, /^[^:]*:[0-9]+:/)
+            print substr($0, 1, RLENGTH - 1)
+        }'
+}
+
+# Makefile recipes of the targets the workflows call (`make <target>`), so a publish
+# hidden behind a make target is still a publish from CI.
+makefile_recipe_hits() {
+    local root="$1" t
+    [ -f "$root/Makefile" ] || return 0
+    workflow_files "$root" | xargs -r grep -hoE '(^|[^A-Za-z0-9_-])make[[:space:]]+[A-Za-z0-9_-]+' 2> /dev/null \
+        | awk '{print $NF}' | sort -u | while IFS= read -r t; do
+        awk -v t="$t" '
+            $0 ~ "^" t ":" { p = 1; next }
+            p && /^\t/ { printf "%s:%d:%s\n", FILENAME, NR, $0; next }
+            p { p = 0 }' "$root/Makefile"
+    done | publish_lines
+}
+
+publish_hits() {
+    local root="$1"
+    {
+        # -H: a single file would otherwise print no filename and the line parser would drop it
+        reach_files "$root" | xargs -r grep -HnE "$PUBLISH_RE" 2> /dev/null | grep -v "release-policy.sh:" | publish_lines
+        makefile_recipe_hits "$root"
+    } | sort -u
 }
 
 gate_no_publish_in_ci() {
-    local gate="no-publish-in-ci" dir="$1" hits
-    if [ ! -d "$dir" ]; then
-        fail "$gate" "workflow directory $dir does not exist"
+    local gate="no-publish-in-ci" root="$1" hits
+    if [ ! -d "$root" ]; then
+        fail "$gate" "root $root does not exist"
         return 1
     fi
-    hits=$(publish_hits "$dir")
+    if [ -z "$(workflow_files "$root")" ]; then
+        fail "$gate" "no workflow files under $root (a gate over nothing is not a pass)"
+        return 1
+    fi
+    hits=$(publish_hits "$root")
     if [ -n "$hits" ]; then
         fail "$gate" "CI publishes a crate at $(printf '%s' "$hits" | tr '\n' ' ')"
         return 1
@@ -201,6 +252,12 @@ self_test_publish() {
         gate_no_publish_in_ci "$FIXTURES/without-publish" || rc=1
     expect_red "no-publish-in-ci on a missing workflow directory" \
         gate_no_publish_in_ci "$FIXTURES/no-such-directory" || rc=1
+    expect_red "no-publish-in-ci on a two-space cargo  publish" \
+        gate_no_publish_in_ci "$FIXTURES/with-publish-two-spaces" || rc=1
+    expect_red "no-publish-in-ci on a publish inside a script the workflow runs" \
+        gate_no_publish_in_ci "$FIXTURES/with-publish-in-script" || rc=1
+    expect_red "no-publish-in-ci on a publish inside a make target the workflow calls" \
+        gate_no_publish_in_ci "$FIXTURES/with-publish-via-make" || rc=1
     return "$rc"
 }
 
@@ -275,7 +332,7 @@ wants_gate() { [ -z "$ONLY" ] || [ "$ONLY" = "$1" ]; }
 run_gates() {
     local rc=0
     if wants_gate no-publish-in-ci; then
-        gate_no_publish_in_ci "$GATES_DIR" || rc=1
+        gate_no_publish_in_ci "${GATES_DIR:-$ROOT}" || rc=1
     fi
     if wants_gate no-registry-secret; then
         gate_no_registry_secret || rc=1
