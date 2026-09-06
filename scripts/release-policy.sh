@@ -15,7 +15,7 @@
 # is "FAIL <gate>: <tool> not installed", an unauthenticated gh is a FAIL, not a pass.
 #
 #   no-publish-in-ci    no non-comment publish command under .github/workflows/
-#   no-registry-secret  no CARGO_REGISTRY_TOKEN / CRATES_TOKEN on the repo or the org
+#   no-registry-secret  no CARGO_REGISTRY_TOKEN / CRATES_TOKEN / CARGO_TOKEN / CRATES_IO_TOKEN on the repo or the org
 #   receipts-at-tag     the release for --tag carries clean-room, dogfood and
 #                       fresh-container receipts naming the tag's 8-char commit SHA
 #
@@ -168,7 +168,7 @@ gate_no_registry_secret() {
         return 1
     fi
     found=$(printf '%s\n' "$listing" |
-        grep -Eo 'CARGO_REGISTRY_TOKEN|CRATES_TOKEN' | sort -u | tr '\n' ' ' || true)
+        grep -Eo 'CARGO_REGISTRY_TOKEN|CRATES_TOKEN|CARGO_TOKEN|CRATES_IO_TOKEN' | sort -u | tr '\n' ' ' || true)
     if [ -n "$found" ]; then
         fail "$gate" "a registry credential is still configured: $found"
         return 1
