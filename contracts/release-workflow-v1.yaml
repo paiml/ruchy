@@ -1,68 +1,81 @@
 metadata:
-  version: "1.0.0"
+  version: "2.0.0"
   author: "Sovereign AI Stack"
-  description: "Release workflow contract: the publish job can only go green by publishing (PMAT-093)"
+  description: >-
+    Release workflow contract (PMAT-135): CI is the gate, the operator is the publisher.
+    "CI held a publish credential" is the mechanism behind the 403 that stopped the
+    5.0.0-beta.2 release. "Producer is never the gate": a workflow that gates AND
+    publishes is one program attesting to itself. Manual publish restores the separation
+    — CI is the gate (build, clean-room, dogfood, tag, prerelease); the operator is the
+    publisher, from their machine, with a scoped token. Consequence: no token in the
+    repo, no crate push from any workflow.
   crate: "ruchy"
   references:
     - "GitHub Actions workflow syntax: jobs.<job_id>.needs, jobs.<job_id>.steps[*].continue-on-error"
     - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z2"
+    - "Supersedes v1.0.0 (PMAT-093), which pinned the shape of a publish job that no longer exists"
 
 equations:
-  publish_not_theater:
-    formula: "∀step ∈ publish-crates: continue_on_error(step) = false ∧ ∀publish(pkg) ∈ publish-crates: pkg ∈ workspace.members"
-    domain: "steps of jobs.publish-crates in .github/workflows/release.yml"
+  publish_not_in_ci:
+    formula: "∀f ∈ .github/workflows: publish_command ∉ noncomment_lines(f) ∧ CARGO_REGISTRY_TOKEN ∉ f"
+    domain: "f ∈ files of .github/workflows/ in the ruchy repository"
     invariants:
-      - "No step of the workflow is wrapped in continue-on-error"
-      - "Every `cargo publish -p <pkg>` names a member of [workspace] members"
-      - "The token comes from a secret that exists (CARGO_REGISTRY_TOKEN), not CRATES_TOKEN"
-  publish_after_build:
-    formula: "needs(publish-crates) ⊇ {create-release, build-binaries, build-wasm}"
-    domain: "jobs.publish-crates.needs"
+      - "No job named publish-crates exists in release.yml"
+      - "No non-comment line of any workflow runs the crate publish command"
+      - "No workflow references a registry credential, so CI cannot hold one"
+  policy_gate_after_builds:
+    formula: "needs(release-policy) ⊇ {create-release, build-binaries, build-wasm} ∧ release-policy runs scripts/release-policy.sh"
+    domain: "jobs.release-policy of .github/workflows/release.yml"
     invariants:
-      - "A broken binary or WASM build blocks the crates.io publish"
+      - "The policy gate observes the release only after every artifact job finished"
+      - "A non-zero exit of scripts/release-policy.sh fails the release workflow"
   prerelease_from_tag:
     formula: "prerelease(create-release) = contains(tag, '-')"
     domain: "jobs.create-release"
     invariants:
       - "v5.0.0-beta.2 is a GitHub pre-release; v5.0.0 is not"
+      - "No step of the workflow is wrapped in continue-on-error"
 
 proof_obligations:
+  - type: safety
+    property: "No workflow can push a crate to the registry"
+    formal: "publish_not_in_ci"
+    applies_to: workflows
+  - type: ordering
+    property: "The policy gate is the last word on a release"
+    formal: "policy_gate_after_builds"
+    applies_to: workflows
   - type: completeness
-    property: "Every publish step is real and gated"
-    formal: "publish_not_theater ∧ publish_after_build ∧ prerelease_from_tag"
-    applies_to: all
+    property: "Every release presents itself honestly and nothing is masked"
+    formal: "prerelease_from_tag"
+    applies_to: workflows
 
 falsification_tests:
   - id: FALSIFY-RELEASE-WORKFLOW-001
-    rule: "No continue-on-error"
-    test: "test_pmat_093_no_step_is_masked_with_continue_on_error"
+    rule: "No publish job, no publish command, no registry credential"
+    test: "test_pmat_135_release_workflow_has_no_publish_job"
     prediction: "verified"
-    if_fails: "Contract violation — a masked step can report green without publishing"
+    if_fails: "Contract violation — CI regained a publish credential and the producer is the gate again"
   - id: FALSIFY-RELEASE-WORKFLOW-002
-    rule: "Publish targets are workspace members"
-    test: "test_pmat_093_every_cargo_publish_targets_a_workspace_member"
+    rule: "The policy gate runs after the builds"
+    test: "test_pmat_135_release_policy_job_gates_after_the_builds"
     prediction: "verified"
-    if_fails: "Contract violation — a phantom package is published"
+    if_fails: "Contract violation — the release policy is not checked, or is checked before the artifacts exist"
   - id: FALSIFY-RELEASE-WORKFLOW-003
-    rule: "Publish waits for the builds"
-    test: "test_pmat_093_publish_job_needs_the_build_jobs"
-    prediction: "verified"
-    if_fails: "Contract violation — a crate can ship while its binaries fail to build"
-  - id: FALSIFY-RELEASE-WORKFLOW-004
-    rule: "The token secret exists"
-    test: "test_pmat_093_publish_uses_only_the_existing_registry_secret"
-    prediction: "verified"
-    if_fails: "Contract violation — cargo publish runs with an empty token"
-  - id: FALSIFY-RELEASE-WORKFLOW-005
     rule: "Pre-release tags are pre-releases"
     test: "test_pmat_093_prerelease_flag_is_derived_from_the_tag"
     prediction: "verified"
     if_fails: "Contract violation — a beta is presented as the latest stable release"
+  - id: FALSIFY-RELEASE-WORKFLOW-004
+    rule: "No continue-on-error"
+    test: "test_pmat_093_no_step_is_masked_with_continue_on_error"
+    prediction: "verified"
+    if_fails: "Contract violation — a masked step can report green without doing its job"
 
 kani_harnesses:
   - id: KANI-RELEASE-WORKFLOW-001
     obligation: PO-RELEASE-WORKFLOW-001
-    property: "publish_not_theater"
+    property: "publish_not_in_ci"
     bound: 8
     strategy: bounded_int
     harness: verify_release_workflow
@@ -73,8 +86,7 @@ qa_gate:
   min_coverage: 0.90
   max_complexity: 10
   required_tests:
-    - "test_pmat_093_no_step_is_masked_with_continue_on_error"
-    - "test_pmat_093_every_cargo_publish_targets_a_workspace_member"
-    - "test_pmat_093_publish_job_needs_the_build_jobs"
-    - "test_pmat_093_publish_uses_only_the_existing_registry_secret"
+    - "test_pmat_135_release_workflow_has_no_publish_job"
+    - "test_pmat_135_release_policy_job_gates_after_the_builds"
     - "test_pmat_093_prerelease_flag_is_derived_from_the_tag"
+    - "test_pmat_093_no_step_is_masked_with_continue_on_error"

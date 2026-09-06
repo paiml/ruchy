@@ -1,3 +1,10 @@
+# Release workflow.
+#
+# Job order: create-release -> (build-binaries, build-wasm) -> release-policy.
+# CI builds the artifacts, attaches them to the GitHub release, marks a tag carrying a
+# pre-release suffix as a pre-release, and then checks the release policy. CI never
+# ships a crate to the registry: the operator publishes by hand from their machine with
+# a scoped token, so no registry credential lives in this repository (PMAT-135).
 name: Release
 
 on:
@@ -150,34 +157,25 @@ jobs:
           asset_name: ruchy-${{ steps.get_version.outputs.VERSION }}-wasm-checksums.txt
           asset_content_type: text/plain
 
-  # Publish to crates.io (PMAT-093).
-  # Runs only after the binaries and the WASM package built, publishes the two
-  # workspace members that are on crates.io in dependency order, and fails loudly:
-  # no masked steps, no phantom packages, and the secret that actually exists.
-  publish-crates:
-    name: Publish to crates.io
+  # Release policy gate (PMAT-135).
+  # CI is the gate; the operator is the publisher. "CI held a publish credential" is
+  # the mechanism behind the 403 that stopped the 5.0.0-beta.2 release, and a workflow
+  # that gates AND ships is one program attesting to itself. This job runs last and
+  # refuses the release if any workflow regains the ability to push a crate, if a
+  # registry credential is configured on the repo or the org, or if the tag's
+  # clean-room / dogfood / fresh-container receipts are not attached to the release.
+  release-policy:
+    name: Release Policy
     runs-on: ubuntu-latest
     needs: [create-release, build-binaries, build-wasm]
-    env:
-      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Version from tag
-        id: v
-        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
-      - name: Publish ruchy
-        run: cargo publish -p ruchy
-      - name: Wait for crates.io to index ruchy
-        run: |
-          for _ in $(seq 1 40); do
-            if curl -fsSL -A "paiml/ruchy release.yml" \
-                 "https://crates.io/api/v1/crates/ruchy/${{ steps.v.outputs.VERSION }}" >/dev/null; then
-              exit 0
-            fi
-            sleep 15
-          done
-          echo "::error::ruchy ${{ steps.v.outputs.VERSION }} not visible on crates.io after 10 minutes"
-          exit 1
-      - name: Publish ruchy-wasm
-        run: cargo publish -p ruchy-wasm
+        with:
+          # the receipts gate resolves the tag to a commit with git rev-parse
+          fetch-depth: 0
+      - name: Enforce release policy
+        # Only the gate whose subject is THIS tree runs here. no-registry-secret needs an
+        # admin token that GITHUB_TOKEN is not, and receipts-at-tag asks about receipts the
+        # operator attaches AFTER publishing (the fresh-container one cannot exist before);
+        # both run in the operator dogfood (scripts/release-policy.sh is a declared gate).
+        run: bash scripts/release-policy.sh --only no-publish-in-ci

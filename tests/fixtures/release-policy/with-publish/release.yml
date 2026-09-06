@@ -1,0 +1,19 @@
+# PMAT-135 falsifier fixture: a workflow that publishes a crate from CI.
+# scripts/release-policy.sh --only no-publish-in-ci must turn RED on this directory.
+name: Fixture Release (publishes from CI)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish-crates:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    env:
+      CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish ruchy
+        run: cargo publish -p ruchy

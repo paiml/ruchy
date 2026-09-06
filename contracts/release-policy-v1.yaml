@@ -1,0 +1,95 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: >-
+    Release policy gate contract (PMAT-135) for scripts/release-policy.sh.
+    "CI held a publish credential" is the mechanism behind the 403 that stopped the
+    5.0.0-beta.2 release. "Producer is never the gate": a workflow that gates AND
+    publishes is one program attesting to itself. Manual publish restores the separation
+    — CI is the gate (build, clean-room, dogfood, tag, prerelease); the operator is the
+    publisher, from their machine, with a scoped token. Consequence: no token in the
+    repo, no crate push from any workflow. This contract pins the three gates that
+    enforce it, and the rule that a gate never skips silently.
+  crate: "ruchy"
+  references:
+    - "scripts/release-policy.sh"
+    - "contracts/release-workflow-v1.yaml (the shape of the workflow this script polices)"
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z2"
+
+equations:
+  no_publish_in_ci:
+    formula: "gate(no-publish-in-ci) = PASS ⟺ ∀f ∈ gates_dir: publish_command ∉ noncomment_lines(f)"
+    domain: "files under .github/workflows/, or under --gates-dir <dir>"
+    invariants:
+      - "A publish command on a non-comment line fails the gate and its file:line is printed"
+      - "A publish command inside a comment does not fail the gate"
+      - "A gates directory that does not exist is a FAIL, never an empty PASS"
+  no_registry_secret:
+    formula: "gate(no-registry-secret) = PASS ⟺ {CARGO_REGISTRY_TOKEN, CRATES_TOKEN} ∩ (secrets(repo) ∪ secrets(org)) = ∅"
+    domain: "gh secret list for the repository and, when readable, for the paiml org"
+    invariants:
+      - "A configured registry credential fails the gate"
+      - "gh missing is FAIL 'gh not installed'; gh unauthenticated is FAIL 'gh not authenticated'"
+      - "No unmeasured state is ever reported as PASS"
+  receipts_at_tag:
+    formula: "gate(receipts-at-tag) = PASS ⟺ ∀k ∈ {clean-room, dogfood, fresh-container}: ∃a ∈ assets(release(tag)): matches(a, k, sha8(tag))"
+    domain: "assets of the GitHub release for --tag, and sha8 = git rev-parse <tag>^{commit} truncated to 8 chars"
+    invariants:
+      - "The three receipts must name the commit the tag resolves to, not merely exist"
+      - "A dogfood receipt is dogfood-*<sha>* or receipt-*<sha>*.json"
+      - "A missing release, or a missing receipt kind, fails the gate and is named in the reason"
+
+proof_obligations:
+  - type: safety
+    property: "No release can proceed while CI can publish or holds a registry credential"
+    formal: "no_publish_in_ci ∧ no_registry_secret"
+    applies_to: script
+  - type: completeness
+    property: "Every gate terminates in PASS or FAIL; a gate that cannot measure reports FAIL"
+    formal: "no_publish_in_ci ∧ no_registry_secret ∧ receipts_at_tag"
+    applies_to: script
+  - type: classification
+    property: "The receipts required at a tag are exactly the three kinds, matched against the tag's SHA"
+    formal: "receipts_at_tag"
+    applies_to: script
+
+falsification_tests:
+  - id: FALSIFY-RELEASE-POLICY-001
+    rule: "Every gate turns RED on its fixture"
+    test: "test_pmat_135_release_policy_self_test_turns_red_on_fixtures"
+    prediction: "verified"
+    if_fails: "Contract violation — a gate that cannot turn RED measures nothing"
+  - id: FALSIFY-RELEASE-POLICY-002
+    rule: "A publishing workflow fails no-publish-in-ci"
+    test: "test_pmat_135_no_publish_gate_fails_on_a_workflow_that_publishes"
+    prediction: "verified"
+    if_fails: "Contract violation — the gate accepts a workflow that ships a crate"
+  - id: FALSIFY-RELEASE-POLICY-003
+    rule: "A build-only workflow passes no-publish-in-ci"
+    test: "test_pmat_135_no_publish_gate_passes_on_a_workflow_that_does_not_publish"
+    prediction: "verified"
+    if_fails: "Contract violation — the gate is a constant FAIL and blocks every release"
+  - id: FALSIFY-RELEASE-POLICY-004
+    rule: "The repository's own workflows pass the gate"
+    test: "test_pmat_135_no_publish_gate_passes_on_the_repository_workflows"
+    prediction: "verified"
+    if_fails: "Contract violation — a workflow in this repository publishes a crate"
+
+kani_harnesses:
+  - id: KANI-RELEASE-POLICY-001
+    obligation: PO-RELEASE-POLICY-001
+    property: "receipts_at_tag requires all three receipt kinds"
+    bound: 3
+    strategy: bounded_int
+    harness: verify_release_policy_receipts
+
+qa_gate:
+  id: QA-RELEASE-POLICY
+  name: "release policy gate contract"
+  min_coverage: 0.90
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_135_release_policy_self_test_turns_red_on_fixtures"
+    - "test_pmat_135_no_publish_gate_fails_on_a_workflow_that_publishes"
+    - "test_pmat_135_no_publish_gate_passes_on_a_workflow_that_does_not_publish"
+    - "test_pmat_135_no_publish_gate_passes_on_the_repository_workflows"
