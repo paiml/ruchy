@@ -1,0 +1,90 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Gate-discovery contract for the ruchy-dogfood pre-release protocol: a repo's release gates are DECLARED in Cargo.toml and discovered, never copied into the protocol, and the absence of a declared gate is a FAIL (PMAT-136)"
+  crate: "ruchy"
+  references:
+    - ".claude/skills/ruchy-dogfood/SKILL.md (the protocol)"
+    - "scripts/dogfood-gates.sh (the discovery runner)"
+    - "contracts/test-feature-gates-v1.yaml (PMAT-112/113, same shape)"
+    - "docs/specifications/ruchy-5.0.0-beta.2-release-plan.md §2 Z5 (pre-release gate)"
+
+equations:
+  gates_declared_not_copied:
+    formula: "gates(protocol) = strings([package.metadata.dogfood].gates ∈ Cargo.toml)"
+    domain: "Cargo.toml [package.metadata.dogfood] and scripts/dogfood-gates.sh --list"
+    invariants:
+      - "The protocol carries no copy of a repo gate: adding a gate is an edit to Cargo.toml, never to SKILL.md"
+      - "scripts/dogfood-gates.sh --list prints exactly the declared list, in declaration order"
+      - "Each declared gate gets its own receipt row: PASS|FAIL <script> <seconds>"
+  absence_is_fail:
+    formula: "¬exists(g) ⇒ row(g) = FAIL ∧ gates = ∅ ⇒ verdict = FAIL"
+    domain: "scripts/dogfood-gates.sh over a manifest whose gates are missing, empty, or name absent scripts"
+    invariants:
+      - "A declared script that does not exist is a deleted gate: FAIL <script> missing, never SKIP"
+      - "An empty or absent gates list is a clean sweep over an empty set: FAIL no gates declared"
+      - "A gate that cannot run is FAIL with a reason; deterministic-tool absence is never silent"
+      - "Exit is 1 whenever any row is FAIL"
+
+proof_obligations:
+  - type: completeness
+    property: "Every gate the protocol runs comes from the declaration, and every declared gate produces a row"
+    formal: "gates_declared_not_copied"
+    applies_to: all
+  - type: soundness
+    property: "No missing or unmeasured gate can be reported as passing"
+    formal: "absence_is_fail"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-DOGFOOD-GATES-001
+    rule: "The declaration exists and is non-empty"
+    test: "test_pmat_136_dogfood_gates_table_declares_a_non_empty_list"
+    prediction: "verified"
+    if_fails: "Contract violation — an empty gates list is a clean sweep over an empty set"
+  - id: FALSIFY-DOGFOOD-GATES-002
+    rule: "Every declared gate exists and is executable"
+    test: "test_pmat_136_every_declared_gate_exists_and_is_executable"
+    prediction: "verified"
+    if_fails: "Contract violation — a declared-but-missing gate is a deleted gate the protocol would sweep over"
+  - id: FALSIFY-DOGFOOD-GATES-003
+    rule: "The cross-ticket exemption disappears when the gate lands"
+    test: "test_pmat_136_pending_allowlist_is_empty_once_the_gate_lands"
+    prediction: "verified"
+    if_fails: "Contract violation — PENDING_FROM_OTHER_TICKETS outlived PMAT-135 and now hides a real absence"
+  - id: FALSIFY-DOGFOOD-GATES-004
+    rule: "The skill is named and may spawn its lanes"
+    test: "test_pmat_136_skill_frontmatter_names_the_skill_and_allows_agent"
+    prediction: "verified"
+    if_fails: "Contract violation — the skill is shadowed by the user-scope dogfood skill, or cannot spawn its three lanes"
+  - id: FALSIFY-DOGFOOD-GATES-005
+    rule: "Discovery output equals the declaration"
+    test: "test_pmat_136_dogfood_gates_list_matches_the_declaration"
+    prediction: "verified"
+    if_fails: "Discovery defect — the runner reads a different set than Cargo.toml declares, so a gate is run or skipped unannounced"
+
+kani_harnesses:
+  - id: KANI-DOGFOOD-GATES-001
+    obligation: PO-DOGFOOD-GATES-001
+    property: "gates_declared_not_copied"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_dogfood_gates_declared
+  - id: KANI-DOGFOOD-GATES-002
+    obligation: PO-DOGFOOD-GATES-002
+    property: "absence_is_fail"
+    bound: 8
+    strategy: bounded_int
+    harness: verify_dogfood_absence_is_fail
+
+qa_gate:
+  id: QA-DOGFOOD-GATES
+  name: "dogfood gate discovery contract"
+  min_coverage: 0.90
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_136_dogfood_gates_table_declares_a_non_empty_list"
+    - "test_pmat_136_every_declared_gate_exists_and_is_executable"
+    - "test_pmat_136_pending_allowlist_is_empty_once_the_gate_lands"
+    - "test_pmat_136_skill_frontmatter_names_the_skill_and_allows_agent"
+    - "test_pmat_136_dogfood_gates_list_matches_the_declaration"

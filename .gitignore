@@ -133,3 +133,6 @@ dependency_cleanup_analysis.md
 # RIGHTWARDS ARROW used in some Apex Hunt directory names), so one pattern
 # covers every observed variant — all of them start with "Apex Hunt: ...".
 .pmat-work/*:*
+
+# PMAT-136: dogfood receipts (written by the ruchy-dogfood skill)
+.dogfood/
