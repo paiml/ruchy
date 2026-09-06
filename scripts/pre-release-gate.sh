@@ -628,6 +628,16 @@ crate_version() {
         gsub(/^version[[:space:]]*=[[:space:]]*"/, ""); gsub(/"$/, ""); print; exit }' "$ROOT/Cargo.toml"
 }
 
+# The extracted crate becomes its own workspace root. Cargo searches upward from a
+# manifest for a workspace; a stray Cargo.toml anywhere above $WORK (a fixture left
+# in /tmp made both clean-room builds die with "failed to parse manifest at
+# /tmp/Cargo.toml" on a tree the org clean-room passed 10/10, PMAT-139) would be
+# found and parsed. crates.io consumers never see a parent manifest, so an empty
+# [workspace] table changes nothing about what is measured.
+own_workspace_root() {
+    printf '\n[workspace]\n' >> "$1/Cargo.toml"
+}
+
 stage_clean_room() {
     hdr "STAGE 5/8  clean_room -- cargo package, then --locked and unlocked builds"
     local version
@@ -686,6 +696,7 @@ stage_clean_room() {
         return 0
     }
     local src="$ex/ruchy-$version"
+    own_workspace_root "$src"
 
     say "  clean-room build 1/2: --locked, fresh CARGO_HOME ..."
     local home1 locked_exit
@@ -713,6 +724,7 @@ stage_clean_room() {
     mkdir -p "$ex2"
     tar xzf "$crate" -C "$ex2"
     local src2="$ex2/ruchy-$version"
+    own_workspace_root "$src2"
     home2=$(mktemp -d "$WORK/cargohome2.XXXX")
     (cd "$src2" && env -u CARGO_TARGET_DIR CARGO_HOME="$home2" \
         cargo build --release) > "$WORK/cleanroom-unlocked.log" 2>&1
