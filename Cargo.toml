@@ -641,3 +641,16 @@ required-features = ["repl"]
 [[example]]
 name = "test_mutation"
 required-features = ["repl"]
+
+# PMAT-136: the ruchy-dogfood protocol DISCOVERS this repo's own release gates
+# here and runs each one with its own receipt row -- it never carries a copy of
+# them. A declared script that does not exist is a deleted gate (FAIL), and an
+# empty list is a clean sweep over an empty set (FAIL).
+# scripts/release-policy.sh is written by PMAT-135; until that branch merges it
+# is declared here and absent from the tree, and its FAIL is expected.
+[package.metadata.dogfood]
+gates = [
+    "scripts/release-policy.sh",
+    "scripts/wasm32-build.sh",
+    "scripts/book-corpus.sh",
+]

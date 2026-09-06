@@ -220,25 +220,14 @@ stage_features() {
     clippy_run all --all-features; a=$?
     clippy_run minimal --no-default-features --features minimal; m=$?
 
-    # wasm32: the release workflow's Build WASM job (PMAT-129/130). getrandom 0.3 (via
-    # aprender-core's rand 0.9) needs the wasm_js backend both as a feature (Cargo.toml,
-    # wasm32 table) and as a cfg flag; the flag is set here exactly as release.yml sets it.
-    if ! rustup target list --installed 2> /dev/null | grep -qx 'wasm32-unknown-unknown'; then
-        say "  installing the wasm32-unknown-unknown target ..."
-        rustup target add wasm32-unknown-unknown > "$WORK/wasm32-target.log" 2>&1 || true
-    fi
-    if rustup target list --installed 2> /dev/null | grep -qx 'wasm32-unknown-unknown'; then
-        say "  build (wasm32-unknown-unknown, --no-default-features --features wasm-compile) ..."
-        (cd "$ROOT" && RUSTFLAGS='--cfg getrandom_backend="wasm_js"' command cargo build --lib \
-            --target wasm32-unknown-unknown --no-default-features --features wasm-compile) \
-            > "$WORK/wasm32.log" 2>&1
-        w=$?
-        [ "$w" -eq 0 ] || tail -20 "$WORK/wasm32.log"
-        say "  wasm32 exit=$w"
-    else
-        w=127
-        say "  wasm32-unknown-unknown target unavailable -- the wasm build FAILS the stage (never skipped silently)"
-    fi
+    # wasm32: the release workflow's Build WASM job (PMAT-129/130). The command lives
+    # once, in scripts/wasm32-build.sh, which the dogfood protocol also declares as a
+    # gate (PMAT-136): a missing target fails there, never silently.
+    say "  build (wasm32-unknown-unknown via scripts/wasm32-build.sh) ..."
+    bash "$ROOT/scripts/wasm32-build.sh" > "$WORK/wasm32.log" 2>&1
+    w=$?
+    [ "$w" -eq 0 ] || tail -20 "$WORK/wasm32.log"
+    say "  wasm32 exit=$w"
 
     if rustup run "$CI_TOOLCHAIN" cargo --version > /dev/null 2>&1; then
         (cd "$ROOT" && command cargo "+$CI_TOOLCHAIN" fmt --all -- --check) > "$WORK/fmt.log" 2>&1
