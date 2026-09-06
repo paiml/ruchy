@@ -1,0 +1,700 @@
+{
+  "schema_version": 1,
+  "version": "5.0.0-beta.2",
+  "head": "83294baa255e8ed05f9867c0a492a3a14f6686a3",
+  "baseline": "4.2.1",
+  "stages": {
+    "tests": {
+      "status": "PASS",
+      "exit": 0
+    },
+    "features": {
+      "status": "PASS",
+      "default": 0,
+      "all": 0,
+      "minimal": 0,
+      "wasm32": 0,
+      "fmt": 0,
+      "audit": 0
+    },
+    "verbs": {
+      "status": "PASS",
+      "total": 47,
+      "pass": 27,
+      "warn": 20,
+      "fail": 0,
+      "list": [
+        {
+          "verb": "repl",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "929905fec5353746929660df9e85dd043cc8592e7ff7613a5b5d82f110421083",
+          "status": "WARN",
+          "reason": "needs an interactive TTY"
+        },
+        {
+          "verb": "new",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "4052d1276b8819ab17bbcf004be397e825124485d959811039a13f9e911039a6",
+          "status": "WARN",
+          "reason": "creates a cargo project on disk"
+        },
+        {
+          "verb": "build",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "c295c03aef40630e2a899356198be2b0d7a1cab4e72458beace86eb0f163d759",
+          "status": "WARN",
+          "reason": "needs a whole project rather than one file"
+        },
+        {
+          "verb": "parse",
+          "mode": "golden",
+          "input": "golden/arith.ruchy",
+          "exit": 0,
+          "stdout_sha256": "aecb7fb5c6217e946e8d1cfddc3cbaf897000b4bfe4d2e66757110867b369776",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "parse",
+          "mode": "golden",
+          "input": "golden/async_task.ruchy",
+          "exit": 0,
+          "stdout_sha256": "fa76f4917815ad1f0be5e2b208a6eaa9fb5aae873fc80a3732ab29fab00d9338",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "parse",
+          "mode": "golden",
+          "input": "golden/function.ruchy",
+          "exit": 0,
+          "stdout_sha256": "591a22e93d494095d2c1bb6d6637612744b60405e542add388eeb2e169484839",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "parse",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "bf0fba3dd71e9a4d247faffa2b1b07e5a71e8f296dc44a332fb1b1a8a1bd2724",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "parse",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "eac6108e64408902a11582f0a083a57d8f9aea961cfd9815d737560b42cf8abc",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "transpile",
+          "mode": "golden",
+          "input": "golden/arith.ruchy",
+          "exit": 0,
+          "stdout_sha256": "7eea15389a9c95078459e07b22f9a77746ed7a19adcbf6f3db8ff8f3aebb0ff8",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "transpile",
+          "mode": "golden",
+          "input": "golden/async_task.ruchy",
+          "exit": 0,
+          "stdout_sha256": "2b961e9aef68a95aa4c13f3a1815eb6590c70cc12857c2d639d02ae2d05ff933",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "transpile",
+          "mode": "golden",
+          "input": "golden/function.ruchy",
+          "exit": 0,
+          "stdout_sha256": "69b58b32b7e6264db63ccb76c5d10ab182d86c650f363af2b17199a14738aa19",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "transpile",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "b73835626abee2df99cc0fa7472c6d093cb905911d3e9dd15fff038ad60306c3",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "transpile",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "23a68caaf3a52a3e8c8b7e2346d816f3c9bbe321bdd7dcf271b7a8178ab4c763",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "run",
+          "mode": "golden",
+          "input": "golden/arith.ruchy",
+          "exit": 0,
+          "stdout_sha256": "8527a891e224136950ff32ca212b45bc93f69fbb801c3b1ebedac52775f99e61",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "run",
+          "mode": "golden",
+          "input": "golden/async_task.ruchy",
+          "exit": 0,
+          "stdout_sha256": "e3dc7f8282aff60267902687048094f6bba0caf5d8b50b857bdce2225aa76ea1",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "run",
+          "mode": "golden",
+          "input": "golden/function.ruchy",
+          "exit": 0,
+          "stdout_sha256": "ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "run",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "run",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "compile",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "b1555b76119da7f823f81455b4ca603089d53feff0a9c18b5c6b84589801135b",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "check",
+          "mode": "golden",
+          "input": "golden/arith.ruchy",
+          "exit": 0,
+          "stdout_sha256": "6bf134bd99a48050f4d0175c618cd549e0388a0b151b78f2fc8dbdbfc5cb1f1f",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "check",
+          "mode": "golden",
+          "input": "golden/async_task.ruchy",
+          "exit": 0,
+          "stdout_sha256": "6bf134bd99a48050f4d0175c618cd549e0388a0b151b78f2fc8dbdbfc5cb1f1f",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "check",
+          "mode": "golden",
+          "input": "golden/function.ruchy",
+          "exit": 0,
+          "stdout_sha256": "6bf134bd99a48050f4d0175c618cd549e0388a0b151b78f2fc8dbdbfc5cb1f1f",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "check",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "6bf134bd99a48050f4d0175c618cd549e0388a0b151b78f2fc8dbdbfc5cb1f1f",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "check",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "6bf134bd99a48050f4d0175c618cd549e0388a0b151b78f2fc8dbdbfc5cb1f1f",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "test",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "e6ec72f14d4307b5fceed6a6fda217e6171f19cfe439a4d1add9fb9cd8858287",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "notebook",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "033de9096c346a1da25f871b53d1146186358aa71b5405c10994c4757198422e",
+          "status": "WARN",
+          "reason": "needs the notebook feature and an HTTP server"
+        },
+        {
+          "verb": "serve",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "e9274c923cc910723c96603dff628eda375c15953eb48760848c19df7cb7352c",
+          "status": "WARN",
+          "reason": "needs the notebook feature and an HTTP server"
+        },
+        {
+          "verb": "coverage",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "73ff9de31f6c70d4a6605cff3443e9bd725a05c9b7dba0d8b056cc4392631856",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "ast",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "bf0fba3dd71e9a4d247faffa2b1b07e5a71e8f296dc44a332fb1b1a8a1bd2724",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "provability",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "b0144a1e47a82682a5796e2c25ddc4bccdc5c6af2c67cf595a2ec99576d4ed71",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "runtime",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "a71b47b64ade8dcb1f39291d3b5ac832364c49b6099f10eac8cb1526b3d5bed0",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "score",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "5b2e5deafc3781ee9155a7f952ddb500b6a2b4a96c6ffd6e55c439e1c2ca2831",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "quality-gate",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "fmt",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "26a6ba1c1573ec236447f261d5c213e54c85466a10bea57a33dd8e550280c57f",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "doc",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "db1d7382c680a66679622d0cfe5463cc30bcd4ab0720d93c474f58ab39890bc1",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "bench",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "4d80cdc604473fa37f06e0317311ecfeff1318114ff1ed89466ca5afa8ea0920",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "lint",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "fa427cd29aa4eee021260abbe01d6bdf90a2f3c96e08fb8a4ddfcc7bffead6e2",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "add",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "58944dc997033d720e981a6e8545632313c7e7ce5e3fdb60ac49826290071a34",
+          "status": "WARN",
+          "reason": "mutates Cargo.toml and needs the network access"
+        },
+        {
+          "verb": "publish",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "1dacb4223ad6a162032c3302d2fc48f7fa58a4b3b391e393cf2b27d6e836de9b",
+          "status": "WARN",
+          "reason": "needs the network and a registry token"
+        },
+        {
+          "verb": "mcp",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "58922bb55558856aae0ea1fabdc348faf9dd71260591c2b7145a03baa8311282",
+          "status": "WARN",
+          "reason": "needs a long-lived stdio server"
+        },
+        {
+          "verb": "optimize",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "daa090b8c9188ecede8b049eeb633a0a4c57a98c29530c0dec002063c4a221b6",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "actor:observe",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "fa14ac54ba2a94e4f7e2d527c0b1786c53305267349ebbe5efa226fad925963b",
+          "status": "WARN",
+          "reason": "needs a running actor system"
+        },
+        {
+          "verb": "dataflow:debug",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "0de38c656f1ef08bacc14185802efcf37e1ad37e0f2079fabb18469a3d245700",
+          "status": "WARN",
+          "reason": "needs a live dataflow session"
+        },
+        {
+          "verb": "wasm",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "1787e67cf91f0358c063f302973b8c31efb66790e0e261f94a057f4b6acfc323",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "prove",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "replay-to-tests",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "67407aa0585e26c47de973fb9efd5b5f6c45a66bef8e884216d9f13b2b014316",
+          "status": "WARN",
+          "reason": "needs recorded .replay session files"
+        },
+        {
+          "verb": "property-tests",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "bbc89ce9286de86237c1ba1b7ddff41e7a2326195662c3c8f47eb6c0fbd7eda2",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "mutations",
+          "mode": "golden",
+          "input": "golden/tested.ruchy",
+          "exit": 0,
+          "stdout_sha256": "cf93a44b30b3b66575e10cff050a990843ac0d1163a4748bb6584d881bcebd60",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "fuzz",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "590a800d7f156185eaa179ffcedf4207856a188c4ffe9cf50aae921b31942537",
+          "status": "WARN",
+          "reason": "unbounded fuzzing loop"
+        },
+        {
+          "verb": "oracle",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "ca06e73664ec4a6811657d7bc5407b71e70b471480366575dca5854cca843f4b",
+          "status": "WARN",
+          "reason": "subcommand-only surface with no file argument"
+        },
+        {
+          "verb": "hunt",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "a4353a557aacdfa0ea6d07f6e53532b283c0f54745514dce2261941fd6e4b110",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "report",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "9c74261fe4a1de942f984d9b878e5165d5f4dd777741e08a7180ec2b45df18ae",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "infra",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "ffd4346b6d727f2b599e0cecc53959dbaa7ecd9e0cdc3faa7459eb016d7c5037",
+          "status": "WARN",
+          "reason": "subcommand-only surface with no file argument"
+        },
+        {
+          "verb": "sim",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "26aa63b5afb5583a08f1e878b9bdff23a96e689bb89f93258c8109292fc3d9f8",
+          "status": "WARN",
+          "reason": "subcommand-only surface with no file argument"
+        },
+        {
+          "verb": "widget",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "64738f7c7d3e9031fc8b866965acf09bcbb96bdcba3c4ed5a6846c407ab3b5eb",
+          "status": "WARN",
+          "reason": "subcommand-only surface with no file argument"
+        },
+        {
+          "verb": "apr",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "611df5224ee96ad73c95420549c44414b254c0cc5fa483607b3eb3a01e09a299",
+          "status": "WARN",
+          "reason": "subcommand-only surface with no file argument"
+        },
+        {
+          "verb": "model",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "f2978b17b12b63e2f04cb1e83564179406a9591e7ef6729aae86c1cffe48d1bc",
+          "status": "WARN",
+          "reason": "subcommand-only surface with no file argument"
+        },
+        {
+          "verb": "purify",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "ce68e4cb563252fae0aa7823a02a66c9aae7ff6d77f6749963aadabda8376a48",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "migrate-4to5",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "797c1e08e265c379b9c1d263f222d5baa2a7d3a5751b9cf7097c4d1f2feed986",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "tier",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "d6030d6e1bab707cfe5762afa3d0e91bdedb92acdaebdc8057b59dfe9200bdc9",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "contracts",
+          "mode": "help_only",
+          "input": null,
+          "exit": 0,
+          "stdout_sha256": "a8f9b6ce126477ef0f5f503de8f27121fa74949c3994b78bb82924159ab36127",
+          "status": "WARN",
+          "reason": "subcommand-only surface with no file argument"
+        },
+        {
+          "verb": "suggest-contracts",
+          "mode": "golden",
+          "input": "golden/hello.ruchy",
+          "exit": 0,
+          "stdout_sha256": "03d579f4dee87c686ea60f0d86c25e359b48cd97cd46da68cb8c777aeab0ab5d",
+          "status": "PASS",
+          "reason": null
+        },
+        {
+          "verb": "help",
+          "mode": "help_only",
+          "input": null,
+          "exit": 2,
+          "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "status": "WARN",
+          "reason": "meta verb that only prints usage"
+        }
+      ]
+    },
+    "differential": {
+      "status": "PASS",
+      "files": 1287,
+      "both_pass": 1107,
+      "check_regressions": [
+        "../ruchyruchy/validation/tests/test_property_framework.ruchy"
+      ],
+      "run_regressions": [
+        "../ruchyruchy/validation/tests/test_property_framework.ruchy"
+      ],
+      "run_stdout_diffs": [],
+      "known_breaks": [
+        "examples/24_math_science.ruchy",
+        "../ruchyruchy/validation/tests/test_property_framework.ruchy"
+      ],
+      "known_fixes": [],
+      "unlisted_regressions": [],
+      "unlisted_stdout_diffs": [],
+      "nondeterministic": [
+        "examples/04_collections.ruchy",
+        "examples/09_async_await.ruchy",
+        "../ruchy-repl-demos/demos/repl/01-basics/records.ruchy",
+        "../ruchy-repl-demos/test_v1.27.7_simple.ruchy"
+      ],
+      "fixed": 0,
+      "both_fail": 179,
+      "compiled_compared": 96,
+      "compiled_skipped_budget": 0
+    },
+    "transpile": {
+      "status": "PASS",
+      "identical": 1089,
+      "differs": [
+        "examples/01_basics.ruchy",
+        "examples/02_functions.ruchy",
+        "examples/04_collections.ruchy",
+        "examples/06_error_handling.ruchy",
+        "examples/13_iterators.ruchy",
+        "examples/24_math_science.ruchy",
+        "examples/30_contracts.ruchy",
+        "examples/31_sovereign_platform.ruchy",
+        "examples/32_migration_demo.ruchy",
+        "examples/34_embedding.ruchy",
+        "examples/json_builtins.ruchy",
+        "examples/lang_comp/12-error-handling/01_result_type.ruchy",
+        "examples/test_collections.ruchy",
+        "examples/test_functions.ruchy",
+        "../ruchy-book/listings/ch08-advanced/listing-08-02/src/main.ruchy",
+        "../ruchy-cli-tools-book/examples/ruchy-head/head.ruchy",
+        "../ruchy-cookbook/recipes/ch01/recipe-008/src/main.ruchy",
+        "../ruchyruchy/validation/optimizations/test_token_cache_red.ruchy"
+      ]
+    },
+    "clean_room": {
+      "status": "PASS",
+      "locked_exit": 0,
+      "unlocked_exit": 0,
+      "binary_version": "5.0.0-beta.2",
+      "unlocked_binary_version": "5.0.0-beta.2",
+      "expected_version": "5.0.0-beta.2",
+      "locked_binary_present": true,
+      "unlocked_binary_present": true
+    },
+    "package": {
+      "status": "PASS",
+      "files": 1446,
+      "bytes_compressed": 3323719,
+      "colon_paths": 0,
+      "has_lock": true
+    },
+    "satd": {
+      "status": "PASS",
+      "count": 0,
+      "max": 0
+    }
+  },
+  "warns": [
+    "verbs: repl is --help only (needs an interactive TTY)",
+    "verbs: new is --help only (creates a cargo project on disk)",
+    "verbs: build is --help only (needs a whole project rather than one file)",
+    "verbs: notebook is --help only (needs the notebook feature and an HTTP server)",
+    "verbs: serve is --help only (needs the notebook feature and an HTTP server)",
+    "verbs: add is --help only (mutates Cargo.toml and needs the network access)",
+    "verbs: publish is --help only (needs the network and a registry token)",
+    "verbs: mcp is --help only (needs a long-lived stdio server)",
+    "verbs: actor:observe is --help only (needs a running actor system)",
+    "verbs: dataflow:debug is --help only (needs a live dataflow session)",
+    "verbs: replay-to-tests is --help only (needs recorded .replay session files)",
+    "verbs: fuzz is --help only (unbounded fuzzing loop)",
+    "verbs: oracle is --help only (subcommand-only surface with no file argument)",
+    "verbs: infra is --help only (subcommand-only surface with no file argument)",
+    "verbs: sim is --help only (subcommand-only surface with no file argument)",
+    "verbs: widget is --help only (subcommand-only surface with no file argument)",
+    "verbs: apr is --help only (subcommand-only surface with no file argument)",
+    "verbs: model is --help only (subcommand-only surface with no file argument)",
+    "verbs: contracts is --help only (subcommand-only surface with no file argument)",
+    "verbs: help is --help only (meta verb that only prints usage)",
+    "differential: corpus ../tooling-with-ruchy is not present next to the repo; it was not measured",
+    "differential: examples/04_collections.ruchy is nondeterministic on the 4.2.1 baseline; stdout not compared",
+    "differential: examples/09_async_await.ruchy is nondeterministic on the 4.2.1 baseline; stdout not compared",
+    "differential: ../ruchy-repl-demos/demos/repl/01-basics/records.ruchy is nondeterministic on the 4.2.1 baseline; stdout not compared",
+    "differential: ../ruchy-repl-demos/test_v1.27.7_simple.ruchy is nondeterministic on the 4.2.1 baseline; stdout not compared"
+  ],
+  "verdict": "go"
+}

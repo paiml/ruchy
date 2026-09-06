@@ -1,0 +1,10 @@
+=== cargo publish --locked -p ruchy-wasm ===
+    Packaged 13 files, 101.8KiB (27.6KiB compressed)
+   Verifying ruchy-wasm v5.0.0-beta.2 (/tmp/ruchy-rel/ruchy-wasm)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 39.27s
+   Uploading ruchy-wasm v5.0.0-beta.2 (/tmp/ruchy-rel/ruchy-wasm)
+    Uploaded ruchy-wasm v5.0.0-beta.2 to registry `crates-io`
+note: waiting for ruchy-wasm v5.0.0-beta.2 to be available at registry `crates-io`
+help: you may press ctrl-c to skip waiting; the crate should be available shortly
+   Published ruchy-wasm v5.0.0-beta.2 at registry `crates-io`
+ruchy-wasm publish exit=0

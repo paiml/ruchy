@@ -1,0 +1,10 @@
+=== cargo publish --locked -p ruchy ===
+   Verifying ruchy v5.0.0-beta.2 (/tmp/ruchy-rel)
+warning: ruchy@5.0.0-beta.2: [contract] /mnt/nvme-raid0/targets/ruchy-rel-publish/package/provable-contracts/contracts/ruchy/binding.yaml not found; AllImplemen
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9.28s
+   Uploading ruchy v5.0.0-beta.2 (/tmp/ruchy-rel)
+    Uploaded ruchy v5.0.0-beta.2 to registry `crates-io`
+note: waiting for ruchy v5.0.0-beta.2 to be available at registry `crates-io`
+help: you may press ctrl-c to skip waiting; the crate should be available shortly
+   Published ruchy v5.0.0-beta.2 at registry `crates-io`
+ruchy publish exit=0

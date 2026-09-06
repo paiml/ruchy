@@ -1,0 +1,53 @@
+make[1]: Entering directory '/home/noah/src/infra/machines/clean-room'
+==> Creating clean-room container for ruchy...
+docker run -d --init --memory=32g --memory-swap=32g \
+	-e CARGO_BUILD_JOBS=8 --name ruchy-clean-room \
+	-v ruchy-cargo-registry:/usr/local/cargo/registry \
+	rust:1.95-slim sleep infinity
+d742fa435e67f798a9bd2d5b06a6ee01d65069f678dab1190c3589d0014b61c5
+==> Provisioning ruchy (forjar apply)...
+cd /home/noah/src/infra && forjar apply --yes --force-unlock -f /tmp/clean-room-ruchy/forjar.yaml
+[1mruchy-cr[0m: [32m4[0m converged, 0 unchanged, 0 failed (12.4s)
+
+[32mApply complete: 4 converged, 0 unchanged.[0m
+warning: state dir state was last applied by stack 'lambda-labs'; this apply re-stamps it as 'ruchy-clean-room'. If that is not a rename, one of -f/--state-dir points at the wrong stack (`forjar undo` refuses this combination).
+==> Copying ruchy source from /tmp/ruchy-rel
+    version: 5.0.0-beta.2
+    commit:  59c7453b
+tar -C /tmp/ruchy-rel \
+	--exclude='.git' \
+	--exclude='./target' --exclude='./target_*' \
+	--exclude='./models' \
+	--exclude='benches/comparative' \
+	--exclude='coverage_report' --exclude='book' \
+	--exclude='.cargo/config.toml' \
+	-cf - . | docker exec -i ruchy-clean-room tar -C /build/ruchy -xf -
+make[2]: Entering directory '/home/noah/src/infra/machines/clean-room'
+==> Running gates for ruchy...
+docker exec -e OPENSSL_NO_VENDOR=1 -e MODE_B_CHECK_EXTRA='' -e RUST_MIN_STACK='' ruchy-clean-room /build/gates.sh both
+
+[1;34m=== GATE A0: Strip local path deps (simulate cargo publish) ===[0m
+[1;32m--- GATE A0 PASSED (0s) ---[0m
+
+[1;34m=== GATE A1: Generate fresh lockfile (no patches) ===[0m
+error: failed to load manifest for workspace member `/build/ruchy/ruchy-embed`
+referenced by workspace at `/build/ruchy/Cargo.toml`
+
+Caused by:
+  failed to parse manifest at `/build/ruchy/ruchy-embed/Cargo.toml`
+
+Caused by:
+  dependency (ruchy) specified without providing a local path, Git repository, version, or workspace dependency to use
+[1;31mGATE A1 FAILED (0s): lockfile generation failed[0m
+make[2]: *** [Makefile:593: _run-gates] Error 1
+make[2]: Leaving directory '/home/noah/src/infra/machines/clean-room'
+make[2]: Entering directory '/home/noah/src/infra/machines/clean-room'
+==> Capturing result for ruchy...
+==> Recorded result for ruchy
+make[2]: Leaving directory '/home/noah/src/infra/machines/clean-room'
+make[2]: Entering directory '/home/noah/src/infra/machines/clean-room'
+==> Tearing down ruchy clean-room...
+make[2]: Leaving directory '/home/noah/src/infra/machines/clean-room'
+make[1]: *** [Makefile:474: _run-clean-room-inner] Error 2
+make[1]: Leaving directory '/home/noah/src/infra/machines/clean-room'
+make: *** [Makefile:471: _run-clean-room] Error 2

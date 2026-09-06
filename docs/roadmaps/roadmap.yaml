@@ -2845,3 +2845,37 @@ roadmap:
   labels:
   - kind:release
   notes: null
+- id: PMAT-138
+  github_issue: null
+  item_type: task
+  title: CLEANROOM-RELEASE-SUBJECT - infra gates-lib A0 strips path from members' deps on the crate being released, so A1 cannot resolve the unpublished version (ruchy-wasm -> ruchy ^5.0.0-beta.2); protect deps on RELEASE_SUBJECT like publish=false members, gate dependents in cascade after the subject publishes; add clean-room-ruchy to the Makefile roster; HAS_BIN=yes for ruchy
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-06T07:05:26Z
+  updated: 2026-09-06T07:05:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:release
+  notes: null
+- id: PMAT-139
+  github_issue: null
+  item_type: task
+  title: GATE-WORKDIR-ISOLATION - pre-release-gate.sh builds the extracted crate and runs verb smokes under $TMPDIR; a stray /tmp/Cargo.toml above the work dir made cargo's upward workspace search fail (clean_room 101, verb mutations FAIL) on a tree the org clean-room passed 10/10; append [workspace] to the extracted manifest and stop the search, and name the work dir in the receipt
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-06T09:54:43Z
+  updated: 2026-09-06T09:54:43Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:release
+  notes: null
