@@ -118,8 +118,8 @@ fn test_pmat_135_release_policy_job_gates_after_the_builds() {
     }
     let scripts = job_run_scripts(&job);
     assert!(
-        scripts.contains("scripts/release-policy.sh"),
-        "release-policy must run scripts/release-policy.sh; run scripts were:\n{scripts}"
+        scripts.contains("scripts/release-policy.sh --only no-publish-in-ci"),
+        "release-policy must run only the gate whose subject is this tree (--only no-publish-in-ci); run scripts were:\n{scripts}"
     );
 }
 

@@ -174,4 +174,8 @@ jobs:
           # the receipts gate resolves the tag to a commit with git rev-parse
           fetch-depth: 0
       - name: Enforce release policy
-        run: bash scripts/release-policy.sh --tag "${GITHUB_REF_NAME}"
+        # Only the gate whose subject is THIS tree runs here. no-registry-secret needs an
+        # admin token that GITHUB_TOKEN is not, and receipts-at-tag asks about receipts the
+        # operator attaches AFTER publishing (the fresh-container one cannot exist before);
+        # both run in the operator dogfood (scripts/release-policy.sh is a declared gate).
+        run: bash scripts/release-policy.sh --only no-publish-in-ci

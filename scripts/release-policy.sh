@@ -19,6 +19,13 @@
 #   receipts-at-tag     the release for --tag carries clean-room, dogfood and
 #                       fresh-container receipts naming the tag's 8-char commit SHA
 #
+# Phase. no-publish-in-ci asks about this tree and runs in CI (release.yml) and in
+# the operator dogfood. no-registry-secret needs an admin token GITHUB_TOKEN is not;
+# receipts-at-tag asks about receipts attached AFTER the publish (the fresh-container
+# receipt installs from crates.io). Those two run only from the operator machine, as
+# a [package.metadata.dogfood] gate, and their RED before that phase is "not yet
+# measured", never a skip.
+#
 # Usage:
 #   bash scripts/release-policy.sh [--tag <tag>] [--only <gate>] [--gates-dir <dir>]
 #   bash scripts/release-policy.sh --self-test
