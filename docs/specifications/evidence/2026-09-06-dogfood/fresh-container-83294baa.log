@@ -1,0 +1,30 @@
+== crates.io versions ==
+{
+  "num": "5.0.0-beta.2",
+  "yanked": false,
+  "created_at": "2026-09-06T10:05:22.916169Z"
+}
+crates.io: 5.0.0-beta.2 present
+== fresh container: rust:1.91-slim ==
+debconf: unable to initialize frontend: Dialog
+debconf: (TERM is not set, so the dialog frontend is not usable.)
+debconf: falling back to frontend: Readline
+debconf: unable to initialize frontend: Readline
+debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/x86_64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, <STDIN> line 8.)
+debconf: falling back to frontend: Teletype
+debconf: unable to initialize frontend: Teletype
+debconf: (This frontend requires a controlling tty.)
+debconf: falling back to frontend: Noninteractive
+-- cargo install ruchy --version 5.0.0-beta.2 --locked
+    Finished `release` profile [optimized] target(s) in 3m 05s
+  Installing /usr/local/cargo/bin/ruchy
+   Installed package `ruchy v5.0.0-beta.2` (executable `ruchy`)
+ruchy 5.0.0-beta.2
+-- cargo install ruchy --version 5.0.0-beta.2 --force (fresh resolution)
+    Finished `release` profile [optimized] target(s) in 2m 59s
+   Replacing /usr/local/cargo/bin/ruchy
+    Replaced package `ruchy v5.0.0-beta.2` with `ruchy v5.0.0-beta.2` (executable `ruchy`)
+ruchy 5.0.0-beta.2
+beta2 ok
+
+# exit status of the run: recorded by the operator; see the last lines above (both installs printed "ruchy 5.0.0-beta.2" and the smoke printed "beta2 ok")

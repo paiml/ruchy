@@ -1,6 +1,6 @@
 # Ruchy 5.0.0-beta.2 — release plan
 
-> **Status (as-built, 2026-09-06): manual publish in progress under the owner prescription (B44); the earlier stop stands as history.** Previous line: STOPPED(publish-token) 2026-09-05. Every zero and ratchet ticket is merged (Z0–Z9, R1, Z5a–Z5c, PMAT-119); the dogfood gate says `go` (8/8 stages, `evidence/2026-09-05-dogfood/receipt.json`); the tag `v5.0.0-beta.2` and its GitHub prerelease exist on 59c7453b; `cargo publish` was refused with 403 Forbidden (invalid `CARGO_REGISTRY_TOKEN`). Resume path: §6 B43. Plan history: v1 (P1) → v2 (after the P2 quorum) → v3 (this document, §7e as-built).
+> **Status (as-built, 2026-09-06): DONE — `ruchy` and `ruchy-wasm` 5.0.0-beta.2 are on crates.io, published by the operator from the tag checkout after the org clean-room (10/10) and the dogfood gate (go) at 83294baa; fresh-container install verified; receipts attached; policy gates green (B44, §5 as run).** Previous line: STOPPED(publish-token) 2026-09-05. Every zero and ratchet ticket is merged (Z0–Z9, R1, Z5a–Z5c, PMAT-119); the dogfood gate says `go` (8/8 stages, `evidence/2026-09-05-dogfood/receipt.json`); the tag `v5.0.0-beta.2` and its GitHub prerelease exist on 59c7453b; `cargo publish` was refused with 403 Forbidden (invalid `CARGO_REGISTRY_TOKEN`). Resume path: §6 B43. Plan history: v1 (P1) → v2 (after the P2 quorum) → v3 (this document, §7e as-built).
 
 | Field | Value |
 |---|---|
@@ -325,7 +325,7 @@ that turns its gate red** · routing.
 - **PMAT-136 (#220)**: `.claude/skills/ruchy-dogfood/SKILL.md` (explicit `name:`, `Agent` allowed; three read-only worker lanes with disjoint outputs; the orchestrator is the single receipt writer; lane `.err` = NO-GO; `pmat work show` absent (pmat 3.38.0) = FAIL row; `--twice` byte-identical). Gates discovered from `[package.metadata.dogfood]` by `scripts/dogfood-gates.sh` (comment-safe, `--manifest` for fixtures; declared-but-missing FAIL, empty FAIL). `scripts/wasm32-build.sh` is now the single copy of the wasm32 command (the gate's stage 2 calls it); `scripts/book-corpus.sh` is the check-only corpus sweep.
 - **PMAT-134 (infra #448)**: `docs/specifications/sovereign-release-policy.md` RP-001 with measured baselines (26 repos with `cargo publish` in a workflow; 4 repos holding `CARGO_REGISTRY_TOKEN`; none at org level).
 - **PMAT-137 (#218)**, **PMAT-138 (infra PR)**: B45/B46.
-- **PMAT-133**: the operator procedure itself — §5 as run.
+- **PMAT-133**: the operator procedure itself — §5 as run (manual publish). **PMAT-139**: the gate's extracted crate is its own workspace root (B49).
 
 
 ### Z6 · PMAT-097 · CONTRACTS-DISPATCH
@@ -507,6 +507,26 @@ silent cap.
 | 6 | A_9 not run: `5.0.0-beta.2` is absent from crates.io. The script is filed as `evidence/2026-09-05-dogfood/a9-verify-fresh-container.sh.txt` for the resume |
 | 7 | plan v3 (this document), `docs/audits/impl-PMAT-091-receipt.md`, warn tickets PMAT-123…126 |
 
+### §5 as run — manual publish (2026-09-06, owner prescription B44)
+
+| Step | Result |
+|---|---|
+| ticket | PMAT-133 `ruchy 5.0.0-beta.2 manual publish` |
+| token, read-only | `cargo owner --list ruchy` / `ruchy-wasm` → `noahgift (Noah Gift)`; the token was never printed |
+| tag checkout | `/tmp/ruchy-rel` (and `/home/noah/src/ruchy-rel` beside the corpora), detached at `v5.0.0-beta.2` = 83294baa; `git status --porcelain` empty |
+| org clean-room (guide §4.3) | first run on the old tag 59c7453b: A1 FAIL (B45); with PMAT-137 + PMAT-138: **10/10** on 83294baa, A4 `ruchy 5.0.0-beta.2` (`cleanroom-infra-ruchy-83294baa-rehearsal.log`, infra `results.csv` row) |
+| repo dogfood gate at the tag | first run from `/tmp`: no-go (verb `mutations` FAIL, clean_room 101) — a fixture `Cargo.toml` a worker test left in `/tmp` sat above the work dir (B49, PMAT-139); rerun beside the corpora with `TMPDIR` relocated: **go**, 8/8, 25 warns in the ticketed classes (`receipt-tag-83294baa.json`) |
+| dry run | `cargo publish --dry-run --locked -p ruchy`: packaged 1446 files, verified, exit 0 |
+| publish | `cargo publish --locked -p ruchy` → `Published ruchy v5.0.0-beta.2`; `cargo publish --locked -p ruchy-wasm` → `Published ruchy-wasm v5.0.0-beta.2`; crates.io `max_version` 5.0.0-beta.2 for both (`publish-ruchy.log`, `publish-ruchy-wasm.log`) |
+| fresh container | `rust:1.91-slim`: `cargo install ruchy --version 5.0.0-beta.2 --locked` and `--force` (fresh resolution) both installed and printed `ruchy 5.0.0-beta.2`; the `ruchy run` smoke printed `beta2 ok` (`fresh-container-83294baa.log`)
+ |
+| receipts at tag | attached to the GitHub release: `clean-room-83294baa.log` + `clean-room-83294baa-results.csv`, `dogfood-receipt-83294baa.json`, `fresh-container-83294baa.log` (12 assets with the four binaries and the WASM package)
+ |
+| policy gates | operator run from the policy branch (#219 head): `PASS no-publish-in-ci`, `PASS no-registry-secret`, `PASS receipts-at-tag` (exit 0). The tag's own tree: `FAIL no-publish-in-ci` at `release.yml:170,183` — structural until #219 merges (B48)
+ |
+| repository secret | `CARGO_REGISTRY_TOKEN` deleted from `paiml/ruchy` (invalid; policy RP-001 §5) |
+| release run on the new tag | 34025099514: builds and WASM green, the old `publish-crates` job 403 as before (harmless; #219 removes it) |
+
 ## §6 Blockers (andons — appended, never resolved silently)
 
 | # | Andon | Handling |
@@ -555,6 +575,8 @@ silent cap.
 | B45 | The infra clean-room hard gate was red on the tag (59c7453b) at A1 twice over: `ruchy-embed` depended on `ruchy` by path only (PMAT-137, #218), and after A0 strips paths `ruchy-wasm`'s `ruchy = ^5.0.0-beta.2` cannot resolve from crates.io before ruchy itself is published — the gate has no notion of the release subject, so a workspace whose members depend on its root is structurally red before every root release | PMAT-138 (infra PR): `RELEASE_SUBJECT_DIR` keeps deps on the subject through A0 (self-tested); `gates/ruchy.sh` verifies the installed binary and no longer skips the minimal check; `clean-room-ruchy` target. Measured: A0/A1 simulation exit 0; full run 10/10 on 83294baa; the run at the final tag is the receipt |
 | B46 | The infra Makefile had no `clean-room-ruchy` target and ruchy is not in `REPOS_ALL` or the fleet roster: the guide's "10 active CPU-gate repos" never included the compiler, so the org gate had never run on it | target added (PMAT-138); roster + README membership after the released-tree run passes (the Makefile's own rule) |
 | B47 | agy 1.1.27 quorum lanes on #219/#220 returned `SUCCESS` with `num_turns=1`, zero tool calls, "measured" groundings and line numbers past the end of the files; the delegate caught it by reading the lanes' JSON | every lane claim re-run by the orchestrator (the three real findings — whitespace evasion, script/make indirection, comment-unsafe TOML scan — were folded with fixtures that turn RED; a fourth, single-file `grep` printing no filename, was found by running the self-test); memory note written |
+| B48 | The org's self-hosted fleet reported 16 of 17 runners busy for over three hours while the org-wide census showed one run in progress; #219, #220, the plan PR and every other repo's CI stayed queued. The runners are not on this host (`verify-systemd-units` here is the wrong machine), so the hygiene procedure of guide §4.4 is Noah's | the publish proceeded on the tag's tree (the crate content does not depend on #219/#220); the structural gaps this leaves are recorded per gate (§5 as run); merges follow when the fleet recovers |
+| B49 | The first dogfood run at the tag was a no-go for an environmental reason: a fixture `Cargo.toml` written to `/tmp` by the PMAT-136 worker's test sat above the gate's work directory, so cargo's upward workspace search parsed it (clean_room builds exit 101, `mutations` verb exit 1) on a tree the org clean-room had passed 10/10 | file removed (mine to remove: a worker artifact); rerun with `TMPDIR` under a manifest-free parent: go. PMAT-139: the extracted crate becomes its own workspace root, so the gate no longer depends on the parent directories of `$TMPDIR` |
 | B24 | **Read-only agy review lanes mutated the repository**: during the P4 review of #202/#203 (13:50–13:54) the lanes ran `git checkout` of the PR branches in the main checkout (HEAD reflog), which removed the three worktrees' metadata under `.git/worktrees/` and left a staged change behind; `writes=false`/`--sandbox` did not prevent it | main checkout restored to the plan branch; worktrees recreated with their uncommitted files preserved (rsync from the orphaned directories); nothing lost. Every later lane prompt forbids `git checkout/switch/worktree/stash/reset` explicitly and uses `git show <ref>:<path>`/`git diff a...b` only; recorded for the skill's lane doctrine |
 | B22 | **The `ruchy` bin unit-test target (952 tests) has never run to completion**: `test_handle_watch_mode_setup` spawned a thread that called `std::process::exit(0)` after 10 ms — cargo saw exit 0 and reported success after ~640–666 of 952 tests every time. With it removed, the target exposes: 2 tests asserting `/nonexistent` is absent (it exists on this host), 1 case-sensitive assertion bug (`notebook feature`), 1 wrong expectation (`parse_source("")` is an error in 4.2.1 and HEAD alike), 2 further failures (`test_handle_test_dispatch_with_filter`, `test_run_cargo_build_no_project`), and **18 tests that block forever** (11 `prove_handler`, 4 watch-mode, 3 dispatch in `ruchy.rs`) | all under PMAT-104, commit `e9d8365e` on the Z0 PR: killer deleted, mcp stub returns `Err`, prover loop takes a reader and ends on EOF, watch mode split into testable halves, 17 cwd-mutating tests serialized behind `handlers::test_support::cwd_lock()`, hermetic paths, three assertions corrected, two vacuous dispatch tests removed → **954 passed, 0 failed, 0 ignored**, identical single-threaded; no `#[ignore]` added. Measured on the side: `ruchy prove < /dev/null` **hangs on 4.2.1 (exit 124) and exits 0 at HEAD** — a user-facing fix already on `main`, to be named in the beta.2 CHANGELOG |
 

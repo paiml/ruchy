@@ -16,3 +16,10 @@
 {"repo":"ruchy","ticket":"PMAT-127","phase":"Z5b","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #215"}
 {"repo":"ruchy","ticket":"PMAT-100","phase":"Z9","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #214"}
 {"repo":"ruchy","ticket":"PMAT-129","phase":"Z5c","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #216"}
+{"repo":"ruchy","ticket":"PMAT-133","phase":"manual publish","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; owner prescription 2026-09-06"}
+{"repo":"ruchy","ticket":"PMAT-135","phase":"release.yml no publish + policy gate","mode":"worker+direct","est":null,"actual":null,"basis":"first-run[U]; PR #219"}
+{"repo":"ruchy","ticket":"PMAT-136","phase":"ruchy-dogfood skill","mode":"worker+direct","est":null,"actual":null,"basis":"first-run[U]; PR #220"}
+{"repo":"ruchy","ticket":"PMAT-137","phase":"workspace path deps","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #218"}
+{"repo":"infra","ticket":"PMAT-134","phase":"policy spec","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; infra #448"}
+{"repo":"infra","ticket":"PMAT-138","phase":"clean-room release subject","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; infra #450"}
+{"repo":"ruchy","ticket":"PMAT-139","phase":"gate workdir isolation","mode":"direct","est":null,"actual":null,"basis":"first-run[U]"}
