@@ -163,3 +163,31 @@ fn test_pmat_136_dogfood_gates_list_matches_the_declaration() {
         "--list must print exactly the gates declared in Cargo.toml"
     );
 }
+
+/// PMAT-136 (quorum on #220): a `]` or a quoted name inside a comment must neither
+/// end the array early nor become a phantom gate.
+#[test]
+fn test_pmat_136_gate_discovery_ignores_comments_in_the_manifest() {
+    let dir = std::env::temp_dir().join(format!("pmat136-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).expect("temp dir");
+    let manifest = dir.join("Cargo.toml");
+    std::fs::write(
+        &manifest,
+        "[package]\nname = \"x\"\n[package.metadata.dogfood]\n# gates = [\"phantom\"] ]\ngates = [\n    \"scripts/a.sh\", # first ] not the end\n    \"scripts/b.sh\",\n]\n",
+    )
+    .expect("write manifest");
+    let output = Command::new("bash")
+        .arg("scripts/dogfood-gates.sh")
+        .arg("--list")
+        .arg("--manifest")
+        .arg(&manifest)
+        .output()
+        .expect("run scripts/dogfood-gates.sh --list --manifest");
+    let _ = std::fs::remove_dir_all(&dir);
+    let listed = String::from_utf8_lossy(&output.stdout);
+    assert_eq!(
+        listed.trim(),
+        "scripts/a.sh\nscripts/b.sh",
+        "listed: {listed:?}"
+    );
+}

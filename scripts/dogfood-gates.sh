@@ -27,12 +27,15 @@ ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/.." && pwd)
 MANIFEST="$ROOT/Cargo.toml"
 
 usage() {
-    echo "usage: bash scripts/dogfood-gates.sh [--list]" >&2
+    echo "usage: bash scripts/dogfood-gates.sh [--list] [--manifest <Cargo.toml>]" >&2
 }
 
 # Print the strings of the `gates` array in [package.metadata.dogfood], one per line.
+# Comments are dropped first: a `]` or a quoted name inside a comment must neither end
+# the array early nor become a phantom gate (quorum on #220).
 extract_gates() {
     awk '
+        { sub(/#.*$/, "") }
         /^[[:space:]]*\[/ { in_table = ($0 ~ /^[[:space:]]*\[package\.metadata\.dogfood\]/); next }
         !in_table { next }
         /^[[:space:]]*gates[[:space:]]*=/ { collecting = 1 }
@@ -63,12 +66,15 @@ run_gate() {
 }
 
 main() {
-    local mode gates failed gate
-    mode=${1:-run}
-    if [ "$mode" != "run" ] && [ "$mode" != "--list" ]; then
-        usage
-        exit 2
-    fi
+    local mode=run gates failed gate
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --list) mode="list"; shift ;;
+            --manifest) MANIFEST=${2:-}; [ -n "$MANIFEST" ] || { usage; exit 2; }; shift 2 ;;
+            run) shift ;;
+            *) usage; exit 2 ;;
+        esac
+    done
 
     gates=$(extract_gates)
     if [ -z "$gates" ]; then
@@ -76,7 +82,7 @@ main() {
         exit 1
     fi
 
-    if [ "$mode" = "--list" ]; then
+    if [ "$mode" = "list" ]; then
         printf '%s\n' "$gates"
         exit 0
     fi
