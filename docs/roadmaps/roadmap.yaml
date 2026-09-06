@@ -2760,3 +2760,88 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: PMAT-133
+  github_issue: null
+  item_type: task
+  title: ruchy 5.0.0-beta.2 manual publish
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-06T06:56:42Z
+  updated: 2026-09-06T06:56:42Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:release
+  notes: null
+- id: PMAT-134
+  github_issue: null
+  item_type: task
+  title: SOVEREIGN-RELEASE-POLICY - policy spec infra/docs/specifications/sovereign-release-policy.md (no-publish-in-ci, no-registry-secret, receipts-at-tag) enforced by a pmat comply org rule; each gate with its falsifier
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-06T06:56:42Z
+  updated: 2026-09-06T06:56:42Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:release
+  notes: null
+- id: PMAT-135
+  github_issue: null
+  item_type: task
+  title: RELEASE-YML-NO-PUBLISH - delete the publish-crates job from release.yml (CI is the gate, the operator is the publisher); replace it with a release-policy gate job; retire release-workflow-v1's publish equations
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-06T06:56:42Z
+  updated: 2026-09-06T06:56:42Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:release
+  notes: null
+- id: PMAT-136
+  github_issue: null
+  item_type: task
+  title: RUCHY-DOGFOOD-SKILL - .claude/skills/ruchy-dogfood/SKILL.md (explicit name, Agent in allowed-tools) modelled on apr-dogfood v3; gates discovered from [package.metadata.dogfood]; three disjoint worker lanes; orchestrator is the single receipt writer; --twice byte-identical
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-06T06:56:42Z
+  updated: 2026-09-06T06:56:42Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:release
+  notes: null
+- id: PMAT-137
+  github_issue: null
+  item_type: task
+  title: 'CLEANROOM-A1-RUCHY-EMBED - infra clean-room hard gate (gates/ruchy.sh) fails at A1 on tag v5.0.0-beta.2 (59c7453b): after A0 strips path deps, ruchy-embed/Cargo.toml depends on ruchy with path only and no version, so cargo generate-lockfile fails; every intra-workspace path dep needs version = alongside path = (guide 4.3)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-06T07:00:41Z
+  updated: 2026-09-06T07:00:41Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:release
+  notes: null

@@ -317,3 +317,56 @@ fn test_pmat_129_wasm32_dependency_table_is_complete() {
         "web-sys must enable CanvasRenderingContext2d (src/computebrick/wasm_entry.rs); got {web_sys:?}"
     );
 }
+
+/// Dependencies of one manifest section as (name, table) pairs; string-form
+/// entries (`foo = "1.0"`) carry no path and are not returned.
+fn table_dependencies<'a>(
+    manifest: &'a toml::Table,
+    section: &str,
+) -> Vec<(&'a str, &'a toml::Table)> {
+    manifest
+        .get(section)
+        .and_then(|s| s.as_table())
+        .map(|deps| {
+            deps.iter()
+                .filter_map(|(name, value)| value.as_table().map(|t| (name.as_str(), t)))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+/// PMAT-137: the infra clean-room (guide §4.3, gate A0) strips `path` from
+/// every normal and build dependency to simulate what a crates.io consumer
+/// sees; a path-only dependency then has no source and gate A1 fails. Every
+/// intra-workspace `path` dependency therefore carries `version` too.
+/// Dev-dependencies are exempt: `cargo publish` omits path-only dev-deps and
+/// the gate drops them the same way.
+#[test]
+fn test_pmat_137_workspace_path_dependencies_carry_versions() {
+    let root: toml::Table = read(&manifest_dir().join("Cargo.toml"))
+        .parse()
+        .expect("root manifest");
+    let members: Vec<String> = root
+        .get("workspace")
+        .and_then(|w| w.get("members"))
+        .and_then(|m| m.as_array())
+        .expect("[workspace] members")
+        .iter()
+        .filter_map(|m| m.as_str().map(str::to_string))
+        .collect();
+    let mut violations = Vec::new();
+    for member in &members {
+        let path = manifest_dir().join(member).join("Cargo.toml");
+        let manifest: toml::Table = read(&path).parse().expect("member manifest parses");
+        for section in ["dependencies", "build-dependencies"] {
+            for (name, dep) in table_dependencies(&manifest, section) {
+                if dep.contains_key("path") && !dep.contains_key("version") {
+                    violations.push(format!(
+                        "{member}/Cargo.toml [{section}] {name}: path without version"
+                    ));
+                }
+            }
+        }
+    }
+    assert!(violations.is_empty(), "{}", violations.join("\n"));
+}
