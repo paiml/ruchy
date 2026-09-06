@@ -1,15 +1,16 @@
-//! PMAT-093 — the release workflow must be able to publish, not merely look like it.
+//! PMAT-093 / PMAT-135 — the release workflow must build and gate, never publish.
 //!
-//! At `main` on 2026-09-05 `.github/workflows/release.yml` published a `ruchy-cli`
-//! package that is not a workspace member, wrapped both `cargo publish` steps in
-//! `continue-on-error: true`, read a `CRATES_TOKEN` secret that does not exist, and
-//! could publish before the binaries had built. Every one of those is a way for the
-//! job to go green without a crate reaching crates.io. These tests pin the fixed
-//! shape. Each is red on the pre-fix file (see the DoD mutations in the plan).
+//! PMAT-093 pinned a publish job that could only go green by publishing. PMAT-135
+//! deletes the job outright: "CI held a publish credential" is the mechanism behind
+//! the 403 that stopped the 5.0.0-beta.2 release, and "producer is never the gate" —
+//! a workflow that gates AND publishes is one program attesting to itself. Manual
+//! publish restores the separation: CI is the gate (build, clean-room, dogfood, tag,
+//! prerelease); the operator is the publisher, from their machine, with a scoped
+//! token. Consequence: no token in the repo, no crate publishing in any workflow.
 
 use serde_yaml::Value;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -22,48 +23,6 @@ fn release_yml_text() -> String {
 
 fn release_yml() -> Value {
     serde_yaml::from_str(&release_yml_text()).expect("release.yml parses as YAML")
-}
-
-/// Package names of every workspace member, read from each member's Cargo.toml.
-fn workspace_member_names() -> Vec<String> {
-    let root = repo_root();
-    let manifest = fs::read_to_string(root.join("Cargo.toml")).expect("read Cargo.toml");
-    let members_block = manifest
-        .split("members = [")
-        .nth(1)
-        .and_then(|rest| rest.split(']').next())
-        .expect("[workspace] members list");
-    members_block
-        .split(',')
-        .map(|s| s.trim().trim_matches('"').to_string())
-        .filter(|s| !s.is_empty())
-        .map(|dir| package_name(&root.join(dir).join("Cargo.toml")))
-        .collect()
-}
-
-fn package_name(manifest: &Path) -> String {
-    let text =
-        fs::read_to_string(manifest).unwrap_or_else(|e| panic!("{}: {e}", manifest.display()));
-    let mut in_package = false;
-    for line in text.lines() {
-        let line = line.trim();
-        if line.starts_with('[') {
-            in_package = line == "[package]";
-        } else if in_package && line.starts_with("name") {
-            return line
-                .split('=')
-                .nth(1)
-                .unwrap()
-                .trim()
-                .trim_matches('"')
-                .to_string();
-        }
-    }
-    panic!("{}: no [package] name", manifest.display())
-}
-
-fn publish_job() -> Value {
-    release_yml()["jobs"]["publish-crates"].clone()
 }
 
 /// Every `run:` script in a job, concatenated.
@@ -90,6 +49,16 @@ fn all_steps() -> Vec<(String, usize, Value)> {
     out
 }
 
+/// The `needs:` list of a job, as job ids.
+fn job_needs(job: &Value) -> Vec<String> {
+    job["needs"]
+        .as_sequence()
+        .expect("job needs is a list")
+        .iter()
+        .map(|v| v.as_str().expect("needs entry is a string").to_string())
+        .collect()
+}
+
 #[test]
 fn test_pmat_093_no_step_is_masked_with_continue_on_error() {
     let masked: Vec<String> = all_steps()
@@ -103,56 +72,54 @@ fn test_pmat_093_no_step_is_masked_with_continue_on_error() {
     );
 }
 
+/// PMAT-135: the release workflow holds no publish job, no publish command, and no
+/// registry credential. The operator publishes; CI does not.
 #[test]
-fn test_pmat_093_every_cargo_publish_targets_a_workspace_member() {
-    let members = workspace_member_names();
-    let scripts = job_run_scripts(&publish_job());
-    let mut publishes = 0;
-    for line in scripts.lines().filter(|l| l.contains("cargo publish")) {
-        let tokens: Vec<&str> = line.split_whitespace().collect();
-        let pkg = tokens
-            .iter()
-            .position(|t| *t == "-p" || *t == "--package")
-            .and_then(|i| tokens.get(i + 1))
-            .unwrap_or_else(|| panic!("cargo publish without -p/--package: {line}"));
-        assert!(
-            members.iter().any(|m| m == pkg),
-            "cargo publish names `{pkg}`, which is not a workspace member {members:?}"
-        );
-        publishes += 1;
-    }
+fn test_pmat_135_release_workflow_has_no_publish_job() {
+    let yml = release_yml();
     assert!(
-        publishes >= 2,
-        "expected to publish ruchy and ruchy-wasm, found {publishes} publish steps"
+        yml["jobs"]["publish-crates"].is_null(),
+        "the publish-crates job must be gone: CI is the gate, the operator is the publisher"
     );
-}
-
-#[test]
-fn test_pmat_093_publish_job_needs_the_build_jobs() {
-    let needs: Vec<String> = publish_job()["needs"]
-        .as_sequence()
-        .expect("publish-crates.needs is a list")
-        .iter()
-        .map(|v| v.as_str().unwrap().to_string())
+    let offenders: Vec<String> = release_yml_text()
+        .lines()
+        .enumerate()
+        .filter(|(_, line)| {
+            let trimmed = line.trim_start();
+            !trimmed.starts_with('#') && trimmed.contains("cargo publish")
+        })
+        .map(|(i, line)| format!("release.yml:{}: {}", i + 1, line.trim()))
         .collect();
-    for job in ["create-release", "build-binaries", "build-wasm"] {
-        assert!(
-            needs.iter().any(|n| n == job),
-            "publish-crates must need `{job}`; needs = {needs:?}"
-        );
-    }
-}
-
-#[test]
-fn test_pmat_093_publish_uses_only_the_existing_registry_secret() {
-    let job = serde_yaml::to_string(&publish_job()).expect("serialize publish job");
     assert!(
-        job.contains("secrets.CARGO_REGISTRY_TOKEN"),
-        "publish-crates must use secrets.CARGO_REGISTRY_TOKEN (the secret that exists)"
+        offenders.is_empty(),
+        "no workflow may push a crate to the registry: {offenders:?}"
     );
     assert!(
-        !job.contains("CRATES_TOKEN"),
-        "secrets.CRATES_TOKEN does not exist in this repository"
+        !release_yml_text().contains("CARGO_REGISTRY_TOKEN"),
+        "no registry credential may be referenced by the release workflow"
+    );
+}
+
+/// PMAT-135: the policy gate runs last, after every artifact job, and runs the script.
+#[test]
+fn test_pmat_135_release_policy_job_gates_after_the_builds() {
+    let yml = release_yml();
+    let job = yml["jobs"]["release-policy"].clone();
+    assert!(
+        !job.is_null(),
+        "release.yml must define a release-policy job that enforces the no-publish policy"
+    );
+    let needs = job_needs(&job);
+    for required in ["create-release", "build-binaries", "build-wasm"] {
+        assert!(
+            needs.iter().any(|n| n == required),
+            "release-policy must need `{required}`; needs = {needs:?}"
+        );
+    }
+    let scripts = job_run_scripts(&job);
+    assert!(
+        scripts.contains("scripts/release-policy.sh"),
+        "release-policy must run scripts/release-policy.sh; run scripts were:\n{scripts}"
     );
 }
 

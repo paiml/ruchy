@@ -1,0 +1,19 @@
+# PMAT-135 fixture: a workflow that builds and never publishes.
+# The comment below mentions cargo publish on purpose: the gate excludes comments,
+# so a policy note about the operator's manual step must not turn it RED.
+name: Fixture Release (no publish)
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-binaries:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # The operator runs cargo publish by hand from their machine, never CI.
+      - name: Build release binary
+        run: cargo build --release

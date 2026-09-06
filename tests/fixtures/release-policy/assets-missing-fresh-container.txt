@@ -1,0 +1,4 @@
+ruchy-linux-amd64
+ruchy-darwin-arm64
+clean-room-deadbeef12345678.json
+receipt-deadbeef12345678.json
