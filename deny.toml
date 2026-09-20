@@ -11,15 +11,25 @@ no-default-features = false
 ignore = [
     # Unmaintained transitive deps with no available fix.
     # Reviewed 2026-03-26 — all are deep transitive, no direct usage.
-    # SEC-1, 2026-09-20: number_prefix (RUSTSEC-2025-0119) and rustls-pemfile
-    # (RUSTSEC-2025-0134) were REMOVED from this list. Neither crate is in
+    # SEC-1/RHL-13, 2026-09-20: THREE were removed from this list —
+    # number_prefix (RUSTSEC-2025-0119), rustls-pemfile (RUSTSEC-2025-0134) and
+    # paste (RUSTSEC-2024-0436). Neither crate is in
     # Cargo.lock any more, and cargo-deny reported both as
     # `warning[advisory-not-detected] ... no crate matched advisory criteria`.
-    # They were exemptions for crates that had already left the tree.
+    # The first two named crates that had already left the tree. paste is the
+    # interesting one: it IS in Cargo.lock at 1.0.15, so the "not in the lock"
+    # criterion kept it — and that criterion is not sufficient. The decisive test,
+    # from the infra session: REMOVE the ignore and see whether cargo-deny flips
+    # to FAILED. Measured 2026-09-20 on all three survivors —
+    #   instant  (RUSTSEC-2024-0384): removed -> exit 1, LIVE
+    #   paste    (RUSTSEC-2024-0436): removed -> exit 0, suppresses NOTHING
+    #   bincode  (RUSTSEC-2025-0141): removed -> exit 1, LIVE
+    # paste sits outside cargo-deny's default-feature graph, so its ignore was
+    # inert. Presence in the lock is sufficient to DELETE nothing; only the
+    # removal test distinguishes a live exemption from a dead one.
     # Every id below must carry an entry in docs/audits/advisory-ignores.yaml
     # with an owner and a removed_by date; src/advisory_ignore_gate.rs enforces it.
     { id = "RUSTSEC-2024-0384", reason = "instant: transitive via web-time, no replacement available" },
-    { id = "RUSTSEC-2024-0436", reason = "paste: transitive via simba/nalgebra/parquet, use pastey when upstream migrates" },
     { id = "RUSTSEC-2025-0141", reason = "bincode: transitive, widely used, no drop-in replacement" },
 ]
 
