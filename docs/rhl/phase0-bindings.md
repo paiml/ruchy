@@ -181,8 +181,9 @@ would be a category error.
 
 The binding RHL-0 takes, therefore:
 
-- the **vocabulary file** is the Σ entity, and carries `sigma_entity: pv-contract`
-  once at the top (see `vocab/fleet-v1.yaml`);
+- the **vocabulary file** is the Σ entity. It originally carried
+  `sigma_entity: pv-contract`; **that value is retracted and the field now reads
+  `[U]`** — see the correction below, and `vocab/fleet-v1.yaml`;
 - a **term's** `kind` stays RHL's own closed list, and there is no per-term
   `sigma_class` field at all.
 
@@ -198,9 +199,12 @@ The binding RHL-0 takes, therefore:
 >   opposite of the principle drawn here.
 > - `ontology.yaml` does not appear in its own registry.
 > - apex has **no `pv-contract` type at all**: it is sovereign (v4.5 fork A) and
->   uses domain types, so `sigma_entity: pv-contract` is ONT-001's fleet
->   vocabulary, a different choice — possibly the right one for ruchy, but not
->   apex's pattern.
+>   uses domain types. And infra reads ONT-001 §3.1 as putting a vocabulary file
+>   under `documents` or `data files` by format, while `pv-contract` means "a
+>   contract about contracts" — which a term registry is not. So `pv-contract` is
+>   **wrong**, not merely un-apex-like, and the field is now `[U]` with both
+>   candidates named. §3.7 requires every entity type to name its extractor and
+>   none exists for a YAML term registry, so binding it is an ONT-001 row.
 >
 > **What the apex precedent actually supports** is one file satisfying two
 > independent readers: its `equations:` block is `pv`'s and its

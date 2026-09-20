@@ -7,7 +7,8 @@
 # Sigma's `entity_types` (paiml-ontology.md ONT-001 v4.9 §3.1) classify WHAT
 # THING a contract is about (code, documents, data files, web, media,
 # pv-contract, ...) — they do not classify RHL's own linguistic term kinds.
-# The vocabulary FILE is the Sigma entity (a `pv-contract`), so
+# The vocabulary FILE is the Sigma entity — its TYPE is UNBOUND, see below; an
+# earlier revision said `pv-contract` and that value is RETRACTED. So
 # `sigma_entity` is declared once here; a per-term `sigma_class` field would
 # be a category error and is deliberately absent. `kind:` below is RHL's own
 # closed list from §3.4, unrelated to Sigma.

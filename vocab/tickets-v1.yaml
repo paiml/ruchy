@@ -5,7 +5,8 @@
 #
 # Sigma binding: see vocab/fleet-v1.yaml's header comment for the full
 # reasoning (paiml-ontology.md ONT-001 v4.9 §3.1). The vocabulary FILE is the
-# Sigma `pv-contract` entity; `kind:` below is RHL's own closed list, not a
+# Sigma entity, with its TYPE unbound — an earlier revision said `pv-contract`
+# and that value is RETRACTED; `kind:` below is RHL's own closed list, not a
 # Sigma class — no per-term `sigma_class` field.
 # sigma_entity: "[U]" — NOT bound, deliberately. RHL-13, 2026-09-20.
 #

@@ -253,8 +253,37 @@ Rules:
 > *word* a term is. Σ and `noun | measure | action | unit | entity` are
 > different sorts, and inheriting one from the other is a category error.
 >
-> RHL-0 therefore pre-registers vocabularies in which the **file** carries
-> `sigma_entity: pv-contract` and a term carries no `sigma_class` at all.
+> RHL-0 therefore pre-registers vocabularies in which the **file** carries a
+> `sigma_entity` and a term carries no `sigma_class` at all.
+>
+> > **Erratum A2.1 (RHL-13, 2026-09-20) `[V]`.** This sentence originally named
+> > the value `pv-contract`. **That value is retracted.** Two sessions falsified
+> > it independently: apex has no `pv-contract` type at all (it is sovereign and
+> > uses domain types), and infra reads ONT-001 §3.1 as putting a vocabulary file
+> > under `documents` or `data files` by format — while `pv-contract` means "a
+> > contract about contracts", which a term registry is not.
+> >
+> > `vocab/*.yaml` now carry `sigma_entity: "[U]"` with both candidates named.
+> > It is not re-guessed: ONT-001 §3.7 requires every entity type to name its
+> > extractor, and none exists for a YAML term registry, so adding one is an
+> > ONT-001 row rather than a ruchy decision. Binding it is RHL-2's work.
+> >
+> > **The second half of A2 — that a TERM is not an instance of a Σ class — is
+> > unaffected.** It rests on the artifact-vs-word distinction alone, and both
+> > sessions confirm it: `study | claim | dataset | figure` are as plainly not
+> > word-kinds as `code | documents | data files` are.
+> >
+> > **On §3.4's freeze rule, stated rather than quietly sidestepped.** §3.4 says
+> > vocabularies are "never edited in place: `v1` is frozen when first released;
+> > changes ship as `v2`." These two files were edited in place. The argument for
+> > an exemption, offered for the operator to accept or refuse rather than
+> > assumed: no TERM changed — not one `term`, `kind`, `takes`, `gives`, `effect`
+> > or `lowers_to` — and `sigma_entity` is file-level metadata that nothing reads
+> > (`VocabFile` deserialises only `vocabulary`, `version` and `terms`). The
+> > freeze exists so a falsifier cannot be tuned after the fact, and retracting a
+> > metadata value that was wrong on arrival tunes nothing. If that reasoning is
+> > rejected, the repair is `fleet-v2.yaml`/`tickets-v2.yaml` and this erratum
+> > says so. **RHL-2 must not read this as licence to edit a term in place.**
 >
 > This is why §10's STOP condition `vocabulary-unbindable` — "Σ at HEAD cannot
 > express term kinds" — **does not fire**: Σ expresses what is genuinely under
