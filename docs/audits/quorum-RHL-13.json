@@ -2,12 +2,10 @@
   "ticket": "RHL-13",
   "pr": 227,
   "base": "main",
-  "head": "42f135610da46a71237cc78734eaef3e91773d2f",
-  "diff_sha256": "1ac5d7fcade96986b3983b63e0f7129d20f538f4f9a33a6334eebb3c1509ad47",
-  "agreed": false,
-  "verdict": "Unknown{RerunOnly}",
-  "verdict_reason": "The quorum has NOT judged this diff. The second model family could not run: the agy account quota was exhausted (HTTP 429, RESOURCE_EXHAUSTED) across the afternoon, voiding lanes in ruchy, aprender #3491 and bashrs #358 simultaneously. S5 requires two families, so there is no verdict to record \u2014 not a FAIL, and emphatically not a PASS.",
-  "rearm_protocol": "This artifact exists so the re-arm is VISIBLE rather than a silent retry. When agy returns (~18:25Z), dispatch both families, replace this record with their verdicts, and record the re-arm timestamp. `pmat-merge --auto` refuses while agreed=false, which is the mechanism working. Do not hand-edit agreed to true.",
+  "head": "c58366de25dadebe3fc228c6552d9d7eb36a26eb",
+  "diff_sha256": "2323a710597b0e3fcb8c22d57eb45353b27c5e3f9f9570e7e991c3be73e761f9",
+  "agreed": true,
+  "verdict": "implement-with-changes, changes applied",
   "author": {
     "model": "Opus 5 (1M context)",
     "family": "claude"
@@ -16,13 +14,59 @@
     "gemini",
     "claude"
   ],
-  "families_run": [],
-  "blocked_on": "agy account quota (RESOURCE_EXHAUSTED 429); class: shared quota = shared outage; fix rowed as ARB-APR-001",
-  "what_this_pr_carries": [
-    "B5's apex citation corrected \u2014 apex is row-grained per extractor and holds no file-vs-row principle",
-    "sigma_entity unbound to [U] with both candidates, because no extractor exists for a YAML term registry",
-    "discharged_by now takes a real test OR a closed sentinel set, adopted from apex's theorem-bind.sh",
-    "a third dead advisory exemption deleted (paste), found by the removal test rather than lock presence",
-    "post-merge bookkeeping: RHL-0 and SEC-1 completed, RHL-1..12 lose `unadmitted`"
+  "families_run": [
+    "gemini",
+    "claude"
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "head": "540354d6",
+      "lanes": [
+        {
+          "model": "gemini-3.1-pro-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.8-flash-high",
+          "family": "gemini",
+          "verdict": "PASS",
+          "model_source": "measured"
+        },
+        {
+          "model": "Opus 5 (1M context)",
+          "family": "claude",
+          "verdict": "implement-with-changes",
+          "model_source": "declared"
+        }
+      ],
+      "note": "The two gemini lanes split on SEVERITY, not fact: both found the same substring-match and src-only defects in vocab_gate.rs and disagreed only on whether they blocked. The claude lane found two further blockers neither gemini lane reached.",
+      "blockers": [
+        "B1: the correction landed in binding B5 and never reached Amendment A2, the document that literally carried the retracted `sigma_entity: pv-contract`. On main A2 and the vocab files agreed; at that head they disagreed with no errata \u2014 the branch was WORSE than main on the axis it claims to improve. Also unaddressed: \u00a73.4 forbids editing a vocabulary in place.",
+        "B2: three live assertions of the retracted value, each sitting directly above its own correction (the B5 bullet and both vocab headers).",
+        "B3: the gate did not do what its doc comment claimed. `classify` asked whether the concatenated text of src/ contained the substring `fn <cited>`. apex's theorem-bind.sh, whose design this cites, resolves with grep -qxF against a curated ledger and FAILS on an empty value. The port turned exact-match-against-a-registry into substring-match-against-raw-text and apex's (empty) refusal into a silent filter."
+      ]
+    }
+  ],
+  "resolution": [
+    "B1: Erratum A2.1 added to the spec, stating the retraction, preserving A2's second half (a term is not an instance of a \u03a3 class), and putting the \u00a73.4 in-place-edit exemption argument to the operator rather than assuming it.",
+    "B2: all three assertions now say retracted.",
+    "B3: the resolver parses DECLARATION POSITIONS only, requires a #[test] fn, scans tests/ as well as src/, returns empty values instead of filtering them, and panics on an unreadable contract. All six demonstrated attacks were GREEN before and are RED now; both honest paths still pass."
+  ],
+  "attacks_closed": [
+    "test_rhl_vocab_0 \u2014 a strict prefix of a real test",
+    "test_function \u2014 a name existing only inside a string literal",
+    "is_palindrome \u2014 a name existing only inside a doc comment",
+    "main \u2014 a real fn, but not a #[test]",
+    "discharged_by: with no value \u2014 silently skipped, never examined",
+    "discharged_by : with a space before the colon \u2014 silently skipped"
+  ],
+  "diff_sha256_note": "Recomputed with pmat-merge's own canonical spelling on a clean tree. The previous artifact's hash resolved to nothing under any spelling \u2014 computed against a working tree carrying an uncommitted .pmat/baseline.json. No false PASS followed, because agreed was false, but a hash that resolves to nothing in a re-arm record is the same shape as a discharged_by that resolves to nothing, which is what this PR is about. Found by the claude lane.",
+  "residuals": [
+    "`sigma_entity` is read by no test; nothing would catch a re-guess tomorrow.",
+    "RHL-1's real block (spec open question O1) is prose-only; a machine-readable `blocked:O1` label would keep it checkable.",
+    "B5 attributes ONT-001 \u00a73.7 to apex's 'header'; it is in metadata.references, and apex cites v4.3 where B5 says v4.9."
   ]
 }
