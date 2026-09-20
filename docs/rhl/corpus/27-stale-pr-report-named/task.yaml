@@ -1,0 +1,4 @@
+id: "27-stale-pr-report-named"
+title: "Report a named repo's current open PR count"
+ambiguous: false
+entrypoint: "run"

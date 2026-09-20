@@ -1,0 +1,4 @@
+id: "13-host-online-ratio-report"
+title: "Report the fraction of declared hosts that are online"
+ambiguous: false
+entrypoint: "run"

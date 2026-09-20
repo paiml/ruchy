@@ -1,0 +1,2 @@
+For every declared repo, if it has more than 20 open pull requests, file a
+ticket in that repo labeled "stale-pr".

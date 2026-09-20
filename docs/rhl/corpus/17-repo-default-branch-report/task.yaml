@@ -1,0 +1,4 @@
+id: "17-repo-default-branch-report"
+title: "Report a named repo's declared default branch"
+ambiguous: false
+entrypoint: "run"

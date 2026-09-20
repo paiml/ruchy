@@ -1,0 +1,4 @@
+id: "06-pin-check-all-repos"
+title: "Pin check across every declared repo"
+ambiguous: false
+entrypoint: "run"

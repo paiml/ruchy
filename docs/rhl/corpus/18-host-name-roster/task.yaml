@@ -1,0 +1,4 @@
+id: "18-host-name-roster"
+title: "Report the names of every declared host, joined by commas"
+ambiguous: false
+entrypoint: "run"

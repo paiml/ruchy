@@ -1,0 +1,4 @@
+id: "26-pin-check-named-branch-value"
+title: "Report whether a named repo's default branch equals main"
+ambiguous: false
+entrypoint: "run"

@@ -1,0 +1,67 @@
+// F1 POSITIVE CONTROL — this grammar MUST be rejected by LALRPOP.
+//
+// Spec RHL-001 §7 F1 requires a deliberately ambiguous production that turns the
+// grammar check RED. A toy fixture would prove only that the check notices a toy.
+// This one is not a toy: it is spec §3.2's OWN action syntax, transcribed exactly
+// as the spec writes it — an attribute block opened by nothing at all:
+//
+//     file ticket in repo "paiml/infra"
+//       title "gx10 disk below 100 GB"
+//     end
+//
+// The planted defect is therefore the single production
+//
+//     Stmt: <App> NEWLINE <Body> "end"
+//
+// which grammar/rhl.lalrpop repairs by requiring the marker `with` before the
+// NEWLINE. Everything else here is identical in spirit to the real grammar,
+// trimmed to the smallest set of productions that still reaches the conflict.
+//
+// LALRPOP reports, in its own words:
+//   "Local ambiguity detected ... after having observed the following symbols
+//    in the input: Body App. At that point, if the next token is a `NEWLINE`,
+//    then the parser can proceed in two different ways."
+//
+// If this file ever PROCESSES CLEANLY, the grammar gate is no longer able to
+// detect an ambiguous production, and every conflict-free claim RHL makes is
+// worthless. That is why the gate asserts this file fails, and asserts that it
+// fails specifically with a CONFLICT rather than with any error at all.
+
+grammar;
+
+match {
+    r"\n[ \t\n]*" => NEWLINE,
+} else {
+    "use vocabulary", "job", "command", "check", "pipeline", "shape",
+    "let", "be", "set", "to", "when", "otherwise", "end",
+    "for each", "in", "repeat at most", "times", "until",
+    "wait up to", "runs on", "every",
+    "may read", "may write", "may call",
+    "expect", "example", "given", "then", "give back", "stop with",
+    "is not", "is below", "is above", "is at least", "is at most", "is one of", "is", "contains",
+    "and", "or", "not", "%",
+} else {
+    r"[0-9]+" => INT,
+    r#""[^"]*""# => STRING,
+    r"[a-z_][a-z0-9_]*" => WORD,
+    r"[ \t]+" => { },
+}
+
+pub Program: () = { <Body> => () };
+
+Body: () = {
+    <Stmt> NEWLINE => (),
+    <Body> <Stmt> NEWLINE => (),
+};
+
+Stmt: () = {
+    "let" <Phrase> "be" <App> => (),
+    "when" <App> NEWLINE <Body> "end" => (),
+    <App> => (),
+    <App> NEWLINE <Body> "end" => (),   // UNMARKED attribute block — the planted defect
+};
+
+App: () = { <Phrase> => (), <Phrase> <Args> => () };
+Args: () = { <Atom> => (), <Args> <Atom> => () };
+Atom: () = { STRING => (), INT => (), INT WORD => () };
+Phrase: () = { WORD => (), <Phrase> WORD => () };

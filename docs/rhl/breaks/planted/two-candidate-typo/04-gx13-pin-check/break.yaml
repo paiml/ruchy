@@ -1,0 +1,7 @@
+base: docs/rhl/breaks/valid/04-gx13-pin-check.rhl
+class: "two-candidate typo"
+expected_code: RHL-V003
+safe_fix: false
+candidates:
+  - host
+  - hour

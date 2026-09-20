@@ -1,0 +1,8 @@
+id: "40-disk-cleanup-unstated-unit"
+title: "Disk cleanup trigger with an unstated unit"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "below 5" gives no unit — a reading of "5 GB free" and a reading of "5
+  percent free" are both consistent with the English, and they trigger on
+  different hosts for the same declared free-space values.

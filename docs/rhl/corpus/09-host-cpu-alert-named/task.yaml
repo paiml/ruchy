@@ -1,0 +1,4 @@
+id: "09-host-cpu-alert-named"
+title: "CPU alert on one named host, fixed threshold"
+ambiguous: false
+entrypoint: "run"

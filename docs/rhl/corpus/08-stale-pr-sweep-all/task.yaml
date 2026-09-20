@@ -1,0 +1,4 @@
+id: "08-stale-pr-sweep-all"
+title: "Stale-PR sweep across every declared repo"
+ambiguous: false
+entrypoint: "run"

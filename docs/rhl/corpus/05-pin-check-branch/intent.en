@@ -1,0 +1,2 @@
+Check that paiml/core's default branch is exactly "main". If it is not, file
+a ticket in paiml/core labeled "ci" saying the branch is pinned incorrectly.

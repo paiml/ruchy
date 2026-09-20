@@ -1,0 +1,57 @@
+metadata:
+  version: "1.0.0"
+  author: "RHL-0"
+  description: "RHL-0 pre-registered contract for vocabulary term 'GB' (fleet v1, kind: unit)"
+  crate: "ruchy"
+  references:
+    - "RHL-001 §3.4"
+
+equations:
+  gb_shape:
+    formula: "kind('GB') = unit ∧ gives('GB') = Size"
+    domain: "t ∈ vocabulary fleet v1 terms named 'GB'"
+    invariants:
+      - "term kind is one of {noun, measure, action, unit, entity} (RHL-001 §3.4)"
+      - "term result type ('gives') is Size"
+      - "lowers_to stays the unbound marker `[U]` until RHL-3 — RHL-0 does not bind lowering"
+
+proof_obligations:
+  - type: invariant
+    property: "Term 'GB' carries a contract template on disk (F6)"
+    formal: "contract('GB') exists"
+    applies_to: all
+  - type: invariant
+    property: "Term 'GB' kind is drawn from RHL's closed kind list"
+    formal: "kind('GB') ∈ {noun, measure, action, unit, entity}"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RHL-FLEET-GB-001
+    rule: "Vocabulary term contract must exist (RHL-001 F6)"
+    test: "test_rhl_vocab_0_all_terms_have_existing_contract"
+    prediction: "verified"
+    if_fails: "Contract violation — RHL-001 F6: term 'GB' has no contract template"
+
+  - id: FALSIFY-RHL-FLEET-GB-002
+    rule: "Vocabulary term kind is drawn from the closed list"
+    test: "test_rhl_vocab_0_kind_is_closed_list"
+    prediction: "verified"
+    if_fails: "Contract violation — term 'GB' kind not in {noun, measure, action, unit, entity}"
+
+kani_harnesses:
+  - id: KANI-RHL-FLEET-GB-001
+    obligation: PO-RHL-FLEET-GB-001
+    property: "Term 'GB' contract template is well-formed YAML with a metadata block"
+    bound: 1
+    strategy: exhaustive
+    harness: verify_rhl_fleet_gb_contract
+
+qa_gate:
+  id: QA-RHL-FLEET-GB
+  name: "rhl fleet vocabulary term: GB"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - test_rhl_vocab_0_all_terms_have_existing_contract
+    - test_rhl_vocab_0_kind_is_closed_list
+    - test_rhl_vocab_0_lowers_to_is_unbound

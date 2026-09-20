@@ -1,0 +1,9 @@
+id: "32-cpu-alert-unstated-threshold"
+title: "CPU alert with no named host and no stated threshold"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "a runner's CPU is high" names no host — "a runner" could mean any one
+  declared host or all of them — and "high" gives no numeric bound. A
+  single-host reading at 80% and a fleet-wide reading at 95% are both
+  consistent with the English.

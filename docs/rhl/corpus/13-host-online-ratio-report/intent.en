@@ -1,0 +1,2 @@
+Report the fraction of declared hosts that are currently online, as a
+decimal string with two digits after the point, e.g. "0.50".

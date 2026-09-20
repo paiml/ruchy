@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/valid/04-gx13-pin-check.rhl
+class: "wrong type"
+expected_code: RHL-T002
+safe_fix: false

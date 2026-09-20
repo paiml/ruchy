@@ -1,0 +1,3 @@
+Watch free disk on both /var/lib/docker and /var/log; file a ticket labeled
+"disk" in paiml/fleet-ops for each of the two paths that has less than 5 GB
+(5,000,000,000 bytes) free.

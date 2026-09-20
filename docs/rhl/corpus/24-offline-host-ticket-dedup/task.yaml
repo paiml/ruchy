@@ -1,0 +1,4 @@
+id: "24-offline-host-ticket-dedup"
+title: "File exactly one ticket listing every offline host"
+ambiguous: false
+entrypoint: "run"

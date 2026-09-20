@@ -1,0 +1,2 @@
+Report the total number of open pull requests summed across every declared
+repo, as a decimal string.

@@ -1,0 +1,2 @@
+Report the highest CPU usage percentage among all declared hosts, as a
+decimal string.

@@ -1,0 +1,9 @@
+id: "35-disk-watch-which-host"
+title: "Disk watch with a pronoun and no numeric threshold"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "the runner" is a pronoun with no antecedent when more than one host is
+  declared — a reading that means "every declared host" and a reading that
+  means "whichever host is named elsewhere and merely referred to here" are
+  both consistent, and "it's low" gives no numeric bound either.

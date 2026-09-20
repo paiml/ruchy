@@ -1,0 +1,2 @@
+If runner-03's CPU usage is over 90 percent, file a ticket in paiml/fleet-ops
+labeled "cpu-hot".

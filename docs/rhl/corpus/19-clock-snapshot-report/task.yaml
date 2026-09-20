@@ -1,0 +1,4 @@
+id: "19-clock-snapshot-report"
+title: "Report the current mocked clock time"
+ambiguous: false
+entrypoint: "run"

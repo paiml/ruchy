@@ -1,0 +1,57 @@
+metadata:
+  version: "1.0.0"
+  author: "RHL-0"
+  description: "RHL-0 pre-registered contract for vocabulary term 'ticket title' (tickets v1, kind: noun)"
+  crate: "ruchy"
+  references:
+    - "RHL-001 §3.4"
+
+equations:
+  ticket_title_shape:
+    formula: "kind('ticket title') = noun ∧ gives('ticket title') = Text"
+    domain: "t ∈ vocabulary tickets v1 terms named 'ticket title'"
+    invariants:
+      - "term kind is one of {noun, measure, action, unit, entity} (RHL-001 §3.4)"
+      - "term result type ('gives') is Text"
+      - "lowers_to stays the unbound marker `[U]` until RHL-3 — RHL-0 does not bind lowering"
+
+proof_obligations:
+  - type: invariant
+    property: "Term 'ticket title' carries a contract template on disk (F6)"
+    formal: "contract('ticket title') exists"
+    applies_to: all
+  - type: invariant
+    property: "Term 'ticket title' kind is drawn from RHL's closed kind list"
+    formal: "kind('ticket title') ∈ {noun, measure, action, unit, entity}"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RHL-TICKETS-TICKET-TITLE-001
+    rule: "Vocabulary term contract must exist (RHL-001 F6)"
+    test: "test_rhl_vocab_0_all_terms_have_existing_contract"
+    prediction: "verified"
+    if_fails: "Contract violation — RHL-001 F6: term 'ticket title' has no contract template"
+
+  - id: FALSIFY-RHL-TICKETS-TICKET-TITLE-002
+    rule: "Vocabulary term kind is drawn from the closed list"
+    test: "test_rhl_vocab_0_kind_is_closed_list"
+    prediction: "verified"
+    if_fails: "Contract violation — term 'ticket title' kind not in {noun, measure, action, unit, entity}"
+
+kani_harnesses:
+  - id: KANI-RHL-TICKETS-TICKET-TITLE-001
+    obligation: PO-RHL-TICKETS-TICKET-TITLE-001
+    property: "Term 'ticket title' contract template is well-formed YAML with a metadata block"
+    bound: 1
+    strategy: exhaustive
+    harness: verify_rhl_tickets_ticket_title_contract
+
+qa_gate:
+  id: QA-RHL-TICKETS-TICKET-TITLE
+  name: "rhl tickets vocabulary term: ticket title"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - test_rhl_vocab_0_all_terms_have_existing_contract
+    - test_rhl_vocab_0_kind_is_closed_list
+    - test_rhl_vocab_0_lowers_to_is_unbound

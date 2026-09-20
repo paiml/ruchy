@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/valid/01-gx10-disk-watch.rhl
+class: "undeclared effect"
+expected_code: RHL-E001
+safe_fix: false

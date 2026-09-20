@@ -1,0 +1,4 @@
+id: "05-pin-check-branch"
+title: "Pin check on one repo's default branch"
+ambiguous: false
+entrypoint: "run"

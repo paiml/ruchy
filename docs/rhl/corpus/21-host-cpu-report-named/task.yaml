@@ -1,0 +1,4 @@
+id: "21-host-cpu-report-named"
+title: "Report a named host's current CPU usage"
+ambiguous: false
+entrypoint: "run"

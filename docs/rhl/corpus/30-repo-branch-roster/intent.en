@@ -1,0 +1,2 @@
+Report the default branch name of every declared repo, joined by commas, in
+declared order.

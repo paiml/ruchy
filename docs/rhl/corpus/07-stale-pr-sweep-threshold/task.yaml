@@ -1,0 +1,4 @@
+id: "07-stale-pr-sweep-threshold"
+title: "Stale-PR sweep on one repo, fixed threshold"
+ambiguous: false
+entrypoint: "run"

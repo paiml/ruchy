@@ -1,0 +1,4 @@
+id: "25-disk-watch-two-paths"
+title: "Disk watch on two named paths, fixed threshold"
+ambiguous: false
+entrypoint: "run"

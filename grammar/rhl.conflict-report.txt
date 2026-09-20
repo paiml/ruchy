@@ -1,0 +1,57 @@
+RHL v0 — LALRPOP conflict report
+================================
+
+Spec RHL-001 row RHL-0 names "grammar/rhl.* — the grammar, with its conflict-free
+report" as a deliverable, and §7 F1 requires the grammar be "proven conflict-free
+by the generator's report". This file IS that report. It is regenerated and
+compared by src/rhl_pre_registration/grammar_gate.rs, so it cannot drift from the
+grammar without turning the gate RED.
+
+generator   lalrpop 0.23 (dev-dependency; see Cargo.toml)
+command     lalrpop::Configuration::new()
+                .set_out_dir(<a fresh temp dir>)
+                .emit_rerun_directives(false)
+                .process_file("grammar/rhl.lalrpop")
+
+SUBJECT
+    grammar/rhl.lalrpop
+    sha256  e60e7071cebae861e047765accd85f4ed59ce1eff0f9d6d2fe4b609bab28a6f9
+    result  Ok(())
+    LALRPOP reported no LR(1) conflict and no local ambiguity. A clean run
+    prints nothing, so the evidence is the Ok and the hash above, not output
+    text. Edit the grammar and this hash stops matching.
+
+POSITIVE CONTROL — F1 requires that an ambiguous production turn this check RED
+    grammar/fixtures/ambiguous.lalrpop
+    sha256  7617bd1dfa85db2e52811b719809d359cb87f7018c4088a3e18a538e6defad57
+    result  Err
+    LALRPOP printed, in its own words:
+        "Local ambiguity detected
+           The problem arises after having observed the following symbols in
+           the input: Body App
+           At that point, if the next token is a `NEWLINE`, then the parser can
+           proceed in two different ways."
+        "and looking at a token `NEWLINE` we can reduce to a `Stmt` but we can
+         also shift"
+
+    The fixture is not a toy: it is spec §3.2's own action syntax, in which an
+    attribute block is opened by nothing at all. See the amendment note in
+    grammar/rhl.lalrpop.
+
+WHY THE CONTROL IS DISCRIMINATING, AND NOT JUST "SOMETHING WENT WRONG"
+    LALRPOP's Err value renders as the generic string "invalid data" for a
+    conflict and for a mere typo alike — measured, 2026-09-20. Matching on that
+    message would let a renamed or corrupted fixture pass the positive control
+    for the wrong reason. So the gate runs a three-way DIFFERENTIAL instead:
+
+        grammar/rhl.lalrpop                       -> Ok
+        grammar/fixtures/ambiguous.lalrpop        -> Err
+        the same fixture, with the single planted
+        production deleted and nothing else       -> Ok
+
+    The third run is built at test time by deleting the one line the fixture
+    marks "UNMARKED attribute block — the planted defect". Because that line is
+    the only difference between a grammar LALRPOP accepts and one it rejects,
+    the rejection is attributable to the planted ambiguity and to nothing else.
+    A typo, a missing file, or a bad edit fails the third run too, and the gate
+    goes RED rather than quietly passing.

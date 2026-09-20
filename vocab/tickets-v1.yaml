@@ -1,0 +1,55 @@
+# RHL-0 pre-registered vocabulary (RHL-001 §3.4). No RHL compiler code exists
+# yet — `lowers_to` stays the unbound marker `[U]` on every term until RHL-3
+# binds it. Domain: filing and labelling a ticket in a repo (RHL-001 §3.2's
+# worked example calls `file ticket in repo … title … label …`).
+#
+# Sigma binding: see vocab/fleet-v1.yaml's header comment for the full
+# reasoning (paiml-ontology.md ONT-001 v4.9 §3.1). The vocabulary FILE is the
+# Sigma `pv-contract` entity; `kind:` below is RHL's own closed list, not a
+# Sigma class — no per-term `sigma_class` field.
+sigma_entity: pv-contract
+
+vocabulary: tickets
+version: 1
+terms:
+  - term: file ticket
+    kind: action
+    takes: [{name: repo, type: Text}]
+    gives: Ticket
+    effect: write tickets
+    lowers_to: "[U]"          # bound at RHL-3
+    contract: contracts/rhl-tickets-file-ticket-v1.yaml
+
+  - term: label ticket
+    kind: action
+    takes: [{name: ticket, type: Ticket}, {name: label, type: Text}]
+    gives: Ticket
+    effect: write tickets
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-label-ticket-v1.yaml
+
+  - term: repo
+    kind: entity
+    instances_from: org/repos/*.yaml         # closed world: only declared org repos exist
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-repo-v1.yaml
+
+  - term: ticket title
+    kind: noun
+    gives: Text
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-ticket-title-v1.yaml
+
+  - term: ticket label
+    kind: noun
+    gives: Text
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-ticket-label-v1.yaml
+
+  - term: tickets filed in
+    kind: measure
+    takes: [{name: repo, type: Text}]
+    gives: Count
+    effect: read tickets
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-tickets-filed-in-v1.yaml

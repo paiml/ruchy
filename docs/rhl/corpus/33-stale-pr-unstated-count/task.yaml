@@ -1,0 +1,9 @@
+id: "33-stale-pr-unstated-count"
+title: "Stale-PR sweep with no stated count and no stated age"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "a lot" gives no numeric threshold on open-PR count, and "stale" could
+  mean "many open PRs" or "PRs open a long time" — the English gives no
+  age field to read either. Both readings are consistent with the sentence
+  and they select different repos.

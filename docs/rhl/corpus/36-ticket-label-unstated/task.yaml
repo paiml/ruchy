@@ -1,0 +1,10 @@
+id: "36-ticket-label-unstated"
+title: "File a ticket about an unnamed disk issue"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "the disk issue" names neither a path nor a host, and no label is given —
+  a reading that means "whichever declared path currently has the least
+  free space" and a reading that means "every path currently below some
+  implicit threshold" are both consistent, and neither tells the task what
+  label to attach.

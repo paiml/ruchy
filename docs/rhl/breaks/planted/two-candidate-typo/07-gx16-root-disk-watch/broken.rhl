@@ -1,0 +1,26 @@
+use vocabulary fleet v1
+use vocabulary tickets v1
+
+job "gx16 root disk watch"
+  runs on hosr gx16
+  every 1 hour
+  may read disk
+  may write tickets
+  may call tickets
+
+  let free be disk usage of "/"
+
+  when free is below 70 gb
+    file ticket in repo "paiml/infra" with
+      title "gx16 root disk watch"
+      label "disk"
+    end
+  end
+
+  expect ticket count is at most 1
+
+  example "gx16 root disk watch example"
+    given free is 60 gb
+    then ticket count is 1
+  end
+end

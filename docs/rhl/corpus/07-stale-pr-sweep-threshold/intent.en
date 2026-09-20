@@ -1,0 +1,2 @@
+Count open pull requests on paiml/core. If there are more than 20, file a
+ticket in paiml/core labeled "stale-pr".

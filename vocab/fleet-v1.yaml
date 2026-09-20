@@ -1,0 +1,73 @@
+# RHL-0 pre-registered vocabulary (RHL-001 §3.4). No RHL compiler code exists
+# yet — `lowers_to` stays the unbound marker `[U]` on every term until RHL-3
+# binds it. Domain: the fleet's own disk/host/runner/pin-style measures and
+# entities (RHL-001 §8 row RHL-0, "the fleet's own small jobs and checks").
+#
+# Sigma binding (RHL-001 §3.4; ruling recorded here, not re-litigated):
+# Sigma's `entity_types` (paiml-ontology.md ONT-001 v4.9 §3.1) classify WHAT
+# THING a contract is about (code, documents, data files, web, media,
+# pv-contract, ...) — they do not classify RHL's own linguistic term kinds.
+# The vocabulary FILE is the Sigma entity (a `pv-contract`), so
+# `sigma_entity` is declared once here; a per-term `sigma_class` field would
+# be a category error and is deliberately absent. `kind:` below is RHL's own
+# closed list from §3.4, unrelated to Sigma.
+sigma_entity: pv-contract
+
+vocabulary: fleet
+version: 1
+terms:
+  - term: disk free of
+    kind: measure            # noun | measure | action | unit | entity
+    takes: [{name: path, type: Text}]
+    gives: Size
+    effect: read disk
+    lowers_to: "[U]"          # bound at RHL-3
+    contract: contracts/rhl-fleet-disk-free-of-v1.yaml
+
+  - term: disk usage of
+    kind: measure
+    takes: [{name: path, type: Text}]
+    gives: Size
+    effect: read disk
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-disk-usage-of-v1.yaml
+
+  - term: host
+    kind: entity
+    instances_from: machines/*/forjar.yaml   # closed world: only declared hosts exist
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-host-v1.yaml
+
+  - term: runner
+    kind: entity
+    instances_from: fleet/runners/*.yaml     # closed world: only declared runners exist
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-runner-v1.yaml
+
+  - term: runner load of
+    kind: measure
+    takes: [{name: runner, type: Text}]
+    gives: Percent
+    effect: read runner
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-runner-load-of-v1.yaml
+
+  - term: pin status of
+    kind: measure
+    takes: [{name: host, type: Text}]
+    gives: Text
+    effect: read host
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-pin-status-of-v1.yaml
+
+  - term: GB
+    kind: unit
+    gives: Size
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-gb-v1.yaml
+
+  - term: hour
+    kind: unit
+    gives: Duration
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-hour-v1.yaml

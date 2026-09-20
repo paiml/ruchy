@@ -1,0 +1,58 @@
+metadata:
+  version: "1.0.0"
+  author: "RHL-0"
+  description: "RHL-0 pre-registered contract for vocabulary term 'runner' (fleet v1, kind: entity)"
+  crate: "ruchy"
+  references:
+    - "RHL-001 §3.4"
+
+equations:
+  runner_closed_world:
+    formula: "instances('runner') = { x : x ∈ glob('fleet/runners/*.yaml') }"
+    domain: "t ∈ vocabulary fleet v1 terms named 'runner'"
+    invariants:
+      - "term kind is entity (RHL-001 §3.4)"
+      - "every instance of 'runner' comes from the declared closed-world source 'fleet/runners/*.yaml'"
+      - "an undeclared instance is a compile error naming the nearest candidate (RHL-001 §3.4)"
+      - "lowers_to stays the unbound marker `[U]` until RHL-3 — RHL-0 does not bind lowering"
+
+proof_obligations:
+  - type: invariant
+    property: "Term 'runner' carries a contract template on disk (F6)"
+    formal: "contract('runner') exists"
+    applies_to: all
+  - type: completeness
+    property: "Every instance of entity term 'runner' is enumerable from its closed-world source"
+    formal: "∀x. valid('runner', x) ⟺ x ∈ glob('fleet/runners/*.yaml')"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RHL-FLEET-RUNNER-001
+    rule: "Vocabulary term contract must exist (RHL-001 F6)"
+    test: "test_rhl_vocab_0_all_terms_have_existing_contract"
+    prediction: "verified"
+    if_fails: "Contract violation — RHL-001 F6: term 'runner' has no contract template"
+
+  - id: FALSIFY-RHL-FLEET-RUNNER-002
+    rule: "Entity term declares its closed-world instances_from source"
+    test: "test_rhl_vocab_0_entity_terms_declare_instances_from"
+    prediction: "verified"
+    if_fails: "Contract violation — entity term 'runner' has no instances_from source"
+
+kani_harnesses:
+  - id: KANI-RHL-FLEET-RUNNER-001
+    obligation: PO-RHL-FLEET-RUNNER-001
+    property: "Term 'runner' contract template is well-formed YAML with a metadata block"
+    bound: 1
+    strategy: exhaustive
+    harness: verify_rhl_fleet_runner_contract
+
+qa_gate:
+  id: QA-RHL-FLEET-RUNNER
+  name: "rhl fleet vocabulary term: runner"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - test_rhl_vocab_0_all_terms_have_existing_contract
+    - test_rhl_vocab_0_entity_terms_declare_instances_from
+    - test_rhl_vocab_0_lowers_to_is_unbound
