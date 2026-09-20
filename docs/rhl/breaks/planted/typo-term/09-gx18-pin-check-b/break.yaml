@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/valid/09-gx18-pin-check-b.rhl
+class: "typo'd term"
+expected_code: RHL-V002
+safe_fix: true

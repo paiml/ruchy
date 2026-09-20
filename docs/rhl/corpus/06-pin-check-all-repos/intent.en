@@ -1,0 +1,2 @@
+Check every declared repo's default branch is "main". File one ticket per
+repo that fails, in that repo, labeled "ci".

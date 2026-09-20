@@ -1,0 +1,25 @@
+use vocabulary fleet v1
+use vocabulary tickets v1
+
+job "gx12 runner load watch"
+  runs on host gx12
+  every 1 hour
+  may read disk
+  may call tickets
+
+  let free be runner load of "runner-01"
+
+  when free is below 90 GB
+    file ticket in repo "paiml/ci-ops" with
+      title "gx12 runner load watch"
+      label "runner"
+    end
+  end
+
+  expect ticket count is at most 1
+
+  example "gx12 runner load watch example"
+    given free is 95 GB
+    then ticket count is 1
+  end
+end

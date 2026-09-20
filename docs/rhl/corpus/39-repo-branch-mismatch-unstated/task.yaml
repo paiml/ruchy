@@ -1,0 +1,9 @@
+id: "39-repo-branch-mismatch-unstated"
+title: "Consistency check with no stated property"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "consistent" names no property to compare — a reading that means "same
+  default branch name" and a reading that means "same open-PR count" are
+  both consistent with the sentence, and they flag different repos as
+  inconsistent on the same fleet data.

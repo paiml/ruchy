@@ -1,0 +1,4 @@
+id: "20-disk-headroom-report-named-path"
+title: "Report free bytes on a named path"
+ambiguous: false
+entrypoint: "run"

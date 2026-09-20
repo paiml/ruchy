@@ -1,0 +1,9 @@
+id: "38-cpu-sweep-relative-threshold"
+title: "CPU sweep with a relative, undefined threshold"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "too much compared to the others" defines no statistic — a reading that
+  means "more than the mean by some margin" and a reading that means
+  "the single highest host" are both consistent with the sentence, and
+  they pick different hosts, or none, on the same fleet data.

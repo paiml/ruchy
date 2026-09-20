@@ -1,0 +1,9 @@
+id: "37-offline-sweep-unstated-repo"
+title: "Report offline hosts with no stated destination or format"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "report ... to the team" names no ticket repo to file into and no target
+  system at all — a reading that means "return the names as a value" and a
+  reading that means "file a ticket somewhere" are both consistent, and if
+  it is a ticket, no repo is named to file it in.

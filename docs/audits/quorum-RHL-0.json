@@ -1,0 +1,103 @@
+{
+  "ticket": "RHL-0",
+  "pr": 225,
+  "base": "main",
+  "head": "e7a462f4ad04d3d6793f29eeecea690749769171",
+  "diff_sha256": "68a492075e7978038a6eb6dbb25a95e7c7f58ba63f67ae2b4d549e162b61af1a",
+  "agreed": true,
+  "author": {
+    "model": "Opus 5 (1M context)",
+    "family": "claude"
+  },
+  "families": [
+    "gemini",
+    "claude"
+  ],
+  "rounds": [
+    {
+      "round": "plan-grill",
+      "lanes": [
+        {
+          "model": "gemini-3.1-pro-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.8-flash-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.7-flash-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        }
+      ],
+      "unanimous_findings": [
+        "no fixed interface contract, so F8's A/B could not score both arms with the same tests",
+        "no sha256 manifest, so pre-registered artifacts could be tuned during RHL-1..12"
+      ],
+      "outcome": "both implemented: docs/rhl/corpus/HARNESS.md and docs/rhl/PREREGISTRATION.sha256"
+    },
+    {
+      "round": "pre-PR (gemini)",
+      "lanes": [
+        {
+          "model": "gemini-3.1-pro-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.8-flash-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.7-flash-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        }
+      ],
+      "findings": [
+        "14 term contracts declared phantom Kani harnesses \u2014 the practice this PR files KANIDEBT-1 against",
+        "Cargo.toml include omitted the gates' data files, so a packaged crate could not run them",
+        "task 01 named runner-01 and registered no host: an arm advantage hidden in a fixture"
+      ],
+      "outcome": "all fixed; the fixture finding was generalised into a gate that then caught three more (tasks 24, 25, 29)"
+    },
+    {
+      "round": "second family (S5)",
+      "lanes": [
+        {
+          "model": "Opus 5 (1M context)",
+          "family": "claude",
+          "verdict": "implement-with-changes",
+          "model_source": "declared"
+        }
+      ],
+      "findings": [
+        "M3: moving `pub` off Program made the whole F1 gate green on a grammar with Amendment A1's ambiguity restored",
+        "M4: a grammar whose only production is Phrase = WORD+ passed every check while parsing no RHL at all",
+        "M1/M2: the gate's stated reason for discarding LALRPOP's error was false \u2014 a conflict and a typo render differently",
+        "M7: two of twelve valid break programs did not parse, taking ten planted breaks with them",
+        "M8: the unit GB lexed as nothing, so \u00a73.1 principle 4's own example was an InvalidToken",
+        "M10: Amendment A1's claim to be 'the only' repair was false"
+      ],
+      "method": "the lane GENERATED A PARSER from grammar/rhl.lalrpop and ran the committed corpus through it \u2014 something no gemini lane did",
+      "outcome": "all fixed except M6, recorded as spec open question O1 because the obvious repair reintroduces an LR conflict"
+    }
+  ],
+  "agreed_basis": "Every finding from all three rounds is fixed and independently re-measured by the author before commit, except M6 which is recorded as spec open question O1 with both candidate repairs and their LALRPOP reports, for the operator to rule. Two model families are represented, per S5.",
+  "s5_evidence": "This ticket is the first measured case for family diversity: three gemini lanes unanimously passed a grammar gate that could be switched off two different ways, and the claude lane found both by building a parser instead of reading one. Recorded in paiml-implement#298.",
+  "residuals": [
+    "F1's second half \u2014 every corpus program has exactly one parse \u2014 needs a generated parser and is RHL-1's work.",
+    "Only 4 of 40 corpus tasks have been audited for arm fairness. RHL-8 must audit the rest BEFORE the A/B, and the corpus is frozen at merge: a later fix goes v0 -> v1 with a public diff and a manifest re-hash.",
+    "Spec open question O1: three lines of \u00a73.2 do not parse; the operator rules between the two recorded repairs."
+  ]
+}

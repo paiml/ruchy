@@ -1,0 +1,2 @@
+File one ticket labeled "disk" in paiml/fleet-ops for every declared path
+with less than 5 GB (5,000,000,000 bytes) free, one ticket per path.

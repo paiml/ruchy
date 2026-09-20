@@ -1,0 +1,4 @@
+id: "28-host-cpu-max-report"
+title: "Report the highest CPU usage among all declared hosts"
+ambiguous: false
+entrypoint: "run"

@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/valid/10-gx19-ticket-sweep-b.rhl
+class: "undeclared effect"
+expected_code: RHL-E001
+safe_fix: false

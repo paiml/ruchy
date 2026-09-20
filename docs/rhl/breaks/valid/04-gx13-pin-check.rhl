@@ -1,0 +1,26 @@
+use vocabulary fleet v1
+use vocabulary tickets v1
+
+job "gx13 pin check"
+  runs on host gx13
+  every 1 hour
+  may read disk
+  may write tickets
+  may call tickets
+
+  let free be pin status of "gx13"
+
+  when free is below 1 GB
+    file ticket in repo "paiml/infra" with
+      title "gx13 pin check"
+      label "pin"
+    end
+  end
+
+  expect ticket count is at most 1
+
+  example "gx13 pin check example"
+    given free is 1 GB
+    then ticket count is 1
+  end
+end

@@ -1,0 +1,25 @@
+use vocabulary fleet v1
+use vocabulary tickets v1
+
+job "gx10 disk watch"
+  runs on host gx10
+  every 1 hour
+  may read disk
+  may call tickets
+
+  let free be disk free of "/"
+
+  when free is below 100 GB
+    file ticket in repo "paiml/infra" with
+      title "gx10 disk watch"
+      label "fleet"
+    end
+  end
+
+  expect ticket count is at most 1
+
+  example "gx10 disk watch example"
+    given free is 90 GB
+    then ticket count is 1
+  end
+end

@@ -9,8 +9,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2025-11-21T18:54:23.631941416+00:00
-  updated: 2025-11-21T18:54:23.631941416+00:00
+  created: 2025-11-21 18:54:23.631941+00:00
+  updated: 2025-11-21 18:54:23.631941+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -25,8 +25,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2025-12-07T11:34:16.278912787+00:00
-  updated: 2025-12-07T11:34:16.278912787+00:00
+  created: 2025-12-07 11:34:16.278912+00:00
+  updated: 2025-12-07 11:34:16.278912+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -41,8 +41,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-07T11:40:36.944407236+00:00
-  updated: 2025-12-07T11:55:28.077901092+00:00
+  created: 2025-12-07 11:40:36.944407+00:00
+  updated: 2025-12-07 11:55:28.077901+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -57,8 +57,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-07T11:56:03.382770646+00:00
-  updated: 2025-12-07T12:00:58.156656645+00:00
+  created: 2025-12-07 11:56:03.382770+00:00
+  updated: 2025-12-07 12:00:58.156656+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -73,8 +73,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-07T12:06:37.176030920+00:00
-  updated: 2025-12-07T12:10:31.836539019+00:00
+  created: 2025-12-07 12:06:37.176030+00:00
+  updated: 2025-12-07 12:10:31.836539+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -89,8 +89,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-07T12:11:07.239094784+00:00
-  updated: 2025-12-07T12:11:07.239094784+00:00
+  created: 2025-12-07 12:11:07.239094+00:00
+  updated: 2025-12-07 12:11:07.239094+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -105,8 +105,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-07T12:31:09.162509921+00:00
-  updated: 2025-12-07T12:31:09.162509921+00:00
+  created: 2025-12-07 12:31:09.162509+00:00
+  updated: 2025-12-07 12:31:09.162509+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -121,8 +121,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-07T12:45:53.557478821+00:00
-  updated: 2025-12-09T08:02:01.304725582+00:00
+  created: 2025-12-07 12:45:53.557478+00:00
+  updated: 2025-12-09 08:02:01.304725+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -137,8 +137,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T09:38:32.497593772+00:00
-  updated: 2025-12-08T12:00:00.000000000+00:00
+  created: 2025-12-08 09:38:32.497593+00:00
+  updated: 2025-12-08 12:00:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -153,8 +153,8 @@ roadmap:
   status: planned
   priority: low
   assigned_to: null
-  created: 2025-12-08T09:49:49.046931143+00:00
-  updated: 2025-12-08T12:00:00.000000000+00:00
+  created: 2025-12-08 09:49:49.046931+00:00
+  updated: 2025-12-08 12:00:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -169,8 +169,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T16:32:34.069441627+00:00
-  updated: 2025-12-08T16:52:00.000000000+00:00
+  created: 2025-12-08 16:32:34.069441+00:00
+  updated: 2025-12-08 16:52:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -185,8 +185,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T16:57:58.274356660+00:00
-  updated: 2025-12-08T16:57:58.274356660+00:00
+  created: 2025-12-08 16:57:58.274356+00:00
+  updated: 2025-12-08 16:57:58.274356+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -201,8 +201,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T17:04:09.449665899+00:00
-  updated: 2025-12-08T17:06:04.968899591+00:00
+  created: 2025-12-08 17:04:09.449665+00:00
+  updated: 2025-12-08 17:06:04.968899+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -217,8 +217,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T17:06:35.242328491+00:00
-  updated: 2025-12-08T17:09:04.057686195+00:00
+  created: 2025-12-08 17:06:35.242328+00:00
+  updated: 2025-12-08 17:09:04.057686+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -233,8 +233,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T17:09:35.307294749+00:00
-  updated: 2025-12-08T17:20:00.159057415+00:00
+  created: 2025-12-08 17:09:35.307294+00:00
+  updated: 2025-12-08 17:20:00.159057+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -249,8 +249,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T17:33:19.560449997+00:00
-  updated: 2025-12-08T17:38:45.842038944+00:00
+  created: 2025-12-08 17:33:19.560449+00:00
+  updated: 2025-12-08 17:38:45.842038+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -265,8 +265,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T17:39:54.559491875+00:00
-  updated: 2025-12-08T17:44:15.296984875+00:00
+  created: 2025-12-08 17:39:54.559491+00:00
+  updated: 2025-12-08 17:44:15.296984+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -281,8 +281,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T17:47:16.942214773+00:00
-  updated: 2025-12-08T18:04:16.391547620+00:00
+  created: 2025-12-08 17:47:16.942214+00:00
+  updated: 2025-12-08 18:04:16.391547+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -297,8 +297,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T18:05:31.694422272+00:00
-  updated: 2025-12-08T18:40:21.300619594+00:00
+  created: 2025-12-08 18:05:31.694422+00:00
+  updated: 2025-12-08 18:40:21.300619+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -313,8 +313,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T18:41:01.686477479+00:00
-  updated: 2025-12-08T18:45:28.011558956+00:00
+  created: 2025-12-08 18:41:01.686477+00:00
+  updated: 2025-12-08 18:45:28.011558+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -329,8 +329,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T18:45:57.940497465+00:00
-  updated: 2025-12-09T00:00:00.000000000+00:00
+  created: 2025-12-08 18:45:57.940497+00:00
+  updated: 2025-12-09 00:00:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -345,8 +345,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T19:19:02.762505108+00:00
-  updated: 2025-12-08T20:04:56.333716696+00:00
+  created: 2025-12-08 19:19:02.762505+00:00
+  updated: 2025-12-08 20:04:56.333716+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -361,8 +361,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T20:05:58.856116218+00:00
-  updated: 2025-12-08T23:06:29.962536073+00:00
+  created: 2025-12-08 20:05:58.856116+00:00
+  updated: 2025-12-08 23:06:29.962536+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -377,8 +377,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-08T21:50:44.035102250+00:00
-  updated: 2025-12-08T22:50:27.708525761+00:00
+  created: 2025-12-08 21:50:44.035102+00:00
+  updated: 2025-12-08 22:50:27.708525+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -393,8 +393,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T08:02:54.001766378+00:00
-  updated: 2025-12-09T08:17:41.064787968+00:00
+  created: 2025-12-09 08:02:54.001766+00:00
+  updated: 2025-12-09 08:17:41.064787+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -409,8 +409,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T08:18:28.270630597+00:00
-  updated: 2025-12-09T08:25:11.193038709+00:00
+  created: 2025-12-09 08:18:28.270630+00:00
+  updated: 2025-12-09 08:25:11.193038+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -425,8 +425,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T09:30:00.000000000+00:00
-  updated: 2025-12-09T09:35:00.000000000+00:00
+  created: 2025-12-09 09:30:00+00:00
+  updated: 2025-12-09 09:35:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -441,8 +441,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T09:40:00.000000000+00:00
-  updated: 2025-12-09T09:45:00.000000000+00:00
+  created: 2025-12-09 09:40:00+00:00
+  updated: 2025-12-09 09:45:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -457,8 +457,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T09:50:00.000000000+00:00
-  updated: 2025-12-09T09:55:00.000000000+00:00
+  created: 2025-12-09 09:50:00+00:00
+  updated: 2025-12-09 09:55:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -473,8 +473,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T10:00:00.000000000+00:00
-  updated: 2025-12-09T10:05:00.000000000+00:00
+  created: 2025-12-09 10:00:00+00:00
+  updated: 2025-12-09 10:05:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -489,8 +489,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T10:10:00.000000000+00:00
-  updated: 2025-12-09T10:15:00.000000000+00:00
+  created: 2025-12-09 10:10:00+00:00
+  updated: 2025-12-09 10:15:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -505,8 +505,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2025-12-09T10:20:00.000000000+00:00
-  updated: 2025-12-09T10:25:00.000000000+00:00
+  created: 2025-12-09 10:20:00+00:00
+  updated: 2025-12-09 10:25:00+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -521,8 +521,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2025-12-09T12:41:11.011350828+00:00
-  updated: 2025-12-09T12:41:11.011350828+00:00
+  created: 2025-12-09 12:41:11.011350+00:00
+  updated: 2025-12-09 12:41:11.011350+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -537,8 +537,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2025-12-09T13:11:15.179959578+00:00
-  updated: 2025-12-09T13:11:15.179959578+00:00
+  created: 2025-12-09 13:11:15.179959+00:00
+  updated: 2025-12-09 13:11:15.179959+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -553,8 +553,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2025-12-09T13:22:30.244726317+00:00
-  updated: 2025-12-09T13:22:30.244726317+00:00
+  created: 2025-12-09 13:22:30.244726+00:00
+  updated: 2025-12-09 13:22:30.244726+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -569,8 +569,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2025-12-15T16:12:21.394121937+00:00
-  updated: 2026-01-05T23:45:50.725008686+00:00
+  created: 2025-12-15 16:12:21.394121+00:00
+  updated: 2026-01-05 23:45:50.725008+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -585,8 +585,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2025-12-15T17:21:36.511765739+00:00
-  updated: 2025-12-15T17:21:36.511765739+00:00
+  created: 2025-12-15 17:21:36.511765+00:00
+  updated: 2025-12-15 17:21:36.511765+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -601,8 +601,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-01T02:04:55.720887763+00:00
-  updated: 2026-01-03T23:31:12.774152905+00:00
+  created: 2026-01-01 02:04:55.720887+00:00
+  updated: 2026-01-03 23:31:12.774152+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -617,8 +617,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-01T09:49:53.652931618+00:00
-  updated: 2026-01-01T09:49:53.652931618+00:00
+  created: 2026-01-01 09:49:53.652931+00:00
+  updated: 2026-01-01 09:49:53.652931+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -633,8 +633,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-01T20:03:09.678461546+00:00
-  updated: 2026-01-02T09:34:32.623111268+00:00
+  created: 2026-01-01 20:03:09.678461+00:00
+  updated: 2026-01-02 09:34:32.623111+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -649,8 +649,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-01T20:13:55.523244507+00:00
-  updated: 2026-01-01T21:20:33.532184767+00:00
+  created: 2026-01-01 20:13:55.523244+00:00
+  updated: 2026-01-01 21:20:33.532184+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -665,8 +665,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-01T21:31:33.753946474+00:00
-  updated: 2026-01-01T21:31:33.753946474+00:00
+  created: 2026-01-01 21:31:33.753946+00:00
+  updated: 2026-01-01 21:31:33.753946+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -681,8 +681,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-03T23:35:30.180350455+00:00
-  updated: 2026-01-03T23:35:30.180350455+00:00
+  created: 2026-01-03 23:35:30.180350+00:00
+  updated: 2026-01-03 23:35:30.180350+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -697,8 +697,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-04T02:33:03.250937921+00:00
-  updated: 2026-01-04T08:12:24.693453632+00:00
+  created: 2026-01-04 02:33:03.250937+00:00
+  updated: 2026-01-04 08:12:24.693453+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -713,8 +713,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-04T03:06:19.202655545+00:00
-  updated: 2026-01-04T03:06:19.202655545+00:00
+  created: 2026-01-04 03:06:19.202655+00:00
+  updated: 2026-01-04 03:06:19.202655+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -729,8 +729,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-04T08:22:21.107737959+00:00
-  updated: 2026-01-04T15:20:20.333676296+00:00
+  created: 2026-01-04 08:22:21.107737+00:00
+  updated: 2026-01-04 15:20:20.333676+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -745,8 +745,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-04T11:36:02.899790812+00:00
-  updated: 2026-01-04T11:36:02.899790812+00:00
+  created: 2026-01-04 11:36:02.899790+00:00
+  updated: 2026-01-04 11:36:02.899790+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -761,8 +761,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-04T11:53:28.969768494+00:00
-  updated: 2026-01-04T11:53:28.969768494+00:00
+  created: 2026-01-04 11:53:28.969768+00:00
+  updated: 2026-01-04 11:53:28.969768+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -777,8 +777,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-04T12:58:14.315796992+00:00
-  updated: 2026-01-04T12:58:14.315796992+00:00
+  created: 2026-01-04 12:58:14.315796+00:00
+  updated: 2026-01-04 12:58:14.315796+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -793,8 +793,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-04T13:20:23.035875038+00:00
-  updated: 2026-01-04T13:20:23.035875038+00:00
+  created: 2026-01-04 13:20:23.035875+00:00
+  updated: 2026-01-04 13:20:23.035875+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -809,8 +809,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T08:44:13.970054814+00:00
-  updated: 2026-01-05T08:44:13.970054814+00:00
+  created: 2026-01-05 08:44:13.970054+00:00
+  updated: 2026-01-05 08:44:13.970054+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -825,8 +825,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T08:57:39.576861432+00:00
-  updated: 2026-01-05T08:57:39.576861432+00:00
+  created: 2026-01-05 08:57:39.576861+00:00
+  updated: 2026-01-05 08:57:39.576861+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -841,8 +841,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T09:04:26.421955697+00:00
-  updated: 2026-01-05T09:04:26.421955697+00:00
+  created: 2026-01-05 09:04:26.421955+00:00
+  updated: 2026-01-05 09:04:26.421955+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -857,8 +857,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T09:22:59.351387421+00:00
-  updated: 2026-01-05T09:22:59.351387421+00:00
+  created: 2026-01-05 09:22:59.351387+00:00
+  updated: 2026-01-05 09:22:59.351387+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -873,8 +873,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T09:31:57.606606252+00:00
-  updated: 2026-01-05T09:31:57.606606252+00:00
+  created: 2026-01-05 09:31:57.606606+00:00
+  updated: 2026-01-05 09:31:57.606606+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -889,8 +889,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T09:39:45.182983320+00:00
-  updated: 2026-01-05T09:39:45.182983320+00:00
+  created: 2026-01-05 09:39:45.182983+00:00
+  updated: 2026-01-05 09:39:45.182983+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -905,8 +905,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T10:07:43.516565443+00:00
-  updated: 2026-01-05T10:09:37.308980618+00:00
+  created: 2026-01-05 10:07:43.516565+00:00
+  updated: 2026-01-05 10:09:37.308980+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -921,8 +921,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T10:25:40.974898664+00:00
-  updated: 2026-01-05T10:25:40.974898664+00:00
+  created: 2026-01-05 10:25:40.974898+00:00
+  updated: 2026-01-05 10:25:40.974898+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -937,8 +937,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T11:15:13.879411685+00:00
-  updated: 2026-01-05T11:15:13.879411685+00:00
+  created: 2026-01-05 11:15:13.879411+00:00
+  updated: 2026-01-05 11:15:13.879411+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -953,8 +953,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T11:44:18.794911306+00:00
-  updated: 2026-01-05T11:44:18.794911306+00:00
+  created: 2026-01-05 11:44:18.794911+00:00
+  updated: 2026-01-05 11:44:18.794911+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -969,8 +969,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T11:50:22.947645807+00:00
-  updated: 2026-01-05T11:50:22.947645807+00:00
+  created: 2026-01-05 11:50:22.947645+00:00
+  updated: 2026-01-05 11:50:22.947645+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -985,8 +985,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T12:03:22.547226546+00:00
-  updated: 2026-01-05T12:03:22.547226546+00:00
+  created: 2026-01-05 12:03:22.547226+00:00
+  updated: 2026-01-05 12:03:22.547226+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1001,8 +1001,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T12:40:59.641407010+00:00
-  updated: 2026-01-05T12:40:59.641407010+00:00
+  created: 2026-01-05 12:40:59.641407+00:00
+  updated: 2026-01-05 12:40:59.641407+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1017,8 +1017,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T12:47:57.787938956+00:00
-  updated: 2026-01-05T12:47:57.787938956+00:00
+  created: 2026-01-05 12:47:57.787938+00:00
+  updated: 2026-01-05 12:47:57.787938+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1033,8 +1033,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T12:54:42.641735790+00:00
-  updated: 2026-01-05T12:54:42.641735790+00:00
+  created: 2026-01-05 12:54:42.641735+00:00
+  updated: 2026-01-05 12:54:42.641735+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1049,8 +1049,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T12:58:22.657888694+00:00
-  updated: 2026-01-05T12:58:22.657888694+00:00
+  created: 2026-01-05 12:58:22.657888+00:00
+  updated: 2026-01-05 12:58:22.657888+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1065,8 +1065,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T13:03:29.870632411+00:00
-  updated: 2026-01-05T13:03:29.870632411+00:00
+  created: 2026-01-05 13:03:29.870632+00:00
+  updated: 2026-01-05 13:03:29.870632+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1081,8 +1081,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T13:13:56.393602842+00:00
-  updated: 2026-01-05T13:13:56.393602842+00:00
+  created: 2026-01-05 13:13:56.393602+00:00
+  updated: 2026-01-05 13:13:56.393602+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1097,8 +1097,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T13:17:37.269344569+00:00
-  updated: 2026-01-05T13:17:37.269344569+00:00
+  created: 2026-01-05 13:17:37.269344+00:00
+  updated: 2026-01-05 13:17:37.269344+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1113,8 +1113,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T13:31:22.445899540+00:00
-  updated: 2026-01-05T13:31:22.445899540+00:00
+  created: 2026-01-05 13:31:22.445899+00:00
+  updated: 2026-01-05 13:31:22.445899+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1129,8 +1129,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T14:50:39.002940083+00:00
-  updated: 2026-01-05T15:07:13.954280544+00:00
+  created: 2026-01-05 14:50:39.002940+00:00
+  updated: 2026-01-05 15:07:13.954280+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1145,8 +1145,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T15:10:43.728160478+00:00
-  updated: 2026-01-05T15:22:27.437578271+00:00
+  created: 2026-01-05 15:10:43.728160+00:00
+  updated: 2026-01-05 15:22:27.437578+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1161,8 +1161,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T15:23:34.557069550+00:00
-  updated: 2026-01-05T15:29:03.319850912+00:00
+  created: 2026-01-05 15:23:34.557069+00:00
+  updated: 2026-01-05 15:29:03.319850+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1177,8 +1177,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T15:29:09.520321732+00:00
-  updated: 2026-01-05T15:29:09.520321732+00:00
+  created: 2026-01-05 15:29:09.520321+00:00
+  updated: 2026-01-05 15:29:09.520321+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1193,8 +1193,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T15:36:59.651209615+00:00
-  updated: 2026-01-05T15:39:05.091441326+00:00
+  created: 2026-01-05 15:36:59.651209+00:00
+  updated: 2026-01-05 15:39:05.091441+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1209,8 +1209,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T15:39:10.665628342+00:00
-  updated: 2026-01-05T15:41:41.968248082+00:00
+  created: 2026-01-05 15:39:10.665628+00:00
+  updated: 2026-01-05 15:41:41.968248+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1225,8 +1225,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T15:41:48.549106258+00:00
-  updated: 2026-01-05T15:44:06.020212372+00:00
+  created: 2026-01-05 15:41:48.549106+00:00
+  updated: 2026-01-05 15:44:06.020212+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1241,8 +1241,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T15:44:13.835369543+00:00
-  updated: 2026-01-05T15:45:54.831417766+00:00
+  created: 2026-01-05 15:44:13.835369+00:00
+  updated: 2026-01-05 15:45:54.831417+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1257,8 +1257,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T16:08:57.461564776+00:00
-  updated: 2026-01-05T16:11:06.180911076+00:00
+  created: 2026-01-05 16:08:57.461564+00:00
+  updated: 2026-01-05 16:11:06.180911+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1273,8 +1273,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T16:11:14.099624165+00:00
-  updated: 2026-01-05T16:13:27.577257321+00:00
+  created: 2026-01-05 16:11:14.099624+00:00
+  updated: 2026-01-05 16:13:27.577257+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1289,8 +1289,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T16:13:52.650174401+00:00
-  updated: 2026-01-05T16:13:52.650174401+00:00
+  created: 2026-01-05 16:13:52.650174+00:00
+  updated: 2026-01-05 16:13:52.650174+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1305,8 +1305,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T16:20:47.182240915+00:00
-  updated: 2026-01-05T16:24:52.821321082+00:00
+  created: 2026-01-05 16:20:47.182240+00:00
+  updated: 2026-01-05 16:24:52.821321+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1321,8 +1321,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T16:32:41.781070795+00:00
-  updated: 2026-01-05T16:37:27.481297047+00:00
+  created: 2026-01-05 16:32:41.781070+00:00
+  updated: 2026-01-05 16:37:27.481297+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1337,8 +1337,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-05T16:42:24.510189537+00:00
-  updated: 2026-01-05T16:46:49.019661158+00:00
+  created: 2026-01-05 16:42:24.510189+00:00
+  updated: 2026-01-05 16:46:49.019661+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1353,8 +1353,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T16:53:28.941945749+00:00
-  updated: 2026-01-05T16:53:28.941945749+00:00
+  created: 2026-01-05 16:53:28.941945+00:00
+  updated: 2026-01-05 16:53:28.941945+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1369,8 +1369,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T17:10:31.687022548+00:00
-  updated: 2026-01-05T17:10:31.687022548+00:00
+  created: 2026-01-05 17:10:31.687022+00:00
+  updated: 2026-01-05 17:10:31.687022+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1385,8 +1385,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T17:25:18.286661242+00:00
-  updated: 2026-01-05T17:25:18.286661242+00:00
+  created: 2026-01-05 17:25:18.286661+00:00
+  updated: 2026-01-05 17:25:18.286661+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1401,8 +1401,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T17:33:01.478591388+00:00
-  updated: 2026-01-05T17:33:01.478591388+00:00
+  created: 2026-01-05 17:33:01.478591+00:00
+  updated: 2026-01-05 17:33:01.478591+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1417,8 +1417,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T17:38:15.914147724+00:00
-  updated: 2026-01-05T17:38:15.914147724+00:00
+  created: 2026-01-05 17:38:15.914147+00:00
+  updated: 2026-01-05 17:38:15.914147+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1433,8 +1433,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T17:43:10.310018632+00:00
-  updated: 2026-01-05T17:43:10.310018632+00:00
+  created: 2026-01-05 17:43:10.310018+00:00
+  updated: 2026-01-05 17:43:10.310018+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1449,8 +1449,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T17:57:56.688469313+00:00
-  updated: 2026-01-05T17:57:56.688469313+00:00
+  created: 2026-01-05 17:57:56.688469+00:00
+  updated: 2026-01-05 17:57:56.688469+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1465,8 +1465,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T18:05:39.503250445+00:00
-  updated: 2026-01-05T18:05:39.503250445+00:00
+  created: 2026-01-05 18:05:39.503250+00:00
+  updated: 2026-01-05 18:05:39.503250+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1481,8 +1481,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T18:09:03.431771767+00:00
-  updated: 2026-01-05T18:09:03.431771767+00:00
+  created: 2026-01-05 18:09:03.431771+00:00
+  updated: 2026-01-05 18:09:03.431771+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1497,8 +1497,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-05T18:21:54.404585874+00:00
-  updated: 2026-01-05T18:21:54.404585874+00:00
+  created: 2026-01-05 18:21:54.404585+00:00
+  updated: 2026-01-05 18:21:54.404585+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1513,8 +1513,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T09:34:01.484613+00:00
-  updated: 2026-01-09T09:38:17.158778+00:00
+  created: 2026-01-09 09:34:01.484613+00:00
+  updated: 2026-01-09 09:38:17.158778+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1529,8 +1529,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-09T09:46:00.153994+00:00
-  updated: 2026-01-09T09:46:00.153994+00:00
+  created: 2026-01-09 09:46:00.153994+00:00
+  updated: 2026-01-09 09:46:00.153994+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1545,8 +1545,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-09T09:53:40.247049+00:00
-  updated: 2026-01-09T09:53:40.247049+00:00
+  created: 2026-01-09 09:53:40.247049+00:00
+  updated: 2026-01-09 09:53:40.247049+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1561,8 +1561,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-09T10:05:45.027429+00:00
-  updated: 2026-01-09T10:05:45.027429+00:00
+  created: 2026-01-09 10:05:45.027429+00:00
+  updated: 2026-01-09 10:05:45.027429+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1577,8 +1577,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-09T10:12:52.484380+00:00
-  updated: 2026-01-09T10:12:52.484380+00:00
+  created: 2026-01-09 10:12:52.484380+00:00
+  updated: 2026-01-09 10:12:52.484380+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1593,8 +1593,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-09T10:30:01.678131+00:00
-  updated: 2026-01-09T10:30:01.678131+00:00
+  created: 2026-01-09 10:30:01.678131+00:00
+  updated: 2026-01-09 10:30:01.678131+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1609,8 +1609,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T11:38:09.951538+00:00
-  updated: 2026-01-09T11:38:50.959117+00:00
+  created: 2026-01-09 11:38:09.951538+00:00
+  updated: 2026-01-09 11:38:50.959117+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1625,8 +1625,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T12:12:52.107609+00:00
-  updated: 2026-01-09T12:28:01.033186+00:00
+  created: 2026-01-09 12:12:52.107609+00:00
+  updated: 2026-01-09 12:28:01.033186+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1641,8 +1641,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T13:00:23.070375+00:00
-  updated: 2026-01-09T13:06:53.919475+00:00
+  created: 2026-01-09 13:00:23.070375+00:00
+  updated: 2026-01-09 13:06:53.919475+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1657,8 +1657,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T13:08:24.319508+00:00
-  updated: 2026-01-09T13:14:47.453792+00:00
+  created: 2026-01-09 13:08:24.319508+00:00
+  updated: 2026-01-09 13:14:47.453792+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1673,8 +1673,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T15:00:08.465871+00:00
-  updated: 2026-01-09T15:05:53.472522+00:00
+  created: 2026-01-09 15:00:08.465871+00:00
+  updated: 2026-01-09 15:05:53.472522+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1689,8 +1689,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T15:07:38.388651+00:00
-  updated: 2026-01-09T15:09:15.302290+00:00
+  created: 2026-01-09 15:07:38.388651+00:00
+  updated: 2026-01-09 15:09:15.302290+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1705,8 +1705,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-09T15:29:22.749981+00:00
-  updated: 2026-01-09T15:44:35.585280+00:00
+  created: 2026-01-09 15:29:22.749981+00:00
+  updated: 2026-01-09 15:44:35.585280+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1721,8 +1721,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T11:18:06.514808123+00:00
-  updated: 2026-01-12T11:57:53.390084078+00:00
+  created: 2026-01-12 11:18:06.514808+00:00
+  updated: 2026-01-12 11:57:53.390084+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1737,8 +1737,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T11:37:05.162845671+00:00
-  updated: 2026-01-12T11:37:05.162845671+00:00
+  created: 2026-01-12 11:37:05.162845+00:00
+  updated: 2026-01-12 11:37:05.162845+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1753,8 +1753,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-01-12T12:21:15.567591800+00:00
-  updated: 2026-01-12T12:23:42.970851477+00:00
+  created: 2026-01-12 12:21:15.567591+00:00
+  updated: 2026-01-12 12:23:42.970851+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1769,8 +1769,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T12:24:53.915486248+00:00
-  updated: 2026-01-12T12:24:53.915486248+00:00
+  created: 2026-01-12 12:24:53.915486+00:00
+  updated: 2026-01-12 12:24:53.915486+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1785,8 +1785,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T12:27:40.387954231+00:00
-  updated: 2026-01-12T12:27:40.387954231+00:00
+  created: 2026-01-12 12:27:40.387954+00:00
+  updated: 2026-01-12 12:27:40.387954+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1801,8 +1801,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T13:18:45.939771234+00:00
-  updated: 2026-01-12T13:18:45.939771234+00:00
+  created: 2026-01-12 13:18:45.939771+00:00
+  updated: 2026-01-12 13:18:45.939771+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1817,8 +1817,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T14:26:28.043594455+00:00
-  updated: 2026-01-12T14:26:28.043594455+00:00
+  created: 2026-01-12 14:26:28.043594+00:00
+  updated: 2026-01-12 14:26:28.043594+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1833,8 +1833,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T14:40:11.930915607+00:00
-  updated: 2026-01-12T14:40:11.930915607+00:00
+  created: 2026-01-12 14:40:11.930915+00:00
+  updated: 2026-01-12 14:40:11.930915+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1849,8 +1849,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T14:45:26.394508300+00:00
-  updated: 2026-01-12T14:45:26.394508300+00:00
+  created: 2026-01-12 14:45:26.394508+00:00
+  updated: 2026-01-12 14:45:26.394508+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1865,8 +1865,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T14:48:44.956172425+00:00
-  updated: 2026-01-12T14:48:44.956172425+00:00
+  created: 2026-01-12 14:48:44.956172+00:00
+  updated: 2026-01-12 14:48:44.956172+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1881,8 +1881,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T15:29:49.897813820+00:00
-  updated: 2026-01-12T15:29:49.897813820+00:00
+  created: 2026-01-12 15:29:49.897813+00:00
+  updated: 2026-01-12 15:29:49.897813+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1897,8 +1897,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-01-12T15:54:52.574489148+00:00
-  updated: 2026-01-12T15:54:52.574489148+00:00
+  created: 2026-01-12 15:54:52.574489+00:00
+  updated: 2026-01-12 15:54:52.574489+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1913,8 +1913,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-04-04T06:39:15Z
-  updated: 2026-04-04T06:39:15Z
+  created: 2026-04-04 06:39:15+00:00
+  updated: 2026-04-04 06:39:15+00:00
   spec: null
   acceptance_criteria:
   - cc 1.2.56 had missing modules; updated to 1.2.59 in Cargo.lock
@@ -1930,8 +1930,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-04-04T06:43:00Z
-  updated: 2026-04-04T06:43:00Z
+  created: 2026-04-04 06:43:00+00:00
+  updated: 2026-04-04 06:43:00+00:00
   spec: null
   acceptance_criteria:
   - Negate always unifies with Int; fails on -3.15 (Float). Should accept both Int and Float.
@@ -1947,8 +1947,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-04-04T06:43:00.904498691+00:00
-  updated: 2026-04-04T06:43:00.904498691+00:00
+  created: 2026-04-04 06:43:00.904498+00:00
+  updated: 2026-04-04 06:43:00.904498+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1963,8 +1963,8 @@ roadmap:
   status: inprogress
   priority: high
   assigned_to: null
-  created: 2026-04-04T09:05:58Z
-  updated: 2026-04-04T09:06:09.792646372+00:00
+  created: 2026-04-04 09:05:58+00:00
+  updated: 2026-04-04 09:06:09.792646+00:00
   spec: null
   acceptance_criteria:
   - Parser has TryCatch AST node but transpiler does not handle it. test_error_handling ignored.
@@ -1980,8 +1980,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-04-04T10:32:27.208587691+00:00
-  updated: 2026-04-04T10:32:27.208587691+00:00
+  created: 2026-04-04 10:32:27.208587+00:00
+  updated: 2026-04-04 10:32:27.208587+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -1996,8 +1996,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-04-04T11:13:53.251109183+00:00
-  updated: 2026-04-04T11:13:53.251109183+00:00
+  created: 2026-04-04 11:13:53.251109+00:00
+  updated: 2026-04-04 11:13:53.251109+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2012,8 +2012,8 @@ roadmap:
   status: completed
   priority: medium
   assigned_to: null
-  created: 2026-04-04T11:32:45.457346773+00:00
-  updated: 2026-04-04T11:32:45.457346773+00:00
+  created: 2026-04-04 11:32:45.457346+00:00
+  updated: 2026-04-04 11:32:45.457346+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2028,11 +2028,11 @@ roadmap:
   status: inprogress
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:12:13Z
-  updated: 2026-09-05T09:13:23.607931144+00:00
+  created: 2026-09-05 09:12:13+00:00
+  updated: 2026-09-05 09:13:23.607931+00:00
   spec: null
   acceptance_criteria:
-  - "'Process: paiml-implement unattended per ~/Downloads/ruchy-next-release-prompt.md. Hard gates: clean-room publish, ci/gate, pre-release-gate, cargo publish. Evidence: docs/specifications/evidence/2026-09-05-release-gather/'"
+  - '''Process: paiml-implement unattended per ~/Downloads/ruchy-next-release-prompt.md. Hard gates: clean-room publish, ci/gate, pre-release-gate, cargo publish. Evidence: docs/specifications/evidence/2026-09-05-release-gather/'''
   phases: []
   subtasks: []
   estimated_effort: null
@@ -2048,8 +2048,8 @@ roadmap:
   status: inprogress
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:27:37.877455314+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 09:27:37.877455+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2067,8 +2067,8 @@ roadmap:
   status: inprogress
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T12:53:26.490772425+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 12:53:26.490772+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2085,8 +2085,8 @@ roadmap:
   status: inprogress
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T13:18:14.767960906+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 13:18:14.767960+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2104,8 +2104,8 @@ roadmap:
   status: inprogress
   priority: high
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:27:38.099804940+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 09:27:38.099804+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2122,8 +2122,8 @@ roadmap:
   status: inprogress
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T13:47:42.082132229+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 13:47:42.082132+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2140,8 +2140,8 @@ roadmap:
   status: inprogress
   priority: high
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T13:47:42.833225461+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 13:47:42.833225+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2159,8 +2159,8 @@ roadmap:
   status: inprogress
   priority: high
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T12:53:32.625777510+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 12:53:32.625777+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2177,8 +2177,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T13:10:02.501318988+00:00
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 13:10:02.501318+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2194,8 +2194,8 @@ roadmap:
   status: planned
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:19:38Z
-  updated: 2026-09-05T09:19:38Z
+  created: 2026-09-05 09:19:38+00:00
+  updated: 2026-09-05 09:19:38+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2212,8 +2212,8 @@ roadmap:
   status: inprogress
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:28:17Z
-  updated: 2026-09-05T13:18:17.597563614+00:00
+  created: 2026-09-05 09:28:17+00:00
+  updated: 2026-09-05 13:18:17.597563+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2231,8 +2231,8 @@ roadmap:
   status: inprogress
   priority: critical
   assigned_to: null
-  created: 2026-09-05T09:59:40Z
-  updated: 2026-09-05T10:00:25.389429721+00:00
+  created: 2026-09-05 09:59:40+00:00
+  updated: 2026-09-05 10:00:25.389429+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2250,8 +2250,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-09-05T10:19:09Z
-  updated: 2026-09-05T10:23:09.509818860+00:00
+  created: 2026-09-05 10:19:09+00:00
+  updated: 2026-09-05 10:23:09.509818+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2268,8 +2268,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T10:44:29Z
-  updated: 2026-09-05T10:44:29Z
+  created: 2026-09-05 10:44:29+00:00
+  updated: 2026-09-05 10:44:29+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2287,8 +2287,8 @@ roadmap:
   status: planned
   priority: critical
   assigned_to: null
-  created: 2026-09-05T12:40:57Z
-  updated: 2026-09-05T12:40:57Z
+  created: 2026-09-05 12:40:57+00:00
+  updated: 2026-09-05 12:40:57+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2306,8 +2306,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T12:40:57Z
-  updated: 2026-09-05T12:40:57Z
+  created: 2026-09-05 12:40:57+00:00
+  updated: 2026-09-05 12:40:57+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2325,8 +2325,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T12:50:22Z
-  updated: 2026-09-05T12:50:22Z
+  created: 2026-09-05 12:50:22+00:00
+  updated: 2026-09-05 12:50:22+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2344,8 +2344,8 @@ roadmap:
   status: planned
   priority: low
   assigned_to: null
-  created: 2026-09-05T13:21:13Z
-  updated: 2026-09-05T13:21:13Z
+  created: 2026-09-05 13:21:13+00:00
+  updated: 2026-09-05 13:21:13+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2361,8 +2361,8 @@ roadmap:
   status: planned
   priority: low
   assigned_to: null
-  created: 2026-09-05T13:21:13Z
-  updated: 2026-09-05T13:21:13Z
+  created: 2026-09-05 13:21:13+00:00
+  updated: 2026-09-05 13:21:13+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2378,8 +2378,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T13:47:41Z
-  updated: 2026-09-05T13:47:41Z
+  created: 2026-09-05 13:47:41+00:00
+  updated: 2026-09-05 13:47:41+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2397,8 +2397,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T13:47:41Z
-  updated: 2026-09-05T13:47:41Z
+  created: 2026-09-05 13:47:41+00:00
+  updated: 2026-09-05 13:47:41+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2414,8 +2414,8 @@ roadmap:
   status: inprogress
   priority: high
   assigned_to: null
-  created: 2026-09-05T15:03:26Z
-  updated: 2026-09-05T15:29:12.246023973+00:00
+  created: 2026-09-05 15:03:26+00:00
+  updated: 2026-09-05 15:29:12.246023+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2432,8 +2432,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T15:03:26Z
-  updated: 2026-09-05T15:03:26Z
+  created: 2026-09-05 15:03:26+00:00
+  updated: 2026-09-05 15:03:26+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2450,8 +2450,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T15:03:26Z
-  updated: 2026-09-05T15:03:26Z
+  created: 2026-09-05 15:03:26+00:00
+  updated: 2026-09-05 15:03:26+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2468,8 +2468,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T15:03:26Z
-  updated: 2026-09-05T15:03:26Z
+  created: 2026-09-05 15:03:26+00:00
+  updated: 2026-09-05 15:03:26+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2485,8 +2485,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T15:03:26Z
-  updated: 2026-09-05T15:03:26Z
+  created: 2026-09-05 15:03:26+00:00
+  updated: 2026-09-05 15:03:26+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2503,8 +2503,8 @@ roadmap:
   status: planned
   priority: high
   assigned_to: null
-  created: 2026-09-05T15:03:26Z
-  updated: 2026-09-05T15:03:26Z
+  created: 2026-09-05 15:03:26+00:00
+  updated: 2026-09-05 15:03:26+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2521,8 +2521,8 @@ roadmap:
   status: planned
   priority: critical
   assigned_to: null
-  created: 2026-09-05T15:05:06Z
-  updated: 2026-09-05T15:05:06Z
+  created: 2026-09-05 15:05:06+00:00
+  updated: 2026-09-05 15:05:06+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2541,8 +2541,8 @@ roadmap:
   status: inprogress
   priority: medium
   assigned_to: null
-  created: 2026-09-05T15:05:07.886328146+00:00
-  updated: 2026-09-05T15:05:07.886328146+00:00
+  created: 2026-09-05 15:05:07.886328+00:00
+  updated: 2026-09-05 15:05:07.886328+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2557,8 +2557,8 @@ roadmap:
   status: planned
   priority: low
   assigned_to: null
-  created: 2026-09-05T15:23:55Z
-  updated: 2026-09-05T15:23:55Z
+  created: 2026-09-05 15:23:55+00:00
+  updated: 2026-09-05 15:23:55+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2575,8 +2575,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T16:38:22Z
-  updated: 2026-09-05T16:38:22Z
+  created: 2026-09-05 16:38:22+00:00
+  updated: 2026-09-05 16:38:22+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2591,8 +2591,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T16:38:22Z
-  updated: 2026-09-05T16:38:22Z
+  created: 2026-09-05 16:38:22+00:00
+  updated: 2026-09-05 16:38:22+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2607,8 +2607,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T17:09:05Z
-  updated: 2026-09-05T17:09:05Z
+  created: 2026-09-05 17:09:05+00:00
+  updated: 2026-09-05 17:09:05+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2623,8 +2623,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T17:09:05Z
-  updated: 2026-09-05T17:09:05Z
+  created: 2026-09-05 17:09:05+00:00
+  updated: 2026-09-05 17:09:05+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2639,8 +2639,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T17:09:05Z
-  updated: 2026-09-05T17:09:05Z
+  created: 2026-09-05 17:09:05+00:00
+  updated: 2026-09-05 17:09:05+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2655,8 +2655,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T17:09:05Z
-  updated: 2026-09-05T17:09:05Z
+  created: 2026-09-05 17:09:05+00:00
+  updated: 2026-09-05 17:09:05+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2671,8 +2671,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T17:32:59Z
-  updated: 2026-09-05T17:32:59Z
+  created: 2026-09-05 17:32:59+00:00
+  updated: 2026-09-05 17:32:59+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2687,8 +2687,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T17:50:21Z
-  updated: 2026-09-05T17:50:21Z
+  created: 2026-09-05 17:50:21+00:00
+  updated: 2026-09-05 17:50:21+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2703,8 +2703,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T18:54:11Z
-  updated: 2026-09-05T18:54:11Z
+  created: 2026-09-05 18:54:11+00:00
+  updated: 2026-09-05 18:54:11+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2719,8 +2719,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T18:54:11Z
-  updated: 2026-09-05T18:54:11Z
+  created: 2026-09-05 18:54:11+00:00
+  updated: 2026-09-05 18:54:11+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2735,8 +2735,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T19:20:42Z
-  updated: 2026-09-05T19:20:42Z
+  created: 2026-09-05 19:20:42+00:00
+  updated: 2026-09-05 19:20:42+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2751,8 +2751,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-05T20:19:40Z
-  updated: 2026-09-05T20:19:40Z
+  created: 2026-09-05 20:19:40+00:00
+  updated: 2026-09-05 20:19:40+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2767,8 +2767,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-06T06:56:42Z
-  updated: 2026-09-06T06:56:42Z
+  created: 2026-09-06 06:56:42+00:00
+  updated: 2026-09-06 06:56:42+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2784,8 +2784,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-06T06:56:42Z
-  updated: 2026-09-06T06:56:42Z
+  created: 2026-09-06 06:56:42+00:00
+  updated: 2026-09-06 06:56:42+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2801,8 +2801,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-06T06:56:42Z
-  updated: 2026-09-06T06:56:42Z
+  created: 2026-09-06 06:56:42+00:00
+  updated: 2026-09-06 06:56:42+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2818,8 +2818,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-06T06:56:42Z
-  updated: 2026-09-06T06:56:42Z
+  created: 2026-09-06 06:56:42+00:00
+  updated: 2026-09-06 06:56:42+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2835,8 +2835,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-06T07:00:41Z
-  updated: 2026-09-06T07:00:41Z
+  created: 2026-09-06 07:00:41+00:00
+  updated: 2026-09-06 07:00:41+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2852,8 +2852,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-06T07:05:26Z
-  updated: 2026-09-06T07:05:26Z
+  created: 2026-09-06 07:05:26+00:00
+  updated: 2026-09-06 07:05:26+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2869,8 +2869,8 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-06T09:54:43Z
-  updated: 2026-09-06T09:54:43Z
+  created: 2026-09-06 09:54:43+00:00
+  updated: 2026-09-06 09:54:43+00:00
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2879,6 +2879,395 @@ roadmap:
   labels:
   - kind:release
   notes: null
+- id: RHL-0
+  github_issue: null
+  item_type: task
+  title: 'RHL-0: RHL spec ruled; grammar, corpora and vocabulary v0 pre-registered'
+  status: review
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:26:35+00:00
+  updated: 2026-09-20 12:13:26+00:00
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  notes: null
+- id: RHL-1
+  github_issue: null
+  item_type: task
+  title: 'RHL-1: parser, intent tree, fmt, diagnostics JSON, check'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 12:36:57+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 150. UNADMITTED until RHL-0 merges (spec RHL-001 §8 readiness rule).
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-0
+  notes: 'K-hat BASIS [C], not [U]: RHL-0 measured k_measured=118 assistant messages against K=100 with andon at 80 — an 18% overrun that produced no PARTIAL(andon). Use 118 as RHL-1''s basis, and note the unit: statusline.sh counts every assistant message including intra-turn tool calls, while the spec''s K-hat is budgeted in orchestrator turns (~72 for RHL-0). Pick one unit and say which. RHL-1 also inherits two gaps RHL-0 could not close: F1''s second half (every corpus program has exactly one parse) needs a generated parser, and open question O1 — three lines of spec 3.2 (expect no change to host / expect at most 1 ticket per run / then 0 tickets are filed) still do not parse, and the obvious repair reintroduces an LR conflict.'
+- id: RHL-2
+  github_issue: null
+  item_type: task
+  title: 'RHL-2: fix --safe, vocab verb, vocabulary shape in pv'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 90. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-1
+  notes: null
+- id: RHL-3
+  github_issue: null
+  item_type: task
+  title: 'RHL-3: YAML surface, convert, round-trip property test'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-1
+  notes: null
+- id: RHL-4
+  github_issue: null
+  item_type: task
+  title: 'RHL-4: lowering to ruchy for unit kind job, determinism test'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 150. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-2
+  notes: null
+- id: RHL-5
+  github_issue: null
+  item_type: task
+  title: 'RHL-5: example to tests, expect to pv contract, receipt'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 120. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-4
+  notes: null
+- id: RHL-6
+  github_issue: null
+  item_type: task
+  title: 'RHL-6: MCP tools on ruchy mcp'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-2
+  notes: null
+- id: RHL-7
+  github_issue: null
+  item_type: task
+  title: 'RHL-7: F7 measurement, agent repair on the break corpus'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED until RHL-0 merges. F7 floor X% and k rounds are [U].
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-6
+  notes: null
+- id: RHL-8
+  github_issue: null
+  item_type: task
+  title: 'RHL-8: F8 measurement, the A/B, report-only, published either way'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 12:36:57+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 90. UNADMITTED until RHL-0 merges. F8 may FAIL; spec §7 says so in advance.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-5
+  notes: 'OPERATOR RULING 2026-09-20 — THE CORPUS IS FROZEN ONCE RHL-0 MERGES. Only 4 of the 40 tasks have been audited for arm fairness (task 01 by a review lane; tasks 24, 25, 29 by the gate that fix produced). The other 36 pass the mechanical gate but nobody has read them against their intents. RHL-8 MUST audit all 40 before running the A/B. When a task needs a fairness fix, the corpus goes v0 -> v1 with a public diff and a manifest re-hash — NEVER an in-place edit. An in-place edit means F8''s A/B is measured against a corpus tuned after the fact, which is the one thing pre-registration exists to prevent. Also inherited: the ten ambiguous tasks are numbered 31-40, so numeric order leaks the scoring key; docs/rhl/corpus/HARNESS.md requires a seeded shuffle with the seed recorded in this row''s receipt.'
+- id: RHL-9
+  github_issue: null
+  item_type: task
+  title: 'RHL-9: explain verb, deterministic'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 40. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-4
+  notes: null
+- id: RHL-10
+  github_issue: null
+  item_type: task
+  title: 'RHL-10: ask verb, text to RHL via apr grammar-constrained decoding'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 90. UNADMITTED. Also needs constrained decoding merged in aprender.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-8
+  notes: null
+- id: RHL-11
+  github_issue: null
+  item_type: task
+  title: 'RHL-11: say verb, voice via whisper.apr'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED. Also needs the whisper.apr own-or-archive decision (spec §12.5, unruled).
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-10
+  notes: null
+- id: RHL-12
+  github_issue: null
+  item_type: task
+  title: 'RHL-12: unit kinds command, check, pipeline, shape (one row each)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20 10:27:37+00:00
+  spec: null
+  acceptance_criteria:
+  - K̂ 60 each. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-5
+  notes: null
+- id: TESTDEBT-1
+  github_issue: null
+  item_type: task
+  title: 'TESTDEBT-1: two .disabled test/bench files are a red nobody consumes'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 10:27:51+00:00
+  updated: 2026-09-20 10:27:51+00:00
+  spec: null
+  acceptance_criteria:
+  - 'Spec RHL-001 §1 asks RHL-0 to file (not fix) a ticket for three disabled-test DIRECTORIES: tests.disabled, tests_disabled_for_mutation, tests_temp_disabled_for_sprint7_mutation. MEASURED at HEAD 11221f57: none of the three exists; they were removed in 67d2e16e ''fix(release): package hygiene — drop quarantine dirs''. The spec''s [C] claim is stale. What DOES remain, same debt class: benches/shared_session_performance.rs.disabled and src/bin/ruchy-coverage.rs.disabled — tracked files renamed out of the build so nothing compiles or runs them. Decide per file: restore into the build, or delete. File only; RHL-0 does not fix.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - test-debt
+  - filed-by:RHL-0
+  notes: null
+- id: KANIDEBT-1
+  github_issue: null
+  item_type: task
+  title: 'KANIDEBT-1: 28 contracts declare kani_harnesses that do not exist'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 11:39:02+00:00
+  updated: 2026-09-20 11:39:02+00:00
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED at HEAD: every contracts/*.yaml declaring a kani_harnesses block names harness functions that exist nowhere in the tree. Probe: verify_roadmap_uniqueness (contracts/roadmap-sot-v1.yaml) appears only in that YAML — no src/ or tests/ definition. 28 contracts declare the block. pv validate REQUIRES the block, so the incentive is to declare a harness rather than write one, and a declared-but-absent harness reads as a proof that is not held. Decide per contract: write the harness, or mark it declared_not_implemented with the test that actually discharges the obligation (the pattern contracts/rhl-pre-registration-v1.yaml uses). File only; RHL-0 does not fix.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - contract-debt
+  - filed-by:RHL-0
+  notes: null
+- id: WORKTREE-1
+  github_issue: null
+  item_type: task
+  title: 'WORKTREE-1: .claude/worktrees is untracked and not git-ignored'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 12:01:38+00:00
+  updated: 2026-09-20 12:36:57+00:00
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED during RHL-0: agy review and goal lanes create clones under .claude/worktrees/. Six accumulated in ONE session and totalled 34 GB (du -sh). git check-ignore reports the path is NOT ignored, so they show as untracked and a ''git add -A'' would sweep an entire clone into a commit. Two problems: (1) add .claude/worktrees/ to .gitignore; (2) nothing prunes stale lane clones — agy-lane.sh KEEPs a clone whenever a writes=false lane writes scratch files into it, which every review lane in this session did. File only; RHL-0 does not fix.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tooling-debt
+  - filed-by:RHL-0
+  notes: 'OPERATOR RULING 2026-09-20: this is aprender#3579''s class — ''clones outside the repo root, fleet-wide'' — and folds into that fix rather than getting a ruchy-local one. aprender#3579: ''12 guards build their universe with find and 8 do not exclude .claude/worktrees — they scan 3 trees at 3 different commits and attribute it all to HEAD''. Same root cause, wider blast radius: here it was 6 clones totalling 34 GB in one session, un-ignored, where a git add -A would have swept a whole clone into a commit.'
+- id: CIBASE-1
+  github_issue: null
+  item_type: task
+  title: 'CIBASE-1: Baseline Comparison fails on every PR, passes only on main'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 12:05:11+00:00
+  updated: 2026-09-20 12:05:11+00:00
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED 2026-09-20 via gh run list --workflow=benchmarks.yml: the ''Baseline Comparison'' job fails on PMAT-135, PMAT-139, PMAT-140 and RHL-0 — every recent BRANCH — and succeeds only on main. Failing step is ''Checkout baseline'': .github/workflows/benchmarks.yml:82 runs ''git checkout ${{ github.base_ref }} -- benches/'', but actions/checkout fetches only the PR head, so the base ref does not exist locally and the checkout fails in ~14s before any benchmark runs. Consequence: the job has never compared anything on a PR; it is a red that nobody consumes, and it is not a required context (the only required check is ''gate''), so it silently stays red. Fix: fetch the base ref first (fetch-depth 0, or an explicit git fetch origin $GITHUB_BASE_REF), or drop the job. Note the PR that fixes it touches .github/workflows and so needs a web-UI merge click. Filed by RHL-0; not fixed there.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci-debt
+  - filed-by:RHL-0
+  notes: null
+- id: SEC-1
+  github_issue: null
+  item_type: task
+  title: 'SEC-1: RUSTSEC-2026-0285 turns the required gate RED; make every advisory exemption a dated promise'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-20 12:27:33+00:00
+  updated: 2026-09-20 12:27:33+00:00
+  spec: null
+  acceptance_criteria:
+  - 'RUSTSEC-2026-0285 in rustls 0.23.43 failed ci/security, which feeds ci/gate and so the REQUIRED ''gate'' context, blocking every PR. Fixed by bumping rustls to 0.23.45 (the advisory''s own patched range) rather than exempting it. Alongside the fix, docs/audits/advisory-ignores.yaml plus src/advisory_ignore_gate.rs make every advisory exemption carry a reason, an owner ticket and a removed_by date, and turn the gate RED the day one expires — an ignore with no expiry is the same standing red under a different name. Three inherited deny.toml exemptions are brought under that rule (two more were deleted rather than dated: their crates are not in Cargo.lock); SEC-3 owns re-reviewing them, SEC-2 owns the rustls/pmcp question.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - security
+  notes: null
+- id: HARNESS-1
+  github_issue: null
+  item_type: task
+  title: 'HARNESS-1: the andon at 0.8K did not stop the line; RHL-0 ran to 118 against K=100'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20 12:37:03+00:00
+  updated: 2026-09-20 12:37:03+00:00
+  spec: null
+  acceptance_criteria:
+  - 'OPERATOR RULING 2026-09-20: ''Budget: k_measured=118 against K=100, andon at 80. The row overran its cap by 18% without a PARTIAL(andon). The harness should have stopped the line at 80 — if it did not, that is a harness ask.'' MEASURED on ruchy RHL-0: goal.sh set --K 100 --khat 80 was called at Phase 1 and statusline.sh measured k=118 by the end, with no andon fired and no PARTIAL(andon) emitted. Two things to separate before fixing: (1) UNITS — statusline.sh''s k counts distinct assistant message ids INCLUDING intra-turn tool-call messages, while K-hat is budgeted in orchestrator turns (~72 here). 118 vs 72 is not a 64% overrun, it is two different measures. Decide which one K governs and make goal.sh and statusline.sh agree. (2) ENFORCEMENT — whichever unit is chosen, nothing currently interrupts at 0.8K. The skill says ''turns >= 0.8K and gate != PASS -> andon: commit WIP, push, gh pr create --draft, emit PARTIAL(andon), stop'', but that is a rule the MODEL is asked to follow, with no hook behind it. A PreToolUse hook that refuses once k_measured >= K, the way the progress guard already refuses a third identical call, would make the cap real. Filed from ruchy; owner is paiml-implement (see LANE-1, filed the same day).'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:docs
+  - harness-ask
+  - filed-by:RHL-0
+  notes: null
 - id: SEC-2
   github_issue: null
   item_type: task
@@ -2886,11 +3275,11 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-20T12:25:44Z
-  updated: 2026-09-20T12:25:44Z
+  created: 2026-09-20 12:25:44+00:00
+  updated: 2026-09-20 12:25:44+00:00
   spec: null
   acceptance_criteria:
-  - "'SEC-1 fixed RUSTSEC-2026-0285 by bumping rustls 0.23.43 -> 0.23.45 (the advisory''s own patched range). Remaining question, not urgent: rustls enters this tree only through pmcp -> reqwest -> hyper-rustls, and pmcp is optional behind the mcp feature (default = batteries-included, which does not include mcp). Measured 2026-09-20: no sovereign-ci job passes --all-features or any test_args, so no gate job builds rustls at all — cargo-audit reads Cargo.lock irrespective of features, which is why an advisory in a crate this repo does not compile by default can turn the REQUIRED gate red for every PR. Decide: (a) accept that the lock''s audit surface is wider than the build''s, and keep patching; (b) ask whether ruchy needs a TLS-carrying MCP client at all; (c) have the audit job scope to the features actually shipped. Also note cargo update -p rustls alone reported ''Locking 0 packages''; only --precise 0.23.45 moved it, which is worth understanding before the next advisory.'"
+  - '''SEC-1 fixed RUSTSEC-2026-0285 by bumping rustls 0.23.43 -> 0.23.45 (the advisory''''s own patched range). Remaining question, not urgent: rustls enters this tree only through pmcp -> reqwest -> hyper-rustls, and pmcp is optional behind the mcp feature (default = batteries-included, which does not include mcp). Measured 2026-09-20: no sovereign-ci job passes --all-features or any test_args, so no gate job builds rustls at all — cargo-audit reads Cargo.lock irrespective of features, which is why an advisory in a crate this repo does not compile by default can turn the REQUIRED gate red for every PR. Decide: (a) accept that the lock''''s audit surface is wider than the build''''s, and keep patching; (b) ask whether ruchy needs a TLS-carrying MCP client at all; (c) have the audit job scope to the features actually shipped. Also note cargo update -p rustls alone reported ''''Locking 0 packages''''; only --precise 0.23.45 moved it, which is worth understanding before the next advisory.'''
   phases: []
   subtasks: []
   estimated_effort: null
@@ -2906,11 +3295,11 @@ roadmap:
   status: planned
   priority: medium
   assigned_to: null
-  created: 2026-09-20T12:25:44Z
-  updated: 2026-09-20T12:25:44Z
+  created: 2026-09-20 12:25:44+00:00
+  updated: 2026-09-20 12:25:44+00:00
   spec: null
   acceptance_criteria:
-  - "'deny.toml carried five [advisories] ignore entries; three remain with a reason but NO expiry, marked ''Reviewed 2026-03-26'' and not re-reviewed since: RUSTSEC-2024-0384 (instant), RUSTSEC-2024-0436 (paste), RUSTSEC-2025-0119 (number_prefix), RUSTSEC-2025-0141 (bincode), RUSTSEC-2025-0134 (rustls-pemfile). SEC-1 added docs/audits/advisory-ignores.yaml and a gate that refuses any exemption without an owner and a removed_by date, so three of these five now carry removed_by 2026-10-20 and a named owner; the other two (RUSTSEC-2025-0119 number_prefix, RUSTSEC-2025-0134 rustls-pemfile) were DELETED rather than dated, because neither crate is in Cargo.lock and cargo-deny already reported both as advisory-not-detected. THAT DATE IS A FORCING FUNCTION, NOT AN AUDIT RESULT — nobody has re-read these advisories. Before 2026-10-20, for each: confirm the crate is still unmaintained rather than fixed, confirm it is still only transitive, and either drop the exemption or move the date deliberately naming what changed. All five are ''unmaintained'' warnings rather than vulnerabilities, which is why they got 30 days rather than 14; if the operator wants a different window for that class, set it here.'"
+  - '''deny.toml carried five [advisories] ignore entries; three remain with a reason but NO expiry, marked ''''Reviewed 2026-03-26'''' and not re-reviewed since: RUSTSEC-2024-0384 (instant), RUSTSEC-2024-0436 (paste), RUSTSEC-2025-0119 (number_prefix), RUSTSEC-2025-0141 (bincode), RUSTSEC-2025-0134 (rustls-pemfile). SEC-1 added docs/audits/advisory-ignores.yaml and a gate that refuses any exemption without an owner and a removed_by date, so three of these five now carry removed_by 2026-10-20 and a named owner; the other two (RUSTSEC-2025-0119 number_prefix, RUSTSEC-2025-0134 rustls-pemfile) were DELETED rather than dated, because neither crate is in Cargo.lock and cargo-deny already reported both as advisory-not-detected. THAT DATE IS A FORCING FUNCTION, NOT AN AUDIT RESULT — nobody has re-read these advisories. Before 2026-10-20, for each: confirm the crate is still unmaintained rather than fixed, confirm it is still only transitive, and either drop the exemption or move the date deliberately naming what changed. All five are ''''unmaintained'''' warnings rather than vulnerabilities, which is why they got 30 days rather than 14; if the operator wants a different window for that class, set it here.'''
   phases: []
   subtasks: []
   estimated_effort: null
@@ -2918,23 +3307,4 @@ roadmap:
   - kind:code
   - security
   - filed-by:SEC-1
-  notes: null
-- id: SEC-1
-  github_issue: null
-  item_type: task
-  title: 'SEC-1: RUSTSEC-2026-0285 turns the required gate RED; make every advisory exemption a dated promise'
-  status: planned
-  priority: high
-  assigned_to: null
-  created: 2026-09-20T12:27:33Z
-  updated: 2026-09-20T12:27:33Z
-  spec: null
-  acceptance_criteria:
-  - "RUSTSEC-2026-0285 in rustls 0.23.43 failed ci/security, which feeds ci/gate and so the REQUIRED 'gate' context, blocking every PR. Fixed by bumping rustls to 0.23.45 (the advisory's own patched range) rather than exempting it. Alongside the fix, docs/audits/advisory-ignores.yaml plus src/advisory_ignore_gate.rs make every advisory exemption carry a reason, an owner ticket and a removed_by date, and turn the gate RED the day one expires — an ignore with no expiry is the same standing red under a different name. Three inherited deny.toml exemptions are brought under that rule (two more were deleted rather than dated: their crates are not in Cargo.lock); SEC-3 owns re-reviewing them, SEC-2 owns the rustls/pmcp question."
-  phases: []
-  subtasks: []
-  estimated_effort: null
-  labels:
-  - kind:code
-  - security
   notes: null

@@ -1,0 +1,9 @@
+id: "31-disk-watch-unstated-threshold"
+title: "Disk watch with no stated threshold"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "getting low" gives no numeric bound. A reading of "below 5 GB" and a
+  reading of "below 20% free" are both consistent with the English, and they
+  select different hosts on real fleet data; the statement does not say
+  which.

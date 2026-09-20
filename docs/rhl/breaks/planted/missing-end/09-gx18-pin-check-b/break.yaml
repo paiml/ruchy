@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/valid/09-gx18-pin-check-b.rhl
+class: "missing end"
+expected_code: RHL-P001
+safe_fix: false

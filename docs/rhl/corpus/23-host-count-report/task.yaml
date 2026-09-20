@@ -1,0 +1,4 @@
+id: "23-host-count-report"
+title: "Report how many hosts are declared"
+ambiguous: false
+entrypoint: "run"

@@ -1,0 +1,4 @@
+id: "15-ticket-per-offline-host"
+title: "File one ticket per offline host"
+ambiguous: false
+entrypoint: "run"

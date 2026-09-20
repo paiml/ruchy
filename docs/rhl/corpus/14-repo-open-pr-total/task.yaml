@@ -1,0 +1,4 @@
+id: "14-repo-open-pr-total"
+title: "Report total open pull requests summed across every declared repo"
+ambiguous: false
+entrypoint: "run"

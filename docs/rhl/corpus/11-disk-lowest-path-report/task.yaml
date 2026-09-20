@@ -1,0 +1,4 @@
+id: "11-disk-lowest-path-report"
+title: "Report which declared path has the least free disk space"
+ambiguous: false
+entrypoint: "run"

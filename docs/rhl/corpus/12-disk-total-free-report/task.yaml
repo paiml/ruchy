@@ -1,0 +1,4 @@
+id: "12-disk-total-free-report"
+title: "Report total free disk space summed across every declared path"
+ambiguous: false
+entrypoint: "run"

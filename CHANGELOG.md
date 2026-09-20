@@ -5,6 +5,41 @@ All notable changes to the Ruchy programming language will be documented in this
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — RHL-0: pre-registration for the RHL high-level language interface (RHL-001)
+
+Spec `docs/specifications/ruchy-high-level-language-interface.md` lands with the
+artifacts its falsifiers will be measured against, committed **before any RHL
+compiler code exists** so that F1–F9 cannot later be tuned to fit an
+implementation. No RHL compiler code is added: every new module under
+`src/rhl_pre_registration/` is `#[cfg(test)]`.
+
+- `grammar/rhl.lalrpop` — the RHL v0 grammar, conflict-free by LALRPOP's own
+  report (`grammar/rhl.conflict-report.txt`), with `grammar/fixtures/ambiguous.lalrpop`
+  as F1's positive control.
+- `vocab/fleet-v1.yaml`, `vocab/tickets-v1.yaml` — 14 terms, each with a contract
+  template under `contracts/rhl-*.yaml`. `lowers_to` stays `[U]` until RHL-3.
+- `docs/rhl/corpus/` — 40 pre-registered tasks, 10 ambiguous, plus `HARNESS.md`
+  fixing the interface both arms of the F8 A/B must satisfy.
+- `docs/rhl/breaks/` — 12 valid programs x 6 mutation classes, carrying F7's
+  positive control that a two-candidate typo is never auto-fixable.
+- `docs/rhl/PREREGISTRATION.sha256` — sha256 of all 297 artifacts, so a later row
+  cannot revise them without a diff.
+- `docs/rhl/phase0-bindings.md` — the `[U]` rows of RHL-001 bound by reading HEAD.
+
+### Changed
+
+- **RHL-001 §3.3 Amendment A1: the keyword `with`.** §3.2 opened an action's
+  attribute block with no marker, and that syntax is not conflict-free — LALRPOP
+  reports a local ambiguity after `Body App` on a `NEWLINE`, and a parser cannot
+  resolve it without counting every `end` to end of file. `with` is the minimal
+  repair; the unmarked form is preserved as the F1 fixture.
+
+### Fixed
+
+- Nothing. RHL-0 ships no behaviour change to the ruchy compiler.
+
 ## [5.0.0-beta.2] - 2026-09-05
 
 First 5.0 release published to crates.io. `5.0.0-beta.1` (2026-04-04, below) was

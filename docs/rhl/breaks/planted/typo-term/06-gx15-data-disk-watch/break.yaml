@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/valid/06-gx15-data-disk-watch.rhl
+class: "typo'd term"
+expected_code: RHL-V002
+safe_fix: true

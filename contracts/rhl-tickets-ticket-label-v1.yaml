@@ -1,0 +1,63 @@
+metadata:
+  version: "1.0.0"
+  author: "RHL-0"
+  description: "RHL-0 pre-registered contract for vocabulary term 'ticket label' (tickets v1, kind: noun)"
+  crate: "ruchy"
+  references:
+    - "RHL-001 §3.4"
+
+equations:
+  ticket_label_shape:
+    formula: "kind('ticket label') = noun ∧ gives('ticket label') = Text"
+    domain: "t ∈ vocabulary tickets v1 terms named 'ticket label'"
+    invariants:
+      - "term kind is one of {noun, measure, action, unit, entity} (RHL-001 §3.4)"
+      - "term result type ('gives') is Text"
+      - "lowers_to stays the unbound marker `[U]` until RHL-3 — RHL-0 does not bind lowering"
+
+proof_obligations:
+  - type: invariant
+    property: "Term 'ticket label' carries a contract template on disk (F6)"
+    formal: "contract('ticket label') exists"
+    applies_to: all
+  - type: invariant
+    property: "Term 'ticket label' kind is drawn from RHL's closed kind list"
+    formal: "kind('ticket label') ∈ {noun, measure, action, unit, entity}"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RHL-TICKETS-TICKET-LABEL-001
+    rule: "Vocabulary term contract must exist (RHL-001 F6)"
+    test: "test_rhl_vocab_0_all_terms_have_existing_contract"
+    prediction: "verified"
+    if_fails: "Contract violation — RHL-001 F6: term 'ticket label' has no contract template"
+
+  - id: FALSIFY-RHL-TICKETS-TICKET-LABEL-002
+    rule: "Vocabulary term kind is drawn from the closed list"
+    test: "test_rhl_vocab_0_kind_is_closed_list"
+    prediction: "verified"
+    if_fails: "Contract violation — term 'ticket label' kind not in {noun, measure, action, unit, entity}"
+
+# NOT APPLICABLE, declared because `pv validate` requires the block. A vocabulary
+# term contract states a property of YAML bytes on disk; Kani symbolically executes
+# Rust and cannot reach a file system. Declaring a harness that does not exist is the
+# practice KANIDEBT-1 was filed against, so it is marked rather than pretended.
+kani_harnesses:
+  - id: KANI-RHL-TICKETS-TICKET-LABEL-001
+    obligation: PO-RHL-TICKETS-TICKET-LABEL-001
+    property: "NOT APPLICABLE — a vocabulary term contract is a property of YAML bytes on disk, outside Kani's reach"
+    bound: 1
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_rhl_vocab_0_all_terms_have_existing_contract"
+
+qa_gate:
+  id: QA-RHL-TICKETS-TICKET-LABEL
+  name: "rhl tickets vocabulary term: ticket label"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - test_rhl_vocab_0_all_terms_have_existing_contract
+    - test_rhl_vocab_0_kind_is_closed_list
+    - test_rhl_vocab_0_lowers_to_is_unbound

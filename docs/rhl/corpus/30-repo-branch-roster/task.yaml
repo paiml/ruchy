@@ -1,0 +1,4 @@
+id: "30-repo-branch-roster"
+title: "Report every declared repo's default branch, joined by commas"
+ambiguous: false
+entrypoint: "run"

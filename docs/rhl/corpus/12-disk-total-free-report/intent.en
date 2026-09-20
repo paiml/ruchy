@@ -1,0 +1,2 @@
+Report the total free disk space, in bytes, summed across every declared
+path, as a decimal string.

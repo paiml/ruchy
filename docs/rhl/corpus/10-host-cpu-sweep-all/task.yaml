@@ -1,0 +1,4 @@
+id: "10-host-cpu-sweep-all"
+title: "CPU sweep across every online host, fixed threshold"
+ambiguous: false
+entrypoint: "run"

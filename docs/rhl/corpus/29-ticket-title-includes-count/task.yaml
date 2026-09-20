@@ -1,0 +1,4 @@
+id: "29-ticket-title-includes-count"
+title: "File a ticket whose title states the count of low-disk paths"
+ambiguous: false
+entrypoint: "run"

@@ -237,6 +237,12 @@ include = [
     "/CHANGELOG.md",
     "/LICENSE*",
     "contracts/**",
+    # RHL-0: the pre-registration gates in src/rhl_pre_registration/ read these at
+    # test time. Without them a packaged crate's `cargo test --lib` panics with
+    # file-not-found in all five gates (found by pre-PR review, 2026-09-20).
+    "grammar/**",
+    "vocab/**",
+    "docs/rhl/**",
     # SEC-1: src/advisory_ignore_gate.rs is #[cfg(test)] and ships under src/**,
     # so a vendored .crate that runs `cargo test` needs what it reads. Measured:
     # without these, that test fails with "advisory-ignores.yaml is missing".
@@ -244,8 +250,7 @@ include = [
     "docs/audits/advisory-ignores.yaml",
     # And the two the gate scans for an inline `cargo audit --ignore`. Since
     # workflow_files() now fails CLOSED on a missing directory, omitting these
-    # made `cargo test` in an extracted .crate panic — measured, and it made the
-    # comment above false at the commit that introduced the panic.
+    # made `cargo test` in an extracted .crate panic.
     ".github/workflows/**",
     "Makefile",
     "static/notebook.html",
@@ -412,6 +417,11 @@ tokio = { version = "1.47", features = ["macros", "rt", "time"], optional = true
 
 [dev-dependencies]
 provable-contracts = "0.3.1"
+# RHL-0 (RHL-001 F1): the parser generator whose OWN conflict report is the
+# evidence that grammar/rhl.lalrpop is conflict-free. Used only by the
+# #[cfg(test)] pre-registration gate in src/rhl_pre_registration/; no RHL
+# compiler code exists until RHL-1.
+lalrpop = { version = "0.23", default-features = false }
 proptest = { workspace = true }
 criterion = { workspace = true }
 insta = { workspace = true }

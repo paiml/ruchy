@@ -1,0 +1,3 @@
+Watch free disk space on /var/lib/docker on runner-01. If it drops below 5 GB
+(5,000,000,000 bytes), file a ticket in paiml/fleet-ops labeled "disk" saying
+the path is low on space.

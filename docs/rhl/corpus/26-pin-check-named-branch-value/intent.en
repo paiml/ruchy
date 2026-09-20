@@ -1,0 +1,2 @@
+Report whether paiml/core's default branch equals "main", as the string
+"true" or "false".

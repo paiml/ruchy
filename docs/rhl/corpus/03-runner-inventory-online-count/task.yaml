@@ -1,0 +1,4 @@
+id: "03-runner-inventory-online-count"
+title: "Report how many hosts are online"
+ambiguous: false
+entrypoint: "run"

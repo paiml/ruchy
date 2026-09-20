@@ -1,0 +1,177 @@
+metadata:
+  version: "1.0.0"
+  author: "RHL-0"
+  description: "RHL-0 pre-registration: the artifacts RHL-001's falsifiers are measured against are committed before any compiler exists, and cannot be changed unnoticed"
+  crate: "ruchy"
+  references:
+    - "RHL-001 §7: falsifiers F1, F4, F6, F7, F8"
+    - "RHL-001 §8 row RHL-0: spec ruled; corpus and vocabulary v0 pre-registered"
+    - "RHL-001 §3.3 Amendment A1: the keyword `with`"
+    - "docs/rhl/phase0-bindings.md: bindings B1–B7"
+
+equations:
+  grammar_conflict_free:
+    formula: "lalrpop(grammar/rhl.lalrpop) = Ok ∧ lalrpop(grammar/fixtures/ambiguous.lalrpop) = Err ∧ lalrpop(fixture ∖ planted) = Ok"
+    domain: "the LALRPOP 0.23 generator over the two committed grammar files"
+    invariants:
+      - "The grammar is conflict-free by the generator's own report, not by a checker we wrote"
+      - "The ambiguous fixture is rejected, and rejected BECAUSE of its planted production: deleting that one line makes the same file process cleanly"
+      - "Conflict-freedom is not bought with #[precedence] or `else` chaining"
+
+  vocabulary_contracted:
+    formula: "∀ t ∈ terms(vocab/*.yaml) : exists(t.contract) ∧ t.kind ∈ {noun, measure, action, unit, entity} ∧ t.lowers_to = '[U]'"
+    domain: "every term of every committed vocabulary"
+    invariants:
+      - "No term without a contract template (§3.4); enforced here because binding B3 measured that pv does NOT run in ruchy's required check"
+      - "lowers_to stays unbound at RHL-0; binding it is row RHL-3"
+
+  corpus_pre_registered:
+    formula: "|corpus| = 40 ∧ |{t : t.ambiguous}| = 10 ∧ ∀ t : parses_as_rust(t.tests.rs) ∧ arm_neutral(t.tests.rs)"
+    domain: "docs/rhl/corpus/"
+    invariants:
+      - "N and the ambiguous fraction are the operator's §12.4 ruling, not an invented threshold"
+      - "Every pre-written test is real Rust, checked with syn, so the corpus cannot be files that merely look like tests"
+      - "No test names an arm-specific symbol, so F8's path A and path B are scored by the same tests without either being advantaged"
+
+  breaks_discriminate:
+    formula: "∀ b ∈ breaks : bytes(b.broken) ≠ bytes(b.base) ∧ (b.class = two-candidate ⇒ ¬b.safe_fix) ∧ (b.class = typo ⇒ b.safe_fix)"
+    domain: "docs/rhl/breaks/planted/"
+    invariants:
+      - "A break identical to its base tests nothing"
+      - "F7's positive control: a break with two valid candidates must NOT be auto-fixed"
+
+  pre_registration_tamper_evident:
+    formula: "∀ f ∈ pre_registered : sha256(f) = manifest[f] ∧ pre_registered ⊆ dom(manifest)"
+    domain: "docs/rhl/PREREGISTRATION.sha256 over grammar/, vocab/, contracts/rhl-*, docs/rhl/corpus/, docs/rhl/breaks/"
+    invariants:
+      - "Editing a pre-registered artifact is allowed; editing it UNNOTICED is not"
+      - "A row that revises an artifact revises the manifest in the same commit, and that diff is the audit trail"
+
+proof_obligations:
+  - type: invariant
+    property: "The grammar is conflict-free and the check that says so can go RED"
+    formal: "lalrpop accepts the grammar and rejects the planted-ambiguity fixture"
+    applies_to: all
+  - type: completeness
+    property: "Every vocabulary term carries a contract template"
+    formal: "∀ t : exists(t.contract)"
+    applies_to: all
+  - type: invariant
+    property: "F8's two arms are scored by identical, arm-neutral tests"
+    formal: "no tests.rs names Transpiler, Parser, rhl or ruchy"
+    applies_to: all
+  - type: invariant
+    property: "The pre-registration cannot be tuned without leaving a diff"
+    formal: "every recorded sha256 still matches, and every pre-registered file is recorded"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RHL0-001
+    rule: "Grammar is conflict-free by the generator's report"
+    test: "test_rhl_grammar_0_is_conflict_free_by_the_generators_own_report"
+    prediction: "verified"
+    if_fails: "F1's floor is broken — RHL's one-meaning claim has nothing behind it"
+  - id: FALSIFY-RHL0-002
+    rule: "F1 positive control: an ambiguous production turns the check RED, for being ambiguous"
+    test: "test_rhl_grammar_0_ambiguous_fixture_is_rejected_for_being_ambiguous"
+    prediction: "verified"
+    if_fails: "The check can no longer detect ambiguity; every conflict-free claim is worthless"
+  - id: FALSIFY-RHL0-003
+    rule: "The committed conflict report matches its subject"
+    test: "test_rhl_grammar_0_committed_conflict_report_matches_the_grammar"
+    prediction: "verified"
+    if_fails: "The report is decoration — the grammar changed or the report was edited"
+  - id: FALSIFY-RHL0-004
+    rule: "Conflict-freedom is not bought with precedence annotations"
+    test: "test_rhl_grammar_0_conflict_freedom_is_not_bought_with_precedence"
+    prediction: "verified"
+    if_fails: "An ambiguity was silenced rather than removed; the report is a false positive"
+  - id: FALSIFY-RHL0-005
+    rule: "No term without a contract template (§3.4)"
+    test: "test_rhl_vocab_0_all_terms_have_existing_contract"
+    prediction: "verified"
+    if_fails: "§9 hard rule 3 is violated and nothing in CI would have caught it (binding B3)"
+  - id: FALSIFY-RHL0-006
+    rule: "lowers_to stays unbound at RHL-0"
+    test: "test_rhl_vocab_0_lowers_to_is_unbound"
+    prediction: "verified"
+    if_fails: "RHL-0 smuggled in a binding that belongs to row RHL-3"
+  - id: FALSIFY-RHL0-007
+    rule: "Corpus is exactly 40 tasks with exactly 10 ambiguous, each explained"
+    test: "test_rhl_corpus_0_has_exactly_10_ambiguous_tasks_with_reasons"
+    prediction: "verified"
+    if_fails: "The F8 sample no longer matches the operator's pre-registered §12.4 ruling"
+  - id: FALSIFY-RHL0-008
+    rule: "Every pre-written corpus test is real Rust"
+    test: "test_rhl_corpus_0_every_tests_rs_parses_as_real_rust_with_a_test_fn"
+    prediction: "verified"
+    if_fails: "The corpus is artifact-for-evidence: files that look like tests and measure nothing"
+  - id: FALSIFY-RHL0-009
+    rule: "Corpus tests are arm-neutral, so F8's A/B is fair"
+    test: "test_rhl_corpus_0_tests_rs_names_no_arm_specific_symbol"
+    prediction: "verified"
+    if_fails: "One arm of the headline experiment is advantaged and F8 measures nothing"
+  - id: FALSIFY-RHL0-010
+    rule: "F7 positive control: a two-candidate break is never auto-fixable"
+    test: "test_rhl_breaks_0_f7_positive_control_safe_fix_matches_class"
+    prediction: "verified"
+    if_fails: "RHL-2's fix --safe would silently guess between two candidates"
+  - id: FALSIFY-RHL0-011
+    rule: "Every planted break really differs from its base"
+    test: "test_rhl_breaks_0_every_broken_program_differs_from_its_base"
+    prediction: "verified"
+    if_fails: "A break identical to its base tests nothing; F7 would measure repair of an unbroken file"
+  - id: FALSIFY-RHL0-012
+    rule: "No pre-registered artifact changed without the manifest being regenerated"
+    test: "test_rhl_manifest_0_every_recorded_hash_still_matches"
+    prediction: "verified"
+    if_fails: "An artifact may have been tuned to make a falsifier pass — the one thing pre-registration forbids"
+  - id: FALSIFY-RHL0-013
+    rule: "The manifest covers every pre-registered file"
+    test: "test_rhl_manifest_0_covers_every_pre_registered_file"
+    prediction: "verified"
+    if_fails: "An artifact's bytes are unprotected and could be edited with no diff in the manifest"
+
+# RHL-0's invariants are properties of BYTES ON DISK — a generator's verdict, a
+# sha256, a file count, a YAML field. Kani symbolically executes Rust; it cannot
+# reach a file system, so none of these obligations is dischargeable by a Kani
+# harness, and saying otherwise would be a proof claimed and not held.
+#
+# `pv validate` (0.65.2) requires this block to be present, so it is declared and
+# marked. Every obligation here is discharged by the falsification_tests above,
+# which are real, run in `ci / gate`, and were each proven able to FAIL.
+#
+# MEASURED 2026-09-20: all 28 contracts in this repository that declare
+# kani_harnesses declare functions that do not exist anywhere in the tree (e.g.
+# `verify_roadmap_uniqueness` appears only in contracts/roadmap-sot-v1.yaml).
+# Filed as KANIDEBT-1; RHL-0 does not fix it.
+kani_harnesses:
+  - id: KANI-RHL0-001
+    obligation: PO-RHL0-001
+    property: "NOT APPLICABLE — grammar conflict-freedom is a verdict of the LALRPOP generator over a file, outside Kani's reach"
+    bound: 1
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_rhl_grammar_0_is_conflict_free_by_the_generators_own_report"
+  - id: KANI-RHL0-002
+    obligation: PO-RHL0-002
+    property: "NOT APPLICABLE — tamper-evidence is a sha256 over file bytes, outside Kani's reach"
+    bound: 1
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_rhl_manifest_0_every_recorded_hash_still_matches"
+
+qa_gate:
+  id: QA-RHL0-PRE-REGISTRATION
+  name: "RHL-0 pre-registration is complete, discriminating and tamper-evident"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - "test_rhl_grammar_0_is_conflict_free_by_the_generators_own_report"
+    - "test_rhl_grammar_0_ambiguous_fixture_is_rejected_for_being_ambiguous"
+    - "test_rhl_vocab_0_all_terms_have_existing_contract"
+    - "test_rhl_corpus_0_tests_rs_names_no_arm_specific_symbol"
+    - "test_rhl_breaks_0_f7_positive_control_safe_fix_matches_class"
+    - "test_rhl_manifest_0_every_recorded_hash_still_matches"

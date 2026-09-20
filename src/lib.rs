@@ -184,6 +184,10 @@ pub fn run_repl() -> Result<()> {
         runtime::repl::Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;
     repl.run()
 }
+// RHL-0 (spec RHL-001, docs/specifications/ruchy-high-level-language-interface.md):
+// pre-registration gates only. Test-only: no RHL compiler code exists until RHL-1.
+#[cfg(test)]
+mod rhl_pre_registration;
 // SEC-1: advisory exemptions are dated promises. Test-only gate; see the module
 // docs for why it lives in src/ rather than tests/.
 #[cfg(test)]

@@ -1,0 +1,4 @@
+id: "22-repo-count-report"
+title: "Report how many repos are declared"
+ambiguous: false
+entrypoint: "run"

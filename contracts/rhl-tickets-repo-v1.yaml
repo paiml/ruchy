@@ -1,0 +1,64 @@
+metadata:
+  version: "1.0.0"
+  author: "RHL-0"
+  description: "RHL-0 pre-registered contract for vocabulary term 'repo' (tickets v1, kind: entity)"
+  crate: "ruchy"
+  references:
+    - "RHL-001 §3.4"
+
+equations:
+  repo_closed_world:
+    formula: "instances('repo') = { x : x ∈ glob('org/repos/*.yaml') }"
+    domain: "t ∈ vocabulary tickets v1 terms named 'repo'"
+    invariants:
+      - "term kind is entity (RHL-001 §3.4)"
+      - "every instance of 'repo' comes from the declared closed-world source 'org/repos/*.yaml'"
+      - "an undeclared instance is a compile error naming the nearest candidate (RHL-001 §3.4)"
+      - "lowers_to stays the unbound marker `[U]` until RHL-3 — RHL-0 does not bind lowering"
+
+proof_obligations:
+  - type: invariant
+    property: "Term 'repo' carries a contract template on disk (F6)"
+    formal: "contract('repo') exists"
+    applies_to: all
+  - type: completeness
+    property: "Every instance of entity term 'repo' is enumerable from its closed-world source"
+    formal: "∀x. valid('repo', x) ⟺ x ∈ glob('org/repos/*.yaml')"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RHL-TICKETS-REPO-001
+    rule: "Vocabulary term contract must exist (RHL-001 F6)"
+    test: "test_rhl_vocab_0_all_terms_have_existing_contract"
+    prediction: "verified"
+    if_fails: "Contract violation — RHL-001 F6: term 'repo' has no contract template"
+
+  - id: FALSIFY-RHL-TICKETS-REPO-002
+    rule: "Entity term declares its closed-world instances_from source"
+    test: "test_rhl_vocab_0_entity_terms_declare_instances_from"
+    prediction: "verified"
+    if_fails: "Contract violation — entity term 'repo' has no instances_from source"
+
+# NOT APPLICABLE, declared because `pv validate` requires the block. A vocabulary
+# term contract states a property of YAML bytes on disk; Kani symbolically executes
+# Rust and cannot reach a file system. Declaring a harness that does not exist is the
+# practice KANIDEBT-1 was filed against, so it is marked rather than pretended.
+kani_harnesses:
+  - id: KANI-RHL-TICKETS-REPO-001
+    obligation: PO-RHL-TICKETS-REPO-001
+    property: "NOT APPLICABLE — a vocabulary term contract is a property of YAML bytes on disk, outside Kani's reach"
+    bound: 1
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_rhl_vocab_0_all_terms_have_existing_contract"
+
+qa_gate:
+  id: QA-RHL-TICKETS-REPO
+  name: "rhl tickets vocabulary term: repo"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - test_rhl_vocab_0_all_terms_have_existing_contract
+    - test_rhl_vocab_0_entity_terms_declare_instances_from
+    - test_rhl_vocab_0_lowers_to_is_unbound

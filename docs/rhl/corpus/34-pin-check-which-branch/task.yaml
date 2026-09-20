@@ -1,0 +1,10 @@
+id: "34-pin-check-which-branch"
+title: "Pin check with no named repo and no named branch"
+ambiguous: true
+entrypoint: "run"
+ambiguity: >
+  "the repo" names no specific declared repo, and "the right branch" names
+  no specific branch name — a reading that means "main" and a reading that
+  means "whatever branch the repo already declares as default" are both
+  consistent with the sentence, and the second reading makes the check
+  vacuously always pass.

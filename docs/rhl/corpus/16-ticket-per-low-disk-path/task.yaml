@@ -1,0 +1,4 @@
+id: "16-ticket-per-low-disk-path"
+title: "File one ticket per declared path below a fixed threshold"
+ambiguous: false
+entrypoint: "run"
