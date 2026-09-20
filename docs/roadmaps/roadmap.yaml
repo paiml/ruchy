@@ -3356,3 +3356,43 @@ roadmap:
   - ci-debt
   - filed-by:CIBASE-1
   notes: null
+- id: AUDIT-1
+  github_issue: null
+  item_type: task
+  title: 'AUDIT-1: security.yml''s stricter audit step is the one that cannot fail'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-20T17:31:21Z
+  updated: 2026-09-20T17:31:21Z
+  spec: null
+  acceptance_criteria:
+  - 'Five-class audit pass, 2026-09-20. CLASS 3 (gate-that-cannot-fail) AND CLASS 2 (placeholder-is-most-permissive), in one line. .github/workflows/security.yml has two audit steps: line 24 ''Run security audit'' = ''cargo audit'' (CAN fail, and did today on RUSTSEC-2026-0285), and line 26 ''Check for known vulnerabilities'' = ''cargo audit --deny warnings || true'' (CANNOT fail). The step that is NAMED as the thorough check is the disabled one, and it is the STRICTER of the two: --deny warnings escalates unmaintained/unsound/yanked warnings to errors, which is exactly the class ruchy carries two live exemptions for (instant, bincode). So the repository reports a green ''Security Audit'' on warnings it has never actually gated. FALSIFIER: plant a crate with a known unmaintained advisory and no deny.toml ignore; step 24 passes (it does not --deny warnings) and step 26 passes (|| true). Remove the ''|| true'' and step 26 must go RED. ALSO DECIDE: with SEC-1''s expiry gate now in the required check, is step 26 wanted at all, or is it a second audit surface that will drift from .cargo/audit.toml the way sovereign-ci''s already has? Note this workflow is NOT the required ''gate'' context; the required path is sovereign-ci''s own security job.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci-debt
+  - class:gate-cannot-fail
+  notes: null
+- id: AUDIT-2
+  github_issue: null
+  item_type: task
+  title: 'AUDIT-2: test_satd_count_collection passes when the SATD counter is broken'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T17:31:21Z
+  updated: 2026-09-20T17:31:21Z
+  spec: null
+  acceptance_criteria:
+  - 'Five-class audit pass, 2026-09-20. CLASS 3 (gate-that-cannot-fail). src/quality/mod.rs:860, in test_satd_count_collection: ''let count = QualityGates::count_satd_comments().unwrap_or(0);'' followed by ''assert_eq!(count, 0, "SATD comments should be eliminated")''. count_satd_comments returns Result and shells out to ''find src -name *.rs -exec grep -c ...''. If that invocation fails for ANY reason — find missing, src/ absent, a packaged crate without src/, a sandbox without exec — the error becomes 0 and the assertion PASSES. The test cannot distinguish ''there is no SATD'' from ''the counter did not run'', and 0 is the most permissive of the two answers. GROUNDED BY INSPECTION, not executed: making the counter fail under test needs an environment change. NOTE the production gate is NOT affected — line 300 uses ''?'' and propagates. This is the test only. FALSIFIER: replace unwrap_or(0) with expect(), or assert on Ok(0) rather than on the unwrapped value, then rename the binary/PATH so find is unavailable; the test must go RED where today it goes green.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - test-debt
+  - class:gate-cannot-fail
+  notes: null
