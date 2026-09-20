@@ -312,7 +312,7 @@ fn expired_on(e: &Entry, today: chrono::NaiveDate) -> Option<String> {
 fn test_sec_1_no_untraceable_blanket_suppression() {
     let doc = deny_doc();
     let mut found = suppressing_levels(&doc);
-    found.extend(non_empty_graph_exclude(&doc));
+    found.extend(narrowing_graph_keys(&doc));
     assert!(
         found.is_empty(),
         "SEC-1: {DENY_TOML} suppresses advisories in a way that carries NO advisory \
@@ -339,6 +339,10 @@ fn test_sec_1_no_untraceable_blanket_suppression() {
 /// `unmaintained = "workspace"`, which reads as ordinary configuration and
 /// silences exactly the class every current ledger entry lives in. Any value this
 /// gate does not recognise as REPORTING is treated as suppressing.
+///
+/// The same reasoning does NOT protect the `[graph]` keys, which are a
+/// hand-maintained list — see `narrowing_graph_keys`, and the contract's
+/// `scope_limit`, which had to be corrected once already.
 fn suppressing_levels(doc: &toml::Value) -> Vec<String> {
     const CLASSES: &[&str] = &[
         "vulnerability",
@@ -359,19 +363,39 @@ fn suppressing_levels(doc: &toml::Value) -> Vec<String> {
         .collect()
 }
 
-/// A `[graph] exclude` that drops crates from the graph entirely — which removes
-/// them from the licenses and sources checks too, not only advisories.
-fn non_empty_graph_exclude(doc: &toml::Value) -> Vec<String> {
-    doc.get("graph")
-        .and_then(|g| g.get("exclude"))
-        .and_then(toml::Value::as_array)
-        .filter(|a| !a.is_empty())
-        .map(|a| {
-            vec![format!(
-                "graph.exclude = {a:?}  (drops crates from the graph entirely)"
-            )]
-        })
-        .unwrap_or_default()
+/// `[graph]` keys that narrow the graph so an advisory stops being reported.
+///
+/// `exclude` drops named crates outright. `exclude-dev` and `exclude-unpublished`
+/// drop whole SUBTREES, which is worse: they carry no crate name either, so
+/// nothing in them can be owned or dated.
+///
+/// MEASURED 2026-09-20, cargo-deny 0.19.0 on this manifest: with the
+/// `RUSTSEC-2024-0384` ignore removed, `cargo deny check advisories` exits 1
+/// naming `instant`; adding the single line `exclude-dev = true` inside the
+/// existing `[graph]` table takes it to exit 0. A live advisory silenced with no
+/// id, no owner and no date. Found by the Claude lane of the third review round;
+/// my own first probe of it was malformed (a second `[graph]` table, which
+/// cargo-deny rejects as a redefinition) and wrongly read as "not an evasion".
+fn narrowing_graph_keys(doc: &toml::Value) -> Vec<String> {
+    const NARROWING: &[&str] = &["exclude", "exclude-dev", "exclude-unpublished"];
+    let Some(graph) = doc.get("graph").and_then(toml::Value::as_table) else {
+        return Vec::new();
+    };
+    graph
+        .iter()
+        .filter(|(k, _)| NARROWING.contains(&k.as_str()))
+        .filter(|(_, v)| narrows(v))
+        .map(|(k, v)| format!("graph.{k} = {v}  (removes crates from the graph, so their advisories are never reported)"))
+        .collect()
+}
+
+/// A narrowing key is live when it is `true`, or a non-empty array.
+fn narrows(v: &toml::Value) -> bool {
+    match v {
+        toml::Value::Boolean(b) => *b,
+        toml::Value::Array(a) => !a.is_empty(),
+        _ => false,
+    }
 }
 
 /// The audited files must EXIST, or the gate reads an empty string and passes.
@@ -384,12 +408,22 @@ fn non_empty_graph_exclude(doc: &toml::Value) -> Vec<String> {
 #[test]
 fn test_sec_1_the_audited_files_are_where_this_gate_looks() {
     assert!(
+        repo_root().join("Makefile").is_file(),
+        "SEC-1: the Makefile is missing, and it is one of the files scanned for an \
+         inline `cargo audit --ignore`. `read()` returns an empty string for a file \
+         that is not there, so a renamed Makefile reads as 'no exemptions here' — \
+         the same fail-open shape this gate closed for the workflows."
+    );
+    assert!(
         repo_root().join(DENY_TOML).is_file(),
         "SEC-1: {DENY_TOML} is missing. It is tracked and mandatory, and this gate \
          reads it by a hardcoded name whose authoritative definition lives in \
          paiml/.github's workflow. If the path moved, this gate silently passes."
     );
-    let declares_audit_source = ledger().ignores.iter().any(|e| e.source.trim() == "audit");
+    let declares_audit_source = ledger()
+        .ignores
+        .iter()
+        .any(|e| matches!(e.source.trim(), "audit" | "both"));
     assert!(
         !declares_audit_source || repo_root().join(AUDIT_TOML).is_file(),
         "SEC-1: a ledger entry declares `source: audit`, but {AUDIT_TOML} does not \

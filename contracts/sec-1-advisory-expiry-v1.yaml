@@ -27,17 +27,26 @@ equations:
       - "Over-strict is safe; under-strict is the hole. Measured on four token shapes: xRUSTSEC-…, 0RUSTSEC-…, RUSTSEC-…x, RUSTSEC-…-instant"
 
   no_untraceable_suppression:
-    formula: "∀ c ∈ {vulnerability, unmaintained, unsound, notice, yanked} : deny.toml[advisories][c] ∈ {deny, warn, all} ∧ deny.toml[graph][exclude] = []"
+    formula: "∀ c ∈ {vulnerability, unmaintained, unsound, notice, yanked} : deny.toml[advisories][c] ∈ {deny, warn, all} ∧ ∀ k ∈ {exclude, exclude-dev, exclude-unpublished} : ¬narrows(deny.toml[graph][k])"
     domain: "deny.toml, parsed as TOML rather than grepped (CLAUDE.md rule 2)"
     invariants:
       - "A suppression carrying no advisory id cannot be owned or expired"
       - "A class-level suppression silences every FUTURE advisory in that class too"
       - "REPORTING values are allow-listed, not suppressing values deny-listed: a review measured four evasions of a deny-list (single quotes, a quoted key, and cargo-deny's own `unmaintained = \"workspace\"`)"
     scope_limit: >
-      This covers the five lint classes named in the formula and [graph] exclude.
-      A future cargo-deny key that suppresses advisories under some other name
-      would evade it until added. The test's name reads as a universal and is
-      not one; the residual is new KEYS, not new VALUES.
+      This covers the five lint classes named in the formula and the three
+      narrowing [graph] keys. The test's name reads as a universal and is not
+      one: a cargo-deny key that suppresses advisories under some other name
+      evades it until added here.
+
+      That gap is not hypothetical. An earlier revision of this contract claimed
+      the residual was a FUTURE key, "new KEYS, not new VALUES". A review then
+      measured `[graph] exclude-dev = true` — a key present in cargo-deny 0.19.0,
+      in a table this gate already read — taking `cargo deny check advisories`
+      from exit 1 to exit 0 on this manifest with the gate all green. The claim
+      was false when written. `exclude-dev` and `exclude-unpublished` are now
+      covered; the honest statement of the residual is that this list is
+      maintained by hand against a tool that adds keys.
 
 proof_obligations:
   - type: invariant

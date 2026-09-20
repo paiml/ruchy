@@ -242,6 +242,12 @@ include = [
     # without these, that test fails with "advisory-ignores.yaml is missing".
     "deny.toml",
     "docs/audits/advisory-ignores.yaml",
+    # And the two the gate scans for an inline `cargo audit --ignore`. Since
+    # workflow_files() now fails CLOSED on a missing directory, omitting these
+    # made `cargo test` in an extracted .crate panic — measured, and it made the
+    # comment above false at the commit that introduced the panic.
+    ".github/workflows/**",
+    "Makefile",
     "static/notebook.html",
     "golden_traces/**",
     "notebooks/**",
