@@ -266,36 +266,86 @@ fn test_rhl_vocab_0_terms_declare_a_usable_signature() {
     );
 }
 
-/// A `discharged_by` that names no real test is a citation nothing resolves.
+/// Every `discharged_by` either resolves to a real test, or carries a declared
+/// sentinel from a CLOSED set.
 ///
 /// RHL-0 answered `pv validate`'s demand for a `kani_harnesses` block — on
 /// invariants Kani cannot reach, because they are properties of bytes on disk —
 /// by marking each harness `status: declared_not_implemented` and adding
-/// `discharged_by:` naming the test that really discharges it. The apex session,
-/// which has the nearest equivalent (`implemented: false` + a `note:`), pointed
-/// out that this is strictly more informative than theirs ONLY while the named
-/// test exists and can fail. Otherwise it is a worse lie than saying nothing,
-/// because it reads as a discharge. Nothing checked it until now.
+/// `discharged_by:` naming the test that really discharges it.
+///
+/// The apex session, which closed the identical defect class one field over
+/// (`scripts/ci/theorem-bind.sh`, apex#57), pointed out two things. First, a
+/// `discharged_by` naming nothing reads as a discharge and is worse than an
+/// honest "not built" — so it must resolve. Second, and this is the one I had
+/// wrong: a gate that ONLY refuses a dangling name pushes the next author toward
+/// naming *some* test to go green, which is exactly how apex's original defect
+/// happened (`lean_theorem: Theorems.RowMerged` copied into every contract,
+/// resolving to nothing, the validator checking presence only, the gate green).
+///
+/// **Forcing a citation where none can honestly exist is the failure mode.** So
+/// there is a closed set of sentinels giving "there is legitimately nothing here"
+/// a way to be said and still be checked, and a sentinel OUTSIDE the set is as
+/// red as a dangling name — otherwise the set is advisory.
+const SENTINELS: &[&str] = &[
+    // The obligation is a fact about THIS REPOSITORY — bytes on disk, a file
+    // count, a generator's verdict — so no proof or property test can exist and
+    // inventing one would be the defect this gate catches. Every RHL/SEC Kani
+    // harness is this shape.
+    "none_repository_fact",
+    // Discharged outside this repository. Reserved, zero uses today; kept so the
+    // vocabulary exists the day an external discharge does.
+    "declared_external",
+];
+
 #[test]
-fn test_rhl_vocab_0_every_discharged_by_names_a_real_test() {
+fn test_rhl_vocab_0_every_discharged_by_resolves_or_declares() {
     let defined = all_test_fn_source();
-    let dangling: Vec<String> = rhl_and_sec_contracts()
-        .into_iter()
-        .flat_map(|(name, text)| {
-            cited_tests(&text)
-                .into_iter()
-                .map(move |c| (name.clone(), c))
-        })
-        .filter(|(_, cited)| !defined.contains(&format!("fn {cited}")))
-        .map(|(name, cited)| format!("{name}: discharged_by `{cited}` — no such test"))
-        .collect();
+    let mut bad = Vec::new();
+    let mut resolved = 0usize;
+    let mut sentinels = 0usize;
+    for (name, text) in rhl_and_sec_contracts() {
+        for cited in cited_tests(&text) {
+            match classify(&cited, &defined) {
+                Citation::Resolved => resolved += 1,
+                Citation::Sentinel => sentinels += 1,
+                Citation::Dangling => bad.push(format!(
+                    "{name}: discharged_by `{cited}` — names no test and is not one of {SENTINELS:?}"
+                )),
+            }
+        }
+    }
     assert!(
-        dangling.is_empty(),
-        "RHL-13: {} contract(s) cite a discharging test that does not exist: \
-         {dangling:#?}. A `discharged_by` naming nothing reads as a discharge and \
-         is worse than an honest `not built`.",
-        dangling.len()
+        bad.is_empty(),
+        "RHL-13: {} citation(s) neither resolve nor declare: {bad:#?}. A \
+         `discharged_by` naming nothing reads as a discharge. If nothing can \
+         discharge it, say so with a declared sentinel — do not invent a test name \
+         to go green.",
+        bad.len()
     );
+    // apex's third arm: all-sentinel is a vocabulary, not a binding.
+    assert!(
+        resolved >= 1,
+        "RHL-13: {sentinels} citation(s) and not one resolves to a real test. An \
+         all-sentinel binding records that nothing is discharged anywhere, which \
+         is not a binding at all."
+    );
+}
+
+enum Citation {
+    Resolved,
+    Sentinel,
+    Dangling,
+}
+
+fn classify(cited: &str, defined: &str) -> Citation {
+    if SENTINELS.contains(&cited) {
+        Citation::Sentinel
+    } else if defined.contains(&format!("fn {cited}")) {
+        Citation::Resolved
+    } else {
+        Citation::Dangling
+    }
 }
 
 /// Every `.rs` source in the crate, concatenated — the haystack for `fn <name>`.
