@@ -32,6 +32,17 @@ struct Entry {
     id: String,
     reason: String,
     owner_ticket: String,
+    /// A PERSON, not a ticket. An entry that named only a ticket, or carried a
+    /// bare `needs_review: true`, was an unowned obligation with a date on it —
+    /// which expires into exactly the red nobody consumes that this ledger
+    /// exists to drain. There is no second date field: the review date IS
+    /// `removed_by`.
+    ///
+    /// Defaulted so that an entry MISSING it fails the owner test by name,
+    /// rather than aborting YAML parsing and failing all four with a
+    /// deserialization error that says nothing about what is wrong.
+    #[serde(default)]
+    owner: String,
     removed_by: String,
 }
 
@@ -130,13 +141,25 @@ fn test_sec_1_every_entry_carries_a_reason_and_an_owner() {
     let thin: Vec<String> = ledger()
         .ignores
         .iter()
-        .filter(|e| e.reason.trim().len() < 20 || e.owner_ticket.trim().is_empty())
-        .map(|e| e.id.clone())
+        .filter(|e| {
+            e.reason.trim().len() < 20
+                || e.owner_ticket.trim().is_empty()
+                || e.owner.trim().is_empty()
+        })
+        .map(|e| {
+            format!(
+                "{} (owner {:?}, ticket {:?})",
+                e.id, e.owner, e.owner_ticket
+            )
+        })
         .collect();
     assert!(
         thin.is_empty(),
-        "SEC-1: {} ledger entr(ies) carry no usable reason or no owner ticket: \
-         {thin:?}. An exemption nobody owns is an exemption nobody removes.",
+        "SEC-1: {} ledger entr(ies) carry no usable reason, no named owner, or no \
+         owner ticket: {thin:#?}. An exemption nobody owns is an exemption nobody \
+         removes — the date then expires into a red nobody consumes, which is the \
+         failure this ledger exists to prevent. `owner` is a person; `owner_ticket` \
+         is where the work is tracked. Both are required.",
         thin.len()
     );
 }
