@@ -2883,11 +2883,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-0: RHL spec ruled; grammar, corpora and vocabulary v0 pre-registered'
-  status: review
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:26:35+00:00
-  updated: 2026-09-20 12:13:26+00:00
+  updated: 2026-09-20T15:41:42Z
   spec: null
   acceptance_criteria: []
   phases: []
@@ -2905,7 +2905,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 12:36:57+00:00
+  updated: 2026-09-20T15:41:53Z
   spec: null
   acceptance_criteria:
   - K̂ 150. UNADMITTED until RHL-0 merges (spec RHL-001 §8 readiness rule).
@@ -2915,9 +2915,8 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-0
-  notes: 'K-hat BASIS [C], not [U]: RHL-0 measured k_measured=118 assistant messages against K=100 with andon at 80 — an 18% overrun that produced no PARTIAL(andon). Use 118 as RHL-1''s basis, and note the unit: statusline.sh counts every assistant message including intra-turn tool calls, while the spec''s K-hat is budgeted in orchestrator turns (~72 for RHL-0). Pick one unit and say which. RHL-1 also inherits two gaps RHL-0 could not close: F1''s second half (every corpus program has exactly one parse) needs a generated parser, and open question O1 — three lines of spec 3.2 (expect no change to host / expect at most 1 ticket per run / then 0 tickets are filed) still do not parse, and the obvious repair reintroduces an LR conflict.'
+  notes: 'ADMITTED by RHL-0''s merge (commit 1c2caf5d, PR #225) — the spec''s readiness gate ''no implementation rows are admitted until RHL-0 is merged'' has opened. BUT NOT READY TO START: spec open question O1 is unruled. Three lines of section 3.2 do not parse (expect no change to host / expect at most 1 ticket per run / then 0 tickets are filed), and RHL-1 is the row that builds the parser those lines have to pass through. Both candidate repairs are measured and committed as grammar/fixtures/o1-{a,b}-candidate.lalrpop: O1-A is conflict-free, parses all three lines and keeps the corpus at 72/72, and costs two keywords; O1-B adds no keyword and is NOT conflict-free. Get the one-line ruling before starting. K-hat basis is 118 [C] from RHL-0 (see HARNESS-1 on the unit question). RHL-1 also inherits F1''s unmeasured second half: ''every corpus program has exactly one parse'' needs the parser this row builds.'
 - id: RHL-2
   github_issue: null
   item_type: task
@@ -2926,7 +2925,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:46Z
   spec: null
   acceptance_criteria:
   - K̂ 90. UNADMITTED until RHL-0 merges.
@@ -2936,7 +2935,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-1
   notes: null
 - id: RHL-3
@@ -2947,7 +2945,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:46Z
   spec: null
   acceptance_criteria:
   - K̂ 60. UNADMITTED until RHL-0 merges.
@@ -2957,7 +2955,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-1
   notes: null
 - id: RHL-4
@@ -2968,7 +2965,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:46Z
   spec: null
   acceptance_criteria:
   - K̂ 150. UNADMITTED until RHL-0 merges.
@@ -2978,7 +2975,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-2
   notes: null
 - id: RHL-5
@@ -2989,7 +2985,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:46Z
   spec: null
   acceptance_criteria:
   - K̂ 120. UNADMITTED until RHL-0 merges.
@@ -2999,7 +2995,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-4
   notes: null
 - id: RHL-6
@@ -3010,7 +3005,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:47Z
   spec: null
   acceptance_criteria:
   - K̂ 60. UNADMITTED until RHL-0 merges.
@@ -3020,7 +3015,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-2
   notes: null
 - id: RHL-7
@@ -3031,7 +3025,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:47Z
   spec: null
   acceptance_criteria:
   - K̂ 60. UNADMITTED until RHL-0 merges. F7 floor X% and k rounds are [U].
@@ -3041,7 +3035,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-6
   notes: null
 - id: RHL-8
@@ -3052,7 +3045,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 12:36:57+00:00
+  updated: 2026-09-20T15:41:47Z
   spec: null
   acceptance_criteria:
   - K̂ 90. UNADMITTED until RHL-0 merges. F8 may FAIL; spec §7 says so in advance.
@@ -3062,7 +3055,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-5
   notes: 'OPERATOR RULING 2026-09-20 — THE CORPUS IS FROZEN ONCE RHL-0 MERGES. Only 4 of the 40 tasks have been audited for arm fairness (task 01 by a review lane; tasks 24, 25, 29 by the gate that fix produced). The other 36 pass the mechanical gate but nobody has read them against their intents. RHL-8 MUST audit all 40 before running the A/B. When a task needs a fairness fix, the corpus goes v0 -> v1 with a public diff and a manifest re-hash — NEVER an in-place edit. An in-place edit means F8''s A/B is measured against a corpus tuned after the fact, which is the one thing pre-registration exists to prevent. Also inherited: the ten ambiguous tasks are numbered 31-40, so numeric order leaks the scoring key; docs/rhl/corpus/HARNESS.md requires a seeded shuffle with the seed recorded in this row''s receipt.'
 - id: RHL-9
@@ -3073,7 +3065,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:47Z
   spec: null
   acceptance_criteria:
   - K̂ 40. UNADMITTED until RHL-0 merges.
@@ -3083,7 +3075,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-4
   notes: null
 - id: RHL-10
@@ -3094,7 +3085,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:47Z
   spec: null
   acceptance_criteria:
   - K̂ 90. UNADMITTED. Also needs constrained decoding merged in aprender.
@@ -3104,7 +3095,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-8
   notes: null
 - id: RHL-11
@@ -3115,7 +3105,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:47Z
   spec: null
   acceptance_criteria:
   - K̂ 60. UNADMITTED. Also needs the whisper.apr own-or-archive decision (spec §12.5, unruled).
@@ -3125,7 +3115,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-10
   notes: null
 - id: RHL-12
@@ -3136,7 +3125,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20 10:27:37+00:00
+  updated: 2026-09-20T15:41:48Z
   spec: null
   acceptance_criteria:
   - K̂ 60 each. UNADMITTED until RHL-0 merges.
@@ -3146,7 +3135,6 @@ roadmap:
   labels:
   - kind:code
   - rhl
-  - unadmitted
   - depends:RHL-5
   notes: null
 - id: TESTDEBT-1
@@ -3233,11 +3221,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'SEC-1: RUSTSEC-2026-0285 turns the required gate RED; make every advisory exemption a dated promise'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-20 12:27:33+00:00
-  updated: 2026-09-20 12:27:33+00:00
+  updated: 2026-09-20T15:41:46Z
   spec: null
   acceptance_criteria:
   - 'RUSTSEC-2026-0285 in rustls 0.23.43 failed ci/security, which feeds ci/gate and so the REQUIRED ''gate'' context, blocking every PR. Fixed by bumping rustls to 0.23.45 (the advisory''s own patched range) rather than exempting it. Alongside the fix, docs/audits/advisory-ignores.yaml plus src/advisory_ignore_gate.rs make every advisory exemption carry a reason, an owner ticket and a removed_by date, and turn the gate RED the day one expires — an ignore with no expiry is the same standing red under a different name. Three inherited deny.toml exemptions are brought under that rule (two more were deleted rather than dated: their crates are not in Cargo.lock); SEC-3 owns re-reviewing them, SEC-2 owns the rustls/pmcp question.'
@@ -3296,7 +3284,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20 12:25:44+00:00
-  updated: 2026-09-20 12:25:44+00:00
+  updated: 2026-09-20T15:50:57Z
   spec: null
   acceptance_criteria:
   - '''deny.toml carried five [advisories] ignore entries; three remain with a reason but NO expiry, marked ''''Reviewed 2026-03-26'''' and not re-reviewed since: RUSTSEC-2024-0384 (instant), RUSTSEC-2024-0436 (paste), RUSTSEC-2025-0119 (number_prefix), RUSTSEC-2025-0141 (bincode), RUSTSEC-2025-0134 (rustls-pemfile). SEC-1 added docs/audits/advisory-ignores.yaml and a gate that refuses any exemption without an owner and a removed_by date, so three of these five now carry removed_by 2026-10-20 and a named owner; the other two (RUSTSEC-2025-0119 number_prefix, RUSTSEC-2025-0134 rustls-pemfile) were DELETED rather than dated, because neither crate is in Cargo.lock and cargo-deny already reported both as advisory-not-detected. THAT DATE IS A FORCING FUNCTION, NOT AN AUDIT RESULT — nobody has re-read these advisories. Before 2026-10-20, for each: confirm the crate is still unmaintained rather than fixed, confirm it is still only transitive, and either drop the exemption or move the date deliberately naming what changed. All five are ''''unmaintained'''' warnings rather than vulnerabilities, which is why they got 30 days rather than 14; if the operator wants a different window for that class, set it here.'''
@@ -3307,4 +3295,24 @@ roadmap:
   - kind:code
   - security
   - filed-by:SEC-1
+  notes: 'TWO entries remain, not five, not three. The criterion changed twice. First pass deleted RUSTSEC-2025-0119 (number_prefix) and RUSTSEC-2025-0134 (rustls-pemfile) on ''not in Cargo.lock''. The infra session then supplied the decisive test: presence in the lock is NOT sufficient for keeping, because a crate can sit in the lock via a dev-only or optional path the advisory''s affected range never reaches. Remove the ignore and see whether cargo-deny flips to FAILED. MEASURED 2026-09-20 on all three survivors: instant (RUSTSEC-2024-0384) removed -> exit 1 LIVE; bincode (RUSTSEC-2025-0141) removed -> exit 1 LIVE; paste (RUSTSEC-2024-0436) removed -> exit 0, suppressing NOTHING, so it was deleted too. Remaining work is two exemptions, both verified live: confirm each crate is still unmaintained rather than fixed, confirm it is still only transitive, then drop or move the date deliberately naming what changed. Use the removal test, not the advisory-not-detected warning — infra measured that warning producing a false all-seven-orphans finding on xpile, because a PASSING cargo-deny run prints no advisory ids at all and absence from the output is never evidence.'
+- id: RHL-13
+  github_issue: null
+  item_type: task
+  title: 'RHL-13: post-merge corrections — a merged amendment cites apex for a principle apex does not hold'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-20T15:42:29Z
+  updated: 2026-09-20T15:42:29Z
+  spec: null
+  acceptance_criteria:
+  - Four records went wrong or stale at merge. (1) RHL-0 and SEC-1 are merged but sat at review/planned. (2) RHL-1..RHL-12 still carried the unadmitted label after the readiness gate opened. (3) Amendment A2 in the merged spec rests partly on a file-vs-row principle attributed to apex; the apex session read its own contracts/ontology.yaml and reports that apex entity types are ROW-grained per extractor (claim-from-ledger produces one claim per merged ledger row), that ontology.yaml has no self-entry, and that apex has no pv-contract type at all because it is sovereign and uses domain types. The category-error ruling stands on the artifact-vs-word distinction; the apex citation for the file-level choice does not. (4) apex notes that discharged_by is only non-vacuous if the named test exists and fails when the property is violated, and nothing currently checks that.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - correction
   notes: null

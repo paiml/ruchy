@@ -41,13 +41,21 @@ ignores:
   # accountable for it. Reassign if that is wrong — the gate only requires that
   # SOMEONE is named, not that it is this someone.
   #
-  # There were FIVE. Two are gone: RUSTSEC-2025-0119 (number_prefix) and
+  # There were FIVE. THREE are gone: RUSTSEC-2025-0119 (number_prefix) and
   # RUSTSEC-2025-0134 (rustls-pemfile) named crates that are not in Cargo.lock at
   # all, and cargo-deny already reported both as `advisory-not-detected`. Giving
   # them an owner and a date manufactured two obligations out of two removable
   # lines — the exact standing-red-with-a-name this ledger exists to prevent.
   # Deleting a dead exemption is reading the tool's own output, not re-reviewing
   # an advisory. Found by the second-family review, 2026-09-20.
+  #
+  # The THIRD, paste (RUSTSEC-2024-0436), survived that pass because it IS in
+  # Cargo.lock at 1.0.15 and "not in the lock" was the criterion. The infra
+  # session supplied the sharper one: presence in the lock is not sufficient for
+  # KEEPING, because a crate can sit in the lock via a path the advisory's range
+  # never reaches. The decisive test is to REMOVE the ignore and see whether
+  # cargo-deny flips to FAILED. Measured on all three survivors: instant LIVE,
+  # bincode LIVE, paste exit 0 — suppressing nothing. Two remain.
   # ---------------------------------------------------------------------------
   - id: RUSTSEC-2024-0384
     crate: instant
@@ -57,14 +65,6 @@ ignores:
     owner: noah
     removed_by: "2026-10-20"
     reason: "transitive via web-time, no replacement available (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
-  - id: RUSTSEC-2024-0436
-    crate: paste
-    class: unmaintained
-    source: deny
-    owner_ticket: SEC-3
-    owner: noah
-    removed_by: "2026-10-20"
-    reason: "transitive via simba/nalgebra/parquet, use pastey when upstream migrates (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
   - id: RUSTSEC-2025-0141
     crate: bincode
     class: unmaintained
