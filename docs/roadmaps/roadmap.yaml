@@ -3356,3 +3356,81 @@ roadmap:
   - ci-debt
   - filed-by:CIBASE-1
   notes: null
+- id: AUDIT-1
+  github_issue: null
+  item_type: task
+  title: 'AUDIT-1: security.yml''s stricter audit step is the one that cannot fail'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-20T17:31:21Z
+  updated: 2026-09-20T17:31:21Z
+  spec: null
+  acceptance_criteria:
+  - 'Five-class audit pass, 2026-09-20. CLASS 3 (gate-that-cannot-fail) AND CLASS 2 (placeholder-is-most-permissive), in one line. .github/workflows/security.yml has two audit steps: line 24 ''Run security audit'' = ''cargo audit'' (CAN fail, and did today on RUSTSEC-2026-0285), and line 26 ''Check for known vulnerabilities'' = ''cargo audit --deny warnings || true'' (CANNOT fail). Step 26 runs every time; its verdict is swallowed, so it is not disabled but it cannot fail, and it is the STRICTER of the two: --deny warnings escalates unmaintained/unsound/yanked warnings to errors, which is exactly the class ruchy carries two live exemptions for (instant, bincode). So the repository reports a green ''Security Audit'' on warnings it has never actually gated. FALSIFIER: plant a crate with a known unmaintained advisory and no deny.toml ignore; step 24 passes (it does not --deny warnings) and step 26 passes (|| true). Remove the ''|| true'' and step 26 must go RED. ALSO DECIDE: with SEC-1''s expiry gate now in the required check, is step 26 wanted at all, or is it a second audit surface that will drift from .cargo/audit.toml the way sovereign-ci''s already has? Note this workflow is NOT the required ''gate'' context; the required path is sovereign-ci''s own security job.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci-debt
+  - class:gate-cannot-fail
+  notes: null
+- id: AUDIT-2
+  github_issue: null
+  item_type: task
+  title: 'AUDIT-2: test_satd_count_collection passes when the SATD counter is broken'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T17:31:21Z
+  updated: 2026-09-20T17:31:21Z
+  spec: null
+  acceptance_criteria:
+  - 'Five-class audit pass, 2026-09-20. CLASS 3 (gate-that-cannot-fail). src/quality/mod.rs:860, in test_satd_count_collection: ''let count = QualityGates::count_satd_comments().unwrap_or(0);'' followed by ''assert_eq!(count, 0, "SATD comments should be eliminated")''. count_satd_comments returns Result and shells out to ''find src -name *.rs -exec grep -c ...''. If that invocation fails for ANY reason — find missing, src/ absent, a packaged crate without src/, a sandbox without exec — the error becomes 0 and the assertion PASSES. The test cannot distinguish ''there is no SATD'' from ''the counter did not run'', and 0 is the most permissive of the two answers. GROUNDED BY INSPECTION, not executed: making the counter fail under test needs an environment change. NOTE the production gate is NOT affected — line 300 uses ''?'' and propagates. This is the test only. FALSIFIER: replace unwrap_or(0) with expect(), or assert on Ok(0) rather than on the unwrapped value, then rename the binary/PATH so find is unavailable; the test must go RED where today it goes green.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - test-debt
+  - class:gate-cannot-fail
+  notes: null
+- id: AUDIT-3
+  github_issue: null
+  item_type: task
+  title: 'AUDIT-3: 56 public fields are computed and never read, on structs that derive no Serialize'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T18:16:24Z
+  updated: 2026-09-20T18:16:24Z
+  spec: null
+  acceptance_criteria:
+  - 'Five-class audit pass, 2026-09-20, CLASS 1 (computed-but-unexposed). MEASURED: 1896 public struct fields in src/; 81 are never read via .field anywhere in src/; of those, 25 sit on structs that derive Serialize (read by name by serde, legitimately) and 56 sit on structs that derive NO Serialize — genuinely computed and dropped. The audit report first said 11 and refused to mint them under a blanket serde exemption; the review quorum MEASURED that HanseiReport derives only Debug and CacheStats only Debug+Clone, so the exemption was dodging, and the 11 was a probe capped at hits[:400] — a truncation reported as a count, the same defect as the ''17 of 17'' on CIBASE-1. The three the quorum named: HanseiReport.overall_accuracy, HanseiReport.fix_rate (src/oracle/hansei.rs), CacheStats.memory_usage_estimate (src/quality/scoring.rs). The full 56: CacheKey.content_hash (quality/scoring.rs); CacheStats.memory_usage_estimate (quality/scoring.rs); HanseiReport.overall_accuracy (oracle/hansei.rs); HanseiReport.fix_rate (oracle/hansei.rs); HanseiReport.model_age_days (oracle/hansei.rs); OnlineLearningConfig.max_hotfix_samples (oracle/mod.rs); OnlineLearningConfig.merge_on_retrain (oracle/mod.rs); HotFixStats.retrains (oracle/mod.rs); KeyEvent.modifiers (computebrick/mod.rs); Modifiers.shift (computebrick/mod.rs); Modifiers.ctrl (computebrick/mod.rs); Modifiers.alt (computebrick/mod.rs); MouseEvent.modifiers (computebrick/mod.rs); TextStyle.strikethrough (computebrick/canvas.rs); CompilationResult.exit_code (hunt_mode/ephemeral_workspace.rs); UnlockEvent.test_id (notebook/testing/progressive.rs); ConvertedFile.original_path (notebook/testing/migration.rs); ConvertedFile.new_path (notebook/testing/migration.rs); PlagiarismResult.similarity_score (notebook/testing/anticheat.rs); PlagiarismResult.matched_student (notebook/testing/anticheat.rs); PlagiarismResult.matched_sections (notebook/testing/anticheat.rs); ObfuscationResult.indicators (notebook/testing/anticheat.rs); PatternAnalysis.indicators (notebook/testing/anticheat.rs); Assignment.notebook_template (notebook/testing/educational.rs); StudentSubmission.submitted_at (notebook/testing/educational.rs); StudentMetrics.total_executions (notebook/testing/educational.rs); StudentMetrics.avg_execution_time_ms (notebook/testing/educational.rs); StudentMetrics.assignments_completed (notebook/testing/educational.rs); ClassMetrics.total_students (notebook/testing/educational.rs); ClassMetrics.completion_rate (notebook/testing/educational.rs); ClassMetrics.avg_score (notebook/testing/educational.rs); PeerReview.reviewer_id (notebook/testing/educational.rs); PeerReview.reviewee_id (notebook/testing/educational.rs); ReviewComment.line_number (notebook/testing/educational.rs); ReviewComment.comment (notebook/testing/educational.rs); BenchmarkResult.min_time_ms (notebook/testing/performance.rs); BenchmarkResult.percentile_95_ms (notebook/testing/performance.rs); RegressionResult.is_regression (notebook/testing/performance.rs); RegressionResult.percent_change (notebook/testing/performance.rs); TestHistory.avg_duration_ms (notebook/testing/performance.rs); IncrementalResult.dependency_graph (notebook/testing/incremental.rs); IncrementalResult.cache_stats (notebook/testing/incremental.rs); DependencyGraph.nodes (notebook/testing/incremental.rs); DependencyGraph.edges (notebook/testing/incremental.rs); DependencyGraph.execution_order (notebook/testing/incremental.rs); CacheStatistics.total_lookups (notebook/testing/incremental.rs); CacheStatistics.cache_misses (notebook/testing/incremental.rs); VerificationResult.verification_time (notebook/testing/smt.rs); Exercise.starter_code (notebook/testing/grading.rs); TutorialStep.solution (notebook/testing/tutorial.rs); ErrorCluster.fix_action (reporting/pareto.rs); BisectStep.indices (reporting/bisect.rs); ActorContext.actor_name (runtime/actor.rs); CompositeForm.elements (runtime/inspect.rs); CompositeForm.closer (runtime/inspect.rs); ResourceLimits.max_stack_kb (runtime/assessment.rs). Many are under src/notebook/testing/ and may be scaffolding — decide per struct whether the field is exposed (a receipt, a report line), or deleted. ONE row for the class rather than 56, deliberately; the list is the row''s content. FALSIFIER: the probe (docs/audits/five-class-audit-2026-09-20.md) re-run after the fix must report dead=0 for these; a field that is ''exposed'' by a test reading it and nothing else is not exposed.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - class:computed-but-unexposed
+  notes: null
+- id: AUDIT-4
+  github_issue: null
+  item_type: task
+  title: 'AUDIT-4: make test swallows cargo test failures — 34 || true in the Makefile, none in CI'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T18:16:24Z
+  updated: 2026-09-20T18:16:24Z
+  spec: null
+  acceptance_criteria:
+  - 'Five-class audit pass, 2026-09-20, CLASS 3 (gate-that-cannot-fail), developer loop. The Makefile carries 34 ''|| true''. CI invokes no make target (grep of .github/workflows for ''make <target>'' is empty), so no runner is affected — but the developer''s own gates are: line 205 ''cargo test ... --test-threads=... || true'' under the test target; 264 and 274 ''cargo test --test cli_integration || true'' and ''repl_integration || true''; 674 ''cargo llvm-cov test --lib --no-report || true''; 909 ''pmat quality-gate || true''. A developer running make test sees green when tests fail. This was found by the review quorum on the audit PR, which caught that the report claimed probe 3 covered the Makefile when it had scanned .github/workflows only. FALSIFIER: plant a failing test, run make test, it must exit non-zero. Decide per line: most are honest best-effort (cargo install ... || true), the five above are not.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - class:gate-cannot-fail
+  notes: null
