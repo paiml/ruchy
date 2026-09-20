@@ -7,7 +7,21 @@
 # reasoning (paiml-ontology.md ONT-001 v4.9 §3.1). The vocabulary FILE is the
 # Sigma `pv-contract` entity; `kind:` below is RHL's own closed list, not a
 # Sigma class — no per-term `sigma_class` field.
-sigma_entity: pv-contract
+# sigma_entity: "[U]" — NOT bound, deliberately. RHL-13, 2026-09-20.
+#
+# This first read `sigma_entity: pv-contract`. Two sessions independently say that
+# is wrong, for different reasons: apex has no `pv-contract` type at all (it is
+# sovereign and uses domain types), and infra reads ONT-001 §3.1 as putting a
+# vocabulary file under `documents` or `data files` depending on its format.
+# ONT-001's `pv-contract` is "a contract about contracts", and a term registry is
+# not a contract.
+#
+# Rather than swap one guess for another: ONT-001 §3.7 says every entity type
+# names its EXTRACTOR, and there is no extractor for a YAML term registry. So the
+# honest state is that this file is a Σ entity whose type is not yet in Σ, and
+# adding one is an ONT-001 row, not a ruchy decision. Candidates are `documents`
+# and `data files`. Binding it is RHL-2's work, with whoever owns Σ.
+sigma_entity: "[U]"
 
 vocabulary: tickets
 version: 1

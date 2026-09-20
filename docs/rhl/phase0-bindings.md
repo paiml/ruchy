@@ -151,10 +151,11 @@ error.**
 > Both were settled by going and reading Σ.
 
 Σ is at `~/src/infra/docs/specifications/paiml-ontology.md` — ONT-001 v4.9. It is
-not in `ruchy`, and it does not need to be: the established pattern is that a repo
-owns its own Σ registry and cites ONT-001 (apex's `contracts/ontology.yaml` says
-so in its own header, "apex owns this registry rather than waiting on a
-fleet-wide one", citing ONT-001 §3.7).
+not in `ruchy`, and it does not need to be: a repo may own its own Σ registry and
+cite ONT-001. apex's `contracts/ontology.yaml` says so in its own header — "apex
+owns this registry rather than waiting on a fleet-wide one", citing ONT-001 §3.7
+— and that is what this sentence cites apex for, and all it cites apex for. See
+the correction below before drawing anything further from it.
 
 ```bash
 find ~/src -maxdepth 4 -name 'paiml-ontology*'     # → infra/docs/specifications/paiml-ontology.md
@@ -184,6 +185,35 @@ The binding RHL-0 takes, therefore:
   once at the top (see `vocab/fleet-v1.yaml`);
 - a **term's** `kind` stays RHL's own closed list, and there is no per-term
   `sigma_class` field at all.
+
+> **Correction, RHL-13 (2026-09-20) — do not read the first bullet as a general
+> principle, and do not attribute it to apex.**
+> This binding originally cited apex as the precedent for "the file is the Σ
+> entity, the rows inside it are not". The apex session read its own
+> `contracts/ontology.yaml` and reports that this is **not** how apex works:
+>
+> - apex's entity types are `study`, `claim`, `dataset`, `figure`, and each names
+>   an extractor that decides its own granularity. `claim-from-ledger` reads one
+>   JSONL file and produces **one claim per merged row** — row-grained, the
+>   opposite of the principle drawn here.
+> - `ontology.yaml` does not appear in its own registry.
+> - apex has **no `pv-contract` type at all**: it is sovereign (v4.5 fork A) and
+>   uses domain types, so `sigma_entity: pv-contract` is ONT-001's fleet
+>   vocabulary, a different choice — possibly the right one for ruchy, but not
+>   apex's pattern.
+>
+> **What the apex precedent actually supports** is one file satisfying two
+> independent readers: its `equations:` block is `pv`'s and its
+> `entity_types:`/`extractors:` are apex-ont's, and its header says *"Neither is
+> extended to understand the other — that is what makes the two gates independent
+> rather than one gate twice."* That is about reader independence, not entity
+> granularity.
+>
+> The **category-error ruling is unaffected** and rests on the artifact-vs-word
+> distinction alone: `study | claim | dataset | figure` are as plainly not
+> word-kinds as `code | documents | data files` are. Granularity — file or row —
+> is a per-type decision for whoever writes the extractor, and RHL choosing
+> file-level for a vocabulary is a choice, not a law.
 
 **Consequence for §10:** the STOP condition `vocabulary-unbindable` is "Σ at HEAD
 cannot express term kinds". Σ can express what is actually under contract — the

@@ -265,3 +265,82 @@ fn test_rhl_vocab_0_terms_declare_a_usable_signature() {
         bad.len()
     );
 }
+
+/// A `discharged_by` that names no real test is a citation nothing resolves.
+///
+/// RHL-0 answered `pv validate`'s demand for a `kani_harnesses` block — on
+/// invariants Kani cannot reach, because they are properties of bytes on disk —
+/// by marking each harness `status: declared_not_implemented` and adding
+/// `discharged_by:` naming the test that really discharges it. The apex session,
+/// which has the nearest equivalent (`implemented: false` + a `note:`), pointed
+/// out that this is strictly more informative than theirs ONLY while the named
+/// test exists and can fail. Otherwise it is a worse lie than saying nothing,
+/// because it reads as a discharge. Nothing checked it until now.
+#[test]
+fn test_rhl_vocab_0_every_discharged_by_names_a_real_test() {
+    let defined = all_test_fn_source();
+    let dangling: Vec<String> = rhl_and_sec_contracts()
+        .into_iter()
+        .flat_map(|(name, text)| {
+            cited_tests(&text)
+                .into_iter()
+                .map(move |c| (name.clone(), c))
+        })
+        .filter(|(_, cited)| !defined.contains(&format!("fn {cited}")))
+        .map(|(name, cited)| format!("{name}: discharged_by `{cited}` — no such test"))
+        .collect();
+    assert!(
+        dangling.is_empty(),
+        "RHL-13: {} contract(s) cite a discharging test that does not exist: \
+         {dangling:#?}. A `discharged_by` naming nothing reads as a discharge and \
+         is worse than an honest `not built`.",
+        dangling.len()
+    );
+}
+
+/// Every `.rs` source in the crate, concatenated — the haystack for `fn <name>`.
+fn all_test_fn_source() -> String {
+    let root = crate::rhl_pre_registration::repo_root();
+    walkdir::WalkDir::new(root.join("src"))
+        .into_iter()
+        .flatten()
+        .filter(|e| e.path().extension().is_some_and(|x| x == "rs"))
+        .filter_map(|e| std::fs::read_to_string(e.path()).ok())
+        .collect()
+}
+
+/// The RHL and SEC contracts, as (filename, text).
+fn rhl_and_sec_contracts() -> Vec<(String, String)> {
+    let root = crate::rhl_pre_registration::repo_root();
+    std::fs::read_dir(root.join("contracts"))
+        .expect("RHL-13: contracts/ is missing")
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            let n = p
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            n.starts_with("rhl-") || n.starts_with("sec-")
+        })
+        .map(|p| {
+            let n = p
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+            (n, std::fs::read_to_string(&p).unwrap_or_default())
+        })
+        .collect()
+}
+
+/// Every `discharged_by:` value in a contract, unquoted.
+fn cited_tests(contract: &str) -> Vec<String> {
+    contract
+        .lines()
+        .filter_map(|l| l.trim().strip_prefix("discharged_by:"))
+        .map(|v| v.trim().trim_matches('"').to_string())
+        .filter(|v| !v.is_empty())
+        .collect()
+}
