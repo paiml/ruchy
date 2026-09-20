@@ -27,11 +27,17 @@ equations:
       - "Over-strict is safe; under-strict is the hole. Measured on four token shapes: xRUSTSEC-…, 0RUSTSEC-…, RUSTSEC-…x, RUSTSEC-…-instant"
 
   no_untraceable_suppression:
-    formula: "deny.toml contains no lint class set to none|allow|ignore, and no non-empty [graph] exclude"
-    domain: "deny.toml"
+    formula: "∀ c ∈ {vulnerability, unmaintained, unsound, notice, yanked} : deny.toml[advisories][c] ∈ {deny, warn, all} ∧ deny.toml[graph][exclude] = []"
+    domain: "deny.toml, parsed as TOML rather than grepped (CLAUDE.md rule 2)"
     invariants:
       - "A suppression carrying no advisory id cannot be owned or expired"
       - "A class-level suppression silences every FUTURE advisory in that class too"
+      - "REPORTING values are allow-listed, not suppressing values deny-listed: a review measured four evasions of a deny-list (single quotes, a quoted key, and cargo-deny's own `unmaintained = \"workspace\"`)"
+    scope_limit: >
+      This covers the five lint classes named in the formula and [graph] exclude.
+      A future cargo-deny key that suppresses advisories under some other name
+      would evade it until added. The test's name reads as a universal and is
+      not one; the residual is new KEYS, not new VALUES.
 
 proof_obligations:
   - type: invariant

@@ -99,40 +99,95 @@ fn ledger() -> Ledger {
     serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("SEC-1: {LEDGER} is not valid YAML: {e}"))
 }
 
+/// `deny.toml`, parsed. CLAUDE.md rule 2: no simple heuristics.
+///
+/// An earlier revision scanned this file as TEXT with `#`-comments stripped
+/// mid-line. TOML does not treat `#` inside a string as a comment, so
+/// `{ reason = "tracked in #1234", id = "RUSTSEC-2024-0384" }` hid a LIVE
+/// exemption from the gate — measured end to end, with the previous revision as
+/// a control that caught it. Parsing removes that whole class rather than
+/// patching one spelling of it.
+fn deny_doc() -> toml::Value {
+    let text = read(DENY_TOML);
+    toml::from_str(&text).unwrap_or_else(|e| panic!("SEC-1: {DENY_TOML} is not valid TOML: {e}"))
+}
+
+/// The advisory ids `deny.toml` exempts, read from the parsed document rather
+/// than grepped: an entry is either a bare string or a table with an `id`.
+fn deny_ignored_ids(doc: &toml::Value) -> Vec<String> {
+    doc.get("advisories")
+        .and_then(|a| a.get("ignore"))
+        .and_then(toml::Value::as_array)
+        .map(|rows| {
+            rows.iter()
+                .filter_map(|r| r.as_str().or_else(|| r.get("id")?.as_str()))
+                .map(str::to_string)
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
 /// Every advisory this repository exempts, wherever it says so.
 ///
-/// Not just the two config files: `cargo audit --ignore RUSTSEC-…` written
-/// inline in a workflow or a Makefile recipe is a fully effective, undated
-/// exemption. sovereign-ci states the norm ("Advisory exemptions go in
-/// .cargo/audit.toml, not in CI skip logic") in a comment, which is not a check.
-/// This is.
+/// Not just the config files: `cargo audit --ignore RUSTSEC-…` written inline in
+/// a workflow or a Makefile recipe is a fully effective, undated exemption.
+/// sovereign-ci states that norm ("Advisory exemptions go in .cargo/audit.toml,
+/// not in CI skip logic") in a comment, which is not a check. This is.
+///
+/// `.cargo/audit.toml`, the Makefile and the workflows are scanned WHOLE,
+/// comments included — CI's sed is whole-file, `#` inside a quoted shell string
+/// is not a comment to bash or to make, and being over-strict here is the safe
+/// direction. `deny.toml` alone is read structurally, because it alone is parsed
+/// rather than grepped by its consumer.
 fn ignored_everywhere() -> Vec<String> {
-    // `.cargo/audit.toml` is scanned WHOLE, comments included, because CI's sed
-    // is whole-file and an id written in a comment there really is an --ignore
-    // flag. `deny.toml` and the rest are parsed by tools that understand
-    // comments, so a commented id there is inert and scanning it would forbid
-    // documenting a REMOVED exemption — which is exactly what this ledger wants
-    // written down.
     let mut ids = advisory_ids(&read(AUDIT_TOML));
-    for f in [DENY_TOML, "Makefile"] {
-        ids.extend(advisory_ids(&strip_comments(&read(f))));
-    }
-    for e in std::fs::read_dir(repo_root().join(".github/workflows"))
-        .into_iter()
-        .flatten()
-        .flatten()
-    {
-        let p = e.path();
-        if p.extension().is_some_and(|x| x == "yml" || x == "yaml") {
-            ids.extend(advisory_ids(
-                &std::fs::read_to_string(&p).unwrap_or_default(),
-            ));
-        }
+    ids.extend(advisory_ids(&read("Makefile")));
+    ids.extend(deny_ignored_ids(&deny_doc()));
+    for (_, text) in workflow_files() {
+        ids.extend(advisory_ids(&text));
     }
     ids.sort();
     ids.dedup();
     ids
 }
+
+/// Every workflow file and its text. Panics rather than returning nothing: a
+/// missing or unreadable directory used to be swallowed by `flatten()`, so a
+/// renamed `.github/workflows` — or one file at mode 000 — made the gate scan
+/// nothing and pass. Measured, both cases.
+fn workflow_files() -> Vec<(PathBuf, String)> {
+    let dir = repo_root().join(WORKFLOWS);
+    let entries = std::fs::read_dir(&dir).unwrap_or_else(|e| {
+        panic!(
+            "SEC-1: cannot read {WORKFLOWS}: {e}. An unreadable \
+             workflow directory must not read as 'no exemptions here'."
+        )
+    });
+    let mut out = Vec::new();
+    for e in entries {
+        let p = e
+            .expect("SEC-1: unreadable entry in .github/workflows")
+            .path();
+        let is_yaml = p
+            .extension()
+            .and_then(|x| x.to_str())
+            .is_some_and(|x| x.eq_ignore_ascii_case("yml") || x.eq_ignore_ascii_case("yaml"));
+        if is_yaml {
+            let text = std::fs::read_to_string(&p)
+                .unwrap_or_else(|e| panic!("SEC-1: cannot read {}: {e}", p.display()));
+            out.push((p, text));
+        }
+    }
+    assert!(
+        !out.is_empty(),
+        "SEC-1: no workflow files found under {WORKFLOWS}. This gate scans them for \
+         inline `cargo audit --ignore`; finding none means the path moved, not that \
+         the repository has no workflows."
+    );
+    out
+}
+
+const WORKFLOWS: &str = ".github/workflows";
 
 #[test]
 fn test_sec_1_every_ignored_advisory_is_in_the_ledger() {
@@ -255,12 +310,9 @@ fn expired_on(e: &Entry, today: chrono::NaiveDate) -> Option<String> {
 /// future advisory in it, with one line that carries no id to date.
 #[test]
 fn test_sec_1_no_untraceable_blanket_suppression() {
-    let found: Vec<String> = read(DENY_TOML)
-        .lines()
-        .map(str::trim)
-        .filter(|l| !l.starts_with('#'))
-        .filter_map(untraceable_suppression)
-        .collect();
+    let doc = deny_doc();
+    let mut found = suppressing_levels(&doc);
+    found.extend(non_empty_graph_exclude(&doc));
     assert!(
         found.is_empty(),
         "SEC-1: {DENY_TOML} suppresses advisories in a way that carries NO advisory \
@@ -268,30 +320,58 @@ fn test_sec_1_no_untraceable_blanket_suppression() {
          An exemption that names the advisory can be owned and expired. One that \
          silences a whole class, or removes the crate from the graph, cannot — and \
          it silences every FUTURE advisory in that class too. Exempt by id, or say \
-         here why the class is genuinely not applicable.",
+         in {DENY_TOML} why the class is genuinely not applicable.",
     );
 }
 
-/// One `deny.toml` line, if it suppresses advisories without naming one.
-fn untraceable_suppression(line: &str) -> Option<String> {
-    if let Some(level) = blanket_level(line) {
-        return Some(format!("{line}  (silences the `{level}` class outright)"));
-    }
-    let excludes = line.starts_with("exclude") && line.contains('[') && !line.contains("[]");
-    excludes.then(|| format!("{line}  (drops crates from the graph entirely)"))
+/// Advisory lint classes set to anything that stops them being reported.
+///
+/// WHAT THIS DOES NOT COVER, stated because the test's name reads as a
+/// universal and is not one: it inspects the five lint classes named below and
+/// `[graph] exclude`. A future cargo-deny key that suppresses advisories under
+/// some other name would evade it until added here. Allow-listing the REPORTING
+/// values rather than deny-listing the suppressing ones is what keeps that gap
+/// to new KEYS rather than new VALUES.
+///
+/// Allow-listing the reporting values, rather than deny-listing the suppressing
+/// ones, is deliberate. A review measured four evasions of the old deny-list —
+/// `'none'` in single quotes, a quoted key, and cargo-deny's own
+/// `unmaintained = "workspace"`, which reads as ordinary configuration and
+/// silences exactly the class every current ledger entry lives in. Any value this
+/// gate does not recognise as REPORTING is treated as suppressing.
+fn suppressing_levels(doc: &toml::Value) -> Vec<String> {
+    const CLASSES: &[&str] = &[
+        "vulnerability",
+        "unmaintained",
+        "unsound",
+        "notice",
+        "yanked",
+    ];
+    const REPORTING: &[&str] = &["deny", "warn", "all"];
+    let Some(adv) = doc.get("advisories").and_then(toml::Value::as_table) else {
+        return Vec::new();
+    };
+    adv.iter()
+        .filter(|(k, _)| CLASSES.contains(&k.as_str()))
+        .filter_map(|(k, v)| v.as_str().map(|s| (k, s)))
+        .filter(|(_, v)| !REPORTING.contains(v))
+        .map(|(k, v)| format!("advisories.{k} = \"{v}\"  (silences the `{k}` class outright)"))
+        .collect()
 }
 
-/// A lint level set to something that stops an advisory class being reported.
-fn blanket_level(line: &str) -> Option<&'static str> {
-    const CLASSES: &[&str] = &["unmaintained", "unsound", "notice", "yanked"];
-    let (key, value) = line.split_once('=')?;
-    let suppressing = ["none", "allow", "ignore"]
-        .iter()
-        .any(|v| value.contains(&format!("\"{v}\"")));
-    suppressing
-        .then(|| CLASSES.iter().find(|c| key.trim() == **c))
-        .flatten()
-        .copied()
+/// A `[graph] exclude` that drops crates from the graph entirely — which removes
+/// them from the licenses and sources checks too, not only advisories.
+fn non_empty_graph_exclude(doc: &toml::Value) -> Vec<String> {
+    doc.get("graph")
+        .and_then(|g| g.get("exclude"))
+        .and_then(toml::Value::as_array)
+        .filter(|a| !a.is_empty())
+        .map(|a| {
+            vec![format!(
+                "graph.exclude = {a:?}  (drops crates from the graph entirely)"
+            )]
+        })
+        .unwrap_or_default()
 }
 
 /// The audited files must EXIST, or the gate reads an empty string and passes.
@@ -349,11 +429,3 @@ fn test_sec_1_no_exemption_is_dated_beyond_the_maximum_window() {
 /// The longest an exemption may be dated into the future. 90 days is three
 /// re-reviews a year; it is a cap, not a target.
 const MAX_WINDOW_DAYS: i64 = 90;
-
-/// Drop `#`-comments, for files whose consumer parses rather than greps.
-fn strip_comments(text: &str) -> String {
-    text.lines()
-        .map(|l| l.split_once('#').map_or(l, |(code, _)| code))
-        .collect::<Vec<_>>()
-        .join("\n")
-}
