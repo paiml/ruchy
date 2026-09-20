@@ -2032,7 +2032,7 @@ roadmap:
   updated: 2026-09-05T09:13:23.607931144+00:00
   spec: null
   acceptance_criteria:
-  - 'Process: paiml-implement unattended per ~/Downloads/ruchy-next-release-prompt.md. Hard gates: clean-room publish, ci/gate, pre-release-gate, cargo publish. Evidence: docs/specifications/evidence/2026-09-05-release-gather/'
+  - "'Process: paiml-implement unattended per ~/Downloads/ruchy-next-release-prompt.md. Hard gates: clean-room publish, ci/gate, pre-release-gate, cargo publish. Evidence: docs/specifications/evidence/2026-09-05-release-gather/'"
   phases: []
   subtasks: []
   estimated_effort: null
@@ -2878,4 +2878,63 @@ roadmap:
   estimated_effort: null
   labels:
   - kind:release
+  notes: null
+- id: SEC-2
+  github_issue: null
+  item_type: task
+  title: 'SEC-2: move off the rustls version RUSTSEC-2026-0285 affects, and decide who owns pmcp''s TLS stack'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T12:25:44Z
+  updated: 2026-09-20T12:25:44Z
+  spec: null
+  acceptance_criteria:
+  - "'SEC-1 fixed RUSTSEC-2026-0285 by bumping rustls 0.23.43 -> 0.23.45 (the advisory''s own patched range). Remaining question, not urgent: rustls enters this tree only through pmcp -> reqwest -> hyper-rustls, and pmcp is optional behind the mcp feature (default = batteries-included, which does not include mcp). Measured 2026-09-20: no sovereign-ci job passes --all-features or any test_args, so no gate job builds rustls at all — cargo-audit reads Cargo.lock irrespective of features, which is why an advisory in a crate this repo does not compile by default can turn the REQUIRED gate red for every PR. Decide: (a) accept that the lock''s audit surface is wider than the build''s, and keep patching; (b) ask whether ruchy needs a TLS-carrying MCP client at all; (c) have the audit job scope to the features actually shipped. Also note cargo update -p rustls alone reported ''Locking 0 packages''; only --precise 0.23.45 moved it, which is worth understanding before the next advisory.'"
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - security
+  - filed-by:SEC-1
+  notes: null
+- id: SEC-3
+  github_issue: null
+  item_type: task
+  title: 'SEC-3: re-review the three inherited deny.toml advisory exemptions'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T12:25:44Z
+  updated: 2026-09-20T12:25:44Z
+  spec: null
+  acceptance_criteria:
+  - "'deny.toml carried five [advisories] ignore entries; three remain with a reason but NO expiry, marked ''Reviewed 2026-03-26'' and not re-reviewed since: RUSTSEC-2024-0384 (instant), RUSTSEC-2024-0436 (paste), RUSTSEC-2025-0119 (number_prefix), RUSTSEC-2025-0141 (bincode), RUSTSEC-2025-0134 (rustls-pemfile). SEC-1 added docs/audits/advisory-ignores.yaml and a gate that refuses any exemption without an owner and a removed_by date, so three of these five now carry removed_by 2026-10-20 and a named owner; the other two (RUSTSEC-2025-0119 number_prefix, RUSTSEC-2025-0134 rustls-pemfile) were DELETED rather than dated, because neither crate is in Cargo.lock and cargo-deny already reported both as advisory-not-detected. THAT DATE IS A FORCING FUNCTION, NOT AN AUDIT RESULT — nobody has re-read these advisories. Before 2026-10-20, for each: confirm the crate is still unmaintained rather than fixed, confirm it is still only transitive, and either drop the exemption or move the date deliberately naming what changed. All five are ''unmaintained'' warnings rather than vulnerabilities, which is why they got 30 days rather than 14; if the operator wants a different window for that class, set it here.'"
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - security
+  - filed-by:SEC-1
+  notes: null
+- id: SEC-1
+  github_issue: null
+  item_type: task
+  title: 'SEC-1: RUSTSEC-2026-0285 turns the required gate RED; make every advisory exemption a dated promise'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-20T12:27:33Z
+  updated: 2026-09-20T12:27:33Z
+  spec: null
+  acceptance_criteria:
+  - "RUSTSEC-2026-0285 in rustls 0.23.43 failed ci/security, which feeds ci/gate and so the REQUIRED 'gate' context, blocking every PR. Fixed by bumping rustls to 0.23.45 (the advisory's own patched range) rather than exempting it. Alongside the fix, docs/audits/advisory-ignores.yaml plus src/advisory_ignore_gate.rs make every advisory exemption carry a reason, an owner ticket and a removed_by date, and turn the gate RED the day one expires — an ignore with no expiry is the same standing red under a different name. Three inherited deny.toml exemptions are brought under that rule (two more were deleted rather than dated: their crates are not in Cargo.lock); SEC-3 owns re-reviewing them, SEC-2 owns the rustls/pmcp question."
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - security
   notes: null

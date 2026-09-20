@@ -1,0 +1,125 @@
+{
+  "ticket": "SEC-1",
+  "pr": 226,
+  "base": "main",
+  "head": "f4fc1303bd3b6c858255046a6b5da4e3f8430609",
+  "diff_sha256": "5e243395d72394d1a1cc527989dd19e9bc54300bff7593fcf87a39d2659e0134",
+  "agreed": true,
+  "author": {
+    "model": "Opus 5 (1M context)",
+    "family": "claude"
+  },
+  "families": [
+    "gemini",
+    "claude"
+  ],
+  "rounds": [
+    {
+      "round": 1,
+      "head": "a6690e6e",
+      "lanes": [
+        {
+          "model": "gemini-3.1-pro-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.8-flash-high",
+          "family": "gemini",
+          "verdict": "NO-VERDICT (BLIND: backgrounded cargo test, agy 5s)",
+          "model_source": "measured"
+        },
+        {
+          "model": "Opus 5 (1M context)",
+          "family": "claude",
+          "verdict": "implement-with-changes",
+          "model_source": "declared"
+        }
+      ],
+      "findings": 11,
+      "outcome": "all acted on; the two-lane measured finding was phantom Kani harnesses in 14 term contracts"
+    },
+    {
+      "round": 2,
+      "head": "f339e658",
+      "lanes": [
+        {
+          "model": "gemini-3.1-pro-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.8-flash-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "Opus 5 (1M context)",
+          "family": "claude",
+          "verdict": "implement-with-changes",
+          "model_source": "declared"
+        }
+      ],
+      "findings": 6,
+      "outcome": "all acted on; the claude lane proved a REGRESSION in the author's own previous commit, with a control against a6690e6e"
+    },
+    {
+      "round": 3,
+      "head": "4f1bbfee",
+      "lanes": [
+        {
+          "model": "gemini-3.1-pro-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "gemini-3.8-flash-high",
+          "family": "gemini",
+          "verdict": "do-not-implement-as-written",
+          "model_source": "measured"
+        },
+        {
+          "model": "Opus 5 (1M context)",
+          "family": "claude",
+          "verdict": "implement-with-changes",
+          "model_source": "declared"
+        }
+      ],
+      "findings": 5,
+      "outcome": "all five blockers fixed: exclude-dev evasion, two changes the commit message claimed but had not landed, a false measurement claim, and a packaged-crate panic"
+    },
+    {
+      "round": 4,
+      "head": "aae4090d",
+      "lanes": [
+        {
+          "model": "gemini-3.1-pro-high",
+          "family": "gemini",
+          "verdict": "NO-VERDICT",
+          "model_source": "measured",
+          "not_run_reason": "agy account quota RESOURCE_EXHAUSTED (HTTP 429) 202s in; retryable, resets ~1h. agy-lane.sh reported it as PMAT-065 BLIND, but the kept clone holds a 76KB diff.txt and a tree witness, so the lane HAD read its workspace. Capacity, not a finding."
+        },
+        {
+          "model": "Opus 5 (1M context)",
+          "family": "claude",
+          "verdict": "implement-as-written",
+          "model_source": "declared"
+        }
+      ],
+      "findings": 0,
+      "outcome": "claude lane confirmed all five round-3 fixes by measurement, reproduced the exclude-dev evasion, ran the extracted .crate (7 passed), and read the commit message line by line. Three non-blocking items raised and taken in 78c54e48."
+    }
+  ],
+  "agreed_basis": "Every finding from rounds 1-3 (22 in total, from both families) is fixed and independently re-measured by the author before commit. Round 4's claude-family lane returned implement-as-written with no blocker. The round-4 gemini lane did NOT run: the agy account quota was exhausted (429), which is a capacity fact and not a review outcome, and it is recorded here rather than papered over. Both families are represented across the review as a whole, per S5.",
+  "residuals": [
+    "The narrowing [graph] key list is maintained by hand against a tool that adds keys; the contract's scope_limit says so.",
+    "A #[cfg(test)] gate now ships in the published crate and reads repo files, so a vendored tarball that runs cargo test goes red on 2026-10-20 about ruchy's own ledger. Documented trade-off: the alternative is the fail-open shape the gate exists to refuse.",
+    "The round-4 second-family lane is unrun. Re-dispatchable after the agy quota resets."
+  ],
+  "artifact_location_note": "pmat-merge reads docs/audits/quorum-<ticket>.json and excludes that path from the judged diff, so a commit that only adds the verdict leaves the diff unchanged. A copy under .quorum/ is NOT excluded and would perturb its own judged diff, refusing the merge it is meant to arm. Recorded because the operator asked for .quorum/: that is forjar committed-quorum territory, and here the gate reads docs/audits/.",
+  "rebind_note": "Rebound after a roadmap-valid fix: four ticket descriptions containing \": \" were stored by pmat as acceptance_criteria and parsed by YAML as maps, failing CI before cargo-audit ever ran. The verdict covers the same code; only the roadmap text changed."
+}

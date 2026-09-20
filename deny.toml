@@ -11,11 +11,16 @@ no-default-features = false
 ignore = [
     # Unmaintained transitive deps with no available fix.
     # Reviewed 2026-03-26 — all are deep transitive, no direct usage.
+    # SEC-1, 2026-09-20: number_prefix (RUSTSEC-2025-0119) and rustls-pemfile
+    # (RUSTSEC-2025-0134) were REMOVED from this list. Neither crate is in
+    # Cargo.lock any more, and cargo-deny reported both as
+    # `warning[advisory-not-detected] ... no crate matched advisory criteria`.
+    # They were exemptions for crates that had already left the tree.
+    # Every id below must carry an entry in docs/audits/advisory-ignores.yaml
+    # with an owner and a removed_by date; src/advisory_ignore_gate.rs enforces it.
     { id = "RUSTSEC-2024-0384", reason = "instant: transitive via web-time, no replacement available" },
     { id = "RUSTSEC-2024-0436", reason = "paste: transitive via simba/nalgebra/parquet, use pastey when upstream migrates" },
-    { id = "RUSTSEC-2025-0119", reason = "number_prefix: transitive via indicatif, no replacement available" },
     { id = "RUSTSEC-2025-0141", reason = "bincode: transitive, widely used, no drop-in replacement" },
-    { id = "RUSTSEC-2025-0134", reason = "rustls-pemfile: transitive, no safe upgrade available" },
 ]
 
 [licenses]
