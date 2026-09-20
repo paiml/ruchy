@@ -1,3 +1,72 @@
+# Benchmark CI — runs the benchmarks and keeps their raw output. It does NOT gate.
+#
+# CIBASE-1 (2026-09-20) rewrote this file. What it previously claimed, and what it
+# actually did, measured:
+#
+#   `baseline-comparison`   claimed to compare the PR against its base and compute
+#                           effect sizes. MEASURED: 81 of 81 runs on a PR branch
+#                           FAILED, across 33 distinct branches, with zero PR
+#                           successes ever; every one died on its first step with
+#                           `fatal: invalid reference: main` — `actions/checkout`
+#                           leaves the base branch as `origin/main`, not `main`,
+#                           so `git checkout main -- benches/` cannot resolve. It
+#                           has never compared anything on any PR, while reporting
+#                           a result. Removed; see BENCH-1.
+#
+#                           COUNT CORRECTED: an earlier revision of this comment
+#                           said "17 of 17". That was `gh run list`'s default
+#                           20-row page, not a measurement. Paginating the full
+#                           history gives 390 runs: 306 push/success, 3
+#                           push/failure, and 81 pull_request/FAILURE across 33
+#                           distinct branches, with ZERO pull_request successes
+#                           ever. Writing a page size into a permanent comment as
+#                           if it were a count is the class this ticket exists to
+#                           correct, so it is recorded rather than quietly fixed.
+#
+#                           Two further layers, had it ever run: `git checkout
+#                           <ref> -- benches/` swaps only `benches/` and leaves
+#                           `src/` at the PR's code, so the "baseline" would have
+#                           been the PR's library with the base's harness — not a
+#                           baseline. And the "Comparison Results" it echoed
+#                           ("effect sizes (Cohen's d)", "threshold |d| > 0.5")
+#                           were echoed strings; nothing computed a d and nothing
+#                           thresholded on one.
+#
+#   `Generate benchmark report`  wrote a markdown table HEADER and never a row,
+#                           under a "Statistical Summary" heading, and echoed a
+#                           Configuration block (samples, confidence level, warmup)
+#                           that it neither set nor read. Removed.
+#
+#   `Check for regressions` was `echo` plus two comment lines claiming to "fail if
+#                           any benchmark regressed by more than 10%". It had no
+#                           implementation and always passed. Removed.
+#
+#   `|| true` on the run    swallowed every benchmark failure — and it was hiding
+#                           a TOTAL one. An earlier revision of this comment said
+#                           "the benches DO compile, so it was hiding nothing".
+#                           That was FALSE, and a second-family review measured it:
+#                           in job 106109049678 the step reports SUCCESS while its
+#                           log contains `error: linking with 'cc' failed`, ~15
+#                           `undefined symbol: …::drop_slow`, `cargo bench returned
+#                           an error (exit status: 101)` and ZERO `Benchmarking`
+#                           lines. Same signature on six jobs, on main as well as
+#                           on PRs. The last run that actually benchmarked was
+#                           2026-09-05 20:22 (150 benchmarks, 19m04s), so this has
+#                           been masked for two weeks and ~50 runs, and main's 306
+#                           "successes" on this workflow are not successes.
+#                           Root cause is filed as BENCHBUILD-1: there is no
+#                           [profile.bench], so bench inherits [profile.release]'s
+#                           `panic = "abort"`, which criterion cannot link against.
+#
+#   THIS JOB IS EXPECTED RED until BENCHBUILD-1 lands, and that is deliberate.
+#   It is not a required check, so it blocks no merge. Shipping a true red is the
+#   point: the alternative is the two weeks of false green this comment documents.
+#   The red has an owner and a ticket, which is the same rule this repository
+#   applies to an advisory exemption — an unowned red is the thing being drained,
+#   not a red as such.
+#
+# A real regression gate needs a base build, a PR build, and a threshold. The
+# threshold is not ours to invent, so it is a ticket rather than a guess here.
 name: Benchmark CI
 
 on:
@@ -29,67 +98,15 @@ jobs:
       - name: Install cargo-criterion
         run: cargo install cargo-criterion
 
-      - name: Run benchmarks with statistical output
-        run: |
-          cargo criterion --message-format json > benchmark_results.json 2>&1 || true
-          cat benchmark_results.json
-
-      - name: Generate benchmark report
-        run: |
-          echo "## Benchmark Results" > benchmark_report.md
-          echo "" >> benchmark_report.md
-          echo "### Configuration" >> benchmark_report.md
-          echo "- Samples: 100 (minimum)" >> benchmark_report.md
-          echo "- Confidence Level: 95%" >> benchmark_report.md
-          echo "- Warmup: 3 iterations" >> benchmark_report.md
-          echo "- Random Seed: \$RUCHY_BENCHMARK_SEED" >> benchmark_report.md
-          echo "" >> benchmark_report.md
-          echo "### Statistical Summary" >> benchmark_report.md
-          echo "| Benchmark | Mean | Std Dev | 95% CI Lower | 95% CI Upper | Effect Size |" >> benchmark_report.md
-          echo "|-----------|------|---------|--------------|--------------|-------------|" >> benchmark_report.md
+      # No `|| true`. If the benchmarks cannot run, this job is red, and that is
+      # the whole of what this job asserts: the suite builds and executes. It is
+      # not a required check and gates no merge.
+      - name: Run benchmarks
+        run: cargo criterion --message-format json > benchmark_results.json
 
       - name: Upload benchmark results
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: benchmark-results
-          path: |
-            benchmark_results.json
-            benchmark_report.md
-
-      - name: Check for regressions
-        run: |
-          echo "Checking for performance regressions..."
-          # Fail if any benchmark regressed by more than 10%
-          # This ensures statistical rigor in CI
-
-  baseline-comparison:
-    name: Baseline Comparison
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Checkout baseline
-        run: git checkout ${{ github.base_ref }} -- benches/
-
-      - name: Run baseline benchmarks
-        run: cargo bench -- --save-baseline baseline
-
-      - name: Checkout PR
-        run: git checkout ${{ github.head_ref }} -- benches/
-
-      - name: Run PR benchmarks and compare
-        run: |
-          cargo bench -- --baseline baseline
-          echo "### Comparison Results"
-          echo "Effect sizes (Cohen's d) computed for all benchmarks"
-          echo "Threshold: |d| > 0.5 triggers review"
+          path: benchmark_results.json

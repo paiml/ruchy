@@ -3201,11 +3201,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'CIBASE-1: Baseline Comparison fails on every PR, passes only on main'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-20 12:05:11+00:00
-  updated: 2026-09-20 12:05:11+00:00
+  updated: 2026-09-20T17:01:04Z
   spec: null
   acceptance_criteria:
   - 'MEASURED 2026-09-20 via gh run list --workflow=benchmarks.yml: the ''Baseline Comparison'' job fails on PMAT-135, PMAT-139, PMAT-140 and RHL-0 — every recent BRANCH — and succeeds only on main. Failing step is ''Checkout baseline'': .github/workflows/benchmarks.yml:82 runs ''git checkout ${{ github.base_ref }} -- benches/'', but actions/checkout fetches only the PR head, so the base ref does not exist locally and the checkout fails in ~14s before any benchmark runs. Consequence: the job has never compared anything on a PR; it is a red that nobody consumes, and it is not a required context (the only required check is ''gate''), so it silently stays red. Fix: fetch the base ref first (fetch-depth 0, or an explicit git fetch origin $GITHUB_BASE_REF), or drop the job. Note the PR that fixes it touches .github/workflows and so needs a web-UI merge click. Filed by RHL-0; not fixed there.'
@@ -3216,7 +3216,7 @@ roadmap:
   - kind:code
   - ci-debt
   - filed-by:RHL-0
-  notes: null
+  notes: 'MEASURED 2026-09-20. Failure is ''fatal: invalid reference: main'', exit 128, at the FIRST step: actions/checkout leaves the base branch as origin/main, not main, so ''git checkout main -- benches/'' cannot resolve. Full paginated history: 390 runs — 306 push/success, 3 push/failure, and 81 pull_request/FAILURE across 33 distinct branches, with ZERO pull_request successes ever. (An earlier note said 17 of 17; that was gh run list default page size, not a count.) It has never compared anything on any PR. Not a required check (only ''gate'' is) and no consumer reads its artifacts — grep for benchmark_results.json / benchmark_report.md / benchmark-results outside the workflow returns nothing. Classified FC-5 per infra''s ruling (a gate that grades an artifact older than its sources), with their note that the stale thing here is a REF rather than a binary; it is not FC-1, because it is not a control that passed wrongly, it is a comparison that never happened. Two further layers found while fixing: ''git checkout <ref> -- benches/'' swaps only benches/ and leaves src/ at the PR''s code, so even a working version would have benchmarked the PR''s library with the base''s harness; and the ''Comparison Results'' output (Cohen''s d, threshold |d| > 0.5) was echoed strings with no implementation. Removed rather than repaired — a real gate needs a base build, a PR build and a threshold, and inventing a threshold is a STOP condition. Filed as BENCH-1. Also removed in the same pass: a ''Generate benchmark report'' step that wrote a table header and never a row under a Statistical Summary heading, a ''Check for regressions'' step that was echo plus two comments claiming a 10% threshold, and a ''|| true'' that made the benchmark run unable to go red.'
 - id: SEC-1
   github_issue: null
   item_type: task
@@ -3315,4 +3315,44 @@ roadmap:
   - kind:code
   - rhl
   - correction
+  notes: null
+- id: BENCH-1
+  github_issue: null
+  item_type: task
+  title: 'BENCH-1: a real benchmark-regression gate needs a base build, a PR build, and a threshold'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T17:00:59Z
+  updated: 2026-09-20T17:13:07Z
+  spec: null
+  acceptance_criteria:
+  - 'CIBASE-1 removed the baseline-comparison job rather than repair it, because repairing it honestly is a different piece of work. What a real gate needs, none of which the removed job had: (1) build the BASE tree, not just check out its benches/ — the old job swapped only benches/ and left src/ at the PR''s code, so its baseline would have been the PR''s library with the base''s harness; (2) build the PR tree; (3) a THRESHOLD for what counts as a regression. The old job echoed ''effect sizes (Cohen''s d)'' and ''threshold |d| > 0.5'' without computing either. Inventing a threshold is a STOP condition in this stack, so it is an operator ruling, not an implementer''s choice. Also decide whether it gates: today only ''gate'' is required, and a benchmark job that blocks merges on ubuntu-latest timing variance would be a new class of flake. Consider instead a non-gating job that records a number per PR so a trend exists before anything thresholds on it.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci-debt
+  - filed-by:CIBASE-1
+  notes: 'BLOCKED on BENCHBUILD-1: a regression gate cannot compare builds that do not build. cargo bench has failed at link since 2026-09-06 (no [profile.bench], so bench inherits [profile.release]''s panic=''abort'', which criterion cannot link against) and CI reported success throughout because of a ''|| true''. Settle BENCHBUILD-1 first, then decide this row''s threshold.'
+- id: BENCHBUILD-1
+  github_issue: null
+  item_type: task
+  title: 'BENCHBUILD-1: cargo bench has not built since 2026-09-06 and CI reported success for two weeks'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-20T17:12:44Z
+  updated: 2026-09-20T17:12:44Z
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED 2026-09-20. ''cargo bench'' fails at LINK: ''error: linking with cc failed'', ~15 x ''rust-lld: error: undefined symbol: ...::drop_slow'', then ''Error: cargo bench returned an error (exit status: 101); unable to continue''. In CI job 106109049678 the step ''Run benchmarks with statistical output'' reports SUCCESS and the log contains ZERO ''Benchmarking'' lines — ''|| true'' swallowed it. Same signature on at least six jobs (106109049678, 106099918227, 106097217810, 106098665397 today; 101475289010, 101454989197 on 2026-09-06). Last run that actually benchmarked: job 101370148451, 2026-09-05 20:22, 150 Benchmarking lines in 19m04s. So the regression window is 2026-09-05 20:22 -> 2026-09-06 07:05 and it has been masked for two weeks and ~50 runs. ROOT CAUSE, measured not guessed: there is no [profile.bench] in Cargo.toml (grep count 0), so bench INHERITS [profile.release] at Cargo.toml:523-531, which sets panic = ''abort'' and lto = ''fat''. criterion requires unwinding, and ''undefined symbol: drop_slow'' is that signature. It also explains why [profile.test] (opt-level 0, no panic override) passes the required gate while bench does not. Likely fix: add [profile.bench] inheriting release but with panic = ''unwind''. VERIFY by running cargo bench to completion, not cargo bench --no-run: a local --no-run gives three different failures depending on feature resolution (138 panic-strategy errors, the same cc/drop_slow link failure, and 54 anyhow version-conflict errors under --benches), so the local tree is not a reliable oracle for what CI does. BENCH-1 is blocked on this: a regression gate cannot compare builds that do not build.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci-debt
+  - filed-by:CIBASE-1
   notes: null

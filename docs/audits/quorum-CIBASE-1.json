@@ -1,0 +1,65 @@
+{
+  "ticket": "CIBASE-1",
+  "base": "main",
+  "head": "676b48b8e789732af0e9816e3121a356113e7065",
+  "diff_sha256": "313a2cd175dd0f0a4682272becfab5d7a244dc4dd4951cc0a22c5968ed6ebf0c",
+  "agreed": true,
+  "verdict": "implement-with-changes, changes applied",
+  "author": {
+    "model": "Opus 5 (1M context)",
+    "family": "claude"
+  },
+  "families_required": [
+    "gemini",
+    "claude"
+  ],
+  "families_run": [
+    "gemini",
+    "claude"
+  ],
+  "lanes": [
+    {
+      "model": "gemini-3.1-pro-high",
+      "family": "gemini",
+      "verdict": "PASS",
+      "model_source": "measured"
+    },
+    {
+      "model": "gemini-3.8-flash-high",
+      "family": "gemini",
+      "verdict": "PASS",
+      "model_source": "measured"
+    },
+    {
+      "model": "Opus 5 (1M context)",
+      "family": "claude",
+      "verdict": "implement-with-changes",
+      "model_source": "declared"
+    }
+  ],
+  "note_on_the_2_of_2_pass": "Both gemini lanes returned an unqualified PASS on a DELETION review that explicitly invited a dissent ('is any signal, however broken, better than none', 'manufacturing a red nobody will consume'). The delegate flagged that as weak evidence, and it was right: the claude lane found two blockers, one of which inverted a factual claim in the diff. A 2/2 PASS from one family is not a quorum.",
+  "blockers": [
+    {
+      "id": "B1",
+      "claim": "'17 of 17' was gh run list's default 20-row page, not a count, and it sat in a permanent file comment and a roadmap note both marked MEASURED.",
+      "measured": "390 runs paginated: 306 push/success, 3 push/failure, 81 pull_request/FAILURE across 33 distinct branches, ZERO pull_request successes ever.",
+      "resolution": "Corrected in both places, recording what the old number actually was."
+    },
+    {
+      "id": "B2",
+      "claim": "The diff asserted 'the benches DO compile today, so `|| true` was hiding nothing at the time.' That was false, and the opposite is true.",
+      "measured": "Job 106109049678: step reports SUCCESS; log carries `error: linking with cc failed`, ~15 `undefined symbol: ...::drop_slow`, `cargo bench returned an error (exit status: 101)`, and ZERO `Benchmarking` lines. Same on six jobs, main and PRs. Last real benchmark run 2026-09-05 20:22 (150 benchmarks, 19m04s) \u2014 masked two weeks, ~50 runs.",
+      "root_cause": "No [profile.bench]; bench inherits [profile.release]'s panic='abort' + lto='fat'. criterion needs unwinding; drop_slow is that signature.",
+      "resolution": "Comment corrected to say the opposite. Filed BENCHBUILD-1 (high) with the regression window and likely fix. BENCH-1 marked blocked on it."
+    }
+  ],
+  "deliberate_red": "Removing `|| true` makes the benchmark job red on every push and PR. Shipped knowingly: it is not a required check, it blocks no merge, and the alternative is the two weeks of false green B2 documents. The red carries an owner and a ticket \u2014 the same rule applied to advisory exemptions today. An UNOWNED red is what is being drained, not a red as such.",
+  "self_correction": "A previous commit said the local '138 errors' reading was an interruption artifact and the benches were fine. The claude lane checked: the local build genuinely fails too, with a different error class than CI. The first reading was right for the wrong reason and the retraction was wrong. The local tree is not a reliable oracle for CI, and BENCHBUILD-1 records that.",
+  "confirmed_by_all_three": [
+    "git checkout <ref> -- benches/ swaps only benches/ and leaves src/ at the PR's code",
+    "the Cohen's d / threshold output was echoed strings with no implementation",
+    "nothing consumes benchmark_results.json, benchmark_report.md or the benchmark-results artifact",
+    "only `gate` is a required context \u2014 the claude lane verified this against the org ruleset, not a workflow file"
+  ],
+  "workflow_scope_note": "This PR REMOVES a CI job. A standing workflow-edit authorization relayed today permits unsupervised workflow edits only when they ADD or TIGHTEN a check; a removal falls outside it and is STOP(workflow-scope): report, do not wait. Reported here and to the operator, who had already put CIBASE-1 on this session's queue knowing it was a workflow fix."
+}
