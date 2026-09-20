@@ -2879,3 +2879,293 @@ roadmap:
   labels:
   - kind:release
   notes: null
+- id: RHL-0
+  github_issue: null
+  item_type: task
+  title: 'RHL-0: RHL spec ruled; grammar, corpora and vocabulary v0 pre-registered'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:26:35Z
+  updated: 2026-09-20T10:27:48Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  notes: null
+- id: RHL-1
+  github_issue: null
+  item_type: task
+  title: 'RHL-1: parser, intent tree, fmt, diagnostics JSON, check'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 150. UNADMITTED until RHL-0 merges (spec RHL-001 §8 readiness rule).
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-0
+  notes: null
+- id: RHL-2
+  github_issue: null
+  item_type: task
+  title: 'RHL-2: fix --safe, vocab verb, vocabulary shape in pv'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 90. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-1
+  notes: null
+- id: RHL-3
+  github_issue: null
+  item_type: task
+  title: 'RHL-3: YAML surface, convert, round-trip property test'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-1
+  notes: null
+- id: RHL-4
+  github_issue: null
+  item_type: task
+  title: 'RHL-4: lowering to ruchy for unit kind job, determinism test'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 150. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-2
+  notes: null
+- id: RHL-5
+  github_issue: null
+  item_type: task
+  title: 'RHL-5: example to tests, expect to pv contract, receipt'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 120. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-4
+  notes: null
+- id: RHL-6
+  github_issue: null
+  item_type: task
+  title: 'RHL-6: MCP tools on ruchy mcp'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-2
+  notes: null
+- id: RHL-7
+  github_issue: null
+  item_type: task
+  title: 'RHL-7: F7 measurement, agent repair on the break corpus'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED until RHL-0 merges. F7 floor X% and k rounds are [U].
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-6
+  notes: null
+- id: RHL-8
+  github_issue: null
+  item_type: task
+  title: 'RHL-8: F8 measurement, the A/B, report-only, published either way'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 90. UNADMITTED until RHL-0 merges. F8 may FAIL; spec §7 says so in advance.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-5
+  notes: null
+- id: RHL-9
+  github_issue: null
+  item_type: task
+  title: 'RHL-9: explain verb, deterministic'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 40. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-4
+  notes: null
+- id: RHL-10
+  github_issue: null
+  item_type: task
+  title: 'RHL-10: ask verb, text to RHL via apr grammar-constrained decoding'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 90. UNADMITTED. Also needs constrained decoding merged in aprender.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-8
+  notes: null
+- id: RHL-11
+  github_issue: null
+  item_type: task
+  title: 'RHL-11: say verb, voice via whisper.apr'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 60. UNADMITTED. Also needs the whisper.apr own-or-archive decision (spec §12.5, unruled).
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-10
+  notes: null
+- id: RHL-12
+  github_issue: null
+  item_type: task
+  title: 'RHL-12: unit kinds command, check, pipeline, shape (one row each)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T10:27:37Z
+  spec: null
+  acceptance_criteria:
+  - K̂ 60 each. UNADMITTED until RHL-0 merges.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - unadmitted
+  - depends:RHL-5
+  notes: null
+- id: TESTDEBT-1
+  github_issue: null
+  item_type: task
+  title: 'TESTDEBT-1: two .disabled test/bench files are a red nobody consumes'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T10:27:51Z
+  updated: 2026-09-20T10:27:51Z
+  spec: null
+  acceptance_criteria:
+  - 'Spec RHL-001 §1 asks RHL-0 to file (not fix) a ticket for three disabled-test DIRECTORIES: tests.disabled, tests_disabled_for_mutation, tests_temp_disabled_for_sprint7_mutation. MEASURED at HEAD 11221f57: none of the three exists; they were removed in 67d2e16e ''fix(release): package hygiene — drop quarantine dirs''. The spec''s [C] claim is stale. What DOES remain, same debt class: benches/shared_session_performance.rs.disabled and src/bin/ruchy-coverage.rs.disabled — tracked files renamed out of the build so nothing compiles or runs them. Decide per file: restore into the build, or delete. File only; RHL-0 does not fix.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - test-debt
+  - filed-by:RHL-0
+  notes: null
