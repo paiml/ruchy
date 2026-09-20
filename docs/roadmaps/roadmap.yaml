@@ -2883,11 +2883,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-0: RHL spec ruled; grammar, corpora and vocabulary v0 pre-registered'
-  status: inprogress
+  status: review
   priority: medium
   assigned_to: null
   created: 2026-09-20T10:26:35Z
-  updated: 2026-09-20T10:27:48Z
+  updated: 2026-09-20T12:13:26Z
   spec: null
   acceptance_criteria: []
   phases: []
