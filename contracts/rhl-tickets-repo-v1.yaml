@@ -39,13 +39,19 @@ falsification_tests:
     prediction: "verified"
     if_fails: "Contract violation — entity term 'repo' has no instances_from source"
 
+# NOT APPLICABLE, declared because `pv validate` requires the block. A vocabulary
+# term contract states a property of YAML bytes on disk; Kani symbolically executes
+# Rust and cannot reach a file system. Declaring a harness that does not exist is the
+# practice KANIDEBT-1 was filed against, so it is marked rather than pretended.
 kani_harnesses:
   - id: KANI-RHL-TICKETS-REPO-001
     obligation: PO-RHL-TICKETS-REPO-001
-    property: "Term 'repo' contract template is well-formed YAML with a metadata block"
+    property: "NOT APPLICABLE — a vocabulary term contract is a property of YAML bytes on disk, outside Kani's reach"
     bound: 1
-    strategy: exhaustive
-    harness: verify_rhl_tickets_repo_contract
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_rhl_vocab_0_all_terms_have_existing_contract"
 
 qa_gate:
   id: QA-RHL-TICKETS-REPO

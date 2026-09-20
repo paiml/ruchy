@@ -17,6 +17,15 @@
 //! byte-different mutation of a base program that itself exists, every
 //! `break.yaml` fully declares its own contract, and every diagnostic code
 //! belongs to one of `RHL-001` §3.5's stable families.
+//!
+//! # What this gate cannot check, and why that is correct here
+//!
+//! It proves that every planted break DIFFERS from its base, that its class is
+//! one of the six, and that its expected diagnostic code is in a stable family.
+//! It does NOT prove that compiling the broken program actually produces that
+//! code — no RHL compiler exists at RHL-0, and inventing one here would defeat
+//! the point of pre-registering the breaks before the compiler. That
+//! correspondence is exactly what row RHL-7 measures, against these files.
 
 use serde::Deserialize;
 use std::collections::HashSet;

@@ -1,7 +1,9 @@
 //! Task 01 — disk watch on a named path, fixed threshold.
 
 fn ctx_with_free_bytes(bytes: u64) -> TaskCtx {
-    TaskCtx::new(1_700_000_000).with_disk_free("/var/lib/docker", bytes)
+    TaskCtx::new(1_700_000_000)
+        .with_host("runner-01")
+        .with_disk_free("/var/lib/docker", bytes)
 }
 
 #[test]

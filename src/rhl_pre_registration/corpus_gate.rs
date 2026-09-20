@@ -183,3 +183,87 @@ fn test_rhl_corpus_0_harness_md_declares_the_contract_types() {
         );
     }
 }
+
+/// A task's `tests.rs` must actually drive the entrypoint. A file that parses as
+/// Rust and holds a `#[test]` fn but never calls `run` asserts nothing about
+/// either arm, and the structural checks above would not notice.
+#[test]
+fn test_rhl_corpus_0_every_tests_rs_actually_calls_the_entrypoint() {
+    let mut silent = Vec::new();
+    for dir in task_dirs() {
+        let src =
+            std::fs::read_to_string(dir.join("tests.rs")).expect("RHL-0: unreadable tests.rs");
+        if !src.contains("run(") {
+            silent.push(dir.file_name().unwrap().to_string_lossy().to_string());
+        }
+    }
+    assert!(
+        silent.is_empty(),
+        "RHL-0: {} corpus task(s) have tests that never call `run`: {silent:?}. \
+         A test that does not drive the entrypoint scores neither arm of F8's A/B.",
+        silent.len()
+    );
+}
+
+/// Every host and repo an `intent.en` names must be set up in that task's
+/// `tests.rs`. Found by pre-PR review on task 01, whose intent said "on
+/// runner-01" while its `TaskCtx` registered no host at all: a path-A solution
+/// that checks the host exists would refuse and fail, while a path-B solution
+/// that ignored the host would pass. That is an arm advantage hidden in a
+/// fixture, and F8 would have measured it as a win for RHL.
+#[test]
+fn test_rhl_corpus_0_every_named_host_and_repo_is_set_up_in_the_tests() {
+    let host = regex_lite_hosts;
+    let mut missing = Vec::new();
+    for dir in task_dirs() {
+        let intent =
+            std::fs::read_to_string(dir.join("intent.en")).expect("RHL-0: unreadable intent.en");
+        let tests =
+            std::fs::read_to_string(dir.join("tests.rs")).expect("RHL-0: unreadable tests.rs");
+        for name in host(&intent) {
+            if !tests.contains(&name) {
+                missing.push(format!(
+                    "{}: intent names `{name}`, tests.rs never mentions it",
+                    dir.file_name().unwrap().to_string_lossy()
+                ));
+            }
+        }
+    }
+    assert!(
+        missing.is_empty(),
+        "RHL-0: {} task(s) name an entity the tests never set up: {missing:#?}. \
+         An arm that checks for it fails while an arm that ignores it passes, so \
+         F8 would measure the fixture instead of the language.",
+        missing.len()
+    );
+}
+
+/// Hosts (`runner-01`) and repos (`paiml/fleet-ops`) as they appear in prose.
+/// Deliberately conservative: it recognises only these two shapes, so it cannot
+/// flag ordinary English.
+fn regex_lite_hosts(intent: &str) -> Vec<String> {
+    intent
+        .split(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '/' || c == '_'))
+        .filter(|t| is_host(t) || is_repo(t))
+        .map(|t| t.to_string())
+        .collect()
+}
+
+fn is_host(t: &str) -> bool {
+    let Some((head, tail)) = t.rsplit_once('-') else {
+        return false;
+    };
+    is_slug(head) && !tail.is_empty() && tail.chars().all(|c| c.is_ascii_digit())
+}
+
+fn is_repo(t: &str) -> bool {
+    let Some((owner, name)) = t.split_once('/') else {
+        return false;
+    };
+    is_slug(owner) && is_slug(name)
+}
+
+/// A lowercase-and-hyphen slug, as fleet hosts and repo names are written.
+fn is_slug(s: &str) -> bool {
+    !s.is_empty() && s.chars().all(|c| c.is_ascii_lowercase() || c == '-')
+}

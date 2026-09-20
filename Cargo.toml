@@ -237,6 +237,12 @@ include = [
     "/CHANGELOG.md",
     "/LICENSE*",
     "contracts/**",
+    # RHL-0: the pre-registration gates in src/rhl_pre_registration/ read these at
+    # test time. Without them a packaged crate's `cargo test --lib` panics with
+    # file-not-found in all five gates (found by pre-PR review, 2026-09-20).
+    "grammar/**",
+    "vocab/**",
+    "docs/rhl/**",
     "static/notebook.html",
     "golden_traces/**",
     "notebooks/**",

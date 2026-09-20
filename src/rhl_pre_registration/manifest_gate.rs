@@ -35,6 +35,12 @@ const ROOTS: &[&str] = &[
     "vocab",
     "docs/rhl/corpus",
     "docs/rhl/breaks",
+    // Governance, not just artifacts: the spec states the falsifiers, and the
+    // bindings state what was measured at HEAD. Quietly editing either redefines
+    // what "success" means, which is the same failure as tuning the corpus.
+    // Amending them is fine and expected -- doing it without a manifest diff is not.
+    "docs/specifications/ruchy-high-level-language-interface.md",
+    "docs/rhl/phase0-bindings.md",
 ];
 
 /// Term contracts are pre-registered too, but `contracts/` also holds this

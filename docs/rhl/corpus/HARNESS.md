@@ -158,3 +158,39 @@ enough that a correct answer is one short job.
 RHL-0 pre-registers the TASKS, not the solutions. No `.rhl` program and no
 Rust implementation of `run` is committed alongside a task; either would
 contaminate the A/B this corpus exists to make fair.
+
+---
+
+## The evaluation protocol — added by pre-PR review, 2026-09-20
+
+A reviewer pointed out that path A would fail all ten ambiguous tasks *by
+default*, because nothing tells the English-to-Rust arm that refusing is an
+option, while path B's compiler refuses on its own. That would make F8 look like
+a win for RHL when it was really a win for the instructions. The instructions are
+therefore pinned here, as part of the pre-registration, and not written on the
+day of the run.
+
+**Both arms receive exactly the same three things**, and nothing else:
+
+1. the task's `intent.en`, verbatim;
+2. the signatures of `TaskCtx`, `Report` and `TaskError` from this file;
+3. this sentence, verbatim, in both arms:
+
+   > If the statement does not determine the program — a missing threshold, a
+   > missing unit, a missing referent — do not choose a reading. Return
+   > `Err(TaskError::Ambiguous { .. })` naming what is underdetermined.
+
+Neither arm is told **which** tasks are ambiguous, how many are, or that any are.
+The corpus's `ambiguous:` flags and `ambiguity:` explanations are the scoring
+key; they are never shown to a model in either arm.
+
+**Ordering.** The ten ambiguous tasks are numbered 31–40, so task order
+correlates with the answer. Tasks must therefore be presented to both arms in a
+**seeded shuffle**, with the seed recorded in RHL-8's receipt, and each task
+presented independently with no memory of the others. A run that walks the corpus
+in numeric order is not a valid F8 measurement, and RHL-8 must say which seed it
+used.
+
+**Scoring** is per task, identical for both arms: a task passes when every
+`#[test]` in its `tests.rs` passes against that arm's module. There is no partial
+credit, and no human adjudication.

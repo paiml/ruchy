@@ -183,6 +183,25 @@ Rules:
 - Vocabulary terms map to the ontology's entity types (`paiml-ontology.md` Σ) — a term is an instance of a Σ class, so shapes inherit. Exact binding is `[U]` until Phase 0 reads Σ at HEAD.
 - Vocabularies are versioned and **never edited in place**: `v1` is frozen when first released; changes ship as `v2`.
 
+> **Amendment A2 — Σ and term kinds (RHL-0, 2026-09-20) `[V]`.**
+> The bullet above about Σ says "a term is an instance of a Σ class, so shapes
+> inherit". Σ was read at HEAD as this section instructs — ONT-001 v4.9 §3.1,
+> `infra/docs/specifications/paiml-ontology.md` — and its `entity_types`
+> classify **what artifact is under contract** (`code`, `documents`, `data
+> files`, `web`, `media`, `pv-contract`). They do not classify what sort of
+> *word* a term is. Σ and `noun | measure | action | unit | entity` are
+> different sorts, and inheriting one from the other is a category error.
+>
+> RHL-0 therefore pre-registers vocabularies in which the **file** carries
+> `sigma_entity: pv-contract` and a term carries no `sigma_class` at all.
+>
+> This is why §10's STOP condition `vocabulary-unbindable` — "Σ at HEAD cannot
+> express term kinds" — **does not fire**: Σ expresses what is genuinely under
+> contract, which is the vocabulary document. What could not be bound was the
+> sentence, not the ontology. Rewriting the bullet itself is left to RHL-2, when
+> the vocabulary shape enters `pv` and the wording can be fixed against a working
+> shape rather than guessed at. See `docs/rhl/phase0-bindings.md` binding B5.
+
 ### 3.5 Diagnostics are data — the agent-repair contract
 
 Every diagnostic is a JSON object with a **stable code**, a **span**, the **expected set**, **candidates**, and **fix edits**. This is the interface agents program against; the human-readable message is rendered from it.

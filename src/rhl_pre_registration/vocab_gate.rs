@@ -32,6 +32,23 @@ struct Term {
     instances_from: Option<String>,
     lowers_to: String,
     contract: String,
+    /// A term's signature. Deserialised, not ignored: a term whose `takes`,
+    /// `gives` or `effect` is absent or malformed would otherwise sail through
+    /// every other check, and RHL-1's checker would have nothing to type
+    /// against. Found by pre-PR review, 2026-09-20.
+    #[serde(default)]
+    takes: Option<Vec<Param>>,
+    #[serde(default)]
+    gives: Option<String>,
+    #[serde(default)]
+    effect: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Param {
+    name: String,
+    #[serde(rename = "type")]
+    ty: String,
 }
 
 /// The two vocabularies RHL-0 pre-registers, relative to `repo_root()`.
@@ -198,4 +215,53 @@ fn test_rhl_vocab_0_contract_files_parse_with_metadata() {
             );
         }
     }
+}
+
+/// The signature problems of one term, if any. Split out so the test that calls
+/// it stays a single assertion rather than a nest of conditions.
+fn signature_problems(path: &str, t: &Term) -> Vec<String> {
+    let mut out = Vec::new();
+    if t.gives.as_deref().unwrap_or("").trim().is_empty() {
+        out.push(format!("{path}: `{}` declares no `gives` type", t.term));
+    }
+    if t.effect.as_deref().is_some_and(|e| e.trim().is_empty()) {
+        out.push(format!("{path}: `{}` declares an empty `effect`", t.term));
+    }
+    out.extend(empty_params(path, t));
+    out
+}
+
+fn empty_params(path: &str, t: &Term) -> Vec<String> {
+    t.takes
+        .iter()
+        .flatten()
+        .filter(|p| p.name.trim().is_empty() || p.ty.trim().is_empty())
+        .map(|_| {
+            format!(
+                "{path}: `{}` has a parameter with an empty name or type",
+                t.term
+            )
+        })
+        .collect()
+}
+
+/// Every non-entity term must carry a usable signature. `entity` terms are the
+/// exception by design: they name a closed-world set via `instances_from` and
+/// take no arguments (spec §3.4).
+#[test]
+fn test_rhl_vocab_0_terms_declare_a_usable_signature() {
+    let mut bad = Vec::new();
+    for (path, vocab) in all_vocabs() {
+        let path = path.display().to_string();
+        for t in vocab.terms.iter().filter(|t| t.kind != "entity") {
+            bad.extend(signature_problems(&path, t));
+        }
+    }
+    assert!(
+        bad.is_empty(),
+        "RHL-0: {} term(s) carry no usable signature: {bad:#?}. §3.4 gives every \
+         term a type and an effect; a term without one cannot be type-checked at \
+         RHL-1 and cannot have its effect surface enforced at all.",
+        bad.len()
+    );
 }

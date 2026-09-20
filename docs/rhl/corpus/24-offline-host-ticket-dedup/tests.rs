@@ -12,6 +12,7 @@ fn test_task_24_single_ticket_names_both_hosts() {
     let mut ctx = ctx_with_hosts();
     let report = run(&mut ctx).expect("task should not refuse");
     assert_eq!(report.tickets.len(), 1);
+    assert_eq!(report.tickets[0].repo, "paiml/fleet-ops");
     assert!(report.tickets[0].title.contains("runner-01"));
     assert!(report.tickets[0].title.contains("runner-02"));
     assert!(report.tickets[0].labels.contains(&"fleet-down".to_string()));
