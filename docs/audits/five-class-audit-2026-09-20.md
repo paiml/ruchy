@@ -8,9 +8,9 @@ Tree: `e382f9ab` (main, after #228).
 
 | # | Class | Probe | Result |
 |---|---|---|---|
-| 1 | computed-but-unexposed | 1896 public struct fields in `src/`; grep each for any `.field` read | **11** never read — reported, not minted (see below) |
+| 1 | computed-but-unexposed | 1896 public struct fields in `src/`; grep each for any `.field` read; split by whether the struct derives `Serialize` | **81** never read: **56 dead** (no `Serialize`) — minted as `AUDIT-3`; 25 serde-read — not defects |
 | 2 | placeholder-is-most-permissive | workflow steps whose stricter variant is disabled; `unwrap_or` on a permissive value in a gate path | **2** — both minted |
-| 3 | gate-that-cannot-fail | `\|\| true`, `continue-on-error: true`, `\|\| echo` across `.github/workflows/` | **4 matches, 1 real** — minted |
+| 3 | gate-that-cannot-fail | `\|\| true`, `continue-on-error: true`, `\|\| echo` across `.github/workflows/` — **workflows only** | **4 matches, 1 real** — minted as `AUDIT-1`. The Makefile was NOT in this probe; scanned separately after review: **34**, none in any CI path, 5 on developer gates — minted as `AUDIT-4` |
 | 4 | declared-never-graded | every `test:` in `contracts/*.yaml` resolved against every `fn` declared in `src/` and `tests/` | **0 of 30 contracts dangle** |
 | 5 | host ≠ runner | host-specific absolute paths in workflows and the Makefile | **0 in workflows**, 3 in Makefile |
 
@@ -19,10 +19,16 @@ Tree: `e382f9ab` (main, after #228).
 **`AUDIT-1` (high) — class 3 and class 2 in one line.** `security.yml` has two
 audit steps. Line 24 `cargo audit` can fail, and did today on
 `RUSTSEC-2026-0285`. Line 26, named *"Check for known vulnerabilities"*, is
-`cargo audit --deny warnings || true` — it **cannot** fail, and it is the
-**stricter** of the two: `--deny warnings` escalates unmaintained/unsound/yanked
-to errors, which is exactly the class ruchy carries two live exemptions for. The
-step named as the thorough check is the disabled one.
+`cargo audit --deny warnings || true`: it runs every time, and its exit status
+**cannot** fail. It is the **stricter** of the two — `--deny warnings` escalates
+unmaintained/unsound/yanked to errors, exactly the class ruchy carries two live
+exemptions for. So the stricter audit step is the one that cannot fail. Line 24
+still gates vulnerabilities; what is masked is warning escalation, not the audit.
+
+> *Corrected after review.* This paragraph first said the step was "named as the
+> thorough check" (it is not — that was my gloss, not its name) and called it
+> "disabled" (it is not — it runs; its verdict is swallowed). The roadmap row's
+> wording was the precise one and is now mirrored here.
 
 **`AUDIT-2` — class 3, test only.** `src/quality/mod.rs:860`:
 `count_satd_comments().unwrap_or(0)` then `assert_eq!(count, 0)`. The counter
@@ -33,16 +39,21 @@ unaffected.
 
 ## Reported, not minted
 
-**Class 1 — 11 public fields never read via `.field` anywhere in `src/`**:
-`CacheKey.content_hash`, `CacheStats.memory_usage_estimate`,
-`AntiGamingRules.max_test_ratio`, `LintIssue.issue_type`,
-`HanseiReport.overall_accuracy`, `HanseiReport.fix_rate`, and five more. Not
-minted as findings because the probe cannot distinguish a genuinely dropped
-computation from a field that exists to be serialised — several of these are on
-report structs whose consumer is `serde`, which reads them by name and not by
-`.field`. **The probe's own limitation is the finding here**: a sharper version
-would resolve serde usage before counting. Recorded so the next pass starts from
-a known-imprecise number rather than re-deriving it.
+**Class 1 — corrected after review: 81, not 11, and 56 of them are dead.**
+The first version of this report said *11* and refused to mint them under a
+blanket "several are serde-read" exemption. Both review lanes MEASURED that the
+two structs I named as examples — `HanseiReport` and `CacheStats` — derive no
+`Serialize` at all (`Debug` and `Debug, Clone` respectively), so the exemption
+was dodging. And the 11 was not a count: the probe was capped at `hits[:400]`
+of 1896 fields. **A truncation reported as a count — the same defect as the
+"17 of 17" on CIBASE-1, found the same day.**
+
+Re-run over all 1896 and split by whether the struct actually derives
+`Serialize`: **81 never read; 56 on non-serde structs (dead computations); 25 on
+serde structs (read by name, not a defect).** The 56 are minted as `AUDIT-3`,
+one row for the class with the full list as its content rather than 56 rows.
+Many sit under `src/notebook/testing/` and may be scaffolding; the row asks for a
+per-struct decision, expose or delete.
 
 **Class 5 — 3 hardcoded `/home/noah/.nvm/versions/node/v22.13.1/bin` paths** in
 `Makefile` (1839, 1843, 1862). Not in any CI path, so no runner is affected; they
@@ -61,9 +72,14 @@ reference shape, and its number is the one to quote: the job now fails in
 
 ## Probe limitations, stated
 
-Probes 1 and 2 are greps over source, not dataflow: probe 1 over-reports
-serde-read fields, and probe 2 can only see `unwrap_or` shapes it has patterns
-for. Probe 4 is exact — it resolves names against declarations. Probes 3 and 5
-are exact over the file set they scan, which is `.github/workflows/` and
-`Makefile` only; a swallowed failure inside a script those files *call* is
-invisible to this pass.
+Probes 1 and 2 are greps over source, not dataflow: probe 1 now splits by the
+struct's derives but still cannot see a field read through a macro or a
+`Deref`; probe 2 can only see `unwrap_or` shapes it has patterns for. Probe 4 is
+exact — it resolves names against declarations. Probe 3 scanned
+`.github/workflows/` **only** — an earlier version of this paragraph said it
+covered the Makefile too, which it did not, and the review caught the
+inconsistency against the table; the Makefile has since been scanned on its own
+(`AUDIT-4`). Probe 5 scanned workflows and the Makefile. In all cases a swallowed
+failure inside a script those files *call* is invisible to this pass — the
+review checked `scripts/release-policy.sh` and found its one `|| true` is a
+documented best-effort fallback, not a swallowed gate.
