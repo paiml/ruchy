@@ -184,6 +184,10 @@ pub fn run_repl() -> Result<()> {
         runtime::repl::Repl::new(std::env::current_dir().unwrap_or_else(|_| "/tmp".into()))?;
     repl.run()
 }
+// SEC-1: advisory exemptions are dated promises. Test-only gate; see the module
+// docs for why it lives in src/ rather than tests/.
+#[cfg(test)]
+mod advisory_ignore_gate;
 #[cfg(test)]
 mod test_config {
     use std::sync::Once;
