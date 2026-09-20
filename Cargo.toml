@@ -401,6 +401,11 @@ tokio = { version = "1.47", features = ["macros", "rt", "time"], optional = true
 
 [dev-dependencies]
 provable-contracts = "0.3.1"
+# RHL-0 (RHL-001 F1): the parser generator whose OWN conflict report is the
+# evidence that grammar/rhl.lalrpop is conflict-free. Used only by the
+# #[cfg(test)] pre-registration gate in src/rhl_pre_registration/; no RHL
+# compiler code exists until RHL-1.
+lalrpop = { version = "0.23", default-features = false }
 proptest = { workspace = true }
 criterion = { workspace = true }
 insta = { workspace = true }
