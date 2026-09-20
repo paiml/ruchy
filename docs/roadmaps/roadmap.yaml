@@ -3201,11 +3201,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'CIBASE-1: Baseline Comparison fails on every PR, passes only on main'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-20 12:05:11+00:00
-  updated: 2026-09-20 12:05:11+00:00
+  updated: 2026-09-20T17:01:04Z
   spec: null
   acceptance_criteria:
   - 'MEASURED 2026-09-20 via gh run list --workflow=benchmarks.yml: the ''Baseline Comparison'' job fails on PMAT-135, PMAT-139, PMAT-140 and RHL-0 — every recent BRANCH — and succeeds only on main. Failing step is ''Checkout baseline'': .github/workflows/benchmarks.yml:82 runs ''git checkout ${{ github.base_ref }} -- benches/'', but actions/checkout fetches only the PR head, so the base ref does not exist locally and the checkout fails in ~14s before any benchmark runs. Consequence: the job has never compared anything on a PR; it is a red that nobody consumes, and it is not a required context (the only required check is ''gate''), so it silently stays red. Fix: fetch the base ref first (fetch-depth 0, or an explicit git fetch origin $GITHUB_BASE_REF), or drop the job. Note the PR that fixes it touches .github/workflows and so needs a web-UI merge click. Filed by RHL-0; not fixed there.'
@@ -3216,7 +3216,7 @@ roadmap:
   - kind:code
   - ci-debt
   - filed-by:RHL-0
-  notes: null
+  notes: 'MEASURED 2026-09-20. Failure is ''fatal: invalid reference: main'', exit 128, at the FIRST step: actions/checkout leaves the base branch as origin/main, not main, so ''git checkout main -- benches/'' cannot resolve. 17 of 17 runs on a PR branch failed; it has never compared anything on any PR while reporting a result. Not a required check (only ''gate'' is) and no consumer reads its artifacts — grep for benchmark_results.json / benchmark_report.md / benchmark-results outside the workflow returns nothing. Classified FC-5 per infra''s ruling (a gate that grades an artifact older than its sources), with their note that the stale thing here is a REF rather than a binary; it is not FC-1, because it is not a control that passed wrongly, it is a comparison that never happened. Two further layers found while fixing: ''git checkout <ref> -- benches/'' swaps only benches/ and leaves src/ at the PR''s code, so even a working version would have benchmarked the PR''s library with the base''s harness; and the ''Comparison Results'' output (Cohen''s d, threshold |d| > 0.5) was echoed strings with no implementation. Removed rather than repaired — a real gate needs a base build, a PR build and a threshold, and inventing a threshold is a STOP condition. Filed as BENCH-1. Also removed in the same pass: a ''Generate benchmark report'' step that wrote a table header and never a row under a Statistical Summary heading, a ''Check for regressions'' step that was echo plus two comments claiming a 10% threshold, and a ''|| true'' that made the benchmark run unable to go red.'
 - id: SEC-1
   github_issue: null
   item_type: task
@@ -3315,4 +3315,24 @@ roadmap:
   - kind:code
   - rhl
   - correction
+  notes: null
+- id: BENCH-1
+  github_issue: null
+  item_type: task
+  title: 'BENCH-1: a real benchmark-regression gate needs a base build, a PR build, and a threshold'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T17:00:59Z
+  updated: 2026-09-20T17:00:59Z
+  spec: null
+  acceptance_criteria:
+  - 'CIBASE-1 removed the baseline-comparison job rather than repair it, because repairing it honestly is a different piece of work. What a real gate needs, none of which the removed job had: (1) build the BASE tree, not just check out its benches/ — the old job swapped only benches/ and left src/ at the PR''s code, so its baseline would have been the PR''s library with the base''s harness; (2) build the PR tree; (3) a THRESHOLD for what counts as a regression. The old job echoed ''effect sizes (Cohen''s d)'' and ''threshold |d| > 0.5'' without computing either. Inventing a threshold is a STOP condition in this stack, so it is an operator ruling, not an implementer''s choice. Also decide whether it gates: today only ''gate'' is required, and a benchmark job that blocks merges on ubuntu-latest timing variance would be a new class of flake. Consider instead a non-gating job that records a number per PR so a trend exists before anything thresholds on it.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci-debt
+  - filed-by:CIBASE-1
   notes: null
