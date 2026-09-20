@@ -3189,3 +3189,23 @@ roadmap:
   - contract-debt
   - filed-by:RHL-0
   notes: null
+- id: WORKTREE-1
+  github_issue: null
+  item_type: task
+  title: 'WORKTREE-1: .claude/worktrees is untracked and not git-ignored'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T12:01:38Z
+  updated: 2026-09-20T12:02:58Z
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED during RHL-0: agy review and goal lanes create clones under .claude/worktrees/. Six accumulated in ONE session and totalled 34 GB (du -sh). git check-ignore reports the path is NOT ignored, so they show as untracked and a ''git add -A'' would sweep an entire clone into a commit. Two problems: (1) add .claude/worktrees/ to .gitignore; (2) nothing prunes stale lane clones — agy-lane.sh KEEPs a clone whenever a writes=false lane writes scratch files into it, which every review lane in this session did. File only; RHL-0 does not fix.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tooling-debt
+  - filed-by:RHL-0
+  notes: null
