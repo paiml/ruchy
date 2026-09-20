@@ -188,6 +188,10 @@ pub fn run_repl() -> Result<()> {
 // pre-registration gates only. Test-only: no RHL compiler code exists until RHL-1.
 #[cfg(test)]
 mod rhl_pre_registration;
+// SEC-1: advisory exemptions are dated promises. Test-only gate; see the module
+// docs for why it lives in src/ rather than tests/.
+#[cfg(test)]
+mod advisory_ignore_gate;
 #[cfg(test)]
 mod test_config {
     use std::sync::Once;

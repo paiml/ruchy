@@ -826,6 +826,29 @@ This release implements the ruchy-book-2.0 specification with comprehensive qual
 
 ## [Unreleased]
 
+### Security — SEC-1: RUSTSEC-2026-0285, and an expiry on every advisory exemption
+
+- **Fixed** `RUSTSEC-2026-0285` by bumping rustls `0.23.43` → `0.23.45` (and
+  rustls-webpki `0.103.13` → `0.103.15`), the advisory's own patched range. The
+  advisory had turned `ci / security`, and so the required `gate`, red on every PR.
+- **Added** `docs/audits/advisory-ignores.yaml` and `src/advisory_ignore_gate.rs`:
+  every advisory exemption now carries a reason, a named owner, an owner ticket and
+  a `removed_by` date, and the gate goes RED when one expires, is undated, is
+  unowned, is orphaned, or is dated more than 90 days out. Neither `cargo audit`
+  nor `cargo deny` can express an expiry; an exemption without one is a standing
+  red under another name.
+- **Added** refusal of suppressions that name no advisory at all — an advisory
+  lint class set to anything but a reporting level, or a `[graph]` key that
+  narrows the graph (`exclude`, `exclude-dev`, `exclude-unpublished`). Measured:
+  `exclude-dev = true` alone took `cargo deny check advisories` from exit 1 to
+  exit 0 on this manifest.
+- **Removed** two `deny.toml` exemptions rather than dating them:
+  `RUSTSEC-2025-0119` (number_prefix) and `RUSTSEC-2025-0134` (rustls-pemfile)
+  name crates that are not in `Cargo.lock`.
+- **Changed** `Cargo.toml`'s `include` to carry `deny.toml`, the ledger, the
+  `Makefile` and `.github/workflows/**`, so a vendored `.crate` can run the gate
+  that ships in its `src/`.
+
 ### PDCA-070: Test Suite Stabilization (2025-12-09)
 
 **Status**: ✅ COMPLETE - All RED-phase tests properly marked as ignored

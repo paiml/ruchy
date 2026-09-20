@@ -1,0 +1,121 @@
+metadata:
+  version: "1.0.0"
+  author: "SEC-1"
+  description: "Every advisory exemption in this repository is an owned, dated promise, and no exemption can be spelled in a way the ledger cannot see"
+  crate: "ruchy"
+  references:
+    - "SEC-1: RUSTSEC-2026-0285 turned the required gate RED"
+    - "CLAUDE.md: Contract-First Design (CB-1400)"
+    - "Second-family review, 2026-09-20: findings F1-F10"
+
+equations:
+  every_exemption_is_dated_and_owned:
+    formula: "∀ a ∈ exempted(repo) : ∃! e ∈ ledger . e.id = a ∧ e.owner ≠ ∅ ∧ e.owner_ticket ≠ ∅ ∧ today ≤ e.removed_by ≤ today + 90d"
+    domain: "every advisory suppressed by .cargo/audit.toml, deny.toml, a workflow or the Makefile"
+    invariants:
+      - "An exemption with no ledger entry is refused"
+      - "A ledger entry with no named owner is refused — an unowned obligation with a date on it expires into a red nobody consumes"
+      - "An expired entry is refused, and an unreadable date counts as expired"
+      - "An entry dated beyond 90 days is refused: a promise far enough away is not a promise"
+
+  the_scanner_is_a_superset_of_ci:
+    formula: "ids_gate(audit.toml) ⊇ ids_ci(audit.toml), where ids_ci = sed 's/.*\\(RUSTSEC-[0-9]*-[0-9]*\\).*/\\1/p'"
+    domain: "the text of .cargo/audit.toml"
+    invariants:
+      - "CI turns any RUSTSEC- token into an --ignore flag, matching anywhere inside a token"
+      - "A gate that sees LESS than CI leaves CI silently exempting an advisory the ledger never dated"
+      - "Over-strict is safe; under-strict is the hole. Measured on four token shapes: xRUSTSEC-…, 0RUSTSEC-…, RUSTSEC-…x, RUSTSEC-…-instant"
+
+  no_untraceable_suppression:
+    formula: "∀ c ∈ {vulnerability, unmaintained, unsound, notice, yanked} : deny.toml[advisories][c] ∈ {deny, warn, all} ∧ ∀ k ∈ {exclude, exclude-dev, exclude-unpublished} : ¬narrows(deny.toml[graph][k])"
+    domain: "deny.toml, parsed as TOML rather than grepped (CLAUDE.md rule 2)"
+    invariants:
+      - "A suppression carrying no advisory id cannot be owned or expired"
+      - "A class-level suppression silences every FUTURE advisory in that class too"
+      - "REPORTING values are allow-listed, not suppressing values deny-listed: a review measured four evasions of a deny-list (single quotes, a quoted key, and cargo-deny's own `unmaintained = \"workspace\"`)"
+    scope_limit: >
+      This covers the five lint classes named in the formula and the three
+      narrowing [graph] keys. The test's name reads as a universal and is not
+      one: a cargo-deny key that suppresses advisories under some other name
+      evades it until added here.
+
+      That gap is not hypothetical. An earlier revision of this contract claimed
+      the residual was a FUTURE key, "new KEYS, not new VALUES". A review then
+      measured `[graph] exclude-dev = true` — a key present in cargo-deny 0.19.0,
+      in a table this gate already read — taking `cargo deny check advisories`
+      from exit 1 to exit 0 on this manifest with the gate all green. The claim
+      was false when written. `exclude-dev` and `exclude-unpublished` are now
+      covered; the honest statement of the residual is that this list is
+      maintained by hand against a tool that adds keys.
+
+proof_obligations:
+  - type: invariant
+    property: "No advisory is exempted without an owner and a date inside the window"
+    formal: "∀ a ∈ exempted : ledgered(a) ∧ owned(a) ∧ dated(a) ∧ within_window(a)"
+    applies_to: all
+  - type: completeness
+    property: "The gate sees every exemption CI honours"
+    formal: "ids_gate ⊇ ids_ci"
+    applies_to: all
+  - type: invariant
+    property: "The gate's verdict does not depend on where it runs"
+    formal: "verdict(UTC) = verdict(TZ) for every TZ"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-SEC1-001
+    rule: "Every exemption has a ledger entry"
+    test: "test_sec_1_every_ignored_advisory_is_in_the_ledger"
+    prediction: "verified"
+    if_fails: "An exemption with no recorded expiry never expires"
+  - id: FALSIFY-SEC1-002
+    rule: "No ledger entry outlives the exemption it records"
+    test: "test_sec_1_no_ledger_entry_is_orphaned"
+    prediction: "verified"
+    if_fails: "The ledger stops meaning what it says"
+  - id: FALSIFY-SEC1-003
+    rule: "Every entry carries a reason, a named owner and an owner ticket"
+    test: "test_sec_1_every_entry_carries_a_reason_and_an_owner"
+    prediction: "verified"
+    if_fails: "An unowned obligation with a date on it expires into a red nobody consumes"
+  - id: FALSIFY-SEC1-004
+    rule: "No exemption is past its removed_by"
+    test: "test_sec_1_no_advisory_exemption_is_past_its_removed_by"
+    prediction: "verified"
+    if_fails: "A standing red has become permanent under another name"
+  - id: FALSIFY-SEC1-005
+    rule: "No exemption is dated beyond the maximum window"
+    test: "test_sec_1_no_exemption_is_dated_beyond_the_maximum_window"
+    prediction: "verified"
+    if_fails: "'Extend the date' becomes unbounded — measured, 9999-12-31 passed every other check"
+  - id: FALSIFY-SEC1-006
+    rule: "No advisory class is suppressed without an id"
+    test: "test_sec_1_no_untraceable_blanket_suppression"
+    prediction: "verified"
+    if_fails: "cargo-deny silences a whole class with a line no id-scanner can see — measured with unmaintained = \"none\" and with [graph] exclude"
+  - id: FALSIFY-SEC1-007
+    rule: "The audited files are where this gate looks"
+    test: "test_sec_1_the_audited_files_are_where_this_gate_looks"
+    prediction: "verified"
+    if_fails: "A path moved upstream and the gate's failure mode is green, not red"
+
+kani_harnesses:
+  - id: KANI-SEC1-001
+    obligation: PO-SEC1-001
+    property: "NOT APPLICABLE — these are properties of config files and a wall clock, outside Kani's reach"
+    bound: 1
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_sec_1_every_ignored_advisory_is_in_the_ledger"
+
+qa_gate:
+  id: QA-SEC1-ADVISORY-EXPIRY
+  name: "advisory exemptions are owned, dated, bounded and visible"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - "test_sec_1_every_ignored_advisory_is_in_the_ledger"
+    - "test_sec_1_no_advisory_exemption_is_past_its_removed_by"
+    - "test_sec_1_no_untraceable_blanket_suppression"
+    - "test_sec_1_no_exemption_is_dated_beyond_the_maximum_window"
