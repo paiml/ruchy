@@ -15,7 +15,48 @@
 
 ## Verdict
 
-**DONE** — with three things named in *Gaps* below that RHL-0 does not close and does not claim to.
+**PARTIAL(blocked)** — the row is implemented and every gate it owns is green.
+The **merge** is blocked by `SEC-1`, which RHL-0 did not cause and cannot fix.
+
+### The blocker, measured
+
+`ci / security` fails with `error: 1 vulnerability found! Crate: rustls, ID:
+RUSTSEC-2026-0285`. That job feeds `ci / gate`, which re-exports as the required
+context `gate`, so the PR sits at `mergeStateStatus=BLOCKED`.
+
+It is not this branch's doing:
+
+- the `rustls 0.23.43` entry in `Cargo.lock` is **byte-identical** between `main`
+  and this branch — `git diff main...HEAD -- Cargo.lock` shows no rustls line;
+- `main`'s last CI run was green, and `cargo-audit` fetches the advisory database
+  fresh on every run, so a newly published advisory turned an already-merged
+  dependency red;
+- **there is no semver-compatible fix**: `cargo update -p rustls` reports
+  *"Locking 0 packages to latest compatible versions"*, and the only newer
+  release is `0.24.0-dev.1`, a pre-release.
+
+Ignoring the advisory, or moving off `rustls`, is an operator decision about the
+whole repository's dependency set, not something to bury in a 312-file
+pre-registration PR. Filed as `SEC-1` (priority high) with the three options.
+
+### CI on PR #225
+
+| Check | Result |
+|---|---|
+| `ci / test` — **runs the 34 RHL-0 gates** | **pass**, 2m39s |
+| `ci / lint` (clippy + fmt) | pass, 3m25s |
+| `ci / coverage` | pass, 3m4s |
+| `ci / provenance` | pass |
+| `ci / security` | **fail** — `SEC-1`, see above |
+| `ci / gate` → `gate` (required) | fail, cascaded from `ci / security` |
+| `Baseline Comparison` (not required) | fail — `CIBASE-1`, pre-existing on every branch |
+
+`ci / test` passing is the load-bearing result here: it is `cargo test --lib`, so
+binding B4's seam is confirmed in CI, not just locally — the gates really do run
+inside the required check.
+
+Everything in *Gaps* below is additional to this, and named because RHL-0 does
+not close it and does not claim to.
 
 ## Plan and routing
 
@@ -136,6 +177,8 @@ watched go red, then restored byte-identical.
 |---|---|
 | `TESTDEBT-1` | The three disabled-test directories RHL-001 §1 cites were deleted in `67d2e16e`; the spec's `[C]` claim is stale. Two `.disabled` files of the same class do remain. |
 | `KANIDEBT-1` | All 28 contracts in this repo that declare `kani_harnesses` name functions that exist nowhere in the tree. `pv validate` requires the block, which is the incentive. |
+| `SEC-1` | `RUSTSEC-2026-0285` in `rustls 0.23.43` fails `ci / security` and so the required `gate`, on every PR. Not introduced by any branch; no semver-compatible fix exists. Priority high. |
+| `CIBASE-1` | `Baseline Comparison` has failed on every branch PR and passes only on `main`: its `Checkout baseline` step runs `git checkout $base_ref -- benches/`, but the base ref is never fetched. It has never compared anything on a PR. |
 | `WORKTREE-1` | `.claude/worktrees/` is not git-ignored, so a `git add -A` can sweep a whole lane clone into a commit. |
 | `RHL-1`..`RHL-12` | The §8 DAG, labelled `unadmitted`: the spec admits no implementation row until RHL-0 merges. pmat's lifecycle refuses Planned→Blocked, so the label carries it, not the status. |
 

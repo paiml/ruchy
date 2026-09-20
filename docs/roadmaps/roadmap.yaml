@@ -3209,3 +3209,43 @@ roadmap:
   - tooling-debt
   - filed-by:RHL-0
   notes: null
+- id: CIBASE-1
+  github_issue: null
+  item_type: task
+  title: 'CIBASE-1: Baseline Comparison fails on every PR, passes only on main'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T12:05:11Z
+  updated: 2026-09-20T12:05:11Z
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED 2026-09-20 via gh run list --workflow=benchmarks.yml: the ''Baseline Comparison'' job fails on PMAT-135, PMAT-139, PMAT-140 and RHL-0 — every recent BRANCH — and succeeds only on main. Failing step is ''Checkout baseline'': .github/workflows/benchmarks.yml:82 runs ''git checkout ${{ github.base_ref }} -- benches/'', but actions/checkout fetches only the PR head, so the base ref does not exist locally and the checkout fails in ~14s before any benchmark runs. Consequence: the job has never compared anything on a PR; it is a red that nobody consumes, and it is not a required context (the only required check is ''gate''), so it silently stays red. Fix: fetch the base ref first (fetch-depth 0, or an explicit git fetch origin $GITHUB_BASE_REF), or drop the job. Note the PR that fixes it touches .github/workflows and so needs a web-UI merge click. Filed by RHL-0; not fixed there.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci-debt
+  - filed-by:RHL-0
+  notes: null
+- id: SEC-1
+  github_issue: null
+  item_type: task
+  title: 'SEC-1: RUSTSEC-2026-0285 in rustls 0.23.43 turns ci/security and the required gate RED'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-20T12:13:05Z
+  updated: 2026-09-20T12:13:05Z
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED 2026-09-20 on PR #225: ci/security fails with ''error: 1 vulnerability found! Crate: rustls, ID: RUSTSEC-2026-0285''. ci/security feeds ci/gate, which re-exports as the REQUIRED context ''gate'', so every PR is now unmergeable. NOT introduced by any branch: rustls 0.23.43 is byte-identical between main and PR #225 (diff of the Cargo.lock entries is empty), and main''s last CI run was green before the advisory was published — cargo-audit fetches the advisory DB fresh each run, so this is a newly published advisory that turned an already-merged dependency red. NO SEMVER-COMPATIBLE FIX EXISTS YET: ''cargo update -p rustls'' reports ''Locking 0 packages to latest compatible versions''; the only newer release is 0.24.0-dev.1, a pre-release. Options, all operator decisions: (a) add RUSTSEC-2026-0285 to .cargo/audit.toml with a written justification and a review date — the workflow already reads ignores from that file, which does not exist in this repo today; (b) wait for a patched 0.23.x; (c) move off rustls in the dependency that pulls it. Three further advisories are reported as WARNINGS and do not fail the job: RUSTSEC-2025-0141 (bincode), RUSTSEC-2024-0384 (instant), RUSTSEC-2024-0436 (paste).'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - security
+  - filed-by:RHL-0
+  notes: null
