@@ -28,7 +28,10 @@ still gates vulnerabilities; what is masked is warning escalation, not the audit
 > *Corrected after review.* This paragraph first said the step was "named as the
 > thorough check" (it is not — that was my gloss, not its name) and called it
 > "disabled" (it is not — it runs; its verdict is swallowed). The roadmap row's
-> wording was the precise one and is now mirrored here.
+> TITLE had the precise wording; its body carried the same overstatement as this
+> paragraph, and a third review round measured that this note first claimed the
+> row was "mirrored here" while the body still said "NAMED as the thorough check
+> is the disabled one". Both are now corrected, in the same commit.
 
 **`AUDIT-2` — class 3, test only.** `src/quality/mod.rs:860`:
 `count_satd_comments().unwrap_or(0)` then `assert_eq!(count, 0)`. The counter
@@ -72,9 +75,9 @@ reference shape, and its number is the one to quote: the job now fails in
 
 ## Probe limitations, stated
 
-Probes 1 and 2 are greps over source, not dataflow: probe 1 now splits by the
-struct's derives but still cannot see a field read through a macro or a
-`Deref`; probe 2 can only see `unwrap_or` shapes it has patterns for. Probe 4 is
+Probes 1 and 2 are greps over source, not dataflow: probe 1 (1896 fields → 81
+never read → 56 dead / 25 serde) now splits by the struct's derives but still
+cannot see a field read through a macro or a `Deref`; probe 2 can only see `unwrap_or` shapes it has patterns for. Probe 4 is
 exact — it resolves names against declarations. Probe 3 scanned
 `.github/workflows/` **only** — an earlier version of this paragraph said it
 covered the Makefile too, which it did not, and the review caught the
