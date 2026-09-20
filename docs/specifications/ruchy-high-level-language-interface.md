@@ -110,17 +110,17 @@ job "gx10 disk watch"
     end
   end
 
-  expect no change to host
-  expect at most 1 ticket per run
+  expect host is unchanged
+  expect ticket count is at most 1
 
   example "low disk files one ticket"
     given disk free of "/" is 90 GB
-    then 1 ticket is filed
+    then ticket count is 1
   end
 
   example "healthy disk files nothing"
     given disk free of "/" is 400 GB
-    then 0 tickets are filed
+    then ticket count is 0
   end
 end
 ```
@@ -161,7 +161,7 @@ Everything else in a program is a **vocabulary term**, a **literal**, or a **nam
 > because an action's attributes reading as siblings of the statements around
 > them loses the nesting §3.2 uses to say which attributes belong to which
 > action. But "the only one" was not measured and was not true.
-> **Open question O1 — three lines of §3.2 do not parse (RHL-0, 2026-09-20) `[V]`.**
+> **Open question O1 — three lines of §3.2 do not parse (RHL-0, 2026-09-20) `[V]`. RULED: see O1-R at the end of this block (RHL-14).**
 > A parser was generated from `grammar/rhl.lalrpop` and fed §3.2 verbatim. After
 > Amendment A1 these three lines still fail:
 >
@@ -192,7 +192,10 @@ Everything else in a program is a **vocabulary term**, a **literal**, or a **nam
 > | the 72 non-`missing-end` corpus programs | **72/72, 0 failures** |
 >
 > Cost: §3.3 grows by two keywords, and `per` and `are` become unusable inside any
-> vocabulary term — the same trade §3.3 already makes for `of`, `in` and `to`. It
+> vocabulary term — the same trade §3.3 already makes for `in` and `to`. (This
+> line first said "for `of`, `in` and `to`". `of` is NOT reserved: grammar clause 2
+> keeps it free precisely so `disk free of` stays spellable. Found by the O1
+> quorum, lane 2.) It
 > costs §3.1 principle 8 (block-closed, count the `end`s) **nothing**: no
 > production here touches block structure.
 >
@@ -212,6 +215,33 @@ Everything else in a program is a **vocabulary term**, a **literal**, or a **nam
 > **The ruling wanted, in one line:** adopt O1-A and add `per` and `are` to §3.3,
 > or reword these three lines of §3.2 so the language does not need them. O1-B is
 > not available — it is not conflict-free.
+>>
+> **Ruling O1-R (RHL-14, 2026-09-20) `[V]` — reword; reserve nothing; change no
+> grammar.** Ruled by a three-lane decision quorum (gemini 3.1-pro / 3.7-flash /
+> 3.8-flash, conversations `dabbe241…`, `51ff083b…`, `679e5b1c…`), under the
+> operator's standing instruction that design decisions go to a quorum. The three
+> lines of §3.2 now read `expect host is unchanged`, `expect ticket count is at
+> most 1`, `then ticket count is 1` / `is 0` — the shapes the 12 valid corpus
+> programs (`docs/rhl/breaks/valid/`) already used, so the corpus diff is zero and
+> the grammar is untouched. Each parses under the pre-registered grammar as
+> `"expect"|"then" <Cond>` → `Cmp` → `<App> <CompOp> <App>`.
+>
+> Measured by all three lanes: no term in `vocab/fleet-v1.yaml` or
+> `vocab/tickets-v1.yaml` contains `per` or `are` (the words occur only in
+> comments), and no program under `docs/rhl/` uses `no change to`, `per run` or
+> `are filed`. Why 3/3 refused O1-A: reserving `per` and `are` forecloses every
+> future rate or descriptive term — `errors per hour`, `hosts that are pinned` —
+> for three lines of an example, and the A1 precedent cuts the other way: A1 added
+> a keyword to keep a *structure* (the nested block); nothing structural is at
+> stake here. Principle 9 wins over "reads like English" when the English costs
+> the vocabulary a word.
+>
+> *Residual, 2:1.* Lanes 1 and 3 would also have admitted `<App> "to" <App>` under
+> `Cmp` (one production, zero keywords, `to` is already reserved) so that `expect
+> no change to host` parses. Lane 2 called that an ad-hoc preposition with no
+> vocabulary term behind it — there is no term `no change` — and the minimal
+> ruling was taken. A corpus task that needs `X to Y` as a comparison re-opens it;
+> `grammar/fixtures/o1-a-candidate.lalrpop` keeps the measured production.
 >
 > The unmarked form is kept verbatim as `grammar/fixtures/ambiguous.lalrpop`,
 > where it serves as F1's positive control. Evidence:

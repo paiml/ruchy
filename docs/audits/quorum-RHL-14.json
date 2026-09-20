@@ -1,0 +1,84 @@
+{
+ "ticket": "RHL-14",
+ "pr": 230,
+ "base": "main",
+ "head": "9f40a2111d49d1aae8ff9c9e4de34adf43d23f41",
+ "diff_sha256": "e2a9a40cb058b903ef1e38d2db9c81cb22a18fabb64b6f35eb49b0a12b9c3ee4",
+ "agreed": true,
+ "verdict": "implement-as-written (2/2), plus one header line added after review",
+ "author": {
+  "session": "ruchy-9d",
+  "model": "claude-opus-5[1m]"
+ },
+ "families_required": [
+  "gemini",
+  "claude"
+ ],
+ "families_run": [
+  "gemini"
+ ],
+ "families_note": "Docs-only spec amendment. Both review lanes gemini (3.1-pro-high, 3.8-flash-high), both measured (command+output on 6/7 and 5/7 findings), tree witness verified, 0 BLIND. The DECISION itself was a separate 3-lane gemini quorum (dabbe241, 51ff083b, 679e5b1c) recorded in the spec's O1 block; the author is claude-family and took the minimal reading of a 2:1 split, which is recorded there as a residual, not hidden.",
+ "decision_quorum": {
+  "width": 3,
+  "lanes": [
+   {
+    "lane": 1,
+    "model_measured": "gemini-3.1-pro-high",
+    "conversation": "dabbe241-e44f-4516-bc87-aa7d275d8aeb",
+    "verdict": "split: <App> to <App> production for `to`; reword per/are"
+   },
+   {
+    "lane": 2,
+    "model_measured": "gemini-3.8-flash-high",
+    "conversation": "51ff083b-4470-4ef7-8ac5-4e366b5b7af9",
+    "verdict": "O1-R for all three; refutes O1-A's `of` claim"
+   },
+   {
+    "lane": 3,
+    "model_measured": "gemini-3.7-flash-high",
+    "conversation": "679e5b1c-5d2a-40ac-8f43-b7ddab8b2c00",
+    "verdict": "split, same as lane 1"
+   }
+  ],
+  "consensus": "3/3 refuse O1-A as written; 3/3 measured zero vocabulary terms and zero docs/rhl/ programs use per/are or the three shapes; 2/1 on adding <App> to <App>; author took the minimal ruling (no grammar change) and recorded the split as a residual."
+ },
+ "review_quorum": {
+  "judged": "81e1ea0dc1800025fba91a92c6f5e54a74c8c7a3",
+  "width": 2,
+  "lanes": [
+   {
+    "lane": 1,
+    "model_measured": "gemini-3.1-pro-high",
+    "conversation": "92532bd8-8e69-491b-b7fb-97de581a5859",
+    "verdict": "implement-as-written",
+    "kept_clone": "wrote diff.txt/log.txt/old_spec.md/output_log.txt into its writes=false clone; shared checkout byte-identical; clone removed by the author"
+   },
+   {
+    "lane": 2,
+    "model_measured": "gemini-3.8-flash-high",
+    "conversation": "fde2b85e-cec5-45e5-bd4e-8efddb2a316d",
+    "verdict": "implement-as-written"
+   }
+  ],
+  "measured": [
+   "spec sha256 matches the new manifest line; all 301 manifest hashes match the tree",
+   "per/are only in comment lines of both vocabularies (fleet 12,27; tickets 10,23)",
+   "rg 'no change to|per run|are filed' docs/rhl/ \u2192 nothing",
+   "match block: of=False in=True to=True",
+   "roadmap.yaml parses; RHL-1 notes 'NOT READY' gone"
+  ],
+  "gaps_closed_by_author": [
+   "rg -n O1 sweep for stale 'awaiting operator' text: only grammar/fixtures/o1-a-candidate.lalrpop:4 (candidate evidence, manifest-hashed, left as both lanes allowed) and the RHL-0 receipt (historical)",
+   "the O1 header now says RULED so a reader landing there does not stop \u2014 one line, ed39f21e, manifest regenerated, 37 gates green"
+  ],
+  "not_measured": [
+   "`expect host is unchanged` and `then ticket count is 0` have no corpus twin; their parse is a grammar read by both lanes, not a generated-parser run. RHL-1 builds the parser that measures it."
+  ]
+ },
+ "rebind_note": "Reviewed at 81e1ea0d; head moved by one docs commit (the O1 header line + its manifest hash) after the review. Recorded rather than re-reviewed: one sentence, no claim in it the lanes did not already check.",
+ "residuals": [
+  "grammar/fixtures/o1-a-candidate.lalrpop:4 still reads 'Awaiting an operator ruling'",
+  "the 2:1 on <App> \"to\" <App> stays open for a corpus task that needs it"
+ ],
+ "rebind_note_2": "Rebased onto main after #229 merged (both PRs appended roadmap rows; the conflict was two append hunks, resolved by keeping both sides \u2014 204 rows, ids unique, checked with a real YAML parser). The judged diff's content is unchanged except the roadmap hunk's position; head is the bind commit's parent 9f40a211 (the artifact commit adds only itself), the rhl_pre_registration gates re-run green after the rebase."
+}

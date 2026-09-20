@@ -2916,7 +2916,7 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-0
-  notes: 'ADMITTED by RHL-0''s merge (commit 1c2caf5d, PR #225) — the spec''s readiness gate ''no implementation rows are admitted until RHL-0 is merged'' has opened. BUT NOT READY TO START: spec open question O1 is unruled. Three lines of section 3.2 do not parse (expect no change to host / expect at most 1 ticket per run / then 0 tickets are filed), and RHL-1 is the row that builds the parser those lines have to pass through. Both candidate repairs are measured and committed as grammar/fixtures/o1-{a,b}-candidate.lalrpop: O1-A is conflict-free, parses all three lines and keeps the corpus at 72/72, and costs two keywords; O1-B adds no keyword and is NOT conflict-free. Get the one-line ruling before starting. K-hat basis is 118 [C] from RHL-0 (see HARNESS-1 on the unit question). RHL-1 also inherits F1''s unmeasured second half: ''every corpus program has exactly one parse'' needs the parser this row builds.'
+  notes: 'ADMITTED by RHL-0''s merge (commit 1c2caf5d, PR #225) — the spec''s readiness gate ''no implementation rows are admitted until RHL-0 is merged'' has opened. O1 RULED 2026-09-20 by quorum (RHL-14, ruling O1-R): the three section-3.2 lines were reworded to the shapes the corpus already used, no keyword reserved, no grammar change; the 2:1 residual on an App-to-App production is recorded in the spec''s O1 block. READY TO START once RHL-14 merges. K-hat basis is 118 [C] from RHL-0 (see HARNESS-1 on the unit question). RHL-1 also inherits F1''s unmeasured second half: ''every corpus program has exactly one parse'' needs the parser this row builds.'
 - id: RHL-2
   github_issue: null
   item_type: task
@@ -3388,6 +3388,18 @@ roadmap:
   spec: null
   acceptance_criteria:
   - 'Five-class audit pass, 2026-09-20. CLASS 3 (gate-that-cannot-fail). src/quality/mod.rs:860, in test_satd_count_collection: ''let count = QualityGates::count_satd_comments().unwrap_or(0);'' followed by ''assert_eq!(count, 0, "SATD comments should be eliminated")''. count_satd_comments returns Result and shells out to ''find src -name *.rs -exec grep -c ...''. If that invocation fails for ANY reason — find missing, src/ absent, a packaged crate without src/, a sandbox without exec — the error becomes 0 and the assertion PASSES. The test cannot distinguish ''there is no SATD'' from ''the counter did not run'', and 0 is the most permissive of the two answers. GROUNDED BY INSPECTION, not executed: making the counter fail under test needs an environment change. NOTE the production gate is NOT affected — line 300 uses ''?'' and propagates. This is the test only. FALSIFIER: replace unwrap_or(0) with expect(), or assert on Ok(0) rather than on the unwrapped value, then rename the binary/PATH so find is unavailable; the test must go RED where today it goes green.'
+- id: RHL-14
+  github_issue: null
+  item_type: task
+  title: 'RHL-14: O1 ruled by quorum — reword the three §3.2 lines, reserve no keyword'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T18:55:16Z
+  updated: 2026-09-20T18:55:16Z
+  spec: null
+  acceptance_criteria:
+  - Open question O1 (spec RHL-001, under §3.3) ruled by a 3-lane decision quorum on 2026-09-20, per the operator's standing instruction that decisions go to a quorum. 3/3 refuse O1-A as written (reserving per and are forecloses rate and descriptive terms — errors per hour, hosts that are pinned — and all 12 valid corpus programs already use the reworded shapes, so R costs 0 corpus diffs). 2/3 would additionally add App to App under Cmp for the to line; 1/3 calls that an ad-hoc preposition with no vocabulary term behind it. The minimal ruling is taken — reword all three, change no grammar — and the 2:1 on the to production is recorded as a residual. Lane 2 also found a factual error in the O1 text — it says reserving per/are is the same trade already made for of, and of is NOT reserved (grammar/rhl.lalrpop clause 2). Spec is manifest-hashed; PREREGISTRATION.sha256 regenerated in the same commit.
   phases: []
   subtasks: []
   estimated_effort: null
@@ -3433,4 +3445,5 @@ roadmap:
   labels:
   - kind:code
   - class:gate-cannot-fail
+  - kind:docs
   notes: null
