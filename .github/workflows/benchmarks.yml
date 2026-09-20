@@ -4,13 +4,24 @@
 # actually did, measured:
 #
 #   `baseline-comparison`   claimed to compare the PR against its base and compute
-#                           effect sizes. MEASURED: 17 of 17 runs on a PR branch
-#                           FAILED, and every one died on its first step with
+#                           effect sizes. MEASURED: 81 of 81 runs on a PR branch
+#                           FAILED, across 33 distinct branches, with zero PR
+#                           successes ever; every one died on its first step with
 #                           `fatal: invalid reference: main` — `actions/checkout`
 #                           leaves the base branch as `origin/main`, not `main`,
 #                           so `git checkout main -- benches/` cannot resolve. It
 #                           has never compared anything on any PR, while reporting
-#                           a result. Removed; see the ticket below.
+#                           a result. Removed; see BENCH-1.
+#
+#                           COUNT CORRECTED: an earlier revision of this comment
+#                           said "17 of 17". That was `gh run list`'s default
+#                           20-row page, not a measurement. Paginating the full
+#                           history gives 390 runs: 306 push/success, 3
+#                           push/failure, and 81 pull_request/FAILURE across 33
+#                           distinct branches, with ZERO pull_request successes
+#                           ever. Writing a page size into a permanent comment as
+#                           if it were a count is the class this ticket exists to
+#                           correct, so it is recorded rather than quietly fixed.
 #
 #                           Two further layers, had it ever run: `git checkout
 #                           <ref> -- benches/` swaps only `benches/` and leaves
@@ -30,10 +41,29 @@
 #                           any benchmark regressed by more than 10%". It had no
 #                           implementation and always passed. Removed.
 #
-#   `|| true` on the run    swallowed every benchmark failure. The benches DO
-#                           compile today (12 targets, verified), so it was hiding
-#                           nothing at the time — but a step whose status cannot
-#                           go red is not a step. Removed.
+#   `|| true` on the run    swallowed every benchmark failure — and it was hiding
+#                           a TOTAL one. An earlier revision of this comment said
+#                           "the benches DO compile, so it was hiding nothing".
+#                           That was FALSE, and a second-family review measured it:
+#                           in job 106109049678 the step reports SUCCESS while its
+#                           log contains `error: linking with 'cc' failed`, ~15
+#                           `undefined symbol: …::drop_slow`, `cargo bench returned
+#                           an error (exit status: 101)` and ZERO `Benchmarking`
+#                           lines. Same signature on six jobs, on main as well as
+#                           on PRs. The last run that actually benchmarked was
+#                           2026-09-05 20:22 (150 benchmarks, 19m04s), so this has
+#                           been masked for two weeks and ~50 runs, and main's 306
+#                           "successes" on this workflow are not successes.
+#                           Root cause is filed as BENCHBUILD-1: there is no
+#                           [profile.bench], so bench inherits [profile.release]'s
+#                           `panic = "abort"`, which criterion cannot link against.
+#
+#   THIS JOB IS EXPECTED RED until BENCHBUILD-1 lands, and that is deliberate.
+#   It is not a required check, so it blocks no merge. Shipping a true red is the
+#   point: the alternative is the two weeks of false green this comment documents.
+#   The red has an owner and a ticket, which is the same rule this repository
+#   applies to an advisory exemption — an unowned red is the thing being drained,
+#   not a red as such.
 #
 # A real regression gate needs a base build, a PR build, and a threshold. The
 # threshold is not ours to invent, so it is a ticket rather than a guess here.
