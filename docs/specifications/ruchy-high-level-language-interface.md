@@ -161,7 +161,7 @@ Everything else in a program is a **vocabulary term**, a **literal**, or a **nam
 > because an action's attributes reading as siblings of the statements around
 > them loses the nesting §3.2 uses to say which attributes belong to which
 > action. But "the only one" was not measured and was not true.
-> **Open question O1 — three lines of §3.2 do not parse (RHL-0, 2026-09-20) `[V]`.**
+> **Open question O1 — three lines of §3.2 do not parse (RHL-0, 2026-09-20) `[V]`. RULED: see O1-R at the end of this block (RHL-14).**
 > A parser was generated from `grammar/rhl.lalrpop` and fed §3.2 verbatim. After
 > Amendment A1 these three lines still fail:
 >
