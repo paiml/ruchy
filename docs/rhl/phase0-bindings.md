@@ -141,23 +141,56 @@ non-test RHL code enters the crate before RHL-1.
 
 ## B5 — vocabulary terms and the ontology Σ (RHL-001 §3.4)
 
-**Not bound at RHL-0. Recorded as still `[U]`.**
+**Bound. Σ exists, it is expressive, and §3.4's sentence about it is a category
+error.**
 
-§3.4 says a vocabulary term is an instance of a Σ class from `paiml-ontology.md`,
-"exact binding is `[U]` until Phase 0 reads Σ at HEAD". `paiml-ontology.md` is not
-in this repository:
+> **Correction, same PR.** This binding first read "Not bound at RHL-0", on the
+> evidence that `paiml-ontology.md` is absent from *this* repository. That was
+> too narrow a search and the conclusion was wrong. A quorum lane then argued the
+> opposite error — that the file's absence trips §10's `vocabulary-unbindable`.
+> Both were settled by going and reading Σ.
+
+Σ is at `~/src/infra/docs/specifications/paiml-ontology.md` — ONT-001 v4.9. It is
+not in `ruchy`, and it does not need to be: the established pattern is that a repo
+owns its own Σ registry and cites ONT-001 (apex's `contracts/ontology.yaml` says
+so in its own header, "apex owns this registry rather than waiting on a
+fleet-wide one", citing ONT-001 §3.7).
 
 ```bash
-git ls-files | grep -i 'paiml-ontology'   # no output
+find ~/src -maxdepth 4 -name 'paiml-ontology*'     # → infra/docs/specifications/paiml-ontology.md
+sed -n '234,300p' ~/src/infra/docs/specifications/paiml-ontology.md   # §3.1, the entity registry
 ```
 
-The `vocab/*.yaml` files shipped by RHL-0 therefore carry `sigma_class: "[U]"` on
-every term, alongside a `kind:` drawn from §3.4's own closed list
-(`noun | measure | action | unit | entity`). Binding `sigma_class` is work for
-RHL-2, where the vocabulary shape enters `pv`. Inventing a Σ class name here
-would be an invented threshold, which §10 makes a STOP condition.
+ONT-001 §3.1's Σ `entity_types` are an **open registry of things under
+contract**:
 
----
+| Σ entity type | what it classifies |
+|---|---|
+| `code` | crate · module · kernel |
+| `documents` | README.md · CLAUDE.md · spec · changelog |
+| `data files` | csv · parquet · sqlite · gguf · `.apr` model |
+| `web`, `media` | website · html-page · video · audio · image |
+| `pv-contract` | a contract about contracts |
+
+Read that table against RHL-001 §3.4's claim that "a term is an instance of a Σ
+class, so shapes inherit". **It is not.** Σ classifies *what kind of artifact is
+under contract*; `noun | measure | action | unit | entity` classifies *what kind
+of word a term is*. They are different sorts, and inheriting one from the other
+would be a category error.
+
+The binding RHL-0 takes, therefore:
+
+- the **vocabulary file** is the Σ entity, and carries `sigma_entity: pv-contract`
+  once at the top (see `vocab/fleet-v1.yaml`);
+- a **term's** `kind` stays RHL's own closed list, and there is no per-term
+  `sigma_class` field at all.
+
+**Consequence for §10:** the STOP condition `vocabulary-unbindable` is "Σ at HEAD
+cannot express term kinds". Σ can express what is actually under contract — the
+vocabulary document — so the condition **does not fire**. What was unbindable was
+a sentence in §3.4, not the ontology. Rewording §3.4 is proposed for RHL-2, when
+the vocabulary shape enters `pv`; RHL-0 records the finding and does not rewrite
+§3.4 unilaterally.
 
 ## B6 — the three disabled-test directories (RHL-001 §1, `[C]`)
 

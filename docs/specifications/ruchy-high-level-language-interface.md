@@ -104,7 +104,7 @@ job "gx10 disk watch"
   let free be disk free of "/"
 
   when free is below 100 GB
-    file ticket in repo "paiml/infra"
+    file ticket in repo "paiml/infra" with
       title "gx10 disk below 100 GB"
       label "fleet"
     end
@@ -129,9 +129,33 @@ Read aloud it is nearly English. Parsed, it has exactly one meaning: `disk free 
 
 ### 3.3 Keyword set v0 (closed)
 
-`use vocabulary` · unit kinds: `job` `command` `check` `pipeline` `shape` · `let … be` · `set … to` · `when / otherwise / end` · `for each … in … / end` · `repeat at most N times / until / end` · `wait up to` · `may read | write | call` · `runs on` · `every` · `expect` · `example / given / then / end` · `give back` · `stop with` · comparisons: `is` `is not` `is below` `is above` `is at least` `is at most` `is one of` `contains` · logic: `and` `or` `not` · `end`
+`use vocabulary` · unit kinds: `job` `command` `check` `pipeline` `shape` · `let … be` · `set … to` · `when / otherwise / end` · `for each … in … / end` · `repeat at most N times / until / end` · `wait up to` · `may read | write | call` · `runs on` · `every` · `expect` · `example / given / then / end` · `give back` · `stop with` · `with` · comparisons: `is` `is not` `is below` `is above` `is at least` `is at most` `is one of` `contains` · logic: `and` `or` `not` · `end`
 
 Everything else in a program is a **vocabulary term**, a **literal**, or a **name** introduced by `let`.
+
+> **Amendment A1 — `with` (RHL-0, 2026-09-20) `[V]`.**
+> The keyword `with` is new. §3.2 originally opened an action's attribute block
+> with no marker at all, and that syntax is not conflict-free. Measured with
+> LALRPOP 0.23 on the transcribed production, the generator's own words:
+>
+> > *Local ambiguity detected. The problem arises after having observed the
+> > following symbols in the input: `Body App`. At that point, if the next token
+> > is a `NEWLINE`, then the parser can proceed in two different ways.*
+>
+> A parser cannot tell a plain statement from a block opener until it has
+> counted every `end` to the end of the file, so the unmarked form is not LR(k)
+> for any fixed k. It contradicts §3.1 principle 1 — "every valid program has
+> exactly one parse" — which is the principle F1 exists to protect, so the
+> example had to give way rather than the principle.
+>
+> `with` is the minimal repair: one keyword, no §3.1 principle weakened, the
+> keyword list still fits on one screen. §3.3 says the set grows only by spec
+> amendment; this is that amendment, and RHL-0 is the row that rules the spec.
+>
+> The unmarked form is kept verbatim as `grammar/fixtures/ambiguous.lalrpop`,
+> where it serves as F1's positive control. Evidence:
+> `grammar/rhl.conflict-report.txt`; gate:
+> `src/rhl_pre_registration/grammar_gate.rs`.
 
 ### 3.4 Vocabulary — where the ontology lives
 

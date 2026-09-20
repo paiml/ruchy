@@ -3169,3 +3169,23 @@ roadmap:
   - test-debt
   - filed-by:RHL-0
   notes: null
+- id: KANIDEBT-1
+  github_issue: null
+  item_type: task
+  title: 'KANIDEBT-1: 28 contracts declare kani_harnesses that do not exist'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T11:39:02Z
+  updated: 2026-09-20T11:39:02Z
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED at HEAD: every contracts/*.yaml declaring a kani_harnesses block names harness functions that exist nowhere in the tree. Probe: verify_roadmap_uniqueness (contracts/roadmap-sot-v1.yaml) appears only in that YAML — no src/ or tests/ definition. 28 contracts declare the block. pv validate REQUIRES the block, so the incentive is to declare a harness rather than write one, and a declared-but-absent harness reads as a proof that is not held. Decide per contract: write the harness, or mark it declared_not_implemented with the test that actually discharges the obligation (the pattern contracts/rhl-pre-registration-v1.yaml uses). File only; RHL-0 does not fix.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - contract-debt
+  - filed-by:RHL-0
+  notes: null
