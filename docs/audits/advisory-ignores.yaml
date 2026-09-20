@@ -2,9 +2,11 @@
 #
 # Enforced by src/advisory_ignore_gate.rs, a #[cfg(test)] gate that runs inside
 # `ci / gate` (the required check runs `cargo test --lib` on the root crate).
-# The gate holds four things:
+# The gate holds these, across four scanned surfaces (.cargo/audit.toml, deny.toml,
+# the Makefile and .github/workflows/*.yml):
 #
-#   1. every advisory ignored in .cargo/audit.toml or deny.toml has an entry here
+#   1. every advisory ignored on ANY of those four surfaces has an entry here,
+#      and no advisory class is suppressed without naming an advisory at all
 #   2. every entry carries a non-empty reason, a named OWNER and an owner ticket
 #   3. every entry carries a `removed_by` date in ISO form
 #   4. no entry is past its `removed_by` — the day one is, the gate goes RED

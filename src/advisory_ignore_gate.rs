@@ -44,7 +44,13 @@ struct Entry {
     #[serde(default)]
     owner: String,
     removed_by: String,
-    /// Which mechanism exempts this advisory — `audit`, `deny`, or both.
+    /// Which mechanism exempts this advisory: `audit`, `deny` or `both`.
+    ///
+    /// A closed set, checked. `matches!(.., "audit" | "both")` is exact and
+    /// case-sensitive, and a review got `Audit`, `AUDIT`, `audit, deny` and
+    /// `cargo-audit` past it — each skipping the audit-file assertion. The
+    /// orphan test catches the real risk either way, so this is belt-and-braces,
+    /// but a field with three legal values should say so.
     #[serde(default)]
     source: String,
 }
@@ -327,8 +333,8 @@ fn test_sec_1_no_untraceable_blanket_suppression() {
 /// Advisory lint classes set to anything that stops them being reported.
 ///
 /// WHAT THIS DOES NOT COVER, stated because the test's name reads as a
-/// universal and is not one: it inspects the five lint classes named below and
-/// `[graph] exclude`. A future cargo-deny key that suppresses advisories under
+/// universal and is not one: it inspects the five lint classes named below
+/// and the three narrowing `[graph]` keys. A future cargo-deny key that suppresses advisories under
 /// some other name would evade it until added here. Allow-listing the REPORTING
 /// values rather than deny-listing the suppressing ones is what keeps that gap
 /// to new KEYS rather than new VALUES.
@@ -463,3 +469,22 @@ fn test_sec_1_no_exemption_is_dated_beyond_the_maximum_window() {
 /// The longest an exemption may be dated into the future. 90 days is three
 /// re-reviews a year; it is a cap, not a target.
 const MAX_WINDOW_DAYS: i64 = 90;
+
+/// `source` is one of three words. A typo silently changes which assertions run.
+#[test]
+fn test_sec_1_every_entry_declares_a_known_source() {
+    const KNOWN: &[&str] = &["audit", "deny", "both"];
+    let odd: Vec<String> = ledger()
+        .ignores
+        .iter()
+        .filter(|e| !KNOWN.contains(&e.source.trim()))
+        .map(|e| format!("{} has source {:?}", e.id, e.source))
+        .collect();
+    assert!(
+        odd.is_empty(),
+        "SEC-1: {} ledger entr(ies) declare a source outside {KNOWN:?}: {odd:#?}. \
+         The source decides which files this gate asserts the existence of, so a \
+         typo quietly turns one of those assertions off.",
+        odd.len()
+    );
+}
