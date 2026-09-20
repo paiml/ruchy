@@ -38,6 +38,14 @@ ignores:
   # a 30-day window rather than 14. SEC-3 tracks the work; `owner:` names who is
   # accountable for it. Reassign if that is wrong — the gate only requires that
   # SOMEONE is named, not that it is this someone.
+  #
+  # There were FIVE. Two are gone: RUSTSEC-2025-0119 (number_prefix) and
+  # RUSTSEC-2025-0134 (rustls-pemfile) named crates that are not in Cargo.lock at
+  # all, and cargo-deny already reported both as `advisory-not-detected`. Giving
+  # them an owner and a date manufactured two obligations out of two removable
+  # lines — the exact standing-red-with-a-name this ledger exists to prevent.
+  # Deleting a dead exemption is reading the tool's own output, not re-reviewing
+  # an advisory. Found by the second-family review, 2026-09-20.
   # ---------------------------------------------------------------------------
   - id: RUSTSEC-2024-0384
     crate: instant
@@ -55,14 +63,6 @@ ignores:
     owner: noah
     removed_by: "2026-10-20"
     reason: "transitive via simba/nalgebra/parquet, use pastey when upstream migrates (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
-  - id: RUSTSEC-2025-0119
-    crate: number_prefix
-    class: unmaintained
-    source: deny
-    owner_ticket: SEC-3
-    owner: noah
-    removed_by: "2026-10-20"
-    reason: "transitive via indicatif, no replacement available (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
   - id: RUSTSEC-2025-0141
     crate: bincode
     class: unmaintained
@@ -71,11 +71,3 @@ ignores:
     owner: noah
     removed_by: "2026-10-20"
     reason: "transitive, widely used, no drop-in replacement (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
-  - id: RUSTSEC-2025-0134
-    crate: rustls-pemfile
-    class: unmaintained
-    source: deny
-    owner_ticket: SEC-3
-    owner: noah
-    removed_by: "2026-10-20"
-    reason: "transitive, no safe upgrade available (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
