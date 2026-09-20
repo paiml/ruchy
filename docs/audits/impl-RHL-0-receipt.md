@@ -182,12 +182,51 @@ watched go red, then restored byte-identical.
 | `WORKTREE-1` | `.claude/worktrees/` is not git-ignored, so a `git add -A` can sweep a whole lane clone into a commit. |
 | `RHL-1`..`RHL-12` | The §8 DAG, labelled `unadmitted`: the spec admits no implementation row until RHL-0 merges. pmat's lifecycle refuses Planned→Blocked, so the label carries it, not the status. |
 
+## Second-family review (operator ruling S5, 2026-09-20)
+
+The three ph6 lanes were all Gemini, and an earlier lane had gone BLIND — one
+reviewer, sampled twice, one sample void. A **Claude-family** lane was dispatched
+on the diff with a standing instruction to examine `grammar_gate.rs`, the F1
+instrument no lane had read.
+
+It did something no lane had done: **it generated a parser from
+`grammar/rhl.lalrpop` and ran the committed corpus through it.** That found
+defects that no amount of reading would have.
+
+| # | Finding | Status |
+|---|---|---|
+| M1 | The gate's stated reason for discarding LALRPOP's error was **false**. Measured: a conflict renders as `invalid data`, a typo as ``no definition found for `X` ``. The message *does* discriminate. | fixed — the control now asserts the error equals the conflict string, and keeps the differential as a second leg |
+| M2 | The differential alone accepts a fixture whose marked line is a typo rather than an ambiguity. Two committed sentences said it could not. | fixed; the false sentences corrected in `conflict-report.txt` and `ambiguous.lalrpop` |
+| M3 | **Moving `pub` off `Program` makes the whole gate green on a grammar with A1's ambiguity restored.** Four characters, plausible in an honest refactor, and F1's floor is gone. Re-measured here: `Ok`. | fixed — `…program_is_the_only_entry_point` |
+| M4 | The gate placed **no floor on what the grammar describes**. A grammar keeping the header and the whole `match` block, whose only production is `Phrase = WORD+`, passed every check while parsing no RHL at all. | fixed — `…productions_still_cover_the_keyword_set` |
+| M5 | `contains("#[precedence")` missed `#[ precedence`. | hardened to an attribute scan covering `precedence` and `assoc`. Note: re-measured, LALRPOP itself **rejects** `#[ precedence` as an unrecognized attribute, so this was never an actual silencing path — the lane's `Ok` did not reproduce |
+| M6 | Three lines of §3.2 do not parse (`to`, `per`, `are`), and the obvious repair reintroduces an LR conflict. | **not fixed** — recorded as spec **open question O1**, because it is a design question and guessing at it is what §10 forbids |
+| M7 | **2 of 12 "valid" break programs did not parse**, and 10 planted breaks built on them failed for that reason instead of their planted defect. `tickets filed in` contains the reserved word `in`. | fixed — `Cmp` now admits `App "in" App`; re-measured 72/72 |
+| M8 | `vocab` declares the unit `GB`; every corpus program wrote `gb`; and `GB` **lexed as nothing at all**, so §3.1 principle 4's own example was an `InvalidToken`. | fixed — `UNIT` terminal added, corpus reconciled to `GB` |
+| M10 | Amendment A1's claim to be "the only" repair was false; a keyword-free repair exists. | corrected in the spec |
+| M11/M12 | Nothing connects grammar↔corpus↔vocabulary, and the manifest excludes the gate modules. | named in *Gaps*; M4's floor is a partial answer |
+
+Both new gates were proven able to fail, restoring the grammar byte-identical:
+the `pub`-relocation probe turned `…program_is_the_only_entry_point` **and**
+`…productions_still_cover_the_keyword_set` RED (previously the same grammar was
+fully green); the gutted-grammar probe turned the coverage test RED.
+
+Gate count after the review: **36 passed, 0 failed, 1 ignored.**
+
+**The honest summary of M3/M4:** before this review, the F1 instrument could be
+switched off by a four-character edit, and would certify the empty language. It
+was not lying about today's bytes — it never was — but it was weaker than the row
+claimed, and the row's own documents asserted guarantees it did not provide.
+Those sentences are now corrected rather than defended.
+
 ## Gaps — what this row does NOT close
 
 | Gap | What would close it |
 |---|---|
 | **F1's second half is unmeasured.** The grammar is proven conflict-free, but "every corpus program has exactly 1 parse" needs a parser. | RHL-1 |
 | **No lane reviewed `grammar_gate.rs`.** The ph6 delegate says so itself: lanes named evasions for four gates and none for the positive-control gate. | a targeted review, or RHL-1's first use of it |
+| **Grammar↔corpus↔vocabulary are still unconnected.** No gate parses a committed program; `…productions_still_cover_the_keyword_set` is a floor, not a proof. The one grammar-shaped check on corpus bytes is a string heuristic, which CLAUDE.md rule 2 forbids. | RHL-1, once a parser exists |
+| **§3.2 open question O1** — three lines still do not parse, and the obvious repair reintroduces a conflict. | RHL-1 must amend §3.2 or redesign `Args`, with evidence |
 | **Only 4 of 40 corpus tasks were audited for arm fairness** — task 01 by a lane, tasks 24/25/29 by the gate that fix produced. The other 36 pass the mechanical gate but no one has read them against their intents. | RHL-8 must audit all 40 before running the A/B |
 | **`pv_lane` = enforced locally only.** `pv validate` passes on all 15 contracts here, but binding B3 shows CI does not run it, so it is not a gate. | a repo-level decision to arm `pv` in `ci / gate` |
 | `cargo test --workspace` (the fallback `gate_cmd`) was not run to completion — it exceeds the tool's command timeout on this tree. The check that gates, `cargo test --lib` + clippy + fmt, was run in full. | CI on the PR |

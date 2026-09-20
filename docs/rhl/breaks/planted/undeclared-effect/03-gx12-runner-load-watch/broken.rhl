@@ -9,7 +9,7 @@ job "gx12 runner load watch"
 
   let free be runner load of "runner-01"
 
-  when free is below 90 gb
+  when free is below 90 GB
     file ticket in repo "paiml/ci-ops" with
       title "gx12 runner load watch"
       label "runner"
@@ -19,7 +19,7 @@ job "gx12 runner load watch"
   expect ticket count is at most 1
 
   example "gx12 runner load watch example"
-    given free is 95 gb
+    given free is 95 GB
     then ticket count is 1
   end
 end

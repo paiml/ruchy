@@ -24,8 +24,14 @@
 //
 // If this file ever PROCESSES CLEANLY, the grammar gate is no longer able to
 // detect an ambiguous production, and every conflict-free claim RHL makes is
-// worthless. That is why the gate asserts this file fails, and asserts that it
-// fails specifically with a CONFLICT rather than with any error at all.
+// worthless. So the gate asserts two things, not one: that this file fails, and
+// that its rendered error is exactly "invalid data", which is LALRPOP's conflict
+// path specifically (a typo here renders differently -- measured, lalrpop 0.23.1).
+// It then deletes the single line marked below and requires the remainder to
+// process cleanly, so the failure is attributable to that line. Either check
+// alone is weaker than it looks: the error string alone would not notice the
+// planted line being removed, and the differential alone was shown to accept a
+// fixture whose marked line is an undefined nonterminal rather than an ambiguity.
 
 grammar;
 

@@ -20,7 +20,7 @@ job "gx20 var disk watch"
   expect ticket count is at most 1
 
   example "gx20 var disk watch example"
-    given free is 20 gb
+    given free is 20 GB
     then ticket count is 1
   end
 end

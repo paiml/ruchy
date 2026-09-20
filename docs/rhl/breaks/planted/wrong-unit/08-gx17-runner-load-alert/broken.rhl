@@ -20,7 +20,7 @@ job "gx17 runner load alert"
   expect ticket count is at most 1
 
   example "gx17 runner load alert example"
-    given free is 90 gb
+    given free is 90 GB
     then ticket count is 1
   end
 end

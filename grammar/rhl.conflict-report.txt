@@ -7,7 +7,7 @@ by the generator's report". This file IS that report. It is regenerated and
 compared by src/rhl_pre_registration/grammar_gate.rs, so it cannot drift from the
 grammar without turning the gate RED.
 
-generator   lalrpop 0.23 (dev-dependency; see Cargo.toml)
+generator   lalrpop 0.23.1 (dev-dependency; see Cargo.toml)
 command     lalrpop::Configuration::new()
                 .set_out_dir(<a fresh temp dir>)
                 .emit_rerun_directives(false)
@@ -15,7 +15,7 @@ command     lalrpop::Configuration::new()
 
 SUBJECT
     grammar/rhl.lalrpop
-    sha256  e60e7071cebae861e047765accd85f4ed59ce1eff0f9d6d2fe4b609bab28a6f9
+    sha256  3ae463833317b59ecf480aa5dd6e8caba15d4bcf3dd785fa5debae91208b625c
     result  Ok(())
     LALRPOP reported no LR(1) conflict and no local ambiguity. A clean run
     prints nothing, so the evidence is the Ok and the hash above, not output
@@ -24,34 +24,55 @@ SUBJECT
 POSITIVE CONTROL — F1 requires that an ambiguous production turn this check RED
     grammar/fixtures/ambiguous.lalrpop
     sha256  7617bd1dfa85db2e52811b719809d359cb87f7018c4088a3e18a538e6defad57
-    result  Err
+    result  Err("invalid data")
     LALRPOP printed, in its own words:
         "Local ambiguity detected
            The problem arises after having observed the following symbols in
            the input: Body App
            At that point, if the next token is a `NEWLINE`, then the parser can
            proceed in two different ways."
-        "and looking at a token `NEWLINE` we can reduce to a `Stmt` but we can
-         also shift"
 
     The fixture is not a toy: it is spec §3.2's own action syntax, in which an
     attribute block is opened by nothing at all. See the amendment note in
     grammar/rhl.lalrpop.
 
-WHY THE CONTROL IS DISCRIMINATING, AND NOT JUST "SOMETHING WENT WRONG"
-    LALRPOP's Err value renders as the generic string "invalid data" for a
-    conflict and for a mere typo alike — measured, 2026-09-20. Matching on that
-    message would let a renamed or corrupted fixture pass the positive control
-    for the wrong reason. So the gate runs a three-way DIFFERENTIAL instead:
+HOW THE CONTROL DISCRIMINATES A CONFLICT FROM ANY OTHER ERROR
+    CORRECTION, 2026-09-20. An earlier revision of this file asserted that
+    LALRPOP "renders both a conflict and a mere typo as the generic string
+    'invalid data'", and built a three-way differential to work around that.
+    A second-family review measured the claim and it is FALSE. On lalrpop
+    0.23.1, the rendered error does discriminate:
+
+        the fixture, a real LR conflict        ->  "invalid data"
+        the same file, undefined nonterminal   ->  "no definition found for `X`"
+        the same file, unbalanced delimiters   ->  "unterminated code block; ..."
+
+    "invalid data" is specifically the conflict path. So the gate now asserts the
+    error EQUALS that string, which is a direct check rather than an inference.
+
+    The differential is kept as a second, independent leg, because on its own it
+    was shown to be insufficient — a fixture whose marked line is an undefined
+    nonterminal rather than an ambiguity satisfies all three of its conditions:
 
         grammar/rhl.lalrpop                       -> Ok
         grammar/fixtures/ambiguous.lalrpop        -> Err
         the same fixture, with the single planted
         production deleted and nothing else       -> Ok
 
-    The third run is built at test time by deleting the one line the fixture
-    marks "UNMARKED attribute block — the planted defect". Because that line is
-    the only difference between a grammar LALRPOP accepts and one it rejects,
-    the rejection is attributable to the planted ambiguity and to nothing else.
-    A typo, a missing file, or a bad edit fails the third run too, and the gate
-    goes RED rather than quietly passing.
+    Together the two legs say: the fixture fails, it fails for an LR conflict,
+    and it is the marked line that causes it. Either alone is weaker than this
+    file previously claimed.
+
+WHAT THIS REPORT DOES NOT ESTABLISH
+    Conflict-freedom is a property of the empty language too. This report says
+    the grammar has no LR conflict; it does not say the grammar describes RHL.
+    Two gate tests put a floor under that — one requires `Program` to be the
+    single `pub` entry point (LALRPOP only builds states for what the entry
+    point reaches), the other requires every §3.3 keyword to appear in a
+    production and not merely in the lexer's `match` block. Both were added
+    after a review demonstrated grammars that passed every other check while
+    being unable to parse a single RHL program.
+
+    The real check — that every committed corpus program parses, and parses
+    exactly once — needs a generated parser. That is row RHL-1's work, and it is
+    named as a gap in docs/audits/impl-RHL-0-receipt.md.

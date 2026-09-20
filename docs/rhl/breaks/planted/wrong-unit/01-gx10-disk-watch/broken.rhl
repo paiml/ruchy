@@ -20,7 +20,7 @@ job "gx10 disk watch"
   expect ticket count is at most 1
 
   example "gx10 disk watch example"
-    given free is 90 gb
+    given free is 90 GB
     then ticket count is 1
   end
 end

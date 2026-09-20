@@ -22,11 +22,19 @@
 //!
 //! | Module | Falsifier | Holds |
 //! |---|---|---|
-//! | [`grammar_gate`] | F1 | the grammar is conflict-free by LALRPOP's own report, and the ambiguous fixture is rejected *for being ambiguous* |
+//! | [`grammar_gate`] | F1 | the grammar is conflict-free by LALRPOP's own report; the fixture is rejected with LALRPOP's conflict error specifically; `Program` is the only entry point; and every §3.3 keyword still appears in a production |
 //! | [`vocab_gate`] | F4, F6 | every vocabulary term has a contract template and a kind from the closed list |
 //! | [`corpus_gate`] | F8 | the task corpus is the pre-registered size and shape, and its Rust tests are real Rust |
 //! | [`breaks_gate`] | F7 | every planted break is a real mutation of a named valid program, in a declared class |
 //! | [`manifest_gate`] | all | the pre-registered bytes still hash to what RHL-0 committed |
+//!
+//! # What these gates do NOT establish
+//!
+//! `grammar_gate` puts a floor under the grammar but no ceiling: it cannot show
+//! that the committed corpus parses, because that needs a generated parser and
+//! RHL-0 ships no compiler code. The manifest covers the pre-registered data,
+//! the spec and the bindings, but deliberately NOT these gate modules, which
+//! later rows are meant to extend. Both are named in this row's receipt.
 
 #[cfg(test)]
 mod breaks_gate;

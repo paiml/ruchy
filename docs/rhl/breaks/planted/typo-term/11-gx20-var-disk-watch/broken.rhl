@@ -10,7 +10,7 @@ job "gx20 var disk watch"
 
   let free be disk fre of "/var"
 
-  when free is below 30 gb
+  when free is below 30 GB
     file ticket in repo "paiml/infra" with
       title "gx20 var disk watch"
       label "fleet"
@@ -20,7 +20,7 @@ job "gx20 var disk watch"
   expect ticket count is at most 1
 
   example "gx20 var disk watch example"
-    given free is 20 gb
+    given free is 20 GB
     then ticket count is 1
   end
 end

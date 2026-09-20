@@ -20,7 +20,7 @@ job "gx13 pin check"
   expect ticket count is at most 1
 
   example "gx13 pin check example"
-    given free is 1 gb
+    given free is 1 GB
     then ticket count is 1
   end
 end

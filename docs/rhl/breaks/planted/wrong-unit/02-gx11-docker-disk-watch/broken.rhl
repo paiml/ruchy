@@ -20,7 +20,7 @@ job "gx11 docker disk watch"
   expect ticket count is at most 1
 
   example "gx11 docker disk watch example"
-    given free is 95 gb
+    given free is 95 GB
     then ticket count is 1
   end
 end

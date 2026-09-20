@@ -10,7 +10,7 @@ job "gx14 ticket sweep"
 
   let free be tickets filed in "paiml/infra"
 
-  when free is below 5 gb
+  when free is below 5 GB
     file ticket in repo "paiml/infra" with
       title "gx14 ticket sweep"
       label "tickets"
@@ -20,7 +20,7 @@ job "gx14 ticket sweep"
   expect ticket count is at most 1
 
   example "gx14 ticket sweep example"
-    given free is 2 gb
+    given free is 2 GB
     then ticket count is 1
   end
 end

@@ -39,20 +39,30 @@ fn fresh_out_dir(tag: &str) -> PathBuf {
     d
 }
 
-/// Run LALRPOP over one grammar file and report only whether it accepted it.
+/// Run LALRPOP over one grammar file, keeping its rendered error.
 ///
-/// The error value is deliberately discarded: LALRPOP renders both a genuine
-/// conflict and a plain typo as the string "invalid data" (measured, lalrpop
-/// 0.23), so the message cannot discriminate. The differential in
-/// [`test_rhl_grammar_0_ambiguous_fixture_is_rejected_for_being_ambiguous`]
-/// does that job instead.
-fn lalrpop_accepts(path: &Path, tag: &str) -> bool {
+/// An earlier revision discarded the error, on the stated ground that LALRPOP
+/// renders a conflict and a typo alike as `"invalid data"`. That was measured to
+/// be FALSE (lalrpop 0.23.1, 2026-09-20): `invalid data` is specifically the
+/// conflict/ambiguity path, while a typo renders as its own message — an
+/// undefined nonterminal gives ``no definition found for `X` ``. The message is
+/// the sharpest discriminator available, so the positive control now asserts on
+/// it directly, and keeps the differential as a second, independent leg.
+fn lalrpop_result(path: &Path, tag: &str) -> Result<(), String> {
     lalrpop::Configuration::new()
         .set_out_dir(fresh_out_dir(tag))
         .emit_rerun_directives(false)
         .process_file(path)
-        .is_ok()
+        .map_err(|e| e.to_string())
 }
+
+fn lalrpop_accepts(path: &Path, tag: &str) -> bool {
+    lalrpop_result(path, tag).is_ok()
+}
+
+/// LALRPOP's rendered error for a grammar whose only defect is an LR conflict.
+/// Measured, not guessed; see [`lalrpop_result`].
+const CONFLICT_ERROR: &str = "invalid data";
 
 #[test]
 fn test_rhl_grammar_0_is_conflict_free_by_the_generators_own_report() {
@@ -82,11 +92,17 @@ fn test_rhl_grammar_0_ambiguous_fixture_is_rejected_for_being_ambiguous() {
         planted.len()
     );
 
-    assert!(
-        !lalrpop_accepts(&repo_root().join(FIXTURE), "fixture"),
-        "F1 POSITIVE CONTROL BROKEN: LALRPOP ACCEPTED {FIXTURE}. This check can \
-         no longer detect an ambiguous production, so every conflict-free claim \
-         RHL makes is worthless."
+    let err = lalrpop_result(&repo_root().join(FIXTURE), "fixture").expect_err(
+        "F1 POSITIVE CONTROL BROKEN: LALRPOP ACCEPTED the ambiguous fixture. This \
+         check can no longer detect an ambiguous production, so every \
+         conflict-free claim RHL makes is worthless.",
+    );
+    assert_eq!(
+        err, CONFLICT_ERROR,
+        "F1 POSITIVE CONTROL IS NOT DISCRIMINATING: {FIXTURE} was rejected, but \
+         for `{err}` rather than for an LR conflict. A renamed nonterminal or a \
+         stray brace also fails, and would have passed this control for the wrong \
+         reason. Fix the fixture so its ONLY defect is the planted ambiguity."
     );
 
     // The differential: delete the one planted production and nothing else.
@@ -126,11 +142,16 @@ fn test_rhl_grammar_0_committed_conflict_report_matches_the_grammar() {
 #[test]
 fn test_rhl_grammar_0_conflict_freedom_is_not_bought_with_precedence() {
     let grammar = read(GRAMMAR);
+    let silencers: Vec<&str> = grammar
+        .lines()
+        .filter(|l| !l.trim_start().starts_with("//"))
+        .filter(|l| has_attr(l, "precedence") || has_attr(l, "assoc"))
+        .collect();
     assert!(
-        !grammar.contains("#[precedence"),
-        "{GRAMMAR} uses a #[precedence] annotation. Precedence RESOLVES an \
-         ambiguity silently instead of reporting it, which turns the \
-         conflict-free report into a false positive. Rewrite the productions."
+        silencers.is_empty(),
+        "{GRAMMAR} uses a precedence or associativity annotation: {silencers:?}. \
+         These RESOLVE an ambiguity silently instead of reporting it, which turns \
+         the conflict-free report into a false positive. Rewrite the productions."
     );
     // `else` is legitimate exactly once per level in LALRPOP's lexer `match`
     // block. Anywhere else it is precedence chaining between alternatives,
@@ -167,3 +188,130 @@ fn test_rhl_grammar_0_tokenization_contract_is_stated() {
         );
     }
 }
+
+/// `#[name` allowing whitespace after the bracket, which LALRPOP's parser accepts
+/// in some positions. A bare `contains("#[precedence")` missed `#[ precedence`.
+fn has_attr(line: &str, name: &str) -> bool {
+    line.split("#[")
+        .skip(1)
+        .any(|rest| rest.trim_start().starts_with(name))
+}
+
+/// The one line that can switch this whole instrument off.
+///
+/// LALRPOP builds LR states only for nonterminals reachable from a `pub` entry
+/// point. Moving `pub` from `Program` to a leaf makes almost nothing reachable,
+/// and the grammar then processes cleanly however ambiguous it is. MEASURED: with
+/// `pub` on `Quantity` and Amendment A1's ambiguity put back in full, LALRPOP
+/// returns `Ok` and all the other checks here stay green. Four characters,
+/// plausible as part of an honest RHL-1 refactor, and F1's floor is gone.
+#[test]
+fn test_rhl_grammar_0_program_is_the_only_entry_point() {
+    let grammar = read(GRAMMAR);
+    let pubs: Vec<&str> = grammar
+        .lines()
+        .map(str::trim)
+        .filter(|l| l.starts_with("pub ") && l.contains(':'))
+        .collect();
+    assert_eq!(
+        pubs.len(),
+        1,
+        "{GRAMMAR} declares {} `pub` entry points: {pubs:?}. LALRPOP only builds \\
+         states for what a `pub` nonterminal reaches, so more than one entry point \\
+         — or the wrong one — changes what 'conflict-free' even ranges over.",
+        pubs.len()
+    );
+    assert!(
+        pubs[0].starts_with("pub Program:"),
+        "{GRAMMAR}'s entry point is `{}`, not `pub Program`. Everything this gate \\
+         certifies is scoped to what the entry point reaches; move it to a leaf \\
+         and the grammar processes cleanly however ambiguous it is.",
+        pubs[0]
+    );
+}
+
+/// A floor on what the grammar must still DESCRIBE.
+///
+/// "Conflict-free" is a property of the empty language too. MEASURED: a grammar
+/// keeping this file's comment header and its entire `match` block, but whose
+/// only production is `Phrase = WORD+`, passes every other check here — while
+/// being unable to parse a single RHL program. So the keywords of spec §3.3 must
+/// appear in the PRODUCTIONS, not merely be declared as tokens.
+///
+/// This is a floor, not a proof. The real check — that the committed corpus
+/// parses, and parses exactly once — needs a generated parser, which is row
+/// RHL-1's work and is named as a gap in this row's receipt.
+#[test]
+fn test_rhl_grammar_0_productions_still_cover_the_keyword_set() {
+    let grammar = read(GRAMMAR);
+    let body = grammar
+        .rsplit_once('}')
+        .map(|(_, _)| productions_region(&grammar))
+        .unwrap_or_default();
+    let missing: Vec<&str> = KEYWORDS
+        .iter()
+        .filter(|k| !body.contains(&format!("\"{k}\"")))
+        .copied()
+        .collect();
+    assert!(
+        missing.is_empty(),
+        "{GRAMMAR} declares {} §3.3 keyword(s) as tokens but uses them in no \\
+         production: {missing:?}. A grammar that lexes RHL and parses none of it \\
+         is still conflict-free, and that is not what F1 claims.",
+        missing.len()
+    );
+}
+
+/// Everything after the lexer `match` block — i.e. the productions.
+fn productions_region(grammar: &str) -> String {
+    match grammar.find("\npub ") {
+        Some(i) => grammar[i..].to_string(),
+        None => String::new(),
+    }
+}
+
+/// Spec §3.3's closed keyword set, plus `with` from Amendment A1.
+const KEYWORDS: &[&str] = &[
+    "use vocabulary",
+    "job",
+    "command",
+    "check",
+    "pipeline",
+    "shape",
+    "let",
+    "be",
+    "set",
+    "to",
+    "when",
+    "otherwise",
+    "end",
+    "for each",
+    "in",
+    "repeat at most",
+    "times",
+    "until",
+    "wait up to",
+    "runs on",
+    "every",
+    "may read",
+    "may write",
+    "may call",
+    "expect",
+    "example",
+    "given",
+    "then",
+    "give back",
+    "stop with",
+    "with",
+    "is",
+    "is not",
+    "is below",
+    "is above",
+    "is at least",
+    "is at most",
+    "is one of",
+    "contains",
+    "and",
+    "or",
+    "not",
+];

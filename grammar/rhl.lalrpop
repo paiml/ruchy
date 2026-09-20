@@ -27,6 +27,14 @@
 //    bare word `of`, and `of` is a word of the vocabulary term `disk free of`.
 //    Reserving it would make that term unspellable.
 //
+// 2b. A RESERVED WORD CANNOT APPEAR INSIDE A TERM. `in` is reserved by
+//    `for each ... in ...`, and the vocabulary term `tickets filed in` contains
+//    it, so `let free be tickets filed in "x"` did not parse: `App "in" App`
+//    existed only under `Action`, never under a condition. `Cmp` now admits it
+//    too. This is the same hazard clause 2 describes for `of`, and it was not
+//    checked against the single-word keywords until a parser was built from this
+//    file and run over the corpus.
+//
 // 3. THE GRAMMAR DOES NOT KNOW ANY VOCABULARY TERM. It knows only
 //    PHRASE = WORD+. Which words of a phrase form the multi-word term
 //    `disk free of` and which are arguments or names is resolved by the
@@ -37,6 +45,11 @@
 //
 // 4. LITERALS are a STRING, an INT, and a QUANTITY = INT followed by a unit
 //    (`100 GB`, `1 hour`, `5 %`). `%` is its own token because it is not a word.
+//    A unit may be written in capitals, so UNIT is its own terminal: WORD's regex
+//    is lowercase-only and `GB` matched NO rule at all, which made `100 GB` — the
+//    example on this very line, and the one in spec 3.1 principle 4 and 3.2 —
+//    an InvalidToken. Found by building a parser from this grammar and running
+//    the committed corpus through it (pre-PR review, 2026-09-20).
 //
 // 5. THERE IS NO ESCAPE HATCH. No `rust … end` block exists in v0 (§12.3,
 //    Recommended: no). It is where contract coverage would get holes.
@@ -96,6 +109,7 @@ match {
     r"[0-9]+" => INT,
     r#""[^"]*""# => STRING,
     r"[a-z_][a-z0-9_]*" => WORD,
+    r"[A-Z][A-Za-z]*" => UNIT,
     r"[ \t]+" => { },
 }
 
@@ -168,6 +182,7 @@ Disj: () = { <Conj> => (), <Disj> "or" <Conj> => () };
 Conj: () = { <Cmp> => (), <Conj> "and" <Cmp> => () };
 Cmp: () = {
     <App> => (),
+    <App> "in" <App> => (),
     "not" <Cmp> => (),
     <App> <CompOp> <App> => (),
 };
@@ -186,5 +201,5 @@ App: () = {
 
 Args: () = { <Atom> => (), <Args> <Atom> => () };
 Atom: () = { STRING => (), <Quantity> => () };
-Quantity: () = { INT => (), INT WORD => (), INT "%" => () };
+Quantity: () = { INT => (), INT WORD => (), INT UNIT => (), INT "%" => () };
 Phrase: () = { WORD => (), <Phrase> WORD => () };

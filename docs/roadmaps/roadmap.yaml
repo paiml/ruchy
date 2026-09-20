@@ -2905,7 +2905,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20T10:27:37Z
-  updated: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T12:36:57Z
   spec: null
   acceptance_criteria:
   - K̂ 150. UNADMITTED until RHL-0 merges (spec RHL-001 §8 readiness rule).
@@ -2917,7 +2917,7 @@ roadmap:
   - rhl
   - unadmitted
   - depends:RHL-0
-  notes: null
+  notes: 'K-hat BASIS [C], not [U]: RHL-0 measured k_measured=118 assistant messages against K=100 with andon at 80 — an 18% overrun that produced no PARTIAL(andon). Use 118 as RHL-1''s basis, and note the unit: statusline.sh counts every assistant message including intra-turn tool calls, while the spec''s K-hat is budgeted in orchestrator turns (~72 for RHL-0). Pick one unit and say which. RHL-1 also inherits two gaps RHL-0 could not close: F1''s second half (every corpus program has exactly one parse) needs a generated parser, and open question O1 — three lines of spec 3.2 (expect no change to host / expect at most 1 ticket per run / then 0 tickets are filed) still do not parse, and the obvious repair reintroduces an LR conflict.'
 - id: RHL-2
   github_issue: null
   item_type: task
@@ -3052,7 +3052,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20T10:27:37Z
-  updated: 2026-09-20T10:27:37Z
+  updated: 2026-09-20T12:36:57Z
   spec: null
   acceptance_criteria:
   - K̂ 90. UNADMITTED until RHL-0 merges. F8 may FAIL; spec §7 says so in advance.
@@ -3064,7 +3064,7 @@ roadmap:
   - rhl
   - unadmitted
   - depends:RHL-5
-  notes: null
+  notes: 'OPERATOR RULING 2026-09-20 — THE CORPUS IS FROZEN ONCE RHL-0 MERGES. Only 4 of the 40 tasks have been audited for arm fairness (task 01 by a review lane; tasks 24, 25, 29 by the gate that fix produced). The other 36 pass the mechanical gate but nobody has read them against their intents. RHL-8 MUST audit all 40 before running the A/B. When a task needs a fairness fix, the corpus goes v0 -> v1 with a public diff and a manifest re-hash — NEVER an in-place edit. An in-place edit means F8''s A/B is measured against a corpus tuned after the fact, which is the one thing pre-registration exists to prevent. Also inherited: the ten ambiguous tasks are numbered 31-40, so numeric order leaks the scoring key; docs/rhl/corpus/HARNESS.md requires a seeded shuffle with the seed recorded in this row''s receipt.'
 - id: RHL-9
   github_issue: null
   item_type: task
@@ -3197,7 +3197,7 @@ roadmap:
   priority: medium
   assigned_to: null
   created: 2026-09-20T12:01:38Z
-  updated: 2026-09-20T12:02:58Z
+  updated: 2026-09-20T12:36:57Z
   spec: null
   acceptance_criteria:
   - 'MEASURED during RHL-0: agy review and goal lanes create clones under .claude/worktrees/. Six accumulated in ONE session and totalled 34 GB (du -sh). git check-ignore reports the path is NOT ignored, so they show as untracked and a ''git add -A'' would sweep an entire clone into a commit. Two problems: (1) add .claude/worktrees/ to .gitignore; (2) nothing prunes stale lane clones — agy-lane.sh KEEPs a clone whenever a writes=false lane writes scratch files into it, which every review lane in this session did. File only; RHL-0 does not fix.'
@@ -3208,7 +3208,7 @@ roadmap:
   - kind:code
   - tooling-debt
   - filed-by:RHL-0
-  notes: null
+  notes: 'OPERATOR RULING 2026-09-20: this is aprender#3579''s class — ''clones outside the repo root, fleet-wide'' — and folds into that fix rather than getting a ruchy-local one. aprender#3579: ''12 guards build their universe with find and 8 do not exclude .claude/worktrees — they scan 3 trees at 3 different commits and attribute it all to HEAD''. Same root cause, wider blast radius: here it was 6 clones totalling 34 GB in one session, un-ignored, where a git add -A would have swept a whole clone into a commit.'
 - id: CIBASE-1
   github_issue: null
   item_type: task
@@ -3247,5 +3247,25 @@ roadmap:
   labels:
   - kind:code
   - security
+  - filed-by:RHL-0
+  notes: null
+- id: HARNESS-1
+  github_issue: null
+  item_type: task
+  title: 'HARNESS-1: the andon at 0.8K did not stop the line; RHL-0 ran to 118 against K=100'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-20T12:37:03Z
+  updated: 2026-09-20T12:37:03Z
+  spec: null
+  acceptance_criteria:
+  - 'OPERATOR RULING 2026-09-20: ''Budget: k_measured=118 against K=100, andon at 80. The row overran its cap by 18% without a PARTIAL(andon). The harness should have stopped the line at 80 — if it did not, that is a harness ask.'' MEASURED on ruchy RHL-0: goal.sh set --K 100 --khat 80 was called at Phase 1 and statusline.sh measured k=118 by the end, with no andon fired and no PARTIAL(andon) emitted. Two things to separate before fixing: (1) UNITS — statusline.sh''s k counts distinct assistant message ids INCLUDING intra-turn tool-call messages, while K-hat is budgeted in orchestrator turns (~72 here). 118 vs 72 is not a 64% overrun, it is two different measures. Decide which one K governs and make goal.sh and statusline.sh agree. (2) ENFORCEMENT — whichever unit is chosen, nothing currently interrupts at 0.8K. The skill says ''turns >= 0.8K and gate != PASS -> andon: commit WIP, push, gh pr create --draft, emit PARTIAL(andon), stop'', but that is a rule the MODEL is asked to follow, with no hook behind it. A PreToolUse hook that refuses once k_measured >= K, the way the progress guard already refuses a third identical call, would make the cap real. Filed from ruchy; owner is paiml-implement (see LANE-1, filed the same day).'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:docs
+  - harness-ask
   - filed-by:RHL-0
   notes: null

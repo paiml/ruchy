@@ -10,7 +10,7 @@ job "gx21 home disk watch"
 
   let free be disk usage of "/home"
 
-  when free is below 60 gb
+  when free is below 60 GB
     file ticket in repo "paiml/fleet-ops" with
       title "gx21 home disk watch"
       label "disk"
@@ -20,7 +20,7 @@ job "gx21 home disk watch"
   expect ticket count is at most 1
 
   example "gx21 home disk watch example"
-    given free is 55 gb
+    given free is 55 GB
     then ticket count is 1
   end
 end

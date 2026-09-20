@@ -10,7 +10,7 @@ job "gx17 runner load alert"
 
   let free be runer load of "runner-02"
 
-  when free is below 85 gb
+  when free is below 85 GB
     file ticket in repo "paiml/ci-ops" with
       title "gx17 runner load alert"
       label "runner"
@@ -20,7 +20,7 @@ job "gx17 runner load alert"
   expect ticket count is at most 1
 
   example "gx17 runner load alert example"
-    given free is 90 gb
+    given free is 90 GB
     then ticket count is 1
   end
 end

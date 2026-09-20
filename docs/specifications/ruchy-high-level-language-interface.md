@@ -148,9 +148,19 @@ Everything else in a program is a **vocabulary term**, a **literal**, or a **nam
 > exactly one parse" — which is the principle F1 exists to protect, so the
 > example had to give way rather than the principle.
 >
-> `with` is the minimal repair: one keyword, no §3.1 principle weakened, the
-> keyword list still fits on one screen. §3.3 says the set grows only by spec
-> amendment; this is that amendment, and RHL-0 is the row that rules the spec.
+> `with` is the minimal repair **that keeps §3.2's nested attribute block**: one
+> keyword, no §3.1 principle weakened, the keyword list still fits on one screen.
+> §3.3 says the set grows only by spec amendment; this is that amendment, and
+> RHL-0 is the row that rules the spec.
+>
+> *Correction, same PR.* This paragraph first said `with` was "the only" repair
+> keeping every §3.1 principle intact. A second-family review falsified that: it
+> measured a conflict-free grammar in which the nested block is removed
+> altogether and attributes become sibling statements, adding no keyword at all
+> — arguably better service to principle 9 ("small"). `with` is still preferred,
+> because an action's attributes reading as siblings of the statements around
+> them loses the nesting §3.2 uses to say which attributes belong to which
+> action. But "the only one" was not measured and was not true.
 >
 > The unmarked form is kept verbatim as `grammar/fixtures/ambiguous.lalrpop`,
 > where it serves as F1's positive control. Evidence:

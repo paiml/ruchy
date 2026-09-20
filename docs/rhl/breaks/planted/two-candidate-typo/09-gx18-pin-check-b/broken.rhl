@@ -10,7 +10,7 @@ job "gx18 pin check"
 
   let free be pin status of "gx18"
 
-  when free is below 1 gb
+  when free is below 1 GB
     file ticket in repo "paiml/infra" with
       title "gx18 pin check"
       label "pin"
@@ -20,7 +20,7 @@ job "gx18 pin check"
   expect ticket count is at most 1
 
   example "gx18 pin check example"
-    given free is 1 gb
+    given free is 1 GB
     then ticket count is 1
   end
 end

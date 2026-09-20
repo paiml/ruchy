@@ -10,7 +10,7 @@ job "gx16 root disk watch"
 
   let free be disk usage of "/"
 
-  when free is below 70 gb
+  when free is below 70 GB
     file ticket in repo "paiml/infra" with
       title "gx16 root disk watch"
       label "disk"
@@ -19,7 +19,7 @@ job "gx16 root disk watch"
   expect ticket count is at most 1
 
   example "gx16 root disk watch example"
-    given free is 60 gb
+    given free is 60 GB
     then ticket count is 1
   end
 end
