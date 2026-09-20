@@ -1,0 +1,28 @@
+{
+  "ticket": "RHL-13",
+  "pr": 227,
+  "base": "main",
+  "head": "42f135610da46a71237cc78734eaef3e91773d2f",
+  "diff_sha256": "1ac5d7fcade96986b3983b63e0f7129d20f538f4f9a33a6334eebb3c1509ad47",
+  "agreed": false,
+  "verdict": "Unknown{RerunOnly}",
+  "verdict_reason": "The quorum has NOT judged this diff. The second model family could not run: the agy account quota was exhausted (HTTP 429, RESOURCE_EXHAUSTED) across the afternoon, voiding lanes in ruchy, aprender #3491 and bashrs #358 simultaneously. S5 requires two families, so there is no verdict to record \u2014 not a FAIL, and emphatically not a PASS.",
+  "rearm_protocol": "This artifact exists so the re-arm is VISIBLE rather than a silent retry. When agy returns (~18:25Z), dispatch both families, replace this record with their verdicts, and record the re-arm timestamp. `pmat-merge --auto` refuses while agreed=false, which is the mechanism working. Do not hand-edit agreed to true.",
+  "author": {
+    "model": "Opus 5 (1M context)",
+    "family": "claude"
+  },
+  "families_required": [
+    "gemini",
+    "claude"
+  ],
+  "families_run": [],
+  "blocked_on": "agy account quota (RESOURCE_EXHAUSTED 429); class: shared quota = shared outage; fix rowed as ARB-APR-001",
+  "what_this_pr_carries": [
+    "B5's apex citation corrected \u2014 apex is row-grained per extractor and holds no file-vs-row principle",
+    "sigma_entity unbound to [U] with both candidates, because no extractor exists for a YAML term registry",
+    "discharged_by now takes a real test OR a closed sentinel set, adopted from apex's theorem-bind.sh",
+    "a third dead advisory exemption deleted (paste), found by the removal test rather than lock presence",
+    "post-merge bookkeeping: RHL-0 and SEC-1 completed, RHL-1..12 lose `unadmitted`"
+  ]
+}
