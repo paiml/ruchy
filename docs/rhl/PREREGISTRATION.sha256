@@ -9,7 +9,7 @@
 # Regenerate: RHL0_WRITE_MANIFEST=1 cargo test --lib -p ruchy \
 #             rhl_manifest_0_regenerate -- --ignored
 #
-# files: 299
+# files: 301
 
 c8d438383d8a35c73f3151200f6487464f43493069d852022accc6d8d8de056b  contracts/rhl-fleet-disk-free-of-v1.yaml
 8b62ba758018adb354c0ada4fcbdb40bc71bafb773165a30d9383c0cbbf2fdd7  contracts/rhl-fleet-disk-usage-of-v1.yaml
@@ -304,8 +304,10 @@ f8b3f91447b4b64a09d69c71d87a7bdcecf5a37d1f9e08e1c6cc4314b61350bd  docs/rhl/corpu
 1772856a1c12f1a0a5b1fb3c7abf664bd7edafd2fe0318a737d0bda0fff7dfe9  docs/rhl/corpus/40-disk-cleanup-unstated-unit/tests.rs
 6d0fd9fb92ad60ede614398d2051d31ca89c12d9d846f45384979e9bd3097a8e  docs/rhl/corpus/HARNESS.md
 0511cf16bcd1018eb0c2f9f2a8ac0f6e23ddce0706b75464632c5aa304f4256d  docs/rhl/phase0-bindings.md
-179951e5049ca16c62b22d6d8f150857bc6cfd3c21c66603200db5d3e5b02d87  docs/specifications/ruchy-high-level-language-interface.md
+861cfa4c1bb2e65ba1f029607a2bae619690f310fe4c55782d4a99260b72eac8  docs/specifications/ruchy-high-level-language-interface.md
 0447678137b6c7efc06628f010e42f2e2ff6e22cde38e7d573a570bc7939dd77  grammar/fixtures/ambiguous.lalrpop
+3eac9148c0f4c28ff8d42259e23726d6f04dc1b7e95146fbe86468e6a5c8385c  grammar/fixtures/o1-a-candidate.lalrpop
+45f9dd4d63d64bbb6135b0113d8854545439ae7b2d3d54eaa893838f5a636088  grammar/fixtures/o1-b-candidate.lalrpop
 c7f34521310dfa3ef5799d5cca83458746884709004a388ddbddc166aadebdcd  grammar/rhl.conflict-report.txt
 3ae463833317b59ecf480aa5dd6e8caba15d4bcf3dd785fa5debae91208b625c  grammar/rhl.lalrpop
 e70073e2dea8813dcf4c51cf38354bff8894e57c307afc0c6791e469ab81ba24  vocab/fleet-v1.yaml

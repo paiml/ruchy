@@ -161,6 +161,57 @@ Everything else in a program is a **vocabulary term**, a **literal**, or a **nam
 > because an action's attributes reading as siblings of the statements around
 > them loses the nesting §3.2 uses to say which attributes belong to which
 > action. But "the only one" was not measured and was not true.
+> **Open question O1 — three lines of §3.2 do not parse (RHL-0, 2026-09-20) `[V]`.**
+> A parser was generated from `grammar/rhl.lalrpop` and fed §3.2 verbatim. After
+> Amendment A1 these three lines still fail:
+>
+> | line | failure | why |
+> |---|---|---|
+> | `expect no change to host` | `UnrecognizedToken "to"` | `to` is reserved by `set … to`, so no phrase may contain the word |
+> | `expect at most 1 ticket per run` | `UnrecognizedToken "per"` | `Args` admits only literals and quantities, so a bare word cannot follow an argument |
+> | `then 0 tickets are filed` | `UnrecognizedToken "are"` | `are` is not a comparison operator |
+>
+> Two neighbouring failures were REPAIRED rather than recorded, because they were
+> plainly defects: `100 GB` did not lex at all (`WORD` is lowercase-only, so the
+> unit in §3.1 principle 4's own example matched no rule), and the vocabulary term
+> `tickets filed in` could not appear in a condition (`in` was reserved and
+> `App "in" App` existed only under an action). With both fixed, all 72
+> non-`missing-end` corpus programs parse.
+>
+> These three are a design question, so both candidate repairs were MEASURED and
+> are put to the operator rather than guessed at.
+>
+> **Candidate O1-A — reserve `per` and `are`, and let `to` and `per` join a
+> comparison the way `in` already does.** Two new keywords, three new productions.
+> Committed as `grammar/fixtures/o1-a-candidate.lalrpop`.
+>
+> | measurement | result |
+> |---|---|
+> | LALRPOP 0.23.1 | **`Ok` — no conflict, no local ambiguity** |
+> | the three failing §3.2 lines, through a generated parser | **all three parse** |
+> | the 72 non-`missing-end` corpus programs | **72/72, 0 failures** |
+>
+> Cost: §3.3 grows by two keywords, and `per` and `are` become unusable inside any
+> vocabulary term — the same trade §3.3 already makes for `of`, `in` and `to`. It
+> costs §3.1 principle 8 (block-closed, count the `end`s) **nothing**: no
+> production here touches block structure.
+>
+> **Candidate O1-B — admit a bare `WORD` as an argument. No new keyword.**
+> Committed as `grammar/fixtures/o1-b-candidate.lalrpop`.
+>
+> | measurement | result |
+> |---|---|
+> | LALRPOP 0.23.1 | **`Err` — "Local ambiguity detected"** |
+>
+> In the generator's own words: *"and looking at a token `UNIT` we can reduce to a
+> `Quantity` but we can also shift"*, and the same for `"%"`. Once a bare word can
+> be an argument, `100 GB` has two readings — a quantity, or an integer followed by
+> a word argument. It costs principle 8 nothing and principle 1 everything, and
+> principle 1 is the one F1 exists to protect.
+>
+> **The ruling wanted, in one line:** adopt O1-A and add `per` and `are` to §3.3,
+> or reword these three lines of §3.2 so the language does not need them. O1-B is
+> not available — it is not conflict-free.
 >
 > The unmarked form is kept verbatim as `grammar/fixtures/ambiguous.lalrpop`,
 > where it serves as F1's positive control. Evidence:

@@ -1,0 +1,210 @@
+// SPEC OPEN QUESTION O1, CANDIDATE B — not the grammar, a proposal, and a REJECTED one.
+// Admits a bare WORD as an argument. Adds no keyword.
+// MEASURED: LALRPOP Err, "Local ambiguity detected" — once a bare word can be an
+// argument, `100 GB` has two readings. Violates 3.1 principle 1. Kept as the
+// evidence behind O1's ruling, never as a candidate to adopt.
+// RHL v0 grammar — spec RHL-001 §3, row RHL-0.
+//
+// This file is PRE-REGISTRATION, not compiler code. Nothing generates a parser
+// from it yet; that is row RHL-1. What RHL-0 claims about it is exactly one
+// thing, and it is checked by src/rhl_pre_registration/grammar_gate.rs:
+// LALRPOP processes it with NO conflict and NO local ambiguity, which is F1's
+// "proven conflict-free by the generator's report".
+//
+// ============================ TOKENIZATION CONTRACT ============================
+//
+// 1. NEWLINE IS SIGNIFICANT. RHL is line-oriented and block-closed (§3.1
+//    principle 8): one statement per line, blocks end with `end`. A run of
+//    newlines and the blank space around it collapses to ONE NEWLINE token, so
+//    blank lines and leading indentation carry no meaning. Spaces and tabs
+//    inside a line are skipped. There is no INDENT/DEDENT token and there never
+//    will be — an agent repairs a truncated file by counting `end`s, which only
+//    works if layout is meaningless.
+//
+// 2. KEYWORDS ARE RESERVED AND CLOSED. Every literal in the `match` block below
+//    is a keyword from §3.3 and outranks the WORD regex. A multi-word keyword
+//    (`for each`, `is at least`, `repeat at most`) is ONE token matched with
+//    exactly one space between its words; `ruchy fmt` produces that normal form
+//    (§3.1 principle 2), so the parser never has to guess at spacing.
+//
+//    This is why multi-word keywords are lexed whole rather than split into
+//    single words: splitting `is one of` into `is`+`one`+`of` would reserve the
+//    bare word `of`, and `of` is a word of the vocabulary term `disk free of`.
+//    Reserving it would make that term unspellable.
+//
+// 2b. A RESERVED WORD CANNOT APPEAR INSIDE A TERM. `in` is reserved by
+//    `for each ... in ...`, and the vocabulary term `tickets filed in` contains
+//    it, so `let free be tickets filed in "x"` did not parse: `App "in" App`
+//    existed only under `Action`, never under a condition. `Cmp` now admits it
+//    too. This is the same hazard clause 2 describes for `of`, and it was not
+//    checked against the single-word keywords until a parser was built from this
+//    file and run over the corpus.
+//
+// 3. THE GRAMMAR DOES NOT KNOW ANY VOCABULARY TERM. It knows only
+//    PHRASE = WORD+. Which words of a phrase form the multi-word term
+//    `disk free of` and which are arguments or names is resolved by the
+//    VOCABULARY CHECKER against vocab/*.yaml at rows RHL-1/RHL-2 — never here.
+//    A three-lane review flagged multi-word terms as a shift/reduce hazard;
+//    PHRASE = WORD+ is the answer, and it is why this grammar stays small
+//    (§3.1 principle 9) and why LALRPOP's default lexer suffices.
+//
+// 4. LITERALS are a STRING, an INT, and a QUANTITY = INT followed by a unit
+//    (`100 GB`, `1 hour`, `5 %`). `%` is its own token because it is not a word.
+//    A unit may be written in capitals, so UNIT is its own terminal: WORD's regex
+//    is lowercase-only and `GB` matched NO rule at all, which made `100 GB` — the
+//    example on this very line, and the one in spec 3.1 principle 4 and 3.2 —
+//    an InvalidToken. Found by building a parser from this grammar and running
+//    the committed corpus through it (pre-PR review, 2026-09-20).
+//
+// 5. THERE IS NO ESCAPE HATCH. No `rust … end` block exists in v0 (§12.3,
+//    Recommended: no). It is where contract coverage would get holes.
+//
+// ===================== AMENDMENT: `with` (RHL-0, 2026-09-20) ===================
+//
+// §3.2's worked example opens an attribute block with NO marker at all:
+//
+//     file ticket in repo "paiml/infra"
+//       title "gx10 disk below 100 GB"
+//     end
+//
+// That syntax is NOT conflict-free, and LALRPOP says so in its own words. The
+// exact report is committed at grammar/fixtures/ambiguous.lalrpop's companion
+// run: after `Body App`, a NEWLINE can either end a plain statement or open an
+// attribute block, and the parser cannot tell which until it has counted every
+// `end` to the end of the file. That is unbounded lookahead, so the syntax is
+// not LR(k) for any k. It directly contradicts §3.1 principle 1, "every valid
+// program has exactly one parse".
+//
+// The minimal repair, and the only one that keeps every §3.1 principle intact,
+// is to mark the block opener. `with` is added to §3.3's closed keyword set:
+//
+//     file ticket in repo "paiml/infra" with
+//       title "gx10 disk below 100 GB"
+//     end
+//
+// §3.3 says the keyword list grows only by spec amendment; this is that
+// amendment, and RHL-0 is the row that rules the spec. The unmarked form is
+// kept, deliberately, as the F1 positive control in grammar/fixtures/.
+//
+// ================================ NOTE ON SCOPE ================================
+//
+// `given` and `then` are statements here rather than productions private to
+// `example`. The grammar defines SHAPE; that `given`/`then` may appear only
+// inside an `example` block is a CHECK, and it belongs with the other checks at
+// RHL-1. Encoding it here would buy nothing and cost a production.
+grammar;
+
+match {
+    r"\n[ \t\n]*" => NEWLINE,
+} else {
+    "use vocabulary",
+    "job", "command", "check", "pipeline", "shape",
+    "let", "be", "set", "to",
+    "when", "otherwise", "end",
+    "for each", "in",
+    "repeat at most", "times", "until",
+    "wait up to", "runs on", "every",
+    "may read", "may write", "may call",
+    "expect", "example", "given", "then",
+    "give back", "stop with", "with",
+    "is not", "is below", "is above", "is at least", "is at most", "is one of",
+    "is", "contains",
+    "and", "or", "not", "%",
+} else {
+    r"[0-9]+" => INT,
+    r#""[^"]*""# => STRING,
+    r"[a-z_][a-z0-9_]*" => WORD,
+    r"[A-Z][A-Za-z]*" => UNIT,
+    r"[ \t]+" => { },
+}
+
+pub Program: () = {
+    <DeclSeq> => (),
+    NEWLINE <DeclSeq> => (),
+};
+
+DeclSeq: () = {
+    <Decl> => (),
+    <DeclSeq> <Decl> => (),
+};
+
+Decl: () = {
+    "use vocabulary" <Phrase> NEWLINE => (),
+    <UnitKind> STRING NEWLINE <Body> "end" NEWLINE => (),
+    <UnitKind> STRING NEWLINE <Body> "end" => (),
+};
+
+UnitKind: () = {
+    "job" => (), "command" => (), "check" => (), "pipeline" => (), "shape" => (),
+};
+
+Body: () = {
+    <Line> => (),
+    <Body> <Line> => (),
+};
+
+Line: () = { <Stmt> NEWLINE => () };
+
+Stmt: () = {
+    "runs on" <App> => (),
+    "every" <Quantity> => (),
+    "may read" <Phrase> => (),
+    "may write" <Phrase> => (),
+    "may call" <Phrase> => (),
+    "wait up to" <Quantity> => (),
+    "let" <Phrase> "be" <Cond> => (),
+    "set" <Phrase> "to" <Cond> => (),
+    "expect" <Cond> => (),
+    "give back" <Cond> => (),
+    "stop with" <Cond> => (),
+    "given" <Cond> => (),
+    "then" <Cond> => (),
+    <Action> => (),
+    <BlockStmt> => (),
+};
+
+BlockStmt: () = {
+    "when" <Cond> NEWLINE <Body> "end" => (),
+    "when" <Cond> NEWLINE <Body> "otherwise" NEWLINE <Body> "end" => (),
+    "for each" <Phrase> "in" <Cond> NEWLINE <Body> "end" => (),
+    "repeat at most" INT "times" NEWLINE <Body> "end" => (),
+    "repeat at most" INT "times" "until" <Cond> NEWLINE <Body> "end" => (),
+    "example" STRING NEWLINE <Body> "end" => (),
+};
+
+Action: () = {
+    <ActionHead> => (),
+    <ActionHead> "with" NEWLINE <Body> "end" => (),
+};
+
+ActionHead: () = {
+    <App> => (),
+    <App> "in" <App> => (),
+};
+
+Cond: () = { <Disj> => () };
+Disj: () = { <Conj> => (), <Disj> "or" <Conj> => () };
+Conj: () = { <Cmp> => (), <Conj> "and" <Cmp> => () };
+Cmp: () = {
+    <App> => (),
+    <App> "in" <App> => (),
+    "not" <Cmp> => (),
+    <App> <CompOp> <App> => (),
+};
+
+CompOp: () = {
+    "is" => (), "is not" => (), "is below" => (), "is above" => (),
+    "is at least" => (), "is at most" => (), "is one of" => (), "contains" => (),
+};
+
+App: () = {
+    <Phrase> => (),
+    <Phrase> <Args> => (),
+    <Quantity> => (),
+    STRING => (),
+};
+
+Args: () = { <Atom> => (), <Args> <Atom> => () };
+Atom: () = { STRING => (), <Quantity> => (), WORD => () };
+Quantity: () = { INT => (), INT WORD => (), INT UNIT => (), INT "%" => () };
+Phrase: () = { WORD => (), <Phrase> WORD => () };
