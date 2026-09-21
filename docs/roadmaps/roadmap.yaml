@@ -3463,7 +3463,7 @@ roadmap:
   updated: 2026-09-21T05:24:26Z
   spec: null
   acceptance_criteria:
-  - 'Resolving #230''s roadmap.yaml conflict by concatenating the two hunks split rows mid-body: AUDIT-2 lost phases/subtasks/labels, RHL-14 took AUDIT-2''s labels, AUDIT-4 took RHL-14''s kind:docs. The rebind check (YAML parses, ids unique) is true of the corrupted file. Restore each row field-for-field from its source commit and verify by comparison, not by parse.'
+  - 'Resolving #230''s roadmap.yaml conflict by concatenating the two hunks split rows mid-body: AUDIT-2 lost phases/subtasks/labels, RHL-14 took AUDIT-2''s labels, AUDIT-4 took RHL-14''s kind:docs. The rebind check (YAML parses, ids unique) is true of the corrupted file. Restore each row field-for-field from its source commit and verify by comparison, not by parse. SECOND PART, added after review round 1 (lane 1 FAILED the PR for flipping CIBASE-1 and RHL-13, which this text did not name): record completion of the tickets this session merged — RHL-14 (#230), RHL-13 (#227), CIBASE-1 (#228) to completed with the landing commit in notes. They cannot be flipped under their own ids: the commit-msg hook refuses a commit whose Pmat-Ticket is completed in the staged roadmap (measured on this branch), so a completion flip always rides on another open ticket, and this is that ticket.'
   phases: []
   subtasks: []
   estimated_effort: null
