@@ -2909,6 +2909,10 @@ roadmap:
   spec: null
   acceptance_criteria:
   - K̂ 150. UNADMITTED until RHL-0 merges (spec RHL-001 §8 readiness rule).
+  - 'Plan docs/rhl/rhl-1-plan.md (D1-D8), grilled in two 3-lane rounds, both split FAIL/FAIL/PASS (the §10 quorum-split STOP), and resolved by three operator rulings on 2026-09-21: unverified instances pass and are listed; the JSON is an object with the §3.5 list under diagnostics; wrong-unit/04 and /09 are a named exception, with the corpus repair filed as RHL-16. Spec Amendment A3 records all four rulings.'
+  - 'F1 second half: the parser is generated from src/rhl/grammar.lalrpop, whose skeleton is gated identical to grammar/rhl.lalrpop; 12/12 valid programs, 60/60 non-missing-end breaks and the §3.2 example parse, and 12/12 missing-end breaks fail with RHL-P001.'
+  - 'F2: fmt is byte-exact on the 12 valid programs and the §3.2 example; idempotent and tree-preserving on all 73 parseable programs and in proptest; a mangled copy of each valid program formats back to its bytes.'
+  - 'Checker: 70/72 planted breaks give their pre-registered code on the mutated line (V002 with one safe fix that restores the base line; V003 with exactly the pre-registered candidates), plus an exact two-entry exception list. ruchy check/fmt route .rhl; check exits 0 pass, 1 error, 2 refusal.'
   phases: []
   subtasks: []
   estimated_effort: null
@@ -3456,7 +3460,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-15: post-merge repair — the #230 rebase scrambled three roadmap rows on main'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-21T05:24:26Z
@@ -3470,4 +3474,24 @@ roadmap:
   labels:
   - kind:docs
   - correction
+  notes: 'Landed: merged e41774b4 (#231), 2026-09-21. Status flipped on RHL-1''s branch, because the commit-msg hook refuses a completion flip under the ticket''s own id (see this row''s acceptance text).'
+- id: RHL-16
+  github_issue: null
+  item_type: task
+  title: 'RHL-16: repair the pre-registered corpus and vocabulary as v2 — the valid programs are not valid under their vocabulary'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-21T08:52:40Z
+  updated: 2026-09-21T08:52:40Z
+  spec: null
+  acceptance_criteria:
+  - 'Found by RHL-1''s checker, measured and not tuned (spec RHL-001 Amendment A3; docs/rhl/rhl-1-plan.md M3-M5). (1) All 12 docs/rhl/breaks/valid programs use ticket count, title and label, none of which is a term of vocab/fleet-v1.yaml or vocab/tickets-v1.yaml: RHL-V001 x3 in every program. (2) Programs 03/08 bind free to runner load of (Percent, effect read runner), 04/09 to pin status of (Text, read host), 05/10 to tickets filed in (Count, read tickets), yet each compares free with a GB quantity and declares only read disk / write tickets / call tickets. (3) Consequences for the planted breaks: wrong-unit/04 and /09 expect RHL-T001 but get RHL-T002 (named in KNOWN_CORPUS_DEFECTS in src/rhl/check_tests.rs by operator ruling 2026-09-21), and six breaks (wrong-type 04/09, wrong-unit 03/05/08/10) repeat a code their base already has on the mutated line. REPAIR: never in place (§3.4 freeze) — ship fleet-v2/tickets-v2 terms (for example a ticket-count measure and title/label attributes of file ticket) and a v2 valid+planted corpus whose programs check clean under v2; regenerate docs/rhl/PREREGISTRATION.sha256 in the same commit. Pre-registered data changes are an operator decision. DONE WHEN: every v2 valid program checks with exit 0 or only unverified instances, all v2 planted breaks yield their code and it is new relative to the base, and KNOWN_CORPUS_DEFECTS is empty.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - depends:RHL-1
   notes: null

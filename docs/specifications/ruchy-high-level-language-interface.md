@@ -348,6 +348,55 @@ Every diagnostic is a JSON object with a **stable code**, a **span**, the **expe
 - Codes are stable forever and grouped: `RHL-P` parse · `RHL-V` vocabulary · `RHL-T` type/unit · `RHL-E` effect · `RHL-B` bound · `RHL-C` contract · `RHL-X` example.
 - **Refusals are diagnostics too**, exit code 2, never a best guess: `Ambiguous`, `OutOfVocabulary`, `NoContractTemplate`, `UndeclaredEffect`, `Unbounded`, `EngineUnavailable`.
 
+> **Amendment A3 — what RHL-1 built against this section (RHL-1, 2026-09-21) `[V]`.**
+> RHL-1 built the first checker, and building it forced four rulings the text above
+> does not make. The full reasoning, the measurements and both quorum rounds are in
+> `docs/rhl/rhl-1-plan.md`. The code catalogue is `docs/rhl/diagnostic-codes.md`,
+> rendered from `src/rhl/codes.rs`.
+>
+> 1. **The JSON is an object that holds the list.** *Operator ruling, 2026-09-21,
+>    option "Object, amend §3.5".* `ruchy check --format json` prints
+>    `{"file", "verdict", "diagnostics", "unverified"}`. The list this section
+>    describes is `diagnostics`. `verdict` is `pass`, `fail` or `refused`. Each
+>    diagnostic also carries `refusal` (for example `OutOfVocabulary`) when its code
+>    is an instance of one of the refusals above. Exit code: 2 if any diagnostic
+>    carries a refusal, else 1 if there is any error, else 0.
+> 2. **An entity with no source of truth is unverified, not refused.** *Operator
+>    ruling, 2026-09-21, option "Pass, list as unverified".* §3.4 makes entities
+>    closed-world "where a source of truth exists". When an `instances_from` glob
+>    (resolved against the directory that contains `vocab/`) matches no file,
+>    nothing is refused, and each such instance is named in `unverified` with the
+>    glob it would have read. When the glob matches, an unknown instance is
+>    `RHL-V001`–`V003`, with candidates drawn from the declared instances.
+> 3. **`may call` covers only `call` effects.** §3.2 calls `may read disk` and
+>    `may call tickets` "the entire effect surface" of its example. But the term
+>    `file ticket` declares the effect `write tickets`. Also, every pre-registered
+>    `undeclared effect` break removes only `may write tickets`, keeps
+>    `may call tickets`, and expects `RHL-E001`. The breaks are the falsifier (F9),
+>    so they win over the prose. Consequence: §3.2's example, exactly as written,
+>    gets `RHL-E001` on its `file ticket` line, because it needs
+>    `may write tickets`. Both plan-grill rounds accepted this (plan decision D5).
+> 4. **`EngineUnavailable` has no code yet.** RHL-1 allocates only the codes it
+>    emits and tests. Nothing in `check` calls an engine. The code arrives with the
+>    first row that calls one (RHL-10, `ask` through `apr`).
+>
+> **Finding, filed as RHL-16 — the pre-registered corpus is not valid under the
+> pre-registered vocabulary.** The checker measured it, and was not tuned to it:
+>
+> - All 12 `docs/rhl/breaks/valid/` programs use `ticket count`, `title` and
+>   `label`, and none of the three is a vocabulary term (`RHL-V001` in all 12).
+> - Six of the 12 bind `free` to a measure whose type is not `Size`
+>   (`runner load of` gives Percent, `pin status of` gives Text, `tickets filed in`
+>   gives Count) and read effects they do not declare.
+> - As a result, the planted breaks `wrong-unit/04` and `wrong-unit/09` expect
+>   `RHL-T001` but get `RHL-T002`, and six breaks repeat a code their base program
+>   already has on the same line.
+>
+> *Operator ruling, 2026-09-21, option "Named exception + RHL-16":* the
+> planted-break gate holds the other 70 breaks and names those two in an exact
+> exception list. The corpus is repaired as v2 files under RHL-16, never edited in
+> place.
+
 ---
 
 ## §4 Pipeline

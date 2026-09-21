@@ -175,8 +175,8 @@ the corpus bytes"), which presupposes the corpus is in normal form.
 ### D8 — CLI surface in RHL-1
 
 **Proposal.** Dispatch on the `.rhl` extension inside the existing verbs (§1, rule 1):
-- `ruchy check <f.rhl> [--format text|json] [--world <dir>]`. Exit codes: 0 pass,
-  1 error diagnostics, 2 refusal or `Unknown`.
+- `ruchy check <f.rhl> [--format text|json]`. Exit codes: 0 pass,
+  1 error diagnostics, 2 refusal.
 - `ruchy fmt <f.rhl> [--check|--stdout]`.
 
 *Round 1 (lane 2):* today the binary exits 1 on every handler `Err`
@@ -207,7 +207,7 @@ the logic is gated by `cargo test --lib` (M8).
 | P2 | diagnostics model, P-codes, JSON render, code catalogue | `src/rhl/{diag,codes}.rs` | self | `cargo test --lib rhl::diag` |
 | P3 | `fmt` normal form: F2 idempotence and tree preservation over the corpus plus proptest; mangled→corpus positive control | `src/rhl/fmt.rs` | worker (disjoint scope) | `cargo test --lib rhl::fmt` |
 | P4 | vocabulary loader (C001 contract-template refusal), resolver, V/T/E/X/B checks, candidates and fixes, planted-break gate, valid-corpus measurement | `src/rhl/{vocab,check}.rs`, `src/rhl/check/**` | self | `cargo test --lib rhl::check` |
-| P5 | CLI wiring by extension; exit codes | `src/bin/ruchy.rs`, `src/bin/handlers/check_handler.rs`, the fmt handler | self | `cargo test --lib rhl::cli` + `cargo run -- check docs/rhl/breaks/planted/typo-term/01-gx10-disk-watch/broken.rhl --format json` |
+| P5 | CLI wiring by extension; exit codes | `src/bin/ruchy.rs`, `src/bin/handlers/check_handler.rs`, the fmt handler | self | `cargo test --lib rhl::cli` (the process exit code is also exercised by `tests/rhl_1_cli_exit_codes.rs`, which is outside the required check, B4) |
 | P6 | spec amendment notes (A3: §3.2 effect, M3–M6), code catalogue doc, roadmap (RHL-16 filed), CHANGELOG, receipt; diff quorum; PR | `docs/**`, `CHANGELOG.md` | self + delegate | `pmat work validate` + quorum PASS |
 
 A mutation must be observed RED for the DoD. `cargo mutants --file src/rhl/check.rs` runs
@@ -237,3 +237,40 @@ Lane 2's charge that "not filtering by kind" tunes the checker to one fixture is
 not adopted. The `[host, hour]` expectation is pre-registered F7 data, and the
 reconciliation filters by position, not by semantic kind. Round 2 grills the amended
 plan. A second split is §10's `quorum-split` STOP.
+
+**Round 2 (`grillme`, width 3; same three models).** Verdicts: FAIL, FAIL, PASS, the
+same split as round 1. That is §10's `quorum-split` STOP, so the disputed decisions
+went to the operator.
+
+- Both FAIL lanes blocked on D6 (an absent instance source still exits 0) and on D8
+  (an object where §3.5 says "emits the list").
+- Both also noted that `EngineUnavailable` has no code.
+- Lane 1 objected to a `cargo run` step in the P5 gate.
+- Lane 2 found a leftover `[--world <dir>]` in D8.
+- All three lanes accepted D7. The fmt tests later confirmed it byte-for-byte.
+
+**Operator rulings (2026-09-21).** These are the options the operator selected,
+quoted verbatim:
+
+- D6: **"Pass, list as unverified (Recommended)"**.
+- D8: **"Object, amend §3.5 (Recommended)"**.
+- The two planted breaks that contradict the vocabulary (below):
+  **"Named exception + RHL-16 (Recommended)"**.
+
+Taken without a ruling, because they are corrections rather than choices:
+
+- The `--world` leftover and the "`Unknown`" wording are removed from D8.
+- The P5 acceptance command is a lib test, and the process exit code is tested
+  outside the required check.
+- `EngineUnavailable` is recorded as deferred to the first row that calls an engine
+  (spec Amendment A3 item 4).
+
+**Measured after the rulings.** These are what the checker reports, not tuned to:
+
+- **M3 and M4 hold.**
+- **M5 undercounted.** Six planted breaks repeat a code their base already has on
+  the mutated line, not four: wrong-type 04/09 and wrong-unit 03/05/08/10.
+- **Two breaks contradict the vocabulary.** `wrong-unit/04` and `/09` expect
+  `RHL-T001`, but their base binds `free` to Text, so the checker reports
+  `RHL-T002`. They are the named exception, and RHL-16 repairs the corpus as v2
+  files.

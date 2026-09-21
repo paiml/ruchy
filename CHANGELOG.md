@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — RHL-1: the RHL parser, intent tree, `fmt`, JSON diagnostics and `check` (RHL-001)
+
+This is the first RHL compiler code. It is a front end only: nothing is lowered to
+Ruchy yet (that is RHL-4).
+
+- `src/rhl/` — the intent tree, and a LALRPOP parser generated at build time from
+  `src/rhl/grammar.lalrpop`. A lib test holds that grammar's production skeleton
+  identical to the pre-registered `grammar/rhl.lalrpop`, so the conflict-free
+  report covers the parser that runs. `lalrpop` is now a build-dependency, and
+  `lalrpop-util` (lexer) and `serde_yaml_ng` are dependencies.
+- `ruchy check <file.rhl> [--format text|json]`: diagnostics in the §3.5 shape,
+  with stable codes (`docs/rhl/diagnostic-codes.md`), candidates and fix edits.
+  Exit codes: 0 pass, 1 error, 2 refusal.
+- `ruchy fmt <file.rhl>`: the RHL normal form. It is idempotent and
+  tree-preserving on every parseable corpus program and in property tests.
+- The checker covers vocabulary terms (with candidates), types and units, declared
+  effects, `for each` bounds, contract templates and `given`/`then` placement.
+  70 of the 72 pre-registered planted breaks give their pre-registered code.
+- Spec Amendment A3 records the rulings RHL-1 needed: the JSON object shape;
+  entities with no source of truth are listed as unverified; `may call` covers
+  only `call` effects; `EngineUnavailable` is deferred.
+- Found, and filed as RHL-16 rather than tuned away: the pre-registered valid
+  corpus is not valid under the pre-registered vocabulary.
+
 ### Added — RHL-0: pre-registration for the RHL high-level language interface (RHL-001)
 
 Spec `docs/specifications/ruchy-high-level-language-interface.md` lands with the
