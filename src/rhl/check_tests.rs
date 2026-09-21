@@ -752,3 +752,25 @@ fn test_rhl_1_check_term_with_no_contract_field_is_c001_not_v004() {
     );
     assert!(report.diagnostics[0].message.contains("`hour`"));
 }
+
+#[test]
+fn test_rhl_1_check_known_name_with_extra_words_is_t002_not_a_no_op_fix() {
+    // Round-2 review input: `x` is a `let` name, so `x gx10` is a known name
+    // followed by a word it cannot take. A distance-0 "candidate" `x` would be a
+    // V002 whose safe fix replaces `x` with `x` — a no-op `fix --safe` would loop on.
+    let src = "use vocabulary fleet v1\n\njob \"a\"\n  may read disk\n\n  let x be disk free of \"/\"\n  runs on x gx10\nend\n";
+    let report = check_src(src);
+    let on_line_7: Vec<&Diagnostic> = report
+        .diagnostics
+        .iter()
+        .filter(|d| d.span.line == 7)
+        .collect();
+    assert_eq!(on_line_7.len(), 1, "{:?}", codes_of(&report));
+    assert_eq!(on_line_7[0].code, codes::T002);
+    assert!(on_line_7[0].fixes.is_empty());
+    assert!(report
+        .diagnostics
+        .iter()
+        .flat_map(|d| &d.candidates)
+        .all(|c| c.distance > 0));
+}

@@ -118,6 +118,9 @@ impl<'a> Checker<'a> {
         let texts: Vec<String> = words.iter().map(|w| w.text.clone()).collect();
         let d = match near::search_prefixes(&texts, pool) {
             None => self.unknown_diag(codes::V001, words, Vec::new(), kind),
+            Some((k, found)) if found.iter().any(|c| c.distance == 0) => {
+                self.extra_words(&words[..k], &words[k..])
+            }
             Some((k, found)) => {
                 let code = if found.len() == 1 {
                     codes::V002
@@ -129,6 +132,25 @@ impl<'a> Checker<'a> {
         };
         self.diags.push(d);
         Val::unknown()
+    }
+
+    /// `known` is spelled exactly (a `let` name: a term would have resolved
+    /// before the candidate search) and `extra` are words it cannot take.
+    /// That is a misuse (RHL-T002), not an unknown word: a distance-0
+    /// "candidate" would make a V002 whose safe fix changes nothing.
+    fn extra_words(&self, known: &[Word], extra: &[Word]) -> Diagnostic {
+        let message = format!(
+            "`{}` takes no further words, found `{}`",
+            words_text(known),
+            words_text(extra)
+        );
+        Diagnostic::error(
+            codes::T002,
+            self.file,
+            self.source,
+            words_span(extra),
+            message,
+        )
     }
 
     fn unknown_diag(
