@@ -3201,7 +3201,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'CIBASE-1: Baseline Comparison fails on every PR, passes only on main'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-20 12:05:11+00:00
@@ -3216,7 +3216,7 @@ roadmap:
   - kind:code
   - ci-debt
   - filed-by:RHL-0
-  notes: 'MEASURED 2026-09-20. Failure is ''fatal: invalid reference: main'', exit 128, at the FIRST step: actions/checkout leaves the base branch as origin/main, not main, so ''git checkout main -- benches/'' cannot resolve. Full paginated history: 390 runs — 306 push/success, 3 push/failure, and 81 pull_request/FAILURE across 33 distinct branches, with ZERO pull_request successes ever. (An earlier note said 17 of 17; that was gh run list default page size, not a count.) It has never compared anything on any PR. Not a required check (only ''gate'' is) and no consumer reads its artifacts — grep for benchmark_results.json / benchmark_report.md / benchmark-results outside the workflow returns nothing. Classified FC-5 per infra''s ruling (a gate that grades an artifact older than its sources), with their note that the stale thing here is a REF rather than a binary; it is not FC-1, because it is not a control that passed wrongly, it is a comparison that never happened. Two further layers found while fixing: ''git checkout <ref> -- benches/'' swaps only benches/ and leaves src/ at the PR''s code, so even a working version would have benchmarked the PR''s library with the base''s harness; and the ''Comparison Results'' output (Cohen''s d, threshold |d| > 0.5) was echoed strings with no implementation. Removed rather than repaired — a real gate needs a base build, a PR build and a threshold, and inventing a threshold is a STOP condition. Filed as BENCH-1. Also removed in the same pass: a ''Generate benchmark report'' step that wrote a table header and never a row under a Statistical Summary heading, a ''Check for regressions'' step that was echo plus two comments claiming a 10% threshold, and a ''|| true'' that made the benchmark run unable to go red.'
+  notes: 'Landed: merged e382f9ab (#228), 2026-09-20. MEASURED 2026-09-20. Failure is ''fatal: invalid reference: main'', exit 128, at the FIRST step: actions/checkout leaves the base branch as origin/main, not main, so ''git checkout main -- benches/'' cannot resolve. Full paginated history: 390 runs — 306 push/success, 3 push/failure, and 81 pull_request/FAILURE across 33 distinct branches, with ZERO pull_request successes ever. (An earlier note said 17 of 17; that was gh run list default page size, not a count.) It has never compared anything on any PR. Not a required check (only ''gate'' is) and no consumer reads its artifacts — grep for benchmark_results.json / benchmark_report.md / benchmark-results outside the workflow returns nothing. Classified FC-5 per infra''s ruling (a gate that grades an artifact older than its sources), with their note that the stale thing here is a REF rather than a binary; it is not FC-1, because it is not a control that passed wrongly, it is a comparison that never happened. Two further layers found while fixing: ''git checkout <ref> -- benches/'' swaps only benches/ and leaves src/ at the PR''s code, so even a working version would have benchmarked the PR''s library with the base''s harness; and the ''Comparison Results'' output (Cohen''s d, threshold |d| > 0.5) was echoed strings with no implementation. Removed rather than repaired — a real gate needs a base build, a PR build and a threshold, and inventing a threshold is a STOP condition. Filed as BENCH-1. Also removed in the same pass: a ''Generate benchmark report'' step that wrote a table header and never a row under a Statistical Summary heading, a ''Check for regressions'' step that was echo plus two comments claiming a 10% threshold, and a ''|| true'' that made the benchmark run unable to go red.'
 - id: SEC-1
   github_issue: null
   item_type: task
@@ -3300,7 +3300,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-13: post-merge corrections — a merged amendment cites apex for a principle apex does not hold'
-  status: inprogress
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-20T15:42:29Z
@@ -3315,7 +3315,7 @@ roadmap:
   - kind:code
   - rhl
   - correction
-  notes: null
+  notes: 'Landed: merged 68a5f4c0 (#227), 2026-09-20.'
 - id: BENCH-1
   github_issue: null
   item_type: task
@@ -3388,11 +3388,19 @@ roadmap:
   spec: null
   acceptance_criteria:
   - 'Five-class audit pass, 2026-09-20. CLASS 3 (gate-that-cannot-fail). src/quality/mod.rs:860, in test_satd_count_collection: ''let count = QualityGates::count_satd_comments().unwrap_or(0);'' followed by ''assert_eq!(count, 0, "SATD comments should be eliminated")''. count_satd_comments returns Result and shells out to ''find src -name *.rs -exec grep -c ...''. If that invocation fails for ANY reason — find missing, src/ absent, a packaged crate without src/, a sandbox without exec — the error becomes 0 and the assertion PASSES. The test cannot distinguish ''there is no SATD'' from ''the counter did not run'', and 0 is the most permissive of the two answers. GROUNDED BY INSPECTION, not executed: making the counter fail under test needs an environment change. NOTE the production gate is NOT affected — line 300 uses ''?'' and propagates. This is the test only. FALSIFIER: replace unwrap_or(0) with expect(), or assert on Ok(0) rather than on the unwrapped value, then rename the binary/PATH so find is unavailable; the test must go RED where today it goes green.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - test-debt
+  - class:gate-cannot-fail
+  notes: null
 - id: RHL-14
   github_issue: null
   item_type: task
   title: 'RHL-14: O1 ruled by quorum — reword the three §3.2 lines, reserve no keyword'
-  status: planned
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-20T18:55:16Z
@@ -3404,10 +3412,8 @@ roadmap:
   subtasks: []
   estimated_effort: null
   labels:
-  - kind:code
-  - test-debt
-  - class:gate-cannot-fail
-  notes: null
+  - kind:docs
+  notes: 'Landed: merged cc651022 (#230), 2026-09-20. O1 ruled O1-R by a 3-lane decision quorum (spec O1 block). POST-MERGE REPAIR: the rebase of #230 onto #229 resolved a roadmap.yaml conflict by concatenating the two hunks, which split rows mid-body — AUDIT-2 lost phases/subtasks/labels, RHL-14 took AUDIT-2''s labels, AUDIT-4 took RHL-14''s kind:docs. The artifact''s check (ids unique, YAML parses) could not see it. Restored field-for-field from 0d989656 and 81e1ea0d on RHL-14-roadmap-repair.'
 - id: AUDIT-3
   github_issue: null
   item_type: task
@@ -3445,5 +3451,23 @@ roadmap:
   labels:
   - kind:code
   - class:gate-cannot-fail
+  notes: null
+- id: RHL-15
+  github_issue: null
+  item_type: task
+  title: 'RHL-15: post-merge repair — the #230 rebase scrambled three roadmap rows on main'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-09-21T05:24:26Z
+  updated: 2026-09-21T05:24:26Z
+  spec: null
+  acceptance_criteria:
+  - 'Resolving #230''s roadmap.yaml conflict by concatenating the two hunks split rows mid-body: AUDIT-2 lost phases/subtasks/labels, RHL-14 took AUDIT-2''s labels, AUDIT-4 took RHL-14''s kind:docs. The rebind check (YAML parses, ids unique) is true of the corrupted file. Restore each row field-for-field from its source commit and verify by comparison, not by parse. SECOND PART, added after review round 1 (lane 1 FAILED the PR for flipping CIBASE-1 and RHL-13, which this text did not name): record completion of the tickets this session merged — RHL-14 (#230), RHL-13 (#227), CIBASE-1 (#228) to completed with the landing commit in notes. They cannot be flipped under their own ids: the commit-msg hook refuses a commit whose Pmat-Ticket is completed in the staged roadmap (measured on this branch), so a completion flip always rides on another open ticket, and this is that ticket.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
   - kind:docs
+  - correction
   notes: null
