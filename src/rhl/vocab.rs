@@ -54,7 +54,11 @@ pub struct Term {
     /// For an entity, the glob that declares its instances.
     #[serde(default)]
     pub instances_from: Option<String>,
-    /// The contract template, relative to the vocabulary root.
+    /// The contract template, relative to the vocabulary root. A term that
+    /// omits it deserializes with an empty path, which names no file, so the
+    /// vocabulary is refused with RHL-C001 by name (§3.4) rather than failing
+    /// to load as an unknown vocabulary (RHL-V004).
+    #[serde(default)]
     pub contract: String,
 }
 

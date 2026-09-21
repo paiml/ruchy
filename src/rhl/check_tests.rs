@@ -688,3 +688,67 @@ fn test_rhl_1_check_open_world_host_is_unverified_not_refused_d6() {
     );
     assert_eq!(codes_of(&bare), vec![codes::T002]);
 }
+
+// ---------------------------------------------------------------- pre-PR review findings (ph6 quorum)
+
+/// The one V002 diagnostic of `report`, with its fixes.
+fn only_v002(report: &Report) -> &Diagnostic {
+    let v: Vec<&Diagnostic> = report
+        .diagnostics
+        .iter()
+        .filter(|d| d.code == codes::V002)
+        .collect();
+    assert_eq!(v.len(), 1, "{:?}", codes_of(report));
+    v[0]
+}
+
+#[test]
+fn test_rhl_1_check_unique_candidate_that_breaks_the_entity_position_is_not_safe() {
+    let src = "use vocabulary fleet v1\n\njob \"a\"\n  runs on hou gx10\n  may read disk\nend\n";
+    let report = check_src(src);
+    let d = only_v002(&report);
+    assert_eq!(d.candidates[0].term, "hour");
+    assert!(
+        d.fixes.iter().all(|f| !f.safe),
+        "`hour` is a unit where `runs on` needs an entity: §3.5 says a fix is safe \
+         only when it preserves types"
+    );
+}
+
+#[test]
+fn test_rhl_1_check_unique_candidate_that_changes_the_dimension_is_not_safe() {
+    let src = CLEAN.replace("10 GB\n\n", "10 hou\n\n");
+    let report = check_src(&src);
+    let d = only_v002(&report);
+    assert_eq!(d.candidates[0].term, "hour");
+    assert!(
+        d.fixes.iter().all(|f| !f.safe),
+        "`10 hour` is a Duration compared with the Size `free`: not type-preserving"
+    );
+}
+
+#[test]
+fn test_rhl_1_check_unique_candidate_that_keeps_types_stays_safe() {
+    let src = CLEAN.replace("disk free of", "disk fre of");
+    let report = check_src(&src);
+    let d = only_v002(&report);
+    assert!(d.fixes.iter().any(|f| f.safe));
+}
+
+#[test]
+fn test_rhl_1_check_term_with_no_contract_field_is_c001_not_v004() {
+    let tmp = temp_root(None, None);
+    let path = tmp.path().join("vocab/fleet-v1.yaml");
+    let yaml = std::fs::read_to_string(&path).expect("read copy");
+    let line = "    contract: contracts/rhl-fleet-hour-v1.yaml\n";
+    assert!(yaml.contains(line), "fixture drifted");
+    std::fs::write(&path, yaml.replacen(line, "", 1)).expect("write");
+    let report = check("t.rhl", CLEAN, Some(tmp.path()));
+    assert_eq!(
+        codes_of(&report),
+        vec![codes::C001],
+        "{:?}",
+        report.diagnostics
+    );
+    assert!(report.diagnostics[0].message.contains("`hour`"));
+}

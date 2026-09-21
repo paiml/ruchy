@@ -731,3 +731,63 @@ fn test_rhl_1_error_non_ascii_inside_string_parses_outside_is_invalid() {
         })
     );
 }
+
+#[test]
+fn test_rhl_1_crlf_line_endings_parse_to_the_lf_tree_with_the_same_spans() {
+    let lf = read(&root().join("docs/rhl/breaks/valid/01-gx10-disk-watch.rhl"));
+    let crlf = lf.replace('\n', "\r\n");
+    let (a, b) = (
+        parse(&lf).expect("LF parses"),
+        parse(&crlf).expect("CRLF parses"),
+    );
+    assert_eq!(
+        serde_json::to_value(&a).expect("tree"),
+        serde_json::to_value(&b).expect("tree")
+    );
+    let phrase_at = |p: &crate::rhl::tree::Program, src: &str| {
+        let span = first_let_phrase_span(p);
+        src[span.start..span.end].to_string()
+    };
+    assert_eq!(phrase_at(&b, &crlf), "disk free of");
+}
+
+#[test]
+fn test_rhl_1_crlf_inside_a_string_is_kept() {
+    let src = "job \"a\r\nb\"\r\n  every 1 hour\r\nend\r\n";
+    let p = parse(src).expect("parses");
+    let crate::rhl::tree::Decl::Unit(u) = &p.decls[0] else {
+        panic!("a unit")
+    };
+    assert_eq!(u.name.value, "a\r\nb");
+}
+
+#[test]
+fn test_rhl_1_lone_carriage_return_is_still_an_invalid_token() {
+    let err = parse("job \"a\"\r  every 1 hour\nend\n").expect_err("lone CR");
+    assert!(matches!(err, ParseFailure::InvalidToken { .. }), "{err:?}");
+}
+
+/// The span of the phrase in the first `let` statement's value.
+fn first_let_phrase_span(p: &crate::rhl::tree::Program) -> crate::rhl::tree::Span {
+    use crate::rhl::tree::{App, CondKind, Decl, StmtKind};
+    let unit = p
+        .decls
+        .iter()
+        .find_map(|d| match d {
+            Decl::Unit(u) => Some(u),
+            Decl::Use(_) => None,
+        })
+        .expect("a unit");
+    let value = unit
+        .body
+        .iter()
+        .find_map(|s| match &s.kind {
+            StmtKind::Let { value, .. } => Some(value),
+            _ => None,
+        })
+        .expect("a let");
+    match &value.kind {
+        CondKind::App(App::Call { phrase, .. }) => phrase.span,
+        other => panic!("unexpected let value {other:?}"),
+    }
+}

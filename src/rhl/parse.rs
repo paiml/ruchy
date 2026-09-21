@@ -15,6 +15,7 @@ use super::tree::{
 };
 use lalrpop_util::lexer::Token;
 use lalrpop_util::ParseError;
+use std::borrow::Cow;
 
 /// Why a source text is not an RHL program. Owned: no borrow of the source.
 ///
@@ -60,7 +61,28 @@ pub enum ParseFailure {
 /// Returns a [`ParseFailure`] when `source` is not a program of the RHL v0
 /// grammar.
 pub fn parse(source: &str) -> Result<Program, ParseFailure> {
-    ProgramParser::new().parse(source).map_err(failure)
+    let text = crlf_as_space(source);
+    ProgramParser::new().parse(&text).map_err(failure)
+}
+
+/// A `\r` that ends a line outside a string literal becomes a space. The
+/// byte length is unchanged, so every span still points into `source`, and
+/// the lexer skips the space like any trailing blank: a CRLF file parses to
+/// the tree of its LF twin. The pre-registered grammar is not touched. A lone
+/// `\r`, and a `\r` inside a string, are left as written.
+fn crlf_as_space(source: &str) -> Cow<'_, str> {
+    if !source.contains('\r') {
+        return Cow::Borrowed(source);
+    }
+    let mut out = String::with_capacity(source.len());
+    let mut in_string = false;
+    let mut chars = source.chars().peekable();
+    while let Some(c) = chars.next() {
+        in_string ^= c == '"';
+        let line_end = c == '\r' && !in_string && chars.peek() == Some(&'\n');
+        out.push(if line_end { ' ' } else { c });
+    }
+    Cow::Owned(out)
 }
 
 /// Own a LALRPOP error. The grammar's actions are all infallible (`=>`, never

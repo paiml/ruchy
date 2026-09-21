@@ -159,6 +159,41 @@ impl Diagnostic {
     }
 }
 
+/// `source` with `edits` applied. Edits are applied last-position first, so
+/// an earlier edit's line and column stay valid; an edit whose line or column
+/// lies past the text is ignored.
+#[must_use]
+pub fn apply_edits(source: &str, edits: &[Edit]) -> String {
+    let mut sorted: Vec<&Edit> = edits.iter().collect();
+    sorted.sort_by_key(|e| std::cmp::Reverse((e.span.line, e.span.col)));
+    sorted.into_iter().fold(source.to_string(), |text, e| {
+        match byte_range(&text, e.span) {
+            Some((start, end)) => format!("{}{}{}", &text[..start], e.text, &text[end..]),
+            None => text,
+        }
+    })
+}
+
+/// The byte range of a line span in `text`, if the line and column exist.
+fn byte_range(text: &str, span: LineSpan) -> Option<(usize, usize)> {
+    let line_start = if span.line == 1 {
+        0
+    } else {
+        text.match_indices('\n').nth(span.line - 2)?.0 + 1
+    };
+    let mut offsets = text[line_start..]
+        .char_indices()
+        .map(|(i, _)| line_start + i)
+        .chain(std::iter::once(text.len()));
+    let start = offsets.nth(span.col - 1)?;
+    let end = if span.len == 0 {
+        start
+    } else {
+        offsets.nth(span.len - 1)?
+    };
+    Some((start, end))
+}
+
 /// The diagnostic for a parse failure of `source`.
 #[must_use]
 pub fn from_parse_failure(file: &str, source: &str, failure: &ParseFailure) -> Diagnostic {
@@ -361,6 +396,27 @@ mod tests {
         assert_eq!(d.refusal.as_deref(), Some("Ambiguous"));
         let p = Diagnostic::error(codes::P002, "f", "abc", Span::new(0, 1), String::new());
         assert_eq!(p.refusal, None);
+    }
+
+    #[test]
+    fn test_rhl_1_diag_apply_edits_counts_characters_and_lines() {
+        let src = "a\n  é fre of\nz";
+        let edit = |line, col, len, text: &str| Edit {
+            span: LineSpan { line, col, len },
+            text: text.to_string(),
+        };
+        assert_eq!(
+            apply_edits(src, &[edit(2, 5, 3, "free")]),
+            "a\n  é free of\nz"
+        );
+        assert_eq!(apply_edits(src, &[edit(1, 2, 0, "b")]), "ab\n  é fre of\nz");
+        assert_eq!(
+            apply_edits(src, &[edit(9, 1, 1, "x")]),
+            src,
+            "past the text: ignored"
+        );
+        let two = [edit(1, 1, 1, "A"), edit(3, 1, 1, "Z")];
+        assert_eq!(apply_edits(src, &two), "A\n  é fre of\nZ");
     }
 
     #[test]

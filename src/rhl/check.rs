@@ -109,6 +109,37 @@ impl Report {
 /// RHL-V004. A parse failure is one P-code diagnostic and nothing else.
 #[must_use]
 pub fn check(file: &str, source: &str, root: Option<&Path>) -> Report {
+    let mut report = check_once(file, source, root);
+    for d in &mut report.diagnostics {
+        demote_unsafe_fixes(d, file, source, root);
+    }
+    report
+}
+
+/// §3.5: "A fix is safe only when it is the unique candidate and preserves
+/// types." The checker proposes a fix as safe on uniqueness alone; this
+/// applies it, re-checks the result once, and demotes the fix when the fixed
+/// program has a type or unit error (`RHL-T…`) on an edited line — `runs on
+/// hou gx10` fixed to the unit `hour`, or `10 hou` fixed to a Duration where
+/// a Size is compared.
+fn demote_unsafe_fixes(d: &mut Diagnostic, file: &str, source: &str, root: Option<&Path>) {
+    for fix in d.fixes.iter_mut().filter(|f| f.safe) {
+        let fixed = diag::apply_edits(source, &fix.edits);
+        let lines: Vec<usize> = fix.edits.iter().map(|e| e.span.line).collect();
+        let after = check_once(file, &fixed, root);
+        if let Some(t) = after
+            .diagnostics
+            .iter()
+            .find(|x| x.code.starts_with("RHL-T") && lines.contains(&x.span.line))
+        {
+            fix.safe = false;
+            fix.title = format!("{} (not safe: the result has {})", fix.title, t.code);
+        }
+    }
+}
+
+/// One check, with every fix as the checker proposed it.
+fn check_once(file: &str, source: &str, root: Option<&Path>) -> Report {
     let program = match super::parse(source) {
         Ok(p) => p,
         Err(f) => {
