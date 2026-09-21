@@ -1,0 +1,164 @@
+// RHL v0 production grammar — spec RHL-001 §3, row RHL-1 (plan D1).
+//
+// This is the grammar the parser is GENERATED from (build.rs). Its skeleton —
+// the `match` block, every nonterminal name, every alternative and the symbol
+// sequence of every alternative — is IDENTICAL to the pre-registered
+// grammar/rhl.lalrpop, and src/rhl/parse_tests.rs gates that identity. Only the
+// action code, the `<name:X>` bindings, the `@L`/`@R` location markers, the
+// result types and the `use` header differ. So LALRPOP's conflict-free report
+// for grammar/rhl.lalrpop (F1) is a report about the parser that runs.
+//
+// The tokenization contract, the `with` amendment and the scope notes are
+// stated once, in grammar/rhl.lalrpop; they are not repeated here so that the
+// two files cannot disagree about them.
+//
+// Every action is infallible (`=>`, never `=>?`), so LALRPOP never builds a
+// ParseError::User from this grammar; src/rhl/parse.rs relies on that and
+// src/rhl/parse_tests.rs checks it.
+use crate::rhl::parse as b;
+use crate::rhl::tree::{
+    Action, App, Atom, CompOp, Cond, CondKind, Decl, EffectVerb, Phrase, Program,
+    Quantity, Stmt, StmtKind, UnitKind,
+};
+
+grammar;
+
+match {
+    r"\n[ \t\n]*" => NEWLINE,
+} else {
+    "use vocabulary",
+    "job", "command", "check", "pipeline", "shape",
+    "let", "be", "set", "to",
+    "when", "otherwise", "end",
+    "for each", "in",
+    "repeat at most", "times", "until",
+    "wait up to", "runs on", "every",
+    "may read", "may write", "may call",
+    "expect", "example", "given", "then",
+    "give back", "stop with", "with",
+    "is not", "is below", "is above", "is at least", "is at most", "is one of",
+    "is", "contains",
+    "and", "or", "not", "%",
+} else {
+    r"[0-9]+" => INT,
+    r#""[^"]*""# => STRING,
+    r"[a-z_][a-z0-9_]*" => WORD,
+    r"[A-Z][A-Za-z]*" => UNIT,
+    r"[ \t]+" => { },
+}
+
+pub Program: Program = {
+    <decls:DeclSeq> => Program { decls },
+    NEWLINE <decls:DeclSeq> => Program { decls },
+};
+
+DeclSeq: Vec<Decl> = {
+    <d:Decl> => vec![d],
+    <v:DeclSeq> <d:Decl> => b::push(v, d),
+};
+
+Decl: Decl = {
+    <l:@L> "use vocabulary" <p:Phrase> <r:@R> NEWLINE => b::use_decl(l, p, r),
+    <l:@L> <k:UnitKind> <nl:@L> <n:STRING> NEWLINE <body:Body> "end" <r:@R> NEWLINE
+        => b::unit(l, k, b::text(nl, n), body, r),
+    <l:@L> <k:UnitKind> <nl:@L> <n:STRING> NEWLINE <body:Body> "end" <r:@R>
+        => b::unit(l, k, b::text(nl, n), body, r),
+};
+
+UnitKind: UnitKind = {
+    "job" => UnitKind::Job, "command" => UnitKind::Command, "check" => UnitKind::Check,
+    "pipeline" => UnitKind::Pipeline, "shape" => UnitKind::Shape,
+};
+
+Body: Vec<Stmt> = {
+    <s:Line> => vec![s],
+    <v:Body> <s:Line> => b::push(v, s),
+};
+
+Line: Stmt = { <s:Stmt> NEWLINE => s };
+
+Stmt: Stmt = {
+    <l:@L> "runs on" <a:App> <r:@R> => b::stmt(l, StmtKind::RunsOn(a), r),
+    <l:@L> "every" <q:Quantity> <r:@R> => b::stmt(l, StmtKind::Every(q), r),
+    <l:@L> "may read" <p:Phrase> <r:@R> => b::may(l, EffectVerb::Read, p, r),
+    <l:@L> "may write" <p:Phrase> <r:@R> => b::may(l, EffectVerb::Write, p, r),
+    <l:@L> "may call" <p:Phrase> <r:@R> => b::may(l, EffectVerb::Call, p, r),
+    <l:@L> "wait up to" <q:Quantity> <r:@R> => b::stmt(l, StmtKind::WaitUpTo(q), r),
+    <l:@L> "let" <name:Phrase> "be" <value:Cond> <r:@R>
+        => b::stmt(l, StmtKind::Let { name, value }, r),
+    <l:@L> "set" <name:Phrase> "to" <value:Cond> <r:@R>
+        => b::stmt(l, StmtKind::Set { name, value }, r),
+    <l:@L> "expect" <c:Cond> <r:@R> => b::stmt(l, StmtKind::Expect(c), r),
+    <l:@L> "give back" <c:Cond> <r:@R> => b::stmt(l, StmtKind::GiveBack(c), r),
+    <l:@L> "stop with" <c:Cond> <r:@R> => b::stmt(l, StmtKind::StopWith(c), r),
+    <l:@L> "given" <c:Cond> <r:@R> => b::stmt(l, StmtKind::Given(c), r),
+    <l:@L> "then" <c:Cond> <r:@R> => b::stmt(l, StmtKind::Then(c), r),
+    <l:@L> <a:Action> <r:@R> => b::stmt(l, StmtKind::Action(a), r),
+    <s:BlockStmt> => s,
+};
+
+BlockStmt: Stmt = {
+    <l:@L> "when" <cond:Cond> NEWLINE <then_body:Body> "end" <r:@R>
+        => b::stmt(l, StmtKind::When { cond, then_body, otherwise: None }, r),
+    <l:@L> "when" <cond:Cond> NEWLINE <then_body:Body> "otherwise" NEWLINE <o:Body> "end" <r:@R>
+        => b::stmt(l, StmtKind::When { cond, then_body, otherwise: Some(o) }, r),
+    <l:@L> "for each" <name:Phrase> "in" <collection:Cond> NEWLINE <body:Body> "end" <r:@R>
+        => b::stmt(l, StmtKind::ForEach { name, collection, body }, r),
+    <l:@L> "repeat at most" <tl:@L> <t:INT> "times" NEWLINE <body:Body> "end" <r:@R>
+        => b::stmt(l, StmtKind::Repeat { times: b::int(tl, t), until: None, body }, r),
+    <l:@L> "repeat at most" <tl:@L> <t:INT> "times" "until" <u:Cond> NEWLINE <body:Body> "end" <r:@R>
+        => b::stmt(l, StmtKind::Repeat { times: b::int(tl, t), until: Some(u), body }, r),
+    <l:@L> "example" <nl:@L> <n:STRING> NEWLINE <body:Body> "end" <r:@R>
+        => b::stmt(l, StmtKind::Example { name: b::text(nl, n), body }, r),
+};
+
+Action: Action = {
+    <h:ActionHead> => Action { head: h.0, target: h.1, with: None },
+    <h:ActionHead> "with" NEWLINE <w:Body> "end" => Action { head: h.0, target: h.1, with: Some(w) },
+};
+
+ActionHead: (App, Option<App>) = {
+    <a:App> => (a, None),
+    <a:App> "in" <t:App> => (a, Some(t)),
+};
+
+Cond: Cond = { <c:Disj> => c };
+Disj: Cond = { <c:Conj> => c, <a:Disj> "or" <c:Conj> => b::or(a, c) };
+Conj: Cond = { <c:Cmp> => c, <a:Conj> "and" <c:Cmp> => b::and(a, c) };
+Cmp: Cond = {
+    <l:@L> <a:App> <r:@R> => b::cond(l, CondKind::App(a), r),
+    <l:@L> <left:App> "in" <right:App> <r:@R> => b::cond(l, CondKind::In { left, right }, r),
+    <l:@L> "not" <c:Cmp> <r:@R> => b::cond(l, CondKind::Not(Box::new(c)), r),
+    <l:@L> <left:App> <op:CompOp> <right:App> <r:@R>
+        => b::cond(l, CondKind::Compare { left, op, right }, r),
+};
+
+CompOp: CompOp = {
+    "is" => CompOp::Is, "is not" => CompOp::IsNot, "is below" => CompOp::IsBelow,
+    "is above" => CompOp::IsAbove, "is at least" => CompOp::IsAtLeast,
+    "is at most" => CompOp::IsAtMost, "is one of" => CompOp::IsOneOf,
+    "contains" => CompOp::Contains,
+};
+
+App: App = {
+    <phrase:Phrase> => App::Call { phrase, args: Vec::new() },
+    <phrase:Phrase> <args:Args> => App::Call { phrase, args },
+    <q:Quantity> => App::Quantity(q),
+    <l:@L> <s:STRING> => App::Text(b::text(l, s)),
+};
+
+Args: Vec<Atom> = { <a:Atom> => vec![a], <v:Args> <a:Atom> => b::push(v, a) };
+Atom: Atom = {
+    <l:@L> <s:STRING> => Atom::Text(b::text(l, s)),
+    <q:Quantity> => Atom::Quantity(q),
+};
+Quantity: Quantity = {
+    <l:@L> <i:INT> <r:@R> => b::quantity(l, i, None, r),
+    <l:@L> <i:INT> <u:WORD> <r:@R> => b::quantity(l, i, Some(u), r),
+    <l:@L> <i:INT> <u:UNIT> <r:@R> => b::quantity(l, i, Some(u), r),
+    <l:@L> <i:INT> <u:"%"> <r:@R> => b::quantity(l, i, Some(u), r),
+};
+Phrase: Phrase = {
+    <l:@L> <w:WORD> => b::phrase(l, w),
+    <p:Phrase> <l:@L> <w:WORD> => b::extend(p, l, w),
+};

@@ -1,0 +1,8 @@
+test test_rhl_1_cli_check_rejects_an_unknown_format ... ok
+test test_rhl_1_cli_fmt_stdout_normalizes_layout ... ok
+test test_rhl_1_cli_check_parse_error_exits_1 ... ok
+test test_rhl_1_cli_fmt_check_accepts_the_normal_form ... ok
+test test_rhl_1_cli_check_refusal_exits_2_with_json_report ... ok
+test test_rhl_1_cli_check_clean_program_exits_0 ... ok
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+exit=0

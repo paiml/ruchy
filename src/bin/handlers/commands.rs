@@ -150,6 +150,12 @@ fn read_and_format_file(path: &Path) -> Result<(String, String)> {
     use ruchy::quality::formatter::Formatter;
     let source = fs::read_to_string(path)
         .with_context(|| format!("Failed to read file: {}", path.display()))?;
+    if ruchy::rhl::cli::is_rhl(path) {
+        // RHL-1: `.rhl` has its own normal form (RHL-001 §3.1 principle 2).
+        let formatted = ruchy::rhl::cli::format_file_source(&path.display().to_string(), &source)
+            .map_err(anyhow::Error::msg)?;
+        return Ok((source, formatted));
+    }
     let mut parser = RuchyParser::new(&source);
     let ast = parser.parse()?;
     let mut formatter = Formatter::new();

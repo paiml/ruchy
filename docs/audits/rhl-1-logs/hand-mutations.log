@@ -1,0 +1,13 @@
+# RHL-1 hand mutations — each applied with sed, `cargo test --lib rhl` run, file restored.
+# cargo-mutants 27.0.0 was attempted three times (copy mode twice, --in-place once) and each
+# run was ended by an external interrupt during a build phase (at 109 s, 109 s and 260 s);
+# one mutant build of this crate measured 150 s. See the receipt's jidoka section.
+# Script: handmut.sh <id> <file> <sed-expr>. Output below is verbatim.
+M1-threshold-len/2 exit=101 test result: FAILED. 132 passed; 1 failed; 1 ignored; 0 measured; 20626 filtered out; finished in 1.06s | failed: rhl::check::near::tests::test_rhl_1_check_near_threshold_is_rustc_rule
+M2-no-type-demotion exit=101 test result: FAILED. 131 passed; 2 failed; 1 ignored; 0 measured; 20626 filtered out; finished in 0.38s | failed: rhl::check::check_tests::test_rhl_1_check_unique_candidate_that_changes_the_dimension_is_not_safe rhl::check::check_tests::test_rhl_1_check_unique_candidate_that_breaks_the_entity_position_is_not_safe
+M3-no-undeclared-effect exit=101 test result: FAILED. 130 passed; 3 failed; 1 ignored; 0 measured; 20626 filtered out; finished in 0.81s | failed: rhl::check::check_tests::test_rhl_1_check_undeclared_effect_is_e001_with_an_unsafe_fix rhl::check::check_tests::test_rhl_1_check_valid_corpus_measurement_matches_plan_m3_m4 rhl::check::check_tests::test_rhl_1_check_planted_breaks_all_yield_their_expected_code
+M4-example-not-a-block exit=101 test result: FAILED. 132 passed; 1 failed; 1 ignored; 0 measured; 20626 filtered out; finished in 0.37s | failed: rhl::fmt::fmt_tests::test_rhl_1_fmt_corpus_spec_example_is_normal_form
+# Mutations: M1 src/rhl/check/near.rs threshold /3 -> /2; M2 src/rhl/check.rs demote_unsafe_fixes filter `f.safe && false`;
+# M3 src/rhl/check/checker.rs effects filter `false && …` (E001 never reported); M4 src/rhl/fmt.rs `StmtKind::Example` removed from is_block.
+# 4/4 caught (RED). After M4 the restored file kept its old mtime, so cargo reused the mutated build and the next
+# `cargo test --lib` showed a stale M4 failure; touching the restored files fixed it (133/133), and the script now touches.

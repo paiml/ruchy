@@ -389,6 +389,16 @@ wasmtime = { version = "47.0.3", optional = true }
 # Markdown parsing - optional for minimal builds
 pulldown-cmark = { version = "0.9", optional = true }
 
+# RHL-1: runtime support for the LALRPOP-generated RHL parser (src/rhl/).
+# Only `lexer`: the grammar uses LALRPOP's built-in lexer and nothing else.
+# `unicode` is off on purpose — every RHL terminal regex is ASCII, and a
+# non-ASCII byte inside a string literal still matches `[^"]` (tested in
+# src/rhl/parse_tests.rs).
+lalrpop-util = { version = "0.23", default-features = false, features = ["lexer"] }
+# RHL-1 (plan P4): the checker reads `vocab/<name>-v<N>.yaml`. serde_yaml_ng is
+# already locked as a build-dependency; serde_yaml is unmaintained.
+serde_yaml_ng = "0.10"
+
 # Platform-specific dependencies for non-WASM targets
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 rustyline = { workspace = true, optional = true }
@@ -625,6 +635,11 @@ rustdoc-args = ["--generate-link-to-definition"]
 [build-dependencies]
 serde = { version = "1", features = ["derive"] }
 serde_yaml_ng = "0.10"
+# RHL-1 (RHL-001 plan D1): build.rs generates the RHL parser from
+# src/rhl/grammar.lalrpop, whose skeleton is gated identical to the
+# pre-registered grammar/rhl.lalrpop — so the conflict-free report covers the
+# parser that runs. Same version and features as the RHL-0 dev-dependency.
+lalrpop = { version = "0.23", default-features = false }
 
 [[bench]]
 name = "execution_bench"

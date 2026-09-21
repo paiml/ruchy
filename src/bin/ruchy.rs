@@ -166,6 +166,9 @@ enum Commands {
         /// Watch for changes and re-check automatically
         #[arg(long)]
         watch: bool,
+        /// Output format for .rhl files: text, or json (the RHL-001 §3.5 diagnostics report)
+        #[arg(long, default_value = "text")]
+        format: String,
     },
     /// Run tests for Ruchy code with optional coverage reporting
     Test {
@@ -1409,7 +1412,11 @@ fn handle_command_dispatch(
             pgo,
             embed_models,
         ),
-        Some(Commands::Check { files, watch }) => handle_check_command(&files, watch),
+        Some(Commands::Check {
+            files,
+            watch,
+            format,
+        }) => handle_check_command(&files, watch, &format),
         Some(Commands::Test {
             path,
             watch,
