@@ -2901,11 +2901,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-1: parser, intent tree, fmt, diagnostics JSON, check'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
-  updated: 2026-09-20T15:41:53Z
+  updated: 2026-09-21T07:11:12.533763822+00:00
   spec: null
   acceptance_criteria:
   - K̂ 150. UNADMITTED until RHL-0 merges (spec RHL-001 §8 readiness rule).
