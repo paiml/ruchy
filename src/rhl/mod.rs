@@ -10,10 +10,13 @@
 //! identical to the pre-registered, conflict-free `grammar/rhl.lalrpop`
 //! (`parse_tests`), so F1's "exactly one parse" is a claim about this parser.
 
+pub mod check;
 pub mod codes;
 pub mod diag;
+pub mod fmt;
 pub mod parse;
 pub mod tree;
+pub mod vocab;
 
 lalrpop_util::lalrpop_mod!(grammar, "/rhl/grammar.rs");
 
