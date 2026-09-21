@@ -20,7 +20,6 @@
 {"repo":"ruchy","ticket":"PMAT-135","phase":"release.yml no publish + policy gate","mode":"worker+direct","est":null,"actual":null,"basis":"first-run[U]; PR #219"}
 {"repo":"ruchy","ticket":"PMAT-136","phase":"ruchy-dogfood skill","mode":"worker+direct","est":null,"actual":null,"basis":"first-run[U]; PR #220"}
 {"repo":"ruchy","ticket":"PMAT-137","phase":"workspace path deps","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; PR #218"}
-{"repo":"infra","ticket":"PMAT-134","phase":"policy spec","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; infra #448"}
-{"repo":"infra","ticket":"PMAT-138","phase":"clean-room release subject","mode":"direct","est":null,"actual":null,"basis":"first-run[U]; infra #450"}
 {"repo":"ruchy","ticket":"PMAT-139","phase":"gate workdir isolation","mode":"direct","est":null,"actual":null,"basis":"first-run[U]"}
 {"repo": "ruchy", "ticket": "RHL-0", "phase": "all", "mode": "mixed:self+sonnet-worker+agy-quorum", "est": 80, "actual": 72, "unit": "turn", "basis": "spec RHL-001 §11 [A]; agy goal lane BLIND, fell back to sonnet-worker per R-4; k_measured=118 counts assistant messages, not orchestrator turns"}
+{"repo":"ruchy","ticket":"RHL-1","phase":"all","mode":"mixed:self+opus-worker+agy-quorum","est":150,"actual":138,"unit":"turn","basis":"spec RHL-001 §8 [A]; actual is k_measured (distinct assistant message ids), PR #232"}

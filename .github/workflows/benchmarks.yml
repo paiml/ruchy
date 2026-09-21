@@ -67,13 +67,24 @@
 #
 # A real regression gate needs a base build, a PR build, and a threshold. The
 # threshold is not ours to invent, so it is a ticket rather than a guess here.
+#
+# CIPOOL-1 (2026-09-21) moved this job, for two operator rules relayed by the
+# aprender session and approved for ruchy by the operator:
+#   - NO HOSTED GITHUB RUNNERS (standing rule, 2026-09-10). It ran on
+#     `ubuntu-latest`; it now runs on the fleet's `[self-hosted, clean-room]`,
+#     bare-metal, in the same shape as sovereign-ci's `security` job.
+#   - Benchmarks are release-class work, like coverage ("coverage on tags
+#     release only", paiml/aprender#3676). It ran on every PR and every main
+#     push, and each of those runs was the red above. It now runs on a `v*` tag
+#     and on manual dispatch.
+# The red is not hidden by the move: BENCHBUILD-1 still owns it, and a dispatch
+# shows it on demand.
 name: Benchmark CI
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
@@ -84,7 +95,7 @@ env:
 jobs:
   benchmark:
     name: Performance Benchmarks
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, clean-room]
 
     steps:
       - uses: actions/checkout@v4
@@ -92,11 +103,19 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Install cargo-criterion
-        run: cargo install cargo-criterion
+      # The clean-room runners share HOME, so a `cargo install` into ~/.cargo
+      # races between runners. Root it in the runner's own persistent tool
+      # directory instead, as sovereign-ci's bare-metal `security` job does
+      # (infra#77; not /tmp, which boot empties — infra#219). No rust-cache: a
+      # self-hosted runner keeps its own target/ between runs.
+      - name: Install cargo-criterion (per-runner CARGO_HOME)
+        run: |
+          : "${RUNNER_TOOL_CACHE:?RUNNER_TOOL_CACHE is unset; refusing to root CARGO_HOME at /}"
+          export CARGO_HOME="$RUNNER_TOOL_CACHE/cargo-home-bench"
+          mkdir -p "$CARGO_HOME"
+          echo "CARGO_HOME=$CARGO_HOME" >> "$GITHUB_ENV"
+          cargo install cargo-criterion --locked --root "$CARGO_HOME"
+          echo "$CARGO_HOME/bin" >> "$GITHUB_PATH"
 
       # No `|| true`. If the benchmarks cannot run, this job is red, and that is
       # the whole of what this job asserts: the suite builds and executes. It is

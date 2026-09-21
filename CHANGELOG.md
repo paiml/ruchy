@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — CIPOOL-1: CI pays for release-class work on release tags only
+
+- Coverage runs on `v*` tags and manual dispatch only. `ci.yml` opts into
+  sovereign-ci's `coverage_on: tag` (paiml/.github#74) and adds the tag
+  trigger, and on PRs and main pushes the coverage job is skipped visibly.
+- Benchmark CI leaves the hosted `ubuntu-latest` runner for the fleet's
+  `[self-hosted, clean-room]` pool, and runs on `v*` tags and manual dispatch
+  instead of on every PR and main push. It remains red until BENCHBUILD-1.
+- `.github/actionlint.yaml` declares the fleet runner labels.
+- `docs/audits/impl-estimates.jsonl` holds `ruchy` rows only. The two `infra`
+  rows moved out, which unblocked the gated writer, and RHL-1's row is recorded.
+
 ### Added — RHL-1: the RHL parser, intent tree, `fmt`, JSON diagnostics and `check` (RHL-001)
 
 This is the first RHL compiler code. It is a front end only: nothing is lowered to
