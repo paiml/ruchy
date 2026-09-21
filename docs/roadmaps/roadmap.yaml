@@ -2901,7 +2901,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-1: parser, intent tree, fmt, diagnostics JSON, check'
-  status: inprogress
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
@@ -2920,7 +2920,7 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-0
-  notes: 'ADMITTED by RHL-0''s merge (commit 1c2caf5d, PR #225) — the spec''s readiness gate ''no implementation rows are admitted until RHL-0 is merged'' has opened. O1 RULED 2026-09-20 by quorum (RHL-14, ruling O1-R): the three section-3.2 lines were reworded to the shapes the corpus already used, no keyword reserved, no grammar change; the 2:1 residual on an App-to-App production is recorded in the spec''s O1 block. READY TO START once RHL-14 merges. K-hat basis is 118 [C] from RHL-0 (see HARNESS-1 on the unit question). RHL-1 also inherits F1''s unmeasured second half: ''every corpus program has exactly one parse'' needs the parser this row builds.'
+  notes: 'Landed: merged d56cf407 (#232), 2026-09-21; required gate green. Receipt docs/audits/impl-RHL-1-receipt.md. Follow-ups: RHL-16 (corpus/vocabulary v2), and the safe-fix scope question recorded on RHL-2. Earlier note: ADMITTED by RHL-0''s merge (commit 1c2caf5d, PR #225) — the spec''s readiness gate ''no implementation rows are admitted until RHL-0 is merged'' has opened. O1 RULED 2026-09-20 by quorum (RHL-14, ruling O1-R): the three section-3.2 lines were reworded to the shapes the corpus already used, no keyword reserved, no grammar change; the 2:1 residual on an App-to-App production is recorded in the spec''s O1 block. READY TO START once RHL-14 merges. K-hat basis is 118 [C] from RHL-0 (see HARNESS-1 on the unit question). RHL-1 also inherits F1''s unmeasured second half: ''every corpus program has exactly one parse'' needs the parser this row builds.'
 - id: RHL-2
   github_issue: null
   item_type: task
@@ -3494,4 +3494,23 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-1
+  notes: null
+- id: CIPOOL-1
+  github_issue: null
+  item_type: task
+  title: 'CIPOOL-1: coverage on tagged releases only; Benchmark CI off hosted runners, to tag/dispatch; estimate ledger re-keyed'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-09-21T10:22:17Z
+  updated: 2026-09-21T10:22:17.964855463+00:00
+  spec: null
+  acceptance_criteria:
+  - 'Operator decisions relayed by the aprender session on 2026-09-21 (coverage on tagged releases only, paiml/aprender#3676; no hosted GitHub runners, standing rule 2026-09-10) and approved for ruchy by the operator in the RHL-1 session (''yes to all''). (1) ci.yml opts into sovereign-ci''s coverage_on input (paiml/.github#74, merged): coverage_on: tag plus a v* tag trigger on push. (2) benchmarks.yml ran on ubuntu-latest on every PR and main push: move it to [self-hosted, clean-room] and to v* tags + workflow_dispatch. (3) docs/audits/impl-estimates.jsonl carries two infra rows (PMAT-134, PMAT-138) that make pmat work estimate record refuse every ruchy row; move them out and record RHL-1''s row. Also records RHL-1 completed (merged d56cf407, #232).'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci
   notes: null

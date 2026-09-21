@@ -1,0 +1,5 @@
+# actionlint knows GitHub-hosted labels only; the fleet's self-hosted labels must be
+# declared here or every fleet runs-on is reported as an unknown label. The list
+# mirrors paiml/infra's .github/actionlint.yaml (CIPOOL-1).
+self-hosted-runner:
+  labels: [clean-room, perf-solo, merge-queue, intel, amd, gpu, yoga]
