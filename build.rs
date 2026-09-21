@@ -20,6 +20,30 @@ fn main() {
 
     emit_simd_cfgs();
     enforce_contract_bindings();
+    generate_rhl_parser();
+}
+
+/// The RHL production grammar (RHL-1, spec RHL-001 plan D1).
+const RHL_GRAMMAR: &str = "src/rhl/grammar.lalrpop";
+
+/// Generate the RHL parser into `OUT_DIR/rhl/grammar.rs` (`src/rhl/mod.rs`
+/// includes it). Only this one grammar is processed: `grammar/rhl.lalrpop` is
+/// pre-registration data, and `grammar/fixtures/` holds a deliberately
+/// ambiguous grammar that LALRPOP must reject.
+fn generate_rhl_parser() {
+    println!("cargo:rerun-if-changed={RHL_GRAMMAR}");
+    let Some(out_dir) = std::env::var_os("OUT_DIR") else {
+        panic!("RHL-1: cargo did not set OUT_DIR for the build script");
+    };
+    // `process_file` rejects an in_dir (so no `use_cargo_dir_conventions()`),
+    // and writes `<file stem>.rs` directly into the out dir it is given.
+    if let Err(e) = lalrpop::Configuration::new()
+        .set_out_dir(std::path::Path::new(&out_dir).join("rhl"))
+        .emit_rerun_directives(false)
+        .process_file(RHL_GRAMMAR)
+    {
+        panic!("RHL-1: LALRPOP rejected {RHL_GRAMMAR}: {e}");
+    }
 }
 
 /// Detect target features for SIMD availability reporting.

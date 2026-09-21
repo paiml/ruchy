@@ -4203,6 +4203,9 @@ name = "lalrpop-util"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "884f3e747ed2dcee867cda1b0c31a048f9e20de2d916a248949319921a2e666e"
+dependencies = [
+ "regex-automata",
+]
 
 [[package]]
 name = "lazy_static"
@@ -6850,6 +6853,7 @@ dependencies = [
  "js-sys",
  "jugar-probar",
  "lalrpop",
+ "lalrpop-util",
  "local-ip-address",
  "logos",
  "markup5ever_rcdom",

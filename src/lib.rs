@@ -90,6 +90,8 @@ pub mod proving;
 pub mod quality;
 pub mod reporting;
 pub mod reproducibility;
+// RHL-1 (spec RHL-001): the RHL intent tree and its LALRPOP-generated parser.
+pub mod rhl;
 pub mod runtime;
 pub mod server;
 pub mod stdlib;
