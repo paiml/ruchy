@@ -88,11 +88,20 @@ codes and their meaning exactly. Record the catalogue once, in `src/rhl/codes.rs
 | `RHL-T003` | bare number | an unannotated integer where a unit-bearing quantity is expected (§3.1 principle 4) |
 | `RHL-E001` | undeclared effect | a term's `effect` is not covered by a `may` line of its unit (pre-registered) |
 | `RHL-X001` | `given`/`then` outside `example` | the grammar leaves this check to RHL-1 (grammar "NOTE ON SCOPE") |
+| `RHL-B001` | not a finite collection | `for each … in <x>` where `<x>` is not a finite collection. No v1 term gives a collection, so every `for each` is refused today (§3.1 principle 5). *Added by round 1, lane 1.* |
+| `RHL-C001` | no contract template | a vocabulary term whose `contract:` file does not exist; the **vocabulary** is refused by name, exit 2 (§3.4, §3.5 `NoContractTemplate`, §9.3, F6's positive control). *Added by round 1, lanes 1 and 2.* |
 
 The V001/V002/V003 numbering follows the pre-registered pair: V002 means one candidate
 and V003 means several, so V001 means none. An unknown **effect target** (`may read dsk`)
 and an unknown **unit** (`100 gib`) reuse V001–V003, with candidates drawn from their own
 namespace. The code says "unknown word"; `expected.kind` says which namespace.
+
+*Round 1 (lane 2): D3 and D4 read as contradicting each other.* They are reconciled like
+this: the **syntactic position** picks the namespace, and the expected **semantic** kind
+never does. The word after `may <verb>` comes from effect targets. The word after an
+integer in a quantity comes from unit terms. Every generic `App` position (the operand of
+`runs on`, `let … be`, `when`, a comparison) draws from all terms plus the `let` names in
+scope, because the grammar leaves that position open.
 
 ### D4 — Candidate rule for unknown words (an invented threshold would be a §10 STOP)
 
@@ -101,7 +110,8 @@ is **rustc's `find_best_match_for_name` rule**, `max(len/3, 1)`. It is borrowed 
 not invented. The search runs over the unresolved phrase's word-prefixes, **longest
 first**. The first prefix length that yields any candidate within the threshold wins, and
 its candidates are every term (or in-scope `let` name) at that prefix's **minimum**
-distance. Candidates are **not** filtered by expected kind. The pre-registered
+distance. In a generic `App` position, candidates are **not** filtered by expected kind (see the
+D3 reconciliation: the position picks the namespace). The pre-registered
 `hosr → [host, hour]` requires this, because `hour` is a unit where an entity is expected.
 
 Checked by hand against M2:
@@ -123,14 +133,23 @@ consequence, stated rather than hidden: §3.2's example as written yields `RHL-E
 
 ### D6 — Closed-world entity instances with no source in the repo (M7)
 
-**Proposal.** An entity term followed by one word (`host gx10`) resolves the word against
-`instances_from`, globbed under a **world root**. The CLI flag `--world <dir>` sets it; it
-defaults to none. With no world root, or a glob that matches nothing, the instance is
-**not verified**. `check` then reports a `warning`-severity `RHL-V005 instance
-unverified` (naming the source it would have read), and the overall verdict is
-`Unknown{reason}`, never `Pass` (§4: "never a fabricated GO"). With a world root, an
-unknown instance is `RHL-V00{1,2,3}`, candidates drawn from the declared instances
-(`host gx11` → `gx10`, §3.4). This adds a thirteenth code, `RHL-V005`.
+**Proposal (amended by round 1, lane 2).** Relative paths in a vocabulary file resolve
+against the directory that contains `vocab/`. The same rule already locates its
+`contract:` files, so `instances_from` needs no new flag. The instance name is whatever
+the glob's `*` matched: `machines/gx10/forjar.yaml` declares `gx10`.
+
+- **The glob matches at least one file:** the entity is closed-world. An unknown instance
+  is `RHL-V001`–`V003`, with candidates drawn from the declared instances (`host gx11` →
+  `gx10`, §3.4).
+- **The glob matches nothing:** no source of truth exists, so by §3.4's own qualifier
+  ("closed-world *where a source of truth exists*") the entity is not closed-world and
+  nothing is refused. The JSON output says so in a top-level `unverified` list, e.g.
+  `host gx10 — no file matches machines/*/forjar.yaml`. That list carries no diagnostic
+  code, does not change the exit code, and says which instances were unverified.
+
+*Dropped from the first draft:* the `--world` flag, the code `RHL-V005`, and exit 2 on an
+absent source. Lane 2: the flag and the code were unruled inventions, and exit 2 would
+refuse every program in this repository.
 
 ### D7 — The `fmt` normal form
 
@@ -139,10 +158,14 @@ unknown instance is `RHL-V00{1,2,3}`, candidates drawn from the declared instanc
 - single spaces between tokens;
 - a trailing newline;
 - one blank line between the `use` block and the first unit, and between units;
-- inside a **unit body only**: a blank line before and after every block statement
-  (`when`, `for each`, `repeat`, `example`, an action `with` block), and between
-  consecutive simple statements of **different groups** — header (`runs on`, `every`,
-  `may …`, `wait up to`), binding (`let`, `set`), assertion (`expect`), other;
+- inside a **unit body only**, between two **consecutive sibling** statements: a blank line
+  when either is a block statement (`when`, `for each`, `repeat`, `example`, an action with
+  a `with` block), or when both are simple statements of **different groups** — header
+  (`runs on`, `every`, `may …`, `wait up to`), binding (`let`, `set`), assertion
+  (`expect`), other. Never a blank line before the first statement or after the last, so
+  the unit's closing `end` follows its last statement directly. *Reworded by round 1
+  (lanes 1 and 2): "before and after every block" put a blank line before the unit's
+  `end`.*
 - no blank lines inside nested bodies.
 
 Checked by hand: this reproduces all 12 valid programs and the §3.2 example
@@ -155,6 +178,20 @@ the corpus bytes"), which presupposes the corpus is in normal form.
 - `ruchy check <f.rhl> [--format text|json] [--world <dir>]`. Exit codes: 0 pass,
   1 error diagnostics, 2 refusal or `Unknown`.
 - `ruchy fmt <f.rhl> [--check|--stdout]`.
+
+*Round 1 (lane 2):* today the binary exits 1 on every handler `Err`
+(`src/bin/ruchy.rs`, the final `process::exit(1)` in `main`). P5 therefore returns a
+typed exit status from the `.rhl` path of `check`, and `main` maps it to 0/1/2 instead of
+sending it through the generic `Err` → 1 path.
+
+**JSON output shape (P2, stated for round 2).** `--format json` prints one object,
+`{"file", "verdict", "diagnostics": [<§3.5 objects>], "unverified": [<D6 entries>]}`,
+where `verdict` is `pass`, `fail` or `refused`. §3.5 says the command "emits the list".
+Here the list is the `diagnostics` array. It is wrapped in an object only so that D6's
+`unverified` list has somewhere to live without becoming a diagnostic code. Each
+diagnostic also carries `refusal` (for example `OutOfVocabulary`) when its code is an
+instance of a §3.5 refusal. **Exit rule:** 2 if any diagnostic carries a refusal, else 1
+if there is any error, else 0. The catalogue in `src/rhl/codes.rs` maps codes to refusals.
 
 Vocabulary search path: `vocab/` beside the file's nearest ancestor that contains one,
 else `--vocab <dir>`. All logic lives in the lib (`src/rhl/`); the bin is thin wiring, so
@@ -169,7 +206,7 @@ the logic is gated by `cargo test --lib` (M8).
 | P1 | tree + generated parser + skeleton-identity gate + F1 over the corpus | `src/rhl/{mod,tree,parse}.rs`, `src/rhl/grammar.lalrpop`, `build.rs`, `Cargo.toml` | self | `cargo test --lib rhl::parse` |
 | P2 | diagnostics model, P-codes, JSON render, code catalogue | `src/rhl/{diag,codes}.rs` | self | `cargo test --lib rhl::diag` |
 | P3 | `fmt` normal form: F2 idempotence and tree preservation over the corpus plus proptest; mangled→corpus positive control | `src/rhl/fmt.rs` | worker (disjoint scope) | `cargo test --lib rhl::fmt` |
-| P4 | vocabulary loader, resolver, V/T/E/X checks, candidates and fixes, planted-break gate, valid-corpus measurement | `src/rhl/{vocab,check}.rs`, `src/rhl/check/**` | self | `cargo test --lib rhl::check` |
+| P4 | vocabulary loader (C001 contract-template refusal), resolver, V/T/E/X/B checks, candidates and fixes, planted-break gate, valid-corpus measurement | `src/rhl/{vocab,check}.rs`, `src/rhl/check/**` | self | `cargo test --lib rhl::check` |
 | P5 | CLI wiring by extension; exit codes | `src/bin/ruchy.rs`, `src/bin/handlers/check_handler.rs`, the fmt handler | self | `cargo test --lib rhl::cli` + `cargo run -- check docs/rhl/breaks/planted/typo-term/01-gx10-disk-watch/broken.rhl --format json` |
 | P6 | spec amendment notes (A3: §3.2 effect, M3–M6), code catalogue doc, roadmap (RHL-16 filed), CHANGELOG, receipt; diff quorum; PR | `docs/**`, `CHANGELOG.md` | self + delegate | `pmat work validate` + quorum PASS |
 
@@ -182,3 +219,21 @@ on the resolver and the type/effect rules.
   lacks. Report it; do not add the production.
 - Any threshold not covered by D4's borrowed rule.
 - A quorum split on D2 or D5 after one round.
+
+## 5. Quorum rounds
+
+**Round 1 (`grillme`, width 3; gemini-3.1-pro-high, gemini-3.8-flash-high,
+gemini-3.7-flash-high).** Verdicts: FAIL, FAIL, PASS, so no agreement. All three lanes
+re-measured M3–M7 as true, and D1, D2 and D5 were accepted by every lane that took a
+position. The amendments taken, each written into its decision above:
+
+- D3 gains `RHL-B001` and `RHL-C001` (lanes 1 and 2).
+- D3 and D4 are reconciled: the syntactic position picks the namespace (lane 2).
+- D6 drops `--world`, `RHL-V005` and exit 2 on an absent source (lane 2).
+- D7's blank-line rule is reworded (lanes 1 and 2).
+- D8 names the exit-status plumbing (lane 2).
+
+Lane 2's charge that "not filtering by kind" tunes the checker to one fixture is answered,
+not adopted. The `[host, hour]` expectation is pre-registered F7 data, and the
+reconciliation filters by position, not by semantic kind. Round 2 grills the amended
+plan. A second split is §10's `quorum-split` STOP.

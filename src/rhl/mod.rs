@@ -10,6 +10,8 @@
 //! identical to the pre-registered, conflict-free `grammar/rhl.lalrpop`
 //! (`parse_tests`), so F1's "exactly one parse" is a claim about this parser.
 
+pub mod codes;
+pub mod diag;
 pub mod parse;
 pub mod tree;
 
@@ -19,3 +21,10 @@ pub use parse::{parse, ParseFailure};
 
 #[cfg(test)]
 mod parse_tests;
+
+/// Repository root, from the crate manifest, so a test reads the same files
+/// under `cargo test`, nextest and an extracted `.crate` alike.
+#[cfg(test)]
+pub(crate) fn repo_root() -> std::path::PathBuf {
+    std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+}
