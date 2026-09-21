@@ -1,0 +1,5 @@
+warning: unused import: `std::collections::HashMap`
+warning: unused imports: `InterpreterError` and `Value`
+warning: unused variable: `pid`
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 14.86s
+exit=0

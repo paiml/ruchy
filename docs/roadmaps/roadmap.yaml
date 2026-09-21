@@ -2940,7 +2940,7 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-1
-  notes: null
+  notes: 'Carried from RHL-1 (pre-PR review round 2, 1 FAIL / 2 PASS): RHL-1 judges a V002 fix type-preserving at the EDIT SITE — check() applies each safe fix, re-checks once, and demotes it on an RHL-T code on an edited line. A type error the fix exposes on ANOTHER line is left to the re-check that fix --safe performs (§3.5). Measured case: let t be 10 hou, fixed to hour, gives RHL-T001 three lines later and the fix stays safe. The global reading (demote on any new RHL-T) would also demote the pre-registered safe fixes of typo-term 03/04/05/08/09/10, whose base programs are mistyped (RHL-16). RHL-2 must rule local vs global when it builds fix --safe.'
 - id: RHL-3
   github_issue: null
   item_type: task
