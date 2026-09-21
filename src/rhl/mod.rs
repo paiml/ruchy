@@ -11,6 +11,7 @@
 //! (`parse_tests`), so F1's "exactly one parse" is a claim about this parser.
 
 pub mod check;
+pub mod cli;
 pub mod codes;
 pub mod diag;
 pub mod fmt;

@@ -4,6 +4,7 @@
 
 use anyhow::Result;
 use colored::Colorize;
+use ruchy::rhl::cli::{check_files, is_rhl, OutputFormat};
 use ruchy::Parser as RuchyParser;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -16,11 +17,13 @@ use std::path::{Path, PathBuf};
 ///
 /// # Errors
 /// Returns error if files cannot be read or have syntax errors
-pub fn handle_check_command(files: &[PathBuf], watch: bool) -> Result<()> {
+pub fn handle_check_command(files: &[PathBuf], watch: bool, format: &str) -> Result<()> {
     // FIX CLI-CONTRACT-CHECK-003: Support checking multiple files
     validate_file_list(files)?;
 
-    if watch {
+    if !watch && files.iter().any(|f| is_rhl(f)) {
+        handle_rhl_check(files, format)
+    } else if watch {
         check_watch_mode(files)
     } else if files.len() == 1 {
         // Single file - return error directly for better error messages
@@ -28,6 +31,27 @@ pub fn handle_check_command(files: &[PathBuf], watch: bool) -> Result<()> {
     } else {
         check_multiple_files(files)
     }
+}
+
+/// Check `.rhl` files (RHL-001 §5, RHL-1): print the report and exit with
+/// its code — 0 pass, 1 error, 2 refusal. Exit 2 cannot travel through the
+/// generic `Err` path, which `main` maps to 1, so this handler exits itself.
+fn handle_rhl_check(files: &[PathBuf], format: &str) -> Result<()> {
+    if let Some(other) = files.iter().find(|f| !is_rhl(f)) {
+        anyhow::bail!(
+            "{} is not an .rhl file; check .rhl and .ruchy files in separate runs",
+            other.display()
+        );
+    }
+    let format = OutputFormat::parse(format).map_err(anyhow::Error::msg)?;
+    let paths: Vec<&Path> = files.iter().map(PathBuf::as_path).collect();
+    let outcome = check_files(&paths, format);
+    print!("{}", outcome.stdout);
+    eprint!("{}", outcome.stderr);
+    if outcome.exit != 0 {
+        std::process::exit(outcome.exit);
+    }
+    Ok(())
 }
 
 /// Validate that file list is not empty (complexity: 1)
@@ -62,8 +86,23 @@ fn check_multiple_files(files: &[PathBuf]) -> Result<()> {
     }
 }
 
+/// One text-format RHL check, as an `Err` on any diagnostic (watch mode).
+fn check_rhl_once(file: &Path) -> Result<()> {
+    let outcome = check_files(&[file], OutputFormat::Text);
+    print!("{}", outcome.stdout);
+    eprint!("{}", outcome.stderr);
+    if outcome.exit == 0 {
+        Ok(())
+    } else {
+        anyhow::bail!("{}: RHL check failed", file.display())
+    }
+}
+
 /// Check syntax of a single file
 pub fn handle_check_syntax(file: &Path) -> Result<()> {
+    if is_rhl(file) {
+        return check_rhl_once(file);
+    }
     let source = super::read_file_with_context(file)?;
     let mut parser = RuchyParser::new(&source);
     match parser.parse() {
@@ -225,7 +264,7 @@ mod tests {
 
     #[test]
     fn test_handle_check_command_empty_files() {
-        let result = handle_check_command(&[], false);
+        let result = handle_check_command(&[], false, "text");
         assert!(result.is_err());
         assert!(result
             .unwrap_err()
@@ -236,7 +275,7 @@ mod tests {
     #[test]
     fn test_handle_check_command_nonexistent_file() {
         let files = vec![PathBuf::from("/nonexistent/file.ruchy")];
-        let result = handle_check_command(&files, false);
+        let result = handle_check_command(&files, false, "text");
         assert!(result.is_err());
     }
 
@@ -295,7 +334,7 @@ mod tests {
         fs::write(&file_path, "42").unwrap();
 
         let files = vec![file_path];
-        let result = handle_check_command(&files, false);
+        let result = handle_check_command(&files, false, "text");
         assert!(result.is_ok());
     }
 

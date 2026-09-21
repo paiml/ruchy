@@ -266,6 +266,7 @@ fn test_handle_advanced_command_check() {
     let command = Commands::Check {
         files: vec![temp_file.path().to_path_buf()],
         watch: false,
+        format: "text".to_string(),
     };
     let result = handle_advanced_command(command);
     assert!(result.is_ok());

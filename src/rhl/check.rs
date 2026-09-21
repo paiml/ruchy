@@ -38,6 +38,18 @@ pub enum Verdict {
     Refused,
 }
 
+impl Verdict {
+    /// The verdict as the JSON report spells it: `pass`, `fail` or `refused`.
+    #[must_use]
+    pub fn word(self) -> &'static str {
+        match self {
+            Self::Pass => "pass",
+            Self::Fail => "fail",
+            Self::Refused => "refused",
+        }
+    }
+}
+
 /// An entity instance that could not be verified, because the entity's
 /// `instances_from` glob matches no file (plan D6). Not a diagnostic.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
