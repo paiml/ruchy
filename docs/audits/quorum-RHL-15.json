@@ -1,0 +1,236 @@
+{
+ "ticket": "RHL-15",
+ "base": "origin/main",
+ "base_resolved": "origin/main",
+ "base_note": "no origin/origin/main exists; judged against the local ref",
+ "head": "58bca9996d616375a31e03d77d1c49deeb295325",
+ "diff_sha256": "8f580cf0addea933652be5de4e549fc45a74511204fcd53f013a4bd5b0aad13b",
+ "width": 2,
+ "executor": "agy",
+ "prompt_mode": "inline",
+ "prompt_bytes": 11245,
+ "author": {
+  "model": "claude-opus-5",
+  "family": "claude",
+  "source": "flag"
+ },
+ "agreed": true,
+ "lanes": [
+  {
+   "lane": 1,
+   "status": "SUCCESS",
+   "verdict": "PASS",
+   "summary": "The diff properly fulfills all acceptance criteria outlined in RHL-15 without doing anything extraneous. It successfully restores the corrupted fields for AUDIT-2, RHL-14, and AUDIT-4 caused by the mid-row hunk concatenation. It also marks CIBASE-1, RHL-13, and RHL-14 as completed with the appropriate 'Landed' commit notes, and introduces RHL-15 accurately to the end of the roadmap yaml. Finally, the quorum-RHL-14.json artifact has been accurately amended with the correction note.",
+   "findings": [
+    {
+     "claim": "Diff restores lost fields to AUDIT-2.",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "grounding": "cited"
+    },
+    {
+     "claim": "Diff removes AUDIT-2's labels from RHL-14, restores its proper 'kind:docs' label, and adds landing commit notes marking it completed.",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "grounding": "cited"
+    },
+    {
+     "claim": "Diff removes RHL-14's 'kind:docs' from AUDIT-4 by correctly placing 'notes: null' before the label and starting the new RHL-15 block.",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "grounding": "cited"
+    },
+    {
+     "claim": "Diff correctly marks CIBASE-1 and RHL-13 as completed and adds landing commit notes to each.",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "grounding": "cited"
+    },
+    {
+     "claim": "JSON audit log properly updated with the rebind note correction explaining the conflict and false verification.",
+     "file": "docs/audits/quorum-RHL-14.json",
+     "grounding": "cited"
+    }
+   ],
+   "raw_bytes": 6356,
+   "err_bytes": 0,
+   "envelope_status": "SUCCESS",
+   "verdict_source": "structured_output",
+   "model": "gemini-3.1-pro-high",
+   "model_measured": "gemini-3.1-pro-high",
+   "model_source": "measured",
+   "family": "gemini"
+  },
+  {
+   "lane": 2,
+   "status": "SUCCESS",
+   "verdict": "PASS",
+   "summary": "VERDICT: PASS. The diff does exactly what ticket RHL-15 specifies and nothing forbidden: (1) field-for-field restoration of AUDIT-2, AUDIT-4, and RHL-14 roadmap rows scrambled by the #230 rebase on main, verified by comparing against source commits 0d989656 and 81e1ea0d; (2) addition of rebind_note_2_correction in quorum-RHL-14.json; (3) completion status and landing commit notes for merged tickets CIBASE-1 (#228), RHL-13 (#227), and RHL-14 (#230), riding on open ticket RHL-15 in accordance with commit-msg hook constraints; and (4) addition of RHL-15 to roadmap.yaml in inprogress status. No gates are weakened and no tests are refuted.",
+   "findings": [
+    {
+     "claim": "quorum-RHL-14.json appends rebind_note_2_correction documenting that rebind_note_2 was false as written due to mid-row conflict concatenation in #230's rebase onto main.",
+     "command": "git diff origin/main...HEAD -- docs/audits/quorum-RHL-14.json",
+     "file": "docs/audits/quorum-RHL-14.json",
+     "fix": "N/A (correct as written)",
+     "grounding": "measured",
+     "line": 84,
+     "output": "+ \"rebind_note_2_correction\": \"FALSE AS WRITTEN. rebind_note_2 says the conflict was 'resolved by keeping both sides \u2014 204 rows, ids unique, checked with a real YAML parser'. Keeping both sides meant concatenating two conflict hunks whose boundaries fell mid-row, so AUDIT-2 lost phases/subtasks/labels, RHL-14 took AUDIT-2's labels, and AUDIT-4 took RHL-14's kind:docs \u2014 and that landed on main in cc651022. Unique ids and a clean parse are true of the corrupted file; the check did not compare fields against either side's source. Found the next morning by reading the rows back; repaired field-for-field from 0d989656 and 81e1ea0d on branch RHL-14-roadmap-repair. The review lanes judged the pre-rebase diff and are not implicated.\""
+    },
+    {
+     "claim": "AUDIT-2, AUDIT-4, and RHL-14 rows are restored field-for-field from source commits 0d989656 and 81e1ea0d.",
+     "command": "python3 -c \"import subprocess, yaml; get_rm = lambda ref: {i['id']: i for i in yaml.safe_load(subprocess.check_output(['git', 'show', f'{ref}:docs/roadmaps/roadmap.yaml']))['roadmap']}; head, audit, rhl14 = get_rm('HEAD'), get_rm('0d989656'), get_rm('81e1ea0d'); print('A2:', head['AUDIT-2'] == audit['AUDIT-2'], 'A4:', head['AUDIT-4'] == audit['AUDIT-4'], 'R14_non_status:', all(head['RHL-14'][k] == rhl14['RHL-14'][k] for k in rhl14['RHL-14'] if k not in ('status', 'notes')))\"",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "fix": "N/A (matches source commits exactly)",
+     "grounding": "measured",
+     "line": 3391,
+     "output": "A2: True A4: True R14_non_status: True"
+    },
+    {
+     "claim": "CIBASE-1, RHL-13, and RHL-14 are marked completed with verified merge commit hashes in notes (e382f9ab for #228, 68a5f4c0 for #227, cc651022 for #230).",
+     "command": "git log -1 --oneline e382f9ab && git log -1 --oneline 68a5f4c0 && git log -1 --oneline cc651022",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "fix": "N/A (hashes and PR numbers are accurate)",
+     "grounding": "measured",
+     "line": 3204,
+     "output": "e382f9ab (CIBASE-1-baseline-never-compared) CIBASE-1: a comparison job that never compared anything, on 81 of 81 PRs (#228)\n68a5f4c0 (RHL-13-post-merge-corrections) RHL-13: a merged amendment cited apex for a principle apex does not hold (#227)\ncc651022 (origin/main, origin/HEAD, main) RHL-14: O1 ruled by quorum \u2014 reword the three \u00a73.2 lines, reserve no keyword (#230)"
+    },
+    {
+     "claim": "Commit-msg hook enforces that tickets cannot be marked completed in their own commits, requiring completion flips to ride on an open ticket like RHL-15.",
+     "command": "sed -n '90,94p' .git/hooks/commit-msg",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "fix": "N/A (ticket criteria explicitly accounts for this)",
+     "grounding": "measured",
+     "line": 3465,
+     "output": "    case \"$status\" in\n        completed|cancelled)\n            refuse \"Pmat-Ticket $id is $status \u2014 work belongs to an open item, and CB-2113 refuses this commit in CI.\" \\\n                \"leave a ticket open in its own PR; the next ticket's PR marks it completed\" ;;\n    esac"
+    },
+    {
+     "claim": "RHL-15 task is properly registered in roadmap.yaml in inprogress status with unique ID and valid YAML syntax.",
+     "command": "python3 -c \"import yaml; data = yaml.safe_load(open('docs/roadmaps/roadmap.yaml')); items = data['roadmap']; print(f'Total: {len(items)}, Unique IDs: {len({i[\\\"id\\\"] for i in items})}')\"",
+     "file": "docs/roadmaps/roadmap.yaml",
+     "fix": "N/A (valid YAML with 205 unique items)",
+     "grounding": "measured",
+     "line": 3455,
+     "output": "Total: 205, Unique IDs: 205"
+    }
+   ],
+   "raw_bytes": 11822,
+   "err_bytes": 0,
+   "envelope_status": "SUCCESS",
+   "verdict_source": "structured_output",
+   "grounding_check": "parity",
+   "model": "gemini-3.7-flash-high",
+   "model_measured": "gemini-3.7-flash-high",
+   "model_source": "measured",
+   "family": "gemini"
+  }
+ ],
+ "dissent": [],
+ "dedup": [
+  {
+   "file": "docs/audits/quorum-RHL-14.json",
+   "line": null,
+   "lanes_agreeing": [
+    1
+   ],
+   "claims": [
+    "JSON audit log properly updated with the rebind note correction explaining the conflict and false verification."
+   ]
+  },
+  {
+   "file": "docs/audits/quorum-RHL-14.json",
+   "line": 84,
+   "lanes_agreeing": [
+    2
+   ],
+   "claims": [
+    "quorum-RHL-14.json appends rebind_note_2_correction documenting that rebind_note_2 was false as written due to mid-row conflict concatenation in #230's rebase onto main."
+   ]
+  },
+  {
+   "file": "docs/roadmaps/roadmap.yaml",
+   "line": null,
+   "lanes_agreeing": [
+    1
+   ],
+   "claims": [
+    "Diff correctly marks CIBASE-1 and RHL-13 as completed and adds landing commit notes to each.",
+    "Diff removes AUDIT-2's labels from RHL-14, restores its proper 'kind:docs' label, and adds landing commit notes marking it completed.",
+    "Diff removes RHL-14's 'kind:docs' from AUDIT-4 by correctly placing 'notes: null' before the label and starting the new RHL-15 block.",
+    "Diff restores lost fields to AUDIT-2."
+   ]
+  },
+  {
+   "file": "docs/roadmaps/roadmap.yaml",
+   "line": 3204,
+   "lanes_agreeing": [
+    2
+   ],
+   "claims": [
+    "CIBASE-1, RHL-13, and RHL-14 are marked completed with verified merge commit hashes in notes (e382f9ab for #228, 68a5f4c0 for #227, cc651022 for #230)."
+   ]
+  },
+  {
+   "file": "docs/roadmaps/roadmap.yaml",
+   "line": 3391,
+   "lanes_agreeing": [
+    2
+   ],
+   "claims": [
+    "AUDIT-2, AUDIT-4, and RHL-14 rows are restored field-for-field from source commits 0d989656 and 81e1ea0d."
+   ]
+  },
+  {
+   "file": "docs/roadmaps/roadmap.yaml",
+   "line": 3455,
+   "lanes_agreeing": [
+    2
+   ],
+   "claims": [
+    "RHL-15 task is properly registered in roadmap.yaml in inprogress status with unique ID and valid YAML syntax."
+   ]
+  },
+  {
+   "file": "docs/roadmaps/roadmap.yaml",
+   "line": 3465,
+   "lanes_agreeing": [
+    2
+   ],
+   "claims": [
+    "Commit-msg hook enforces that tickets cannot be marked completed in their own commits, requiring completion flips to ride on an open ticket like RHL-15."
+   ]
+  }
+ ],
+ "uncovered": [],
+ "coverage_source": "lanes",
+ "partial": false,
+ "partial_reasons": [
+  "lane 1: grounding NOT COMPARED \u2014 structured_output holds a verdict but no single verdict object could be read out of .response (6356 raw bytes), so agy's labels stand unchecked for this lane (PMAT-082)"
+ ],
+ "auto_merge": {
+  "checked": true,
+  "was_armed": false,
+  "disarmed": false,
+  "note": "auto-merge not armed"
+ },
+ "lint": {
+  "ok": true,
+  "output": "receipt complete: kind=artifact lanes=2 author=claude-opus-5/claude"
+ },
+ "prior_rounds": [
+  {
+   "round": 1,
+   "head": "2f26ab0d",
+   "lanes": [
+    {
+     "lane": 1,
+     "model_measured": "gemini-3.1-pro-high",
+     "verdict": "FAIL",
+     "summary": "The diff successfully restores the fields for the three scrambled rows (AUDIT-2, RHL-14, AUDIT-4) mentioned in the ticket, using a clever diff technique for AUDIT-4's labels. However, it also includes unrelated updates to the status and notes of `CIBASE-1` and `RHL-13`. Since the ticket strictly defines its scope as repairing the three rows scrambled by the #230 rebase, these extra updates violate the negative constraint by doing something the ticket does not ask for."
+    },
+    {
+     "lane": 2,
+     "model_measured": "gemini-3.8-flash-high",
+     "verdict": "NO-VERDICT",
+     "summary": ""
+    }
+   ],
+   "resolution": "lane 1 FAIL on scope (CIBASE-1/RHL-13 flips not named in the ticket) \u2014 accepted: the ticket text now names them and why they must ride on another open ticket (the commit-msg hook refuses a completed Pmat-Ticket). Lane 2 NO-VERDICT: gemini-3.8-flash-high backgrounded `cargo test --lib -p ruchy rhl_pre_registration` and agy terminated it (paiml-implement#309). Round 2 named its lane models (3.1-pro, 3.7-flash) so the review would return a verdict; that is recorded here, not hidden."
+  }
+ ]
+}
