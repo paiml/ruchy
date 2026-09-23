@@ -279,7 +279,10 @@ impl Interpreter {
                 if h_type.as_ref() != msg_type.as_ref() {
                     continue;
                 }
-                let Some(Value::Closure { params, body, env }) = h.get("handler") else {
+                // UNDEFCALL-1: spawned actors store `receive` handlers under "body"
+                let Some(Value::Closure { params, body, env }) =
+                    h.get("handler").or_else(|| h.get("body"))
+                else {
                     continue;
                 };
 
