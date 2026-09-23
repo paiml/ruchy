@@ -67,7 +67,8 @@ pub fn handle_complex_command(command: crate::Commands) -> Result<()> {
         | crate::Commands::QualityGate { .. }
         | crate::Commands::Fmt { .. }
         | crate::Commands::Lint { .. }
-        | crate::Commands::Coverage { .. }) => dispatch_analysis(cmd),
+        | crate::Commands::Coverage { .. }
+        | crate::Commands::Prove { .. }) => dispatch_analysis(cmd),
         // Interactive and tooling commands
         cmd => dispatch_tooling(cmd),
     }
@@ -276,7 +277,9 @@ fn dispatch_analysis(command: crate::Commands) -> Result<()> {
             &format,
             verbose,
         ),
-        _ => unreachable!("dispatch_analysis called with non-analysis command"),
+        _ => Err(routing_error(
+            "dispatch_analysis received a non-analysis command",
+        )),
     }
 }
 
@@ -634,11 +637,47 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
         } => crate::handlers::handlers_modules::sovereign::handle_suggest_contracts(
             &path, &format, verbose, pub_only, &exclude,
         ),
-        _ => {
-            eprintln!("Command not yet implemented");
-            Ok(())
-        }
+        // Exhaustive on purpose (G2B-S2): no wildcard arm, so a new `Commands`
+        // variant does not compile until it is routed somewhere.
+        crate::Commands::Ast { .. }
+        | crate::Commands::Provability { .. }
+        | crate::Commands::Runtime { .. }
+        | crate::Commands::Score { .. }
+        | crate::Commands::QualityGate { .. }
+        | crate::Commands::Fmt { .. }
+        | crate::Commands::Lint { .. }
+        | crate::Commands::Coverage { .. }
+        | crate::Commands::Prove { .. } => Err(routing_error(
+            "an analysis command reached dispatch_tooling",
+        )),
+        crate::Commands::Repl { .. }
+        | crate::Commands::New { .. }
+        | crate::Commands::Build { .. }
+        | crate::Commands::Publish { .. }
+        | crate::Commands::Parse { .. }
+        | crate::Commands::Transpile { .. }
+        | crate::Commands::Run { .. }
+        | crate::Commands::Compile { .. }
+        | crate::Commands::Check { .. }
+        | crate::Commands::Fix { .. }
+        | crate::Commands::Convert { .. }
+        | crate::Commands::Vocab { .. }
+        | crate::Commands::Test { .. }
+        | crate::Commands::PropertyTests { .. }
+        | crate::Commands::Mutations { .. }
+        | crate::Commands::Fuzz { .. }
+        | crate::Commands::Oracle { .. }
+        | crate::Commands::Hunt { .. }
+        | crate::Commands::Report { .. } => Err(routing_error(
+            "this command is dispatched by main, not the command router",
+        )),
     }
+}
+
+/// An internal CLI routing defect: a command reached a dispatcher that does not
+/// own it. Returned as an error (never a silent `Ok`) so the process exits non-zero.
+fn routing_error(detail: &str) -> anyhow::Error {
+    anyhow::anyhow!("internal CLI routing error: {detail}")
 }
 
 #[cfg(test)]
@@ -782,5 +821,54 @@ mod tests {
     fn test_lint_args_error_message() {
         let err = validate_lint_args(None, false).unwrap_err();
         assert!(err.contains("file") || err.contains("--all"));
+    }
+
+    // ========================================================================
+    // G2B-S2 (RHLGA-1): exhaustive routing, no silent catch-all
+    // ========================================================================
+
+    fn missing_path() -> std::path::PathBuf {
+        let p = std::env::temp_dir().join(format!("ruchy-router-missing-{}", std::process::id()));
+        assert!(!p.exists(), "{} unexpectedly exists", p.display());
+        p
+    }
+
+    fn prove_check(file: std::path::PathBuf) -> crate::Commands {
+        crate::Commands::Prove {
+            file: Some(file),
+            backend: "z3".to_string(),
+            ml_suggestions: false,
+            timeout: 5000,
+            script: None,
+            export: None,
+            check: true,
+            counterexample: false,
+            verbose: false,
+            format: "text".to_string(),
+        }
+    }
+
+    #[test]
+    fn test_command_router_prove_reaches_the_prover() {
+        // A missing file is an error only if the prover actually ran.
+        let result = handle_complex_command(prove_check(missing_path()));
+        assert!(result.is_err(), "prove must be routed, not swallowed");
+    }
+
+    #[test]
+    fn test_command_router_prove_check_on_valid_file_succeeds() {
+        let file = tempfile::NamedTempFile::new().expect("temp file");
+        std::fs::write(file.path(), "let x = 42").expect("write");
+        let result = handle_complex_command(prove_check(file.path().to_path_buf()));
+        assert!(result.is_ok(), "prove --check failed: {result:?}");
+    }
+
+    #[test]
+    fn test_command_router_main_routed_variant_is_an_error_not_a_silent_ok() {
+        let result = handle_complex_command(crate::Commands::Parse {
+            file: missing_path(),
+        });
+        let err = result.expect_err("a variant main dispatches must not succeed here");
+        assert!(err.to_string().contains("routing"), "got: {err}");
     }
 }
