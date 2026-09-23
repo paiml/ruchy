@@ -91,6 +91,32 @@ fn test_infra_destroy_missing_file() {
         .failure();
 }
 
+/// G2B-S2: a path that is missing on every host (`/nonexistent` is a real
+/// directory on some machines, so the test above also covers "not a file").
+#[test]
+fn test_infra_destroy_path_missing_everywhere() {
+    let dir = TempDir::new().unwrap();
+    ruchy_cmd()
+        .arg("infra")
+        .arg("destroy")
+        .arg(dir.path().join("absent.ruchy"))
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("File not found"));
+}
+
+#[test]
+fn test_infra_destroy_directory_is_not_a_spec() {
+    let dir = TempDir::new().unwrap();
+    ruchy_cmd()
+        .arg("infra")
+        .arg("destroy")
+        .arg(dir.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("not a file"));
+}
+
 // ============================================================================
 // ruchy sim
 // ============================================================================
