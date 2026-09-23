@@ -783,22 +783,16 @@ fn test_sleep_float() {
 // === Hash Function ===
 #[test]
 fn test_compute_hash_of_file_containing_hello() {
-    // METHODS-1: `hash(x)` does not exist; SHA-256 via `compute_hash` is deterministic
+    // METHODS-1: `hash(x)` does not exist; MD5 via `compute_hash` is deterministic
     let result = super::part1::compute_hash_of("hello");
-    assert_eq!(
-        result,
-        "\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\""
-    );
+    assert_eq!(result, "\"5d41402abc4b2a76b9719d911017c592\"");
 }
 
 #[test]
 fn test_compute_hash_of_file_containing_42() {
     // METHODS-1: `hash(x)` does not exist; hash the decimal text of 42 instead
     let result = super::part1::compute_hash_of("42");
-    assert_eq!(
-        result,
-        "\"73475cb40a568e8da8a045ced110137e159f890ac4da883b6b17dc651b3a8049\""
-    );
+    assert_eq!(result, "\"a1d0c6e83f027327d8461063f4ac58a6\"");
 }
 
 // === Additional String Methods via REPL ===
