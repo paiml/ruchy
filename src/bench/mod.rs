@@ -6,11 +6,11 @@
 //!
 //! # Examples
 //!
-//! ```no_run
-//! use ruchy::bench::{BenchmarkResults, http_benchmark};
-//! use std::time::Duration;
+//! ```ignore
+//! // Requires the `http-client` feature (bench::http is compiled only with it).
+//! use ruchy::bench::http::benchmark_http;
 //!
-//! let results = http_benchmark(
+//! let results = benchmark_http(
 //!     "https://api.example.com",
 //!     100,  // requests
 //!     10,   // concurrency

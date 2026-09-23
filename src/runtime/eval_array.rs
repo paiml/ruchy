@@ -212,7 +212,7 @@ fn eval_array_contains(arr: &Arc<[Value]>, item: &Value) -> Result<Value, Interp
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// [10, 20, 30].enumerate() => [(0, 10), (1, 20), (2, 30)]
 /// ```
 fn eval_array_enumerate(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
@@ -453,7 +453,7 @@ fn validate_single_closure_argument(
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// [1, 2].concat([3, 4]) => [1, 2, 3, 4]
 /// ```
 fn eval_array_concat(arr: &Arc<[Value]>, other: &Value) -> Result<Value, InterpreterError> {
@@ -475,7 +475,7 @@ fn eval_array_concat(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Interpr
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// [[1, 2], [3, 4]].flatten() => [1, 2, 3, 4]
 /// [1, 2, 3].flatten() => [1, 2, 3]  // Already flat
 /// ```
@@ -502,7 +502,7 @@ fn eval_array_flatten(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
 /// Cyclomatic complexity: 3 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// [1, 2, 3].union([3, 4, 5]) => [1, 2, 3, 4, 5]
 /// [1, 2, 2].union([2, 3]) => [1, 2, 3]  // Duplicates removed
 /// ```
@@ -542,7 +542,7 @@ fn eval_array_union(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Interpre
 /// Cyclomatic complexity: 4 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// [1, 2, 3, 4].intersection([3, 4, 5, 6]) => [3, 4]
 /// [1, 2].intersection([3, 4]) => []  // No common elements
 /// ```
@@ -575,7 +575,7 @@ fn eval_array_intersection(arr: &Arc<[Value]>, other: &Value) -> Result<Value, I
 /// Cyclomatic complexity: 4 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// [1, 2, 3, 4].difference([3, 4, 5, 6]) => [1, 2]
 /// [1, 2].difference([3, 4]) => [1, 2]  // All elements retained
 /// [1, 2].difference([1, 2, 3]) => []   // All elements removed
@@ -612,7 +612,7 @@ fn eval_array_difference(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Int
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// [3, 1, 4, 1, 5].sort() => [1, 1, 3, 4, 5]
 /// ["zebra", "apple", "banana"].sort() => ["apple", "banana", "zebra"]
 /// [].sort() => []

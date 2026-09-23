@@ -923,7 +923,7 @@ fn eval_sleep(args: &[Value]) -> Result<Value, InterpreterError> {
 /// `timestamp()` - Get current time in milliseconds since Unix epoch
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// let start = timestamp();
 /// // ... some operation ...
 /// let end = timestamp();

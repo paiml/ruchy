@@ -9,7 +9,8 @@ use super::super::StringPart;
 ///
 /// # Examples
 ///
-/// ```
+/// ```text
+/// Illustrative; the parser utilities are crate-private.
 /// use ruchy::frontend::parser::utils::parse_string_interpolation;
 /// use ruchy::frontend::parser::ParserState;
 ///

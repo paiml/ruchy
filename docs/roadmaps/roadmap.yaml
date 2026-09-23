@@ -3776,3 +3776,22 @@ roadmap:
   - kind:code
   - filed-by:RHLGA-1
   notes: null
+- id: CLASSNEW-1
+  github_issue: null
+  item_type: task
+  title: 'CLASSNEW-1: a class constructor written new(...) { self.x = ... } fails with Undefined variable: self (the book''s ch19 form)'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T14:34:36Z
+  updated: 2026-09-23T14:34:36Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null

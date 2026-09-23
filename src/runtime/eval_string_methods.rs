@@ -272,7 +272,7 @@ fn eval_string_chars(s: &str) -> Result<Value, InterpreterError> {
 /// Cyclomatic complexity: 2 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// "Hello".as_bytes() => [72, 101, 108, 108, 111]
 /// "A".as_bytes() => [65]
 /// "".as_bytes() => []
@@ -307,7 +307,7 @@ fn eval_string_lines(s: &str) -> Result<Value, InterpreterError> {
 /// Cyclomatic complexity: 4 (within Toyota Way limits)
 ///
 /// # Examples
-/// ```
+/// ```ruchy
 /// "Hello, {}!".format("Alice") => "Hello, Alice!"
 /// "{} + {} = {}".format(2, 3, 5) => "2 + 3 = 5"
 /// ```
