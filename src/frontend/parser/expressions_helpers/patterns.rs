@@ -862,7 +862,7 @@ pub(in crate::frontend::parser) fn parse_single_pattern(
         | Token::Atom(_) => parse_literal_pattern(state),
         Token::Some | Token::None => parse_option_pattern(state),
         Token::Ok | Token::Err => parse_result_pattern(state),
-        Token::Identifier(_) | Token::Result | Token::Var => {
+        Token::Identifier(_) | Token::Result | Token::Option | Token::Var => {
             parse_identifier_or_constructor_pattern(state)
         }
         Token::LeftParen => parse_match_tuple_pattern(state),
@@ -1044,6 +1044,8 @@ fn parse_identifier_or_constructor_pattern(state: &mut ParserState) -> Result<Pa
     let name = match state.tokens.peek() {
         Some((Token::Identifier(n), _)) => n.clone(),
         Some((Token::Result, _)) => "Result".to_string(),
+        // QPAT-1: `Option` is a keyword token; `Option::Some(v)` is a qualified pattern
+        Some((Token::Option, _)) => "Option".to_string(),
         Some((Token::Var, _)) => "var".to_string(),
         _ => bail!("Expected identifier pattern"),
     };

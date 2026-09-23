@@ -3897,13 +3897,18 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'QPAT-1: qualified enum patterns (Option::Some(v) =>) do not parse'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T16:33:14Z
   updated: 2026-09-23T16:33:14Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'match patterns Option::Some(v), Option::None, Result::Ok(x) and Result::Err(e) parse and match exactly like Some(v), None, Ok(x) and Err(e)'
+  - 'qualified patterns nest (Option::Some(Option::Some(x))), take guards, and work in if let'
+  - 'user enum patterns Color::Red and Shape::Circle(r) match their variants'
+  - 'the transpiled Rust for Option, Result and user-enum qualified patterns compiles and prints the same as the interpreter'
+  - 'cargo test --test qpat_1_qualified_patterns passes'
   phases: []
   subtasks: []
   estimated_effort: null
