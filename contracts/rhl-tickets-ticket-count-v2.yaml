@@ -15,7 +15,7 @@ equations:
       - "term result type ('gives') is Count"
       - "term declares NO effect: it is the number of tickets this run files, read from the run's own plan, so no `may` line is needed (RHL-16)"
       - "term takes no argument"
-      - "lowers_to stays the unbound marker `[U]` until RHL-4 — RHL-16 does not bind lowering"
+      - "lowers_to is the unbound marker `[U]` or a `<module>::<name>` that resolves to one function of vocab/runtime/<module>.ruchy (RHL-4, Amendment A4)"
 
 proof_obligations:
   - type: invariant
@@ -62,5 +62,5 @@ qa_gate:
   required_tests:
     - test_rhl16_v2_every_term_has_an_existing_contract
     - test_rhl16_v2_file_ticket_has_attributes_and_ticket_count_has_no_effect
-    - test_rhl16_v2_lowers_to_and_sigma_entity_stay_unbound
+    - test_rhl4c_v2_lowers_to_is_unbound_or_resolves_through_the_runtime
     - test_rhl16_measure_without_effect_needs_no_may_line

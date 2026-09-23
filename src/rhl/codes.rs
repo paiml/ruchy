@@ -48,8 +48,21 @@ pub const B001: &str = "RHL-B001";
 pub const C001: &str = "RHL-C001";
 /// `given` or `then` outside an `example` block.
 pub const X001: &str = "RHL-X001";
+/// An `example` whose `given` lines leave a fact the job reads unset, so its
+/// test would read a value the example never stated (RHL-5).
+pub const X002: &str = "RHL-X002";
+/// A construct of a checked program that RHL-4's lowering to ruchy does not
+/// cover in v0; lowering declines rather than guesses (RHL-4).
+pub const L001: &str = "RHL-L001";
+/// A job that `ruchy compile` or `ruchy run` must build reads or performs a
+/// term whose `lowers_to` is `[U]`: there is nothing to run it with (RHL-4).
+pub const L002: &str = "RHL-L002";
+/// `ruchy compile` could not emit or write the job's unit contract; a unit
+/// without its contract is not built (§9.3, RHL-5b).
+pub const C002: &str = "RHL-C002";
 
-/// Every code, in family order. Append only; never renumber or reuse.
+/// Every code, in the order it was allocated (each family's original codes
+/// first, later codes appended). Append only; never reorder, renumber or reuse.
 pub const CATALOGUE: &[CodeInfo] = &[
     info(P001, "missing `end`", None),
     info(P002, "unexpected token", None),
@@ -66,6 +79,18 @@ pub const CATALOGUE: &[CodeInfo] = &[
     info(C001, "no contract template", Some("NoContractTemplate")),
     info(X001, "`given`/`then` outside `example`", None),
     info(P004, "YAML is not an intent tree", None),
+    info(L001, "construct not lowerable in v0", None),
+    info(
+        L002,
+        "term has no runtime binding",
+        Some("EngineUnavailable"),
+    ),
+    info(X002, "example leaves a fact unset", None),
+    info(
+        C002,
+        "unit contract could not be emitted",
+        Some("NoContractTemplate"),
+    ),
 ];
 
 const fn info(code: &'static str, title: &'static str, refusal: Option<&'static str>) -> CodeInfo {
@@ -92,7 +117,7 @@ mod tests {
 
     #[test]
     fn test_rhl_1_codes_match_the_stable_family_pattern_and_are_unique() {
-        let re = Regex::new(r"^RHL-[PVTEBCX][0-9]{3}$").expect("static regex");
+        let re = Regex::new(r"^RHL-[PVTEBCXL][0-9]{3}$").expect("static regex");
         let mut seen = HashSet::new();
         for c in CATALOGUE {
             assert!(re.is_match(c.code), "{} is not RHL-<family><nnn>", c.code);

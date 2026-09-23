@@ -230,6 +230,7 @@ fn test_handle_advanced_command_transpile() {
         file: temp_file.path().to_path_buf(),
         output: None,
         minimal: false,
+        emit: None,
     };
     let result = handle_advanced_command(command);
     assert!(result.is_ok());
@@ -519,6 +520,7 @@ fn test_handle_command_dispatch_transpile() {
             file: temp_file.path().to_path_buf(),
             output: None,
             minimal: false,
+            emit: None,
         }),
         true,
         VmMode::Ast,
@@ -534,6 +536,7 @@ fn test_handle_command_dispatch_run() {
     let result = handle_command_dispatch(
         Some(Commands::Run {
             file: temp_file.path().to_path_buf(),
+            apply: false,
         }),
         false,
         VmMode::Ast,

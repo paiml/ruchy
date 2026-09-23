@@ -22,7 +22,7 @@ use super::diag::{self, Diagnostic, LineSpan};
 use super::tree::{Decl, Program, UseDecl};
 use super::vocab;
 use checker::Checker;
-use lexicon::Lexicon;
+pub(crate) use lexicon::Lexicon;
 use serde::Serialize;
 use std::path::Path;
 
@@ -175,6 +175,37 @@ fn check_once(file: &str, source: &str, root: Option<&Path>) -> Report {
             return Report::new(file, vec![d], Vec::new());
         }
     };
+    let (lex, mut diagnostics) = load(file, source, &program, root);
+    let mut checker = Checker::new(file, source, &lex);
+    for decl in &program.decls {
+        if let Decl::Unit(unit) = decl {
+            checker.unit(unit);
+        }
+    }
+    diagnostics.extend(checker.diags);
+    Report::new(file, diagnostics, checker.unverified)
+}
+
+/// The lexicon of `program` (the text `source`, named `file`): every term of
+/// its `use vocabulary` lines, resolved exactly as the checker resolves them.
+/// It is the one term lookup: lowering (RHL-4b) reads terms through it and
+/// never loads a vocabulary itself.
+pub(crate) fn load_lexicon(
+    file: &str,
+    source: &str,
+    program: &Program,
+    root: Option<&Path>,
+) -> Lexicon {
+    load(file, source, program, root).0
+}
+
+/// The lexicon of `program` and the diagnostics of loading it.
+fn load(
+    file: &str,
+    source: &str,
+    program: &Program,
+    root: Option<&Path>,
+) -> (Lexicon, Vec<Diagnostic>) {
     let mut loader = Loader {
         file,
         source,
@@ -182,16 +213,8 @@ fn check_once(file: &str, source: &str, root: Option<&Path>) -> Report {
         lex: Lexicon::default(),
         diags: Vec::new(),
     };
-    loader.load_all(&program);
-    let mut checker = Checker::new(file, source, &loader.lex);
-    for decl in &program.decls {
-        if let Decl::Unit(unit) = decl {
-            checker.unit(unit);
-        }
-    }
-    let mut diagnostics = loader.diags;
-    diagnostics.extend(checker.diags);
-    Report::new(file, diagnostics, checker.unverified)
+    loader.load_all(program);
+    (loader.lex, loader.diags)
 }
 
 /// Loads the vocabularies of a program's `use vocabulary` lines.

@@ -1,0 +1,49 @@
+// RHL-4b runtime for vocabulary `fleet` (spec RHL-001 §4, Amendment A4).
+// A `lowers_to` of `fleet::<name>` names one `fun <name>` below; lowering
+// copies that function into the generated source. A measure binding takes the
+// term's `takes` in order (Text as &str) and returns the fact, or ends the
+// process with exit 3 when the world cannot be read: nothing is decided on a
+// fact that was not observed.
+
+fun disk_free_of(path: &str) -> i64 {
+    let out = std::process::Command::new("df").arg("-B1").arg("--output=avail").arg(path).output()
+    let text = match out {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
+        Err(_) => String::new(),
+    }
+    let mut last: Option<i64> = None
+    for line in text.lines() {
+        let parsed: Option<i64> = line.trim().parse().ok()
+        if parsed.is_some() {
+            last = parsed
+        }
+    }
+    match last {
+        Some(v) => v,
+        None => {
+            eprintln!("observe: disk free of {:?}: df gave no number", path)
+            std::process::exit(3)
+        }
+    }
+}
+
+fun disk_usage_of(path: &str) -> i64 {
+    let out = std::process::Command::new("du").arg("-sb").arg(path).output()
+    let text = match out {
+        Ok(o) => String::from_utf8_lossy(&o.stdout).to_string(),
+        Err(_) => String::new(),
+    }
+    let mut first: Option<i64> = None
+    for word in text.split_whitespace() {
+        if first.is_none() {
+            first = word.parse().ok()
+        }
+    }
+    match first {
+        Some(v) => v,
+        None => {
+            eprintln!("observe: disk usage of {:?}: du gave no number", path)
+            std::process::exit(3)
+        }
+    }
+}

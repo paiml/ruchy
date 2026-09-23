@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — RHL-4, RHL-5, RHL-6, RHL-9: RHL compiles, tests, contracts and talks MCP (RHL-001, experimental)
+
+- **Lowering (RHL-4):** a checked `job` lowers to Ruchy source, following spec
+  Amendment A4:
+  - `struct Facts`, `enum Action`, and a pure `decide(facts) -> Vec<Action>`;
+  - `observe()` reads facts through each term's `lowers_to` binding
+    (`vocab/runtime/*.ruchy`: `df`, `du`, and the `gh` CLI);
+  - `apply(plan)` performs the actions only with `--apply`. By default the
+    built job prints its plan and does nothing.
+  - `ruchy transpile x.rhl [--emit ruchy|rust|contract]`,
+    `ruchy compile x.rhl`, and `ruchy run x.rhl [--apply]`.
+  - Refusals: `RHL-L001` (no v0 lowering) and `RHL-L002` (EngineUnavailable: the
+    term has no local binding).
+  - Byte-deterministic.
+- **Examples, expectations, receipt (RHL-5):**
+  - `example … given … then …` blocks become hermetic tests, run by
+    `ruchy test x.rhl [--format json]`.
+  - `expect` lines guard the plan: a violated expectation stops the job
+    before anything is applied.
+  - `ruchy compile` writes a `pv`-valid unit contract and a receipt. The
+    receipt holds the input hashes, the vocabulary versions, the Ruchy
+    version and a three-valued verdict: Pass, Fail, or Unknown with a reason.
+  - New codes: `RHL-X002` (an example leaves a fact unset) and `RHL-C002`
+    (the unit contract could not be emitted).
+- **MCP (RHL-6, MCPTOOLS-1):** `ruchy mcp` now registers its tools. Before,
+  it registered none. The tools are the existing `ruchy-*` tools plus
+  `rhl_check`, `rhl_fix`, `rhl_format`, `rhl_convert`, `rhl_transpile`,
+  `rhl_explain`, `rhl_vocabulary` and `rhl_grammar`. Each takes and returns
+  JSON through the same functions the CLI verbs use. The MCP handler's unit
+  tests no longer block on stdin.
+- **Explain (RHL-9):** `ruchy explain x.rhl` renders the tree as plain
+  sentences, deterministically, with no model involved.
+- **v2 vocabularies:** the five locally observable terms (`disk free of`,
+  `disk usage of`, `tickets filed in`, `file ticket`, `label ticket`) are
+  bound. Every other term stays `[U]`.
+
 ### Fixed — G2 (RHLGA-1): defects found while driving the test suite toward GA criterion #3
 
 Behaviour changes a program can observe are marked **(behaviour)**.

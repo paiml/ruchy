@@ -1,8 +1,10 @@
 # RHL-16 vocabulary v2 (RHL-001 §3.4; roadmap row RHL-16). v1 stays frozen and
 # byte-identical beside this file; v2 carries every v1 term forward unchanged,
 # each with its own v2 contract template, and adds only what the v2 valid
-# programs need (docs/rhl/rhl-16-v2.md). `lowers_to` stays the unbound marker
-# `[U]` on every term until RHL-4 binds it.
+# programs need (docs/rhl/rhl-16-v2.md). `lowers_to` names the vocab/runtime
+# function a term lowers to (RHL-4, docs/rhl/rhl-4.md); a term with no local
+# source of truth keeps `[U]`, and compiling a job that uses it is refused
+# with RHL-L002 (EngineUnavailable).
 #
 # Sigma binding: unchanged from v1 — see vocab/fleet-v1.yaml's header comment
 # (paiml-ontology.md ONT-001 v4.9 §3.1). The vocabulary FILE is the Sigma
@@ -20,7 +22,7 @@ terms:
     # v2: the lines of a `with … end` block after this action are attribute
     # assignments; each names one of these and gives a value of its type.
     attributes: [{name: title, type: Text}, {name: label, type: Text}]
-    lowers_to: "[U]"          # bound at RHL-4
+    lowers_to: "tickets::file_ticket"  # bound at RHL-4
     contract: contracts/rhl-tickets-file-ticket-v2.yaml
 
   - term: label ticket
@@ -28,7 +30,7 @@ terms:
     takes: [{name: ticket, type: Ticket}, {name: label, type: Text}]
     gives: Ticket
     effect: write tickets
-    lowers_to: "[U]"
+    lowers_to: "tickets::label_ticket"
     contract: contracts/rhl-tickets-label-ticket-v2.yaml
 
   - term: repo
@@ -54,7 +56,7 @@ terms:
     takes: [{name: repo, type: Text}]
     gives: Count
     effect: read tickets
-    lowers_to: "[U]"
+    lowers_to: "tickets::tickets_filed_in"
     contract: contracts/rhl-tickets-tickets-filed-in-v2.yaml
 
   # v2: the number of tickets this run files. It is read from the run's own

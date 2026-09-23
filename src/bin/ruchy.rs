@@ -32,7 +32,7 @@ use handlers::{
     handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
     handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_parse_command,
     handle_property_tests_command, handle_repl_command, handle_run_command, handle_stdin_input,
-    handle_test_command, handle_transpile_command, VmMode,
+    handle_test_command, VmMode,
 };
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -114,11 +114,17 @@ enum Commands {
         /// Use minimal codegen for self-hosting (direct Rust mapping, no optimization)
         #[arg(long)]
         minimal: bool,
+        /// For .rhl/.rhl.yaml files (RHL-4): `ruchy` stops at the lowered ruchy source; `rust` (default) goes on to Rust
+        #[arg(long)]
+        emit: Option<String>,
     },
     /// Compile and run a Ruchy file
     Run {
         /// The file to run
         file: PathBuf,
+        /// For .rhl/.rhl.yaml jobs (RHL-4): perform the planned actions; without it the job only prints its plan
+        #[arg(long)]
+        apply: bool,
     },
     /// Compile a Ruchy file to a standalone binary (RUCHY-0801)
     Compile {
@@ -191,6 +197,11 @@ enum Commands {
         /// The surface to write, `rhl` or `yaml`; by default the other one than the input's extension
         #[arg(long)]
         to: Option<String>,
+    },
+    /// Explain an RHL program in plain language, from its tree; deterministic, no model (RHL-9)
+    Explain {
+        /// The .rhl or .rhl.yaml file to explain
+        file: PathBuf,
     },
     /// List, show and validate RHL vocabularies (RHL-2)
     Vocab {
@@ -1450,8 +1461,27 @@ fn handle_command_dispatch(
             file,
             output,
             minimal,
-        }) => handle_transpile_command(&file, output.as_deref(), minimal, verbose),
-        Some(Commands::Run { file }) => handle_run_command(&file, verbose, vm_mode),
+            emit,
+        }) => handlers::rhl_handler::handle_transpile(
+            &file,
+            output.as_deref(),
+            minimal,
+            emit.as_deref(),
+            verbose,
+        ),
+        Some(Commands::Compile {
+            ref file,
+            ref output,
+            ..
+        }) if ruchy::rhl::cli::is_rhl(file) => {
+            handlers::rhl_handler::handle_rhl_compile(file, output)
+        }
+        Some(Commands::Run { file, apply }) => {
+            match handlers::rhl_handler::handle_run(&file, apply)? {
+                Some(()) => Ok(()),
+                None => handle_run_command(&file, verbose, vm_mode),
+            }
+        }
         Some(Commands::Compile {
             file,
             output,
@@ -1492,7 +1522,13 @@ fn handle_command_dispatch(
         Some(Commands::Convert { input, output, to }) => {
             handlers::rhl_handler::handle_convert_command(&input, output.as_deref(), to.as_deref())
         }
+        Some(Commands::Explain { file }) => handlers::rhl_handler::handle_explain_command(&file),
         Some(Commands::Vocab { command }) => handle_vocab(command),
+        Some(Commands::Test {
+            path: Some(ref path),
+            ref format,
+            ..
+        }) if ruchy::rhl::cli::is_rhl(path) => handlers::rhl_handler::handle_rhl_test(path, format),
         Some(Commands::Test {
             path,
             watch,

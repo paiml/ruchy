@@ -1,0 +1,55 @@
+// RHL-4b runtime for vocabulary `tickets` (spec RHL-001 §4, Amendment A4).
+// A `lowers_to` of `tickets::<name>` names one `fun <name>` below; lowering
+// copies that function into the generated source. A measure binding returns
+// the fact or ends the process with exit 3. An action binding takes the
+// action's fields in order (Text as &str) and returns whether it was
+// performed; it is called only under `--apply` (§9.4).
+
+fun tickets_filed_in(repo: &str) -> i64 {
+    let out = std::process::Command::new("gh").arg("issue").arg("list").arg("--repo").arg(repo).arg("--state").arg("open").arg("--json").arg("number").arg("--limit").arg("1000").output()
+    let text = match out {
+        Ok(o) => {
+            if o.status.success() {
+                String::from_utf8_lossy(&o.stdout).to_string()
+            } else {
+                String::new()
+            }
+        }
+        Err(_) => String::new(),
+    }
+    if !text.trim().starts_with("[") {
+        eprintln!("observe: tickets filed in {:?}: gh gave no list", repo)
+        std::process::exit(3)
+    }
+    let mut count: i64 = -1
+    for _piece in text.split("\"number\"") {
+        count = count + 1
+    }
+    count
+}
+
+fun file_ticket(repo: &str, title: &str, label: &str) -> bool {
+    let mut args: Vec<String> = Vec::new()
+    args.push("issue".to_string())
+    args.push("create".to_string())
+    args.push("--repo".to_string())
+    args.push(repo.to_string())
+    args.push("--title".to_string())
+    args.push(title.to_string())
+    if label != "" {
+        args.push("--label".to_string())
+        args.push(label.to_string())
+    }
+    match std::process::Command::new("gh").args(&args).status() {
+        Ok(s) => s.success(),
+        Err(_) => false,
+    }
+}
+
+fun label_ticket(repo: &str, number: i64, label: &str) -> bool {
+    let status = std::process::Command::new("gh").arg("issue").arg("edit").arg(number.to_string()).arg("--repo").arg(repo).arg("--add-label").arg(label).status()
+    match status {
+        Ok(s) => s.success(),
+        Err(_) => false,
+    }
+}

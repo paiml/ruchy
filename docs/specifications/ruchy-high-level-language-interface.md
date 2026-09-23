@@ -345,7 +345,7 @@ Every diagnostic is a JSON object with a **stable code**, a **span**, the **expe
 
 - `ruchy check --format json` emits the list. `ruchy fix --safe` applies every fix marked `safe: true` — deterministic, idempotent, and re-checks.
 - A fix is `safe` only when it is the **unique** candidate and preserves types. Two candidates ⇒ no safe fix; the agent (or human) chooses.
-- Codes are stable forever and grouped: `RHL-P` parse · `RHL-V` vocabulary · `RHL-T` type/unit · `RHL-E` effect · `RHL-B` bound · `RHL-C` contract · `RHL-X` example.
+- Codes are stable forever and grouped: `RHL-P` parse · `RHL-V` vocabulary · `RHL-T` type/unit · `RHL-E` effect · `RHL-B` bound · `RHL-C` contract · `RHL-X` example · `RHL-L` lowering (Amendment A4).
 - **Refusals are diagnostics too**, exit code 2, never a best guess: `Ambiguous`, `OutOfVocabulary`, `NoContractTemplate`, `UndeclaredEffect`, `Unbounded`, `EngineUnavailable`.
 
 > **Amendment A3 — what RHL-1 built against this section (RHL-1, 2026-09-21) `[V]`.**
@@ -411,6 +411,43 @@ Every diagnostic is a JSON object with a **stable code**, a **span**, the **expe
 ```
 
 Determinism: same inputs ⇒ byte-identical ruchy and Rust, on any host. The receipt verdict is three-valued — `Pass`, `Fail`, `Unknown{reason}` — never a fabricated GO.
+
+> **Amendment A4 — what lowering `job` fixed (RHL-4, 2026-09-23) `[V]`.**
+> RHL-4 built the first lowering; the rulings below come from the RHLGA-1 round-2
+> quorum (plan `docs/rhl/rhlga-1-plan.md` §5, Q4) and from what the transpiler accepted.
+>
+> 1. **Shape: observe → decide → apply.** A `job` lowers to ruchy source with a
+>    `struct Facts` (one field per distinct measure-and-literal-arguments pair), an
+>    `enum Action` (one struct variant per action term used) and a pure
+>    `fun decide(facts: Facts) -> Vec<Action>`. `observe()` fills `Facts` through each
+>    term's `lowers_to`; `apply(plan)` performs the actions, and only when asked to.
+>    Determinism is a property of `decide`.
+> 2. **A new code family, `RHL-L` (lowering).** `RHL-L001`: a construct that checks but
+>    has no v0 lowering (for example `give back`, `stop with`, `wait up to`, `for each`,
+>    `is one of`, or a second unit per file). The §3.5 family list gains `RHL-L`. Codes
+>    remain append-only.
+> 3. **`repeat at most N times until C`** tests `C` before each round, so the loop may
+>    run zero times; it never runs more than `N` times.
+> 4. **Units lower to integers in a base unit:** Size in bytes (`GB` = 10^9), Duration in
+>    seconds (`hour` = 3600), Percent in hundredths (`90 %` = 9000), Count as itself.
+>    Which type a unit gives comes from the vocabulary; the scale is the table in
+>    `docs/rhl/rhl-4.md`.
+> 5. **Found while lowering, fixed in ruchy rather than worked around:** the transpiler
+>    dropped the parentheses of `!( … )` and of a comparison nested in a comparison
+>    (TRANSPILENOT-1, TRANSPILECMP-1), and an empty body `{ }` was an empty object
+>    literal (EMPTYBLOCK-1). The lowering still emits the forms that were safe before
+>    those fixes, so it does not depend on them.
+
+> **Amendment A5 — how F6 is measured, and C002 (RHL-5, 2026-09-23) `[V]`.**
+> F6 asks that every compiled unit ship "a `pv`-valid contract with `shapes_n > 0`".
+> The `shapes_n` that `pv extract` prints counts SHACL shapes, and it is 0 for every
+> kernel contract in the provable-contracts corpus and for every `contracts/rhl-*` term
+> contract, so no unit contract could meet it as written. F6 is therefore measured as
+> `pv validate` exit 0 **and** `pv status` "Proof obligations: N" with N ≥ 1. Every unit
+> contract carries at least the effect-surface obligation. Ruled 2:1 by the RHL-4/5/6
+> pre-PR quorum (the dissent held that a real shapes block, or this amendment, is
+> needed; this amendment is it). `RHL-C002` (the unit contract could not be emitted) is
+> an instance of the §3.5 refusal `NoContractTemplate`, by the same 2:1 ruling.
 
 ---
 

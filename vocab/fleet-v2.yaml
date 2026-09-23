@@ -1,8 +1,10 @@
 # RHL-16 vocabulary v2 (RHL-001 §3.4; roadmap row RHL-16). v1 stays frozen and
 # byte-identical beside this file; v2 carries every v1 term forward unchanged,
 # each with its own v2 contract template, and adds only what the v2 valid
-# programs need (docs/rhl/rhl-16-v2.md). `lowers_to` stays the unbound marker
-# `[U]` on every term until RHL-4 binds it.
+# programs need (docs/rhl/rhl-16-v2.md). `lowers_to` names the vocab/runtime
+# function a term lowers to (RHL-4, docs/rhl/rhl-4.md); a term with no local
+# source of truth keeps `[U]`, and compiling a job that uses it is refused
+# with RHL-L002 (EngineUnavailable).
 #
 # Sigma binding: unchanged from v1 — see vocab/fleet-v1.yaml's header comment
 # (paiml-ontology.md ONT-001 v4.9 §3.1). The vocabulary FILE is the Sigma
@@ -17,7 +19,7 @@ terms:
     takes: [{name: path, type: Text}]
     gives: Size
     effect: read disk
-    lowers_to: "[U]"          # bound at RHL-4
+    lowers_to: "fleet::disk_free_of"  # bound at RHL-4
     contract: contracts/rhl-fleet-disk-free-of-v2.yaml
 
   - term: disk usage of
@@ -25,7 +27,7 @@ terms:
     takes: [{name: path, type: Text}]
     gives: Size
     effect: read disk
-    lowers_to: "[U]"
+    lowers_to: "fleet::disk_usage_of"
     contract: contracts/rhl-fleet-disk-usage-of-v2.yaml
 
   - term: host

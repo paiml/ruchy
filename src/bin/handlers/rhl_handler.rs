@@ -7,7 +7,9 @@
 //! the generic `Err` path, which `main` maps to 1.
 
 use anyhow::Result;
-use ruchy::rhl::cli::{convert_file, Outcome, OutputFormat};
+use ruchy::rhl::cli::{
+    compile_file, convert_file, is_rhl, run_file, test_file, transpile_file, Outcome, OutputFormat,
+};
 use ruchy::rhl::fix::fix_files;
 use ruchy::rhl::vocab_cli::{list_outcome, no_root, resolve_root, show_outcome, validate_outcome};
 use std::path::{Path, PathBuf};
@@ -34,6 +36,76 @@ pub fn handle_fix_command(files: &[PathBuf], safe: bool, format: &str) -> Result
 /// carried by the exit code.
 pub fn handle_convert_command(input: &Path, output: Option<&Path>, to: Option<&str>) -> Result<()> {
     finish(&convert_file(input, output, to))
+}
+
+/// `ruchy explain <file.rhl | file.rhl.yaml>`: the plain-language rendering
+/// of the program's tree (RHL-9; spec RHL-001 §5).
+///
+/// # Errors
+///
+/// Never returns one: every outcome is printed and carried by the exit code.
+pub fn handle_explain_command(file: &Path) -> Result<()> {
+    finish(&ruchy::rhl::explain::explain_file(file))
+}
+
+/// `ruchy transpile`: an RHL file (`.rhl`, `.rhl.yaml`) is checked, lowered
+/// and transpiled by the library (RHL-4); any other file takes the existing
+/// ruchy path unchanged.
+///
+/// # Errors
+///
+/// Returns an error for `--emit` on a non-RHL file, or the ruchy path's error.
+pub fn handle_transpile(
+    file: &Path,
+    output: Option<&Path>,
+    minimal: bool,
+    emit: Option<&str>,
+    verbose: bool,
+) -> Result<()> {
+    if is_rhl(file) {
+        return finish(&transpile_file(file, output, emit));
+    }
+    if emit.is_some() {
+        anyhow::bail!("--emit applies to .rhl and .rhl.yaml files only");
+    }
+    super::handle_transpile_command(file, output, minimal, verbose)
+}
+
+/// `ruchy compile` on an RHL file: build the job (RHL-4).
+///
+/// # Errors
+///
+/// Never returns one: the outcome is printed and carried by the exit code.
+pub fn handle_rhl_compile(file: &Path, output: &Path) -> Result<()> {
+    finish(&compile_file(file, output))
+}
+
+/// `ruchy run [--apply]`: an RHL file is compiled and executed (RHL-4);
+/// `--apply` exists only for RHL files; any other file takes the existing
+/// ruchy path unchanged.
+///
+/// # Errors
+///
+/// Returns an error for `--apply` on a non-RHL file.
+pub fn handle_run(file: &Path, apply: bool) -> Result<Option<()>> {
+    if is_rhl(file) {
+        return finish(&run_file(file, apply)).map(Some);
+    }
+    if apply {
+        anyhow::bail!("--apply applies to .rhl and .rhl.yaml files only");
+    }
+    Ok(None)
+}
+
+/// `ruchy test [--format text|json]` on an RHL file: build and run the tests
+/// its `example` blocks lower to (RHL-5).
+///
+/// # Errors
+///
+/// Returns an error for a `--format` other than `text` or `json`.
+pub fn handle_rhl_test(file: &Path, format: &str) -> Result<()> {
+    let format = OutputFormat::parse(format).map_err(anyhow::Error::msg)?;
+    finish(&test_file(file, format))
 }
 
 /// What `ruchy vocab` was asked to do.

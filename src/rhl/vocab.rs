@@ -65,6 +65,11 @@ pub struct Term {
     /// to load as an unknown vocabulary (RHL-V004).
     #[serde(default)]
     pub contract: String,
+    /// The runtime binding (RHL-4, spec Amendment A4): `<module>::<name>`,
+    /// the function `fun <name>` in `vocab/runtime/<module>.ruchy`, or `[U]`
+    /// when no local source of truth exists ([`super::runtime::UNBOUND`]).
+    #[serde(default)]
+    pub lowers_to: String,
 }
 
 impl Term {

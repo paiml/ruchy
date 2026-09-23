@@ -158,6 +158,10 @@ fn term_line(t: &Term) -> String {
             Some(params(&t.attributes)).filter(|s| !s.is_empty()),
         ),
         ("instances from", t.instances_from.clone()),
+        (
+            "lowers to",
+            Some(t.lowers_to.clone()).filter(|s| !s.is_empty()),
+        ),
         ("contract", Some(t.contract.clone())),
     ];
     parts.extend(

@@ -169,12 +169,26 @@ fn test_rhl2_vocab_show_gives_every_field_of_every_term() {
         file["contract"],
         "contracts/rhl-tickets-file-ticket-v2.yaml"
     );
+    assert_eq!(file["lowers_to"], "tickets::file_ticket");
+    let title = v["terms"]
+        .as_array()
+        .expect("terms")
+        .iter()
+        .find(|t| t["term"] == "ticket title")
+        .expect("ticket title");
+    assert_eq!(title["lowers_to"], "[U]");
     let text = show_outcome(&root(), "fleet", "1", OutputFormat::Text);
     assert!(text.stdout.starts_with("fleet v1 ("), "{}", text.stdout);
     assert!(
         text.stdout.contains("disk free of  measure"),
         "{}",
         text.stdout
+    );
+    let v2 = show_outcome(&root(), "fleet", "2", OutputFormat::Text);
+    assert!(
+        v2.stdout.contains("lowers to fleet::disk_free_of"),
+        "{}",
+        v2.stdout
     );
 }
 
