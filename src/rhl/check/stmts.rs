@@ -1,11 +1,10 @@
 //! Statements: headers, bindings, actions and blocks (spec RHL-001 §3.3).
 
-use super::checker::{app_span, longest_term, words_text, Checker};
+use super::checker::{app_span, longest_term, Checker};
 use super::lexicon::{LexTerm, Lexicon};
-use super::near;
 use super::types::{duration_code, mismatch, Ty, Val};
 use crate::rhl::codes;
-use crate::rhl::diag::Candidate;
+use crate::rhl::diag::Expected;
 use crate::rhl::tree::{Action, App, Cond, Effect, Phrase, Quantity, Span, Stmt, StmtKind, Word};
 use crate::rhl::vocab::{Param, TermKind};
 
@@ -188,8 +187,10 @@ impl Checker<'_> {
     }
 
     /// An attribute `term` does not declare: V002/V003 for a near miss, as for
-    /// any unknown word. The attribute namespace is closed and small, so a V001
-    /// (nothing near) lists every declared attribute as a candidate, without a fix.
+    /// any unknown word, and V001 when nothing is near. V001 means "no
+    /// candidate" (the catalogue), so the declared attributes travel in the
+    /// diagnostic's `expected` set — `{kind: attribute, of, names}` — never as
+    /// candidates (RHL-2's ruling on RHL-16's open question).
     fn unknown_attribute(&mut self, term: &LexTerm, words: &[Word]) {
         let action = &term.term.term;
         let pool: Vec<(String, String)> = term
@@ -200,20 +201,24 @@ impl Checker<'_> {
             .collect();
         let at = self.diags.len();
         self.unknown(words, &pool, &format!("attribute of `{action}`"));
-        let Some(d) = self.diags.get_mut(at).filter(|d| d.code == codes::V001) else {
+        let Some(d) = self
+            .diags
+            .get_mut(at)
+            .filter(|d| d.code.starts_with("RHL-V"))
+        else {
             return;
         };
-        let written = words_text(words);
-        d.candidates = pool
-            .iter()
-            .map(|(name, vocabulary)| Candidate {
-                term: name.clone(),
-                vocabulary: vocabulary.clone(),
-                distance: near::distance(&written, name),
-            })
-            .collect();
-        let names: Vec<String> = pool.iter().map(|(n, _)| format!("`{n}`")).collect();
-        d.message = format!("{}; `{action}` has {}", d.message, names.join(", "));
+        let names: Vec<String> = pool.into_iter().map(|(n, _)| n).collect();
+        if d.code == codes::V001 {
+            let listed: Vec<String> = names.iter().map(|n| format!("`{n}`")).collect();
+            d.message = format!("{}; `{action}` has {}", d.message, listed.join(", "));
+        }
+        d.expected = Some(Expected {
+            kind: Some("attribute".to_string()),
+            of: Some(action.clone()),
+            names,
+            ..Expected::default()
+        });
     }
 
     /// The head of an action statement must be an action term.

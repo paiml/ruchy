@@ -1016,12 +1016,18 @@ fn test_rhl16_attribute_unknown_is_v001_listing_the_declared_attributes() {
     );
     let d = &report.diagnostics[0];
     assert_eq!(d.span.line, 8);
-    let names: Vec<&str> = d.candidates.iter().map(|c| c.term.as_str()).collect();
-    assert_eq!(names, vec!["title", "label"]);
+    // RHL-2 ruling on RHL-16's open question: V001 is "no candidate", so the
+    // declared attributes travel in `expected`, never as candidates.
+    assert!(d.candidates.is_empty(), "V001 has no candidate: {d:#?}");
     assert!(d.fixes.is_empty(), "V001 has no fix");
+    let expected = d.expected.as_ref().expect("expected set");
+    assert_eq!(expected.kind.as_deref(), Some("attribute"));
+    assert_eq!(expected.of.as_deref(), Some("file ticket"));
+    assert_eq!(expected.names, vec!["title", "label"]);
+    let json = serde_json::to_value(expected).expect("serializable");
     assert_eq!(
-        d.expected.as_ref().and_then(|e| e.kind.as_deref()),
-        Some("attribute of `file ticket`")
+        json,
+        serde_json::json!({"kind": "attribute", "of": "file ticket", "names": ["title", "label"]})
     );
 }
 
