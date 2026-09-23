@@ -3867,3 +3867,41 @@ roadmap:
   - runtime
   - filed-by:RHLGA-1
   notes: null
+- id: ENUMEQ-1
+  github_issue: null
+  item_type: task
+  title: 'ENUMEQ-1: enum values never compare equal in the interpreter: Some(3) == Some(3) and None == None are false'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-23T16:33:14Z
+  updated: 2026-09-23T16:33:14Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: QPAT-1
+  github_issue: null
+  item_type: task
+  title: 'QPAT-1: qualified enum patterns (Option::Some(v) =>) do not parse'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T16:33:14Z
+  updated: 2026-09-23T16:33:14Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - filed-by:RHLGA-1
+  notes: null
