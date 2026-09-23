@@ -2965,7 +2965,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-4: lowering to ruchy for unit kind job, determinism test'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
@@ -2980,12 +2980,12 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-2
-  notes: null
+  notes: 'In progress under RHLGA-1 (plan P4), branch RHLGA-P6-rhl6: lowering of job (Amendment A4), observe/apply with --apply, transpile/compile/run, RHL-L001/L002.'
 - id: RHL-5
   github_issue: null
   item_type: task
   title: 'RHL-5: example to tests, expect to pv contract, receipt'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
@@ -3000,12 +3000,12 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-4
-  notes: null
+  notes: 'In progress under RHLGA-1 (plan P5), branch RHLGA-P6-rhl6: example tests via ruchy test, expect guards, unit pv contract, receipt with a three-valued verdict.'
 - id: RHL-6
   github_issue: null
   item_type: task
   title: 'RHL-6: MCP tools on ruchy mcp'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
@@ -3020,7 +3020,7 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-2
-  notes: null
+  notes: 'In progress under RHLGA-1 (plan P6), branch RHLGA-P6-rhl6: the eight rhl_* MCP tools; ruchy mcp registers tools (MCPTOOLS-1).'
 - id: RHL-7
   github_issue: null
   item_type: task
@@ -3065,7 +3065,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHL-9: explain verb, deterministic'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-20 10:27:37+00:00
@@ -3080,7 +3080,7 @@ roadmap:
   - kind:code
   - rhl
   - depends:RHL-4
-  notes: null
+  notes: 'In progress under RHLGA-1 (plan P6), branch RHLGA-P6-rhl6: ruchy explain, deterministic.'
 - id: RHL-10
   github_issue: null
   item_type: task
