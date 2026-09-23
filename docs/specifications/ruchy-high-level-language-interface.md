@@ -438,6 +438,17 @@ Determinism: same inputs ⇒ byte-identical ruchy and Rust, on any host. The rec
 >    literal (EMPTYBLOCK-1). The lowering still emits the forms that were safe before
 >    those fixes, so it does not depend on them.
 
+> **Amendment A5 — how F6 is measured, and C002 (RHL-5, 2026-09-23) `[V]`.**
+> F6 asks that every compiled unit ship "a `pv`-valid contract with `shapes_n > 0`".
+> The `shapes_n` that `pv extract` prints counts SHACL shapes, and it is 0 for every
+> kernel contract in the provable-contracts corpus and for every `contracts/rhl-*` term
+> contract, so no unit contract could meet it as written. F6 is therefore measured as
+> `pv validate` exit 0 **and** `pv status` "Proof obligations: N" with N ≥ 1. Every unit
+> contract carries at least the effect-surface obligation. Ruled 2:1 by the RHL-4/5/6
+> pre-PR quorum (the dissent held that a real shapes block, or this amendment, is
+> needed; this amendment is it). `RHL-C002` (the unit contract could not be emitted) is
+> an instance of the §3.5 refusal `NoContractTemplate`, by the same 2:1 ruling.
+
 ---
 
 ## §5 CLI — extend, do not collide

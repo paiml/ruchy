@@ -61,7 +61,8 @@ pub const L002: &str = "RHL-L002";
 /// without its contract is not built (§9.3, RHL-5b).
 pub const C002: &str = "RHL-C002";
 
-/// Every code, in family order. Append only; never renumber or reuse.
+/// Every code, in the order it was allocated (each family's original codes
+/// first, later codes appended). Append only; never reorder, renumber or reuse.
 pub const CATALOGUE: &[CodeInfo] = &[
     info(P001, "missing `end`", None),
     info(P002, "unexpected token", None),

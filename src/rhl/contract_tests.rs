@@ -47,6 +47,13 @@ fn pv_available() -> bool {
     let ok = Command::new("pv").arg("--version").output().is_ok_and(|o| {
         o.status.success() && String::from_utf8_lossy(&o.stdout).contains("contracts")
     });
+    // A host without `pv` skips these checks, printed. The release gate sets
+    // RHL_REQUIRE_PV=1, and then a missing `pv` fails instead of skipping, so
+    // the release never ships on a vacuous pass.
+    assert!(
+        ok || std::env::var_os("RHL_REQUIRE_PV").is_none(),
+        "RHL_REQUIRE_PV is set but no provable-contracts `pv` is on PATH"
+    );
     if !ok {
         println!("RHL-5b: skipped: no provable-contracts `pv` on PATH");
     }
