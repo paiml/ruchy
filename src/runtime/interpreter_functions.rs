@@ -16,7 +16,6 @@ use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::Param;
 use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
-use std::collections::HashMap;
 use std::sync::Arc;
 
 impl Interpreter {
@@ -290,24 +289,15 @@ impl Interpreter {
         // Try to evaluate the function normally
         let func_val_result = self.eval_expr(func);
 
-        // If function lookup fails and it's an identifier, treat it as a message constructor
+        // UNDEFCALL-1: an undefined PascalCase callee is an actor message constructor;
+        // any other undefined callee is an error naming the function.
         let func_val = match func_val_result {
             Ok(val) => val,
             Err(InterpreterError::RuntimeError(msg)) if msg.starts_with("Undefined variable:") => {
-                // Check if this is an identifier that could be a message constructor
-                if let ExprKind::Identifier(name) = &func.kind {
-                    // Create a message object - args already evaluated above
-                    let mut message = HashMap::new();
-                    message.insert(
-                        "__type".to_string(),
-                        Value::from_string("Message".to_string()),
-                    );
-                    message.insert("type".to_string(), Value::from_string(name.clone()));
-                    message.insert("data".to_string(), Value::Array(Arc::from(arg_vals)));
-
-                    return Ok(Value::Object(Arc::new(message)));
-                }
-                return Err(InterpreterError::RuntimeError(msg));
+                return match &func.kind {
+                    ExprKind::Identifier(name) => undefined_callee(name, arg_vals),
+                    _ => Err(InterpreterError::RuntimeError(msg)),
+                };
             }
             Err(e) => return Err(e),
         };
@@ -375,6 +365,26 @@ impl Interpreter {
         self.record_function_call_feedback(site_id, &func_name, &arg_vals, &result);
         Ok(result)
     }
+}
+
+/// UNDEFCALL-1: result of calling an identifier that resolves to nothing.
+///
+/// PascalCase names (`Increment(5)`, `Say(4)`) are actor message constructors and
+/// evaluate to a `Message` object; every other name is an undefined function.
+fn undefined_callee(name: &str, args: Vec<Value>) -> Result<Value, InterpreterError> {
+    if is_message_constructor_name(name) {
+        return Ok(crate::runtime::eval_actor::create_message_object(
+            name, args,
+        ));
+    }
+    Err(InterpreterError::RuntimeError(format!(
+        "Undefined function: {name}"
+    )))
+}
+
+/// A message constructor name starts with an ASCII uppercase letter.
+fn is_message_constructor_name(name: &str) -> bool {
+    name.chars().next().is_some_and(|c| c.is_ascii_uppercase())
 }
 
 #[cfg(test)]
@@ -751,6 +761,25 @@ mod tests {
         } else {
             panic!("Expected Object");
         }
+    }
+
+    #[test]
+    fn test_undefcall_1_lowercase_undefined_call_errors() {
+        let mut interp = make_interpreter();
+        let func = make_expr(ExprKind::Identifier("nosuch".to_string()));
+        let args = vec![make_expr(ExprKind::Literal(Literal::Integer(1, None)))];
+
+        let err = interp.eval_function_call(&func, &args).unwrap_err();
+        assert_eq!(err.to_string(), "Runtime error: Undefined function: nosuch");
+    }
+
+    #[test]
+    fn test_undefcall_1_message_constructor_name_rule() {
+        assert!(is_message_constructor_name("Increment"));
+        assert!(is_message_constructor_name("X"));
+        assert!(!is_message_constructor_name("increment"));
+        assert!(!is_message_constructor_name("_Increment"));
+        assert!(!is_message_constructor_name(""));
     }
 
     #[test]

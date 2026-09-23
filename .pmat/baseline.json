@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-23T14:07:55.526115031Z",
+  "created_at": "2026-09-23T14:08:07.114993962Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -11119,48 +11119,48 @@
     },
     "./src/bin/handlers/execution_handler.rs": {
       "content_hash": [
-        23,
-        161,
-        32,
-        38,
-        70,
-        161,
-        56,
-        83,
-        130,
-        127,
-        134,
-        88,
-        86,
-        249,
-        160,
-        210,
-        125,
-        112,
-        148,
-        80,
-        200,
-        59,
-        204,
-        150,
-        145,
-        236,
-        29,
-        132,
-        215,
-        184,
-        38,
-        193
+        153,
+        147,
+        7,
+        87,
+        187,
+        99,
+        108,
+        119,
+        223,
+        122,
+        121,
+        238,
+        42,
+        65,
+        242,
+        190,
+        137,
+        227,
+        143,
+        173,
+        170,
+        248,
+        9,
+        140,
+        153,
+        242,
+        126,
+        197,
+        232,
+        120,
+        89,
+        210
       ],
       "score": {
         "structural_complexity": 25.0,
         "semantic_complexity": 20.0,
-        "duplication_ratio": 16.64,
+        "duplication_ratio": 16.779661,
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
         "entropy_score": 5.0,
-        "total": 92.399994,
+        "total": 92.52697,
         "grade": "A",
         "confidence": 1.0,
         "language": "Rust",
@@ -11172,15 +11172,15 @@
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 26 duplicate code patterns"
+            "issue": "Found 25 duplicate code patterns"
           },
           {
             "source_metric": "Duplication",
-            "amount": 3.36,
+            "amount": 3.220339,
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Code duplication: 16.8%"
+            "issue": "Code duplication: 16.1%"
           }
         ],
         "critical_defects_count": 0,
@@ -44145,7 +44145,7 @@
   },
   "summary": {
     "total_files": 519,
-    "avg_score": 90.32001,
+    "avg_score": 90.32025,
     "grade_distribution": {
       "A+": 189,
       "A": 176,
