@@ -26,7 +26,7 @@ reported as failures. Every `UNMEASURED` row below names the smallest next step.
 |---|-----------|-----------|----------|--------|---------|-----|
 | 1 | All 9 pillar specs pass acceptance | 100% | 16/16 passed (`sovereign_nine_pillar_acceptance.rs`) | **MET** | `target/debug/deps/sovereign_nine_pillar_acceptance-8ff9bfcd28834341` | — |
 | 2 | ruchy-embed startup latency | < 5ms | Only a debug-profile binary available; debug-mode pass (0.00s) is not evidence for the release-mode threshold | **UNMEASURED** | `cargo test --release -p ruchy-embed --test startup_benchmark -- --ignored` | Re-run release build once target-dir lock is free |
-| 3 | Zero regressions in 4.x test suite | 0 failures | `cargo check --all-features` still compiling (no errors yet) when budget ran out; PMAT-101 (polars drift) still `inprogress` in roadmap.yaml | **UNMEASURED** | `cargo test --all-features` | Resolve/confirm PMAT-101, then run to completion in an isolated target dir |
+| 3 | Zero regressions in 4.x test suite | 0 failures | `cargo test --workspace --no-fail-fast` (default features): exit 101, 27,573 pass, **285 fail** in 27 binaries, 2,773 ignored (`criterion-3-workspace-tests.txt`). `--all-features` not yet run. | **NOT_MET** | `CARGO_TARGET_DIR=/mnt/nvme-raid0/targets/ruchy cargo test --workspace --no-fail-fast` | Phase G2 (TESTGATE-1); then `--all-features` in G1 |
 | 4 | Downstream book repos compile | 100% on each of 7 | Not started — disk headroom risk (31GB free) deprioritized 7 fresh clones+builds | **UNMEASURED** | book validation harnesses (Appendix B) | Free disk, clone 7 `paiml/*` repos fresh, run each harness against `target/release/ruchy` |
 | 5 | WASM target functional | All WASM tests pass | Build started (wasm32-unknown-unknown target confirmed installed, no wasm-pack), killed before finishing to free lock/disk | **UNMEASURED** | `cargo build -p ruchy-wasm --target wasm32-unknown-unknown --release` | Re-run in isolated target dir once lock contention clears |
 | 6 | Binary size (default) | < +20% vs 4.x | HEAD 11,034,536 B vs 4.2.1 14,233,736 B = **-22.48%** (smaller) | **MET** | `stat -c%s target/release/ruchy` vs `~/.cargo/bin/ruchy` | — |
@@ -40,8 +40,8 @@ reported as failures. Every `UNMEASURED` row below names the smallest next step.
 
 ## Go/No-Go
 
-Per §10, GA requires **all 13 criteria MET**. At this HEAD: 4 MET (#1, #6, #11, #12), 0 NOT_MET,
-9 UNMEASURED. GA cannot be declared from this evidence — most of the remaining work is
+Per §10, GA requires **all 13 criteria MET**. At this HEAD: 4 MET (#1, #6, #11, #12), 1 NOT_MET (#3),
+8 UNMEASURED. GA cannot be declared from this evidence — most of the remaining work is
 re-running already-identified commands with more disk headroom and without lock contention,
 not new implementation, except criterion #13's F3/F5 falsifiers which need new instrumentation.
 

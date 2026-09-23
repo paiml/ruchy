@@ -27,7 +27,7 @@ Provenance tags as in RHL-001: `[V]` measured · `[C]` cited · `[A]` directive/
 | Lowering seam: RHL emits ruchy **source text** into the existing parser and transpiler | `docs/rhl/phase0-bindings.md` B1 |
 | `ruchy mcp` exists (`src/mcp.rs`, feature `mcp`) | tree |
 | 5.0 GA go/no-go: all 13 criteria of `ruchy-5.0-sovereign-platform.md` §10 | spec §10 |
-| GA gather at this HEAD: 4 MET (#1, #6, #11, #12), 0 NOT_MET, 9 UNMEASURED | `docs/specifications/evidence/2026-09-23-ga-gather/` |
+| GA gather at this HEAD: first pass 4 MET (#1, #6, #11, #12), 9 UNMEASURED; after §1b, #3 is NOT_MET (285 failures) | `docs/specifications/evidence/2026-09-23-ga-gather/` |
 | Every `vocab/*.yaml` term has `lowers_to: "[U]"` | `vocab/fleet-v1.yaml`, `vocab/tickets-v1.yaml` |
 | The 12 valid break-corpus programs do not check clean under v1 vocabulary (RHL-16) | roadmap RHL-16 |
 
