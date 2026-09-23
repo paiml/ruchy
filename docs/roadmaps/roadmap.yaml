@@ -3539,7 +3539,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RUNMAIN-1: ruchy run does not call main() when the file defines any other function'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T10:09:23Z
@@ -3559,7 +3559,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'TESTGATE-1: 285 integration-test failures on main are ungated; required gate runs cargo test --lib only'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T10:09:23Z
@@ -3599,7 +3599,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'UNDEFCALL-1: calling an undefined function returns an actor Message value instead of an error'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T10:43:20Z
@@ -3619,7 +3619,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'EMPTYBLOCK-1: an empty block {} in if/else body position is an empty object literal, so if c { } fails to type-check'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T13:44:21Z
@@ -3642,7 +3642,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'TRANSPILENOT-1: the transpiler drops the parentheses after unary !: !(b && x) becomes !b && x'
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-23T13:44:25Z
@@ -3665,7 +3665,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'TRANSPILECMP-1: (a < 1) == false transpiles to a chained comparison that rustc rejects'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T13:44:25Z
@@ -3720,5 +3720,59 @@ roadmap:
   labels:
   - kind:code
   - parser
+  - filed-by:RHLGA-1
+  notes: null
+- id: METHODS-1
+  github_issue: null
+  item_type: task
+  title: 'METHODS-1: object keys/values/items/entries, array sorted/reversed/drop and assert_ne in the interpreter'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T14:08:38Z
+  updated: 2026-09-23T14:08:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  notes: null
+- id: DOCTEST-1
+  github_issue: null
+  item_type: task
+  title: 'DOCTEST-1: the ruchy lib''s failing doctests are fixed, retagged or removed as placeholders'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T14:08:38Z
+  updated: 2026-09-23T14:08:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  notes: null
+- id: NOTEBOOK-1
+  github_issue: null
+  item_type: task
+  title: 'NOTEBOOK-1: ruchy notebook FILE validation needs no notebook feature'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T14:08:38Z
+  updated: 2026-09-23T14:08:38Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
   - filed-by:RHLGA-1
   notes: null

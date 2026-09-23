@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filed: UNDEFCALL-1 (a call to an undefined function evaluates to an actor
   message instead of an error) and BYTECODE-1 (bytecode mode never calls
   `main`).
+
 ### Added — RHL-3: the YAML surface `.rhl.yaml` and `ruchy convert` (RHL-001)
 
 - `.rhl.yaml` is a lossless YAML form of the intent tree (`rhl: 1` marker,
