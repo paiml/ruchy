@@ -782,7 +782,7 @@ fn test_sleep_float() {
 
 // === Hash Function ===
 #[test]
-fn test_hash_string() {
+fn test_compute_hash_of_file_containing_hello() {
     // METHODS-1: `hash(x)` does not exist; SHA-256 via `compute_hash` is deterministic
     let result = super::part1::compute_hash_of("hello");
     assert_eq!(
@@ -792,7 +792,7 @@ fn test_hash_string() {
 }
 
 #[test]
-fn test_hash_int() {
+fn test_compute_hash_of_file_containing_42() {
     // METHODS-1: `hash(x)` does not exist; hash the decimal text of 42 instead
     let result = super::part1::compute_hash_of("42");
     assert_eq!(

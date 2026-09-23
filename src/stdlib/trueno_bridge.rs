@@ -50,12 +50,34 @@ pub use trueno::{select_best_available_backend, Backend};
 /// The compensated sum with reduced numerical error
 ///
 /// # Examples
+///
+/// Adding many small terms to a much larger running sum drifts under naive
+/// summation, because each `1.0` is below the rounding granularity of a
+/// `1e16` accumulator; `kahan_sum`'s running compensation recovers the lost
+/// low-order bits and lands on the exact mathematical total:
 /// ```
 /// use ruchy::stdlib::trueno_bridge::kahan_sum;
 ///
-/// let values = vec![0.1; 10];
-/// let result = kahan_sum(&values);
-/// assert!((result - 1.0).abs() < 1e-10);
+/// let mut values = vec![1e16];
+/// values.extend(std::iter::repeat(1.0).take(10_000));
+/// let naive: f64 = values.iter().sum();
+/// let kahan = kahan_sum(&values);
+/// let exact = 1e16 + 10_000.0;
+/// assert_eq!(kahan, exact);
+/// assert_ne!(naive, exact);
+/// ```
+///
+/// Plain Kahan summation is not immune to every cancellation pattern: when
+/// the offsetting terms arrive in an order where the first addition already
+/// loses the small term before any compensation has built up (e.g.
+/// `[1e16, 1.0, -1e16]`, whose exact sum is `1.0`), `kahan_sum` returns `0.0`
+/// instead. The improved Neumaier (Kahan-Babuska) variant tracks the larger
+/// of the two operands' magnitude and would recover the correct `1.0` here.
+/// ```
+/// use ruchy::stdlib::trueno_bridge::kahan_sum;
+///
+/// let result = kahan_sum(&[1e16, 1.0, -1e16]);
+/// assert_eq!(result, 0.0);
 /// ```
 #[must_use]
 pub fn kahan_sum(values: &[f64]) -> f64 {

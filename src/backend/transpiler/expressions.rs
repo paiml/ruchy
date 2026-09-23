@@ -70,12 +70,15 @@ impl Transpiler {
     /// Returns an error if expression transpilation fails
     /// # Examples
     ///
-    /// (ignored: constructing the arguments for `transpile_string_interpolation` requires non-trivial internal types not reachable from a short doctest)
-    /// ```ignore
-    /// use ruchy::backend::transpiler::expressions::transpile_string_interpolation;
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::StringPart;
     ///
-    /// let result = transpile_string_interpolation(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let parts = vec![StringPart::Text("hello".to_string())];
+    /// let tokens = transpiler.transpile_string_interpolation(&parts).unwrap();
+    /// assert!(tokens.to_string().contains("format !"));
+    /// assert!(tokens.to_string().contains("\"hello\""));
     /// ```
     pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
         if parts.is_empty() {

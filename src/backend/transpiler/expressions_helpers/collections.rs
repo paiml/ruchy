@@ -132,12 +132,18 @@ impl Transpiler {
     /// Transpiles object literals
     /// # Examples
     ///
-    /// (ignored: constructing the arguments for `transpile_object_literal` requires non-trivial internal types not reachable from a short doctest)
-    /// ```ignore
-    /// use ruchy::backend::transpiler::expressions::transpile_object_literal;
+    /// ```
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, ObjectField, Span};
     ///
-    /// let result = transpile_object_literal(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let value = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+    /// let fields = vec![ObjectField::KeyValue {
+    ///     key: "x".to_string(),
+    ///     value,
+    /// }];
+    /// let tokens = transpiler.transpile_object_literal(&fields).unwrap();
+    /// assert!(tokens.to_string().contains("map . insert"));
     /// ```
     pub fn transpile_object_literal(
         &self,
