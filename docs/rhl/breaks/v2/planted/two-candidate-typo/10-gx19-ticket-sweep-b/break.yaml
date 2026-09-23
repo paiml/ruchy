@@ -1,0 +1,7 @@
+base: docs/rhl/breaks/v2/valid/10-gx19-ticket-sweep-b.rhl
+class: "two-candidate typo"
+expected_code: RHL-V003
+safe_fix: false
+candidates:
+  - host
+  - hour

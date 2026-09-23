@@ -1,0 +1,24 @@
+use vocabulary fleet v2
+use vocabulary tickets v2
+
+job "gx20 var disk watch"
+  runs on host gx20
+  every 1 hour
+  may read disk
+  may write tickets
+
+  let free be disk free of "/var"
+
+  when free is below 30 GB
+    file ticket in repo "paiml/infra" with
+      title "gx20 var disk watch"
+      label "fleet"
+    end
+
+  expect ticket count is at most 1
+
+  example "gx20 var disk watch example"
+    given free is 20 GB
+    then ticket count is 1
+  end
+end

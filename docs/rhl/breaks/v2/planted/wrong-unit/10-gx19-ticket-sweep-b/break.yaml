@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/10-gx19-ticket-sweep-b.rhl
+class: "wrong unit"
+expected_code: RHL-T001
+safe_fix: false

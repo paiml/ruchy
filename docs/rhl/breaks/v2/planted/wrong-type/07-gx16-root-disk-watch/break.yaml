@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/07-gx16-root-disk-watch.rhl
+class: "wrong type"
+expected_code: RHL-T002
+safe_fix: false

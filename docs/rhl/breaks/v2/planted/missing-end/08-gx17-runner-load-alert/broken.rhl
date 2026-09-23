@@ -1,0 +1,24 @@
+use vocabulary fleet v2
+use vocabulary tickets v2
+
+job "gx17 runner load alert"
+  runs on host gx17
+  every 1 hour
+  may read runner
+  may write tickets
+
+  let load be runner load of "runner-02"
+
+  when load is above 85 %
+    file ticket in repo "paiml/ci-ops" with
+      title "gx17 runner load alert"
+      label "runner"
+    end
+
+  expect ticket count is at most 1
+
+  example "gx17 runner load alert example"
+    given load is 90 %
+    then ticket count is 1
+  end
+end

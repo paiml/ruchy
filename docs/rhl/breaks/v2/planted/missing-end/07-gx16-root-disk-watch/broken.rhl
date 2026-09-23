@@ -1,0 +1,24 @@
+use vocabulary fleet v2
+use vocabulary tickets v2
+
+job "gx16 root disk watch"
+  runs on host gx16
+  every 1 hour
+  may read disk
+  may write tickets
+
+  let used be disk usage of "/"
+
+  when used is above 70 GB
+    file ticket in repo "paiml/infra" with
+      title "gx16 root disk watch"
+      label "disk"
+    end
+
+  expect ticket count is at most 1
+
+  example "gx16 root disk watch example"
+    given used is 80 GB
+    then ticket count is 1
+  end
+end

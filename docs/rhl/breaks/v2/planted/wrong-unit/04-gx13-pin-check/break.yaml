@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/04-gx13-pin-check.rhl
+class: "wrong unit"
+expected_code: RHL-T001
+safe_fix: false
