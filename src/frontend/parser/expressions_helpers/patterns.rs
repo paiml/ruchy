@@ -661,9 +661,11 @@ fn parse_if_let_expression(state: &mut ParserState, start_span: Span) -> Result<
             .map_err(|e| anyhow::anyhow!("Expected expression after '=' in if-let: {e}"))?,
     );
     // Parse then branch
-    let then_branch = Box::new(parse_expr_recursive(state).map_err(|e| {
-        anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {e}")
-    })?);
+    let then_branch = Box::new(
+        crate::frontend::parser::collections::parse_body_expr(state).map_err(|e| {
+            anyhow::anyhow!("Expected body after if-let condition, typically {{ ... }}: {e}")
+        })?,
+    );
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
     Ok(Expr::new(
@@ -685,9 +687,11 @@ fn parse_regular_if_expression(state: &mut ParserState, start_span: Span) -> Res
             .map_err(|e| anyhow::anyhow!("Expected condition after 'if': {e}"))?,
     );
     // Parse then branch (expect block) with better error context
-    let then_branch = Box::new(parse_expr_recursive(state).map_err(|e| {
-        anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {e}")
-    })?);
+    let then_branch = Box::new(
+        crate::frontend::parser::collections::parse_body_expr(state).map_err(|e| {
+            anyhow::anyhow!("Expected body after if condition, typically {{ ... }}: {e}")
+        })?,
+    );
     // Parse optional else branch
     let else_branch = parse_else_branch(state)?;
     Ok(Expr::new(
@@ -709,9 +713,11 @@ fn parse_else_branch(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
             // Let the recursive call handle else-if or else-if-let
             Ok(Some(Box::new(parse_if_expression(state)?)))
         } else {
-            Ok(Some(Box::new(parse_expr_recursive(state).map_err(
-                |e| anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {e}"),
-            )?)))
+            Ok(Some(Box::new(
+                crate::frontend::parser::collections::parse_body_expr(state).map_err(|e| {
+                    anyhow::anyhow!("Expected body after 'else', typically {{ ... }}: {e}")
+                })?,
+            )))
         }
     } else {
         Ok(None)

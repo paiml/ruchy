@@ -3615,3 +3615,72 @@ roadmap:
   - runtime
   - filed-by:RHLGA-1
   notes: null
+- id: EMPTYBLOCK-1
+  github_issue: null
+  item_type: task
+  title: 'EMPTYBLOCK-1: an empty block {} in if/else body position is an empty object literal, so if c { } fails to type-check'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T13:44:21Z
+  updated: 2026-09-23T13:44:21Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro (HEAD 852a06e4): `fun f(a: i32) { if a < 2 { } }` transpiled to an if whose branch is a BTreeMap block (E0308); `fun f() { }` inferred `-> BTreeMap<String, String>`; `while a < 0 { }` body was a map (E0308).'
+  - 'Root cause: parse_block (collections.rs) treats every empty `{}` as an empty object literal (is_empty_braces), and if/else/while/for/loop/fun bodies were parsed with the generic parse_expr_recursive, so body position inherited the expression-position meaning.'
+  - 'Fix: collections::parse_body_expr consumes `{ }` in body position as an empty (unit) block; `let m = {}` stays an empty object literal.'
+  - 'tests/emptyblock_1_empty_body.rs: 6 tests, transpiled-text shape + interpreter vs rustc differential, all green.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - filed-by:RHLGA-1
+  notes: 'Separate defect seen while testing, not fixed here: a unit-returning call as the last statement of main is emitted as println!("{:?}", f(5)), printing an extra `()`.'
+- id: TRANSPILENOT-1
+  github_issue: null
+  item_type: task
+  title: 'TRANSPILENOT-1: the transpiler drops the parentheses after unary !: !(b && x) becomes !b && x'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-23T13:44:25Z
+  updated: 2026-09-23T13:44:25Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro (HEAD 852a06e4): `!(b && x)` -> `!b && x` (f(true,false): interpreter true, rustc false); `!(s == "p")` -> `!s == "p"` (E0600); `a - (b - c)` -> `a - b - c`; `a / (b * c)` -> `a / b * c`; `-(a + b)` -> `-a + b`.'
+  - 'Root cause: the AST has no parenthesis node, and transpile_unary formatted its operand with no precedence check; transpile_expr_with_precedence only wrapped a lower-precedence child, never an equal-precedence right operand of a left-associative operator, and bitwise/shift operators all had precedence 0.'
+  - 'Fix: binary_ops.rs OperandShape + operand_needs_parens (Rust precedence and associativity, method-style operators ** ?? <- in), unary operands wrapped when infix/cast/low.'
+  - 'tests/transpilenot_1_unary_not_parens.rs: 7 tests + a 16-case proptest over random int/bool expression trees (interpreter output == rustc output), all green.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: TRANSPILECMP-1
+  github_issue: null
+  item_type: task
+  title: 'TRANSPILECMP-1: (a < 1) == false transpiles to a chained comparison that rustc rejects'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T13:44:25Z
+  updated: 2026-09-23T13:44:25Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro (HEAD 852a06e4): `let u = (a < 1) == false` -> `a < 1 == false`, rejected by syn/rustc ("comparison operators cannot be chained"); also `(a | b) & 6` -> `a | b & 6` (silent: 5 vs 4).'
+  - 'Root cause: the precedence table ranked < (40) above == (30), so a comparison under a comparison was never wrapped, but Rust comparisons are non-associative at one level.'
+  - 'Fix: infix_child_needs_parens always parenthesises a comparison under a comparison; bitwise/shift ops get Rust-ordered precedences.'
+  - 'tests/transpilecmp_1_comparison_parens.rs: 6 tests + a 12-case proptest over nested comparisons, all green.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null

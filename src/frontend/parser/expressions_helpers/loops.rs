@@ -119,7 +119,7 @@ fn parse_labeled_while_loop(state: &mut ParserState, label: Option<String>) -> R
         );
         // Parse body (expect block)
         let body = Box::new(
-            parse_expr_recursive(state)
+            crate::frontend::parser::collections::parse_body_expr(state)
                 .map_err(|e| anyhow::anyhow!("Expected body after while-let condition: {e}"))?,
         );
         Ok(Expr::new(
@@ -142,7 +142,7 @@ fn parse_labeled_while_loop(state: &mut ParserState, label: Option<String>) -> R
         let contracts = parse_loop_contracts(state)?;
         // Parse body (expect block)
         let body = Box::new(
-            parse_expr_recursive(state)
+            crate::frontend::parser::collections::parse_body_expr(state)
                 .map_err(|e| anyhow::anyhow!("Expected body after while condition: {e}"))?,
         );
         let mut expr = Expr::new(
@@ -186,7 +186,7 @@ fn parse_labeled_for_loop(state: &mut ParserState, label: Option<String>) -> Res
     let contracts = parse_loop_contracts(state)?;
     // Parse body (expect block)
     let body = Box::new(
-        parse_expr_recursive(state)
+        crate::frontend::parser::collections::parse_body_expr(state)
             .map_err(|e| anyhow::anyhow!("Expected body after for iterator: {e}"))?,
     );
     // Get the var name from the pattern for backward compatibility
@@ -266,7 +266,9 @@ pub(in crate::frontend::parser) fn parse_loop(state: &mut ParserState) -> Result
 /// Syntax: `['label:] loop { body }`
 fn parse_labeled_loop(state: &mut ParserState, label: Option<String>) -> Result<Expr> {
     let start_span = state.tokens.expect(&Token::Loop)?;
-    let body = Box::new(parse_expr_recursive(state)?);
+    let body = Box::new(crate::frontend::parser::collections::parse_body_expr(
+        state,
+    )?);
 
     Ok(Expr::new(ExprKind::Loop { label, body }, start_span))
 }
