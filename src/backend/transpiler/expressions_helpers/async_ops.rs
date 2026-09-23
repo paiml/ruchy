@@ -8,7 +8,11 @@ use quote::{format_ident, quote};
 
 impl Transpiler {
     pub fn transpile_unary(&self, op: UnaryOp, operand: &Expr) -> Result<TokenStream> {
-        let operand_tokens = self.transpile_expr(operand)?;
+        let mut operand_tokens = self.transpile_expr(operand)?;
+        // TRANSPILENOT-1: `!(b && x)` must not become `!b && x`
+        if Self::unary_operand_needs_parens(operand) {
+            operand_tokens = quote! { (#operand_tokens) };
+        }
         Ok(match op {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
