@@ -11,7 +11,13 @@
 //! `#[serde(skip)]`: the serialized tree is the program's meaning, and two
 //! programs that differ only in layout serialize identically. That is what
 //! F2 ("`fmt` preserves the tree") compares, and it is what the lossless YAML
-//! surface (row RHL-3) will round-trip.
+//! surface ([`super::yaml`], row RHL-3) round-trips.
+//!
+//! The serde attributes shape that YAML for a person (spec RHL-001 §9 rule 7,
+//! one schema family with the vocabulary files): a phrase is one string
+//! (`disk free of`, as a vocabulary `term:` is), words, strings and digits are
+//! plain strings, an absent optional part or an empty argument list is
+//! omitted, and an unknown key is refused rather than dropped.
 
 use serde::{Deserialize, Serialize};
 
@@ -40,6 +46,7 @@ impl Span {
 
 /// A whole `.rhl` file: vocabulary imports and units, in source order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Program {
     /// Top-level declarations in source order.
     pub decls: Vec<Decl>,
@@ -57,6 +64,7 @@ pub enum Decl {
 
 /// `use vocabulary <phrase>`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct UseDecl {
     /// The words after the keyword, for example `fleet v1`.
     pub vocabulary: Phrase,
@@ -97,6 +105,7 @@ impl UnitKind {
 
 /// `<kind> "<name>" … end`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Unit {
     /// Which of the five unit kinds this is.
     pub kind: UnitKind,
@@ -111,6 +120,7 @@ pub struct Unit {
 
 /// One line-oriented statement, or a block statement closed by `end`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Stmt {
     /// What the statement is.
     pub kind: StmtKind,
@@ -121,7 +131,7 @@ pub struct Stmt {
 
 /// The statement forms of `grammar/rhl.lalrpop` (`Stmt` and `BlockStmt`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum StmtKind {
     /// `runs on <app>`
     RunsOn(App),
@@ -164,6 +174,7 @@ pub enum StmtKind {
         /// Statements run when the condition holds.
         then_body: Vec<Stmt>,
         /// Statements after `otherwise`, if the block has one.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         otherwise: Option<Vec<Stmt>>,
     },
     /// `for each <name> in <cond> … end`
@@ -180,6 +191,7 @@ pub enum StmtKind {
         /// The bound `n`.
         times: Int,
         /// The early-exit condition, if any.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
         until: Option<Cond>,
         /// The loop body.
         body: Vec<Stmt>,
@@ -195,6 +207,7 @@ pub enum StmtKind {
 
 /// `may <verb> <target>`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Effect {
     /// `read`, `write` or `call`.
     pub verb: EffectVerb,
@@ -228,17 +241,21 @@ impl EffectVerb {
 
 /// An action statement: `<app> [in <app>] [with … end]`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Action {
     /// The action term and its arguments, for example `file ticket`.
     pub head: App,
     /// The operand after `in`, for example `repo "paiml/infra"`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub target: Option<App>,
     /// The attribute lines of a `with … end` block, if present.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub with: Option<Vec<Stmt>>,
 }
 
 /// A condition: `or`, `and`, `not`, a comparison, `in`, or a bare application.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Cond {
     /// What the condition is.
     pub kind: CondKind,
@@ -249,7 +266,7 @@ pub struct Cond {
 
 /// The condition forms of `grammar/rhl.lalrpop` (`Disj`, `Conj`, `Cmp`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum CondKind {
     /// `<cond> or <cond>` — left-associative.
     Or(Box<Cond>, Box<Cond>),
@@ -327,13 +344,14 @@ impl CompOp {
 
 /// An application: a phrase with optional arguments, a quantity, or a string.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum App {
     /// `<phrase> [<atom>…]` — a term, a `let` name, or an entity and instance.
     Call {
         /// The words, for example `disk free of` or `host gx10`.
         phrase: Phrase,
         /// String and quantity arguments, for example `"/"`.
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
         args: Vec<Atom>,
     },
     /// A quantity literal such as `100 GB`.
@@ -354,10 +372,12 @@ pub enum Atom {
 
 /// `INT [unit]` — `100 GB`, `1 hour`, `5 %`, or a bare `3`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Quantity {
     /// The number.
     pub value: Int,
     /// The unit word exactly as written (`GB`, `hour`, `%`), if any.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub unit: Option<Word>,
     /// From the number to the end of the unit.
     #[serde(skip)]
@@ -370,6 +390,7 @@ pub struct Quantity {
 /// Leading zeros are dropped at parse time (`007` and `7` are one tree, so
 /// `fmt` prints `7`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Int {
     /// Decimal digits with leading zeros removed (`"0"` for zero).
     pub digits: String,
@@ -380,6 +401,7 @@ pub struct Int {
 
 /// A string literal. `value` excludes the quotes; RHL strings have no escapes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Text {
     /// The characters between the quotes.
     pub value: String,
@@ -391,6 +413,7 @@ pub struct Text {
 /// One or more words (grammar `Phrase = WORD+`). The grammar knows no
 /// vocabulary term; which words form a term is the checker's job.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(into = "String", try_from = "String")]
 pub struct Phrase {
     /// The words in order; never empty.
     pub words: Vec<Word>,
@@ -411,8 +434,42 @@ impl Phrase {
     }
 }
 
+/// A phrase serializes as its words joined by single spaces.
+impl From<Phrase> for String {
+    fn from(phrase: Phrase) -> Self {
+        phrase.text()
+    }
+}
+
+/// A phrase deserializes from words separated by single spaces. The empty
+/// string, and a leading, trailing or doubled space, are no phrase: they
+/// would name a word that is empty.
+impl TryFrom<String> for Phrase {
+    type Error = String;
+
+    fn try_from(text: String) -> Result<Self, Self::Error> {
+        let words: Vec<Word> = text
+            .split(' ')
+            .map(|w| Word {
+                text: w.to_string(),
+                span: Span::default(),
+            })
+            .collect();
+        if words.iter().any(|w| w.text.is_empty()) {
+            return Err(format!(
+                "`{text}` is not a phrase: words are non-empty and separated by one space"
+            ));
+        }
+        Ok(Self {
+            words,
+            span: Span::default(),
+        })
+    }
+}
+
 /// One word, a unit symbol, or `%`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
 pub struct Word {
     /// The word exactly as written.
     pub text: String,

@@ -40,3 +40,13 @@ An unknown attribute in the `with` block of an action that declares `attributes:
 attributes>]}`. When no declared attribute is near, the code is `RHL-V001`, which has no
 candidates. The declared names are listed in `expected.names` and not as candidates
 (RHL-2).
+
+## Diagnostics of the YAML surface `.rhl.yaml`
+
+RHL-3 adds no code. A `.rhl.yaml` text that is not a program tree (not YAML, not the
+tree's shape, an unknown key, a local YAML tag, no `rhl: 1`, or a tree the grammar could not produce) is
+reported as `RHL-P001`, the parse family, at the YAML's line and column, or at line 0
+when the problem has no one place. `ruchy convert` exits 2 on it; `ruchy check` gives
+the verdict `fail` and exits 1, as for a `.rhl` parse failure. Every other diagnostic of
+a `.rhl.yaml` file is the checker's, with the code it has for the `.rhl` form, a span of
+line 0, column 0 (unknown), and no fixes. See `docs/rhl/rhl-3.md`.

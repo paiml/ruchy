@@ -18,7 +18,7 @@ mod types;
 mod values;
 
 use super::codes;
-use super::diag::{self, Diagnostic};
+use super::diag::{self, Diagnostic, LineSpan};
 use super::tree::{Decl, Program, UseDecl};
 use super::vocab;
 use checker::Checker;
@@ -142,6 +142,28 @@ fn demote_unsafe_fixes(d: &mut Diagnostic, file: &str, source: &str, root: Optio
             fix.title = format!("{} (not safe: the result has {})", fix.title, t.code);
         }
     }
+}
+
+/// Check the `.rhl.yaml` text `source` with the same checker as RHL text
+/// (spec §9 rule 5). The YAML is read as a tree ([`super::yaml::from_yaml`]),
+/// which is checked as its normal form: a tree is only accepted when that
+/// form parses back to it, so the checker sees exactly this tree.
+///
+/// Diagnostics carry [`LineSpan::UNKNOWN`] and no fixes: their positions and
+/// edits would be in the RHL text, which is not the file checked. A text that
+/// is not a tree is one `RHL-P001` at the YAML's line and column.
+#[must_use]
+pub fn check_yaml(file: &str, source: &str, root: Option<&Path>) -> Report {
+    let program = match super::yaml::from_yaml(source) {
+        Ok(p) => p,
+        Err(e) => return Report::new(file, vec![super::yaml::diagnostic(file, &e)], Vec::new()),
+    };
+    let mut report = check(file, &super::fmt::format(&program), root);
+    for d in &mut report.diagnostics {
+        d.span = LineSpan::UNKNOWN;
+        d.fixes.clear();
+    }
+    report
 }
 
 /// One check, with every fix as the checker proposed it.

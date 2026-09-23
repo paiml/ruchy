@@ -522,7 +522,7 @@ fn arb_decl() -> BoxedStrategy<Decl> {
     prop_oneof![1 => use_decl, 2 => unit].boxed()
 }
 
-fn arb_program() -> impl Strategy<Value = Program> {
+pub(crate) fn arb_program() -> impl Strategy<Value = Program> {
     prop::collection::vec(arb_decl(), 1..4).prop_map(|decls| Program { decls })
 }
 

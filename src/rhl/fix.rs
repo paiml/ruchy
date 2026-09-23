@@ -12,6 +12,7 @@ use super::check::{check, Report};
 use super::cli::{is_rhl, json, text, Outcome, OutputFormat};
 use super::diag::{apply_edits, Diagnostic, Edit, Fix, Severity};
 use super::vocab::find_root;
+use super::yaml::is_rhl_yaml;
 use serde::Serialize;
 use std::path::Path;
 
@@ -175,6 +176,13 @@ pub fn fix_files(paths: &[&Path], safe: bool, format: OutputFormat) -> Outcome {
     if !safe {
         let msg = "ruchy fix: only `--safe` exists for .rhl files: it applies the fixes `ruchy check` marks safe\n";
         return failure(msg.to_string(), 2);
+    }
+    if let Some(yaml) = paths.iter().find(|p| is_rhl_yaml(p)) {
+        let msg = format!(
+            "{}: ruchy fix edits RHL text; `ruchy convert` it to .rhl first\n",
+            yaml.display()
+        );
+        return failure(msg, 1);
     }
     if let Some(other) = paths.iter().find(|p| !is_rhl(p)) {
         let msg = format!(
