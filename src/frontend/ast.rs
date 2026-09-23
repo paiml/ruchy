@@ -274,6 +274,12 @@ pub struct Expr {
     /// At Silver level (default), they transpile to `debug_assert!` in Rust.
     pub contracts: Vec<ContractClause>,
 }
+/// Attribute name the parser attaches to a `FieldAccess` written with `::`
+/// (`module::function`, `Type::assoc`). It is not spellable in source, so a
+/// `.` access (`obj.field`) never carries it. Consumers that do not care about
+/// the distinction (the interpreter) see an ordinary `FieldAccess`.
+pub const PATH_ACCESS_MARKER: &str = "::";
+
 impl Expr {
     /// Creates a new expression with the given kind and span.
     ///
@@ -295,6 +301,14 @@ impl Expr {
     ///     Span::new(0, 4)
     /// );
     /// ```
+    /// True when this expression is a `FieldAccess` written with `::` (a path
+    /// segment), false for `obj.field` and every other expression.
+    #[must_use]
+    pub fn is_path_access(&self) -> bool {
+        matches!(self.kind, ExprKind::FieldAccess { .. })
+            && self.attributes.iter().any(|a| a.name == PATH_ACCESS_MARKER)
+    }
+
     #[must_use]
     pub fn new(kind: ExprKind, span: Span) -> Self {
         Self {

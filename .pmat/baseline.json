@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-24T00:02:23.621914046Z",
+  "created_at": "2026-09-24T00:02:25.956192176Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -10454,48 +10454,48 @@
     },
     "./src/bin/handlers/command_router.rs": {
       "content_hash": [
-        188,
-        7,
-        223,
-        224,
-        33,
-        164,
-        2,
-        91,
-        61,
-        174,
-        99,
-        138,
+        85,
+        10,
+        207,
+        121,
+        119,
+        104,
+        93,
         253,
-        4,
+        27,
+        136,
+        140,
+        68,
+        48,
         18,
-        96,
-        62,
-        69,
-        79,
-        64,
-        198,
-        240,
-        75,
-        239,
+        242,
+        163,
+        177,
+        189,
+        110,
+        162,
+        80,
         52,
-        57,
-        245,
-        219,
-        209,
-        98,
-        154,
-        153
+        147,
+        160,
+        122,
+        34,
+        94,
+        159,
+        114,
+        162,
+        94,
+        174
       ],
       "score": {
         "structural_complexity": 8.2,
         "semantic_complexity": 20.0,
-        "duplication_ratio": 17.793493,
+        "duplication_ratio": 17.794872,
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
         "entropy_score": 5.0,
-        "total": 85.99349,
+        "total": 85.99487,
         "grade": "A-",
         "confidence": 1.0,
         "language": "Rust",
@@ -10507,11 +10507,11 @@
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 121 duplicate code patterns"
+            "issue": "Found 130 duplicate code patterns"
           },
           {
             "source_metric": "Duplication",
-            "amount": 2.2065065,
+            "amount": 2.2051282,
             "applied_to": [
               "Duplication"
             ],
@@ -10531,7 +10531,7 @@
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cyclomatic complexity: 66"
+            "issue": "High cyclomatic complexity: 67"
           }
         ],
         "critical_defects_count": 0,
@@ -44864,7 +44864,7 @@
   },
   "summary": {
     "total_files": 528,
-    "avg_score": 90.33213,
+    "avg_score": 90.33214,
     "grade_distribution": {
       "A+": 195,
       "A": 176,

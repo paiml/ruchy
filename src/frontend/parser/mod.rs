@@ -585,13 +585,19 @@ fn handle_colon_colon_operator(state: &mut ParserState, left: Expr) -> Result<Ex
         ));
     }
 
-    Ok(Expr::new(
+    let mut access = Expr::new(
         ExprKind::FieldAccess {
             object: Box::new(left),
             field,
         },
         field_span,
-    ))
+    );
+    access.attributes.push(Attribute {
+        name: crate::frontend::ast::PATH_ACCESS_MARKER.to_string(),
+        args: Vec::new(),
+        span: field_span,
+    });
+    Ok(access)
 }
 
 /// Parse turbofish type parameters: ::<Type1, Type2, ...>
