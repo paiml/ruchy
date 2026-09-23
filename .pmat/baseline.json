@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-24T00:02:42.195626747Z",
+  "created_at": "2026-09-24T00:02:44.094721892Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -7750,48 +7750,48 @@
     },
     "./src/backend/transpiler/program_transpiler.rs": {
       "content_hash": [
-        160,
-        209,
-        255,
-        12,
-        153,
-        198,
-        132,
-        226,
-        142,
-        128,
-        150,
-        178,
-        67,
-        95,
-        86,
-        186,
-        103,
-        154,
-        1,
-        52,
-        145,
-        103,
-        180,
-        212,
-        151,
-        26,
-        192,
-        68,
-        223,
-        80,
-        38,
-        223
+        227,
+        183,
+        19,
+        21,
+        187,
+        175,
+        246,
+        135,
+        174,
+        123,
+        58,
+        123,
+        51,
+        231,
+        139,
+        54,
+        27,
+        93,
+        143,
+        78,
+        228,
+        251,
+        134,
+        33,
+        187,
+        17,
+        18,
+        55,
+        20,
+        46,
+        66,
+        33
       ],
       "score": {
-        "structural_complexity": 9.0,
+        "structural_complexity": 9.1,
         "semantic_complexity": 20.0,
-        "duplication_ratio": 12.835052,
+        "duplication_ratio": 12.883959,
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
         "entropy_score": 5.0,
-        "total": 81.83505,
+        "total": 81.98396,
         "grade": "B+",
         "confidence": 1.0,
         "language": "Rust",
@@ -7803,31 +7803,31 @@
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 122 duplicate code patterns"
+            "issue": "Found 124 duplicate code patterns"
           },
           {
             "source_metric": "Duplication",
-            "amount": 7.1649485,
+            "amount": 7.116041,
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Code duplication: 35.8%"
+            "issue": "Code duplication: 35.6%"
           },
           {
             "source_metric": "StructuralComplexity",
-            "amount": 7.5000005,
+            "amount": 6.9,
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cognitive complexity: 40"
+            "issue": "High cognitive complexity: 38"
           },
           {
             "source_metric": "StructuralComplexity",
-            "amount": 8.5,
+            "amount": 9.0,
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cyclomatic complexity: 47"
+            "issue": "High cyclomatic complexity: 48"
           }
         ],
         "critical_defects_count": 0,
@@ -16779,38 +16779,38 @@
     },
     "./src/frontend/parser/expressions_helpers/modules.rs": {
       "content_hash": [
-        214,
-        90,
-        108,
-        125,
-        169,
-        95,
-        18,
-        74,
-        31,
-        98,
-        251,
-        59,
-        230,
-        67,
-        131,
-        52,
-        130,
-        202,
-        29,
-        209,
-        68,
-        64,
-        42,
-        92,
-        119,
-        130,
-        122,
-        28,
-        16,
-        131,
-        61,
-        117
+        101,
+        155,
+        19,
+        223,
+        83,
+        45,
+        196,
+        242,
+        218,
+        62,
+        104,
+        153,
+        221,
+        227,
+        40,
+        73,
+        192,
+        96,
+        91,
+        49,
+        41,
+        57,
+        135,
+        78,
+        254,
+        44,
+        134,
+        140,
+        106,
+        229,
+        161,
+        253
       ],
       "score": {
         "structural_complexity": 25.0,
@@ -16832,7 +16832,7 @@
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 13 duplicate code patterns"
+            "issue": "Found 12 duplicate code patterns"
           }
         ],
         "critical_defects_count": 0,
@@ -44864,7 +44864,7 @@
   },
   "summary": {
     "total_files": 528,
-    "avg_score": 90.32924,
+    "avg_score": 90.32952,
     "grade_distribution": {
       "A+": 195,
       "A": 176,

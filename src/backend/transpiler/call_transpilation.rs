@@ -356,6 +356,54 @@ impl Transpiler {
         )
     }
 
+    /// RHLGA-1: a range receiver (`a..b`, `range(a, b)`) is already an iterator.
+    fn is_range_receiver(object: &Expr) -> bool {
+        match &object.kind {
+            ExprKind::Range { .. } => true,
+            ExprKind::Call { func, args } => {
+                matches!(&func.kind, ExprKind::Identifier(name) if name == "range")
+                    && matches!(args.len(), 1 | 2)
+            }
+            _ => false,
+        }
+    }
+
+    /// `a..b` needs parentheses to take a method; `range(a, b)` emits them itself.
+    fn parenthesize_range_literal(obj_tokens: &TokenStream, object: &Expr) -> TokenStream {
+        if matches!(object.kind, ExprKind::Range { .. }) {
+            quote! { (#obj_tokens) }
+        } else {
+            obj_tokens.clone()
+        }
+    }
+
+    /// `count`/`sum`/`min`/`max` on a non-DataFrame receiver.
+    /// A collection is iterated by reference (`.iter()`, `.copied()` for
+    /// min/max); a range is called directly, parenthesised when it is a
+    /// range literal so the method binds to the whole range.
+    fn transpile_collection_aggregate(
+        obj_tokens: &TokenStream,
+        method: &str,
+        method_ident: &proc_macro2::Ident,
+        object: &Expr,
+    ) -> TokenStream {
+        let (iter, copied) = if Self::is_range_receiver(object) {
+            let range = Self::parenthesize_range_literal(obj_tokens, object);
+            (range.clone(), range)
+        } else {
+            (
+                quote! { #obj_tokens.iter() },
+                quote! { #obj_tokens.iter().copied() },
+            )
+        };
+        match method {
+            // TRANSPILER-ITERATOR-001: sum defaults to i32 (collect loses the type)
+            "sum" => quote! { #iter.sum::<i32>() },
+            "count" => quote! { #iter.count() },
+            _ => quote! { #copied.#method_ident() },
+        }
+    }
+
     /// Dispatch method call by category
     pub(super) fn dispatch_method_by_category(
         &self,
@@ -387,29 +435,16 @@ impl Transpiler {
                 Ok(quote! { #obj_tokens.#method_ident(#(#arg_tokens),*) })
             }
             // Aggregation methods that work on both DataFrame and collections
-            "sum" => {
+            "sum" | "min" | "max" | "count" => {
                 if Transpiler::is_dataframe_expr(object) {
                     self.transpile_dataframe_method(object, method, &[])
                 } else {
-                    // TRANSPILER-ITERATOR-001 FIX: For collections, use .iter().sum::<i32>()
-                    // Default to i32 for sum since collect::<Vec<_>>() loses type info
-                    Ok(quote! { #obj_tokens.iter().sum::<i32>() })
-                }
-            }
-            "min" | "max" => {
-                if Transpiler::is_dataframe_expr(object) {
-                    self.transpile_dataframe_method(object, method, &[])
-                } else {
-                    // min/max return Option, use .copied() for ownership
-                    Ok(quote! { #obj_tokens.iter().copied().#method_ident() })
-                }
-            }
-            "count" => {
-                if Transpiler::is_dataframe_expr(object) {
-                    self.transpile_dataframe_method(object, method, &[])
-                } else {
-                    // count returns usize
-                    Ok(quote! { #obj_tokens.iter().count() })
+                    Ok(Self::transpile_collection_aggregate(
+                        obj_tokens,
+                        method,
+                        method_ident,
+                        object,
+                    ))
                 }
             }
             // DataFrame-only operations
