@@ -82,13 +82,46 @@ mod tests {
     use std::thread;
     use tempfile::tempdir;
 
+    /// A watcher for `path`, or `None` when the host has no inotify instance
+    /// left (EMFILE/ENOSPC). The limit (`fs.inotify.max_user_instances`, 128
+    /// here) is shared by every process of the user, so on a busy host it is
+    /// an environment limit, not a watcher defect (FLAKE-1). The skip is
+    /// printed; any other creation error still fails the test.
+    fn watcher_or_skip(path: PathBuf, debounce_ms: u64) -> Option<FileWatcher> {
+        match FileWatcher::new(vec![path], debounce_ms) {
+            Ok(w) => Some(w),
+            Err(e) if is_host_watch_limit(&e) => {
+                eprintln!("skipped: host inotify limit reached: {e}");
+                None
+            }
+            Err(e) => panic!("watcher creation failed: {e}"),
+        }
+    }
+
+    fn is_host_watch_limit(e: &notify::Error) -> bool {
+        match &e.kind {
+            notify::ErrorKind::Io(io) => matches!(io.raw_os_error(), Some(24 | 28)),
+            notify::ErrorKind::MaxFilesWatch => true,
+            _ => false,
+        }
+    }
+
+    #[test]
+    fn test_flake_1_host_watch_limit_is_recognised() {
+        let emfile = notify::Error::io(std::io::Error::from_raw_os_error(24));
+        let enoent = notify::Error::io(std::io::Error::from_raw_os_error(2));
+        assert!(is_host_watch_limit(&emfile));
+        assert!(!is_host_watch_limit(&enoent));
+    }
+
     #[test]
     fn test_watcher_detects_file_creation() {
         let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
 
-        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 100)
-            .expect("operation should succeed in test");
+        let Some(mut watcher) = watcher_or_skip(watch_path.clone(), 100) else {
+            return;
+        };
 
         // Create a file
         let test_file = watch_path.join("test.txt");
@@ -108,8 +141,9 @@ mod tests {
         let watch_path = temp_dir.path().to_path_buf();
 
         // Use longer debounce time for reliable testing under load
-        let mut watcher = FileWatcher::new(vec![watch_path.clone()], 3000)
-            .expect("operation should succeed in test");
+        let Some(mut watcher) = watcher_or_skip(watch_path.clone(), 3000) else {
+            return;
+        };
 
         let test_file = watch_path.join("test.txt");
 
@@ -142,16 +176,17 @@ mod tests {
     fn test_watcher_new_creates_instance() {
         let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
-        let result = FileWatcher::new(vec![watch_path], 500);
-        assert!(result.is_ok(), "Should create watcher successfully");
+        // watcher_or_skip fails the test on any error but the host limit.
+        let _ = watcher_or_skip(watch_path, 500);
     }
 
     #[test]
     fn test_watcher_check_changes_no_events() {
         let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
-        let mut watcher =
-            FileWatcher::new(vec![watch_path], 100).expect("operation should succeed in test");
+        let Some(mut watcher) = watcher_or_skip(watch_path, 100) else {
+            return;
+        };
         // No file changes made
         let changes = watcher.check_changes();
         assert!(changes.is_none(), "Should return None when no changes");
@@ -164,8 +199,9 @@ mod tests {
         let test_file = watch_path.join("existing.txt");
         fs::write(&test_file, "initial").expect("operation should succeed in test");
 
-        let mut watcher =
-            FileWatcher::new(vec![watch_path], 100).expect("operation should succeed in test");
+        let Some(mut watcher) = watcher_or_skip(watch_path, 100) else {
+            return;
+        };
 
         // Modify file
         thread::sleep(Duration::from_millis(100));
@@ -183,8 +219,9 @@ mod tests {
         let test_file = watch_path.join("to_delete.txt");
         fs::write(&test_file, "content").expect("operation should succeed in test");
 
-        let mut watcher =
-            FileWatcher::new(vec![watch_path], 100).expect("operation should succeed in test");
+        let Some(mut watcher) = watcher_or_skip(watch_path, 100) else {
+            return;
+        };
 
         // Delete file
         thread::sleep(Duration::from_millis(100));
@@ -200,7 +237,6 @@ mod tests {
         let temp_dir = tempdir().expect("operation should succeed in test");
         let watch_path = temp_dir.path().to_path_buf();
         // Zero debounce should still work
-        let result = FileWatcher::new(vec![watch_path], 0);
-        assert!(result.is_ok(), "Should create watcher with zero debounce");
+        let _ = watcher_or_skip(watch_path, 0);
     }
 }

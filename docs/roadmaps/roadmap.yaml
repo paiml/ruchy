@@ -3800,3 +3800,22 @@ roadmap:
   - runtime
   - filed-by:RHLGA-1
   notes: 'Transpiled path was not affected: ruchy transpile emits fn new(initial: i32) -> Self { Self { value: initial } } and rustc runs it to 15. Fields with no declared default and no assignment in new(...) start as nil in the interpreter (not a per-type zero value).'
+- id: FLAKE-1
+  github_issue: null
+  item_type: task
+  title: 'FLAKE-1: server::watcher lib tests fail with EMFILE when the host''s per-user inotify instances (128) are exhausted'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-23T15:49:48Z
+  updated: 2026-09-23T15:49:48Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tests
+  - filed-by:RHLGA-1
+  notes: null
