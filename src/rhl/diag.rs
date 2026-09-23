@@ -31,6 +31,14 @@ pub struct LineSpan {
 }
 
 impl LineSpan {
+    /// No position: line 0, column 0. Diagnostics of a `.rhl.yaml` file's
+    /// tree carry it, because the checker sees the tree, not the YAML text.
+    pub const UNKNOWN: Self = Self {
+        line: 0,
+        col: 0,
+        len: 0,
+    };
+
     /// Convert a byte span of `source` to a line span. Out-of-range or
     /// mid-character offsets are clamped to the nearest character boundary.
     #[must_use]

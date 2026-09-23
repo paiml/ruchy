@@ -1,4 +1,5 @@
-//! `ruchy fix` and `ruchy vocab` for RHL (spec RHL-001 §5; roadmap row RHL-2).
+//! `ruchy fix`, `ruchy vocab` (spec RHL-001 §5; roadmap row RHL-2) and
+//! `ruchy convert` (row RHL-3) for RHL.
 //!
 //! Every decision lives in the library (`ruchy::rhl::fix`,
 //! `ruchy::rhl::vocab_cli`), under `cargo test --lib`. This handler only
@@ -6,7 +7,7 @@
 //! the generic `Err` path, which `main` maps to 1.
 
 use anyhow::Result;
-use ruchy::rhl::cli::{Outcome, OutputFormat};
+use ruchy::rhl::cli::{convert_file, Outcome, OutputFormat};
 use ruchy::rhl::fix::fix_files;
 use ruchy::rhl::vocab_cli::{list_outcome, no_root, resolve_root, show_outcome, validate_outcome};
 use std::path::{Path, PathBuf};
@@ -23,6 +24,16 @@ pub fn handle_fix_command(files: &[PathBuf], safe: bool, format: &str) -> Result
     let format = OutputFormat::parse(format).map_err(anyhow::Error::msg)?;
     let paths: Vec<&Path> = files.iter().map(PathBuf::as_path).collect();
     finish(&fix_files(&paths, safe, format))
+}
+
+/// `ruchy convert <input> [-o <output>] [--to rhl|yaml]`: `.rhl` ⇄ `.rhl.yaml`.
+///
+/// # Errors
+///
+/// Never returns one: every outcome, including a refusal, is printed and
+/// carried by the exit code.
+pub fn handle_convert_command(input: &Path, output: Option<&Path>, to: Option<&str>) -> Result<()> {
+    finish(&convert_file(input, output, to))
 }
 
 /// What `ruchy vocab` was asked to do.

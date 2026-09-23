@@ -20,6 +20,7 @@ pub mod parse;
 pub mod tree;
 pub mod vocab;
 pub mod vocab_cli;
+pub mod yaml;
 
 lalrpop_util::lalrpop_mod!(grammar, "/rhl/grammar.rs");
 

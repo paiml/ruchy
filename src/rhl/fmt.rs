@@ -300,4 +300,4 @@ fn text(t: &Text) -> String {
 
 #[cfg(test)]
 #[path = "fmt_tests.rs"]
-mod fmt_tests;
+pub(crate) mod fmt_tests;

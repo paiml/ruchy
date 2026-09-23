@@ -1,15 +1,18 @@
 //! The `.rhl` side of the existing `ruchy check` and `ruchy fmt` verbs (spec
-//! RHL-001 §5: extend by file extension; plan D8). The new verbs `ruchy fix`
-//! and `ruchy vocab` (RHL-2) live in [`super::fix`] and [`super::vocab_cli`].
+//! RHL-001 §5: extend by file extension; plan D8), for both surfaces: RHL
+//! text (`.rhl`) and its YAML (`.rhl.yaml`, row RHL-3). The new verbs `ruchy
+//! fix` and `ruchy vocab` (RHL-2) live in [`super::fix`] and
+//! [`super::vocab_cli`]; `ruchy convert` (RHL-3) is [`convert_file`].
 //!
 //! Everything a verb decides lives here, in the library, so the required
 //! check (`cargo test --lib`, binding B4) covers it. The binary only prints an
 //! [`Outcome`] and exits with its code.
 
-use super::check::{check, Report};
+use super::check::{check, check_yaml, Report};
 use super::diag::{self, render_text};
-use super::fmt::format_source;
+use super::fmt::{format, format_source};
 use super::vocab::find_root;
+use super::yaml::{self, is_rhl_yaml};
 use std::path::Path;
 
 /// How `ruchy check` prints its result.
@@ -49,10 +52,10 @@ pub struct Outcome {
     pub exit: i32,
 }
 
-/// True for a path RHL owns: the `.rhl` extension.
+/// True for a path RHL owns: the `.rhl` extension, or a `.rhl.yaml` name.
 #[must_use]
 pub fn is_rhl(path: &Path) -> bool {
-    path.extension().is_some_and(|e| e == "rhl")
+    path.extension().is_some_and(|e| e == "rhl") || is_rhl_yaml(path)
 }
 
 /// `ruchy check` over `.rhl` files. One file prints one report; several print
@@ -81,7 +84,12 @@ pub fn check_files(paths: &[&Path], format: OutputFormat) -> Outcome {
 
 fn check_one(path: &Path, source: &str) -> Report {
     let root = find_root(path);
-    check(&path.display().to_string(), source, root.as_deref())
+    let file = path.display().to_string();
+    if is_rhl_yaml(path) {
+        check_yaml(&file, source, root.as_deref())
+    } else {
+        check(&file, source, root.as_deref())
+    }
 }
 
 fn render(reports: &[Report], format: OutputFormat) -> String {
@@ -114,14 +122,135 @@ pub(crate) fn text(report: &Report) -> String {
 }
 
 /// `ruchy fmt` on one `.rhl` source: the normal form, or the parse diagnostic
-/// as text when the source is not a program.
+/// as text when the source is not a program. A `.rhl.yaml` file is re-emitted
+/// as canonical YAML.
 ///
 /// # Errors
 ///
 /// Returns the rendered diagnostic when `source` does not parse.
 pub fn format_file_source(file: &str, source: &str) -> Result<String, String> {
+    if is_rhl_yaml(Path::new(file)) {
+        return yaml::format_yaml(source).map_err(|e| yaml_error(file, &e));
+    }
     format_source(source)
         .map_err(|failure| render_text(&[diag::from_parse_failure(file, source, &failure)]))
+}
+
+fn yaml_error(file: &str, e: &yaml::YamlError) -> String {
+    render_text(&[yaml::diagnostic(file, e)])
+}
+
+/// Which surface `ruchy convert` writes; the input is the other one.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Target {
+    /// RHL text in `fmt`'s normal form, read from YAML.
+    Rhl,
+    /// Canonical `.rhl.yaml`, read from RHL text.
+    Yaml,
+}
+
+impl Target {
+    /// Parse `--to`. Only `rhl` and `yaml` exist.
+    ///
+    /// # Errors
+    ///
+    /// Returns the message to print for any other value.
+    pub fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "rhl" => Ok(Self::Rhl),
+            "yaml" => Ok(Self::Yaml),
+            other => Err(format!("--to must be `rhl` or `yaml`, not `{other}`\n")),
+        }
+    }
+
+    /// The direction a file name implies: `.rhl.yaml` converts to RHL,
+    /// `.rhl` to YAML, anything else to nothing.
+    #[must_use]
+    pub fn for_input(path: &Path) -> Option<Self> {
+        if is_rhl_yaml(path) {
+            Some(Self::Rhl)
+        } else if is_rhl(path) {
+            Some(Self::Yaml)
+        } else {
+            None
+        }
+    }
+}
+
+/// Convert `source` (named `file` in diagnostics) to `target`.
+///
+/// # Errors
+///
+/// Returns the rendered `RHL-P…` diagnostic when the source is not a tree:
+/// RHL text that does not parse, or YAML that [`yaml::from_yaml`] refuses.
+pub fn convert_source(file: &str, source: &str, target: Target) -> Result<String, String> {
+    match target {
+        Target::Yaml => super::parse(source)
+            .map(|p| yaml::to_yaml(&p))
+            .map_err(|f| render_text(&[diag::from_parse_failure(file, source, &f)])),
+        Target::Rhl => yaml::from_yaml(source)
+            .map(|p| format(&p))
+            .map_err(|e| yaml_error(file, &e)),
+    }
+}
+
+/// `ruchy convert <input> [-o <output>] [--to rhl|yaml]`. The result goes to
+/// `output`, or to standard output. Exit 0 on success; 2 when the direction
+/// is unknown or the input is not a tree (convert declines, diagnostic on
+/// standard error); 1 when a file cannot be read or written.
+#[must_use]
+pub fn convert_file(input: &Path, output: Option<&Path>, to: Option<&str>) -> Outcome {
+    let target = match resolve_target(input, to) {
+        Ok(t) => t,
+        Err(message) => return failed(message, 2),
+    };
+    let source = match std::fs::read_to_string(input) {
+        Ok(s) => s,
+        Err(e) => return failed(format!("{}: cannot read: {e}\n", input.display()), 1),
+    };
+    match convert_source(&input.display().to_string(), &source, target) {
+        Ok(text) => deliver(output, text),
+        Err(rendered) => failed(rendered, 2),
+    }
+}
+
+fn resolve_target(input: &Path, to: Option<&str>) -> Result<Target, String> {
+    match to {
+        Some(value) => Target::parse(value),
+        None => Target::for_input(input).ok_or_else(|| {
+            format!(
+                "{}: cannot tell the direction: name the file .rhl or .rhl.yaml, or pass --to rhl|yaml\n",
+                input.display()
+            )
+        }),
+    }
+}
+
+/// Write `text` to `output`, or return it as standard output.
+fn deliver(output: Option<&Path>, text: String) -> Outcome {
+    let Some(path) = output else {
+        return Outcome {
+            stdout: text,
+            stderr: String::new(),
+            exit: 0,
+        };
+    };
+    match std::fs::write(path, text) {
+        Ok(()) => Outcome {
+            stdout: String::new(),
+            stderr: String::new(),
+            exit: 0,
+        },
+        Err(e) => failed(format!("{}: cannot write: {e}\n", path.display()), 1),
+    }
+}
+
+fn failed(stderr: String, exit: i32) -> Outcome {
+    Outcome {
+        stdout: String::new(),
+        stderr,
+        exit,
+    }
 }
 
 #[cfg(test)]
