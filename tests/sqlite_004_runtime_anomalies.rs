@@ -403,12 +403,14 @@ fn test_sqlite_061_function_too_few_args() {
 /// Test calling undefined function
 #[test]
 fn test_sqlite_062_undefined_function() {
-    // Note: Ruchy treats undefined identifiers followed by () as message constructors
-    // This is a design decision, not an error. The test verifies no panic occurs.
-    let result = execute_program("undefined_function()");
+    // UNDEFCALL-1: an undefined callee is an error naming the function, not an
+    // actor message value. The call returns that error and does not panic.
+    let result = std::panic::catch_unwind(|| execute_program("undefined_function()"))
+        .expect("undefined function call must not panic");
+    let err = result.expect_err("undefined function call must be an error");
     assert!(
-        result.is_ok(),
-        "Undefined function call should not panic (message constructor behavior)"
+        err.contains("Undefined function: undefined_function"),
+        "error should name the undefined function, got: {err}"
     );
 }
 
