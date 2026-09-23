@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — RHL-3: the YAML surface `.rhl.yaml` and `ruchy convert` (RHL-001)
+
+- `.rhl.yaml` is a lossless YAML form of the intent tree (`rhl: 1` marker,
+  unknown keys and local tags refused). A YAML tree is accepted only if its RHL
+  normal form parses back to the same tree, so YAML cannot express a program
+  the grammar cannot.
+- `ruchy convert <in> [-o out] [--to rhl|yaml]` converts both ways; RHL output
+  is always `fmt`'s normal form. `ruchy check` and `ruchy fmt` accept
+  `.rhl.yaml` and run the same checker on the same tree.
+- F3 holds on the corpus: for every v1 and v2 program that parses, RHL → YAML →
+  RHL and YAML → RHL → YAML are byte-identical, plus property tests over
+  generated trees.
+- New diagnostic code `RHL-P004`: a `.rhl.yaml` text that is not an intent
+  tree. Details: `docs/rhl/rhl-3.md`.
+
 ### Added — RHL-16 and RHL-2: vocabulary v2, `ruchy fix --safe`, `ruchy vocab` (RHL-001)
 
 - `vocab/fleet-v2.yaml`, `vocab/tickets-v2.yaml`: every v1 term carried forward,
