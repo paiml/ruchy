@@ -181,6 +181,17 @@ enum Commands {
         #[arg(long, default_value = "text")]
         format: String,
     },
+    /// Convert between RHL text (.rhl) and its YAML surface (.rhl.yaml), losslessly (RHL-3)
+    Convert {
+        /// The .rhl or .rhl.yaml file to convert
+        input: PathBuf,
+        /// Write the result here instead of to standard output
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// The surface to write, `rhl` or `yaml`; by default the other one than the input's extension
+        #[arg(long)]
+        to: Option<String>,
+    },
     /// List, show and validate RHL vocabularies (RHL-2)
     Vocab {
         #[command(subcommand)]
@@ -1478,6 +1489,9 @@ fn handle_command_dispatch(
             safe,
             format,
         }) => handlers::rhl_handler::handle_fix_command(&files, safe, &format),
+        Some(Commands::Convert { input, output, to }) => {
+            handlers::rhl_handler::handle_convert_command(&input, output.as_deref(), to.as_deref())
+        }
         Some(Commands::Vocab { command }) => handle_vocab(command),
         Some(Commands::Test {
             path,
