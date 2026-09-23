@@ -774,3 +774,309 @@ fn test_rhl_1_check_known_name_with_extra_words_is_t002_not_a_no_op_fix() {
         .flat_map(|d| &d.candidates)
         .all(|c| c.distance > 0));
 }
+
+// ---------------------------------------------------------------- RHL-16: v2 vocabulary and corpus
+
+/// Where RHL-16 put the v2 corpus. v1 (`docs/rhl/breaks/{valid,planted}`)
+/// stays byte-identical (§3.4 freeze).
+const V2_BREAKS: &str = "docs/rhl/breaks/v2";
+
+/// The v2 planted breaks whose expectation contradicts the v2 vocabulary. The
+/// RHL-16 DONE WHEN: this list is empty, and a test holds it so.
+const KNOWN_CORPUS_DEFECTS_V2: [(&str, &str); 0] = [];
+
+fn v2_breaks() -> Vec<Break> {
+    dirs(&root().join(V2_BREAKS).join("planted"))
+        .iter()
+        .flat_map(|class| dirs(class))
+        .map(|d| load_break(&d))
+        .collect()
+}
+
+fn v2_valid_programs() -> Vec<(String, String, Report)> {
+    dirs(&root().join(V2_BREAKS).join("valid"))
+        .iter()
+        .map(|p| {
+            let name = p
+                .strip_prefix(root())
+                .expect("under root")
+                .display()
+                .to_string();
+            let source = read(p);
+            let report = check(&name, &source, Some(&root()));
+            (name, source, report)
+        })
+        .collect()
+}
+
+fn v2_vocab(name: &str) -> crate::rhl::vocab::Vocabulary {
+    crate::rhl::vocab::load(&root(), name, 2).unwrap_or_else(|e| panic!("{name} v2: {e}"))
+}
+
+#[test]
+fn test_rhl16_v2_every_term_has_an_existing_contract() {
+    for name in ["fleet", "tickets"] {
+        let v = v2_vocab(name);
+        let missing: Vec<&str> = crate::rhl::vocab::missing_contracts(&root(), &v)
+            .iter()
+            .map(|t| t.term.as_str())
+            .collect();
+        assert!(missing.is_empty(), "{name} v2: no contract for {missing:?}");
+        for t in &v.terms {
+            assert!(
+                t.contract.starts_with(&format!("contracts/rhl-{name}-"))
+                    && t.contract.ends_with("-v2.yaml"),
+                "{name} v2 `{}`: contract `{}` is not a v2 template",
+                t.term,
+                t.contract
+            );
+        }
+    }
+}
+
+#[test]
+fn test_rhl16_v2_carries_every_v1_term_forward() {
+    for name in ["fleet", "tickets"] {
+        let v1 = crate::rhl::vocab::load(&root(), name, 1).expect("v1 loads");
+        let v2 = v2_vocab(name);
+        for old in &v1.terms {
+            let new = v2
+                .terms
+                .iter()
+                .find(|t| t.term == old.term)
+                .unwrap_or_else(|| panic!("{name} v2 drops `{}`", old.term));
+            let shape = |t: &crate::rhl::vocab::Term| {
+                (
+                    t.kind,
+                    t.takes.clone(),
+                    t.gives.clone(),
+                    t.effect.clone(),
+                    t.instances_from.clone(),
+                )
+            };
+            assert_eq!(shape(new), shape(old), "{name} v2 changed `{}`", old.term);
+        }
+    }
+}
+
+#[test]
+fn test_rhl16_v2_lowers_to_and_sigma_entity_stay_unbound() {
+    for name in ["fleet", "tickets"] {
+        let path = root().join(format!("vocab/{name}-v2.yaml"));
+        let yaml: serde_yaml_ng::Value =
+            serde_yaml_ng::from_str(&read(&path)).expect("v2 vocabulary is YAML");
+        assert_eq!(yaml["sigma_entity"].as_str(), Some("[U]"), "{name} v2");
+        let terms = yaml["terms"].as_sequence().expect("terms");
+        for t in terms {
+            assert_eq!(t["lowers_to"].as_str(), Some("[U]"), "{name} v2: {t:?}");
+        }
+    }
+}
+
+#[test]
+fn test_rhl16_v2_file_ticket_has_attributes_and_ticket_count_has_no_effect() {
+    use crate::rhl::vocab::{Param, TermKind};
+    let v = v2_vocab("tickets");
+    let find = |s: &str| v.terms.iter().find(|t| t.term == s).expect(s).clone();
+    let text = |n: &str| Param {
+        name: n.to_string(),
+        ty: "Text".to_string(),
+    };
+    assert_eq!(
+        find("file ticket").attributes,
+        vec![text("title"), text("label")]
+    );
+    let count = find("ticket count");
+    assert_eq!(
+        (count.kind, count.gives.as_deref(), count.effect.as_deref()),
+        (TermKind::Measure, Some("Count"), None)
+    );
+    assert!(count.takes.is_empty());
+    for t in v.terms.iter().filter(|t| t.term != "file ticket") {
+        assert!(t.attributes.is_empty(), "`{}` has attributes", t.term);
+    }
+}
+
+#[test]
+fn test_rhl16_v2_valid_programs_check_clean() {
+    let programs = v2_valid_programs();
+    assert_eq!(programs.len(), 12, "the v2 valid corpus has 12 programs");
+    for (name, source, report) in &programs {
+        assert!(
+            source.starts_with("use vocabulary fleet v2\nuse vocabulary tickets v2\n"),
+            "{name}: not a v2 program"
+        );
+        assert_eq!(
+            report.diagnostics,
+            Vec::<Diagnostic>::new(),
+            "{name}: a v2 valid program must check clean (Amendment A3: only unverified notes)"
+        );
+        assert_eq!(report.exit_code(), 0, "{name}");
+    }
+}
+
+#[test]
+fn test_rhl16_v2_valid_programs_are_in_fmt_normal_form() {
+    for (name, source, _) in v2_valid_programs() {
+        let formatted = crate::rhl::fmt::format_source(&source).expect("parses");
+        assert_eq!(formatted, source, "{name}: not in fmt normal form");
+    }
+}
+
+#[test]
+fn test_rhl16_v2_planted_breaks_are_six_classes_of_twelve_on_v2_bases() {
+    let breaks = v2_breaks();
+    assert_eq!(breaks.len(), 72, "the v2 planted corpus has 6 classes x 12");
+    let classes: BTreeSet<&str> = breaks.iter().map(|b| b.spec.class.as_str()).collect();
+    let want = BTreeSet::from([
+        "typo'd term",
+        "missing end",
+        "wrong unit",
+        "wrong type",
+        "undeclared effect",
+        "two-candidate typo",
+    ]);
+    assert_eq!(classes, want);
+    for b in &breaks {
+        assert!(
+            b.spec.base.starts_with("docs/rhl/breaks/v2/valid/"),
+            "{}: base `{}` is not a v2 valid program",
+            b.name,
+            b.spec.base
+        );
+        assert_ne!(b.base, b.broken, "{}: not a mutation", b.name);
+        let dir = b.name.rsplit('/').next().unwrap_or("");
+        assert!(b.spec.base.ends_with(&format!("{dir}.rhl")), "{}", b.name);
+    }
+}
+
+#[test]
+fn test_rhl16_v2_planted_breaks_all_yield_their_code_on_the_mutated_line() {
+    let failures: Vec<String> = v2_breaks().iter().filter_map(break_failure).collect();
+    assert!(
+        failures.is_empty(),
+        "{} v2 planted break(s) fail the gate:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+#[test]
+fn test_rhl16_v2_every_planted_code_is_new_relative_to_its_base() {
+    let not_new: Vec<String> = v2_breaks()
+        .iter()
+        .filter(|b| !is_new(b))
+        .map(|b| format!("{} ({})", b.name, b.spec.expected_code))
+        .collect();
+    assert!(
+        not_new.is_empty(),
+        "v2 codes that are not new: {not_new:#?}"
+    );
+}
+
+#[test]
+fn test_rhl16_v2_has_no_known_corpus_defects_and_v1_keeps_its_two() {
+    assert!(KNOWN_CORPUS_DEFECTS_V2.is_empty());
+    let v1: Vec<&str> = KNOWN_CORPUS_DEFECTS.iter().map(|(n, _)| *n).collect();
+    assert_eq!(
+        v1,
+        vec![
+            "docs/rhl/breaks/planted/wrong-unit/04-gx13-pin-check",
+            "docs/rhl/breaks/planted/wrong-unit/09-gx18-pin-check-b",
+        ],
+        "the v1 exception list is frozen with v1"
+    );
+}
+
+// ---------------------------------------------------------------- RHL-16: attributes and effect-free measures
+
+/// A job with `body` (already indented) using both v2 vocabularies.
+fn job_v2(body: &str) -> String {
+    format!("use vocabulary fleet v2\nuse vocabulary tickets v2\n\njob \"t\"\n{body}end\n")
+}
+
+const FILE_V2: &str = "  may write tickets\n  file ticket in repo \"paiml/infra\" with\n    title \"disk low\"\n    label \"fleet\"\n  end\n";
+
+#[test]
+fn test_rhl16_attribute_declared_is_ok() {
+    let report = check_src(&job_v2(FILE_V2));
+    assert_eq!(report.diagnostics, Vec::<Diagnostic>::new());
+    assert_eq!(report.exit_code(), 0);
+}
+
+#[test]
+fn test_rhl16_attribute_unknown_is_v001_listing_the_declared_attributes() {
+    let src = job_v2(&FILE_V2.replace("label \"fleet\"", "priority \"high\""));
+    let report = check_src(&src);
+    assert_eq!(
+        codes_of(&report),
+        vec![codes::V001],
+        "{:#?}",
+        report.diagnostics
+    );
+    let d = &report.diagnostics[0];
+    assert_eq!(d.span.line, 8);
+    let names: Vec<&str> = d.candidates.iter().map(|c| c.term.as_str()).collect();
+    assert_eq!(names, vec!["title", "label"]);
+    assert!(d.fixes.is_empty(), "V001 has no fix");
+    assert_eq!(
+        d.expected.as_ref().and_then(|e| e.kind.as_deref()),
+        Some("attribute of `file ticket`")
+    );
+}
+
+#[test]
+fn test_rhl16_attribute_near_miss_is_v002_with_a_safe_fix() {
+    let report = check_src(&job_v2(&FILE_V2.replace("title \"", "titl \"")));
+    let d = only_v002(&report);
+    assert_eq!(d.candidates[0].term, "title");
+    assert_eq!(d.candidates[0].vocabulary, "tickets v2");
+    assert!(d.fixes.iter().any(|f| f.safe));
+}
+
+#[test]
+fn test_rhl16_attribute_wrong_type_is_t002() {
+    for value in ["5", "5 GB", "\"a\" \"b\""] {
+        let src = job_v2(&FILE_V2.replace("\"disk low\"", value));
+        let report = check_src(&src);
+        assert_eq!(codes_of(&report), vec![codes::T002], "title {value}");
+        assert_eq!(report.diagnostics[0].span.line, 7, "title {value}");
+    }
+    let bare = check_src(&job_v2(&FILE_V2.replace("title \"disk low\"", "title")));
+    assert_eq!(codes_of(&bare), vec![codes::T002]);
+}
+
+#[test]
+fn test_rhl16_attribute_line_takes_no_target() {
+    let src = job_v2(&FILE_V2.replace("title \"disk low\"", "title in repo \"x\""));
+    let report = check_src(&src);
+    assert_eq!(
+        codes_of(&report),
+        vec![codes::T002],
+        "{:#?}",
+        report.diagnostics
+    );
+}
+
+#[test]
+fn test_rhl16_action_without_attributes_keeps_the_v1_behaviour() {
+    let v1 = job(FILE_V2);
+    let report = check_src(&v1);
+    assert_eq!(codes_of(&report), vec![codes::V001, codes::V001]);
+    for d in &report.diagnostics {
+        assert!(d.candidates.is_empty());
+        assert_eq!(
+            d.expected.as_ref().and_then(|e| e.kind.as_deref()),
+            Some("term or let name")
+        );
+    }
+}
+
+#[test]
+fn test_rhl16_measure_without_effect_needs_no_may_line() {
+    let body = "  expect ticket count is at most 1\n\n  example \"one\"\n    then ticket count is 1\n  end\n";
+    let report = check_src(&job_v2(body));
+    assert_eq!(report.diagnostics, Vec::<Diagnostic>::new());
+    let wrong_unit = check_src(&job_v2(&body.replace("at most 1", "at most 1 GB")));
+    assert_eq!(codes_of(&wrong_unit), vec![codes::T001]);
+}

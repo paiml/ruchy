@@ -1,0 +1,69 @@
+# RHL-16 vocabulary v2 (RHL-001 §3.4; roadmap row RHL-16). v1 stays frozen and
+# byte-identical beside this file; v2 carries every v1 term forward unchanged,
+# each with its own v2 contract template, and adds only what the v2 valid
+# programs need (docs/rhl/rhl-16-v2.md). `lowers_to` stays the unbound marker
+# `[U]` on every term until RHL-4 binds it.
+#
+# Sigma binding: unchanged from v1 — see vocab/fleet-v1.yaml's header comment
+# (paiml-ontology.md ONT-001 v4.9 §3.1). The vocabulary FILE is the Sigma
+# entity and its TYPE is not bound; binding it is not a ruchy decision.
+sigma_entity: "[U]"
+
+vocabulary: fleet
+version: 2
+terms:
+  - term: disk free of
+    kind: measure            # noun | measure | action | unit | entity
+    takes: [{name: path, type: Text}]
+    gives: Size
+    effect: read disk
+    lowers_to: "[U]"          # bound at RHL-4
+    contract: contracts/rhl-fleet-disk-free-of-v2.yaml
+
+  - term: disk usage of
+    kind: measure
+    takes: [{name: path, type: Text}]
+    gives: Size
+    effect: read disk
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-disk-usage-of-v2.yaml
+
+  - term: host
+    kind: entity
+    instances_from: machines/*/forjar.yaml   # closed world: only declared hosts exist
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-host-v2.yaml
+
+  - term: runner
+    kind: entity
+    instances_from: fleet/runners/*.yaml     # closed world: only declared runners exist
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-runner-v2.yaml
+
+  - term: runner load of
+    kind: measure
+    takes: [{name: runner, type: Text}]
+    gives: Percent
+    effect: read runner
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-runner-load-of-v2.yaml
+
+  - term: pin status of
+    kind: measure
+    takes: [{name: host, type: Text}]
+    gives: Text
+    effect: read host
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-pin-status-of-v2.yaml
+
+  - term: GB
+    kind: unit
+    gives: Size
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-gb-v2.yaml
+
+  - term: hour
+    kind: unit
+    gives: Duration
+    lowers_to: "[U]"
+    contract: contracts/rhl-fleet-hour-v2.yaml

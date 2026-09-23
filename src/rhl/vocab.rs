@@ -54,6 +54,11 @@ pub struct Term {
     /// For an entity, the glob that declares its instances.
     #[serde(default)]
     pub instances_from: Option<String>,
+    /// For an action (v2, RHL-16): the attributes its `with … end` block may
+    /// set, each by name with a value of its type. Empty means the action's
+    /// block is checked as ordinary statements, as in v1.
+    #[serde(default)]
+    pub attributes: Vec<Param>,
     /// The contract template, relative to the vocabulary root. A term that
     /// omits it deserializes with an empty path, which names no file, so the
     /// vocabulary is refused with RHL-C001 by name (§3.4) rather than failing
