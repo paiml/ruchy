@@ -198,6 +198,11 @@ enum Commands {
         #[arg(long)]
         to: Option<String>,
     },
+    /// Explain an RHL program in plain language, from its tree; deterministic, no model (RHL-9)
+    Explain {
+        /// The .rhl or .rhl.yaml file to explain
+        file: PathBuf,
+    },
     /// List, show and validate RHL vocabularies (RHL-2)
     Vocab {
         #[command(subcommand)]
@@ -1517,6 +1522,7 @@ fn handle_command_dispatch(
         Some(Commands::Convert { input, output, to }) => {
             handlers::rhl_handler::handle_convert_command(&input, output.as_deref(), to.as_deref())
         }
+        Some(Commands::Explain { file }) => handlers::rhl_handler::handle_explain_command(&file),
         Some(Commands::Vocab { command }) => handle_vocab(command),
         Some(Commands::Test {
             path: Some(ref path),

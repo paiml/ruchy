@@ -250,7 +250,7 @@ fn print_action(out: &mut String, depth: usize, a: &Action) {
 
 // ───────────────────────── conditions and values ─────────────────────────
 
-fn cond(c: &Cond) -> String {
+pub(crate) fn cond(c: &Cond) -> String {
     match &c.kind {
         CondKind::Or(a, b) => format!("{} or {}", cond(a), cond(b)),
         CondKind::And(a, b) => format!("{} and {}", cond(a), cond(b)),
@@ -263,7 +263,7 @@ fn cond(c: &Cond) -> String {
     }
 }
 
-fn app(a: &App) -> String {
+pub(crate) fn app(a: &App) -> String {
     match a {
         App::Call { phrase, args } => {
             let mut s = phrase.text();
@@ -278,7 +278,7 @@ fn app(a: &App) -> String {
     }
 }
 
-fn atom(a: &Atom) -> String {
+pub(crate) fn atom(a: &Atom) -> String {
     match a {
         Atom::Text(t) => text(t),
         Atom::Quantity(q) => quantity(q),
@@ -286,7 +286,7 @@ fn atom(a: &Atom) -> String {
 }
 
 /// `<digits>` or `<digits> <unit>`, for example `100 GB` or `5 %`.
-fn quantity(q: &Quantity) -> String {
+pub(crate) fn quantity(q: &Quantity) -> String {
     match &q.unit {
         Some(u) => format!("{} {}", q.value.digits, u.text),
         None => q.value.digits.clone(),
@@ -294,7 +294,7 @@ fn quantity(q: &Quantity) -> String {
 }
 
 /// A string literal with its quotes.
-fn text(t: &Text) -> String {
+pub(crate) fn text(t: &Text) -> String {
     format!("\"{}\"", t.value)
 }
 

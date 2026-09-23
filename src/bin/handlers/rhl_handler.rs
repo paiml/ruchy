@@ -38,6 +38,16 @@ pub fn handle_convert_command(input: &Path, output: Option<&Path>, to: Option<&s
     finish(&convert_file(input, output, to))
 }
 
+/// `ruchy explain <file.rhl | file.rhl.yaml>`: the plain-language rendering
+/// of the program's tree (RHL-9; spec RHL-001 §5).
+///
+/// # Errors
+///
+/// Never returns one: every outcome is printed and carried by the exit code.
+pub fn handle_explain_command(file: &Path) -> Result<()> {
+    finish(&ruchy::rhl::explain::explain_file(file))
+}
+
 /// `ruchy transpile`: an RHL file (`.rhl`, `.rhl.yaml`) is checked, lowered
 /// and transpiled by the library (RHL-4); any other file takes the existing
 /// ruchy path unchanged.
