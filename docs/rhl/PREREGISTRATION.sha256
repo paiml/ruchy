@@ -9,7 +9,7 @@
 # Regenerate: RHL0_WRITE_MANIFEST=1 cargo test --lib -p ruchy \
 #             rhl_manifest_0_regenerate -- --ignored
 #
-# files: 475
+# files: 477
 
 c8d438383d8a35c73f3151200f6487464f43493069d852022accc6d8d8de056b  contracts/rhl-fleet-disk-free-of-v1.yaml
 1a1190a008e55430fcb72a9bfaa7cf37dd7aae33a59e105b3b21e69b9f2be228  contracts/rhl-fleet-disk-free-of-v2.yaml
@@ -484,5 +484,7 @@ c7f34521310dfa3ef5799d5cca83458746884709004a388ddbddc166aadebdcd  grammar/rhl.co
 3ae463833317b59ecf480aa5dd6e8caba15d4bcf3dd785fa5debae91208b625c  grammar/rhl.lalrpop
 784c9b5abe1c3d2de88586ce6183f59fcaf7c28ae6ae81c6b377224b87bf425e  vocab/fleet-v1.yaml
 f55f01ef60e6d2a80c8e3ac31bb9b7fc03406830a6351614ad04b7e450a41134  vocab/fleet-v2.yaml
+84b0121bd87e23a041c4c540cd4aa33ddc3b2f16e75278061abac15ddcd805ac  vocab/runtime/fleet.ruchy
+3af9492396b259702d7db524439f2600ad99cec49dfc526baa76934297c38def  vocab/runtime/tickets.ruchy
 0348081bcb4567bc1d7f1e41836f8784a4c2a1baabc9d83facb63b1a4a3bc625  vocab/tickets-v1.yaml
 f6a372e7c7cc76d9029d5247395ebc374aa0b789562f43d87ac3dc6aaa7928b1  vocab/tickets-v2.yaml
