@@ -25,7 +25,8 @@ answer and its exit code is the process's.
 | `ruchy transpile x.rhl --emit ruchy [-o out]` | prints (or writes) the lowered ruchy source |
 | `ruchy transpile x.rhl [--emit rust] [-o out]` | lowers, then the same calls `ruchy transpile x.ruchy` makes (`transpile_to_program`, `prettyplease`); a test holds the two outputs byte-equal |
 | `ruchy transpile x.rhl.yaml …` | the same, from the YAML surface |
-| `ruchy compile x.rhl` | declined, exit 2: the observe/apply bindings land in RHL-4b |
+| `ruchy compile x.rhl [-o bin]` | a binary: `decide` + bindings + `observe` + `apply` + `main`, built by the `ruchy compile x.ruchy` path; `RHL-L002` exit 2 for a `[U]` term |
+| `ruchy run x.rhl [--apply]` | compile to a temporary directory, then execute; dry run unless `--apply` |
 
 Exit codes: 0 success; the check's code (1 or 2) when the program does not check clean;
 2 for `RHL-L001` or an unknown `--emit`; 1 when a file cannot be read or written.
@@ -141,3 +142,40 @@ fun decide(facts: Facts) -> Vec<Action> {
 - `(a < 1) == false` transpiles to a chained comparison that `syn` rejects.
 - An empty block `{ }` is an empty object literal (a `BTreeMap`), so `if c { }` without
   `else` does not type-check; lowering emits `()`.
+
+## Running a job: bindings, `observe`, `apply` (Amendment A4)
+
+A vocabulary term's `lowers_to` names its runtime binding: `<module>::<name>` is the function
+`fun <name>` in `vocab/runtime/<module>.ruchy`; `[U]` means no local source of truth exists.
+
+| term (v2) | `lowers_to` | runs |
+|---|---|---|
+| `disk free of` | `fleet::disk_free_of` | `df -B1 --output=avail <path>` |
+| `disk usage of` | `fleet::disk_usage_of` | `du -sb <path>` |
+| `tickets filed in` | `tickets::tickets_filed_in` | `gh issue list --repo <repo> --state open --json number --limit 1000` |
+| `file ticket` | `tickets::file_ticket` | `gh issue create --repo <repo> --title <title> [--label <label>]` |
+| `label ticket` | `tickets::label_ticket` | `gh issue edit <n> --repo <repo> --add-label <label>` |
+| every other v2 term | `[U]` | — |
+
+`ruchy transpile` emits `decide` only. `ruchy compile` and `ruchy run` lower the job to its
+program form: `decide`, then only the runtime functions its terms bind (each once, in first-use
+order), then:
+
+- `fun observe() -> Facts`: each `Facts` field is its measure's binding applied to the literal
+  arguments. A measure that cannot read the world ends the process with exit 3.
+- `fun apply(plan: Vec<Action>) -> i64`: each action calls its binding with its fields (Text
+  passed as `&str`), and the result is how many were performed.
+- `fun main()`: reads `--apply` from the arguments, calls `decide(observe())`, and prints one
+  `{:?}` line per planned action. **By default it is a dry run** (§9.4: the plan is a draft,
+  never an action). It calls `apply` only with `--apply`, and exits 1 when fewer actions were
+  performed than planned.
+
+A job that reads a measure or performs an action bound to `[U]` cannot be built: `RHL-L002`
+(refusal `EngineUnavailable`) names the term at its first use, exit 2.
+
+`ruchy run` compiles and executes. It does not interpret, because ruchy's interpreter does not
+run `std::process::Command`: a `.ruchy` file that calls it does nothing when interpreted.
+
+The tests (`tests/rhl_lower_cli.rs`, `rhl4c_*`) put fake `df` and `gh` scripts FIRST on PATH.
+The only other PATH directory holds links to `rustc`, `cc` and `ld`, so no real `gh` can be
+reached.
