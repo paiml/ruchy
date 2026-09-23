@@ -9,7 +9,7 @@
 # Regenerate: RHL0_WRITE_MANIFEST=1 cargo test --lib -p ruchy \
 #             rhl_manifest_0_regenerate -- --ignored
 #
-# files: 474
+# files: 475
 
 c8d438383d8a35c73f3151200f6487464f43493069d852022accc6d8d8de056b  contracts/rhl-fleet-disk-free-of-v1.yaml
 1a1190a008e55430fcb72a9bfaa7cf37dd7aae33a59e105b3b21e69b9f2be228  contracts/rhl-fleet-disk-free-of-v2.yaml
@@ -41,6 +41,7 @@ eb3bad52cede3575654d65fac0f3a612475b49d2608ff3f5e35b21bb3ba45b6a  contracts/rhl-
 5f792ba857a23c25328995204e55dba33ca7d4783dfa672f3f57cd867336f2d6  contracts/rhl-tickets-ticket-title-v2.yaml
 898b0b1fdde1ef30d54686635ba38dc6463f0490fc6963e3f9c8a5b308db17c7  contracts/rhl-tickets-tickets-filed-in-v1.yaml
 e385aa114554e616fc98975ba6495163cd098fa3e5741d20fc3f44f3633b8c52  contracts/rhl-tickets-tickets-filed-in-v2.yaml
+8eb33b3b176a2fef669eab49bb87755ad7abd2c3fd520e2613c027e4fe96817e  contracts/rhl-vocabulary-shape-v1.yaml
 223a0be9ceb6c5d5d68151d7b90f7e6c3a11ddb75920c5d131394ff67bf8d8c5  docs/rhl/breaks/planted/missing-end/01-gx10-disk-watch/break.yaml
 79f4440eec56565dfc6317c71c4ff5095e6e21be2d1f44fe7f501a33b67ebd8e  docs/rhl/breaks/planted/missing-end/01-gx10-disk-watch/broken.rhl
 0e85cf55ec425524366ee648da8461d85042c8434cb436067a0418b40aea14f9  docs/rhl/breaks/planted/missing-end/02-gx11-docker-disk-watch/break.yaml

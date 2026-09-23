@@ -28,7 +28,7 @@ cites the `test_rhl16_*` tests that check v2.
 For an action that declares `attributes:`, each action-shaped line of its `with … end` block
 assigns an attribute. The line is `<attribute> <value>`:
 
-- The name must be one of the action's declared attributes. If it is not, the code depends on how close the name is to a declared one, as for any unknown word (plan D4). With one near candidate it is RHL-V002, whose fix is safe (`titl` → `title`). With several it is RHL-V003. With none it is **RHL-V001**. Because the attribute namespace is closed and small, that V001 lists every declared attribute as a candidate, with its distance, and offers no fix.
+- The name must be one of the action's declared attributes. If it is not, the code depends on how close the name is to a declared one, as for any unknown word (plan D4). With one near candidate it is RHL-V002, whose fix is safe (`titl` → `title`). With several it is RHL-V003. With none it is **RHL-V001**, which by its catalogue definition carries no candidate; the declared attribute names are given in the diagnostic's `expected` field instead (`{"kind": "attribute", "of": "file ticket", "names": ["title", "label"]}`), and it offers no fix (RHL-2 ruling).
 - The value must be exactly one literal of the attribute's type. Otherwise the checker reports RHL-T002: `title 5`, `title 5 GB`, `title "a" "b"` or a bare `title`.
 - An attribute line takes no `in` target and no nested `with` block. Either one gives RHL-T002.
 - Any other statement in the block (`let`, `when`, …) is checked as an ordinary statement.
