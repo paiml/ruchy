@@ -3780,7 +3780,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'CLASSNEW-1: a class constructor written new(...) { self.x = ... } fails with Undefined variable: self (the book''s ch19 form)'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T14:34:36Z
@@ -3804,7 +3804,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FLAKE-1: server::watcher lib tests fail with EMFILE when the host''s per-user inotify instances (128) are exhausted'
-  status: planned
+  status: inprogress
   priority: medium
   assigned_to: null
   created: 2026-09-23T15:49:48Z

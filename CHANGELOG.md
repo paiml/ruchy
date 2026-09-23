@@ -7,18 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed — RUNMAIN-1: `ruchy run` and `ruchy <file>` call `main()` in multi-item files
+### Fixed — G2 (RHLGA-1): defects found while driving the test suite toward GA criterion #3
 
-- A file with more than one top-level item (for example a helper function and
-  `fun main`) printed nothing and exited 0, in 4.2.1 and 5.0.0-beta.2. The file
-  parses to a block whose functions were bound in a scope that was dropped
-  before the runner called `main()`. `Interpreter::eval_program` now binds
-  top-level items globally, and `Repl::run_program` runs the program and then
-  calls `main()` once, unless the file already calls it. `ruchy run` and
-  `ruchy <file>` both use it, including files with `mod` declarations.
-- Filed: UNDEFCALL-1 (a call to an undefined function evaluates to an actor
-  message instead of an error) and BYTECODE-1 (bytecode mode never calls
-  `main`).
+Behaviour changes a program can observe are marked **(behaviour)**.
+
+- **RUNMAIN-1 (behaviour):** `ruchy run` and `ruchy <file>` now call `main()` in
+  a file with more than one top-level item. Before, such a file printed nothing
+  and exited 0 (in 4.2.1 too): the file parsed to a block whose functions were
+  dropped before `main()` was called. `Interpreter::eval_program` binds top-level
+  items globally; `main()` is called once, and not at all when top-level code
+  already calls it (anywhere outside a function body). `ruchy-embed`'s
+  `Engine::eval` and `load_source` use the same path, so every function of a
+  multi-item source stays callable, and top-level `let` bindings persist across
+  calls on the same engine.
+- **UNDEFCALL-1 (behaviour):** calling an undefined function is a runtime error
+  (`Undefined function: <name>`). Before, it silently evaluated to an actor
+  message value. An undefined callee is still a message where a message is
+  expected (the argument of `send`/`ask`/`!`/`?`), whatever its case.
+- **METHODS-1 (behaviour):** objects gain `.keys()`, `.values()`, `.items()`,
+  `.entries()` (sorted key order, as objects print); arrays gain `.sorted()`,
+  `.reversed()`, `.drop(n)`; `assert_ne` joins `assert_eq`. `.sort()` now orders
+  numbers by value (`[10, 2, 1].sort()` was `[1, 10, 2]`), and its comparator is a
+  total order across mixed types.
+- **TRANSPILENOT-1 / TRANSPILECMP-1 (behaviour, transpiled code):** the
+  transpiler kept operator precedence but lost grouping: `!(b && x)` became
+  `!b && x`, `a - (b - c)` became `a - b - c`, `a / (b * c)` became `a / b * c`,
+  `(a | b) & 6` lost its parentheses, and `(a < 1) == false` became a chained
+  comparison that rustc rejects. Operands are now parenthesised wherever Rust
+  would regroup them; differential tests compare interpreter and rustc output.
+- **EMPTYBLOCK-1:** an empty body `{ }` after `if`/`else`/`while`/`for`/`loop`/`fun`
+  is an empty block, not an empty object literal; `let m = {}` is still an
+  object. (Match arms: EMPTYBLOCK-2.)
+- **CLASSNEW-1:** a class constructor written `new(...) { self.x = ... }` (the
+  book's ch19 form) no longer fails with `Undefined variable: self`.
+- **NOTEBOOK-1:** `ruchy notebook FILE` validation works without the `notebook`
+  feature; only the interactive server needs it. Two debug `println!` lines are
+  gone.
+- **DOCTEST-1:** the `ruchy` doctests went from 194 failing to 0: examples were
+  corrected against the current API, Ruchy snippets are fenced `ruchy`,
+  placeholder examples that called functions with the wrong arity or invented
+  APIs were removed, and crate-private examples are fenced `text`.
+- **FLAKE-1:** the `server::watcher` tests skip, with a printed reason, when the
+  host has no inotify instance left; any other error still fails them.
+- Tests: `ruchy doc` tests no longer rewrite tracked `docs/` files.
+- Filed, not fixed here: BYTECODE-1, MAINUNIT-1, EMPTYBLOCK-2, TESTGATE-1.
 
 ### Added — RHL-3: the YAML surface `.rhl.yaml` and `ruchy convert` (RHL-001)
 
