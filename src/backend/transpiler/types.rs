@@ -12,20 +12,19 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Lifetime;
 
-/// Generate self-receiver tokens based on type kind and mutation flag.
+/// Generate self-receiver tokens for a `self` parameter.
 ///
-/// Reduces nesting in match arms that emit `quote! { &mut self }` or `quote! { &self }`.
-fn self_receiver_tokens(ty: &TypeKind, mutated_fallback: bool) -> TokenStream {
-    if let TypeKind::Reference { is_mut, .. } = ty {
-        if *is_mut {
-            quote! { &mut self }
-        } else {
-            quote! { &self }
-        }
-    } else if mutated_fallback {
-        quote! { &mut self }
-    } else {
-        quote! { &self }
+/// `&self` / `&mut self` are kept. A bare `self` is an owned receiver (SPECIFICATION
+/// §7.11, QUALITY-001): `self`, or `mut self` when declared so. A bare `self` whose
+/// body mutates it cannot compile as an immutable owned receiver, so it becomes
+/// `&mut self` (TRANSPILER-METHOD-SELF-001).
+fn self_receiver_tokens(param: &crate::frontend::ast::Param, mutated: bool) -> TokenStream {
+    match &param.ty.kind {
+        TypeKind::Reference { is_mut: true, .. } => quote! { &mut self },
+        TypeKind::Reference { .. } => quote! { &self },
+        _ if param.is_mutable => quote! { mut self },
+        _ if mutated => quote! { &mut self },
+        _ => quote! { self },
     }
 }
 
@@ -1087,7 +1086,7 @@ impl Transpiler {
                                 // Legacy: name-based detection (e.g., "&self" as name)
                                 quote! { &self }
                             } else {
-                                self_receiver_tokens(&param.ty.kind, self_is_mutated)
+                                self_receiver_tokens(param, self_is_mutated)
                             }
                         } else {
                             let param_name = format_ident!("{}", param.name());
@@ -1183,7 +1182,7 @@ impl Transpiler {
                         // Method receivers in Rust have special syntax that differs from normal parameters
                         if name == "self" {
                             // QUALITY-001 + TRANSPILER-METHOD-SELF-001: self receiver
-                            self_receiver_tokens(&param.ty.kind, self_is_mutated)
+                            self_receiver_tokens(param, self_is_mutated)
                         } else {
                             let param_name = format_ident!("{}", param.name());
                             let type_tokens = self
