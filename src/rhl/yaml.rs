@@ -173,11 +173,11 @@ pub fn format_yaml(source: &str) -> Result<String, YamlError> {
     from_yaml(source).map(|p| to_yaml(&p))
 }
 
-/// The §3.5 diagnostic for a YAML text that is not a tree: `RHL-P001`, at the
+/// The §3.5 diagnostic for a YAML text that is not a tree: `RHL-P004`, at the
 /// YAML's line and column (line 0 when the problem has no one place).
 #[must_use]
 pub fn diagnostic(file: &str, e: &YamlError) -> Diagnostic {
-    let mut d = Diagnostic::error(codes::P001, file, "", Span::default(), e.message.clone());
+    let mut d = Diagnostic::error(codes::P004, file, "", Span::default(), e.message.clone());
     d.span = LineSpan {
         line: e.line,
         col: e.col,

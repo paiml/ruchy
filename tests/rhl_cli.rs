@@ -188,7 +188,7 @@ fn test_rhl3_cli_convert_malformed_yaml_is_p001_exit_2() {
         .assert()
         .code(2)
         .stdout("")
-        .stderr(predicate::str::contains("error[RHL-P001]"));
+        .stderr(predicate::str::contains("error[RHL-P004]"));
 }
 
 fn check_json(file: &Path) -> (serde_json::Value, Option<i32>) {

@@ -233,7 +233,7 @@ to `-o`, or to standard output.
 - RHL output is always `fmt`'s normal form. YAML output is always the canonical YAML.
 - An input that is not a tree is refused with exit **2** and the diagnostic on standard
   error: RHL text that does not parse gets its own `RHL-P…` code; YAML that is refused
-  (above) gets `RHL-P001`, at the YAML's line and column, or at line 0 when the problem
+  (above) gets `RHL-P004`, at the YAML's line and column, or at line 0 when the problem
   is the tree as a whole and has no one place.
 - A file that cannot be read or written is exit **1**. An input whose name gives no
   direction, with no `--to`, is exit **2**.
@@ -250,7 +250,7 @@ Both verbs extend by extension, as for `.rhl`.
   form. The **span of every diagnostic is line 0, column 0** (unknown): the checker's
   positions are in the RHL text, which is not the file checked. For the same reason the
   diagnostics carry **no fixes**. To see positions or apply fixes, `ruchy convert` the file
-  to `.rhl`. A YAML text that is not a tree is one `RHL-P001` diagnostic, with the verdict
+  to `.rhl`. A YAML text that is not a tree is one `RHL-P004` diagnostic, with the verdict
   `fail` and exit 1, as a `.rhl` parse failure is.
 - `ruchy fmt x.rhl.yaml` re-emits the canonical YAML of the tree.
 - `ruchy fix` edits RHL text; on a `.rhl.yaml` file it refuses (exit 1) and names
@@ -268,5 +268,5 @@ The lib tests `test_rhl3_*` in `src/rhl/yaml_tests.rs` measure F3:
 - The same two properties over generated trees (proptest, `PROPTEST_CASES`, default 100).
 - Positive control: changing one token (`100 GB` to `101 GB`, `may read` to `may write`)
   changes the YAML bytes. Changing only the layout does not.
-- Refusals: malformed YAML is `RHL-P001` with its line and column; arbitrary text and
+- Refusals: malformed YAML is `RHL-P004` with its line and column; arbitrary text and
   damaged YAML never panic.

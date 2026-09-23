@@ -24,6 +24,8 @@ pub const P001: &str = "RHL-P001";
 pub const P002: &str = "RHL-P002";
 /// Text that starts no token of the grammar.
 pub const P003: &str = "RHL-P003";
+/// A `.rhl.yaml` text that does not describe an intent tree (RHL-3).
+pub const P004: &str = "RHL-P004";
 /// Unknown word with no candidate.
 pub const V001: &str = "RHL-V001";
 /// Unknown word with exactly one candidate; its fix is safe (pre-registered).
@@ -63,6 +65,7 @@ pub const CATALOGUE: &[CodeInfo] = &[
     info(B001, "not a finite collection", Some("Unbounded")),
     info(C001, "no contract template", Some("NoContractTemplate")),
     info(X001, "`given`/`then` outside `example`", None),
+    info(P004, "YAML is not an intent tree", None),
 ];
 
 const fn info(code: &'static str, title: &'static str, refusal: Option<&'static str>) -> CodeInfo {

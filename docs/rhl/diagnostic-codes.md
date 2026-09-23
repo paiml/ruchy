@@ -28,6 +28,7 @@ When there are errors but no refusal, it exits **1**. With no errors it exits **
 | `RHL-B001` | not a finite collection | `Unbounded` |
 | `RHL-C001` | no contract template | `NoContractTemplate` |
 | `RHL-X001` | `given`/`then` outside `example` | — |
+| `RHL-P004` | YAML is not an intent tree | — |
 
 Six codes were pre-registered by RHL-0 in `docs/rhl/breaks/planted/*/*/break.yaml`
 before any checker existed. Their meaning is fixed by that data: `RHL-P001`,
@@ -43,9 +44,10 @@ candidates. The declared names are listed in `expected.names` and not as candida
 
 ## Diagnostics of the YAML surface `.rhl.yaml`
 
-RHL-3 adds no code. A `.rhl.yaml` text that is not a program tree (not YAML, not the
+RHL-3 adds one code, `RHL-P004`, appended to the catalogue (codes are never reused, so
+the pre-registered `RHL-P001`, missing `end`, keeps its meaning). A `.rhl.yaml` text that is not a program tree (not YAML, not the
 tree's shape, an unknown key, a local YAML tag, no `rhl: 1`, or a tree the grammar could not produce) is
-reported as `RHL-P001`, the parse family, at the YAML's line and column, or at line 0
+reported as `RHL-P004`, in the parse family, at the YAML's line and column, or at line 0
 when the problem has no one place. `ruchy convert` exits 2 on it; `ruchy check` gives
 the verdict `fail` and exits 1, as for a `.rhl` parse failure. Every other diagnostic of
 a `.rhl.yaml` file is the checker's, with the code it has for the `.rhl` form, a span of

@@ -210,7 +210,7 @@ fn test_rhl3_malformed_yaml_is_p001_with_the_yaml_line_and_column() {
     let e = refused("rhl: 1\ndecls: [\n  - {unit: \n");
     assert!(e.line >= 2, "{e:?}");
     let d = diagnostic("x.rhl.yaml", &e);
-    assert_eq!(d.code, "RHL-P001");
+    assert_eq!(d.code, "RHL-P004");
     assert_eq!((d.span.line, d.span.col), (e.line, e.col));
     assert_eq!(d.file, "x.rhl.yaml");
 }
@@ -308,7 +308,7 @@ fn test_rhl3_convert_source_both_directions() {
 fn test_rhl3_convert_source_refuses_what_is_not_a_tree() {
     let err = convert_source("x.rhl.yaml", "rhl: [", Target::Rhl).expect_err("bad yaml");
     assert!(err.contains("x.rhl.yaml:1:"), "{err}");
-    assert!(err.contains("error[RHL-P001]"), "{err}");
+    assert!(err.contains("error[RHL-P004]"), "{err}");
     let err =
         convert_source("x.rhl", "job \"x\"\n  every 1 hour\n", Target::Yaml).expect_err("bad rhl");
     assert!(err.contains("error[RHL-P001]"), "{err}");
@@ -338,7 +338,7 @@ fn test_rhl3_convert_file_refusals_exit_2_or_1() {
     std::fs::write(&bad, "rhl: 1\ndecls: {\n").expect("write");
     let out = convert_file(&bad, None, None);
     assert_eq!(out.exit, 2);
-    assert!(out.stderr.contains("error[RHL-P001]"), "{}", out.stderr);
+    assert!(out.stderr.contains("error[RHL-P004]"), "{}", out.stderr);
     assert!(out.stdout.is_empty());
     let other = dir.path().join("x.txt");
     std::fs::write(&other, "job \"j\"\n  expect a\nend\n").expect("write");
@@ -381,7 +381,7 @@ fn test_rhl3_check_on_yaml_runs_the_same_checker() {
 fn test_rhl3_check_on_malformed_yaml_is_one_p001() {
     let rep = check_yaml("x.rhl.yaml", "rhl: 1\ndecls: {\n", None);
     assert_eq!(rep.diagnostics.len(), 1);
-    assert_eq!(rep.diagnostics[0].code, "RHL-P001");
+    assert_eq!(rep.diagnostics[0].code, "RHL-P004");
     assert_eq!(rep.verdict, Verdict::Fail);
 }
 
@@ -400,7 +400,7 @@ fn test_rhl3_fmt_on_yaml_re_emits_canonical_yaml() {
     let loose = "decls:\n  - unit: {kind: job, name: j, body: [{expect: {app: {call: {phrase: a}}}}]}\nrhl: 1\n";
     assert_eq!(format_file_source("x.rhl.yaml", loose).as_deref(), Ok(ONE));
     let err = format_file_source("x.rhl.yaml", "rhl: [").expect_err("bad");
-    assert!(err.contains("error[RHL-P001]"), "{err}");
+    assert!(err.contains("error[RHL-P004]"), "{err}");
 }
 
 #[test]
@@ -442,7 +442,7 @@ proptest! {
     #[test]
     fn test_rhl3_prop_arbitrary_text_never_panics(s in "\\PC{0,200}") {
         if let Err(e) = from_yaml(&s) {
-            prop_assert_eq!(diagnostic("f.rhl.yaml", &e).code, "RHL-P001");
+            prop_assert_eq!(diagnostic("f.rhl.yaml", &e).code, "RHL-P004");
         }
         let _ = convert_source("f.rhl.yaml", &s, Target::Rhl);
     }
@@ -457,7 +457,7 @@ proptest! {
         let damaged = format!("{}{with}{}", &yaml[..cut], &yaml[cut..].chars().skip(1).collect::<String>());
         match from_yaml(&damaged) {
             Ok(p) => prop_assert_eq!(to_yaml(&from_yaml(&to_yaml(&p)).expect("canonical reads")), to_yaml(&p)),
-            Err(e) => prop_assert_eq!(diagnostic("f.rhl.yaml", &e).code, "RHL-P001"),
+            Err(e) => prop_assert_eq!(diagnostic("f.rhl.yaml", &e).code, "RHL-P004"),
         }
     }
 }
