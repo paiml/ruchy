@@ -89,10 +89,12 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_tuple;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr};
     ///
-    /// let result = transpile_tuple(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let result = transpiler.transpile_tuple(&[]);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_tuple(&self, elements: &[Expr]) -> Result<TokenStream> {
         let element_tokens: Result<Vec<_>> =
@@ -104,10 +106,14 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_range;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
-    /// let result = transpile_range(true);
-    /// assert_eq!(result, Ok(true));
+    /// let transpiler = Transpiler::new();
+    /// let start = Expr::new(ExprKind::Literal(Literal::Integer(0, None)), Span::default());
+    /// let end = Expr::new(ExprKind::Literal(Literal::Integer(10, None)), Span::default());
+    /// let result = transpiler.transpile_range(&start, &end, true);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_range(
         &self,
@@ -127,10 +133,17 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_object_literal;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, ObjectField, Span};
     ///
-    /// let result = transpile_object_literal(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let value = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+    /// let fields = vec![ObjectField::KeyValue {
+    ///     key: "x".to_string(),
+    ///     value,
+    /// }];
+    /// let tokens = transpiler.transpile_object_literal(&fields).unwrap();
+    /// assert!(tokens.to_string().contains("map . insert"));
     /// ```
     pub fn transpile_object_literal(
         &self,
@@ -177,10 +190,14 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_struct_literal;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
-    /// let result = transpile_struct_literal("example");
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let value = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+    /// let fields = vec![("x".to_string(), value)];
+    /// let result = transpiler.transpile_struct_literal("Point", &fields, None);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_struct_literal(
         &self,

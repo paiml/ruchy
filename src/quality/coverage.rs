@@ -20,15 +20,6 @@ impl FileCoverage {
     #[allow(clippy::cast_precision_loss)]
     /// # Examples
     ///
-    /// ```
-    /// use ruchy::quality::coverage::FileCoverage;
-    ///
-    /// let mut instance = FileCoverage::new();
-    /// let result = instance.line_coverage_percentage();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
     /// ```ignore
     /// use ruchy::quality::coverage::line_coverage_percentage;
     ///
@@ -43,15 +34,6 @@ impl FileCoverage {
         }
     }
     #[allow(clippy::cast_precision_loss)]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::coverage::FileCoverage;
-    ///
-    /// let mut instance = FileCoverage::new();
-    /// let result = instance.branch_coverage_percentage();
-    /// // Verify behavior
-    /// ```
     /// # Examples
     ///
     /// ```ignore
@@ -139,15 +121,6 @@ impl CoverageReport {
             (self.covered_functions as f64 / self.total_functions as f64) * 100.0
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::coverage::CoverageReport;
-    ///
-    /// let mut instance = CoverageReport::new();
-    /// let result = instance.add_file();
-    /// // Verify behavior
-    /// ```
     pub fn add_file(&mut self, file_coverage: FileCoverage) {
         self.total_lines += file_coverage.lines_total;
         self.covered_lines += file_coverage.lines_covered;
@@ -187,7 +160,7 @@ impl CoverageCollector {
     /// ```
     /// use ruchy::quality::{CoverageCollector, CoverageTool};
     ///
-    /// let collector = CoverageCollector::new(CoverageTool::Tarpaulin)
+    /// let collector = CoverageCollector::new(CoverageTool::LlvmCov)
     ///     .with_source_dir("src");
     /// ```
     #[must_use]
@@ -202,7 +175,7 @@ impl CoverageCollector {
     /// ```no_run
     /// use ruchy::quality::{CoverageCollector, CoverageTool};
     ///
-    /// let collector = CoverageCollector::new(CoverageTool::Tarpaulin);
+    /// let collector = CoverageCollector::new(CoverageTool::LlvmCov);
     /// let report = collector.collect().expect("Failed to collect coverage");
     /// println!("Line coverage: {:.1}%", report.line_coverage_percentage());
     /// ```

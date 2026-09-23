@@ -20,14 +20,6 @@ pub struct LoweringContext {
 impl LoweringContext {
     /// Create a new lowering context
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::mir::lower::new;
-    ///
-    /// let result = new(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn new() -> Self {
         Self {
             builder: MirBuilder::new(),

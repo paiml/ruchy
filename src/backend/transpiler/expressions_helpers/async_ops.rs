@@ -8,7 +8,11 @@ use quote::{format_ident, quote};
 
 impl Transpiler {
     pub fn transpile_unary(&self, op: UnaryOp, operand: &Expr) -> Result<TokenStream> {
-        let operand_tokens = self.transpile_expr(operand)?;
+        let mut operand_tokens = self.transpile_expr(operand)?;
+        // TRANSPILENOT-1: `!(b && x)` must not become `!b && x`
+        if Self::unary_operand_needs_parens(operand) {
+            operand_tokens = quote! { (#operand_tokens) };
+        }
         Ok(match op {
             UnaryOp::Not | UnaryOp::BitwiseNot => quote! { !#operand_tokens },
             UnaryOp::Negate => quote! { -#operand_tokens },
@@ -21,10 +25,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_await;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_await(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_await(&e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_await(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
@@ -63,10 +70,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_async_block;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_async_block(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_async_block(&e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_async_block(&self, body: &Expr) -> Result<TokenStream> {
         // SPEC-001-E: Async block - simplified synchronous evaluation
@@ -80,10 +90,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_async_lambda;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_async_lambda(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_async_lambda(&[], &e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_async_lambda(&self, params: &[String], body: &Expr) -> Result<TokenStream> {
         let param_idents: Vec<proc_macro2::Ident> =
@@ -97,10 +110,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_throw;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_throw(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_throw(&e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_throw(&self, expr: &Expr) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;

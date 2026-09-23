@@ -50,6 +50,7 @@ println(processes.len());
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -88,6 +89,7 @@ println(configs.len());
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -121,6 +123,7 @@ println(items.len());
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -152,6 +155,7 @@ println(items.len());
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .assert()
         .success();
 }
@@ -173,6 +177,7 @@ println(numbers.len());
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .assert()
         .success();
 }
@@ -195,6 +200,7 @@ println(numbers.len());
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 

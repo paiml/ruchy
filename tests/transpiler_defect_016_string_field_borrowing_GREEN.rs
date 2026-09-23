@@ -61,6 +61,7 @@ println(result);
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -108,6 +109,7 @@ println(format_config(c));
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -145,6 +147,7 @@ println(build_message("World"));
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -182,6 +185,7 @@ println(format_message());
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .assert()
         .success();
 }
@@ -214,6 +218,7 @@ println(format_data(data));
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .assert()
         .success();
 }
@@ -251,6 +256,7 @@ println(format_priority(Priority::High));
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 

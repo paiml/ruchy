@@ -204,10 +204,14 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_index_access;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_index_access(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let e1 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_index_access(&e0, &e1);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_index_access(&self, object: &Expr, index: &Expr) -> Result<TokenStream> {
         use crate::frontend::ast::{ExprKind, Literal};
@@ -230,10 +234,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_slice;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_slice(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_slice(&e0, None, None);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_slice(
         &self,

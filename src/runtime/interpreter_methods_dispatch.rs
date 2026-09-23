@@ -13,7 +13,6 @@
 use crate::frontend::ast::{Expr, ExprKind};
 use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
-use std::collections::HashMap;
 use std::sync::Arc;
 
 impl Interpreter {
@@ -26,17 +25,7 @@ impl Interpreter {
     ) -> Result<Value, InterpreterError> {
         // Special handling for stdlib namespace methods (e.g., Html.parse())
         if let ExprKind::Identifier(namespace) = &receiver.kind {
-            // Check if this is a stdlib namespace call before trying to look it up as a variable
-            let namespace_method = format!("{namespace}_{method}");
-
-            // Try to evaluate as builtin function first
-            let arg_values: Result<Vec<_>, _> =
-                args.iter().map(|arg| self.eval_expr(arg)).collect();
-            let arg_values = arg_values?;
-
-            if let Ok(Some(result)) =
-                crate::runtime::eval_builtin::eval_builtin_function(&namespace_method, &arg_values)
-            {
+            if let Some(result) = self.try_namespace_builtin(namespace, method, args)? {
                 return Ok(result);
             }
         }
@@ -157,26 +146,8 @@ impl Interpreter {
             };
 
             if is_actor {
-                // Try to evaluate the argument as a message
-                let arg_value = match &args[0].kind {
-                    ExprKind::Identifier(name) => {
-                        // Try to evaluate as variable first
-                        if let Ok(val) = self.lookup_variable(name) {
-                            val
-                        } else {
-                            // Treat as a zero-argument message constructor
-                            let mut message = HashMap::new();
-                            message.insert(
-                                "__type".to_string(),
-                                Value::from_string("Message".to_string()),
-                            );
-                            message.insert("type".to_string(), Value::from_string(name.clone()));
-                            message.insert("data".to_string(), Value::Array(Arc::from(vec![])));
-                            Value::Object(Arc::new(message))
-                        }
-                    }
-                    _ => self.eval_expr(&args[0])?,
-                };
+                // UNDEFCALL-1: the argument of send/ask is in message position
+                let arg_value = self.eval_message_expr(&args[0])?;
                 return self.dispatch_method_call(&receiver_value, method, &[arg_value], false);
             }
         }
@@ -237,27 +208,70 @@ impl Interpreter {
 
     // Helper methods for method dispatch (complexity <10 each)
 
-    /// Evaluate a message expression - if it's an undefined identifier, treat as message name
-    /// Complexity: ≤5
+    /// Try `namespace.method(args)` as the stdlib builtin `namespace_method`.
+    ///
+    /// UNDEFCALL-1: `send`/`ask` are never namespace builtins, and their argument is
+    /// in message position, so it must not be evaluated as an ordinary expression here.
+    /// Complexity: 3
+    fn try_namespace_builtin(
+        &mut self,
+        namespace: &str,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<Option<Value>, InterpreterError> {
+        if method == "send" || method == "ask" {
+            return Ok(None);
+        }
+        let arg_values = args
+            .iter()
+            .map(|arg| self.eval_expr(arg))
+            .collect::<Result<Vec<_>, _>>()?;
+        let namespace_method = format!("{namespace}_{method}");
+        Ok(
+            crate::runtime::eval_builtin::eval_builtin_function(&namespace_method, &arg_values)
+                .ok()
+                .flatten(),
+        )
+    }
+
+    /// UNDEFCALL-1: evaluate an expression in message position (the argument of
+    /// `send`/`ask`/`!`/`<?`). An unbound identifier `m` or an unbound callee
+    /// `m(args)` is a message value named `m`, whatever its case; everything else,
+    /// including the message's own arguments, evaluates normally.
+    /// Complexity: 3
     pub(crate) fn eval_message_expr(&mut self, message: &Expr) -> Result<Value, InterpreterError> {
         match &message.kind {
-            ExprKind::Identifier(name) => {
-                // Try to evaluate as variable first
-                if let Ok(val) = self.lookup_variable(name) {
-                    Ok(val)
-                } else {
-                    // Treat as a zero-argument message constructor
-                    let mut msg_obj = HashMap::new();
-                    msg_obj.insert(
-                        "__type".to_string(),
-                        Value::from_string("Message".to_string()),
-                    );
-                    msg_obj.insert("type".to_string(), Value::from_string(name.clone()));
-                    msg_obj.insert("data".to_string(), Value::Array(Arc::from(vec![])));
-                    Ok(Value::Object(Arc::new(msg_obj)))
+            ExprKind::Identifier(name) => Ok(self.lookup_variable(name).unwrap_or_else(|_| {
+                crate::runtime::eval_actor::create_message_object(name, vec![])
+            })),
+            ExprKind::Call { func, args } => match &func.kind {
+                ExprKind::Identifier(name) if self.lookup_variable(name).is_err() => {
+                    self.eval_message_constructor(name, args)
                 }
-            }
+                _ => self.eval_expr(message),
+            },
             _ => self.eval_expr(message),
+        }
+    }
+
+    /// UNDEFCALL-1: `name(args)` in message position where `name` is unbound:
+    /// a builtin call if `name` is a builtin, otherwise a message value.
+    /// Complexity: 2
+    fn eval_message_constructor(
+        &mut self,
+        name: &str,
+        args: &[Expr],
+    ) -> Result<Value, InterpreterError> {
+        let arg_vals = args
+            .iter()
+            .map(|arg| self.eval_expr(arg))
+            .collect::<Result<Vec<_>, _>>()?;
+        let builtin_name = format!("__builtin_{name}__");
+        match crate::runtime::eval_builtin::eval_builtin_function(&builtin_name, &arg_vals)? {
+            Some(result) => Ok(result),
+            None => Ok(crate::runtime::eval_actor::create_message_object(
+                name, arg_vals,
+            )),
         }
     }
 
@@ -443,6 +457,7 @@ impl Interpreter {
 mod tests {
     use super::*;
     use crate::frontend::ast::Span;
+    use std::collections::HashMap;
 
     fn make_interpreter() -> Interpreter {
         Interpreter::new()
@@ -527,6 +542,93 @@ mod tests {
         } else {
             panic!("Expected Object");
         }
+    }
+
+    fn message_call(name: &str, args: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::Call {
+            func: Box::new(make_expr(ExprKind::Identifier(name.to_string()))),
+            args,
+        })
+    }
+
+    fn assert_message(value: &Value, name: &str, data: &[Value]) {
+        let Value::Object(obj) = value else {
+            panic!("expected Message object, got {value:?}");
+        };
+        assert_eq!(
+            obj.get("__type"),
+            Some(&Value::from_string("Message".into()))
+        );
+        assert_eq!(obj.get("type"), Some(&Value::from_string(name.into())));
+        assert_eq!(
+            obj.get("data"),
+            Some(&Value::Array(Arc::from(data.to_vec())))
+        );
+    }
+
+    fn int_lit(n: i64) -> Expr {
+        make_expr(ExprKind::Literal(crate::frontend::ast::Literal::Integer(
+            n, None,
+        )))
+    }
+
+    #[test]
+    fn test_undefcall_1_message_position_lower_case_call_is_message() {
+        let mut interp = make_interpreter();
+        let expr = message_call("deposit", vec![int_lit(100)]);
+        let value = interp.eval_message_expr(&expr).unwrap();
+        assert_message(&value, "deposit", &[Value::Integer(100)]);
+    }
+
+    #[test]
+    fn test_undefcall_1_message_position_pascal_case_call_is_message() {
+        let mut interp = make_interpreter();
+        let expr = message_call("Say", vec![int_lit(4)]);
+        let value = interp.eval_message_expr(&expr).unwrap();
+        assert_message(&value, "Say", &[Value::Integer(4)]);
+    }
+
+    #[test]
+    fn test_undefcall_1_message_position_lower_case_identifier_is_message() {
+        let mut interp = make_interpreter();
+        let expr = make_expr(ExprKind::Identifier("get_balance".to_string()));
+        let value = interp.eval_message_expr(&expr).unwrap();
+        assert_message(&value, "get_balance", &[]);
+    }
+
+    #[test]
+    fn test_undefcall_1_message_position_defined_callee_is_called() {
+        let mut interp = make_interpreter();
+        let body = make_expr(ExprKind::Identifier("x".to_string()));
+        let param = crate::frontend::ast::Param {
+            pattern: crate::frontend::ast::Pattern::Identifier("x".to_string()),
+            ty: crate::frontend::ast::Type {
+                kind: crate::frontend::ast::TypeKind::Named("Any".to_string()),
+                span: Span::default(),
+            },
+            span: Span::default(),
+            is_mutable: false,
+            default_value: None,
+        };
+        interp.eval_function("identity", &[param], &body).unwrap();
+        let expr = message_call("identity", vec![int_lit(7)]);
+        assert_eq!(interp.eval_message_expr(&expr).unwrap(), Value::Integer(7));
+    }
+
+    #[test]
+    fn test_undefcall_1_message_position_builtin_callee_is_called() {
+        let mut interp = make_interpreter();
+        let expr = message_call("abs", vec![int_lit(-3)]);
+        assert_eq!(interp.eval_message_expr(&expr).unwrap(), Value::Integer(3));
+    }
+
+    #[test]
+    fn test_undefcall_1_message_position_nested_undefined_call_errors() {
+        let mut interp = make_interpreter();
+        let inner = message_call("nosuch", vec![int_lit(1)]);
+        let expr = message_call("deposit", vec![inner]);
+        let err = interp.eval_message_expr(&expr).unwrap_err();
+        assert_eq!(err.to_string(), "Runtime error: Undefined function: nosuch");
     }
 
     // Test eval_message_expr with defined variable

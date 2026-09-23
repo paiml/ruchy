@@ -217,9 +217,11 @@ impl Engine {
         let ast = parser
             .parse()
             .map_err(|e| anyhow::anyhow!("Parse error: {e}"))?;
+        // RUNMAIN-1: a multi-item source is a program; its definitions bind in
+        // the engine's scope rather than a block scope that is dropped.
         let result = self
             .interp
-            .eval_expr(&ast)
+            .eval_program(&ast)
             .map_err(|e| anyhow::anyhow!("Eval error: {e}"))?;
         Ok(ruchy_to_embed(result))
     }
@@ -245,7 +247,7 @@ impl Engine {
             .parse()
             .map_err(|e| anyhow::anyhow!("Parse error: {e}"))?;
         self.interp
-            .eval_expr(&ast)
+            .eval_program(&ast)
             .map_err(|e| anyhow::anyhow!("Load error: {e}"))?;
         Ok(())
     }
@@ -418,6 +420,35 @@ mod tests {
         let mut engine = Engine::new();
         let result = engine.load_source("let x = 42");
         assert!(result.is_ok(), "load_source failed: {:?}", result.err());
+    }
+
+    /// RUNMAIN-1: every function of a multi-item source stays callable.
+    #[test]
+    fn test_runmain_1_engine_load_source_keeps_every_function() {
+        let mut engine = Engine::new();
+        engine
+            .load_source(
+                "fun double(x: i64) -> i64 { x * 2 }\nfun triple(x: i64) -> i64 { x * 3 }\n",
+            )
+            .expect("load");
+        let d = engine.call("double", &[Value::from(5i64)]).expect("double");
+        let t = engine.call("triple", &[Value::from(5i64)]).expect("triple");
+        assert!(matches!(d, Value::Integer(10)), "{d:?}");
+        assert!(matches!(t, Value::Integer(15)), "{t:?}");
+    }
+
+    /// RUNMAIN-1: `eval` of a program with a helper and a use of it.
+    #[test]
+    fn test_runmain_1_engine_eval_multi_item_program() {
+        let mut engine = Engine::new();
+        let v = engine
+            .eval("fun inc(x: i64) -> i64 { x + 1 }\nlet y = inc(41)\ny\n")
+            .expect("eval");
+        assert!(matches!(v, Value::Integer(42)), "{v:?}");
+        let again = engine
+            .call("inc", &[Value::from(1i64)])
+            .expect("inc still defined");
+        assert!(matches!(again, Value::Integer(2)), "{again:?}");
     }
 
     #[test]

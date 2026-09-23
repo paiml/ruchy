@@ -104,8 +104,8 @@ pub use helpers::{
     create_repl, log_command_output, read_file_with_context, write_file_with_context,
 };
 
-// Internal re-exports (used by extracted handlers when notebook feature is enabled)
-#[cfg(feature = "notebook")]
+// Internal re-exports (used by notebook_handler's file-validation mode, which
+// runs in every build - see notebook_handler::validate_notebook_file)
 pub(crate) use transpile_handler::parse_source;
 
 // ============================================================================

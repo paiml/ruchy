@@ -128,11 +128,11 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let actor = Expr::literal(42.into());
-    /// let message = Expr::literal("hello".into());
+    /// let actor = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+    /// let message = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Span::default());
     /// let result = transpiler.transpile_send(&actor, &message);
     /// assert!(result.is_ok());
     /// ```
@@ -150,12 +150,12 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let actor = Expr::literal(42.into());
-    /// let message = Expr::literal("hello".into());
-    /// let result = transpiler.transpile_ask(&actor, &message);
+    /// let actor = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+    /// let message = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Span::default());
+    /// let result = transpiler.transpile_ask(&actor, &message, None);
     /// assert!(result.is_ok());
     /// ```
     pub fn transpile_ask(
@@ -186,11 +186,10 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
-    /// let mut transpiler = Transpiler::new();
-    /// let command = Expr::literal("test_command".into());
-    /// let result = transpiler.transpile_command(&command);
+    /// let transpiler = Transpiler::new();
+    /// let result = transpiler.transpile_command("echo", &["hello".to_string()], &[], &None);
     /// assert!(result.is_ok());
     /// ```
     pub fn transpile_command(

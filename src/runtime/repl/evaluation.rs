@@ -2,7 +2,9 @@
 //!
 //! Handles evaluation of user input with proper error handling and multiline support.
 
+use crate::frontend::ast::{Expr, ExprKind, Span};
 use crate::runtime::interpreter::{Interpreter, Value};
+use crate::runtime::InterpreterError;
 use anyhow::Result;
 
 /// Result of evaluating a line of input
@@ -93,6 +95,22 @@ impl Evaluator {
         }
     }
 
+    /// Run a parsed script program (RUNMAIN-1) (complexity: 2)
+    ///
+    /// Top-level items run once, in order, in the global scope. Then `main()`
+    /// is called once when the program defines `main` and does not already
+    /// call it as a top-level statement.
+    ///
+    /// # Errors
+    /// Returns the first error raised by a top-level item or by `main()`.
+    pub fn run_program(&mut self, program: &Expr) -> Result<Value, InterpreterError> {
+        let value = catch_return(self.interpreter.eval_program(program))?;
+        if !should_call_main(program) {
+            return Ok(value);
+        }
+        catch_return(self.interpreter.eval_expr(&main_call_expr()))
+    }
+
     /// Check if we're in multiline mode (complexity: 1)
     pub fn is_multiline(&self) -> bool {
         !self.multiline_buffer.is_empty()
@@ -116,6 +134,89 @@ impl Evaluator {
             || (error_msg.contains("expected") && error_msg.contains("EOF"))
             || error_msg.contains("found EOF")
     }
+}
+
+/// Turn an early `return` at program level into its value (complexity: 2)
+fn catch_return(result: Result<Value, InterpreterError>) -> Result<Value, InterpreterError> {
+    match result {
+        Err(InterpreterError::Return(value)) => Ok(value),
+        other => other,
+    }
+}
+
+/// Top-level items of a parsed program (complexity: 2)
+fn top_level_items(program: &Expr) -> &[Expr] {
+    match &program.kind {
+        ExprKind::Block(items) => items,
+        _ => std::slice::from_ref(program),
+    }
+}
+
+/// Program defines `main` and its top-level code does not call it (complexity: 2)
+fn should_call_main(program: &Expr) -> bool {
+    let items = top_level_items(program);
+    items.iter().any(is_main_definition) && !items.iter().any(calls_main)
+}
+
+/// `fun main(...) { ... }` (complexity: 1)
+fn is_main_definition(item: &Expr) -> bool {
+    matches!(&item.kind, ExprKind::Function { name, .. } if name == "main")
+}
+
+/// AST kinds whose bodies run only when called, so a `main()` inside them does
+/// not drive `main` from the top level.
+const DEFINITION_KINDS: &[&str] = &[
+    "Function",
+    "Lambda",
+    "AsyncLambda",
+    "Class",
+    "Impl",
+    "Actor",
+    "Trait",
+    "Struct",
+    "TupleStruct",
+    "Enum",
+    "Effect",
+];
+
+/// RUNMAIN-1: running `item` evaluates a call to `main` somewhere outside a
+/// definition body. The AST is walked generically through its serde tree so
+/// every expression kind is covered (complexity: 1).
+fn calls_main(item: &Expr) -> bool {
+    serde_json::to_value(item).is_ok_and(|ast| ast_calls_main(&ast))
+}
+
+/// Serialized-AST walk behind [`calls_main`] (complexity: 5)
+fn ast_calls_main(node: &serde_json::Value) -> bool {
+    match node {
+        serde_json::Value::Object(map) => {
+            if DEFINITION_KINDS.iter().any(|kind| map.contains_key(*kind)) {
+                return false;
+            }
+            map.get("Call").is_some_and(is_main_callee) || map.values().any(ast_calls_main)
+        }
+        serde_json::Value::Array(items) => items.iter().any(ast_calls_main),
+        _ => false,
+    }
+}
+
+/// Serialized `ExprKind::Call` payload whose callee is the identifier `main` (complexity: 1)
+fn is_main_callee(call: &serde_json::Value) -> bool {
+    call.pointer("/func/kind/Identifier")
+        .and_then(serde_json::Value::as_str)
+        == Some("main")
+}
+
+/// The expression `main()` (complexity: 1)
+fn main_call_expr() -> Expr {
+    let callee = Expr::new(ExprKind::Identifier("main".to_string()), Span::default());
+    Expr::new(
+        ExprKind::Call {
+            func: Box::new(callee),
+            args: Vec::new(),
+        },
+        Span::default(),
+    )
 }
 
 impl Default for Evaluator {
@@ -523,5 +624,64 @@ mod tests {
             EvalResult::Error(msg) => assert_eq!(msg, "error msg"),
             _ => panic!("Clone failed for Error variant"),
         }
+    }
+
+    fn parse_program(src: &str) -> Expr {
+        crate::frontend::parser::Parser::new(src)
+            .parse()
+            .expect("program parses")
+    }
+
+    #[test]
+    fn test_runmain_1_run_program_calls_main_in_multi_item_file() {
+        let program = parse_program("fun d(a: i64) -> i64 { a * 2 }\nfun main() { d(21) }");
+        let value = Evaluator::new().run_program(&program).expect("runs");
+        assert_eq!(value, Value::Integer(42));
+    }
+
+    #[test]
+    fn test_runmain_1_run_program_keeps_top_level_functions() {
+        let mut evaluator = Evaluator::new();
+        let program = parse_program("fun d(a: i64) -> i64 { a }\nfun e() -> i64 { 5 }");
+        evaluator.run_program(&program).expect("runs");
+        let call = parse_program("d(3) + e()");
+        let value = evaluator
+            .interpreter
+            .eval_expr(&call)
+            .expect("helpers bound");
+        assert_eq!(value, Value::Integer(8));
+    }
+
+    #[test]
+    fn test_runmain_1_run_program_without_main_returns_last_value() {
+        let program = parse_program("fun d(a: i64) -> i64 { a }\nd(9)");
+        let value = Evaluator::new().run_program(&program).expect("runs");
+        assert_eq!(value, Value::Integer(9));
+    }
+
+    #[test]
+    fn test_runmain_1_should_call_main_cases() {
+        assert!(should_call_main(&parse_program("fun main() { 1 }")));
+        assert!(should_call_main(&parse_program(
+            "fun d() { 1 }\nfun main() { 1 }"
+        )));
+        assert!(!should_call_main(&parse_program(
+            "fun main() { 1 }\nmain()"
+        )));
+        assert!(!should_call_main(&parse_program("fun d() { 1 }\nd()")));
+        assert!(!should_call_main(&parse_program("fun d() { 1 }\nmain()")));
+    }
+
+    #[test]
+    fn test_runmain_1_run_program_propagates_main_error() {
+        let program = parse_program("fun d() { 1 }\nfun main() { panic!(\"boom\") }");
+        assert!(Evaluator::new().run_program(&program).is_err());
+    }
+
+    #[test]
+    fn test_runmain_1_catch_return_unwraps_early_return() {
+        let value = catch_return(Err(InterpreterError::Return(Value::Integer(4))));
+        assert_eq!(value.expect("return is a value"), Value::Integer(4));
+        assert!(catch_return(Err(InterpreterError::RuntimeError("x".to_string()))).is_err());
     }
 }

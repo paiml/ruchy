@@ -6,6 +6,46 @@ use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;
 
+/// How an operand's emitted Rust binds, for deciding whether it needs parentheses.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum OperandShape {
+    /// Primary or postfix expression (identifier, literal, call, method call, ...)
+    Atom,
+    /// Prefix unary expression (`!x`, `-x`, `&x`, `*x`)
+    Prefix,
+    /// `x as T`
+    Cast,
+    /// Infix binary expression emitted with a Rust operator
+    Infix(BinaryOp),
+    /// Binds looser than every binary operator (range, assignment, lambda, ternary)
+    Low,
+}
+
+impl OperandShape {
+    fn of(expr: &Expr) -> Self {
+        match &expr.kind {
+            ExprKind::Binary { op, .. } if Transpiler::is_method_style(*op) => Self::Atom,
+            ExprKind::Binary { op, .. } => Self::Infix(*op),
+            ExprKind::Unary { .. } => Self::Prefix,
+            ExprKind::TypeCast { .. } => Self::Cast,
+            ExprKind::Range { .. }
+            | ExprKind::Assign { .. }
+            | ExprKind::CompoundAssign { .. }
+            | ExprKind::Lambda { .. }
+            | ExprKind::Ternary { .. } => Self::Low,
+            _ => Self::Atom,
+        }
+    }
+    /// Operand of a prefix operator: only primaries, postfix and prefix forms bind tighter.
+    fn needs_parens_after_prefix(self) -> bool {
+        matches!(self, Self::Cast | Self::Infix(_) | Self::Low)
+    }
+    /// Receiver of a method call: only primaries and postfix forms bind tighter.
+    fn needs_parens_as_receiver(self) -> bool {
+        self != Self::Atom
+    }
+}
+
 impl Transpiler {
     pub fn transpile_binary(&self, left: &Expr, op: BinaryOp, right: &Expr) -> Result<TokenStream> {
         // Special handling for string concatenation
@@ -69,7 +109,9 @@ impl Transpiler {
     }
     /// Transpile expression with precedence-aware parentheses
     ///
-    /// Adds parentheses around sub-expressions when needed to preserve precedence
+    /// The AST keeps no parenthesis node, so the grouping the source wrote is
+    /// re-inserted wherever the emitted Rust would otherwise regroup it
+    /// (TRANSPILENOT-1, TRANSPILECMP-1).
     fn transpile_expr_with_precedence(
         &self,
         expr: &Expr,
@@ -77,23 +119,81 @@ impl Transpiler {
         is_left_operand: bool,
     ) -> Result<TokenStream> {
         let tokens = self.transpile_expr(expr)?;
-        // Check if we need parentheses
-        if let ExprKind::Binary { op: child_op, .. } = &expr.kind {
-            let parent_prec = Self::get_operator_precedence(parent_op);
-            let child_prec = Self::get_operator_precedence(*child_op);
-            // Add parentheses if child has lower precedence
-            // For right operands, also add parentheses if precedence is equal and parent is right-associative
-            let needs_parens = child_prec < parent_prec
-                || (!is_left_operand
-                    && child_prec == parent_prec
-                    && Self::is_right_associative(parent_op));
-            if needs_parens {
-                return Ok(quote! { (#tokens) });
-            }
+        if Self::operand_needs_parens(expr, parent_op, is_left_operand) {
+            return Ok(quote! { (#tokens) });
         }
         Ok(tokens)
     }
+    /// Whether `expr`, emitted as an operand of `parent_op`, must be parenthesised.
+    fn operand_needs_parens(expr: &Expr, parent_op: BinaryOp, is_left_operand: bool) -> bool {
+        let shape = OperandShape::of(expr);
+        if Self::is_receiver_position(parent_op, is_left_operand) {
+            return shape.needs_parens_as_receiver();
+        }
+        if parent_op == BinaryOp::In {
+            // left operand is emitted as `&#left`
+            return shape.needs_parens_after_prefix();
+        }
+        if Self::is_method_style(parent_op) {
+            // right operand sits inside the method call's own parentheses
+            return false;
+        }
+        Self::needs_parens_as_infix_operand(shape, parent_op, is_left_operand)
+    }
+    /// Operators emitted as a method call on the left (or, for `in`, right) operand.
+    fn is_method_style(op: BinaryOp) -> bool {
+        matches!(
+            op,
+            BinaryOp::Power | BinaryOp::NullCoalesce | BinaryOp::Send | BinaryOp::In
+        )
+    }
+    /// Whether the operand becomes the receiver of the emitted method call.
+    fn is_receiver_position(parent_op: BinaryOp, is_left_operand: bool) -> bool {
+        match parent_op {
+            BinaryOp::In => !is_left_operand,
+            BinaryOp::Power | BinaryOp::NullCoalesce | BinaryOp::Send => is_left_operand,
+            _ => false,
+        }
+    }
+    fn needs_parens_as_infix_operand(
+        shape: OperandShape,
+        parent_op: BinaryOp,
+        is_left_operand: bool,
+    ) -> bool {
+        match shape {
+            OperandShape::Infix(child_op) => {
+                Self::infix_child_needs_parens(child_op, parent_op, is_left_operand)
+            }
+            // `x as T < y` parses `<` as the start of generic arguments
+            OperandShape::Cast => is_left_operand && Self::starts_with_angle(parent_op),
+            OperandShape::Low => true,
+            OperandShape::Atom | OperandShape::Prefix => false,
+        }
+    }
+    fn starts_with_angle(op: BinaryOp) -> bool {
+        matches!(
+            op,
+            BinaryOp::Less | BinaryOp::LessEqual | BinaryOp::LeftShift
+        )
+    }
+    /// Rust precedence rules for an infix child under an infix parent.
+    fn infix_child_needs_parens(child_op: BinaryOp, parent_op: BinaryOp, is_left: bool) -> bool {
+        // Rust comparison operators are non-associative: `a < b == c` is rejected
+        if Self::is_comparison_op(child_op) && Self::is_comparison_op(parent_op) {
+            return true;
+        }
+        let parent_prec = Self::get_operator_precedence(parent_op);
+        let child_prec = Self::get_operator_precedence(child_op);
+        if child_prec != parent_prec {
+            return child_prec < parent_prec;
+        }
+        // Equal precedence: parenthesise the side the associativity would regroup
+        is_left == Self::is_right_associative(parent_op)
+    }
     /// Get operator precedence (higher number = higher precedence)
+    ///
+    /// Relative order follows Rust: `* / %` > `+ -` > `<< >>` > `&` > `^` > `|`
+    /// > comparisons > `&&` > `||`.
     fn get_operator_precedence(op: BinaryOp) -> i32 {
         match op {
             BinaryOp::Or => 10,
@@ -103,13 +203,23 @@ impl Transpiler {
             | BinaryOp::LessEqual
             | BinaryOp::Greater
             | BinaryOp::GreaterEqual
+            | BinaryOp::Gt
             | BinaryOp::In => 40,
+            BinaryOp::BitwiseOr => 42,
+            BinaryOp::BitwiseXor => 43,
+            BinaryOp::BitwiseAnd => 44,
+            BinaryOp::LeftShift | BinaryOp::RightShift => 45,
             BinaryOp::Add | BinaryOp::Subtract => 50,
             BinaryOp::Multiply | BinaryOp::Divide | BinaryOp::Modulo => 60,
             BinaryOp::Power => 70,
             BinaryOp::Send => 15, // Actor message passing
             _ => 0,               // Default for other operators
         }
+    }
+    /// Whether the operand of a prefix unary operator (`!`, `-`, `&`, `*`) must be
+    /// parenthesised to keep its grouping (TRANSPILENOT-1).
+    pub(super) fn unary_operand_needs_parens(operand: &Expr) -> bool {
+        OperandShape::of(operand).needs_parens_after_prefix()
     }
     /// Check if operator is right-associative
     fn is_right_associative(op: BinaryOp) -> bool {
@@ -254,6 +364,7 @@ impl Transpiler {
                 | BinaryOp::LessEqual
                 | BinaryOp::Greater
                 | BinaryOp::GreaterEqual
+                | BinaryOp::Gt
                 | BinaryOp::Equal
                 | BinaryOp::NotEqual
         )
@@ -313,6 +424,35 @@ impl Transpiler {
 mod tests {
     use super::*;
     use quote::quote;
+
+    fn ident(name: &str) -> crate::frontend::ast::Expr {
+        crate::frontend::ast::Expr::new(
+            crate::frontend::ast::ExprKind::Identifier(name.to_string()),
+            crate::frontend::ast::Span::default(),
+        )
+    }
+
+    #[test]
+    fn test_transpilecmp_1_is_comparison_op_gt() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::Gt));
+    }
+
+    #[test]
+    fn test_transpilecmp_1_gt_under_equal_keeps_parens() {
+        let gt = crate::frontend::ast::Expr::new(
+            crate::frontend::ast::ExprKind::Binary {
+                left: Box::new(ident("a")),
+                op: BinaryOp::Gt,
+                right: Box::new(ident("b")),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+        let tokens = Transpiler::new()
+            .transpile_binary(&gt, BinaryOp::Equal, &ident("c"))
+            .expect("transpile Gt under Eq");
+        let code = tokens.to_string();
+        assert!(code.contains("(a > b) == c"), "got: {code}");
+    }
 
     // Test 1: get_operator_precedence - Or (lowest)
     #[test]

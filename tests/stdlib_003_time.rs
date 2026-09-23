@@ -214,7 +214,12 @@ let timestamp = std::time::now_millis()
 println("Compiled at: {}", timestamp)
 "#;
 
-    let (_temp_dir, file_path) = write_temp_file(code);
+    let (temp_dir, file_path) = write_temp_file(code);
 
-    ruchy_cmd().arg("compile").arg(file_path).assert().success();
+    ruchy_cmd()
+        .arg("compile")
+        .arg(file_path)
+        .current_dir(temp_dir.path())
+        .assert()
+        .success();
 }

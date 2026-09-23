@@ -122,15 +122,6 @@ impl AstNormalizer {
         }
     }
     /// Main entry point: normalize an AST to core form
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::canonical_ast::AstNormalizer;
-    ///
-    /// let mut instance = AstNormalizer::new();
-    /// let result = instance.normalize();
-    /// // Verify behavior
-    /// ```
     pub fn normalize(&mut self, expr: &Expr) -> CoreExpr {
         self.desugar_and_convert(expr)
     }
@@ -355,14 +346,6 @@ impl AstNormalizer {
 impl CoreExpr {
     /// Check that the expression is in normal form
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::canonical_ast::is_normalized;
-    ///
-    /// let result = is_normalized(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn is_normalized(&self) -> bool {
         match self {
             CoreExpr::Var(_) | CoreExpr::Literal(_) => true,
@@ -374,14 +357,6 @@ impl CoreExpr {
     }
     /// Check that all variables are bound (no free variables)
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::canonical_ast::is_closed;
-    ///
-    /// let result = is_closed(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn is_closed(&self) -> bool {
         self.is_closed_at(0)
     }

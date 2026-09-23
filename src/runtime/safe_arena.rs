@@ -19,22 +19,6 @@ pub struct SafeArena {
 }
 impl SafeArena {
     /// Create a new arena with the given size limit
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::safe_arena::SafeArena;
-    ///
-    /// let instance = SafeArena::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::safe_arena::SafeArena;
-    ///
-    /// let instance = SafeArena::new();
-    /// // Verify behavior
-    /// ```
     pub fn new(max_size: usize) -> Self {
         Self {
             storage: RefCell::new(Vec::new()),
@@ -61,15 +45,6 @@ impl SafeArena {
         })
     }
     /// Reset the arena, clearing all allocations
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::safe_arena::SafeArena;
-    ///
-    /// let mut instance = SafeArena::new();
-    /// let result = instance.reset();
-    /// // Verify behavior
-    /// ```
     /// # Examples
     ///
     /// ```ignore

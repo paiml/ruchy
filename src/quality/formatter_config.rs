@@ -117,13 +117,10 @@ impl FormatterConfig {
     /// ```
     /// use ruchy::quality::FormatterConfig;
     ///
-    /// let toml = r#"
-    /// indent_width = 2
-    /// use_tabs = false
-    /// "#;
-    ///
-    /// let config = FormatterConfig::from_toml(toml).unwrap();
-    /// assert_eq!(config.indent_width, 2);
+    /// // Every field is required; a complete file round-trips.
+    /// let toml = FormatterConfig::default().to_toml().unwrap();
+    /// let config = FormatterConfig::from_toml(&toml).unwrap();
+    /// assert_eq!(config.indent_width, FormatterConfig::default().indent_width);
     /// ```
     pub fn from_toml(toml_str: &str) -> Result<Self, String> {
         toml::from_str(toml_str).map_err(|e| format!("Failed to parse config TOML: {e}"))

@@ -229,6 +229,37 @@ fn try_dispatch_builtin(
     }
 }
 
+/// METHODS-1: `keys`, `values`, `items`/`entries` on a plain object (no `__type`).
+///
+/// Entries come back in sorted key order, the order `Display` prints an object in.
+/// Returns `None` for any other method so the caller keeps its error path.
+///
+/// # Complexity
+/// Cyclomatic complexity: 5
+fn eval_plain_object_method(
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Option<Result<Value, InterpreterError>> {
+    let project: fn(&String, &Value) -> Value = match method {
+        "keys" => |k, _| Value::from_string(k.clone()),
+        "values" => |_, v| v.clone(),
+        "items" | "entries" => {
+            |k, v| Value::from_array(vec![Value::from_string(k.clone()), v.clone()])
+        }
+        _ => return None,
+    };
+    if !arg_values.is_empty() {
+        return Some(Err(InterpreterError::RuntimeError(format!(
+            "Object method '{method}' takes no arguments"
+        ))));
+    }
+    let mut entries: Vec<(&String, &Value)> = obj.iter().collect();
+    entries.sort_by(|a, b| a.0.cmp(b.0));
+    let projected = entries.into_iter().map(|(k, v)| project(k, v)).collect();
+    Some(Ok(Value::from_array(projected)))
+}
+
 /// Evaluate methods on `Object` (`HashMap`) types
 ///
 /// Dispatches based on `__type` marker to appropriate handler
@@ -256,14 +287,27 @@ fn eval_object_method(
         };
     }
 
-    // Issue #96: Fallback for module functions (std::env, std::fs, etc.)
+    eval_untyped_object_method(obj, method, arg_values)
+}
+
+/// Methods on an object without a `__type` marker: module functions first
+/// (Issue #96: std::env, std::fs, ...), then map-style methods (METHODS-1).
+///
+/// # Complexity
+/// Cyclomatic complexity: 3
+fn eval_untyped_object_method(
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
     if let Some(value) = try_dispatch_builtin(obj, method, arg_values)? {
         return Ok(value);
     }
-
-    Err(InterpreterError::RuntimeError(
-        "Object is missing __type marker".to_string(),
-    ))
+    eval_plain_object_method(obj, method, arg_values).unwrap_or_else(|| {
+        Err(InterpreterError::RuntimeError(
+            "Object is missing __type marker".to_string(),
+        ))
+    })
 }
 
 /// Evaluate methods on Command objects (RUNTIME-090, Issue #75)

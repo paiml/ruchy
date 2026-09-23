@@ -150,8 +150,8 @@ impl Statistics {
     ///
     /// let times = vec![Duration::from_millis(10), Duration::from_millis(30)];
     /// let stats = Statistics::from_durations(&times);
-    /// // StdDev should be ~10ms
-    /// assert!(stats.std_dev().as_millis() >= 9 && stats.std_dev().as_millis() <= 11);
+    /// // StdDev of [10ms, 30ms] (mean 20ms) is sqrt(((10-20)^2+(30-20)^2)/1) ~= 14.14ms
+    /// assert!(stats.std_dev().as_millis() >= 13 && stats.std_dev().as_millis() <= 15);
     /// ```
     #[must_use]
     pub fn std_dev(&self) -> Duration {

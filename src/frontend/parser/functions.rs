@@ -111,7 +111,7 @@ pub fn parse_function_with_visibility(state: &mut ParserState, is_pub: bool) -> 
     // PARSER-063: Skip comments before function body
     skip_comments(state);
 
-    let body = super::parse_expr_recursive(state)?;
+    let body = super::collections::parse_body_expr(state)?;
 
     let mut expr = Expr::new(
         ExprKind::Function {

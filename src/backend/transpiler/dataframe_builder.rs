@@ -13,14 +13,6 @@ impl Transpiler {
     /// Transpile `DataFrame` builder pattern chains
     /// Transforms: `DataFrame::new().column("a", [1,2]).column("b", [3,4]).build()`
     /// Into: `DataFrame::new(vec![Series::new("a", &[1,2]), Series::new("b", &[3,4])])`
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::backend::transpiler::dataframe_builder::transpile_dataframe_builder;
-    ///
-    /// let result = transpile_dataframe_builder(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn transpile_dataframe_builder(&self, expr: &Expr) -> Result<Option<TokenStream>> {
         // Check if this is a DataFrame builder pattern
         if let Some((columns, _base)) = self.extract_dataframe_builder_chain(expr) {
@@ -107,14 +99,6 @@ impl Transpiler {
         }
     }
     /// Check if expression is a `DataFrame` builder pattern
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::backend::transpiler::dataframe_builder::is_dataframe_builder;
-    ///
-    /// let result = is_dataframe_builder(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn is_dataframe_builder(&self, expr: &Expr) -> bool {
         match &expr.kind {
             ExprKind::MethodCall { method, .. } => {

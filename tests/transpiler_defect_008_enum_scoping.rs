@@ -76,11 +76,15 @@ fn test_transpiler_defect_008_enum_used_in_function_signature() {
 
     let tempfile = tempfile::NamedTempFile::new().unwrap();
     std::fs::write(tempfile.path(), code).unwrap();
+    let output_dir = tempfile::TempDir::new().unwrap();
+    let output_bin = output_dir.path().join("out");
 
     // This should compile successfully (enum in scope for function signatures)
     ruchy_cmd()
         .arg("compile")
         .arg(tempfile.path())
+        .arg("-o")
+        .arg(&output_bin)
         .assert()
         .success();
 }

@@ -132,14 +132,6 @@ impl ProvenanceTracker {
     /// Generate the complete compilation trace
     #[must_use]
     #[allow(clippy::cast_possible_truncation)]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::provenance::finish;
-    ///
-    /// let result = finish(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn finish(mut self) -> CompilationTrace {
         // Finish any pending transformation
         if let Some(builder) = self.current_transformation.take() {
@@ -220,14 +212,6 @@ impl TraceDiffer {
     }
     /// Find the first point where the traces diverge
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::provenance::find_divergence;
-    ///
-    /// let result = find_divergence(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn find_divergence(&self) -> Option<DivergencePoint> {
         // Check source hash
         if self.trace1.source_hash != self.trace2.source_hash {

@@ -229,12 +229,12 @@ impl ErrorRecoveryContext {
     /// use ruchy::error_recovery_enhanced::{ErrorRecoveryContext, RecoveryStrategy, RecoveredError, RecoveryAction};
     ///
     /// let mut context = ErrorRecoveryContext::new(RecoveryStrategy::Adaptive, 10);
-    /// let error = RecoveredError {
-    ///     message: "Test error".to_string(),
-    ///     position: 5,
-    ///     recovery_action: RecoveryAction::InsertedToken { token: ";".to_string() },
-    ///     recovery_success: true,
-    /// };
+    /// let error = RecoveredError::new(
+    ///     "Test error".to_string(),
+    ///     5,
+    ///     RecoveryAction::InsertedToken { token: ";".to_string() },
+    ///     true,
+    /// );
     /// context.record_error(error);
     ///
     /// let stats = context.recovery_statistics();

@@ -78,31 +78,7 @@ impl Counterexample {
     /// ```
     /// use ruchy::proving::counterexample::Counterexample;
     ///
-    /// let instance = Counterexample::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::counterexample::Counterexample;
-    ///
-    /// let instance = Counterexample::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::counterexample::Counterexample;
-    ///
-    /// let instance = Counterexample::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::counterexample::Counterexample;
-    ///
-    /// let instance = Counterexample::new();
+    /// let instance = Counterexample::new("x > 0");
     /// // Verify behavior
     /// ```
     pub fn new(failed_assertion: &str) -> Self {
@@ -117,10 +93,10 @@ impl Counterexample {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::counterexample::Counterexample;
+    /// use ruchy::proving::counterexample::{Counterexample, Value};
     ///
-    /// let mut instance = Counterexample::new();
-    /// let result = instance.add_assignment();
+    /// let mut instance = Counterexample::new("x > 0");
+    /// instance.add_assignment("x", Value::Int(-1));
     /// // Verify behavior
     /// ```
     pub fn add_assignment(&mut self, var: &str, value: Value) {

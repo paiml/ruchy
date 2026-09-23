@@ -2,7 +2,8 @@
 //! Extracted to maintain ≤10 complexity per function
 use anyhow::{bail, Context, Result};
 use colored::Colorize;
-use ruchy::frontend::ast::Attribute;
+use ruchy::frontend::ast::{Attribute, Expr, ExprKind, Span};
+use ruchy::runtime::interpreter::Interpreter;
 use ruchy::utils::read_file_with_context;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -77,26 +78,24 @@ fn should_include_file(entry: &walkdir::DirEntry, filter: Option<&str>) -> bool 
     }
 }
 /// Run a single .ruchy test file
-/// Complexity: 5 (reduced by extracting helpers)
+///
+/// The whole file is evaluated once as a program, so its top-level functions
+/// stay defined, and then each `@test` function is called (TESTRUN-1).
+/// `main()` is not called.
+/// Complexity: 1
 pub fn run_test_file(test_file: &Path, verbose: bool) -> Result<()> {
     let test_content = read_file_with_context(test_file)?;
-
-    // Parse and find test functions
-    let test_functions = parse_and_find_tests(&test_content, test_file, verbose)?;
-
-    // Initialize REPL and execute tests
-    execute_test_functions(&test_content, &test_functions, test_file, verbose)?;
-
-    Ok(())
+    let (program, test_functions) = parse_and_find_tests(&test_content, test_file, verbose)?;
+    execute_test_functions(&program, &test_functions, test_file, verbose)
 }
 
-/// Parse test file and find all @test functions
-/// Complexity: 2 (reduced by extracting validation)
+/// Parse the test file and collect the names of its `@test` functions
+/// Complexity: 2
 fn parse_and_find_tests(
     test_content: &str,
     test_file: &Path,
     verbose: bool,
-) -> Result<Vec<String>> {
+) -> Result<(Expr, Vec<String>)> {
     use ruchy::frontend::parser::Parser;
 
     if verbose {
@@ -111,11 +110,11 @@ fn parse_and_find_tests(
     let test_functions = extract_test_functions(&ast)?;
     validate_test_functions(&test_functions, test_file, verbose)?;
 
-    Ok(test_functions)
+    Ok((ast, test_functions))
 }
 
 /// Validate that test functions were found
-/// Complexity: 2 (simple validation)
+/// Complexity: 2
 fn validate_test_functions(
     test_functions: &[String],
     test_file: &Path,
@@ -132,33 +131,34 @@ fn validate_test_functions(
     Ok(())
 }
 
-/// Execute all test functions in REPL
-/// Complexity: 4 (within limit)
+/// Load the file as a program, then call each test function in turn
+///
+/// `eval_program` binds the file's top-level items in the global scope; a
+/// block-scoped evaluation would drop them before the tests run (TESTRUN-1).
+/// Complexity: 2
 fn execute_test_functions(
-    test_content: &str,
+    program: &Expr,
     test_functions: &[String],
     test_file: &Path,
     verbose: bool,
 ) -> Result<()> {
-    use ruchy::runtime::repl::Repl;
-
-    // Initialize REPL and load the file (defines all functions)
-    let mut repl = Repl::new(std::env::temp_dir())?;
-    repl.evaluate_expr_str(test_content, None)
+    let mut interpreter = Interpreter::new();
+    interpreter
+        .eval_program(program)
+        .map_err(|e| anyhow::anyhow!("{e}"))
         .with_context(|| format!("Failed to load test file: {}", test_file.display()))?;
 
-    // Execute each test function
     for test_fn_name in test_functions {
-        execute_single_test(&mut repl, test_fn_name, verbose)?;
+        execute_single_test(&mut interpreter, test_fn_name, verbose)?;
     }
 
     Ok(())
 }
 
-/// Execute a single test function
-/// Complexity: 3 (within limit)
+/// Call one test function with no arguments
+/// Complexity: 3
 fn execute_single_test(
-    repl: &mut ruchy::runtime::repl::Repl,
+    interpreter: &mut Interpreter,
     test_fn_name: &str,
     verbose: bool,
 ) -> Result<()> {
@@ -166,10 +166,7 @@ fn execute_single_test(
         println!("   🏃 Executing test: {}", test_fn_name);
     }
 
-    let call_expr = format!("{}()", test_fn_name);
-    let result = repl.evaluate_expr_str(&call_expr, None);
-
-    match result {
+    match interpreter.eval_expr(&zero_arg_call(test_fn_name)) {
         Ok(_) => {
             if verbose {
                 println!("   ✅ Test passed: {}", test_fn_name);
@@ -178,6 +175,19 @@ fn execute_single_test(
         }
         Err(e) => bail!("Test failed: {} - {}", test_fn_name, e),
     }
+}
+
+/// Build the expression `name()`
+/// Complexity: 1
+fn zero_arg_call(name: &str) -> Expr {
+    let callee = Expr::new(ExprKind::Identifier(name.to_string()), Span::default());
+    Expr::new(
+        ExprKind::Call {
+            func: Box::new(callee),
+            args: Vec::new(),
+        },
+        Span::default(),
+    )
 }
 
 /// Extract names of functions with @test attribute

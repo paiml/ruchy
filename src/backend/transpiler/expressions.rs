@@ -71,10 +71,14 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_string_interpolation;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::StringPart;
     ///
-    /// let result = transpile_string_interpolation(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let parts = vec![StringPart::Text("hello".to_string())];
+    /// let tokens = transpiler.transpile_string_interpolation(&parts).unwrap();
+    /// assert!(tokens.to_string().contains("format !"));
+    /// assert!(tokens.to_string().contains("\"hello\""));
     /// ```
     pub fn transpile_string_interpolation(&self, parts: &[StringPart]) -> Result<TokenStream> {
         if parts.is_empty() {
@@ -107,27 +111,18 @@ impl Transpiler {
             format!(#format_string #(, #args)*)
         })
     }
-    /// Transpiles binary operations
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, BinaryOp};
-    ///
-    /// let mut transpiler = Transpiler::new();
-    /// let left = Expr::literal(1.into());
-    /// let right = Expr::literal(2.into());
-    /// let result = transpiler.transpile_binary(&left, BinaryOp::Add, &right);
-    /// assert!(result.is_ok());
-    /// ```
     /// Transpiles assignment
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_assign;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
-    /// let result = transpile_assign(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let target = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let value = Expr::new(ExprKind::Literal(Literal::Integer(1, None)), Span::default());
+    /// let result = transpiler.transpile_assign(&target, &value);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_assign(&self, target: &Expr, value: &Expr) -> Result<TokenStream> {
         // DEADLOCK FIX (Issue #132): Check if assigning to a global that's also in value
@@ -313,10 +308,14 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_compound_assign;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Span};
     ///
-    /// let result = transpile_compound_assign(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let e1 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_compound_assign(&e0, BinaryOp::Add, &e1);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_compound_assign(
         &self,
@@ -427,10 +426,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_pre_increment;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_pre_increment(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_pre_increment(&e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_pre_increment(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
@@ -441,10 +443,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_post_increment;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_post_increment(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_post_increment(&e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_post_increment(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
@@ -455,10 +460,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_pre_decrement;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_pre_decrement(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_pre_decrement(&e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_pre_decrement(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
@@ -469,10 +477,13 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_post_decrement;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_post_decrement(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_post_decrement(&e0);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_post_decrement(&self, target: &Expr) -> Result<TokenStream> {
         let target_tokens = self.transpile_expr(target)?;
@@ -482,10 +493,14 @@ impl Transpiler {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::backend::transpiler::expressions::transpile_array_init;
+    /// use ruchy::backend::transpiler::Transpiler;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
     ///
-    /// let result = transpile_array_init(());
-    /// assert_eq!(result, Ok(()));
+    /// let transpiler = Transpiler::new();
+    /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let e1 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
+    /// let result = transpiler.transpile_array_init(&e0, &e1);
+    /// assert!(result.is_ok());
     /// ```
     pub fn transpile_array_init(&self, value: &Expr, size: &Expr) -> Result<TokenStream> {
         let value_tokens = self.transpile_expr(value)?;

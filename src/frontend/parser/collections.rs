@@ -61,6 +61,30 @@ pub fn parse_block(state: &mut ParserState) -> Result<Expr> {
     Ok(create_block_result(Vec::new(), start_span))
 }
 
+/// Parse a statement body (if / else / while / for / loop / fun body) (complexity: 2)
+///
+/// EMPTYBLOCK-1: in body position an empty `{ }` is an empty block. In
+/// expression position (`let m = {}`) it stays an empty object literal.
+pub fn parse_body_expr(state: &mut ParserState) -> Result<Expr> {
+    if let Some(empty) = try_parse_empty_body(state) {
+        return Ok(empty);
+    }
+    super::parse_expr_recursive(state)
+}
+
+/// Consume `{ }` and return an empty block, or leave the stream untouched (complexity: 3)
+fn try_parse_empty_body(state: &mut ParserState) -> Option<Expr> {
+    if !matches!(state.tokens.peek(), Some((Token::LeftBrace, _))) {
+        return None;
+    }
+    if !matches!(state.tokens.peek_nth(1), Some((Token::RightBrace, _))) {
+        return None;
+    }
+    let start_span = state.tokens.advance()?.1; // consume {
+    state.tokens.advance(); // consume }
+    Some(create_block_result(Vec::new(), start_span))
+}
+
 /// Try to parse as block expressions with backtracking (complexity: 5)
 fn try_parse_block_expressions(state: &mut ParserState, start_span: Span) -> Result<Expr> {
     // Save position for backtracking

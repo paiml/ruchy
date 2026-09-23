@@ -56,15 +56,6 @@ impl Formatter {
     pub fn set_source(&mut self, source: impl Into<String>) {
         self.source = Some(source.into());
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::formatter::Formatter;
-    ///
-    /// let mut instance = Formatter::new();
-    /// let result = instance.format();
-    /// // Verify behavior
-    /// ```
     pub fn format(&self, ast: &Expr) -> Result<String> {
         // Check if the top-level expression should be ignored
         if self.should_ignore(ast) {

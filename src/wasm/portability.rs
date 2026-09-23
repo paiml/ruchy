@@ -272,15 +272,6 @@ impl PortabilityAnalyzer {
         }
     }
     /// Create a new portability analyzer with specific config
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::portability::PortabilityAnalyzer;
-    ///
-    /// let mut instance = PortabilityAnalyzer::new();
-    /// let result = instance.new_with_config();
-    /// // Verify behavior
-    /// ```
     pub fn new_with_config(config: AnalysisConfig) -> Self {
         Self {
             config,

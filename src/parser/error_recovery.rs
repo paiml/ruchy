@@ -123,15 +123,6 @@ impl ErrorRecovery {
         Self::default()
     }
     /// Create a synthetic error node for missing function name
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::parser::error_recovery::ErrorRecovery;
-    ///
-    /// let mut instance = ErrorRecovery::new();
-    /// let result = instance.missing_function_name();
-    /// // Verify behavior
-    /// ```
     pub fn missing_function_name(&mut self, location: SourceLocation) -> ErrorNode {
         self.error_count += 1;
         ErrorNode {
@@ -195,15 +186,6 @@ impl ErrorRecovery {
         }
     }
     /// Create error node for malformed let binding
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::parser::error_recovery::ErrorRecovery;
-    ///
-    /// let mut instance = ErrorRecovery::new();
-    /// let result = instance.malformed_let_binding();
-    /// // Verify behavior
-    /// ```
     pub fn malformed_let_binding(
         &mut self,
         partial_name: Option<String>,
@@ -222,15 +204,6 @@ impl ErrorRecovery {
         }
     }
     /// Create error node for incomplete if expression
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::parser::error_recovery::ErrorRecovery;
-    ///
-    /// let mut instance = ErrorRecovery::new();
-    /// let result = instance.incomplete_if_expr();
-    /// // Verify behavior
-    /// ```
     pub fn incomplete_if_expr(
         &mut self,
         condition: Option<Box<Expr>>,
@@ -251,14 +224,6 @@ impl ErrorRecovery {
     }
     /// Check if we should continue parsing or give up
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::parser::error_recovery::should_continue;
-    ///
-    /// let result = should_continue(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn should_continue(&self) -> bool {
         self.error_count < self.max_errors
     }
@@ -276,14 +241,6 @@ impl ErrorRecovery {
     }
     /// Check if token is a synchronization point
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::parser::error_recovery::is_sync_token;
-    ///
-    /// let result = is_sync_token("example");
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn is_sync_token(&self, token: &str) -> bool {
         self.sync_tokens.contains(&token.to_string())
     }
@@ -305,14 +262,6 @@ pub struct RecoveryRules;
 impl RecoveryRules {
     /// Determine recovery strategy based on context
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::parser::error_recovery::select_strategy;
-    ///
-    /// let result = select_strategy(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn select_strategy(context: &ErrorContext) -> RecoveryStrategy {
         match context {
             ErrorContext::FunctionDecl { name, params, body } => {
@@ -336,14 +285,6 @@ impl RecoveryRules {
     }
     /// Generate synthetic AST for error recovery
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::parser::error_recovery::synthesize_ast;
-    ///
-    /// let result = synthesize_ast(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn synthesize_ast(error: &ErrorNode) -> Expr {
         let default_span = Span::new(0, 0);
         match &error.context {

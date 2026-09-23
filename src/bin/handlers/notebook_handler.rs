@@ -5,9 +5,12 @@
 use anyhow::Result;
 use std::path::Path;
 
-/// Handle notebook command
-#[cfg(feature = "notebook")]
 /// Validate notebook file can be parsed and executed
+///
+/// TOOL-VALIDATION-003: this only parses/transpiles/compiles/runs the file
+/// (the same helpers `ruchy run` uses); it never touches the notebook
+/// server (tokio/axum/wasmtime), so it must work in every build regardless
+/// of whether the "notebook" feature is enabled.
 /// Complexity: 3 (Toyota Way: <10)
 fn validate_notebook_file(path: &Path) -> Result<()> {
     use super::{
@@ -59,21 +62,10 @@ fn open_browser_for_notebook(url: &str) -> Result<()> {
     Ok(())
 }
 
-/// Handle notebook command - start server or validate file
-/// Complexity: 4 (Toyota Way: <10) [Reduced from 14]
+/// Launch the interactive notebook server
+/// Complexity: 4 (Toyota Way: <10)
 #[cfg(feature = "notebook")]
-pub fn handle_notebook_command(
-    file: Option<&Path>,
-    port: u16,
-    open_browser: bool,
-    host: &str,
-) -> Result<()> {
-    // TOOL-VALIDATION-003: Non-interactive file validation mode
-    if let Some(path) = file {
-        return validate_notebook_file(path);
-    }
-
-    // Interactive server mode (original behavior)
+fn start_notebook_server(port: u16, open_browser: bool, host: &str) -> Result<()> {
     println!("🚀 Starting Ruchy Notebook server...");
     println!("   Host: {}:{}", host, port);
 
@@ -86,26 +78,35 @@ pub fn handle_notebook_command(
         open_browser_for_notebook(&url)?;
     }
 
-    // Start the notebook server
-    println!(
-        "🔧 DEBUG: About to call ruchy::notebook::start_server({})",
-        port
-    );
     let result = runtime.block_on(async { ruchy::notebook::start_server(port).await });
-    println!("🔧 DEBUG: Server returned: {:?}", result);
     result.map_err(|e| anyhow::anyhow!("Notebook server error: {}", e))
 }
 
+/// Interactive notebook server stub for builds without the "notebook" feature
+/// Complexity: 1 (Toyota Way: <10)
 #[cfg(not(feature = "notebook"))]
-pub fn handle_notebook_command(
-    _file: Option<&Path>,
-    _port: u16,
-    _open_browser: bool,
-    _host: &str,
-) -> Result<()> {
+fn start_notebook_server(_port: u16, _open_browser: bool, _host: &str) -> Result<()> {
     Err(anyhow::anyhow!(
         "Notebook feature not enabled. Rebuild with --features notebook"
     ))
+}
+
+/// Handle notebook command - start server or validate file
+/// Complexity: 2 (Toyota Way: <10) [Reduced from 14]
+pub fn handle_notebook_command(
+    file: Option<&Path>,
+    port: u16,
+    open_browser: bool,
+    host: &str,
+) -> Result<()> {
+    // TOOL-VALIDATION-003: Non-interactive file validation mode.
+    // Runs in every build; see `validate_notebook_file` doc comment.
+    if let Some(path) = file {
+        return validate_notebook_file(path);
+    }
+
+    // Interactive server mode requires the "notebook" feature.
+    start_notebook_server(port, open_browser, host)
 }
 
 #[cfg(test)]

@@ -66,30 +66,6 @@ impl Default for TransactionMetadata {
 }
 impl TransactionalState {
     /// Create a new transactional state with the given memory limit
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::transaction::TransactionalState;
-    ///
-    /// let instance = TransactionalState::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::transaction::TransactionalState;
-    ///
-    /// let instance = TransactionalState::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::transaction::TransactionalState;
-    ///
-    /// let instance = TransactionalState::new();
-    /// // Verify behavior
-    /// ```
     pub fn new(max_memory: usize) -> Self {
         Self {
             bindings: HashMap::new(),
@@ -101,15 +77,6 @@ impl TransactionalState {
         }
     }
     /// Begin a new transaction
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::transaction::TransactionalState;
-    ///
-    /// let mut instance = TransactionalState::new();
-    /// let result = instance.begin_transaction();
-    /// // Verify behavior
-    /// ```
     pub fn begin_transaction(&mut self, metadata: TransactionMetadata) -> Result<TransactionId> {
         if self.transactions.len() >= self.max_depth {
             return Err(anyhow!("Transaction depth limit exceeded"));
@@ -301,7 +268,7 @@ impl TransactionalState {
     /// ```
     /// use ruchy::runtime::transaction::TransactionalState;
     ///
-    /// let state = TransactionalState::new();
+    /// let state = TransactionalState::new(1024 * 1024);
     /// let arena = state.arena();
     /// assert!(arena.used() >= 0);
     /// ```
@@ -390,15 +357,6 @@ impl TransactionLog {
             max_entries,
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::transaction::TransactionLog;
-    ///
-    /// let mut instance = TransactionLog::new();
-    /// let result = instance.log();
-    /// // Verify behavior
-    /// ```
     pub fn log(&mut self, event: TransactionEvent) {
         self.events.push((Instant::now(), event));
         // Maintain size limit

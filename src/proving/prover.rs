@@ -17,24 +17,9 @@ impl InteractiveProver {
     ///
     /// ```
     /// use ruchy::proving::prover::InteractiveProver;
+    /// use ruchy::proving::smt::SmtBackend;
     ///
-    /// let instance = InteractiveProver::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::prover::InteractiveProver;
-    ///
-    /// let instance = InteractiveProver::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::prover::InteractiveProver;
-    ///
-    /// let instance = InteractiveProver::new();
+    /// let instance = InteractiveProver::new(SmtBackend::Z3);
     /// // Verify behavior
     /// ```
     pub fn new(backend: SmtBackend) -> Self {
@@ -50,9 +35,10 @@ impl InteractiveProver {
     ///
     /// ```
     /// use ruchy::proving::prover::InteractiveProver;
+    /// use ruchy::proving::smt::SmtBackend;
     ///
-    /// let mut instance = InteractiveProver::new();
-    /// let result = instance.set_timeout();
+    /// let mut instance = InteractiveProver::new(SmtBackend::Z3);
+    /// instance.set_timeout(10_000);
     /// // Verify behavior
     /// ```
     pub fn set_timeout(&mut self, timeout: u64) {
@@ -63,10 +49,11 @@ impl InteractiveProver {
     ///
     /// ```
     /// use ruchy::proving::prover::InteractiveProver;
+    /// use ruchy::proving::smt::SmtBackend;
     ///
-    /// let mut instance = InteractiveProver::new();
-    /// let result = instance.set_ml_suggestions();
-    /// assert_eq!(result, Ok(true));
+    /// let mut instance = InteractiveProver::new(SmtBackend::Z3);
+    /// instance.set_ml_suggestions(true);
+    /// // Verify behavior
     /// ```
     pub fn set_ml_suggestions(&mut self, enabled: bool) {
         self.ml_suggestions = enabled;
@@ -76,9 +63,10 @@ impl InteractiveProver {
     ///
     /// ```
     /// use ruchy::proving::prover::InteractiveProver;
+    /// use ruchy::proving::smt::SmtBackend;
     ///
-    /// let mut instance = InteractiveProver::new();
-    /// let result = instance.load_script();
+    /// let mut instance = InteractiveProver::new(SmtBackend::Z3);
+    /// let result = instance.load_script("lemma foo: true");
     /// // Verify behavior
     /// ```
     pub fn load_script(&mut self, _script: &str) -> Result<()> {
@@ -90,8 +78,9 @@ impl InteractiveProver {
     ///
     /// ```
     /// use ruchy::proving::prover::InteractiveProver;
+    /// use ruchy::proving::smt::SmtBackend;
     ///
-    /// let mut instance = InteractiveProver::new();
+    /// let instance = InteractiveProver::new(SmtBackend::Z3);
     /// let result = instance.get_available_tactics();
     /// // Verify behavior
     /// ```
@@ -102,10 +91,13 @@ impl InteractiveProver {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::prover::InteractiveProver;
+    /// use ruchy::proving::prover::{InteractiveProver, ProverSession};
+    /// use ruchy::proving::smt::SmtBackend;
     ///
-    /// let mut instance = InteractiveProver::new();
-    /// let result = instance.apply_tactic();
+    /// let mut instance = InteractiveProver::new(SmtBackend::Z3);
+    /// let mut session = ProverSession::new();
+    /// session.add_goal("true".to_string());
+    /// let result = instance.apply_tactic(&mut session, "trivial", &[]);
     /// // Verify behavior
     /// ```
     pub fn apply_tactic(

@@ -327,15 +327,6 @@ impl ComponentBuilder {
         }
     }
     /// Create a new component builder with a specific config
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::component::ComponentBuilder;
-    ///
-    /// let mut instance = ComponentBuilder::new();
-    /// let result = instance.new_with_config();
-    /// // Verify behavior
-    /// ```
     pub fn new_with_config(config: ComponentConfig) -> Self {
         Self {
             config,
@@ -346,15 +337,6 @@ impl ComponentBuilder {
         }
     }
     /// Add a source file to compile
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::component::ComponentBuilder;
-    ///
-    /// let mut instance = ComponentBuilder::new();
-    /// let result = instance.add_source();
-    /// // Verify behavior
-    /// ```
     pub fn add_source(&mut self, path: impl AsRef<Path>) -> Result<&mut Self> {
         let path = path.as_ref().to_path_buf();
         if !path.exists() {

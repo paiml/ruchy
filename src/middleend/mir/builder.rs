@@ -18,14 +18,6 @@ pub struct MirBuilder {
 impl MirBuilder {
     /// Create a new MIR builder
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::mir::builder::new;
-    ///
-    /// let result = new(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn new() -> Self {
         Self {
             current_function: None,

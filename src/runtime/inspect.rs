@@ -160,15 +160,6 @@ impl Inspector {
         Self::with_style(InspectStyle::default())
     }
     /// Create an inspector with custom style
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::inspect::Inspector;
-    ///
-    /// let mut instance = Inspector::new();
-    /// let result = instance.with_style();
-    /// // Verify behavior
-    /// ```
     pub fn with_style(style: InspectStyle) -> Self {
         Self {
             depth: 0,
@@ -216,15 +207,6 @@ impl Inspector {
         self.budget > 0
     }
     /// Consume inspection budget
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::inspect::Inspector;
-    ///
-    /// let mut instance = Inspector::new();
-    /// let result = instance.consume_budget();
-    /// // Verify behavior
-    /// ```
     pub fn consume_budget(&mut self, amount: usize) {
         self.budget = self.budget.saturating_sub(amount);
     }

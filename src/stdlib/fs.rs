@@ -15,7 +15,7 @@
 //!
 //! // Create directory
 //! fs::create_dir("my_directory")?;
-//! # Ok::<(), std::io::Error>(())
+//! # Ok::<(), anyhow::Error>(())
 //! ```
 
 use anyhow::Result;
@@ -30,7 +30,7 @@ use std::path::Path;
 ///
 /// let content = fs::read_to_string("file.txt")?;
 /// println!("{}", content);
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -52,7 +52,7 @@ pub fn read_to_string(path: &str) -> Result<String> {
 /// use ruchy::stdlib::fs;
 ///
 /// fs::write("output.txt", "Hello, World!")?;
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -75,7 +75,7 @@ pub fn write(path: &str, contents: &str) -> Result<()> {
 ///
 /// let bytes = fs::read("binary.dat")?;
 /// println!("Read {} bytes", bytes.len());
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -97,7 +97,7 @@ pub fn read(path: &str) -> Result<Vec<u8>> {
 /// use ruchy::stdlib::fs;
 ///
 /// fs::create_dir("new_directory")?;
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -119,7 +119,7 @@ pub fn create_dir(path: &str) -> Result<()> {
 /// use ruchy::stdlib::fs;
 ///
 /// fs::create_dir_all("a/b/c/d")?;
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -141,7 +141,7 @@ pub fn create_dir_all(path: &str) -> Result<()> {
 /// use ruchy::stdlib::fs;
 ///
 /// fs::remove_file("old_file.txt")?;
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -163,7 +163,7 @@ pub fn remove_file(path: &str) -> Result<()> {
 /// use ruchy::stdlib::fs;
 ///
 /// fs::remove_dir("empty_directory")?;
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -186,7 +186,7 @@ pub fn remove_dir(path: &str) -> Result<()> {
 ///
 /// let bytes_copied = fs::copy("source.txt", "dest.txt")?;
 /// println!("Copied {} bytes", bytes_copied);
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -208,7 +208,7 @@ pub fn copy(from: &str, to: &str) -> Result<u64> {
 /// use ruchy::stdlib::fs;
 ///
 /// fs::rename("old_name.txt", "new_name.txt")?;
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -232,7 +232,7 @@ pub fn rename(from: &str, to: &str) -> Result<()> {
 /// for entry in fs::read_dir(".")? {
 ///     println!("{:?}", entry);
 /// }
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors
@@ -257,7 +257,7 @@ pub fn read_dir(path: &str) -> Result<Vec<std::fs::DirEntry>> {
 /// let meta = fs::metadata("file.txt")?;
 /// println!("Is file: {}", meta.is_file());
 /// println!("Size: {} bytes", meta.len());
-/// # Ok::<(), std::io::Error>(())
+/// # Ok::<(), anyhow::Error>(())
 /// ```
 ///
 /// # Errors

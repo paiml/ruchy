@@ -479,6 +479,10 @@ fn equal_values(left: &Value, right: &Value) -> bool {
         }
         // Atoms - string equality (interned comparison)
         (Value::Atom(a), Value::Atom(b)) => a == b,
+        // ENUMEQ-1: enums - same enum, same variant, payloads equal under `==`
+        (Value::EnumVariant { .. }, Value::EnumVariant { .. }) => {
+            crate::runtime::value::enum_variants_eq(left, right, equal_values)
+        }
         // Type mismatch
         _ => false,
     }

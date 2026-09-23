@@ -43,7 +43,7 @@ impl Interpreter {
     ///
     /// let mut parser = Parser::new(code);
     /// let expr = parser.parse().expect("parse should succeed in doctest");
-    /// interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
+    /// interpreter.eval_program(&expr).expect("eval_program should succeed in doctest");
     /// let main_call = Parser::new("main()").parse().expect("parse should succeed in doctest");
     /// let result = interpreter.eval_expr(&main_call).expect("eval_expr should succeed in doctest");
     /// // Actor instance returned
@@ -145,7 +145,7 @@ impl Interpreter {
     ///
     /// let mut parser = Parser::new(code);
     /// let expr = parser.parse().expect("parse should succeed in doctest");
-    /// interpreter.eval_expr(&expr).expect("eval_expr should succeed in doctest");
+    /// interpreter.eval_program(&expr).expect("eval_program should succeed in doctest");
     /// let main_call = Parser::new("main()").parse().expect("parse should succeed in doctest");
     /// let result = interpreter.eval_expr(&main_call);
     /// assert!(result.is_ok());
@@ -279,7 +279,10 @@ impl Interpreter {
                 if h_type.as_ref() != msg_type.as_ref() {
                     continue;
                 }
-                let Some(Value::Closure { params, body, env }) = h.get("handler") else {
+                // UNDEFCALL-1: spawned actors store `receive` handlers under "body"
+                let Some(Value::Closure { params, body, env }) =
+                    h.get("handler").or_else(|| h.get("body"))
+                else {
                     continue;
                 };
 

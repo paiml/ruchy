@@ -1312,27 +1312,11 @@ impl InferenceContext {
     }
     /// Get the final inferred type for a type variable
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::infer::solve;
-    ///
-    /// let result = solve(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn solve(&self, var: &crate::middleend::types::TyVar) -> MonoType {
         self.unifier.solve(var)
     }
     /// Apply current substitution to a type
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::infer::apply;
-    ///
-    /// let result = apply(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn apply(&self, ty: &MonoType) -> MonoType {
         self.unifier.apply(ty)
     }

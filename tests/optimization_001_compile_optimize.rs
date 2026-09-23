@@ -321,6 +321,7 @@ fun main() {
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
     cmd.arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .arg("--optimize")
         .arg("invalid_level"); // Invalid optimization level
 

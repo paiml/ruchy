@@ -16,7 +16,6 @@ use crate::frontend::ast::{Expr, ExprKind};
 use crate::frontend::Param;
 use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
-use std::collections::HashMap;
 use std::sync::Arc;
 
 impl Interpreter {
@@ -290,24 +289,13 @@ impl Interpreter {
         // Try to evaluate the function normally
         let func_val_result = self.eval_expr(func);
 
-        // If function lookup fails and it's an identifier, treat it as a message constructor
+        // UNDEFCALL-1: an undefined callee is an error naming the function, whatever
+        // its case. Message values are built only in message position
+        // (`eval_message_expr`: the argument of send/ask/`!`/`<?`).
         let func_val = match func_val_result {
             Ok(val) => val,
             Err(InterpreterError::RuntimeError(msg)) if msg.starts_with("Undefined variable:") => {
-                // Check if this is an identifier that could be a message constructor
-                if let ExprKind::Identifier(name) = &func.kind {
-                    // Create a message object - args already evaluated above
-                    let mut message = HashMap::new();
-                    message.insert(
-                        "__type".to_string(),
-                        Value::from_string("Message".to_string()),
-                    );
-                    message.insert("type".to_string(), Value::from_string(name.clone()));
-                    message.insert("data".to_string(), Value::Array(Arc::from(arg_vals)));
-
-                    return Ok(Value::Object(Arc::new(message)));
-                }
-                return Err(InterpreterError::RuntimeError(msg));
+                return unbound_call(func, msg, arg_vals);
             }
             Err(e) => return Err(e),
         };
@@ -374,6 +362,54 @@ impl Interpreter {
         let site_id = func.span.start; // Use func span start as site ID
         self.record_function_call_feedback(site_id, &func_name, &arg_vals, &result);
         Ok(result)
+    }
+}
+
+/// A callee whose lookup failed with `Undefined variable: …` (msg).
+///
+/// A plain name goes to `unbound_callee`. `Result::Ok` / `Result::Err` parse
+/// as a field access on `Result`; they are prelude constructors too
+/// (OPTPATH-1). Any other callee keeps the lookup error.
+fn unbound_call(func: &Expr, msg: String, args: Vec<Value>) -> Result<Value, InterpreterError> {
+    match &func.kind {
+        ExprKind::Identifier(name) => unbound_callee(name, args),
+        ExprKind::FieldAccess { object, field } => match &object.kind {
+            ExprKind::Identifier(ty) if prelude_variant(&format!("{ty}::{field}")).is_some() => {
+                unbound_callee(&format!("{ty}::{field}"), args)
+            }
+            _ => Err(InterpreterError::RuntimeError(msg)),
+        },
+        _ => Err(InterpreterError::RuntimeError(msg)),
+    }
+}
+
+/// The prelude enum constructors a call can name without a definition:
+/// `Ok`, `Err` and the qualified `Option::Some`, `Result::Ok`,
+/// `Result::Err` (OPTPATH-1). Returns `(enum, variant)`.
+fn prelude_variant(name: &str) -> Option<(&'static str, &'static str)> {
+    match name {
+        "Ok" | "Result::Ok" => Some(("Result", "Ok")),
+        "Err" | "Result::Err" => Some(("Result", "Err")),
+        "Option::Some" => Some(("Option", "Some")),
+        _ => None,
+    }
+}
+
+/// UNDEFCALL-1: calling an identifier that resolves to nothing.
+///
+/// A prelude constructor (`prelude_variant`) builds its enum variant, the
+/// same value as the unqualified form; every other name is an undefined
+/// function, whatever its case.
+fn unbound_callee(name: &str, args: Vec<Value>) -> Result<Value, InterpreterError> {
+    match prelude_variant(name) {
+        Some((enum_name, variant_name)) => Ok(Value::EnumVariant {
+            enum_name: enum_name.to_string(),
+            variant_name: variant_name.to_string(),
+            data: Some(args),
+        }),
+        None => Err(InterpreterError::RuntimeError(format!(
+            "Undefined function: {name}"
+        ))),
     }
 }
 
@@ -732,25 +768,47 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_function_call_message_constructor() {
+    fn test_undefcall_1_ok_err_calls_build_result_variants() {
         let mut interp = make_interpreter();
-        // Call undefined function - becomes message constructor
+        for name in ["Ok", "Err"] {
+            let func = make_expr(ExprKind::Identifier(name.to_string()));
+            let args = vec![make_expr(ExprKind::Literal(Literal::Integer(1, None)))];
+            let value = interp.eval_function_call(&func, &args).unwrap();
+            let Value::EnumVariant {
+                enum_name,
+                variant_name,
+                data,
+            } = value
+            else {
+                panic!("expected Result variant, got {value:?}");
+            };
+            assert_eq!(enum_name, "Result");
+            assert_eq!(variant_name, name);
+            assert_eq!(data, Some(vec![Value::Integer(1)]));
+        }
+    }
+
+    #[test]
+    fn test_undefcall_1_pascal_case_undefined_call_errors() {
+        let mut interp = make_interpreter();
         let func = make_expr(ExprKind::Identifier("CustomMessage".to_string()));
         let args = vec![make_expr(ExprKind::Literal(Literal::Integer(42, None)))];
 
-        let result = interp.eval_function_call(&func, &args).unwrap();
-        if let Value::Object(obj) = result {
-            assert_eq!(
-                obj.get("__type"),
-                Some(&Value::from_string("Message".to_string()))
-            );
-            assert_eq!(
-                obj.get("type"),
-                Some(&Value::from_string("CustomMessage".to_string()))
-            );
-        } else {
-            panic!("Expected Object");
-        }
+        let err = interp.eval_function_call(&func, &args).unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "Runtime error: Undefined function: CustomMessage"
+        );
+    }
+
+    #[test]
+    fn test_undefcall_1_lowercase_undefined_call_errors() {
+        let mut interp = make_interpreter();
+        let func = make_expr(ExprKind::Identifier("nosuch".to_string()));
+        let args = vec![make_expr(ExprKind::Literal(Literal::Integer(1, None)))];
+
+        let err = interp.eval_function_call(&func, &args).unwrap_err();
+        assert_eq!(err.to_string(), "Runtime error: Undefined function: nosuch");
     }
 
     #[test]
@@ -892,17 +950,19 @@ mod tests {
     fn test_eval_function_call_named_args_lookup_fail() {
         let mut interp = make_interpreter();
 
-        // Function name that doesn't exist at all -- "undefined variable" error
-        // becomes a message constructor since it's an Identifier
+        // UNDEFCALL-1: a callee that doesn't exist at all is an undefined function,
+        // even when its arguments are named
         let func = make_expr(ExprKind::Identifier("UndefinedFunc".to_string()));
         let args = vec![make_expr(ExprKind::Assign {
             target: Box::new(make_expr(ExprKind::Identifier("x".to_string()))),
             value: Box::new(make_expr(ExprKind::Literal(Literal::Integer(1, None)))),
         })];
 
-        let result = interp.eval_function_call(&func, &args);
-        // Should become a message constructor (has named args but can't lookup)
-        assert!(result.is_ok());
+        let err = interp.eval_function_call(&func, &args).unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "Runtime error: Undefined function: UndefinedFunc"
+        );
     }
 
     #[test]

@@ -172,15 +172,6 @@ impl Linter {
             max_complexity: 10,
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::linter::Linter;
-    ///
-    /// let mut instance = Linter::new();
-    /// let result = instance.set_rules();
-    /// // Verify behavior
-    /// ```
     pub fn set_rules(&mut self, rule_filter: &str) {
         self.rules.clear();
         for rule in rule_filter.split(',') {
@@ -212,15 +203,6 @@ impl Linter {
     pub fn set_strict_mode(&mut self, strict: bool) {
         self.strict_mode = strict;
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::linter::Linter;
-    ///
-    /// let mut instance = Linter::new();
-    /// let result = instance.lint();
-    /// // Verify behavior
-    /// ```
     pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
         let mut scope = Scope::new();
@@ -767,15 +749,6 @@ impl Linter {
             }
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::linter::Linter;
-    ///
-    /// let mut instance = Linter::new();
-    /// let result = instance.auto_fix();
-    /// // Verify behavior
-    /// ```
     pub fn auto_fix(&self, source: &str, issues: &[LintIssue]) -> Result<String> {
         // Simple auto-fix implementation
         let mut fixed = source.to_string();

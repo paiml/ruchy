@@ -140,14 +140,14 @@ fn test_range_basic() {
 
 #[test]
 fn test_sorted() {
-    let result = eval("sorted([3, 1, 2])");
-    assert!(result.contains("1") && result.contains("2") && result.contains("3"));
+    // METHODS-1: method form; `sorted(a)` is not a global builtin.
+    assert_eq!(eval("[3, 1, 2].sorted()"), "[1, 2, 3]");
 }
 
 #[test]
 fn test_reversed() {
-    let result = eval("reversed([1, 2, 3])");
-    assert!(result.contains("3") && result.contains("2") && result.contains("1"));
+    // METHODS-1: method form; `reversed(a)` is not a global builtin.
+    assert_eq!(eval("[1, 2, 3].reversed()"), "[3, 2, 1]");
 }
 
 #[test]
@@ -165,14 +165,14 @@ fn test_zip_arrays() {
 
 #[test]
 fn test_take_basic() {
-    let result = eval("take([1, 2, 3, 4], 2)");
-    assert!(result.contains("1"));
+    // METHODS-1: method form; `take(a, n)` is not a global builtin.
+    assert_eq!(eval("[1, 2, 3, 4].take(2)"), "[1, 2]");
 }
 
 #[test]
 fn test_drop_basic() {
-    let result = eval("drop([1, 2, 3, 4], 2)");
-    assert!(result.contains("3") || result.contains("4"));
+    // METHODS-1: method form; `drop(a, n)` is not a global builtin.
+    assert_eq!(eval("[1, 2, 3, 4].drop(2)"), "[3, 4]");
 }
 
 // ============== Conversion Functions ==============
@@ -327,9 +327,21 @@ fn test_assert_eq_same() {
 
 #[test]
 fn test_hash_deterministic() {
-    let result1 = eval("hash(\"hello\")");
-    let result2 = eval("hash(\"hello\")");
+    let result1 = compute_hash_of("hello");
+    let result2 = compute_hash_of("hello");
     assert_eq!(result1, result2);
+    assert_eq!(
+        result1,
+        "\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\""
+    );
+}
+
+/// METHODS-1: `hash(x)` is neither an interpreter nor a transpiler builtin;
+/// `compute_hash(path)` (SHA-256 of a file's bytes) is the existing equivalent.
+pub(super) fn compute_hash_of(content: &str) -> String {
+    let file = tempfile::NamedTempFile::new().expect("create temp file");
+    std::fs::write(file.path(), content).expect("write temp file");
+    eval(&format!("compute_hash(\"{}\")", file.path().display()))
 }
 
 // ============== I/O Functions ==============
@@ -369,28 +381,28 @@ fn test_pop_array() {
 
 #[test]
 fn test_append_arrays() {
-    let result = eval("append([1, 2], [3, 4])");
-    assert!(result.contains("1") || result.contains("4"));
+    // METHODS-1: method form; `append(a, b)` is not a global builtin.
+    assert_eq!(eval("[1, 2].append([3, 4])"), "[1, 2, 3, 4]");
 }
 
 // ============== Map/Object Functions ==============
 
 #[test]
 fn test_keys_object() {
-    let result = eval("keys({a: 1, b: 2})");
-    assert!(result.contains("a") || result.contains("b"));
+    // METHODS-1: method form; `keys(o)` is not a global builtin.
+    assert_eq!(eval("({b: 2, a: 1}).keys()"), "[\"a\", \"b\"]");
 }
 
 #[test]
 fn test_values_object() {
-    let result = eval("values({a: 1, b: 2})");
-    assert!(result.contains("1") || result.contains("2"));
+    // METHODS-1: method form; `values(o)` is not a global builtin.
+    assert_eq!(eval("({b: 2, a: 1}).values()"), "[1, 2]");
 }
 
 #[test]
 fn test_entries_object() {
-    let result = eval("entries({a: 1})");
-    assert!(!result.is_empty());
+    // METHODS-1: method form; `entries(o)` is not a global builtin.
+    assert_eq!(eval("({a: 1}).entries()"), "[[\"a\", 1]]");
 }
 
 // ============== Random Functions ==============
@@ -451,14 +463,14 @@ fn test_array_last_method_via_index() {
 
 #[test]
 fn test_array_sorted_function() {
-    let result = eval("sorted([3,1,2])");
-    assert!(result.contains("1"));
+    // METHODS-1: method form; `sorted(a)` is not a global builtin.
+    assert_eq!(eval("[3,1,2].sorted()"), "[1, 2, 3]");
 }
 
 #[test]
 fn test_array_reversed_function() {
-    let result = eval("reversed([1,2,3])");
-    assert!(result.contains("3"));
+    // METHODS-1: method form; `reversed(a)` is not a global builtin.
+    assert_eq!(eval("[1,2,3].reversed()"), "[3, 2, 1]");
 }
 
 // ============== Environment Functions ==============

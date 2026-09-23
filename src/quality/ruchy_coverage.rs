@@ -19,22 +19,6 @@ pub struct RuchyCoverage {
     pub covered_branches: usize,
 }
 impl RuchyCoverage {
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
-    ///
-    /// let instance = RuchyCoverage::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
-    ///
-    /// let instance = RuchyCoverage::new();
-    /// // Verify behavior
-    /// ```
     pub fn new(file_path: &str) -> Self {
         Self {
             file_path: file_path.to_string(),
@@ -47,15 +31,6 @@ impl RuchyCoverage {
         }
     }
     /// Calculate line coverage percentage
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::ruchy_coverage::RuchyCoverage;
-    ///
-    /// let mut instance = RuchyCoverage::new();
-    /// let result = instance.line_coverage();
-    /// // Verify behavior
-    /// ```
     pub fn line_coverage(&self) -> f64 {
         if self.total_lines == 0 {
             100.0

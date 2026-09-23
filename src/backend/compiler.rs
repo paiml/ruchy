@@ -116,7 +116,8 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
 ///
 /// # Examples
 /// ```no_run
-/// use ruchy::backend::{compile_source_to_binary_with_context, CompileOptions};
+/// use ruchy::backend::compiler::compile_source_to_binary_with_context;
+/// use ruchy::backend::CompileOptions;
 /// use std::path::Path;
 ///
 /// let source = r#"println!("Hello")"#;
@@ -957,22 +958,30 @@ mod tests {
 
     #[test]
     fn test_compile_empty_source() {
-        let source = "";
-        let options = CompileOptions::default();
-
-        let result = compile_source_to_binary(source, &options);
-        // Empty source might be valid or not depending on parser
-        let _ = result; // Just check it doesn't panic
+        // COMPILERACE-1: write into a temp dir, never the crate root (a.out).
+        let dir = tempfile::TempDir::new().expect("operation should succeed in test");
+        let options = CompileOptions {
+            output: dir.path().join("out"),
+            ..Default::default()
+        };
+        let result = compile_source_to_binary("", &options);
+        // A program with no items either builds a binary or is refused; either
+        // way the output exists exactly when the compile succeeded.
+        assert_eq!(result.is_ok(), options.output.exists());
     }
 
     #[test]
     fn test_compile_whitespace_only() {
-        let source = "   \n\t\n   ";
-        let options = CompileOptions::default();
-
-        let result = compile_source_to_binary(source, &options);
-        // Whitespace might be valid or not depending on parser
-        let _ = result; // Just check it doesn't panic
+        // COMPILERACE-1: write into a temp dir, never the crate root (a.out).
+        let dir = tempfile::TempDir::new().expect("operation should succeed in test");
+        let options = CompileOptions {
+            output: dir.path().join("out"),
+            ..Default::default()
+        };
+        let result = compile_source_to_binary("   \n\t\n   ", &options);
+        // A program with no items either builds a binary or is refused; either
+        // way the output exists exactly when the compile succeeded.
+        assert_eq!(result.is_ok(), options.output.exists());
     }
 
     // Test 14: CompileOptions builder pattern functionality

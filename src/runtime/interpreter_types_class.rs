@@ -324,29 +324,10 @@ impl Interpreter {
                             )));
                         }
 
-                        // Create environment for constructor
-                        let mut ctor_env = HashMap::new();
-
-                        // Bind 'self' to mutable instance for constructor
-                        ctor_env.insert(
-                            "self".to_string(),
-                            Value::Object(Arc::new(instance.clone())),
-                        );
-
-                        // RUNTIME-DEFAULT-PARAMS: Bind constructor parameters
-                        for ((param_name, _default_value), arg) in params.iter().zip(args) {
-                            ctor_env.insert(param_name.clone(), arg.clone());
-                        }
-
-                        // Push constructor environment
-                        self.env_stack.push(Rc::new(RefCell::new(ctor_env))); // ISSUE-119: Wrap in Rc<RefCell>
-
-                        // Execute constructor body
-                        // RUNTIME-098: Constructor may return explicit value (e.g., Counter { count: 0 })
-                        let result = self.eval_expr(body)?;
-
-                        // Pop environment before checking result
-                        self.env_stack.pop();
+                        // CLASSNEW-1: run the body with `self` bound; `self` is read
+                        // back before the constructor scope is popped.
+                        let (result, updated_self) =
+                            self.run_constructor_body(&instance, params, args, body)?;
 
                         // RUNTIME-098: Check if constructor returned an explicit struct instance
                         if let Some(obj) = Self::try_extract_class_instance(&result, class_name) {
@@ -354,8 +335,7 @@ impl Interpreter {
                         }
 
                         // RUNTIME-098: For field-assignment constructors (self.x = value),
-                        // extract updated self from environment after constructor execution
-                        let updated_self = self.lookup_variable("self")?;
+                        // copy the updated `self` fields into the instance
                         if let Value::Object(ref updated_instance) = updated_self {
                             copy_non_meta_fields(updated_instance, &mut instance);
                         }
@@ -371,6 +351,34 @@ impl Interpreter {
                 class_name
             )))
         }
+    }
+
+    /// Run a `new`-style constructor body with `self` bound to `instance`.
+    ///
+    /// Returns the body's value and the final value of `self`, which is read
+    /// while the constructor scope is still on the stack (CLASSNEW-1). The
+    /// scope is popped on both the success and the error path.
+    fn run_constructor_body(
+        &mut self,
+        instance: &HashMap<String, Value>,
+        params: &[(String, Option<Arc<Expr>>)],
+        args: &[Value],
+        body: &Expr,
+    ) -> Result<(Value, Value), InterpreterError> {
+        let mut ctor_env = HashMap::new();
+        ctor_env.insert(
+            "self".to_string(),
+            Value::Object(Arc::new(instance.clone())),
+        );
+        for ((param_name, _default_value), arg) in params.iter().zip(args) {
+            ctor_env.insert(param_name.clone(), arg.clone());
+        }
+        self.env_stack.push(Rc::new(RefCell::new(ctor_env)));
+        let outcome = self
+            .eval_expr(body)
+            .and_then(|result| Ok((result, self.lookup_variable("self")?)));
+        self.env_stack.pop();
+        outcome
     }
 
     /// Instantiate a class with arguments (calls init constructor)
