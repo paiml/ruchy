@@ -20,7 +20,7 @@ pub fn format_string_with_values(format_str: &str, values: &[Value]) -> String {
                     if chars.peek() == Some(&'}') {
                         chars.next();
                         if value_index < values.len() {
-                            result.push_str(&format!("{:?}", values[value_index]));
+                            result.push_str(&rust_debug(&values[value_index]));
                             value_index += 1;
                         } else {
                             result.push_str("{:?}");
@@ -74,9 +74,111 @@ pub fn format_value_with_spec(value: &Value, spec: &str) -> String {
     value.to_string()
 }
 
-/// Format value for debug output
+/// Format value for debug output (`{:?}`), as rustc prints the transpiled value.
 pub fn format_value_debug(value: &Value) -> String {
-    format!("{value:?}")
+    rust_debug(value)
+}
+
+/// RHLGA-1: render a value the way Rust's `{:?}` renders the transpiled value
+/// (`[1, 2]`, `"hi"`, `Some(3)`, `(1, true)`, `2.0`), not the internal enum.
+/// Struct/object field order is not recorded in a `Value`; keys are sorted.
+pub fn rust_debug(value: &Value) -> String {
+    debug_scalar(value).unwrap_or_else(|| debug_compound(value))
+}
+
+fn debug_scalar(value: &Value) -> Option<String> {
+    match value {
+        Value::Integer(i) => Some(i.to_string()),
+        Value::Float(f) => Some(format!("{f:?}")),
+        Value::Bool(b) => Some(b.to_string()),
+        Value::Byte(b) => Some(b.to_string()),
+        Value::Nil => Some("()".to_string()),
+        Value::String(s) => Some(format!("{:?}", s.as_ref())),
+        _ => None,
+    }
+}
+
+fn debug_compound(value: &Value) -> String {
+    match value {
+        Value::Array(items) => format!("[{}]", debug_list(items)),
+        Value::Tuple(items) => debug_tuple(items),
+        Value::EnumVariant {
+            variant_name, data, ..
+        } => debug_variant(variant_name, data.as_deref()),
+        Value::Struct { name, fields } => debug_named_fields(name, fields),
+        Value::Object(map) => debug_object_map(map),
+        Value::ObjectMut(cell) => cell
+            .lock()
+            .map_or_else(|_| value.to_string(), |map| debug_object_map(&map)),
+        Value::Class {
+            class_name, fields, ..
+        } => fields.read().map_or_else(
+            |_| value.to_string(),
+            |map| debug_named_fields(class_name, &map),
+        ),
+        Value::Range {
+            start,
+            end,
+            inclusive,
+        } => debug_range(start, end, *inclusive),
+        _ => value.to_string(),
+    }
+}
+
+fn debug_list(items: &[Value]) -> String {
+    items.iter().map(rust_debug).collect::<Vec<_>>().join(", ")
+}
+
+fn debug_tuple(items: &[Value]) -> String {
+    if items.len() == 1 {
+        format!("({},)", rust_debug(&items[0]))
+    } else {
+        format!("({})", debug_list(items))
+    }
+}
+
+fn debug_variant(name: &str, data: Option<&[Value]>) -> String {
+    match data {
+        Some(values) if !values.is_empty() => format!("{name}({})", debug_list(values)),
+        _ => name.to_string(),
+    }
+}
+
+fn debug_range(start: &Value, end: &Value, inclusive: bool) -> String {
+    let op = if inclusive { "..=" } else { ".." };
+    format!("{}{op}{}", rust_debug(start), rust_debug(end))
+}
+
+fn sorted_entries(map: &std::collections::HashMap<String, Value>) -> Vec<(&String, &Value)> {
+    let mut entries: Vec<_> = map.iter().filter(|(k, _)| !k.starts_with("__")).collect();
+    entries.sort_by(|a, b| a.0.cmp(b.0));
+    entries
+}
+
+/// `Name { a: 1, b: 2 }` (derived Debug); a field-less struct prints `Name`.
+fn debug_named_fields(name: &str, map: &std::collections::HashMap<String, Value>) -> String {
+    let fields: Vec<String> = sorted_entries(map)
+        .into_iter()
+        .map(|(k, v)| format!("{k}: {}", rust_debug(v)))
+        .collect();
+    if fields.is_empty() {
+        name.to_string()
+    } else {
+        format!("{name} {{ {} }}", fields.join(", "))
+    }
+}
+
+/// An object literal transpiles to a `BTreeMap`: `{"a": 1}`. An instance
+/// carrying `__class` prints as its struct.
+fn debug_object_map(map: &std::collections::HashMap<String, Value>) -> String {
+    if let Some(Value::String(class)) = map.get("__class") {
+        return debug_named_fields(class, map);
+    }
+    let entries: Vec<String> = sorted_entries(map)
+        .into_iter()
+        .map(|(k, v)| format!("{k:?}: {}", rust_debug(v)))
+        .collect();
+    format!("{{{}}}", entries.join(", "))
 }
 
 /// Format value for display output (no extra quotes for strings)
@@ -114,7 +216,7 @@ mod tests {
     #[test]
     fn test_format_debug_placeholder() {
         let result = format_string_with_values("{:?}", &[Value::from_string("test".to_string())]);
-        assert!(result.contains("String"));
+        assert_eq!(result, "\"test\"");
     }
 
     #[test]
@@ -243,13 +345,13 @@ mod tests {
     #[test]
     fn test_debug_integer() {
         let result = format_value_debug(&Value::Integer(42));
-        assert!(result.contains("42"));
+        assert_eq!(result, "42");
     }
 
     #[test]
     fn test_debug_string() {
-        let result = format_value_debug(&Value::from_string("test".to_string()));
-        assert!(result.contains("String"));
+        let result = format_value_debug(&Value::from_string("a\"b".to_string()));
+        assert_eq!(result, "\"a\\\"b\"");
     }
 
     #[test]
@@ -258,7 +360,7 @@ mod tests {
             vec![Value::Integer(1), Value::Integer(2)].into_boxed_slice(),
         ));
         let result = format_value_debug(&arr);
-        assert!(result.contains("Array"));
+        assert_eq!(result, "[1, 2]");
     }
 
     // format_value_display tests
@@ -340,20 +442,19 @@ mod tests {
     #[test]
     fn test_format_debug_nil() {
         let result = format_value_debug(&Value::Nil);
-        assert!(result.contains("Nil"));
+        assert_eq!(result, "()");
     }
 
     #[test]
     fn test_format_debug_bool() {
         let result = format_value_debug(&Value::Bool(false));
-        assert!(result.contains("Bool"));
-        assert!(result.contains("false"));
+        assert_eq!(result, "false");
     }
 
     #[test]
     fn test_format_debug_float() {
-        let result = format_value_debug(&Value::Float(2.718));
-        assert!(result.contains("Float"));
+        assert_eq!(format_value_debug(&Value::Float(2.718)), "2.718");
+        assert_eq!(format_value_debug(&Value::Float(2.0)), "2.0");
     }
 
     #[test]
@@ -366,7 +467,7 @@ mod tests {
     #[test]
     fn test_format_consecutive_debug_placeholders() {
         let result = format_string_with_values("{:?}{:?}", &[Value::Integer(1), Value::Integer(2)]);
-        assert!(result.contains("Integer"));
+        assert_eq!(result, "12");
     }
 
     #[test]
@@ -491,7 +592,7 @@ mod tests {
     fn test_format_debug_tuple() {
         let tuple = Value::Tuple(Arc::from(vec![Value::Integer(1)]));
         let result = format_value_debug(&tuple);
-        assert!(result.contains("Tuple"));
+        assert_eq!(result, "(1,)");
     }
 
     #[test]
@@ -507,8 +608,46 @@ mod tests {
             "{:?} {:?} {:?}",
             &[Value::Integer(1), Value::Float(2.0), Value::Bool(true)],
         );
-        assert!(result.contains("Integer"));
-        assert!(result.contains("Float"));
-        assert!(result.contains("Bool"));
+        assert_eq!(result, "1 2.0 true");
+    }
+
+    #[test]
+    fn test_rust_debug_compound_values() {
+        let some = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "Some".to_string(),
+            data: Some(vec![Value::Integer(3)]),
+        };
+        let none = Value::EnumVariant {
+            enum_name: "Option".to_string(),
+            variant_name: "None".to_string(),
+            data: None,
+        };
+        assert_eq!(rust_debug(&some), "Some(3)");
+        assert_eq!(rust_debug(&none), "None");
+        let pair = Value::Tuple(Arc::from(vec![Value::Integer(1), Value::Bool(true)]));
+        assert_eq!(rust_debug(&pair), "(1, true)");
+        let range = Value::Range {
+            start: Box::new(Value::Integer(0)),
+            end: Box::new(Value::Integer(3)),
+            inclusive: true,
+        };
+        assert_eq!(rust_debug(&range), "0..=3");
+    }
+
+    #[test]
+    fn test_rust_debug_struct_and_object() {
+        let mut fields = std::collections::HashMap::new();
+        fields.insert("y".to_string(), Value::Integer(2));
+        fields.insert("x".to_string(), Value::from_string("s".to_string()));
+        let point = Value::Struct {
+            name: "P".to_string(),
+            fields: Arc::new(fields.clone()),
+        };
+        assert_eq!(rust_debug(&point), "P { x: \"s\", y: 2 }");
+        assert_eq!(
+            rust_debug(&Value::Object(Arc::new(fields))),
+            "{\"x\": \"s\", \"y\": 2}"
+        );
     }
 }

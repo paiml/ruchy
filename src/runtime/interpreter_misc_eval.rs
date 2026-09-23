@@ -280,9 +280,9 @@ fn eval_format_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, I
         ));
     }
 
-    // Evaluate format string
+    // Evaluate format string (the raw text, not its quoted Display)
     let format_val = interp.eval_expr(&args[0])?;
-    let format_str = format_val.to_string();
+    let format_str = crate::runtime::value_format::format_value_display(&format_val);
 
     // Evaluate remaining arguments
     let mut values = Vec::new();
@@ -290,69 +290,9 @@ fn eval_format_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, I
         values.push(interp.eval_expr(arg)?);
     }
 
-    // Replace {} and {:?} placeholders with values
-    let result = format_with_placeholders(&format_str, &values);
+    // RHLGA-1: same substitution as println!() ({} raw, {:?} Rust Debug)
+    let result = Interpreter::format_string_with_values(&format_str, &values);
     Ok(Value::from_string(result))
-}
-
-/// Replace `{}` and `{:?}` placeholders in a format string with values.
-/// Shared helper used by format!() macro evaluation.
-fn try_consume_debug_placeholder(
-    chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
-    result: &mut String,
-    values: &[Value],
-    value_index: &mut usize,
-) -> bool {
-    if chars.peek() != Some(&':') {
-        return false;
-    }
-    chars.next();
-    if chars.peek() != Some(&'?') {
-        result.push_str("{:");
-        return true;
-    }
-    chars.next();
-    if chars.peek() != Some(&'}') {
-        result.push_str("{:?");
-        return true;
-    }
-    chars.next();
-    if *value_index < values.len() {
-        result.push_str(&format!("{:?}", values[*value_index]));
-        *value_index += 1;
-    } else {
-        result.push_str("{:?}");
-    }
-    true
-}
-
-fn format_with_placeholders(format_str: &str, values: &[Value]) -> String {
-    let mut result = String::new();
-    let mut chars = format_str.chars().peekable();
-    let mut value_index = 0;
-
-    while let Some(ch) = chars.next() {
-        if ch != '{' {
-            result.push(ch);
-            continue;
-        }
-        if try_consume_debug_placeholder(&mut chars, &mut result, values, &mut value_index) {
-            continue;
-        }
-        if chars.peek() == Some(&'}') {
-            chars.next();
-            if value_index < values.len() {
-                result.push_str(&values[value_index].to_string());
-                value_index += 1;
-            } else {
-                result.push_str("{}");
-            }
-        } else {
-            result.push(ch);
-        }
-    }
-
-    result
 }
 
 // ============================================================================

@@ -297,16 +297,9 @@ fn format_value_for_println(value: &Value) -> String {
     }
 }
 
-/// Format string with interpolation
-/// Complexity: 2 (within Toyota Way limits)
+/// Format string with interpolation: `{}` raw, `{:?}` Rust Debug
 fn format_with_interpolation(fmt_str: &str, args: &[Value]) -> String {
-    let mut result = fmt_str.to_string();
-    for arg in args {
-        if let Some(pos) = result.find("{}") {
-            result.replace_range(pos..pos + 2, &format_value_for_println(arg));
-        }
-    }
-    result
+    crate::runtime::value_format::format_string_with_values(fmt_str, args)
 }
 
 /// Join values with spaces
@@ -324,7 +317,8 @@ fn format_println_output(args: &[Value]) -> String {
     if args.is_empty() {
         "\n".to_string()
     } else if let Value::String(fmt_str) = &args[0] {
-        if fmt_str.contains("{}") {
+        // RHLGA-1: the function form substitutes {} and {:?} like println!()
+        if fmt_str.contains("{}") || fmt_str.contains("{:?}") {
             format!("{}\n", format_with_interpolation(fmt_str, &args[1..]))
         } else {
             format!("{}\n", join_values(args))
