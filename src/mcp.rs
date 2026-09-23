@@ -6,6 +6,7 @@
 //!
 //! Includes comprehensive tool discovery for exposing Ruchy compiler
 //! functionality as MCP tools for Claude Code agent mode.
+pub mod rhl_tools;
 pub mod tool_discovery;
 // Re-export tool discovery for easy access
 pub use tool_discovery::RuchyToolDiscovery;
@@ -198,6 +199,7 @@ pub struct RuchyMCPTool {
     description: String,
     input_type: Option<MonoType>,
     output_type: Option<MonoType>,
+    input_schema: Option<Value>,
     handler: Box<dyn Fn(Value) -> Result<Value> + Send + Sync>,
 }
 impl RuchyMCPTool {
@@ -211,6 +213,7 @@ impl RuchyMCPTool {
             description,
             input_type: None,
             output_type: None,
+            input_schema: None,
             handler: Box::new(handler),
         }
     }
@@ -224,6 +227,12 @@ impl RuchyMCPTool {
     #[must_use]
     pub fn with_output_type(mut self, output_type: MonoType) -> Self {
         self.output_type = Some(output_type);
+        self
+    }
+    /// Set the JSON Schema of the tool's arguments, listed by `tools/list`
+    #[must_use]
+    pub fn with_input_schema(mut self, schema: Value) -> Self {
+        self.input_schema = Some(schema);
         self
     }
     /// Get the tool name
@@ -240,19 +249,20 @@ impl RuchyMCPTool {
 #[async_trait]
 impl ToolHandler for RuchyMCPTool {
     async fn handle(&self, args: Value, _extra: RequestHandlerExtra) -> pmcp::Result<Value> {
-        // Validate input type if specified
-        if let Some(ref _input_type) = self.input_type {
-            // In a real implementation, we'd validate against the type
-            // For now, we'll just pass through
-        }
-        // Call the handler
-        let result = (self.handler)(args).map_err(|e| PmcpError::internal(e.to_string()))?;
-        // Validate output type if specified
-        if let Some(ref _output_type) = self.output_type {
-            // In a real implementation, we'd validate the output
-            // For now, we'll just pass through
-        }
-        Ok(result)
+        (self.handler)(args).map_err(|e| PmcpError::internal(e.to_string()))
+    }
+
+    /// The name, description and argument schema `tools/list` reports.
+    fn metadata(&self) -> Option<pmcp::types::ToolInfo> {
+        let schema = self
+            .input_schema
+            .clone()
+            .unwrap_or_else(|| serde_json::json!({"type": "object"}));
+        Some(pmcp::types::ToolInfo::new(
+            self.name.clone(),
+            Some(self.description.clone()),
+            schema,
+        ))
     }
 }
 /// Create common Ruchy MCP tools
@@ -524,17 +534,32 @@ pub fn create_ruchy_tools() -> Vec<(&'static str, RuchyMCPTool)> {
 ///
 /// Returns an error if the server cannot be built or configured
 pub fn create_ruchy_mcp_server() -> Result<Server> {
-    let server = Server::builder()
-        .name("ruchy-mcp-server")
+    create_named_mcp_server("ruchy-mcp-server")
+}
+
+/// Every tool `ruchy mcp` serves: the ruchy tools, then the RHL tools of
+/// spec RHL-001 §6 ([`rhl_tools`]).
+#[must_use]
+pub fn all_tools() -> Vec<(&'static str, RuchyMCPTool)> {
+    let mut tools = create_ruchy_tools();
+    tools.extend(rhl_tools::create_rhl_tools());
+    tools
+}
+
+/// A server named `name` with every tool of [`all_tools`] registered.
+///
+/// # Errors
+///
+/// Returns an error if the server cannot be built
+pub fn create_named_mcp_server(name: &str) -> Result<Server> {
+    let builder = Server::builder()
+        .name(name)
         .version(env!("CARGO_PKG_VERSION"))
-        .capabilities(ServerCapabilities::tools_only())
-        .build()?;
-    // Note: In the actual pmcp API, tools are registered via builder pattern
-    // or through dynamic registration after server start
-    // for (_name, _tool) in create_ruchy_tools() {
-    //     // Tools would be registered here if the API supported it
-    // }
-    Ok(server)
+        .capabilities(ServerCapabilities::tools_only());
+    let builder = all_tools()
+        .into_iter()
+        .fold(builder, |b, (tool_name, tool)| b.tool(tool_name, tool));
+    Ok(builder.build()?)
 }
 /// Example of how to create a Ruchy MCP client with stdio transport
 ///
@@ -616,6 +641,23 @@ mod tests {
     async fn test_server_creation() {
         let server = create_ruchy_mcp_server();
         assert!(server.is_ok());
+    }
+    #[test]
+    fn test_mcptools1_server_registers_every_tool() {
+        let server = create_ruchy_mcp_server().unwrap();
+        let names: Vec<&str> = all_tools().iter().map(|(name, _)| *name).collect();
+        assert_eq!(names.len(), 15);
+        for name in names.iter().chain(rhl_tools::RHL_TOOL_NAMES.iter()) {
+            assert!(server.has_tool(name), "`{name}` not registered");
+        }
+    }
+    #[test]
+    fn test_mcptools1_tool_metadata_names_and_describes_the_tool() {
+        let (_, tool) = rhl_tools::create_rhl_tools().remove(0);
+        let info = tool.metadata().unwrap();
+        assert_eq!(info.name, "rhl_check");
+        assert!(info.description.unwrap().contains("report"));
+        assert_eq!(info.input_schema["required"][0], "source");
     }
     #[tokio::test]
     async fn test_client_creation() {

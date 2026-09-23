@@ -85,11 +85,17 @@ pub fn check_files(paths: &[&Path], format: OutputFormat) -> Outcome {
 
 fn check_one(path: &Path, source: &str) -> Report {
     let root = find_root(path);
-    let file = path.display().to_string();
-    if is_rhl_yaml(path) {
-        check_yaml(&file, source, root.as_deref())
+    check_source(&path.display().to_string(), source, root.as_deref())
+}
+
+/// The check `ruchy check` runs on `source`, named `file`: the YAML checker
+/// for a `.rhl.yaml` name, the RHL text checker otherwise.
+#[must_use]
+pub fn check_source(file: &str, source: &str, root: Option<&Path>) -> Report {
+    if is_rhl_yaml(Path::new(file)) {
+        check_yaml(file, source, root)
     } else {
-        check(&file, source, root.as_deref())
+        check(file, source, root)
     }
 }
 
@@ -330,12 +336,28 @@ fn lower_file(input: &Path, form: Form) -> Result<String, Outcome> {
         .map_err(|e| failed(format!("{}: cannot read: {e}\n", input.display()), 1))?;
     let file = input.display().to_string();
     let root = find_root(input);
-    let lowered = if is_rhl_yaml(input) {
-        lower_yaml_as(form, &file, &source, root.as_deref())
+    lower_named(form, &file, &source, root.as_deref())
+        .map_err(|f| failed(render_lower_failure(&f), f.exit_code()))
+}
+
+/// Check and lower `source`, named `file`, to `form`: the `.rhl.yaml` path
+/// for a YAML name, the RHL text path otherwise. What `ruchy transpile` and
+/// `ruchy compile` lower with.
+///
+/// # Errors
+///
+/// As [`lower_source_as`] and [`lower_yaml_as`].
+pub fn lower_named(
+    form: Form,
+    file: &str,
+    source: &str,
+    root: Option<&Path>,
+) -> Result<String, LowerFailure> {
+    if is_rhl_yaml(Path::new(file)) {
+        lower_yaml_as(form, file, source, root)
     } else {
-        lower_source_as(form, &file, &source, root.as_deref())
-    };
-    lowered.map_err(|f| failed(render_lower_failure(&f), f.exit_code()))
+        lower_source_as(form, file, source, root)
+    }
 }
 
 /// `ruchy compile <file.rhl | file.rhl.yaml> [-o bin]` (RHL-4): lower the job

@@ -38,42 +38,42 @@ pub fn handle_mcp_command(
     _config: Option<&Path>,
 ) -> Result<()> {
     use anyhow::Context;
-    use ruchy::mcp::{create_ruchy_mcp_server, create_ruchy_tools, StdioTransport};
+    use ruchy::mcp::StdioTransport;
 
+    let server = prepare_server(name, verbose)?;
+    let runtime = tokio::runtime::Runtime::new().context("Failed to create async runtime")?;
+    runtime.block_on(async {
+        if verbose {
+            eprintln!("   Transport: stdio");
+            eprintln!("✅ MCP server running");
+        }
+        server
+            .run(StdioTransport::new())
+            .await
+            .context("MCP server error")
+    })
+}
+
+/// Build the server `ruchy mcp` runs, with every tool registered
+/// (`ruchy::mcp::all_tools`), without starting the stdio loop.
+///
+/// # Errors
+/// Returns error if the server cannot be built
+#[cfg(feature = "mcp")]
+fn prepare_server(name: &str, verbose: bool) -> Result<ruchy::mcp::Server> {
+    use anyhow::Context;
+    use ruchy::mcp::{all_tools, create_named_mcp_server};
+
+    let server = create_named_mcp_server(name).context("Failed to create MCP server")?;
     if verbose {
-        eprintln!("🚀 Starting Ruchy MCP Server: {}", name);
-    }
-
-    // Create the MCP server with tools
-    let server = create_ruchy_mcp_server().context("Failed to create MCP server")?;
-
-    // Register all Ruchy tools
-    let tools = create_ruchy_tools();
-    if verbose {
+        let tools = all_tools();
+        eprintln!("🚀 Starting Ruchy MCP Server: {name}");
         eprintln!("   Registered {} tools:", tools.len());
         for (tool_name, tool) in &tools {
             eprintln!("   - {}: {}", tool_name, tool.description());
         }
     }
-
-    if verbose {
-        eprintln!("   Transport: stdio");
-        eprintln!("   Awaiting MCP client connection...");
-    }
-
-    // Create async runtime for the server
-    let runtime = tokio::runtime::Runtime::new().context("Failed to create async runtime")?;
-
-    runtime.block_on(async {
-        let transport = StdioTransport::new();
-
-        if verbose {
-            eprintln!("✅ MCP server running");
-        }
-
-        // Run the server with stdio transport
-        server.run(transport).await.context("MCP server error")
-    })
+    Ok(server)
 }
 
 #[cfg(not(feature = "mcp"))]
@@ -94,14 +94,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_mcp_handler_stub() {
-        // MCP handler tests require the mcp feature
-        // This is a placeholder
-    }
-
-    // ===== EXTREME TDD Round 150 - MCP Handler Tests =====
-
-    #[test]
     #[cfg(not(feature = "mcp"))]
     fn test_handle_mcp_command_no_feature() {
         // Without the mcp feature the command must fail with an error the caller can
@@ -115,90 +107,34 @@ mod tests {
         );
     }
 
-    #[test]
-    fn test_mcp_command_accepts_parameters() {
-        // Verify function signature
-        let _ = handle_mcp_command("test-server", false, 3600, 0.8, 10, false, None);
-    }
+    // MCPTOOLS-1: these build the server `ruchy mcp` runs but never start its
+    // stdio loop, which blocks on standard input until the client hangs up.
 
     #[test]
-    fn test_mcp_command_with_streaming() {
-        let _ = handle_mcp_command(
-            "streaming-server",
-            true, // streaming
-            3600,
-            0.8,
-            10,
-            false,
-            None,
-        );
-    }
-
-    #[test]
-    fn test_mcp_command_with_verbose() {
-        let _ = handle_mcp_command(
-            "verbose-server",
-            false,
-            3600,
-            0.8,
-            10,
-            true, // verbose
-            None,
-        );
-    }
-
-    #[test]
-    fn test_mcp_command_various_timeouts() {
-        let timeouts = [60, 300, 3600, 86400];
-        for timeout in &timeouts {
-            let _ = handle_mcp_command("test", false, *timeout, 0.8, 10, false, None);
+    #[cfg(feature = "mcp")]
+    fn test_mcptools1_prepare_server_registers_the_rhl_tools() {
+        let server = prepare_server("test-server", false).expect("server");
+        for name in ruchy::mcp::rhl_tools::RHL_TOOL_NAMES {
+            assert!(server.has_tool(name), "`{name}` not registered");
         }
     }
 
     #[test]
-    fn test_mcp_command_various_scores() {
-        let scores = [0.0, 0.5, 0.8, 1.0];
-        for score in &scores {
-            let _ = handle_mcp_command("test", false, 3600, *score, 10, false, None);
+    #[cfg(feature = "mcp")]
+    fn test_mcptools1_prepare_server_registers_the_ruchy_tools() {
+        let server = prepare_server("test-server", true).expect("server");
+        for (name, _) in ruchy::mcp::create_ruchy_tools() {
+            assert!(server.has_tool(name), "`{name}` not registered");
         }
+        assert!(!server.has_tool("no-such-tool"));
     }
 
     #[test]
-    fn test_mcp_command_various_complexity() {
-        let complexities = [1, 5, 10, 20, 50];
-        for complexity in &complexities {
-            let _ = handle_mcp_command("test", false, 3600, 0.8, *complexity, false, None);
+    #[cfg(feature = "mcp")]
+    fn test_mcptools1_prepare_server_accepts_any_name() {
+        for name in ["", "ruchy-mcp", "full-server"] {
+            let server = prepare_server(name, false).expect("server");
+            assert!(server.has_tool("rhl_check"));
         }
-    }
-
-    #[test]
-    fn test_mcp_command_with_config() {
-        let _ = handle_mcp_command(
-            "config-server",
-            false,
-            3600,
-            0.8,
-            10,
-            false,
-            Some(Path::new("/path/to/config.toml")),
-        );
-    }
-
-    #[test]
-    fn test_mcp_command_all_options() {
-        let _ = handle_mcp_command(
-            "full-server",
-            true,
-            7200,
-            0.9,
-            15,
-            true,
-            Some(Path::new("./mcp.toml")),
-        );
-    }
-
-    #[test]
-    fn test_mcp_command_empty_name() {
-        let _ = handle_mcp_command("", false, 3600, 0.8, 10, false, None);
     }
 }
