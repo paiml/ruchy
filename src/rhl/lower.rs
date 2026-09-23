@@ -22,6 +22,7 @@
 use super::check::{check, check_yaml, load_lexicon, Lexicon, Report};
 use super::codes;
 use super::diag::{Diagnostic, LineSpan};
+use super::runtime::{ActionUse, MeasureUse, Uses};
 use super::tree::{
     Action, App, Atom, CompOp, Cond, CondKind, Decl, Int, Phrase, Program, Quantity, Span, Stmt,
     StmtKind, Unit, UnitKind,
@@ -50,6 +51,18 @@ impl LowerFailure {
     }
 }
 
+/// What lowering emits.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Form {
+    /// `Facts`, `Action` and `decide`: what `ruchy transpile` emits.
+    Decide,
+    /// `decide` plus the runtime functions the job's terms are bound to,
+    /// `observe`, `apply` and a dry-run-by-default `main`: what `ruchy
+    /// compile` and `ruchy run` build (spec Amendment A4). A term bound to
+    /// `[U]` is refused with `RHL-L002`.
+    Program,
+}
+
 /// Check the RHL text `source` (named `file`), then lower it.
 ///
 /// # Errors
@@ -57,7 +70,21 @@ impl LowerFailure {
 /// [`LowerFailure::Check`] when the check does not pass;
 /// [`LowerFailure::Refused`] for a construct the v0 lowering does not cover.
 pub fn lower_source(file: &str, source: &str, root: Option<&Path>) -> Result<String, LowerFailure> {
-    lower_checked(file, source, root, check(file, source, root))
+    lower_source_as(Form::Decide, file, source, root)
+}
+
+/// [`lower_source`] to the given [`Form`].
+///
+/// # Errors
+///
+/// As [`lower_source`]; for [`Form::Program`] also `RHL-L002`.
+pub fn lower_source_as(
+    form: Form,
+    file: &str,
+    source: &str,
+    root: Option<&Path>,
+) -> Result<String, LowerFailure> {
+    lower_checked(form, file, source, root, check(file, source, root))
 }
 
 /// Check the `.rhl.yaml` text `source`, then lower its tree. The tree is
@@ -68,13 +95,27 @@ pub fn lower_source(file: &str, source: &str, root: Option<&Path>) -> Result<Str
 /// As [`lower_source`]; a refusal carries no position ([`LineSpan::UNKNOWN`]),
 /// as every diagnostic of a `.rhl.yaml` file does.
 pub fn lower_yaml(file: &str, source: &str, root: Option<&Path>) -> Result<String, LowerFailure> {
+    lower_yaml_as(Form::Decide, file, source, root)
+}
+
+/// [`lower_yaml`] to the given [`Form`].
+///
+/// # Errors
+///
+/// As [`lower_yaml`]; for [`Form::Program`] also `RHL-L002`.
+pub fn lower_yaml_as(
+    form: Form,
+    file: &str,
+    source: &str,
+    root: Option<&Path>,
+) -> Result<String, LowerFailure> {
     let report = check_yaml(file, source, root);
     let program = match super::yaml::from_yaml(source) {
         Ok(p) => p,
         Err(_) => return Err(LowerFailure::Check(report)),
     };
     let normal = super::fmt::format(&program);
-    lower_checked(file, &normal, root, report).map_err(|f| match f {
+    lower_checked(form, file, &normal, root, report).map_err(|f| match f {
         LowerFailure::Refused(mut d) => {
             d.span = LineSpan::UNKNOWN;
             LowerFailure::Refused(d)
@@ -84,6 +125,7 @@ pub fn lower_yaml(file: &str, source: &str, root: Option<&Path>) -> Result<Strin
 }
 
 fn lower_checked(
+    form: Form,
     file: &str,
     source: &str,
     root: Option<&Path>,
@@ -96,7 +138,14 @@ fn lower_checked(
         return Err(LowerFailure::Check(report));
     };
     let lex = load_lexicon(file, source, &program, root);
-    lower(file, source, &program, &lex).map_err(LowerFailure::Refused)
+    let (decide, uses) = lower_with(file, source, &program, &lex).map_err(LowerFailure::Refused)?;
+    if form == Form::Decide {
+        return Ok(decide);
+    }
+    let rest = super::runtime::executable(root.unwrap_or(Path::new(".")), &uses).map_err(
+        |(span, m)| LowerFailure::Refused(Diagnostic::error(codes::L002, file, source, span, m)),
+    )?;
+    Ok(decide + &rest)
 }
 
 /// ruchy source to Rust, through ruchy's own parser and transpiler: the calls
@@ -135,13 +184,23 @@ pub(crate) fn lower(
     program: &Program,
     lex: &Lexicon,
 ) -> Result<String, Diagnostic> {
+    lower_with(file, source, program, lex).map(|(text, _)| text)
+}
+
+/// The `decide` lowering, and the measures and actions it uses.
+fn lower_with(
+    file: &str,
+    source: &str,
+    program: &Program,
+    lex: &Lexicon,
+) -> Result<(String, Uses), Diagnostic> {
     let refuse = |span: Span, message: String| -> Diagnostic {
         Diagnostic::error(codes::L001, file, source, span, message)
     };
     let unit = single_job(program).map_err(|(span, m)| refuse(span, m))?;
     let mut l = Lowerer::new(lex, unit);
     l.stmts(&unit.body).map_err(|(span, m)| refuse(span, m))?;
-    Ok(l.render(program, unit))
+    Ok((l.render(program, unit), l.uses()))
 }
 
 /// A refusal before it becomes a diagnostic: where, and why.
@@ -465,6 +524,9 @@ struct Fact {
     term: String,
     key: String,
     ty: Ty,
+    /// The ruchy expressions of its literal arguments, in order.
+    args: Vec<String>,
+    span: Span,
 }
 
 /// One `Action` variant, with its fields in declaration order.
@@ -472,6 +534,7 @@ struct Variant {
     term: String,
     name: String,
     fields: Vec<(String, Ty)>,
+    span: Span,
 }
 
 struct Lowerer<'a> {
@@ -698,6 +761,7 @@ impl<'a> Lowerer<'a> {
             term: term.term.clone(),
             name: name.clone(),
             fields,
+            span,
         });
         Ok(name)
     }
@@ -878,8 +942,13 @@ impl<'a> Lowerer<'a> {
         let Some(term) = self.term(&text) else {
             return Err(out_of_scope(phrase));
         };
+        check_fact_term(term, phrase.span)?;
         let key: Vec<String> = args.iter().map(atom_text).collect();
-        self.fact(term, &key.join(" "), phrase.span)
+        let exprs = args
+            .iter()
+            .map(|a| self.atom(a).map(|o| o.expr))
+            .collect::<Result<Vec<_>, _>>()?;
+        self.fact(term, &key.join(" "), exprs, phrase.span)
     }
 
     /// `<term> in <right>`, as `tickets filed in "paiml/infra"`: the measure
@@ -895,20 +964,26 @@ impl<'a> Lowerer<'a> {
         let term = self
             .term(&name)
             .ok_or_else(|| (span, format!("`{name}` is not a term")))?;
-        let key = match right {
-            App::Text(t) => text_literal(&t.value),
-            App::Quantity(q) => quantity_text(q),
+        let (key, arg) = match right {
+            App::Text(t) => (text_literal(&t.value), text_literal(&t.value)),
+            App::Quantity(q) => (quantity_text(q), self.quantity(q)?.expr),
             App::Call { .. } => match self.entity_instance(right) {
-                Ok((_, instance)) => text_literal(&instance),
+                Ok((_, instance)) => (text_literal(&instance), text_literal(&instance)),
                 Err(_) => return Err(non_literal(&name, span)),
             },
         };
-        self.fact(term, &key, span)
+        self.fact(term, &key, vec![arg], span)
     }
 
     /// The `Facts` field for `term` applied to the arguments spelled `key`,
     /// registered on first use.
-    fn fact(&mut self, term: &Term, key: &str, span: Span) -> Result<Operand, Refusal> {
+    fn fact(
+        &mut self,
+        term: &Term,
+        key: &str,
+        args: Vec<String>,
+        span: Span,
+    ) -> Result<Operand, Refusal> {
         check_fact_term(term, span)?;
         let ty = gives_ty(term, span)?;
         if let Some(f) = self
@@ -924,6 +999,8 @@ impl<'a> Lowerer<'a> {
             term: term.term.clone(),
             key: key.to_string(),
             ty,
+            args,
+            span,
         });
         Ok(Operand::place(format!("facts.{field}"), ty))
     }
@@ -965,6 +1042,44 @@ impl<'a> Lowerer<'a> {
     }
 
     // ------------------------------------------------------------ output
+
+    /// The binding of the term spelled `text`, empty when it has none.
+    fn binding(&self, text: &str) -> String {
+        self.term(text)
+            .map(|t| t.lowers_to.clone())
+            .unwrap_or_default()
+    }
+
+    /// The measures and actions this job uses, in first-use order.
+    fn uses(&self) -> Uses {
+        let measures = self
+            .facts
+            .iter()
+            .map(|f| MeasureUse {
+                field: f.field.clone(),
+                term: f.term.clone(),
+                binding: self.binding(&f.term),
+                args: f.args.clone(),
+                span: f.span,
+            })
+            .collect();
+        let actions = self
+            .variants
+            .iter()
+            .map(|v| ActionUse {
+                variant: v.name.clone(),
+                term: v.term.clone(),
+                binding: self.binding(&v.term),
+                fields: v
+                    .fields
+                    .iter()
+                    .map(|(n, t)| (n.clone(), *t == Ty::Text))
+                    .collect(),
+                span: v.span,
+            })
+            .collect();
+        Uses { measures, actions }
+    }
 
     fn render(&self, program: &Program, unit: &Unit) -> String {
         let mut out = header(program, unit);

@@ -565,3 +565,129 @@ fn test_rhl4b_lower_uses_the_checkers_lookup_so_a_vocabulary_change_is_seen_by_b
     // One loader: lowering never reads a vocabulary file itself.
     assert!(!include_str!("lower.rs").contains("vocab::load("));
 }
+
+// ---------------------------------------------------------------- RHL-4c: observe, apply, main
+
+use super::{lower_source_as, Form};
+
+fn program_of(rel: &str) -> String {
+    let path = root().join(rel);
+    lower_source_as(
+        Form::Program,
+        &path.display().to_string(),
+        &read(&path),
+        Some(&root()),
+    )
+    .unwrap_or_else(|f| panic!("RHL-4c: {rel} does not lower to a program: {f:?}"))
+}
+
+const GX10: &str = "docs/rhl/breaks/v2/valid/01-gx10-disk-watch.rhl";
+
+#[test]
+fn test_rhl4c_program_adds_only_the_bindings_it_uses_and_observe_apply_main() {
+    let p = program_of(GX10);
+    let decide = lower_file(&root().join(GX10));
+    assert!(
+        p.starts_with(&decide),
+        "the program extends the decide lowering"
+    );
+    for want in [
+        "fun disk_free_of(path: &str) -> i64 {",
+        "fun file_ticket(repo: &str, title: &str, label: &str) -> bool {",
+        "fun observe() -> Facts {",
+        "disk_free_of_0: disk_free_of(\"/\")",
+        "fun apply(plan: Vec<Action>) -> i64 {",
+        "Action::FileTicket { repo, title, label } => file_ticket(&repo, &title, &label)",
+        "fun main() {",
+        "if arg == \"--apply\" {",
+    ] {
+        assert!(p.contains(want), "missing `{want}`:\n{p}");
+    }
+    for unused in [
+        "fun disk_usage_of(",
+        "fun tickets_filed_in(",
+        "fun label_ticket(",
+    ] {
+        assert!(
+            !p.contains(unused),
+            "`{unused}` is not used by the job:\n{p}"
+        );
+    }
+    assert!(!p.contains(".collect("), "collect makes ruchy emit polars");
+    // `apply` is called once, and only under the flag.
+    assert_eq!(p.matches("apply(plan)").count(), 1, "{p}");
+}
+
+#[test]
+fn test_rhl4c_program_refuses_an_unbound_measure_with_l002_naming_it() {
+    let rel = "docs/rhl/breaks/v2/valid/03-gx12-runner-load-watch.rhl";
+    let path = root().join(rel);
+    let got = lower_source_as(Form::Program, rel, &read(&path), Some(&root()));
+    match got {
+        Err(f @ LowerFailure::Refused(_)) => {
+            assert_eq!(f.exit_code(), 2);
+            let LowerFailure::Refused(d) = f else {
+                unreachable!()
+            };
+            assert_eq!(d.code, codes::L002, "{d:?}");
+            assert!(d.message.contains("`runner load of`"), "{}", d.message);
+            assert_eq!(d.refusal.as_deref(), Some("EngineUnavailable"));
+        }
+        other => panic!("RHL-4c: expected RHL-L002, got {other:?}"),
+    }
+    // Its decide still lowers: `ruchy transpile` works on it as before.
+    assert!(lower_file(&path).contains("fun decide(facts: Facts) -> Vec<Action>"));
+}
+
+#[test]
+fn test_rhl4c_program_refuses_an_unbound_action_with_l002_naming_it() {
+    let scratch = tempfile::tempdir().expect("tempdir");
+    for sub in ["vocab", "vocab/runtime", "contracts"] {
+        std::fs::create_dir_all(scratch.path().join(sub)).expect("mkdir");
+        for e in std::fs::read_dir(root().join(sub))
+            .expect("read dir")
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+        {
+            std::fs::copy(e.path(), scratch.path().join(sub).join(e.file_name())).expect("copy");
+        }
+    }
+    let tickets = scratch.path().join("vocab/tickets-v2.yaml");
+    let text = read(&tickets).replace("\"tickets::file_ticket\"", "\"[U]\"");
+    std::fs::write(&tickets, text).expect("unbind file ticket");
+    let src = read(&root().join(GX10));
+    match lower_source_as(Form::Program, "j.rhl", &src, Some(scratch.path())) {
+        Err(LowerFailure::Refused(d)) => {
+            assert_eq!(d.code, codes::L002, "{d:?}");
+            assert!(d.message.contains("`file ticket`"), "{}", d.message);
+        }
+        other => panic!("RHL-4c: expected RHL-L002, got {other:?}"),
+    }
+}
+
+#[test]
+fn test_rhl4c_program_is_byte_identical_across_two_lowerings() {
+    let (a, b) = (program_of(GX10), program_of(GX10));
+    assert_eq!(sha(&a), sha(&b));
+    let (ra, rb) = (to_rust(&a).expect("rust"), to_rust(&b).expect("rust"));
+    assert_eq!(sha(&ra), sha(&rb));
+}
+
+#[test]
+fn test_rhl4c_every_bound_v2_program_compiles_with_rustc() {
+    if !rustc_available() {
+        return;
+    }
+    let mut built = 0;
+    for path in v2_valid() {
+        let file = path.display().to_string();
+        let Ok(p) = lower_source_as(Form::Program, &file, &read(&path), Some(&root())) else {
+            continue;
+        };
+        let rust = to_rust(&p).unwrap_or_else(|e| panic!("{file}: {e}"));
+        let dir = tempfile::tempdir().expect("tempdir");
+        rustc(dir.path(), &rust, &["-o", "j"]);
+        built += 1;
+    }
+    assert!(built >= 1, "at least 01-gx10 is fully bound");
+}
