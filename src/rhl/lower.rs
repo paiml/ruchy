@@ -19,14 +19,14 @@
 //! vocabularies, in source order. Nothing is hashed, timed or read from the
 //! host, and the file name is not in the output.
 
-use super::check::{check, check_yaml, Report};
+use super::check::{check, check_yaml, load_lexicon, Lexicon, Report};
 use super::codes;
 use super::diag::{Diagnostic, LineSpan};
 use super::tree::{
     Action, App, Atom, CompOp, Cond, CondKind, Decl, Int, Phrase, Program, Quantity, Span, Stmt,
     StmtKind, Unit, UnitKind,
 };
-use super::vocab::{self, Param, Term, TermKind, Vocabulary};
+use super::vocab::{Param, Term, TermKind};
 use std::path::Path;
 
 /// Why a program was not lowered.
@@ -95,34 +95,8 @@ fn lower_checked(
     let Ok(program) = super::parse(source) else {
         return Err(LowerFailure::Check(report));
     };
-    let vocabs = match root {
-        Some(r) => load_vocabularies(&program, r).map_err(|_| LowerFailure::Check(report))?,
-        None => Vec::new(),
-    };
-    lower(file, source, &program, &vocabs).map_err(LowerFailure::Refused)
-}
-
-/// The vocabularies `program` uses, loaded from `<root>/vocab/`, in the order
-/// of its `use vocabulary` lines.
-///
-/// # Errors
-///
-/// Returns a message for a malformed reference or a vocabulary that does not load.
-pub fn load_vocabularies(program: &Program, root: &Path) -> Result<Vec<Vocabulary>, String> {
-    let mut out: Vec<Vocabulary> = Vec::new();
-    for decl in &program.decls {
-        let Decl::Use(u) = decl else { continue };
-        let words: Vec<&str> = u.vocabulary.words.iter().map(|w| w.text.as_str()).collect();
-        let (name, version) = vocab::parse_reference(&words)
-            .ok_or_else(|| format!("`use vocabulary {}` names no version", u.vocabulary.text()))?;
-        if !out
-            .iter()
-            .any(|v| v.vocabulary == name && v.version == version)
-        {
-            out.push(vocab::load(root, &name, version)?);
-        }
-    }
-    Ok(out)
+    let lex = load_lexicon(file, source, &program, root);
+    lower(file, source, &program, &lex).map_err(LowerFailure::Refused)
 }
 
 /// ruchy source to Rust, through ruchy's own parser and transpiler: the calls
@@ -148,20 +122,24 @@ pub fn to_rust(ruchy: &str) -> Result<String, String> {
 /// to ruchy source. `source` is the text the tree was parsed from, for the
 /// positions of refusals.
 ///
+/// Terms resolve through `lex`, the checker's own lookup
+/// ([`super::check::load_lexicon`]), so check and lower cannot disagree on
+/// what a word means.
+///
 /// # Errors
 ///
 /// `RHL-L001` for a construct the v0 lowering does not cover.
-pub fn lower(
+pub(crate) fn lower(
     file: &str,
     source: &str,
     program: &Program,
-    vocabs: &[Vocabulary],
+    lex: &Lexicon,
 ) -> Result<String, Diagnostic> {
     let refuse = |span: Span, message: String| -> Diagnostic {
         Diagnostic::error(codes::L001, file, source, span, message)
     };
     let unit = single_job(program).map_err(|(span, m)| refuse(span, m))?;
-    let mut l = Lowerer::new(vocabs, unit);
+    let mut l = Lowerer::new(lex, unit);
     l.stmts(&unit.body).map_err(|(span, m)| refuse(span, m))?;
     Ok(l.render(program, unit))
 }
@@ -497,7 +475,7 @@ struct Variant {
 }
 
 struct Lowerer<'a> {
-    terms: Vec<&'a Term>,
+    lex: &'a Lexicon,
     facts: Vec<Fact>,
     variants: Vec<Variant>,
     scopes: Vec<Vec<(String, Ty)>>,
@@ -508,11 +486,11 @@ struct Lowerer<'a> {
 }
 
 impl<'a> Lowerer<'a> {
-    fn new(vocabs: &'a [Vocabulary], unit: &Unit) -> Self {
+    fn new(lex: &'a Lexicon, unit: &Unit) -> Self {
         let mut mutated = Vec::new();
         collect_sets(&unit.body, &mut mutated);
         Self {
-            terms: vocabs.iter().flat_map(|v| v.terms.iter()).collect(),
+            lex,
             facts: Vec::new(),
             variants: Vec::new(),
             scopes: vec![Vec::new()],
@@ -528,9 +506,9 @@ impl<'a> Lowerer<'a> {
         self.lines.push(format!("{indent}{}", text.into()));
     }
 
-    /// The term spelled exactly `text`; the first vocabulary wins, as in the checker.
+    /// The term spelled exactly `text`, by the checker's own lookup.
     fn term(&self, text: &str) -> Option<&'a Term> {
-        self.terms.iter().copied().find(|t| t.term == text)
+        self.lex.get(text).map(|t| &t.term)
     }
 
     fn lookup(&self, name: &str) -> Option<Ty> {
@@ -974,10 +952,9 @@ impl<'a> Lowerer<'a> {
 
     fn unit_scale(&self, unit: &str, span: Span) -> Result<(Ty, i64), Refusal> {
         let gives = self
-            .terms
-            .iter()
-            .find(|t| t.kind == TermKind::Unit && t.term == unit)
-            .and_then(|t| t.gives.as_deref())
+            .lex
+            .unit(unit)
+            .and_then(|t| t.term.gives.as_deref())
             .unwrap_or_default();
         let (_, _, factor) = UNIT_SCALE
             .iter()

@@ -3,7 +3,7 @@
 //! determinism falsifier (RHL-001 F5) with its positive control, and the
 //! meaning of §3.2's two examples.
 
-use super::{load_vocabularies, lower, lower_source, lower_yaml, to_rust, LowerFailure};
+use super::{lower, lower_source, lower_yaml, to_rust, LowerFailure};
 use crate::rhl::codes;
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
@@ -50,8 +50,8 @@ fn refused(body: &str) -> String {
 /// checker already refuses, so that lowering's own refusal is observed).
 fn lower_unchecked(source: &str) -> Result<String, crate::rhl::diag::Diagnostic> {
     let program = crate::rhl::parse(source).expect("RHL-4: test program parses");
-    let vocabs = load_vocabularies(&program, &root()).expect("RHL-4: vocabularies load");
-    lower("t.rhl", source, &program, &vocabs)
+    let lex = crate::rhl::check::load_lexicon("t.rhl", source, &program, Some(&root()));
+    lower("t.rhl", source, &program, &lex)
 }
 
 fn v2_valid() -> Vec<PathBuf> {
@@ -517,4 +517,51 @@ fn test_rhl4_gx10_examples_mean_one_ticket_then_none() {
     rustc(dir.path(), &rust, &["-o", "j"]);
     let out = Command::new(dir.path().join("j")).output().expect("runs");
     assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "1 0");
+}
+
+// ---------------------------------------------------------------- RHL-4b: one lookup
+
+/// A scratch root holding copies of `vocab/` and `contracts/` (files only),
+/// with `disk free of` renamed `disk space of` in fleet v2.
+fn renamed_term_root() -> tempfile::TempDir {
+    let dir = tempfile::tempdir().expect("tempdir");
+    for sub in ["vocab", "contracts"] {
+        std::fs::create_dir_all(dir.path().join(sub)).expect("mkdir");
+        for e in std::fs::read_dir(root().join(sub))
+            .expect("read dir")
+            .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
+        {
+            std::fs::copy(e.path(), dir.path().join(sub).join(e.file_name())).expect("copy");
+        }
+    }
+    let fleet = dir.path().join("vocab/fleet-v2.yaml");
+    let text = read(&fleet).replace("term: disk free of", "term: disk space of");
+    std::fs::write(&fleet, text).expect("write renamed vocabulary");
+    dir
+}
+
+#[test]
+fn test_rhl4b_lower_uses_the_checkers_lookup_so_a_vocabulary_change_is_seen_by_both() {
+    let scratch = renamed_term_root();
+    let src = job(
+        "  let free be disk space of \"/\"\n  when free is below 1 GB\n    \
+                   file ticket in repo \"paiml/infra\"\n  end\n",
+    );
+    // The repository's vocabulary has no `disk space of`: check refuses, so
+    // nothing is lowered.
+    assert!(matches!(
+        lower_source("t.rhl", &src, Some(&root())),
+        Err(LowerFailure::Check(_))
+    ));
+    // The scratch vocabulary has it: check passes and lower resolves it.
+    let program = crate::rhl::parse(&src).expect("parses");
+    let lex = crate::rhl::check::load_lexicon("t.rhl", &src, &program, Some(scratch.path()));
+    assert!(lex.get("disk space of").is_some() && lex.get("disk free of").is_none());
+    let direct = lower("t.rhl", &src, &program, &lex).expect("lowers with the checker's lexicon");
+    let via_check = lower_source("t.rhl", &src, Some(scratch.path())).expect("checks and lowers");
+    assert_eq!(direct, via_check);
+    assert!(direct.contains("disk_space_of_0: i64"), "{direct}");
+    // One loader: lowering never reads a vocabulary file itself.
+    assert!(!include_str!("lower.rs").contains("vocab::load("));
 }
