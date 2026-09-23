@@ -3684,3 +3684,41 @@ roadmap:
   - transpiler
   - filed-by:RHLGA-1
   notes: null
+- id: MAINUNIT-1
+  github_issue: null
+  item_type: task
+  title: 'MAINUNIT-1: a unit-returning call as the last statement of main is transpiled as println!("{:?}", f()) and prints ()'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T14:07:20Z
+  updated: 2026-09-23T14:07:20Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: EMPTYBLOCK-2
+  github_issue: null
+  item_type: task
+  title: 'EMPTYBLOCK-2: an empty match-arm body x => {} still parses as an empty object literal'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-23T14:07:20Z
+  updated: 2026-09-23T14:07:20Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - filed-by:RHLGA-1
+  notes: null
