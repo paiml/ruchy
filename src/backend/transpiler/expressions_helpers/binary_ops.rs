@@ -364,6 +364,7 @@ impl Transpiler {
                 | BinaryOp::LessEqual
                 | BinaryOp::Greater
                 | BinaryOp::GreaterEqual
+                | BinaryOp::Gt
                 | BinaryOp::Equal
                 | BinaryOp::NotEqual
         )
@@ -423,6 +424,35 @@ impl Transpiler {
 mod tests {
     use super::*;
     use quote::quote;
+
+    fn ident(name: &str) -> crate::frontend::ast::Expr {
+        crate::frontend::ast::Expr::new(
+            crate::frontend::ast::ExprKind::Identifier(name.to_string()),
+            crate::frontend::ast::Span::default(),
+        )
+    }
+
+    #[test]
+    fn test_transpilecmp_1_is_comparison_op_gt() {
+        assert!(Transpiler::is_comparison_op(BinaryOp::Gt));
+    }
+
+    #[test]
+    fn test_transpilecmp_1_gt_under_equal_keeps_parens() {
+        let gt = crate::frontend::ast::Expr::new(
+            crate::frontend::ast::ExprKind::Binary {
+                left: Box::new(ident("a")),
+                op: BinaryOp::Gt,
+                right: Box::new(ident("b")),
+            },
+            crate::frontend::ast::Span::default(),
+        );
+        let tokens = Transpiler::new()
+            .transpile_binary(&gt, BinaryOp::Equal, &ident("c"))
+            .expect("transpile Gt under Eq");
+        let code = tokens.to_string();
+        assert!(code.contains("(a > b) == c"), "got: {code}");
+    }
 
     // Test 1: get_operator_precedence - Or (lowest)
     #[test]
