@@ -11,7 +11,7 @@
 use super::check::{check, check_yaml, Report};
 use super::diag::{self, render_text};
 use super::fmt::{format, format_source};
-use super::lower::{lower_source, lower_yaml, to_rust, LowerFailure};
+use super::lower::{lower_source_as, lower_yaml_as, to_rust, Form, LowerFailure};
 use super::vocab::find_root;
 use super::yaml::{self, is_rhl_yaml};
 use std::path::Path;
@@ -291,21 +291,11 @@ pub fn transpile_file(input: &Path, output: Option<&Path>, emit: Option<&str>) -
         Ok(e) => e,
         Err(message) => return failed(message, 2),
     };
-    let source = match std::fs::read_to_string(input) {
-        Ok(s) => s,
-        Err(e) => return failed(format!("{}: cannot read: {e}\n", input.display()), 1),
+    let ruchy = match lower_file(input, Form::Decide) {
+        Ok(r) => r,
+        Err(out) => return out,
     };
     let file = input.display().to_string();
-    let root = find_root(input);
-    let lowered = if is_rhl_yaml(input) {
-        lower_yaml(&file, &source, root.as_deref())
-    } else {
-        lower_source(&file, &source, root.as_deref())
-    };
-    let ruchy = match lowered {
-        Ok(r) => r,
-        Err(f) => return failed(render_lower_failure(&f), f.exit_code()),
-    };
     let text = match emit {
         Emit::Ruchy => ruchy,
         Emit::Rust => match to_rust(&ruchy) {
@@ -323,18 +313,72 @@ fn render_lower_failure(f: &LowerFailure) -> String {
     }
 }
 
-/// `ruchy compile` on an RHL file: declined in RHL-4a, exit 2. A binary
-/// needs `observe` and `apply`, whose bindings are RHL-4b's.
+/// Read, check and lower `input` to `form`; the outcome to print otherwise.
+fn lower_file(input: &Path, form: Form) -> Result<String, Outcome> {
+    let source = std::fs::read_to_string(input)
+        .map_err(|e| failed(format!("{}: cannot read: {e}\n", input.display()), 1))?;
+    let file = input.display().to_string();
+    let root = find_root(input);
+    let lowered = if is_rhl_yaml(input) {
+        lower_yaml_as(form, &file, &source, root.as_deref())
+    } else {
+        lower_source_as(form, &file, &source, root.as_deref())
+    };
+    lowered.map_err(|f| failed(render_lower_failure(&f), f.exit_code()))
+}
+
+/// `ruchy compile <file.rhl | file.rhl.yaml> [-o bin]` (RHL-4): lower the job
+/// with its runtime bindings, `observe`, `apply` and `main`, and build it with
+/// the call `ruchy compile x.ruchy` makes. Exit 0 when built; the check's exit
+/// code, 2 for `RHL-L001`/`RHL-L002`, 1 when the file cannot be read or the
+/// build fails.
 #[must_use]
-pub fn compile_refusal(input: &Path) -> Outcome {
-    failed(
-        format!(
-            "{}: `ruchy compile` does not take RHL yet: the observe/apply bindings land in RHL-4b; \
-             `ruchy transpile` gives the Rust of `decide`\n",
-            input.display()
-        ),
-        2,
-    )
+pub fn compile_file(input: &Path, output: &Path) -> Outcome {
+    let ruchy = match lower_file(input, Form::Program) {
+        Ok(r) => r,
+        Err(out) => return out,
+    };
+    let options = crate::backend::CompileOptions {
+        output: output.to_path_buf(),
+        ..crate::backend::CompileOptions::default()
+    };
+    match crate::backend::compile_source_to_binary(&ruchy, &options) {
+        Ok(_) => Outcome {
+            stdout: String::new(),
+            stderr: format!("{}: built {}\n", input.display(), output.display()),
+            exit: 0,
+        },
+        Err(e) => failed(format!("{}: {e:#}\n", input.display()), 1),
+    }
+}
+
+/// `ruchy run <file.rhl | file.rhl.yaml> [--apply]` (RHL-4): compile to a
+/// temporary directory and execute, because ruchy's interpreter does not run
+/// processes. Without `--apply` the job only prints its plan (§9.4). The
+/// outcome is the job's own output and exit code.
+#[must_use]
+pub fn run_file(input: &Path, apply: bool) -> Outcome {
+    let dir = match tempfile::tempdir() {
+        Ok(d) => d,
+        Err(e) => return failed(format!("cannot create a build directory: {e}\n"), 1),
+    };
+    let bin = dir.path().join("job");
+    let built = compile_file(input, &bin);
+    if built.exit != 0 {
+        return built;
+    }
+    let mut cmd = std::process::Command::new(&bin);
+    if apply {
+        cmd.arg("--apply");
+    }
+    match cmd.output() {
+        Ok(o) => Outcome {
+            stdout: String::from_utf8_lossy(&o.stdout).to_string(),
+            stderr: String::from_utf8_lossy(&o.stderr).to_string(),
+            exit: o.status.code().unwrap_or(1),
+        },
+        Err(e) => failed(format!("{}: cannot run the job: {e}\n", input.display()), 1),
+    }
 }
 
 #[cfg(test)]
@@ -470,9 +514,27 @@ mod tests {
     }
 
     #[test]
-    fn test_rhl4_cli_compile_of_rhl_is_declined_with_exit_2() {
-        let out = compile_refusal(Path::new("j.rhl"));
+    fn test_rhl4c_cli_compile_and_run_refuse_an_unbound_term_with_l002_exit_2() {
+        let path = corpus("docs/rhl/breaks/v2/valid/03-gx12-runner-load-watch.rhl");
+        let dir = tempfile::tempdir().expect("tempdir");
+        let out = compile_file(&path, &dir.path().join("j"));
+        assert_eq!(out.exit, 2, "{out:?}");
+        assert!(out.stderr.contains("RHL-L002"), "{}", out.stderr);
+        assert!(out.stderr.contains("`runner load of`"), "{}", out.stderr);
+        assert!(!dir.path().join("j").exists());
+        let run = run_file(&path, true);
+        assert_eq!(run.exit, 2, "{run:?}");
+        assert!(run.stderr.contains("RHL-L002"), "{}", run.stderr);
+    }
+
+    #[test]
+    fn test_rhl4c_cli_compile_declines_a_typo_with_the_checks_exit() {
+        let typo = corpus("docs/rhl/breaks/planted/typo-term/01-gx10-disk-watch/broken.rhl");
+        let dir = tempfile::tempdir().expect("tempdir");
+        let out = compile_file(&typo, &dir.path().join("j"));
         assert_eq!(out.exit, 2);
-        assert!(out.stderr.contains("RHL-4b"), "{}", out.stderr);
+        assert!(out.stderr.contains("RHL-V002"), "{}", out.stderr);
+        let missing = compile_file(Path::new("/nonexistent/x.rhl"), &dir.path().join("j"));
+        assert_eq!(missing.exit, 1);
     }
 }

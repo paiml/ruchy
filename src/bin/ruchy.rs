@@ -122,6 +122,9 @@ enum Commands {
     Run {
         /// The file to run
         file: PathBuf,
+        /// For .rhl/.rhl.yaml jobs (RHL-4): perform the planned actions; without it the job only prints its plan
+        #[arg(long)]
+        apply: bool,
     },
     /// Compile a Ruchy file to a standalone binary (RUCHY-0801)
     Compile {
@@ -1461,10 +1464,19 @@ fn handle_command_dispatch(
             emit.as_deref(),
             verbose,
         ),
-        Some(Commands::Compile { ref file, .. }) if ruchy::rhl::cli::is_rhl(file) => {
-            handlers::rhl_handler::handle_rhl_compile(file)
+        Some(Commands::Compile {
+            ref file,
+            ref output,
+            ..
+        }) if ruchy::rhl::cli::is_rhl(file) => {
+            handlers::rhl_handler::handle_rhl_compile(file, output)
         }
-        Some(Commands::Run { file }) => handle_run_command(&file, verbose, vm_mode),
+        Some(Commands::Run { file, apply }) => {
+            match handlers::rhl_handler::handle_run(&file, apply)? {
+                Some(()) => Ok(()),
+                None => handle_run_command(&file, verbose, vm_mode),
+            }
+        }
         Some(Commands::Compile {
             file,
             output,

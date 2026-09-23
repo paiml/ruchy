@@ -8,7 +8,7 @@
 
 use anyhow::Result;
 use ruchy::rhl::cli::{
-    compile_refusal, convert_file, is_rhl, transpile_file, Outcome, OutputFormat,
+    compile_file, convert_file, is_rhl, run_file, transpile_file, Outcome, OutputFormat,
 };
 use ruchy::rhl::fix::fix_files;
 use ruchy::rhl::vocab_cli::{list_outcome, no_root, resolve_root, show_outcome, validate_outcome};
@@ -61,13 +61,30 @@ pub fn handle_transpile(
     super::handle_transpile_command(file, output, minimal, verbose)
 }
 
-/// `ruchy compile` on an RHL file: declined until RHL-4b (exit 2).
+/// `ruchy compile` on an RHL file: build the job (RHL-4).
 ///
 /// # Errors
 ///
-/// Never returns one: the refusal is printed and carried by the exit code.
-pub fn handle_rhl_compile(file: &Path) -> Result<()> {
-    finish(&compile_refusal(file))
+/// Never returns one: the outcome is printed and carried by the exit code.
+pub fn handle_rhl_compile(file: &Path, output: &Path) -> Result<()> {
+    finish(&compile_file(file, output))
+}
+
+/// `ruchy run [--apply]`: an RHL file is compiled and executed (RHL-4);
+/// `--apply` exists only for RHL files; any other file takes the existing
+/// ruchy path unchanged.
+///
+/// # Errors
+///
+/// Returns an error for `--apply` on a non-RHL file.
+pub fn handle_run(file: &Path, apply: bool) -> Result<Option<()>> {
+    if is_rhl(file) {
+        return finish(&run_file(file, apply)).map(Some);
+    }
+    if apply {
+        anyhow::bail!("--apply applies to .rhl and .rhl.yaml files only");
+    }
+    Ok(None)
 }
 
 /// What `ruchy vocab` was asked to do.

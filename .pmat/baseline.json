@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-23T17:57:39.574378751Z",
+  "created_at": "2026-09-23T17:57:41.024475431Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -29906,38 +29906,38 @@
     },
     "./src/rhl/lower.rs": {
       "content_hash": [
-        114,
-        222,
-        4,
-        251,
-        185,
-        220,
-        185,
-        24,
         112,
-        137,
-        48,
-        168,
-        10,
-        200,
-        108,
-        69,
-        237,
-        3,
-        206,
-        71,
-        139,
-        36,
-        174,
-        148,
-        102,
-        42,
+        201,
+        96,
+        193,
         197,
-        98,
-        154,
-        91,
+        226,
+        157,
+        0,
+        179,
+        140,
+        218,
+        51,
+        135,
+        97,
+        76,
+        155,
+        75,
+        11,
+        195,
+        112,
+        67,
+        178,
+        255,
+        235,
+        179,
+        247,
+        140,
+        165,
         55,
-        169
+        251,
+        11,
+        64
       ],
       "score": {
         "structural_complexity": 0.0,
@@ -29959,7 +29959,7 @@
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 70 duplicate code patterns"
+            "issue": "Found 77 duplicate code patterns"
           },
           {
             "source_metric": "StructuralComplexity",
@@ -29967,7 +29967,7 @@
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cognitive complexity: 84"
+            "issue": "High cognitive complexity: 85"
           },
           {
             "source_metric": "StructuralComplexity",
@@ -29975,7 +29975,7 @@
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cyclomatic complexity: 160"
+            "issue": "High cyclomatic complexity: 161"
           }
         ],
         "critical_defects_count": 0,
@@ -30135,38 +30135,38 @@
     },
     "./src/rhl/runtime.rs": {
       "content_hash": [
-        198,
-        79,
-        203,
-        136,
-        151,
-        89,
-        91,
-        90,
+        28,
+        188,
+        10,
+        70,
+        137,
+        43,
+        218,
+        35,
+        155,
+        191,
+        21,
+        60,
+        143,
+        36,
+        80,
+        150,
         195,
-        235,
-        146,
-        89,
-        8,
-        14,
-        67,
-        128,
-        120,
-        88,
-        121,
-        204,
-        199,
-        145,
-        2,
-        39,
-        151,
-        222,
-        82,
-        201,
-        212,
-        144,
-        214,
-        166
+        74,
+        195,
+        189,
+        207,
+        157,
+        9,
+        21,
+        99,
+        1,
+        100,
+        111,
+        37,
+        230,
+        181,
+        246
       ],
       "score": {
         "structural_complexity": 25.0,
@@ -30175,8 +30175,8 @@
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
-        "entropy_score": 9.5,
-        "total": 99.545456,
+        "entropy_score": 5.0,
+        "total": 95.454544,
         "grade": "A+",
         "confidence": 1.0,
         "language": "Rust",
@@ -30184,11 +30184,11 @@
         "penalties_applied": [
           {
             "source_metric": "Duplication",
-            "amount": 0.5,
+            "amount": 5.0,
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 1 duplicate code patterns"
+            "issue": "Found 10 duplicate code patterns"
           }
         ],
         "critical_defects_count": 0,
@@ -43841,7 +43841,7 @@
   },
   "summary": {
     "total_files": 515,
-    "avg_score": 90.27169,
+    "avg_score": 90.26375,
     "grade_distribution": {
       "A+": 189,
       "A": 171,

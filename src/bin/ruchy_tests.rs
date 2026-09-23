@@ -536,6 +536,7 @@ fn test_handle_command_dispatch_run() {
     let result = handle_command_dispatch(
         Some(Commands::Run {
             file: temp_file.path().to_path_buf(),
+            apply: false,
         }),
         false,
         VmMode::Ast,
