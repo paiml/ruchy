@@ -47,21 +47,104 @@ pub fn handle_serve_command(
     pid_file: Option<&Path>,
     watch_wasm: bool,
 ) -> Result<()> {
+    let request = ServeRequest {
+        directory,
+        port,
+        host,
+        verbose,
+        watch,
+        debounce,
+        pid_file,
+        watch_wasm,
+    };
+    serve_until(&request, shutdown_on_signal)
+}
+
+/// The arguments of one `ruchy serve` invocation.
+#[cfg(feature = "notebook")]
+struct ServeRequest<'a> {
+    directory: &'a Path,
+    port: u16,
+    host: &'a str,
+    verbose: bool,
+    watch: bool,
+    debounce: u64,
+    pid_file: Option<&'a Path>,
+    watch_wasm: bool,
+}
+
+/// Serve `request` until the channel returned by `install_shutdown` receives.
+///
+/// `install_shutdown` runs once the server is set up. The CLI passes
+/// [`shutdown_on_signal`] (Ctrl+C / SIGTERM); tests pass a channel they
+/// control, so they drive the whole serve path without serving forever.
+/// Complexity: 4 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn serve_until(
+    request: &ServeRequest<'_>,
+    install_shutdown: impl FnOnce() -> std::sync::mpsc::Receiver<()>,
+) -> Result<()> {
+    validate_serve_directory(request.directory)?;
+
+    // Initialize PID file if requested
+    let _pid_guard = request
+        .pid_file
+        .map(ruchy::server::PidFile::create)
+        .transpose()?;
+
+    // World-class UX: Colored startup banner (vite-style)
+    print_startup_banner(
+        request.host,
+        request.port,
+        request.directory,
+        request.watch,
+        request.watch_wasm,
+    );
+    let app = build_static_app(request.directory);
+
+    // PERFORMANCE: Create optimized tokio runtime (multi-threaded, CPU-bound)
+    let num_cpus = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(1);
+    let runtime = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(num_cpus)
+        .enable_all()
+        .build()?;
+
+    let shutdown_rx = install_shutdown();
+    if request.watch {
+        run_watch_mode(
+            &runtime,
+            &app,
+            request.directory,
+            request.host,
+            request.port,
+            request.verbose,
+            request.debounce,
+            request.watch_wasm,
+            num_cpus,
+            &shutdown_rx,
+        )
+    } else {
+        run_normal_mode(
+            &runtime,
+            app,
+            request.host,
+            request.port,
+            request.verbose,
+            num_cpus,
+            &shutdown_rx,
+        )
+    }
+}
+
+/// Static file service for `directory` with the WASM isolation headers.
+/// Complexity: 1 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn build_static_app(directory: &Path) -> axum::Router {
     use axum::{http::HeaderValue, Router};
     use tower::ServiceBuilder;
     use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
-
-    validate_serve_directory(directory)?;
-
-    // Initialize PID file if requested
-    let _pid_guard = if let Some(pid_path) = pid_file {
-        Some(ruchy::server::PidFile::create(pid_path)?)
-    } else {
-        None
-    };
-
-    // World-class UX: Colored startup banner (vite-style)
-    print_startup_banner(host, port, directory, watch, watch_wasm);
 
     // Build the Axum app with static file serving + WASM headers
     let serve_dir = ServeDir::new(directory)
@@ -71,7 +154,7 @@ pub fn handle_serve_command(
     // Add WASM-specific headers for SharedArrayBuffer support (HTTP-003)
     // Required for: WebAssembly threading, SharedArrayBuffer, Atomics
     // Reference: https://web.dev/coop-coep/
-    let app = Router::new().fallback_service(serve_dir).layer(
+    Router::new().fallback_service(serve_dir).layer(
         ServiceBuilder::new()
             // Cross-Origin-Opener-Policy: Isolate browsing context
             .layer(SetResponseHeaderLayer::if_not_present(
@@ -83,19 +166,16 @@ pub fn handle_serve_command(
                 axum::http::header::HeaderName::from_static("cross-origin-embedder-policy"),
                 HeaderValue::from_static("require-corp"),
             )),
-    );
+    )
+}
 
-    // PERFORMANCE: Create optimized tokio runtime (multi-threaded, CPU-bound)
-    let num_cpus = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(1);
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .worker_threads(num_cpus)
-        .enable_all()
-        .build()?;
-
-    // Setup signal handling for graceful shutdown (Ctrl+C)
-    #[cfg(unix)]
+/// A channel that receives once the process gets SIGINT or SIGTERM (Ctrl+C).
+///
+/// On non-Unix targets no handler is installed: the channel never receives
+/// and Ctrl+C ends the process through the default handler.
+/// Complexity: 2 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn shutdown_on_signal() -> std::sync::mpsc::Receiver<()> {
     let (shutdown_tx, shutdown_rx) = std::sync::mpsc::channel::<()>();
 
     #[cfg(unix)]
@@ -103,43 +183,18 @@ pub fn handle_serve_command(
         use signal_hook::consts::{SIGINT, SIGTERM};
         use signal_hook::iterator::Signals;
 
-        let shutdown_tx_clone = shutdown_tx;
         std::thread::spawn(move || {
             let mut signals =
                 Signals::new([SIGINT, SIGTERM]).expect("Failed to register signal handlers");
             if let Some(_sig) = signals.forever().next() {
-                let _ = shutdown_tx_clone.send(());
+                let _ = shutdown_tx.send(());
             }
         });
     }
+    #[cfg(not(unix))]
+    drop(shutdown_tx);
 
-    #[allow(unreachable_code)] // Watch mode and Unix signal handling both return early
-    if watch {
-        run_watch_mode(
-            &runtime,
-            &app,
-            directory,
-            host,
-            port,
-            verbose,
-            debounce,
-            watch_wasm,
-            num_cpus,
-            #[cfg(unix)]
-            &shutdown_rx,
-        )
-    } else {
-        run_normal_mode(
-            &runtime,
-            app,
-            host,
-            port,
-            verbose,
-            num_cpus,
-            #[cfg(unix)]
-            &shutdown_rx,
-        )
-    }
+    shutdown_rx
 }
 
 /// Print colored startup banner (vite-style)
@@ -217,7 +272,7 @@ fn run_watch_mode(
     debounce: u64,
     watch_wasm: bool,
     num_cpus: usize,
-    #[cfg(unix)] shutdown_rx: &std::sync::mpsc::Receiver<()>,
+    shutdown_rx: &std::sync::mpsc::Receiver<()>,
 ) -> Result<()> {
     // One watcher for the whole session: re-creating it on every restart spent
     // an inotify instance each time, and a failure to get one killed the server.
@@ -229,7 +284,6 @@ fn run_watch_mode(
             port,
             verbose,
             num_cpus,
-            #[cfg(unix)]
             shutdown_rx,
         );
     };
@@ -249,7 +303,6 @@ fn run_watch_mode(
         // Poll for file changes AND shutdown signal
         loop {
             // Check for shutdown signal
-            #[cfg(unix)]
             if shutdown_rx.try_recv().is_ok() {
                 print_shutdown_message();
                 server_handle.abort();
@@ -371,8 +424,11 @@ fn print_restart_message() {
     }
 }
 
-/// Run server in normal mode (no watch)
-/// Complexity: 6 (Toyota Way: <10)
+/// Run server in normal mode (no watch) until shutdown is requested.
+///
+/// A server that ends on its own (e.g. the address cannot be bound) returns
+/// its error instead of leaving the process waiting on a dead server.
+/// Complexity: 4 (Toyota Way: <10)
 #[cfg(feature = "notebook")]
 fn run_normal_mode(
     runtime: &tokio::runtime::Runtime,
@@ -381,41 +437,10 @@ fn run_normal_mode(
     port: u16,
     verbose: bool,
     num_cpus: usize,
-    #[cfg(unix)] shutdown_rx: &std::sync::mpsc::Receiver<()>,
+    shutdown_rx: &std::sync::mpsc::Receiver<()>,
 ) -> Result<()> {
     let addr = format!("{}:{}", host, port);
-
-    #[cfg(unix)]
-    {
-        let addr_clone = addr;
-        let verbose_clone = verbose;
-        let num_cpus_clone = num_cpus;
-        let server_future = async move {
-            let listener = tokio::net::TcpListener::bind(&addr_clone).await?;
-
-            if verbose_clone {
-                println!("✅ Server started ({} workers)", num_cpus_clone);
-            }
-
-            axum::serve(listener, app).await
-        };
-
-        // Spawn server task
-        let server_handle = runtime.spawn(server_future);
-
-        // Wait for shutdown signal
-        loop {
-            if shutdown_rx.try_recv().is_ok() {
-                print_shutdown_message();
-                server_handle.abort();
-                return Ok(());
-            }
-            std::thread::sleep(std::time::Duration::from_millis(100));
-        }
-    }
-
-    #[cfg(not(unix))]
-    runtime.block_on(async {
+    let server_handle = runtime.spawn(async move {
         let listener = tokio::net::TcpListener::bind(&addr).await?;
 
         if verbose {
@@ -423,10 +448,50 @@ fn run_normal_mode(
         }
 
         axum::serve(listener, app).await
-    })?;
+    });
 
-    #[allow(unreachable_code)]
-    Ok(())
+    wait_for_shutdown_or_exit(runtime, server_handle, shutdown_rx)
+}
+
+/// Block until shutdown is requested (abort the server, `Ok`) or the server
+/// task ends on its own (return its result).
+/// Complexity: 2 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn wait_for_shutdown_or_exit(
+    runtime: &tokio::runtime::Runtime,
+    mut server_handle: tokio::task::JoinHandle<std::io::Result<()>>,
+    shutdown_rx: &std::sync::mpsc::Receiver<()>,
+) -> Result<()> {
+    loop {
+        if let Some(outcome) = poll_server(runtime, &mut server_handle, shutdown_rx) {
+            return outcome;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+}
+
+/// One poll: `Some` once shutdown was requested or the server task ended.
+/// Complexity: 3 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn poll_server(
+    runtime: &tokio::runtime::Runtime,
+    server_handle: &mut tokio::task::JoinHandle<std::io::Result<()>>,
+    shutdown_rx: &std::sync::mpsc::Receiver<()>,
+) -> Option<Result<()>> {
+    if shutdown_rx.try_recv().is_ok() {
+        print_shutdown_message();
+        server_handle.abort();
+        return Some(Ok(()));
+    }
+    if !server_handle.is_finished() {
+        return None;
+    }
+    let joined = runtime.block_on(server_handle);
+    Some(
+        joined
+            .map_err(anyhow::Error::from)
+            .and_then(|served| Ok(served?)),
+    )
 }
 
 #[cfg(not(feature = "notebook"))]
@@ -470,10 +535,162 @@ mod tests {
         assert!(msg.contains("max_user_instances"), "{msg}");
     }
 
+    /// A channel that has already received the shutdown request.
+    #[cfg(feature = "notebook")]
+    fn stopped() -> std::sync::mpsc::Receiver<()> {
+        let (tx, rx) = std::sync::mpsc::channel();
+        tx.send(()).expect("send shutdown");
+        rx
+    }
+
+    /// Drive the serve path for these arguments without serving forever.
+    ///
+    /// With the notebook feature the server is set up (PID file, banner, app,
+    /// runtime, listener task, watcher) and stopped through the shutdown seam;
+    /// without it the stub is called directly.
+    fn serve_then_stop(
+        directory: &Path,
+        port: u16,
+        host: &str,
+        verbose: bool,
+        watch: bool,
+        debounce: u64,
+        pid_file: Option<&Path>,
+        watch_wasm: bool,
+    ) -> Result<()> {
+        #[cfg(feature = "notebook")]
+        {
+            let request = ServeRequest {
+                directory,
+                port,
+                host,
+                verbose,
+                watch,
+                debounce,
+                pid_file,
+                watch_wasm,
+            };
+            serve_until(&request, stopped)
+        }
+        #[cfg(not(feature = "notebook"))]
+        handle_serve_command(
+            directory, port, host, verbose, watch, debounce, pid_file, watch_wasm,
+        )
+    }
+
+    /// A valid serve request shuts down cleanly with the notebook feature and
+    /// names the missing feature without it.
+    fn assert_served(result: Result<()>) {
+        #[cfg(feature = "notebook")]
+        assert!(result.is_ok(), "{result:?}");
+        #[cfg(not(feature = "notebook"))]
+        assert!(result
+            .expect_err("stub must refuse")
+            .to_string()
+            .contains("notebook feature"),);
+    }
+
+    /// A free local port (bound, then released).
+    #[cfg(feature = "notebook")]
+    fn free_port() -> u16 {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").expect("bind port 0");
+        listener.local_addr().expect("local addr").port()
+    }
+
+    /// GET `path` from 127.0.0.1:`port`, retrying until the server listens.
+    #[cfg(feature = "notebook")]
+    fn http_get(port: u16, path: &str) -> String {
+        use std::io::{Read, Write};
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(20);
+        loop {
+            if let Ok(mut stream) = std::net::TcpStream::connect(("127.0.0.1", port)) {
+                let request =
+                    format!("GET {path} HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n");
+                stream.write_all(request.as_bytes()).expect("write request");
+                let mut response = String::new();
+                stream.read_to_string(&mut response).expect("read response");
+                return response;
+            }
+            assert!(
+                std::time::Instant::now() < deadline,
+                "server never listened"
+            );
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+    }
+
+    /// RHLGA-1: the server really serves the directory, then stops when the
+    /// shutdown channel receives, and the call returns.
     #[test]
-    fn test_serve_handler_stub() {
-        // Serve handler tests require the notebook feature
-        // This is a placeholder
+    #[cfg(feature = "notebook")]
+    fn test_serve_until_serves_files_then_stops_on_shutdown() {
+        let temp_dir = TempDir::new().unwrap();
+        std::fs::write(temp_dir.path().join("hello.txt"), "hello from serve").unwrap();
+        let port = free_port();
+        let (tx, rx) = std::sync::mpsc::channel();
+        let client = std::thread::spawn(move || {
+            let response = http_get(port, "/hello.txt");
+            tx.send(()).expect("send shutdown");
+            response
+        });
+        let request = ServeRequest {
+            directory: temp_dir.path(),
+            port,
+            host: "127.0.0.1",
+            verbose: false,
+            watch: false,
+            debounce: 100,
+            pid_file: None,
+            watch_wasm: false,
+        };
+        serve_until(&request, move || rx).expect("serve until shutdown");
+        let response = client.join().expect("client thread");
+        assert!(response.starts_with("HTTP/1.1 200"), "{response}");
+        assert!(response.contains("hello from serve"), "{response}");
+        assert!(
+            response.contains("cross-origin-opener-policy: same-origin"),
+            "{response}"
+        );
+    }
+
+    /// RHLGA-1: an address that cannot be bound is reported, not waited on.
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_serve_until_reports_a_port_in_use() {
+        let temp_dir = TempDir::new().unwrap();
+        let taken = std::net::TcpListener::bind("127.0.0.1:0").expect("bind port 0");
+        let port = taken.local_addr().expect("local addr").port();
+        let (_tx, rx) = std::sync::mpsc::channel::<()>();
+        let request = ServeRequest {
+            directory: temp_dir.path(),
+            port,
+            host: "127.0.0.1",
+            verbose: false,
+            watch: false,
+            debounce: 100,
+            pid_file: None,
+            watch_wasm: false,
+        };
+        let err = serve_until(&request, move || rx).expect_err("port is taken");
+        assert!(err.to_string().to_lowercase().contains("in use"), "{err}");
+    }
+
+    /// RHLGA-1: watch mode also stops when the shutdown channel receives.
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_serve_until_watch_mode_stops_on_shutdown() {
+        let temp_dir = TempDir::new().unwrap();
+        let request = ServeRequest {
+            directory: temp_dir.path(),
+            port: free_port(),
+            host: "127.0.0.1",
+            verbose: true,
+            watch: true,
+            debounce: 50,
+            pid_file: None,
+            watch_wasm: false,
+        };
+        serve_until(&request, stopped).expect("watch mode stops");
     }
 
     // ===== EXTREME TDD Round 145 - Serve Handler Tests =====
@@ -548,22 +765,23 @@ mod tests {
     #[test]
     fn test_serve_command_default_parameters() {
         // Verify function signature accepts expected parameters
-        let _ = handle_serve_command(
-            Path::new("."),
+        let temp_dir = TempDir::new().unwrap();
+        assert_served(serve_then_stop(
+            temp_dir.path(),
             3000,
             "0.0.0.0",
             true,
             true,
             1000,
-            Some(Path::new("/tmp/pid")),
+            Some(&temp_dir.path().join("server.pid")),
             true,
-        );
+        ));
     }
 
     #[test]
     fn test_serve_command_with_verbose() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8081,
             "127.0.0.1",
@@ -572,14 +790,14 @@ mod tests {
             500,
             None,
             false,
-        );
+        ));
     }
 
     #[test]
     fn test_serve_command_various_hosts() {
         let temp_dir = TempDir::new().unwrap();
         // Test localhost
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8082,
             "localhost",
@@ -588,9 +806,9 @@ mod tests {
             100,
             None,
             false,
-        );
+        ));
         // Test 0.0.0.0
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8083,
             "0.0.0.0",
@@ -599,13 +817,13 @@ mod tests {
             100,
             None,
             false,
-        );
+        ));
     }
 
     #[test]
     fn test_serve_command_various_ports() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             80,
             "127.0.0.1",
@@ -614,8 +832,8 @@ mod tests {
             100,
             None,
             false,
-        );
-        let _ = handle_serve_command(
+        ));
+        assert_served(serve_then_stop(
             temp_dir.path(),
             443,
             "127.0.0.1",
@@ -624,8 +842,8 @@ mod tests {
             100,
             None,
             false,
-        );
-        let _ = handle_serve_command(
+        ));
+        assert_served(serve_then_stop(
             temp_dir.path(),
             65535,
             "127.0.0.1",
@@ -634,14 +852,14 @@ mod tests {
             100,
             None,
             false,
-        );
+        ));
     }
 
     #[test]
     fn test_serve_command_debounce_values() {
         let temp_dir = TempDir::new().unwrap();
         // Minimum debounce
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8084,
             "127.0.0.1",
@@ -650,9 +868,9 @@ mod tests {
             1, // 1ms
             None,
             false,
-        );
+        ));
         // Large debounce
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8085,
             "127.0.0.1",
@@ -661,13 +879,13 @@ mod tests {
             10000, // 10s
             None,
             false,
-        );
+        ));
     }
 
     #[test]
     fn test_serve_command_with_wasm_watch() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8086,
             "127.0.0.1",
@@ -676,7 +894,7 @@ mod tests {
             500,
             None,
             true, // watch_wasm
-        );
+        ));
     }
 
     // ===== EXTREME TDD Round 153 - Serve Handler Tests =====
@@ -685,7 +903,7 @@ mod tests {
     fn test_serve_command_all_flags() {
         let temp_dir = TempDir::new().unwrap();
         let pid_path = temp_dir.path().join("server.pid");
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8087,
             "127.0.0.1",
@@ -694,13 +912,13 @@ mod tests {
             250,  // debounce
             Some(&pid_path),
             true, // watch_wasm
-        );
+        ));
     }
 
     #[test]
     fn test_serve_command_zero_debounce() {
         let temp_dir = TempDir::new().unwrap();
-        let _ = handle_serve_command(
+        assert_served(serve_then_stop(
             temp_dir.path(),
             8088,
             "127.0.0.1",
@@ -709,7 +927,7 @@ mod tests {
             0, // zero debounce
             None,
             false,
-        );
+        ));
     }
 
     #[test]
@@ -717,6 +935,15 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let nested = temp_dir.path().join("a").join("b").join("c");
         std::fs::create_dir_all(&nested).unwrap();
-        let _ = handle_serve_command(&nested, 8089, "127.0.0.1", false, false, 100, None, false);
+        assert_served(serve_then_stop(
+            &nested,
+            8089,
+            "127.0.0.1",
+            false,
+            false,
+            100,
+            None,
+            false,
+        ));
     }
 }
