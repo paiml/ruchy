@@ -36,6 +36,39 @@ impl Transpiler {
         self.transpile_regular_function_call(&func_tokens, args)
     }
 
+    /// PARSER-094: Render a callee `a::b::c` (a FieldAccess chain rooted at a
+    /// lowercase module identifier) as a Rust path. `self.f` is a field, not a path.
+    fn module_call_path(func: &Expr) -> Option<TokenStream> {
+        let segments = Self::callee_path_segments(func)?;
+        let root = segments.first()?;
+        let is_module_root =
+            root.starts_with(|c: char| c.is_ascii_lowercase()) && root != "self" && root != "std";
+        if segments.len() < 2 || !is_module_root {
+            return None;
+        }
+        let idents = segments.iter().map(|s| format_ident!("{}", s));
+        Some(quote! { #(#idents)::* })
+    }
+
+    /// Collect the identifier segments of a FieldAccess chain; None if any
+    /// segment is not a plain identifier (tuple index, call, literal, ...).
+    fn callee_path_segments(expr: &Expr) -> Option<Vec<String>> {
+        match &expr.kind {
+            ExprKind::Identifier(name) if Self::is_plain_ident(name) => Some(vec![name.clone()]),
+            ExprKind::FieldAccess { object, field } if Self::is_plain_ident(field) => {
+                let mut segments = Self::callee_path_segments(object)?;
+                segments.push(field.clone());
+                Some(segments)
+            }
+            _ => None,
+        }
+    }
+
+    fn is_plain_ident(name: &str) -> bool {
+        name.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_')
+            && name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_')
+    }
+
     /// Transform main() calls to __ruchy_main()
     fn transform_main_call(&self, func: &Expr) -> Result<TokenStream> {
         if let ExprKind::Identifier(name) = &func.kind {
@@ -43,6 +76,11 @@ impl Transpiler {
                 let renamed_ident = format_ident!("__ruchy_main");
                 return Ok(quote! { #renamed_ident });
             }
+        }
+        // PARSER-094 (Issue #137): `module::function(..)` parses as Call{FieldAccess}
+        // (`obj.method(..)` is a MethodCall), so a callee path keeps `::`.
+        if let Some(path_tokens) = Self::module_call_path(func) {
+            return Ok(path_tokens);
         }
         self.transpile_expr(func)
     }
