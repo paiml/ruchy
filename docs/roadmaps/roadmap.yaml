@@ -3848,13 +3848,17 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'OPTPATH-1: the interpreter does not know the qualified constructors Option::Some, Option::None, Result::Ok, Result::Err'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T16:21:40Z
   updated: 2026-09-23T16:21:40Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'Option::Some(x), Option::None, Result::Ok(x) and Result::Err(e) evaluate to exactly the same values as Some(x), None, Ok(x) and Err(e)'
+  - 'match with Some/None/Ok/Err patterns accepts the qualified values, and println prints them like the unqualified ones'
+  - 'the constructor argument is evaluated once; any other undefined qualified call (Option::Nope(1)) still fails'
+  - 'tests/optpath_1_qualified_constructors.rs and regression_077_logger_hang::test_regression_077_common_optional_string pass'
   phases: []
   subtasks: []
   estimated_effort: null

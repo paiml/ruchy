@@ -295,10 +295,7 @@ impl Interpreter {
         let func_val = match func_val_result {
             Ok(val) => val,
             Err(InterpreterError::RuntimeError(msg)) if msg.starts_with("Undefined variable:") => {
-                return match &func.kind {
-                    ExprKind::Identifier(name) => unbound_callee(name, arg_vals),
-                    _ => Err(InterpreterError::RuntimeError(msg)),
-                };
+                return unbound_call(func, msg, arg_vals);
             }
             Err(e) => return Err(e),
         };
@@ -368,18 +365,49 @@ impl Interpreter {
     }
 }
 
+/// A callee whose lookup failed with `Undefined variable: …` (msg).
+///
+/// A plain name goes to `unbound_callee`. `Result::Ok` / `Result::Err` parse
+/// as a field access on `Result`; they are prelude constructors too
+/// (OPTPATH-1). Any other callee keeps the lookup error.
+fn unbound_call(func: &Expr, msg: String, args: Vec<Value>) -> Result<Value, InterpreterError> {
+    match &func.kind {
+        ExprKind::Identifier(name) => unbound_callee(name, args),
+        ExprKind::FieldAccess { object, field } => match &object.kind {
+            ExprKind::Identifier(ty) if prelude_variant(&format!("{ty}::{field}")).is_some() => {
+                unbound_callee(&format!("{ty}::{field}"), args)
+            }
+            _ => Err(InterpreterError::RuntimeError(msg)),
+        },
+        _ => Err(InterpreterError::RuntimeError(msg)),
+    }
+}
+
+/// The prelude enum constructors a call can name without a definition:
+/// `Ok`, `Err` and the qualified `Option::Some`, `Result::Ok`,
+/// `Result::Err` (OPTPATH-1). Returns `(enum, variant)`.
+fn prelude_variant(name: &str) -> Option<(&'static str, &'static str)> {
+    match name {
+        "Ok" | "Result::Ok" => Some(("Result", "Ok")),
+        "Err" | "Result::Err" => Some(("Result", "Err")),
+        "Option::Some" => Some(("Option", "Some")),
+        _ => None,
+    }
+}
+
 /// UNDEFCALL-1: calling an identifier that resolves to nothing.
 ///
-/// `Ok(v)` / `Err(e)` construct `Result` variants; every other name is an
-/// undefined function, whatever its case.
+/// A prelude constructor (`prelude_variant`) builds its enum variant, the
+/// same value as the unqualified form; every other name is an undefined
+/// function, whatever its case.
 fn unbound_callee(name: &str, args: Vec<Value>) -> Result<Value, InterpreterError> {
-    match name {
-        "Ok" | "Err" => Ok(Value::EnumVariant {
-            enum_name: "Result".to_string(),
-            variant_name: name.to_string(),
+    match prelude_variant(name) {
+        Some((enum_name, variant_name)) => Ok(Value::EnumVariant {
+            enum_name: enum_name.to_string(),
+            variant_name: variant_name.to_string(),
             data: Some(args),
         }),
-        _ => Err(InterpreterError::RuntimeError(format!(
+        None => Err(InterpreterError::RuntimeError(format!(
             "Undefined function: {name}"
         ))),
     }
