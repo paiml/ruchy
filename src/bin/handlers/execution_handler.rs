@@ -5,7 +5,6 @@
 use anyhow::Result;
 use ruchy::backend::module_resolver::ModuleResolver;
 use ruchy::frontend::ast::{Expr, ExprKind};
-use ruchy::runtime::interpreter::Interpreter;
 use ruchy::Parser as RuchyParser;
 use std::path::Path;
 
@@ -25,38 +24,21 @@ pub fn handle_file_execution(file: &Path) -> Result<()> {
         .parse()
         .map_err(|e| anyhow::anyhow!("Syntax error: {e}"))?;
 
-    // Check if we need module resolution
-    if needs_module_resolution(&ast) {
-        // Resolve module declarations (mod name;) and imports
-        let resolved_ast = resolve_modules_for_execution(file, ast)?;
+    // Resolve module declarations (mod name;) and imports when present
+    let program = if needs_module_resolution(&ast) {
+        resolve_modules_for_execution(file, ast)?
+    } else {
+        ast
+    };
 
-        // Use interpreter to evaluate the resolved AST
-        let mut interpreter = Interpreter::new();
-        interpreter
-            .eval_expr(&resolved_ast)
-            .map_err(|e| anyhow::anyhow!("Evaluation error: {e:?}"))?;
-        return Ok(());
-    }
-
-    // CLI-UNIFY-002: Use REPL-based evaluation for simple scripts
+    // RUNMAIN-1: run the parsed program so a multi-item file keeps its
+    // top-level functions, then call main() once if the file defines it.
     let mut repl = super::create_repl()?;
-
-    match repl.eval(&source) {
-        Ok(_result) => {
-            // After evaluating the file, call main() if it exists
-            match repl.eval("main()") {
-                Ok(_) => Ok(()),
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    std::process::exit(1);
-                }
-            }
-        }
-        Err(e) => {
-            eprintln!("Error: {e}");
-            std::process::exit(1);
-        }
+    if let Err(e) = repl.run_program(&program) {
+        eprintln!("Error: {e}");
+        std::process::exit(1);
     }
+    Ok(())
 }
 
 /// Handle stdin/piped input - evaluate input from standard input

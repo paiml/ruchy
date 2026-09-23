@@ -95,3 +95,21 @@ fn test_runmain_1_main_calls_helper_defined_after() {
 fn test_runmain_1_main_error_exits_nonzero() {
     run_source("fun d(a: i64) -> i64 { a }\nfun main() {\n  panic!(\"boom\")\n}\n").failure();
 }
+
+/// `ruchy <file>` (no subcommand) shares `ruchy run`'s program runner.
+#[test]
+fn test_runmain_1_default_file_path_calls_main() {
+    let dir = tempfile::TempDir::new().unwrap();
+    let file = dir.path().join("two.ruchy");
+    std::fs::write(
+        &file,
+        "fun d(a: i64) -> i64 { a }\nfun main() {\n  println(\"y\")\n}\n",
+    )
+    .unwrap();
+    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+        .current_dir(dir.path())
+        .arg(&file)
+        .assert()
+        .success()
+        .stdout("y\n");
+}

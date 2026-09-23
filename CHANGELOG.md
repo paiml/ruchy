@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — RUNMAIN-1: `ruchy run` and `ruchy <file>` call `main()` in multi-item files
+
+- A file with more than one top-level item (for example a helper function and
+  `fun main`) printed nothing and exited 0, in 4.2.1 and 5.0.0-beta.2. The file
+  parses to a block whose functions were bound in a scope that was dropped
+  before the runner called `main()`. `Interpreter::eval_program` now binds
+  top-level items globally, and `Repl::run_program` runs the program and then
+  calls `main()` once, unless the file already calls it. `ruchy run` and
+  `ruchy <file>` both use it, including files with `mod` declarations.
+- Filed: UNDEFCALL-1 (a call to an undefined function evaluates to an actor
+  message instead of an error) and BYTECODE-1 (bytecode mode never calls
+  `main`).
 ### Added — RHL-3: the YAML surface `.rhl.yaml` and `ruchy convert` (RHL-001)
 
 - `.rhl.yaml` is a lossless YAML form of the intent tree (`rhl: 1` marker,

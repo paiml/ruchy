@@ -3575,3 +3575,43 @@ roadmap:
   - ci
   - filed-by:RHLGA-1
   notes: null
+- id: BYTECODE-1
+  github_issue: null
+  item_type: task
+  title: 'BYTECODE-1: ruchy --vm-mode bytecode run never calls main and has no println'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-23T10:43:20Z
+  updated: 2026-09-23T10:43:20Z
+  spec: null
+  acceptance_criteria:
+  - 'Found by RUNMAIN-1 (RHLGA-1), 2026-09-23: `ruchy --vm-mode bytecode run f.ruchy` never calls main (a file holding only fun main() { println("hi") } prints nothing) and reports Undefined global variable: println for a top-level println. Different root cause from RUNMAIN-1 (the AST path).'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: UNDEFCALL-1
+  github_issue: null
+  item_type: task
+  title: 'UNDEFCALL-1: calling an undefined function returns an actor Message value instead of an error'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T10:43:20Z
+  updated: 2026-09-23T10:43:20Z
+  spec: null
+  acceptance_criteria:
+  - 'Found by RUNMAIN-1 (RHLGA-1), 2026-09-23: in the interpreter, a call to a name that is not defined evaluates to an actor Message value ({__type: Message, type: <name>}) instead of an error, so a missing function looks like success; it is why RUNMAIN-1 exited 0 with no output. A call to an undefined function must be a runtime error with the name, unless the callee is an actor message constructor in scope.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
