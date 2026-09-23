@@ -3823,13 +3823,19 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'TESTRUN-1: ruchy test never ran @test functions in multi-item files; they vanished with the file''s block scope and passed as message values'
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-23T16:21:40Z
   updated: 2026-09-23T16:21:40Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'ruchy test evaluates the file once with Interpreter::eval_program, so its top-level functions stay defined, then calls each @test function; main() is not called'
+  - 'a passing @test in a multi-item file passes, and a @test that calls a helper defined in the same file works'
+  - 'a failing assert_eq in any @test makes ruchy test exit non-zero, and the output names the test and the assertion message'
+  - 'the summary Total/Passed/Failed counts are exact for a directory of passing and failing files'
+  - 'top-level statements of a test file run exactly once'
+  - 'tests/testrun_1_ruchy_test_runs_tests.rs and systematic_tool_validation::integration_all_tools_on_single_program pass'
   phases: []
   subtasks: []
   estimated_effort: null
