@@ -48,6 +48,9 @@ pub const B001: &str = "RHL-B001";
 pub const C001: &str = "RHL-C001";
 /// `given` or `then` outside an `example` block.
 pub const X001: &str = "RHL-X001";
+/// An `example` whose `given` lines leave a fact the job reads unset, so its
+/// test would read a value the example never stated (RHL-5).
+pub const X002: &str = "RHL-X002";
 /// A construct of a checked program that RHL-4's lowering to ruchy does not
 /// cover in v0; lowering declines rather than guesses (RHL-4).
 pub const L001: &str = "RHL-L001";
@@ -78,6 +81,7 @@ pub const CATALOGUE: &[CodeInfo] = &[
         "term has no runtime binding",
         Some("EngineUnavailable"),
     ),
+    info(X002, "example leaves a fact unset", None),
 ];
 
 const fn info(code: &'static str, title: &'static str, refusal: Option<&'static str>) -> CodeInfo {

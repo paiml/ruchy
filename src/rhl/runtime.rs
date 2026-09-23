@@ -86,10 +86,12 @@ pub(crate) struct Uses {
 
 /// The `main` of every built job: `observe`, `decide`, one `{:?}` line per
 /// planned action on standard output, and `apply` ONLY under `--apply`
-/// (§9.4: the plan is a draft, never an action). Exit 1 when `--apply`
-/// performed fewer actions than planned. It ends in `()` because ruchy wraps
-/// a trailing call of `main` in `println!`; it reads the arguments with a
-/// loop because `.collect()` makes ruchy emit polars.
+/// (§9.4: the plan is a draft, never an action). A plan that breaks an
+/// `expect` (`failed_expectation`, RHL-5) is never applied: exit 1 naming it.
+/// Exit 1 also when `--apply` performed fewer actions than planned. It ends
+/// in `()` because ruchy wraps a trailing call of `main` in `println!`; it
+/// reads the arguments with a loop because `.collect()` makes ruchy emit
+/// polars.
 const MAIN: &str = "fun main() {
     let mut apply_flag: bool = false
     for arg in std::env::args() {
@@ -101,6 +103,11 @@ const MAIN: &str = "fun main() {
     let total: i64 = plan.len() as i64
     for action in plan.iter() {
         println!(\"{:?}\", action)
+    }
+    let failed: String = failed_expectation(&plan)
+    if failed != \"\" {
+        eprintln!(\"expectation failed: {}; nothing applied\", failed)
+        std::process::exit(1)
     }
     let mut performed: i64 = 0
     if apply_flag {

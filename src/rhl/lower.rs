@@ -59,8 +59,14 @@ pub enum Form {
     /// `decide` plus the runtime functions the job's terms are bound to,
     /// `observe`, `apply` and a dry-run-by-default `main`: what `ruchy
     /// compile` and `ruchy run` build (spec Amendment A4). A term bound to
-    /// `[U]` is refused with `RHL-L002`.
+    /// `[U]` is refused with `RHL-L002`. Its `main` refuses to apply a plan
+    /// that breaks an `expect` (RHL-5, §9.4).
     Program,
+    /// `decide`, the job's `expect` guards, one test per `example` and a test
+    /// runner `main`: what `ruchy test` builds (RHL-5). No `observe`, no
+    /// `apply` and no runtime binding: an example states its facts, so its
+    /// test never reads or changes the host.
+    Tests,
 }
 
 /// Check the RHL text `source` (named `file`), then lower it.
@@ -138,14 +144,15 @@ fn lower_checked(
         return Err(LowerFailure::Check(report));
     };
     let lex = load_lexicon(file, source, &program, root);
-    let (decide, uses) = lower_with(file, source, &program, &lex).map_err(LowerFailure::Refused)?;
-    if form == Form::Decide {
-        return Ok(decide);
+    let (decide, uses, checks) =
+        lower_with(form, file, source, &program, &lex).map_err(LowerFailure::Refused)?;
+    if form != Form::Program {
+        return Ok(decide + &checks);
     }
     let rest = super::runtime::executable(root.unwrap_or(Path::new(".")), &uses).map_err(
         |(span, m)| LowerFailure::Refused(Diagnostic::error(codes::L002, file, source, span, m)),
     )?;
-    Ok(decide + &rest)
+    Ok(decide + &checks + &rest)
 }
 
 /// ruchy source to Rust, through ruchy's own parser and transpiler: the calls
@@ -184,23 +191,32 @@ pub(crate) fn lower(
     program: &Program,
     lex: &Lexicon,
 ) -> Result<String, Diagnostic> {
-    lower_with(file, source, program, lex).map(|(text, _)| text)
+    lower_with(Form::Decide, file, source, program, lex).map(|(text, _, _)| text)
 }
 
-/// The `decide` lowering, and the measures and actions it uses.
+/// The `decide` lowering, the measures and actions it uses, and — for every
+/// form but [`Form::Decide`] — the `expect` guards and, for [`Form::Tests`],
+/// the examples and their runner (RHL-5, [`examples`]).
 fn lower_with(
+    form: Form,
     file: &str,
     source: &str,
     program: &Program,
     lex: &Lexicon,
-) -> Result<(String, Uses), Diagnostic> {
-    let refuse = |span: Span, message: String| -> Diagnostic {
-        Diagnostic::error(codes::L001, file, source, span, message)
+) -> Result<(String, Uses, String), Diagnostic> {
+    let refuse = |code: &'static str, (span, message): Refusal| -> Diagnostic {
+        Diagnostic::error(code, file, source, span, message)
     };
-    let unit = single_job(program).map_err(|(span, m)| refuse(span, m))?;
+    let unit = single_job(program).map_err(|r| refuse(codes::L001, r))?;
     let mut l = Lowerer::new(lex, unit);
-    l.stmts(&unit.body).map_err(|(span, m)| refuse(span, m))?;
-    Ok((l.render(program, unit), l.uses()))
+    l.stmts(&unit.body).map_err(|r| refuse(codes::L001, r))?;
+    let checks = match form {
+        Form::Decide => String::new(),
+        _ => l
+            .checks(source, unit, form == Form::Tests)
+            .map_err(|(code, r)| refuse(code, r))?,
+    };
+    Ok((l.render(program, unit), l.uses(), checks))
 }
 
 /// A refusal before it becomes a diagnostic: where, and why.
@@ -540,6 +556,14 @@ struct Variant {
 struct Lowerer<'a> {
     lex: &'a Lexicon,
     facts: Vec<Fact>,
+    /// Every `let`, in order: its name, and the `Facts` field when it is bound
+    /// directly to one measure application (what a `given` may set).
+    lets: Vec<(String, Option<String>)>,
+    /// `Some(plan expression)` while an `expect` or `then` is lowered: names
+    /// then resolve only to plan measures ([`examples::PLAN_MEASURES`]).
+    plan: Option<&'static str>,
+    /// The plan measures used, in first-use order.
+    plan_used: Vec<&'static str>,
     variants: Vec<Variant>,
     scopes: Vec<Vec<(String, Ty)>>,
     mutated: Vec<String>,
@@ -555,6 +579,9 @@ impl<'a> Lowerer<'a> {
         Self {
             lex,
             facts: Vec::new(),
+            lets: Vec::new(),
+            plan: None,
+            plan_used: Vec::new(),
             variants: Vec::new(),
             scopes: vec![Vec::new()],
             mutated,
@@ -633,6 +660,9 @@ impl<'a> Lowerer<'a> {
             ""
         };
         let ty = v.ty;
+        let direct = matches!(value.kind, CondKind::App(_) | CondKind::In { .. });
+        let field = v.expr.strip_prefix("facts.").filter(|_| direct);
+        self.lets.push((text.clone(), field.map(str::to_string)));
         self.line(format!(
             "let {m}{}: {} = {}",
             let_ident(name),
@@ -935,6 +965,9 @@ impl<'a> Lowerer<'a> {
 
     /// A `let` name in scope, or a measure applied to literal arguments.
     fn call(&mut self, phrase: &Phrase, args: &[Atom]) -> Result<Operand, Refusal> {
+        if let Some(plan) = self.plan {
+            return self.plan_measure(phrase, args, plan);
+        }
         let text = phrase.text();
         if let (true, Some(ty)) = (args.is_empty(), self.lookup(&text)) {
             return Ok(Operand::place(let_ident(phrase), ty));
@@ -961,6 +994,9 @@ impl<'a> Lowerer<'a> {
             ));
         };
         let name = format!("{} in", phrase.text());
+        if self.plan.is_some() {
+            return Err(examples::not_a_plan_measure(&name, span));
+        }
         let term = self
             .term(&name)
             .ok_or_else(|| (span, format!("`{name}` is not a term")))?;
@@ -1345,6 +1381,11 @@ fn header_line(s: &Stmt) -> Option<String> {
 fn is_rhl5(kind: &StmtKind) -> bool {
     matches!(kind, StmtKind::Expect(_) | StmtKind::Example { .. })
 }
+
+#[path = "examples.rs"]
+mod examples;
+
+pub use examples::example_names;
 
 #[cfg(test)]
 #[path = "lower_tests.rs"]

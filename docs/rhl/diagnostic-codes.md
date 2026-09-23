@@ -31,6 +31,7 @@ When there are errors but no refusal, it exits **1**. With no errors it exits **
 | `RHL-P004` | YAML is not an intent tree | — |
 | `RHL-L001` | construct not lowerable in v0 | — |
 | `RHL-L002` | term has no runtime binding | `EngineUnavailable` |
+| `RHL-X002` | example leaves a fact unset | — |
 
 Six codes were pre-registered by RHL-0 in `docs/rhl/breaks/planted/*/*/break.yaml`
 before any checker existed. Their meaning is fixed by that data: `RHL-P001`,
@@ -69,3 +70,12 @@ build a job with its `observe` and `apply`, which call each measure's and action
 binding (`lowers_to`). A job that reads a measure or performs an action whose `lowers_to` is
 `[U]` has nothing to run it with: `RHL-L002` names the term, at its first use, and the command
 exits 2. `ruchy transpile` emits `decide` only and still lowers such a job.
+
+## Diagnostics of examples and expectations
+
+RHL-5 adds `RHL-X002`, appended to the catalogue in the example family `RHL-X`. `ruchy
+test` lowers each `example` to a test that builds `Facts` from its `given` lines alone;
+an example that leaves a fact the job reads unset is refused with `RHL-X002`, which names
+the example and the fact, and the command exits 2. A `given` over anything but a fact or
+a `let` bound directly to one, and a `then` or `expect` over anything but a plan measure,
+are `RHL-L001`. See `docs/rhl/rhl-5.md`.
