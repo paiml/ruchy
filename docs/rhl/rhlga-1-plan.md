@@ -35,81 +35,103 @@ The GA gather's "concurrent unrelated session" was this orchestrator's own backg
 `cargo test --workspace`; it is not a second session. Recorded, and corrected in the
 evidence README before commit.
 
-## §2 Questions for the quorum (each needs one ruling)
+## §1b Measured after plan v1 `[V]`
 
-**Q1 — Name and extension (RHL-001 §12.1).** The header says RHL / `.rhl` are placeholders,
-"rename before the first release, never after." 5.0.0 would be RHL's first release.
-Options: (a) keep `RHL` / `.rhl` and record the ruling; (b) rename now (name?); (c) ship
-the RHL verbs in 5.0.0 marked *experimental* with the extension explicitly unstable, and
-rule the name before 5.1. Orchestrator recommendation: **(a)** — every artifact, diagnostic
-code prefix (`RHL-P…`, stable forever per §9.6) and corpus already uses it; renaming after
-codes are published is the costly direction, and the codes are published by this release.
+| Fact | Evidence |
+|---|---|
+| `cargo test --workspace --no-fail-fast` at `main`: **27,573 pass, 285 fail (27 binaries), 2,773 ignored**, exit 101. Largest: `probar_wasm_tests` 194, `lang_comp_suite` 25, `cli_interactive_validation` 13, `http_server_cli` 11. CI's `gate` runs `cargo test --lib` + clippy + fmt only, so none of these is gated. This is GA criterion #3's measurement. | `evidence/2026-09-23-ga-gather/criterion-3-workspace-tests.txt` |
+| `tests/cli_contract_doc.rs` ran `ruchy doc` with the repository as cwd, so every workspace test run rewrote the tracked `docs/simple.html`, `docs/test.html`, `docs/test.md`. That write voided two plan-v1 quorum lanes (isolation exit 3). Fixed on this branch: the tests run in their temp dir, a regression test pins it, the three generated files are removed. | this branch |
+| Q4 probe: a hand-written `decide(facts: Facts) -> Vec<RhlAction>` using a `struct`, an `enum` with a struct variant, `let mut plan: Vec<…> = Vec::new()` and `plan.push(…)` (no closures, no map) transpiles with `ruchy transpile`, compiles with `rustc --edition 2021`, and prints `1 0` for the two §3.2 examples. | `evidence/2026-09-23-ga-gather/q4-lowering-probe/` |
+| Defect found by the same probe, present in 4.2.1 and HEAD: `ruchy run` does not call `main()` when the file defines any other function — `fun d(a: i64) -> i64 { a }` + `fun main() { println("y") }` prints nothing, exit 0. `ruchy transpile`+`rustc` runs it. Filed as RUNMAIN-1 and fixed in this program (it is on the RHL path: `ruchy run` of lowered RHL). | `q4-lowering-probe/m5.ruchy` |
 
-**Q2 — Which RHL rows ship in 5.0.0.** Proposal:
-- IN: RHL-2 (`fix --safe`, `vocab`, vocabulary shape), RHL-3 (YAML, `convert`), RHL-4
-  (lowering of `job`), RHL-5 (`example`→tests, `expect`→contract, receipt), RHL-6 (MCP
-  tools), RHL-9 (`explain`).
-- OUT, tracked, not release-blocking: RHL-7 and RHL-8 are *measurements* (agent repair
-  rate; the English-vs-RHL A/B) — `kind:measurement` is not implementable by this skill and
-  both need model runs whose thresholds are `[U]`; RHL-10/RHL-11 depend on work outside this
-  repo (constrained decoding in aprender; the whisper.apr decision); RHL-12 (other unit
-  kinds) — spec §8 says one unit kind end to end first.
-- RHL-16 (corpus + vocabulary v2): IN, as the first phase — without it no valid corpus
-  program checks clean, so RHL-4/5 cannot be exercised on the pre-registered corpus. §3.4
-  forbids in-place edits, so this is `v2` files plus a manifest re-hash; the v1 files stay.
-  RHL-16's note says pre-registered data changes are an operator decision — the directive
-  above routes that decision here.
+## §2 Questions for the quorum — round 2 (plan v2)
 
-**Q3 — GA criteria (5.0 spec §10: "ALL 13 … any single failure blocks").** Proposal:
-measure every criterion to completion (phase G1); fix every NOT_MET that is fixable in this
-repo; for a criterion that cannot be measured as written (#13 F3/F5 have no instrument;
-#4 `tooling-with-ruchy` has no corpus), amend §10 in the same PR with the reason and the
-replacement measurement — never mark it MET. Book repos (#4): "100% on each book" is
-measured as each repo's own harness; a failure caused by the book (not a 4.x→5.0
-regression) is ticketed in that repo rather than fixed here. The alternative the quorum may
-rule instead: GA waits until #4/#13 are MET as written.
+Round 1 (3 lanes, gemini family): lane 3 PASS (counted); lanes 1 and 2 FAIL but void
+(isolation exit 3, caused by the test defect above, not by the lanes). Their findings are
+adopted here anyway. The operator's directive is quoted verbatim at the top of this file;
+this round rules only what it does not already decide.
 
-**Q4 — Lowering design for `job` (RHL-4).** Proposal: **observe → decide → apply.**
-The job lowers to a *pure* ruchy function `decide(facts) -> plan`: every `measure` term
-reads its value from `facts` (keyed by term and literal args), every `action` term appends
-a record to the returned plan instead of acting. A generated `observe()` fills `facts`
-through each term's `lowers_to` binding, and `apply(plan)` performs the actions, and only
-with an explicit `--apply` flag (default prints the plan: §9.4, output is a draft).
-Consequences: determinism (F5) is a property of `decide`; `example given … then …` (RHL-5)
-lowers to a test that builds `facts` from `given` lines and asserts on the plan, so tests
-need no host; `expect` clauses become `ensures` on the plan (count bounds, no write to an
-entity). `lowers_to` values are bound in the **v2** vocabulary (v1 is frozen).
+**Q1 — Name and extension.** Round 1: lane 1 "(a) keep `RHL`/`.rhl`, record the ruling"; lane
+3 no objection. **Proposed ruling: (a).** Diagnostic codes (`RHL-P001` …) are stable forever
+(RHL-001 §9.6) and this release publishes them; renaming afterwards is the costly direction.
 
-**Q5 — Safe-fix scope (carried on RHL-2).** Local (demote a V002 fix only on an RHL-T code
-on an edited line — RHL-1's rule) or global (demote on any new RHL-T anywhere). Proposal:
-**local for `check`'s `safe` flag, and `fix --safe` re-checks the whole file after applying
-and reverts any fix that raised the file's error count** — both readings' failure modes are
-closed: a fix never makes a file worse, and the v1 typo breaks keep their pre-registered
-safe fixes.
+**Q2 — Rows in 5.0.0.** Round 1 lane 1: F8 is the headline falsifier ("F8 can fail. If it
+does, the honest conclusion is that RHL is not worth building"), so shipping RHL without it
+ships an unmeasured claim. **Proposed ruling:** IN, in order: RHL-16, RHL-2, RHL-3, RHL-4,
+RHL-5, RHL-6, RHL-9, then **RHL-7 and RHL-8 as measurements run before the release**, their
+reports published in the release whatever they say. RHL ships in 5.0.0 labelled
+**experimental** in `--help`, README and CHANGELOG (the language, codes and v1/v2 vocabularies
+are frozen; the verbs may change in 5.x). If F8 FAILS, the release says so and RHL stays
+experimental; ruchy 5.0.0 (the language) does not hinge on RHL. OUT: RHL-10, RHL-11 (blocked
+outside this repo), RHL-12 (spec §8: one unit kind end to end first).
 
-**Q6 — Publishing.** RHL-001 §9.9: "no workflow runs `cargo publish`"; §10 lists "a publish"
-as a STOP. The operator directive asks for crates.io and GitHub. Proposal: as beta.2 did —
-the publish runs from the tag checkout by this session, after the clean-room gate, the
-dogfood gate and a green `gate` on `main`; no workflow publishes. `ruchy` first, then
-`ruchy-wasm` after the index resolves.
+**Q3 — GA criteria.** Round 1 lanes 1 and 2: a quorum may not amend §10 ("Release 5.0.0
+requires ALL 13 criteria met"). **Adopted: no amendment of §10 by this program.** What
+remains is *interpretation*, which this round rules:
+- #13 "Provability Mandate (F1–F5 in §14.5) — all 5 metrics in-range". §14.5 defines each
+  metric by its *falsifier* ("we're wrong if…"), and §14.6 sets the gate level per release
+  (5.0.0: "Silver opt-in. Bronze warned but allowed everywhere"; the Platinum oracle quorum
+  arrives in 5.3.0). **Proposed reading:** "in-range" = not in the falsified range, measured
+  at the 5.0.0 gate level: F1 ≥ 50 % of contracted `fun` defs non-trivial; F2 ≤ 5 exempt/KLoC;
+  F3 has no oracle set to correlate before 5.3.0 — the instrument is built and reports
+  `not-applicable: 0 oracles` rather than a number; F4 is counted and reported (the 0 target
+  binds "after 5.2"); F5 is measured over what `cargo package` would ship.
+  Any metric in its falsified range blocks GA; the program then STOPs for the operator.
+- #4 "Downstream book repos compile — 100 % on each book". **Proposed reading:** each repo's own
+  harness on a fresh clone of its default branch; a failure is fixed where the defect lives
+  (a ruchy bug here, a book bug by a PR to that repo); `tooling-with-ruchy` has no corpus
+  (Appendix B's own status table says SKIPPED) and is recorded as vacuous, not as a pass.
+- #3 "Zero regressions in 4.x test suite: `cargo test --all-features`". **Proposed reading:**
+  the whole suite at 0 failures; an `#[ignore]` added by this program needs a named reason
+  (environment: needs a browser, network, or TTY) — never "fails". The 285 failures above are
+  work items, not exemptions.
+If a criterion cannot be met under these readings, the program stops at `PARTIAL(escalate)`
+and asks the operator; it never ships with a criterion unmet.
 
-## §3 Phases (sequential PRs; one ruchy PR in CI at a time, RHL-001 §10)
+**Q4 — Lowering.** Round 1 lane 2: no closures (mutable capture), no `HashMap::get` (runtime
+defect), generated structs and typed enum variants. **Proposed ruling, now measured (§1b):**
+per job, a generated `struct Facts` with one field per distinct (measure term, literal
+arguments) pair; a generated `enum Action` with one struct variant per action term used;
+`fun decide(facts: Facts) -> Vec<Action>` using `let mut plan … plan.push(…)`, `if/else`, and
+`for`/`while` with a counter for `repeat at most N times`; `fun observe() -> Facts` from the
+v2 `lowers_to` bindings; `fun apply(plan)` gated behind an explicit flag. No closures, no
+maps. The determinism test (F5 of RHL-001) compares two lowerings byte for byte.
 
-| # | Phase | PR | Acceptance `A_i` (command) |
-|---|---|---|---|
-| P0 | GA gather (partial, done) + this plan + quorum rulings | 1 (docs) | `jq -e 'length==13' docs/specifications/evidence/2026-09-23-ga-gather/criteria.json` |
-| P1 | RHL-16: `vocab/*-v2.yaml`, v2 valid + planted corpus, manifest re-hash, `KNOWN_CORPUS_DEFECTS` empty for v2 | 2 | `cargo test --lib rhl::` |
-| P2 | RHL-2: `ruchy fix --safe`, `ruchy vocab list/show/validate [--format json]`, vocabulary shape contract | 3 | `cargo test --lib rhl:: && cargo test --test rhl_cli` |
-| P3 | RHL-3: YAML surface (`.rhl.yaml`), `ruchy convert`, round-trip property test (F3) | 4 | same |
-| P4 | RHL-4: lowering of `job` (Q4), `ruchy transpile x.rhl [--emit ruchy]`, `ruchy compile x.rhl`, determinism test (F5) | 5 | same + corpus transpile→rustc |
-| P5 | RHL-5: `example`→tests, `expect`→`pv` contract, receipt; `ruchy test x.rhl` | 6 | same |
-| P6 | RHL-6 + RHL-9: MCP tools (§6) and `ruchy explain` | 7 | same + `cargo test --features mcp` |
-| G1 | GA criteria measured to completion; fixes / §10 amendments per Q3 | 8+ | `jq` over a re-gathered `criteria.json`: no UNMEASURED without an amendment |
-| R1 | 5.0.0: version bump (`ruchy`, `ruchy-wasm`), CHANGELOG, clean-room, dogfood, tag `v5.0.0`, GitHub release, `cargo publish` | 9 | `cargo install ruchy --version 5.0.0` in a fresh `CARGO_HOME` runs `ruchy --version` |
+**Q5 — Safe-fix scope.** Round 1 lane 1: accept the hybrid. **Proposed ruling:** `check`
+keeps RHL-1's local `safe` rule; `fix --safe` applies every safe fix, re-checks the whole
+file, and reverts any fix after which the file's error count rose.
 
-Each implementation phase: RED tests first, then code; ≤10 complexity per function; the
-pre-PR review is a 3-lane quorum over the diff; merge only on green `gate` + quorum PASS.
+**Q6 — Publishing.** Round 1 lane 1: RHL-001 §10 lists "a publish" as a STOP and the directive
+"does not waive it". The directive's words are "goal is this is the "non-beta" version to
+crates.io and github". **Proposed ruling:** the directive is the operator's explicit request
+to publish, which is what the STOP exists to wait for; RHL-001 §9.9 ("no workflow runs `cargo
+publish`") still binds, so the publish runs from the tag checkout in this session after every
+gate in §3 R1 is green, exactly as beta.2 was published. If `cargo publish` is refused (token),
+STOP.
 
-## §4 STOP conditions (inherited, plus)
-RHL-001 §10 · quorum split after one amendment round → operator · `gate` red after three
-five-whys loops · clean-room red · publish token refused (as beta.2's 403).
+## §3 Phases — plan v2
+
+One ruchy PR in CI at a time (RHL-001 §10). Branches may be prepared while another PR is in
+CI; merges are serial. Every acceptance command below is executable and fails on an empty
+selection (`--exact` names or a `grep -c` floor); `N_*` floors are recorded in the phase's
+receipt at RED time.
+
+| # | Phase | Acceptance `A_i` |
+|---|---|---|
+| P0 | This plan ruled (round 2 quorum PASS) · doc-test cwd fix · evidence | `cargo test --test cli_contract_doc` exits 0 **and** `git status --porcelain docs/` is empty after it |
+| G1 | Full GA measurement: #2, #3 (all-features), #4 (7 books), #5, #7, #8–#10 on RHL + pillar code, #13 per the Q3 reading. Writes `criteria.json` v2 | `jq -e 'length==13 and all(.[]; .status\|IN("MET","NOT_MET"))' criteria.json` (UNMEASURED is not allowed out of G1) |
+| G2 | RUNMAIN-1 fix + the 285 workspace failures, by binary, root-caused | `cargo test --workspace --no-fail-fast` exit 0, with the `#[ignore]` count not above 2,773 + named-environment ignores listed in the receipt |
+| P1 | RHL-16 v2 vocabulary + corpus | `cargo test --lib rhl::` with ≥ 1 new v2 test named `rhl16_*`, and `KNOWN_CORPUS_DEFECTS` empty for v2 (a test asserts it) |
+| P2 | RHL-2 `fix --safe`, `vocab`, vocabulary shape | `cargo test --lib rhl::fix rhl::vocab` count ≥ recorded floor · `ruchy fix --safe` on every v2 typo break yields a file that `ruchy check` passes |
+| P3 | RHL-3 YAML, `convert` | round-trip property test over every v2 corpus program (count asserted) |
+| P4 | RHL-4 lowering | `for f in docs/rhl/breaks/v2/valid/*.rhl; do ruchy transpile "$f" -o /tmp/x.rs && rustc --edition 2021 --crate-type lib /tmp/x.rs; done` all exit 0, count = number of v2 valid programs; determinism test |
+| P5 | RHL-5 examples/expect/receipt, `ruchy test x.rhl` | every v2 valid program's examples pass; a planted wrong `then` fails |
+| P6 | RHL-6 MCP + RHL-9 `explain` | `cargo test --features mcp rhl_mcp` count ≥ 8 (one per §6 tool) |
+| M1 | RHL-7 (F7) and RHL-8 (F8) measurements, reports committed | `test -s docs/rhl/reports/f7.json && test -s docs/rhl/reports/f8.json` and each carries its verdict and seed |
+| G3 | Re-measure GA after all merges | `jq -e 'all(.[]; .status=="MET")' criteria.json` |
+| R1 | 5.0.0: bump `ruchy`, `ruchy-wasm`; CHANGELOG; clean-room; dogfood; tag; GitHub release; `cargo publish` | fresh `CARGO_HOME`: `cargo install ruchy --version 5.0.0 && ruchy --version` prints `ruchy 5.0.0` |
+
+## §4 STOP conditions
+RHL-001 §10 (publish waived by the directive, Q6) · quorum split after this amendment round
+→ operator · a GA criterion unmeetable under the Q3 readings → operator · `gate` red after
+three five-whys loops · clean-room red · publish refused.
