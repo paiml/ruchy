@@ -51,7 +51,15 @@ fn rustc_run(dir: &Path, rust: &str) -> String {
     std::fs::write(&main_rs, rust).expect("write main.rs");
     let mut rustc = Command::new("rustc");
     rustc
-        .args(["--edition", "2021", "-A", "warnings", "-o"])
+        .args([
+            "--edition",
+            "2021",
+            "-A",
+            "warnings",
+            "-D",
+            "unused_parens",
+            "-o",
+        ])
         .arg(&bin)
         .arg(&main_rs)
         .timeout(Duration::from_secs(120));
