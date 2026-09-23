@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-24T00:02:11.347132547Z",
+  "created_at": "2026-09-24T00:02:13.146427939Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -6091,48 +6091,48 @@
     },
     "./src/backend/transpiler/function_signature.rs": {
       "content_hash": [
-        216,
-        12,
-        223,
-        11,
+        217,
+        87,
+        242,
+        178,
+        187,
+        154,
+        105,
+        134,
+        100,
+        39,
+        8,
+        245,
+        119,
+        59,
+        71,
+        105,
+        179,
+        87,
+        167,
+        158,
+        186,
+        189,
+        85,
+        231,
+        237,
+        227,
+        87,
+        74,
         159,
-        233,
-        88,
-        246,
-        253,
-        215,
-        33,
-        95,
-        152,
-        73,
-        218,
-        116,
-        72,
-        94,
-        5,
-        169,
-        79,
-        75,
-        147,
-        46,
-        48,
-        174,
-        222,
-        141,
-        19,
-        137,
-        160,
-        213
+        200,
+        165,
+        140
       ],
       "score": {
-        "structural_complexity": 0.09999943,
+        "structural_complexity": 0.0,
         "semantic_complexity": 20.0,
-        "duplication_ratio": 16.774971,
+        "duplication_ratio": 16.813318,
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
         "entropy_score": 5.0,
-        "total": 76.87497,
+        "total": 76.81332,
         "grade": "B",
         "confidence": 1.0,
         "language": "Rust",
@@ -6156,27 +6156,27 @@
           },
           {
             "source_metric": "Duplication",
-            "amount": 3.22503,
+            "amount": 3.1866825,
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Code duplication: 16.1%"
+            "issue": "Code duplication: 15.9%"
           },
           {
             "source_metric": "StructuralComplexity",
-            "amount": 9.900001,
+            "amount": 10.0,
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cognitive complexity: 48"
+            "issue": "High cognitive complexity: 50"
           },
           {
             "source_metric": "StructuralComplexity",
-            "amount": 14.0,
+            "amount": 15.0,
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cyclomatic complexity: 58"
+            "issue": "High cyclomatic complexity: 60"
           }
         ],
         "critical_defects_count": 0,
@@ -44793,7 +44793,7 @@
   },
   "summary": {
     "total_files": 527,
-    "avg_score": 90.31908,
+    "avg_score": 90.31896,
     "grade_distribution": {
       "A+": 194,
       "A": 176,

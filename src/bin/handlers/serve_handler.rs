@@ -5,6 +5,26 @@
 use anyhow::Result;
 use std::path::Path;
 
+/// Reject a serve root that is missing or is not a directory.
+///
+/// Runs in every build so `ruchy serve ./missing` reports the path problem
+/// whether or not the HTTP server itself was compiled in.
+fn validate_serve_directory(directory: &Path) -> Result<()> {
+    if !directory.exists() {
+        return Err(anyhow::anyhow!(
+            "Directory not found: {}",
+            directory.display()
+        ));
+    }
+    if !directory.is_dir() {
+        return Err(anyhow::anyhow!(
+            "Path is not a directory: {}",
+            directory.display()
+        ));
+    }
+    Ok(())
+}
+
 /// Handle serve command - serve static files over HTTP
 ///
 /// # Arguments
@@ -31,19 +51,7 @@ pub fn handle_serve_command(
     use tower::ServiceBuilder;
     use tower_http::{services::ServeDir, set_header::SetResponseHeaderLayer};
 
-    // Verify directory exists
-    if !directory.exists() {
-        return Err(anyhow::anyhow!(
-            "Directory not found: {}",
-            directory.display()
-        ));
-    }
-    if !directory.is_dir() {
-        return Err(anyhow::anyhow!(
-            "Path is not a directory: {}",
-            directory.display()
-        ));
-    }
+    validate_serve_directory(directory)?;
 
     // Initialize PID file if requested
     let _pid_guard = if let Some(pid_path) = pid_file {
@@ -384,7 +392,7 @@ fn run_normal_mode(
 
 #[cfg(not(feature = "notebook"))]
 pub fn handle_serve_command(
-    _directory: &Path,
+    directory: &Path,
     _port: u16,
     _host: &str,
     _verbose: bool,
@@ -393,6 +401,7 @@ pub fn handle_serve_command(
     _pid_file: Option<&Path>,
     _watch_wasm: bool,
 ) -> Result<()> {
+    validate_serve_directory(directory)?;
     Err(anyhow::anyhow!(
         "HTTP server requires notebook feature. Rebuild with --features notebook"
     ))
@@ -412,7 +421,6 @@ mod tests {
     // ===== EXTREME TDD Round 145 - Serve Handler Tests =====
 
     #[test]
-    #[cfg(feature = "notebook")]
     fn test_handle_serve_command_nonexistent_dir() {
         let result = handle_serve_command(
             Path::new("/nonexistent/dir"),
@@ -429,7 +437,6 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "notebook")]
     fn test_handle_serve_command_file_not_dir() {
         let temp_dir = TempDir::new().unwrap();
         let file_path = temp_dir.path().join("test.txt");
