@@ -3819,3 +3819,41 @@ roadmap:
   - tests
   - filed-by:RHLGA-1
   notes: null
+- id: TESTRUN-1
+  github_issue: null
+  item_type: task
+  title: 'TESTRUN-1: ruchy test never ran @test functions in multi-item files; they vanished with the file''s block scope and passed as message values'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-23T16:21:40Z
+  updated: 2026-09-23T16:21:40Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tooling
+  - filed-by:RHLGA-1
+  notes: null
+- id: OPTPATH-1
+  github_issue: null
+  item_type: task
+  title: 'OPTPATH-1: the interpreter does not know the qualified constructors Option::Some, Option::None, Result::Ok, Result::Err'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T16:21:40Z
+  updated: 2026-09-23T16:21:40Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
