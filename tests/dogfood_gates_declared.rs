@@ -15,13 +15,12 @@ use std::process::Command;
 
 /// Gates declared here but owned by another in-flight ticket.
 ///
-/// `scripts/release-policy.sh` is written by PMAT-135 on its own branch. Until
-/// that branch merges the file is absent from this worktree, and the
-/// declared-but-missing rule would fire on it for a reason that is not a defect
-/// of this tree. The allowlist is deliberately narrow: one name, and
-/// `test_pmat_136_pending_allowlist_is_empty_once_the_gate_lands` deletes the
+/// Empty: `scripts/release-policy.sh` (PMAT-135) has landed, so every declared
+/// gate is again covered by the declared-but-missing rule. A future entry must
+/// name a gate owned by an in-flight ticket;
+/// `test_pmat_136_pending_allowlist_is_empty_once_the_gate_lands` removes the
 /// exemption the moment the file appears.
-const PENDING_FROM_OTHER_TICKETS: [&str; 1] = ["scripts/release-policy.sh"];
+const PENDING_FROM_OTHER_TICKETS: [&str; 0] = [];
 
 /// The crate root, independent of the caller's working directory.
 fn repo_root() -> PathBuf {

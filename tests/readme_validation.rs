@@ -77,17 +77,21 @@ fn test_readme_not_empty() {
 fn test_readme_required_sections() {
     let content = fs::read_to_string("README.md").expect("Failed to read README.md");
 
-    let required_sections = vec![
-        "# Ruchy",         // Title
-        "## Features",     // What it does
-        "## Installation", // How to install
-        "## CLI Commands", // How to use
+    // Each required section with its accepted spellings: the title is an
+    // HTML `<h1 align="center">` in the centered header block, and the CLI
+    // usage section is headed "Core Commands".
+    let required_sections: [&[&str]; 4] = [
+        &["# Ruchy", ">Ruchy</h1>"],              // Title
+        &["## Features"],                         // What it does
+        &["## Installation"],                     // How to install
+        &["## CLI Commands", "## Core Commands"], // How to use
     ];
 
-    for section in required_sections {
+    for spellings in required_sections {
         assert!(
-            content.contains(section),
-            "README.md must contain section: {section}"
+            spellings.iter().any(|s| content.contains(s)),
+            "README.md must contain section: {}",
+            spellings.join(" or ")
         );
     }
 }
