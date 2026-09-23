@@ -1,0 +1,7 @@
+$ target/debug/deps/startup_benchmark-23b8f4873e1275a8 --ignored (DEBUG profile, not release — see README caveat)
+
+running 1 test
+test test_embed_006_engine_new_under_5ms_release ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 1 filtered out; finished in 0.00s
+

@@ -1,0 +1,10 @@
+$ target/debug/deps/sovereign_migrate_4to5_e2e-2476d61c68459953
+
+running 4 tests
+test test_migrate_dry_run_reports_all_seven_conflicts ... ok
+test test_migrate_dry_run_does_not_modify_files ... ok
+test test_migrate_apply_leaves_non_conflicting_code_untouched ... ok
+test test_migrate_apply_removes_all_seven_conflicts ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+

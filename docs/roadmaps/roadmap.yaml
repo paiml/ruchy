@@ -3514,3 +3514,22 @@ roadmap:
   - kind:code
   - ci
   notes: null
+- id: RHLGA-1
+  github_issue: null
+  item_type: task
+  title: 'RHLGA-1: implement the admissible RHL-001 rows and release ruchy 5.0.0 (non-beta) to crates.io and GitHub'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T09:32:10Z
+  updated: 2026-09-23T09:32:10Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - rhl
+  - release
+  notes: null

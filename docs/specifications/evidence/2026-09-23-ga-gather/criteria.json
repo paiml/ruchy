@@ -1,0 +1,132 @@
+[
+  {
+    "n": 1,
+    "criterion": "All 9 pillar specs pass acceptance",
+    "threshold": "100%",
+    "measured": "16/16 tests passed in tests/sovereign_nine_pillar_acceptance.rs (CLI-surface acceptance: subcommands registered, keywords reserved, per-pillar smoke)",
+    "status": "MET",
+    "cmd": "timeout 30 target/debug/deps/sovereign_nine_pillar_acceptance-8ff9bfcd28834341",
+    "exit": 0,
+    "fix": null
+  },
+  {
+    "n": 2,
+    "criterion": "ruchy-embed startup latency",
+    "threshold": "< 5ms",
+    "measured": "UNMEASURED — only a debug-profile build of ruchy-embed/tests/startup_benchmark.rs was available (target/debug/deps/startup_benchmark-23b8f4873e1275a8); its ignored release test passed at 0.00s under the debug binary, but the test's own doc comment says debug-mode startup is expected to exceed the 5ms budget so a debug-profile pass is not evidence for the release-mode threshold. A `cargo test --release -p ruchy-embed --test startup_benchmark -- --ignored` build was started but did not finish (queued behind a concurrent cargo lock on the shared target dir, disk at 99% full) — not reached in budget.",
+    "status": "UNMEASURED",
+    "cmd": "timeout 900 cargo test --release -p ruchy-embed --test startup_benchmark -- --ignored --nocapture",
+    "exit": null,
+    "fix": "Re-run the release build in isolation (no concurrent cargo test --workspace holding the target-dir lock) once disk has headroom; ruchy-embed/tests/startup_benchmark.rs:21 is the instrument, no code change needed."
+  },
+  {
+    "n": 3,
+    "criterion": "Zero regressions in 4.x test suite",
+    "threshold": "0 failures",
+    "measured": "UNMEASURED — `cargo check --all-features -p ruchy` was still compiling dependencies (no errors surfaced yet, last line `Checking pmcp v1.20.0`) when the budget ran out; full `cargo test --all-features` was not attempted. roadmap.yaml ticket PMAT-101 (DATAFRAME-POLARS-DRIFT, 10 errors in dataframe.rs/arrow_integration.rs against locked polars-core 0.55.2) is still status `inprogress` as of 2026-09-05, unconfirmed fixed or still-broken at this HEAD — not reached in budget.",
+    "status": "UNMEASURED",
+    "cmd": "timeout 1800 cargo check --all-features -p ruchy",
+    "exit": null,
+    "fix": "Resolve PMAT-101 (or confirm already fixed) then run `cargo test --all-features` to completion with an isolated CARGO_TARGET_DIR and no lock contention."
+  },
+  {
+    "n": 4,
+    "criterion": "Downstream book repos compile",
+    "threshold": "100% on each book (7 repos)",
+    "measured": "UNMEASURED — clones/validation runs were not started before the budget ran out; disk was at 99% full (31 GB free of 1.8 TB) for most of the session, which would have made 7 fresh clones + build risky without first freeing space.",
+    "status": "UNMEASURED",
+    "cmd": "not run",
+    "exit": null,
+    "fix": "Free disk (target dirs from concurrent sessions consumed ~60GB during this run), then clone each of the 7 paiml/* repos fresh into a scratchpad and run each repo's own validation harness against target/release/ruchy per Appendix B; reuse the 2026-09-05-release-gather method (corpora-available.txt) as a starting point — that run recorded ruchy-book PARTIAL, cookbook 77%, tooling-with-ruchy MISSING."
+  },
+  {
+    "n": 5,
+    "criterion": "WASM target functional",
+    "threshold": "All WASM tests pass",
+    "measured": "UNMEASURED — `cargo build -p ruchy-wasm --target wasm32-unknown-unknown --release` was started (wasm32-unknown-unknown target confirmed installed via `rustup target list --installed`; no wasm-pack binary present) but queued behind cargo build-directory lock contention from a concurrent session's `cargo test --workspace` in the same working directory, and was killed before finishing to free resources — not reached in budget.",
+    "status": "UNMEASURED",
+    "cmd": "timeout 900 cargo build -p ruchy-wasm --target wasm32-unknown-unknown --release",
+    "exit": null,
+    "fix": "Re-run with an isolated CARGO_TARGET_DIR once disk has headroom and no concurrent cargo process holds the target dir lock; `cargo test --target wasm32-unknown-unknown` itself cannot run natively (no test runner configured), so the build-only proxy plus ruchy-wasm's own wasm-bindgen-test suite (needs wasm-pack or a JS test runner, neither installed) is the real instrument."
+  },
+  {
+    "n": 6,
+    "criterion": "Binary size (default features)",
+    "threshold": "< +20% vs 4.x",
+    "measured": "HEAD (5.0.0-beta.2) target/release/ruchy = 11,034,536 bytes; 4.2.1 (~/.cargo/bin/ruchy, pre-existing `cargo install ruchy --version 4.2.1`) = 14,233,736 bytes. Delta = -22.48% (smaller, not larger).",
+    "status": "MET",
+    "cmd": "stat -c%s target/release/ruchy; stat -c%s ~/.cargo/bin/ruchy",
+    "exit": 0,
+    "fix": null
+  },
+  {
+    "n": 7,
+    "criterion": "Compile time (default features)",
+    "threshold": "< +30% vs 4.x",
+    "measured": "UNMEASURED — a fair from-clean comparison (fresh target dir for both HEAD and a 4.2.1 source build, per `cargo build --release --timings`) was not affordable: disk was at 98-99% full (31-40GB free) for the whole session and a concurrent session was already consuming target-dir space and cargo-lock time in the same working directory. One directional data point: `cargo build --release -p ruchy --bin ruchy` for HEAD finished in 2m37s wall-clock against an already-warm (pre-populated, ~50GB) target dir — not comparable to a clean-vs-clean baseline, so not used to assert MET/NOT_MET.",
+    "status": "UNMEASURED",
+    "cmd": "not run (clean-vs-clean comparison)",
+    "exit": null,
+    "fix": "Once disk has real headroom (recommend >150GB free), run `cargo build --release --timings` for HEAD from a freshly emptied CARGO_TARGET_DIR, then build 4.2.1 from its crates.io source into another freshly emptied dir, and compare wall-clock."
+  },
+  {
+    "n": 8,
+    "criterion": "TDG grade",
+    "threshold": ">= A- across all new code",
+    "measured": "UNMEASURED — `pmat tdg . --min-grade A- --fail-on-violation` was not reached in budget (all remaining time went to the compile-bound criteria #2/#3/#5 and the write-up).",
+    "status": "UNMEASURED",
+    "cmd": "pmat tdg . --min-grade A- --fail-on-violation",
+    "exit": null,
+    "fix": "Run `pmat tdg . --min-grade A- --fail-on-violation` scoped to the 9 pillar dirs/modules (src/provability/, ruchy-embed/, stdlib bridge modules) listed in Appendix A; not attempted here."
+  },
+  {
+    "n": 9,
+    "criterion": "Test coverage",
+    "threshold": ">= 80% for new pillar code",
+    "measured": "UNMEASURED — not reached in budget. `cargo llvm-cov` was not run.",
+    "status": "UNMEASURED",
+    "cmd": "not run",
+    "exit": null,
+    "fix": "Follow CLAUDE.md's mold-disable pattern (move ~/.cargo/config.toml aside with a trap to restore) and scope `cargo llvm-cov` (nextest, PROPTEST_CASES=5) to the 9 pillar modules named in Appendix A; not attempted here."
+  },
+  {
+    "n": 10,
+    "criterion": "Mutation coverage",
+    "threshold": ">= 75% for new pillar code",
+    "measured": "UNMEASURED — not reached in budget. `cargo mutants` was not run. Prior agent-memory notes cargo-mutants has been interrupted mid-build on this repo in 3/3 prior attempts (killed by build timeouts), so a full run needs a longer, dedicated window.",
+    "status": "UNMEASURED",
+    "cmd": "not run",
+    "exit": null,
+    "fix": "Run `cargo mutants --file <pillar-file>` per pillar module (Appendix A) in a dedicated window with no concurrent cargo lock contention; never use `cargo tarpaulin`."
+  },
+  {
+    "n": 11,
+    "criterion": "Zero unsafe in transpiler output",
+    "threshold": "0 occurrences",
+    "measured": "2/2 tests passed in tests/sovereign_zero_unsafe_transpile.rs (transpiles required + sovereign examples, asserts no `unsafe` in generated Rust). Separately, `pmat query --literal \"unsafe {\" --files-with-matches --exclude-tests` finds `unsafe {` only in the ruchy interpreter/runtime's own internals (src/jit/compiler.rs, src/runtime/arena.rs, src/runtime/bytecode/opcode.rs, src/runtime/bytecode/vm.rs) — not transpiler-generated user code, so out of scope for this criterion (which is about output the transpiler emits, not the compiler's own implementation).",
+    "status": "MET",
+    "cmd": "timeout 30 target/debug/deps/sovereign_zero_unsafe_transpile-69b5ff1d965b68d5",
+    "exit": 0,
+    "fix": null
+  },
+  {
+    "n": 12,
+    "criterion": "`ruchy migrate-4to5` handles all keyword conflicts",
+    "threshold": "100%",
+    "measured": "4/4 tests passed in tests/sovereign_migrate_4to5_e2e.rs (dry-run reports all 7 conflicts, dry-run does not modify files, apply removes all 7 conflicts, apply leaves non-conflicting code untouched).",
+    "status": "MET",
+    "cmd": "timeout 30 target/debug/deps/sovereign_migrate_4to5_e2e-2476d61c68459953",
+    "exit": 0,
+    "fix": null
+  },
+  {
+    "n": 13,
+    "criterion": "Provability Mandate (F1-F5 in §14.5)",
+    "threshold": "All 5 metrics in-range",
+    "measured": "`ruchy tier` (the F1/F2/F4/F11 instrument) reports scorecard {f1:OK, f2:OK, f4:OK, f11:OK} on both examples/ (187 fns, 6 non-Bronze, non_trivial_pct=100.00 on n=6 contracted fns) and src/ (298 fns, 6 non-Bronze). F1's 100% non-trivial is on a very thin sample (only 6 of 298 functions carry any contract at all). F3 (pairwise oracle-verdict correlation on a 100-kernel sample) and F5 (contract-free code shipped to crates.io = 0) have no in-repo instrument as of this HEAD (confirmed via `pmat query`/grep for oracle/pairwise/F3/F5 code — none found beyond the spec's own '§14.5 F3/F5/F6/F7/F8-F12: NOT addressed this session' note carried over from the 2026-09-05 gather), so 2 of the 5 required metrics genuinely cannot be measured without first building new tooling, which is out of scope for a measurement-only pass. Because the criterion requires ALL 5 in-range, it cannot be called MET while 2/5 have no instrument.",
+    "status": "UNMEASURED",
+    "cmd": "timeout 60 target/release/ruchy tier examples/ --json; timeout 60 target/release/ruchy tier . --json",
+    "exit": 0,
+    "fix": "F3 needs a pairwise-oracle-correlation harness over a 100-kernel sample (no ticket found); F5 needs a crates.io-published-artifact contract scan. Both are net-new tooling, not a config/threshold fix."
+  }
+]

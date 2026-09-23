@@ -1,0 +1,42 @@
+Loading index from "./.pmat/context.idx"...
+Checking for incremental updates...
+Incremental update: 1190 mtime-skipped, 30 checksum-reused, 25 re-parsed
+Skipping save (25 minor changes)
+Index: 8931 functions in 1245 files (avg TDG: 97.0)
+Searching raw files for non-indexed matches...
+CHANGELOG.md
+CLAUDE.md
+docs/CONCURRENCY.md
+docs/SPECIFICATION.md
+docs/adr/003-safe-rust-transpilation.md
+docs/architecture/depyler-integration.md
+docs/architecture/ruchy-design-architectur.md
+docs/archived/2025-08-17/archived-todos/missing-features.md
+docs/archived/2025-08-17/archived-todos/ruchy-repl.yaml
+docs/certeza-risk-matrix.md
+docs/notebook/book/src/10-advanced/007-ffi-unsafe.md
+docs/specifications/evidence/2026-09-05-release-gather/changelog-head.txt
+docs/specifications/evidence/2026-09-05-release-gather/spec-5.0-success-criteria.txt
+docs/specifications/repl-testing-ux-spec.md
+docs/specifications/ruchy-5.0-sovereign-platform.md
+docs/specifications/ruchy-embed-pillar9-integration.md
+docs/specifications/ruchy-fuzz.md
+docs/specifications/ruchy-interpreter-spec.md
+docs/specifications/ruchy-unified-spec.md
+docs/specifications/sub/certeza-scientific-foundation.md
+docs/specifications/sub/certeza-workflow-implementation.md
+docs/specifications/sub/classes-wasm-architecture-roadmap.md
+docs/specifications/sub/scoring-unified-debugger.md
+docs/specifications/sub/stabilization-appendices.md
+scripts/qa-validate.sh
+src/jit/compiler.rs
+src/runtime/arena.rs
+src/runtime/bytecode/opcode.rs
+src/runtime/bytecode/vm.rs
+query profile: 3138ms total
+  load_index: 738ms ANDON
+  source_load: 12ms
+  query: 548ms ANDON
+  enrich: 3ms
+  git_history: 0ms
+  output: 1834ms ANDON

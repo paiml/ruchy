@@ -1,0 +1,22 @@
+$ target/debug/deps/sovereign_nine_pillar_acceptance-8ff9bfcd28834341
+
+running 16 tests
+test test_pillar_1_correctness_contracts_subcommands ... ok
+test test_pillar_1_correctness_prove_cli_available ... ok
+test test_migrate_4to5_cli_available ... ok
+test test_pillar_1_correctness_suggest_contracts ... ok
+test test_pillar_6_visualization_signal_keyword_reserved ... ok
+test test_pillar_1_correctness_contract_keywords_reserved ... ok
+test test_pillar_9_embedding_yield_keyword_reserved ... ok
+test test_pillar_4_scripting_purify_cli_available ... ok
+test test_pillar_2_compute_transpile_surface ... ok
+test test_pillar_3_infrastructure_infra_keyword_reserved ... ok
+test test_pillar_8_testing_probar_flags_registered ... ok
+test test_pillar_6_visualization_widget_subcommands ... ok
+test test_pillar_7_simulation_sim_subcommands ... ok
+test test_pillar_5_learning_apr_subcommands ... ok
+test test_pillar_5_learning_model_subcommands ... ok
+test test_pillar_3_infrastructure_infra_subcommands ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s
+

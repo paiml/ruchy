@@ -1,0 +1,5 @@
+HEAD binary: /home/noah/src/ruchy/target/release/ruchy
+HEAD size bytes: 11034536
+4.2.1 binary: /home/noah/.cargo/bin/ruchy (cargo install ruchy --version 4.2.1, pre-existing)
+4.2.1 size bytes: 14233736
+pct_change: -22.4762
