@@ -4,7 +4,7 @@ Row RHL-5 (ticket RHLGA-1, phase P5). Spec RHL-001 §3.1 principle 7 ("Examples 
 expectations are contracts"), §4, §5 (`ruchy test` row), §9.4 (the plan is a draft).
 Code: `src/rhl/examples.rs` (a child of `src/rhl/lower.rs`), `src/rhl/cli.rs` (`test_file`);
 tests: `src/rhl/examples_tests.rs` (`rhl5_`), `tests/rhl_test_cli.rs` (`rhl5_cli_`).
-The pv contract emission of `expect` is RHL-5b and is not done here.
+The pv contract emission of `expect` and the compile receipt are RHL-5b (below).
 
 ## `given` — an example states its facts
 
@@ -96,3 +96,83 @@ literal and gets a different sha. All 12 v2 valid programs pass `ruchy test`.
 A job that reads no fact has an empty `struct Facts`. ruchy transpiles an empty struct
 literal `Facts {}` to `Facts::default()`, which rustc rejects. So an example of such a
 job does not build yet. No v2 program has one.
+
+# RHL-5b — the unit contract and the compile receipt
+
+Code: `src/rhl/contract.rs` (+ `contract_render.rs`), `src/rhl/receipt.rs`, `src/rhl/cli.rs`
+(`transpile_file`, `compile_file`); tests: `src/rhl/contract_tests.rs`,
+`src/rhl/receipt_tests.rs` (`rhl5b_`), `tests/rhl_contract_cli.rs` (`rhl5b_cli_`).
+Spec RHL-001 §3.1 principle 7, §4, §7 F6, §9.3.
+
+## `ruchy transpile x.rhl --emit contract [-o out.yaml]`
+
+Checks the job and lowers it as `ruchy test` does (`Form::Tests`), so a refusal there is a
+refusal here, then writes one `pv` contract for the job. Every string is a double-quoted
+scalar. There is no timestamp: the bytes depend only on the tree (its `fmt` normal form, so
+`.rhl` and `.rhl.yaml` give the same contract), the vocabulary files and the source bytes.
+
+| block | content |
+|---|---|
+| `metadata.unit` | `kind`, `name`, `source_sha256` (of the input file), `runs_on`, `every`, `effects` (the `may` lines), `examples` (names) |
+| `metadata.vocabularies` | `name`, `version`, `sha256` of each `use vocabulary` file |
+| `metadata.terms` | each vocabulary term the job uses (longest leading run of words, as the checker resolves it; units too): `term`, `vocabulary`, `contract` (its term contract path) |
+| `equations.effect_surface` | `effects(apply(plan)) ⊆ {…}`; `invariants`: one `may …` per effect line |
+| `equations.expect_<n>` | one per top-level `expect`, `n` as in the generated guard `expect_<n>`: `formula` over the plan-measure table (`ticket count is at most 1` → `plan_ticket_count(plan) ≤ 1`, the generated function's name) and the same formula as its `postconditions` (ensures) |
+| `proof_obligations` | a `postcondition` per expect; an `invariant` for the closed effect surface (always present); one per `may` line; one per term (its contract) |
+| `falsification_tests` | one per obligation (the guard `expect_<n>`, `ruchy check` RHL-E001, RHL-C001), plus one per example (`example_<n> "<name>"`) |
+| `kani_harnesses` | one entry marked NOT APPLICABLE (`pv validate` requires the block) |
+| `qa_gate` | `required_tests`: `example_<n>`, `expect_<n>`, `ruchy check` |
+
+A job with no `expect` and no `example` still gets a contract: the effect surface and its
+terms. It is never skipped.
+
+**`shapes_n`.** F6 asks for "a `pv`-valid contract with `shapes_n > 0`". The field named
+`shapes_n` in `pv extract` counts SHACL node shapes declared by ontology `shapes:` blocks;
+it is 0 for every kernel contract (all 144 contracts of provable-contracts, and every
+`contracts/rhl-*` term contract). The count used here is the proof obligations `pv status`
+reports (`Proof obligations: N`), which is at least 1 for every job because the effect
+surface obligation is always emitted. `rhl5b_contract_every_v2_valid_program_validates_with_pv`
+asserts `pv validate` exits 0 and N > 0 for all 12 v2 valid programs.
+
+## `ruchy compile x.rhl -o out`
+
+1. lowers the job (`Form::Program`);
+2. emits the unit contract and writes `out.contract.yaml` **before** building. If it cannot
+   be written, the command refuses with `RHL-C002` (refusal `NoContractTemplate`), builds
+   nothing and exits 2 (§9.3);
+3. builds `out`;
+4. runs the job's examples with `ruchy test`'s runner and writes `out.receipt.json`.
+
+`ruchy run` builds to a temporary directory and writes neither file.
+
+## Receipt schema
+
+```json
+{
+  "inputs": {
+    "source_sha256": "…",
+    "vocabularies": [{"name": "fleet", "version": 2, "sha256": "…"}],
+    "runtime_files": [{"path": "vocab/runtime/fleet.ruchy", "sha256": "…"}]
+  },
+  "ruchy_version": "…",
+  "rust_sha256": "…",
+  "contract_sha256": "…",
+  "verdict": "Pass"
+}
+```
+
+`runtime_files` are the `vocab/runtime/<module>.ruchy` files that the used vocabularies'
+`lowers_to` bindings name, sorted. `rust_sha256` is the sha of the Rust the lowered program
+transpiles to. No field holds a path to the source or a wall-clock value, so the same inputs
+give byte-identical receipts.
+
+## Verdict rules
+
+| examples | verdict |
+|---|---|
+| every example holds | `"Pass"` |
+| one or more fails | `"Fail"` |
+| the job has no example | `{"Unknown": "no examples"}` |
+| the test program could not be built or run | `{"Unknown": "the examples could not be built or run: <first line>"}` |
+
+There is no `Pass` without an example that ran and held.
