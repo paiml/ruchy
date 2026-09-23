@@ -219,10 +219,21 @@ fn run_watch_mode(
     num_cpus: usize,
     #[cfg(unix)] shutdown_rx: &std::sync::mpsc::Receiver<()>,
 ) -> Result<()> {
+    // One watcher for the whole session: re-creating it on every restart spent
+    // an inotify instance each time, and a failure to get one killed the server.
+    let Some(mut watcher) = open_watcher(directory, debounce) else {
+        return run_normal_mode(
+            runtime,
+            app.clone(),
+            host,
+            port,
+            verbose,
+            num_cpus,
+            #[cfg(unix)]
+            shutdown_rx,
+        );
+    };
     loop {
-        let mut watcher =
-            ruchy::server::watcher::FileWatcher::new(vec![directory.to_path_buf()], debounce)?;
-
         let addr = format!("{}:{}", host, port);
         let app_clone = app.clone();
         let server_handle = runtime.spawn(async move {
@@ -255,6 +266,34 @@ fn run_watch_mode(
             std::thread::sleep(std::time::Duration::from_millis(100));
         }
     }
+}
+
+/// Open the file watcher for `directory`, or `None` (with a warning on stderr)
+/// when the host cannot watch it.
+///
+/// `--watch` used to exit the server when the watcher could not be created. On a
+/// busy host the per-user inotify instance limit (`fs.inotify.max_user_instances`,
+/// 128 by default) is exhausted and creation fails with EMFILE ("Too many open
+/// files"); the server then keeps serving without reload instead (G2B-S2).
+#[cfg(feature = "notebook")]
+fn open_watcher(directory: &Path, debounce: u64) -> Option<ruchy::server::watcher::FileWatcher> {
+    match ruchy::server::watcher::FileWatcher::new(vec![directory.to_path_buf()], debounce) {
+        Ok(watcher) => Some(watcher),
+        Err(err) => {
+            eprintln!("{}", watch_unavailable_message(directory, &err));
+            None
+        }
+    }
+}
+
+/// Warning printed when `--watch` cannot watch `directory`.
+#[cfg(feature = "notebook")]
+fn watch_unavailable_message(directory: &Path, err: &dyn std::fmt::Display) -> String {
+    format!(
+        "  warning: --watch disabled, cannot watch {}: {err}; serving without reload \
+         (if this is \"Too many open files\", raise fs.inotify.max_user_instances)",
+        directory.display()
+    )
 }
 
 /// Handle file changes in watch mode
@@ -411,6 +450,25 @@ pub fn handle_serve_command(
 mod tests {
     use super::*;
     use tempfile::TempDir;
+
+    /// G2B-S2: a watcher that cannot be created must not end the server.
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_open_watcher_on_unwatchable_path_degrades_to_none() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let missing = dir.path().join("absent");
+        assert!(open_watcher(&missing, 100).is_none());
+    }
+
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_watch_unavailable_message_names_the_cause_and_remedy() {
+        let msg = watch_unavailable_message(Path::new("site"), &"Too many open files");
+        assert!(msg.contains("--watch disabled"), "{msg}");
+        assert!(msg.contains("site"), "{msg}");
+        assert!(msg.contains("Too many open files"), "{msg}");
+        assert!(msg.contains("max_user_instances"), "{msg}");
+    }
 
     #[test]
     fn test_serve_handler_stub() {
