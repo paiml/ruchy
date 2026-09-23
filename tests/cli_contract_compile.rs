@@ -208,11 +208,15 @@ fn cli_compile_default_output_name() {
     let temp = TempDir::new().unwrap();
     let file = create_temp_file(&temp, "default.ruchy", "println(\"default name\")\n");
 
-    // Change to temp directory so a.out is created there
-    let current_dir = std::env::current_dir().unwrap();
-    std::env::set_current_dir(temp.path()).unwrap();
-
-    ruchy_cmd().arg("compile").arg(&file).assert().success();
+    // Run compile with the subprocess's cwd set to the temp dir (not the
+    // whole test process's cwd, which would race with other parallel tests)
+    // so a.out is created there.
+    ruchy_cmd()
+        .arg("compile")
+        .arg(&file)
+        .current_dir(temp.path())
+        .assert()
+        .success();
 
     // Verify a.out was created (default name)
     let default_output = temp.path().join("a.out");
@@ -220,9 +224,6 @@ fn cli_compile_default_output_name() {
         default_output.exists(),
         "Default output 'a.out' should be created"
     );
-
-    // Restore original directory
-    std::env::set_current_dir(current_dir).unwrap();
 }
 
 // ============================================================================

@@ -369,7 +369,13 @@ fn comprehensive_validation_all_15_tools() {
     ruchy_cmd().arg("lint").arg(&example).assert().success();
 
     // Tool 5: compile
-    ruchy_cmd().arg("compile").arg(&example).assert().success();
+    let compile_output_dir = tempfile::TempDir::new().unwrap();
+    ruchy_cmd()
+        .arg("compile")
+        .arg(&example)
+        .current_dir(&compile_output_dir)
+        .assert()
+        .success();
 
     // Tool 6: run
     ruchy_cmd().arg("run").arg(&example).assert().success();

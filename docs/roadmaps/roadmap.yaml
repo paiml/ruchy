@@ -3955,3 +3955,30 @@ roadmap:
   - runtime
   - filed-by:RHLGA-1
   notes: null
+- id: COMPILERACE-1
+  github_issue: null
+  item_type: task
+  title: 'COMPILERACE-1: tests run ruchy compile with the default -o a.out in the repository root, so parallel tests race on the same output and rust-lld cannot open its object files'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T17:05:24Z
+  updated: 2026-09-23T17:05:24Z
+  spec: null
+  acceptance_criteria:
+  - Every `ruchy compile` invocation in the affected test files directs its
+    output into a directory the test owns (`.current_dir(<TempDir>)` or
+    `-o <TempDir>/<name>`), never the repo-root default `a.out`.
+  - tests/compilerace_1_no_output_in_repo.rs documents the rule and asserts
+    the repo-root a.out is never created by a `.current_dir`-scoped compile.
+  - 'cd /home/noah/src/ruchy && rm -f a.out && CARGO_TARGET_DIR=/mnt/nvme-raid0/targets/ruchy
+    cargo test --jobs 8 <the 16 affected --test targets> --test compilerace_1_no_output_in_repo
+    -- --test-threads=8 && test ! -e a.out'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tests
+  - filed-by:RHLGA-1
+  notes: null

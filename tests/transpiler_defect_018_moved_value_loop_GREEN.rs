@@ -99,6 +99,7 @@ println(find_items(items, checks));
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -146,6 +147,7 @@ println(process(vec![Data { value: 5 }]));
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -183,6 +185,7 @@ println(result);
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .assert()
         .success();
 }

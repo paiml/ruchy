@@ -73,6 +73,7 @@ println(format_msg(Priority::High));
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -117,6 +118,7 @@ println(format_person());
     let output = assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .output()
         .unwrap();
 
@@ -155,6 +157,7 @@ println(format_msg());
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .assert()
         .success();
 }
@@ -181,6 +184,7 @@ fun main() {
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .arg("compile")
         .arg(&test_file)
+        .current_dir(&temp_dir)
         .assert()
         .success();
 }
