@@ -121,17 +121,35 @@ receipt at RED time.
 | P0 | This plan ruled (round 2 quorum PASS) · doc-test cwd fix · evidence | `cargo test --test cli_contract_doc` exits 0 **and** `git status --porcelain docs/` is empty after it |
 | G1 | Full GA measurement: #2, #3 (all-features), #4 (7 books), #5, #7, #8–#10 on RHL + pillar code, #13 per the Q3 reading. Writes `criteria.json` v2 | `jq -e 'length==13 and all(.[]; .status\|IN("MET","NOT_MET"))' criteria.json` (UNMEASURED is not allowed out of G1) |
 | G2 | RUNMAIN-1 fix + the 285 workspace failures, by binary, root-caused | `cargo test --workspace --no-fail-fast` exit 0, with the `#[ignore]` count not above 2,773 + named-environment ignores listed in the receipt |
-| P1 | RHL-16 v2 vocabulary + corpus | `cargo test --lib rhl::` with ≥ 1 new v2 test named `rhl16_*`, and `KNOWN_CORPUS_DEFECTS` empty for v2 (a test asserts it) |
+| P1 | RHL-16 v2 vocabulary + corpus | `test "$(cargo test --lib rhl16_ -- --list 2>/dev/null \| grep -c ': test$')" -ge 1 && cargo test --lib rhl::`, and `KNOWN_CORPUS_DEFECTS` empty for v2 (a test asserts it) |
 | P2 | RHL-2 `fix --safe`, `vocab`, vocabulary shape | `cargo test --lib rhl::fix rhl::vocab` count ≥ recorded floor · `ruchy fix --safe` on every v2 typo break yields a file that `ruchy check` passes |
 | P3 | RHL-3 YAML, `convert` | round-trip property test over every v2 corpus program (count asserted) |
-| P4 | RHL-4 lowering | `for f in docs/rhl/breaks/v2/valid/*.rhl; do ruchy transpile "$f" -o /tmp/x.rs && rustc --edition 2021 --crate-type lib /tmp/x.rs; done` all exit 0, count = number of v2 valid programs; determinism test |
+| P4 | RHL-4 lowering | `set -- docs/rhl/breaks/v2/valid/*.rhl; test -e "$1" && for f in docs/rhl/breaks/v2/valid/*.rhl; do ruchy transpile "$f" -o /tmp/x.rs && rustc --edition 2021 --crate-type lib /tmp/x.rs; done` all exit 0, count = number of v2 valid programs; determinism test |
 | P5 | RHL-5 examples/expect/receipt, `ruchy test x.rhl` | every v2 valid program's examples pass; a planted wrong `then` fails |
 | P6 | RHL-6 MCP + RHL-9 `explain` | `cargo test --features mcp rhl_mcp` count ≥ 8 (one per §6 tool) |
 | M1 | RHL-7 (F7) and RHL-8 (F8) measurements, reports committed | `test -s docs/rhl/reports/f7.json && test -s docs/rhl/reports/f8.json` and each carries its verdict and seed |
-| G3 | Re-measure GA after all merges | `jq -e 'all(.[]; .status=="MET")' criteria.json` |
+| G3 | Re-measure GA after all merges | `jq -e 'length==13 and all(.[]; .status=="MET")' criteria.json` |
 | R1 | 5.0.0: bump `ruchy`, `ruchy-wasm`; CHANGELOG; clean-room; dogfood; tag; GitHub release; `cargo publish` | fresh `CARGO_HOME`: `cargo install ruchy --version 5.0.0 && ruchy --version` prints `ruchy 5.0.0` |
 
 ## §4 STOP conditions
 RHL-001 §10 (publish waived by the directive, Q6) · quorum split after this amendment round
 → operator · a GA criterion unmeetable under the Q3 readings → operator · `gate` red after
 three five-whys loops · clean-room red · publish refused.
+
+## §5 Rulings — round 2 quorum, 2026-09-23 `[V]`
+
+Three lanes (gemini-3.1-pro-high, gemini-3.8-flash-high, gemini-3.7-flash-high; author
+Claude), all exit 0, tree witness verified, no isolation violation: **3/3 PASS.**
+Receipt: delegate `ph0r2`, conversations `0e2e2fd4…`, `d184dc97…`, `7a1fbc78…`.
+
+| Q | Ruling | Votes | Residual |
+|---|---|---|---|
+| Q1 | keep `RHL` / `.rhl` | 2 explicit ACCEPT, 1 implicit | — |
+| Q2 | as proposed: RHL ships experimental; F7/F8 measured and published before release | 2 ACCEPT, 1 AMEND | lane 1: "If F8 FAILS, RHL must not ship in 5.0.0" (grounding asserted). Recorded; M1's report is read against it before R1. |
+| Q3 | #13/#4/#3 readings are interpretation, not amendment | 2 ACCEPT, 1 AMEND on #13 | lane 1: F3 must correlate the existing oracles (rustc, Kani, SMT). Its citation is the §14.2 tier table, not an oracle quorum. G1 therefore also reports, where more than one discharge engine exists for the same function, their verdict agreement — as data, beside the `not-applicable` F3 reading. |
+| Q4 | observe → decide → apply, structs/enums/Vec, no closures or maps | 3 ACCEPT | — |
+| Q5 | local `safe`; `fix --safe` reverts a fix that raises the error count | 2 ACCEPT, 1 implicit | — |
+| Q6 | the directive authorises the publish; it runs from the tag checkout, no workflow publishes | 3 ACCEPT | — |
+
+Acceptance amendments adopted (lanes 1+2): G3 asserts `length==13`; P1 counts `rhl16_`
+tests before running; P4 fails on an empty glob.

@@ -3518,13 +3518,15 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RHLGA-1: implement the admissible RHL-001 rows and release ruchy 5.0.0 (non-beta) to crates.io and GitHub'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-23T09:32:10Z
   updated: 2026-09-23T09:32:10Z
-  spec: null
-  acceptance_criteria: []
+  spec: docs/specifications/ruchy-high-level-language-interface.md
+  acceptance_criteria:
+  - 'Plan docs/rhl/rhlga-1-plan.md, ruled by a round-2 quorum 3/3 PASS (§5). Phases P0, G1, G2, P1-P6, M1, G3, R1 each carry an executable acceptance command.'
+  - 'DONE WHEN: all 13 GA criteria of ruchy-5.0-sovereign-platform.md §10 are MET under the §2 Q3 readings; RHL-16, RHL-2, RHL-3, RHL-4, RHL-5, RHL-6, RHL-9 merged; F7/F8 reports committed; ruchy 5.0.0 and ruchy-wasm 5.0.0 on crates.io and a v5.0.0 GitHub release exist.'
   phases: []
   subtasks: []
   estimated_effort: null
@@ -3532,4 +3534,44 @@ roadmap:
   - kind:code
   - rhl
   - release
+  notes: 'Operator directive 2026-09-23, verbatim: "implment paiml-implement: ''/home/noah/Downloads/ruchy-high-level-language-interface.md'' autonomously (quorum for questions), goal is this is the "non-beta" version to crates.io and github." Rulings Q1-Q6 in the plan §5.'
+- id: RUNMAIN-1
+  github_issue: null
+  item_type: task
+  title: 'RUNMAIN-1: ruchy run does not call main() when the file defines any other function'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T10:09:23Z
+  updated: 2026-09-23T10:09:23Z
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED 2026-09-23 on 270a065c and on 4.2.1: a file holding fun d(a: i64) -> i64 { a } and fun main() { println("y") } prints nothing under ruchy run, exit 0; ruchy transpile + rustc prints y; with an explicit main() line it prints y. run_handler.rs evaluates the file then repl.eval("main()"). Evidence docs/specifications/evidence/2026-09-23-ga-gather/q4-lowering-probe/. Found by RHLGA-1; on the RHL path (ruchy run of lowered RHL).'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: TESTGATE-1
+  github_issue: null
+  item_type: task
+  title: 'TESTGATE-1: 285 integration-test failures on main are ungated; required gate runs cargo test --lib only'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-23T10:09:23Z
+  updated: 2026-09-23T10:09:23Z
+  spec: null
+  acceptance_criteria:
+  - 'MEASURED 2026-09-23: cargo test --workspace --no-fail-fast at 270a065c gives 27573 pass, 285 fail across 27 test binaries, 2773 ignored (docs/specifications/evidence/2026-09-23-ga-gather/criterion-3-workspace-tests.txt). The required gate (sovereign-ci) runs cargo test --lib, clippy and fmt, so tests/ is never run in CI and rots. GA criterion 3 needs 0 failures. Fix the failures (RHLGA-1 phase G2) and put the integration suite behind a required check.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - ci
+  - filed-by:RHLGA-1
   notes: null
