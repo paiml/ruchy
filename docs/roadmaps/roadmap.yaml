@@ -3871,13 +3871,20 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'ENUMEQ-1: enum values never compare equal in the interpreter: Some(3) == Some(3) and None == None are false'
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-23T16:33:14Z
   updated: 2026-09-23T16:33:14Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'Some(3) == Some(3), None == None, Ok(1) == Ok(1) and Err("e") == Err("e") are true in the interpreter; Some(3) == Some(4), Some(1) == None and Ok(1) == Err(1) are false'
+  - '!= on enum values is the negation of =='
+  - 'payloads compare recursively with the same equality as every other value (Some(Some(2)), Some([1, 2]), Ok((1, "a")); Some(1) == Some(1.0) agrees with 1 == 1.0)'
+  - 'user enums compare by enum, variant and payload: Color::Red == Color::Red is true, Color::Red == Color::Green is false, A::X == B::X is false'
+  - 'assert_eq(Some(3), Some(3)) passes and assert_eq(Some(3), Some(4)) fails'
+  - 'interpreter output equals transpiled+rustc output for a set of Option, Result and user-enum comparisons'
+  - 'cargo test --test enumeq_1_enum_equality passes'
   phases: []
   subtasks: []
   estimated_effort: null

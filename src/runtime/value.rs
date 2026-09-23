@@ -134,12 +134,63 @@ impl PartialEq for Value {
             }
             (Value::Nil, Value::Nil) => true,
             (Value::Byte(a), Value::Byte(b)) => a == b,
+            (Value::EnumVariant { .. }, Value::EnumVariant { .. }) => {
+                enum_variants_eq(self, other, |a, b| a == b)
+            }
             #[cfg(not(target_arch = "wasm32"))]
             (Value::HtmlDocument(_), Value::HtmlDocument(_)) => false, // Documents compared by identity
             #[cfg(not(target_arch = "wasm32"))]
             (Value::HtmlElement(_), Value::HtmlElement(_)) => false, // Elements compared by identity
             _ => false, // Different variants are not equal
         }
+    }
+}
+
+/// ENUMEQ-1: structural equality of two enum values.
+///
+/// Equal when both are the same enum (an empty `enum_name` means unknown and
+/// agrees with any enum), the same variant, and their payloads are pairwise
+/// equal under `payload_eq`. Returns false when either value is not an enum.
+///
+/// # Complexity
+/// Cyclomatic complexity: 5
+pub fn enum_variants_eq(
+    left: &Value,
+    right: &Value,
+    payload_eq: impl Fn(&Value, &Value) -> bool,
+) -> bool {
+    let (
+        Value::EnumVariant {
+            enum_name: e1,
+            variant_name: v1,
+            data: d1,
+        },
+        Value::EnumVariant {
+            enum_name: e2,
+            variant_name: v2,
+            data: d2,
+        },
+    ) = (left, right)
+    else {
+        return false;
+    };
+    let same_enum = e1 == e2 || e1.is_empty() || e2.is_empty();
+    same_enum && v1 == v2 && payloads_eq(d1.as_deref(), d2.as_deref(), payload_eq)
+}
+
+/// ENUMEQ-1: pairwise payload comparison; a unit variant has no payload.
+///
+/// # Complexity
+/// Cyclomatic complexity: 3
+fn payloads_eq(
+    left: Option<&[Value]>,
+    right: Option<&[Value]>,
+    payload_eq: impl Fn(&Value, &Value) -> bool,
+) -> bool {
+    match (left, right) {
+        (None, None) => true,
+        (Some(a), Some(b)) => a.len() == b.len() && a.iter().zip(b).all(|(x, y)| payload_eq(x, y)),
+        _ => false,
     }
 }
 

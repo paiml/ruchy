@@ -8,21 +8,21 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use ruchy::frontend::parser::Parser;
 use ruchy::runtime::interpreter::Interpreter;
+use ruchy::runtime::Value;
 
 fn ruchy_cmd() -> Command {
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
 }
 
-/// Evaluate `src` in a fresh interpreter and render the value structurally.
-fn value_of(src: &str) -> String {
+/// Evaluate `src` in a fresh interpreter.
+fn value_of(src: &str) -> Value {
     let mut interp = Interpreter::new();
     let expr = Parser::new(src)
         .parse()
         .unwrap_or_else(|e| panic!("`{src}` did not parse: {e}"));
-    let value = interp
+    interp
         .eval_expr(&expr)
-        .unwrap_or_else(|e| panic!("`{src}` failed: {e}"));
-    format!("{value:?}")
+        .unwrap_or_else(|e| panic!("`{src}` failed: {e}"))
 }
 
 fn assert_same_value(qualified: &str, unqualified: &str) {
