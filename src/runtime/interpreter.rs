@@ -1269,6 +1269,23 @@ impl Interpreter {
         result
     }
 
+    /// Evaluate a whole parsed program (RUNMAIN-1).
+    ///
+    /// A program with several top-level items parses to a `Block`. Those items
+    /// are top-level definitions, so they bind in the current scope instead of
+    /// a block scope that `eval_block_expr` pops when the block completes.
+    ///
+    /// # Errors
+    /// Returns the first error raised by a top-level item.
+    pub fn eval_program(&mut self, program: &Expr) -> Result<Value, InterpreterError> {
+        match &program.kind {
+            ExprKind::Block(items) => {
+                crate::runtime::eval_control_flow_new::eval_block_expr(items, |e| self.eval_expr(e))
+            }
+            _ => self.eval_expr(program),
+        }
+    }
+
     /// Evaluate tuple expression
     pub(crate) fn eval_tuple_expr(&mut self, elements: &[Expr]) -> Result<Value, InterpreterError> {
         crate::runtime::eval_control_flow_new::eval_tuple_expr(elements, |e| self.eval_expr(e))

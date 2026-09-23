@@ -161,6 +161,18 @@ impl Repl {
         }
     }
 
+    /// Run a parsed script program, calling `main()` when it defines one
+    /// (RUNMAIN-1) (complexity: 1)
+    ///
+    /// # Errors
+    /// Returns an evaluation error from a top-level item or from `main()`.
+    pub fn run_program(&mut self, program: &crate::frontend::ast::Expr) -> Result<()> {
+        self.evaluator
+            .run_program(program)
+            .map(|_| ())
+            .map_err(|e| anyhow::anyhow!("Evaluation error: {e}"))
+    }
+
     /// Process a single input line (complexity: 8)
     pub fn process_line(&mut self, line: &str) -> Result<bool> {
         let start_time = Instant::now();

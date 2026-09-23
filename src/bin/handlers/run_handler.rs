@@ -57,29 +57,15 @@ pub fn handle_run_command(file: &Path, verbose: bool, vm_mode: VmMode) -> Result
             // For compilation to binary, use: `ruchy compile`
             let mut repl = super::create_repl()?;
 
-            match repl.eval(&source) {
-                Ok(_result) => {
-                    // FIX CLI-CONTRACT-RUN-002: Don't print file evaluation results
-                    // The user's code uses println() for output. We should NOT print the
-                    // final value of file evaluation (that's REPL behavior, not script behavior).
-                    // This matches Python/Ruby/Node: `python script.py` doesn't print the last value.
-
-                    // After evaluating the file, check if main() function exists and call it
-                    // (but also don't print main's return value - it's not a println)
-                    // FIX Issue #81: Handle main() errors (panic!, undefined functions, etc.)
-                    match repl.eval("main()") {
-                        Ok(_) => Ok(()),
-                        Err(e) => {
-                            eprintln!("Error: {e}");
-                            std::process::exit(1);
-                        }
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Error: {e}");
-                    std::process::exit(1);
-                }
+            // RUNMAIN-1: run the parsed program so a multi-item file keeps its
+            // top-level functions, then call main() once if the file defines it.
+            // FIX CLI-CONTRACT-RUN-002: the program's final value is not printed.
+            // FIX Issue #81: errors from top-level code or main() exit non-zero.
+            if let Err(e) = repl.run_program(&ast) {
+                eprintln!("Error: {e}");
+                std::process::exit(1);
             }
+            Ok(())
         }
         VmMode::Bytecode => {
             // OPT-004: Bytecode VM execution path (40-60% faster than AST)
