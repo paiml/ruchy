@@ -15,7 +15,7 @@ equations:
       - "term result type ('gives') is Ticket"
       - "term declares effect 'write tickets' (RHL-001 §3.1 rule 6)"
       - "v2: attributes('file ticket') = [title: Text, label: Text]; each line of its `with … end` block names one of them and gives a value of its type (RHL-16)"
-      - "lowers_to stays the unbound marker `[U]` until RHL-4 — RHL-16 does not bind lowering"
+      - "lowers_to is the unbound marker `[U]` or a `<module>::<name>` that resolves to one function of vocab/runtime/<module>.ruchy (RHL-4, Amendment A4)"
 
 proof_obligations:
   - type: invariant
@@ -62,7 +62,7 @@ qa_gate:
   required_tests:
     - test_rhl16_v2_every_term_has_an_existing_contract
     - test_rhl16_v2_carries_every_v1_term_forward
-    - test_rhl16_v2_lowers_to_and_sigma_entity_stay_unbound
+    - test_rhl4c_v2_lowers_to_is_unbound_or_resolves_through_the_runtime
     - test_rhl16_v2_file_ticket_has_attributes_and_ticket_count_has_no_effect
     - test_rhl16_attribute_declared_is_ok
     - test_rhl16_attribute_unknown_is_v001_listing_the_declared_attributes

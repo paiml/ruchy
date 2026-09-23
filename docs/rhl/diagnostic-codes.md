@@ -30,6 +30,7 @@ When there are errors but no refusal, it exits **1**. With no errors it exits **
 | `RHL-X001` | `given`/`then` outside `example` | — |
 | `RHL-P004` | YAML is not an intent tree | — |
 | `RHL-L001` | construct not lowerable in v0 | — |
+| `RHL-L002` | term has no runtime binding | `EngineUnavailable` |
 
 Six codes were pre-registered by RHL-0 in `docs/rhl/breaks/planted/*/*/break.yaml`
 before any checker existed. Their meaning is fixed by that data: `RHL-P001`,
@@ -62,3 +63,9 @@ of such a program that the v0 lowering does not cover (a unit kind other than `j
 `give back`, `stop with`, `wait up to`, a measure argument that is not a literal, a noun
 term, a measure with no effect, a type with no v0 representation). `ruchy transpile` exits
 2 on it: the compiler declines rather than guesses. See `docs/rhl/rhl-4.md`.
+
+RHL-4 then adds `RHL-L002` (refusal `EngineUnavailable`). `ruchy compile` and `ruchy run`
+build a job with its `observe` and `apply`, which call each measure's and action's runtime
+binding (`lowers_to`). A job that reads a measure or performs an action whose `lowers_to` is
+`[U]` has nothing to run it with: `RHL-L002` names the term, at its first use, and the command
+exits 2. `ruchy transpile` emits `decide` only and still lowers such a job.

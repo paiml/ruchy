@@ -17,7 +17,7 @@ terms:
     takes: [{name: path, type: Text}]
     gives: Size
     effect: read disk
-    lowers_to: "[U]"          # bound at RHL-4
+    lowers_to: "fleet::disk_free_of"  # bound at RHL-4
     contract: contracts/rhl-fleet-disk-free-of-v2.yaml
 
   - term: disk usage of
@@ -25,7 +25,7 @@ terms:
     takes: [{name: path, type: Text}]
     gives: Size
     effect: read disk
-    lowers_to: "[U]"
+    lowers_to: "fleet::disk_usage_of"
     contract: contracts/rhl-fleet-disk-usage-of-v2.yaml
 
   - term: host

@@ -51,6 +51,9 @@ pub const X001: &str = "RHL-X001";
 /// A construct of a checked program that RHL-4's lowering to ruchy does not
 /// cover in v0; lowering declines rather than guesses (RHL-4).
 pub const L001: &str = "RHL-L001";
+/// A job that `ruchy compile` or `ruchy run` must build reads or performs a
+/// term whose `lowers_to` is `[U]`: there is nothing to run it with (RHL-4).
+pub const L002: &str = "RHL-L002";
 
 /// Every code, in family order. Append only; never renumber or reuse.
 pub const CATALOGUE: &[CodeInfo] = &[
@@ -70,6 +73,11 @@ pub const CATALOGUE: &[CodeInfo] = &[
     info(X001, "`given`/`then` outside `example`", None),
     info(P004, "YAML is not an intent tree", None),
     info(L001, "construct not lowerable in v0", None),
+    info(
+        L002,
+        "term has no runtime binding",
+        Some("EngineUnavailable"),
+    ),
 ];
 
 const fn info(code: &'static str, title: &'static str, refusal: Option<&'static str>) -> CodeInfo {

@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-23T17:57:36.736573982Z",
+  "created_at": "2026-09-23T17:57:38.147056700Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -29993,38 +29993,38 @@
     },
     "./src/rhl/mod.rs": {
       "content_hash": [
-        102,
-        208,
-        211,
-        67,
-        73,
-        173,
+        11,
+        136,
+        134,
+        55,
         212,
-        143,
-        217,
-        244,
-        145,
-        145,
-        84,
-        14,
-        75,
-        229,
-        180,
-        94,
-        230,
-        45,
-        95,
-        117,
-        92,
-        230,
-        102,
-        192,
-        249,
-        242,
-        47,
-        116,
+        154,
+        67,
+        138,
         205,
-        20
+        239,
+        210,
+        37,
+        55,
+        142,
+        166,
+        138,
+        126,
+        189,
+        189,
+        26,
+        134,
+        94,
+        61,
+        136,
+        221,
+        97,
+        239,
+        31,
+        132,
+        48,
+        128,
+        240
       ],
       "score": {
         "structural_complexity": 25.0,
@@ -30118,6 +30118,77 @@
               "Duplication"
             ],
             "issue": "Found 15 duplicate code patterns"
+          }
+        ],
+        "critical_defects_count": 0,
+        "has_critical_defects": false,
+        "has_contract_coverage": false
+      },
+      "components": {
+        "complexity_breakdown": {},
+        "duplication_sources": [],
+        "coupling_dependencies": [],
+        "doc_missing_items": [],
+        "consistency_violations": []
+      },
+      "git_context": null
+    },
+    "./src/rhl/runtime.rs": {
+      "content_hash": [
+        198,
+        79,
+        203,
+        136,
+        151,
+        89,
+        91,
+        90,
+        195,
+        235,
+        146,
+        89,
+        8,
+        14,
+        67,
+        128,
+        120,
+        88,
+        121,
+        204,
+        199,
+        145,
+        2,
+        39,
+        151,
+        222,
+        82,
+        201,
+        212,
+        144,
+        214,
+        166
+      ],
+      "score": {
+        "structural_complexity": 25.0,
+        "semantic_complexity": 20.0,
+        "duplication_ratio": 20.0,
+        "coupling_score": 15.0,
+        "doc_coverage": 10.0,
+        "consistency_score": 10.0,
+        "entropy_score": 9.5,
+        "total": 99.545456,
+        "grade": "A+",
+        "confidence": 1.0,
+        "language": "Rust",
+        "file_path": "./src/rhl/runtime.rs",
+        "penalties_applied": [
+          {
+            "source_metric": "Duplication",
+            "amount": 0.5,
+            "applied_to": [
+              "Duplication"
+            ],
+            "issue": "Found 1 duplicate code patterns"
           }
         ],
         "critical_defects_count": 0,
@@ -43769,10 +43840,10 @@
     }
   },
   "summary": {
-    "total_files": 514,
-    "avg_score": 90.253654,
+    "total_files": 515,
+    "avg_score": 90.27169,
     "grade_distribution": {
-      "A+": 188,
+      "A+": 189,
       "A": 171,
       "A-": 30,
       "B+": 29,
@@ -43784,7 +43855,7 @@
     "languages": {
       "JavaScript": 12,
       "Python": 4,
-      "Rust": 498
+      "Rust": 499
     }
   }
 }

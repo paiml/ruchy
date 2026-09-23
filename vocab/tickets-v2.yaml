@@ -20,7 +20,7 @@ terms:
     # v2: the lines of a `with … end` block after this action are attribute
     # assignments; each names one of these and gives a value of its type.
     attributes: [{name: title, type: Text}, {name: label, type: Text}]
-    lowers_to: "[U]"          # bound at RHL-4
+    lowers_to: "tickets::file_ticket"  # bound at RHL-4
     contract: contracts/rhl-tickets-file-ticket-v2.yaml
 
   - term: label ticket
@@ -28,7 +28,7 @@ terms:
     takes: [{name: ticket, type: Ticket}, {name: label, type: Text}]
     gives: Ticket
     effect: write tickets
-    lowers_to: "[U]"
+    lowers_to: "tickets::label_ticket"
     contract: contracts/rhl-tickets-label-ticket-v2.yaml
 
   - term: repo
@@ -54,7 +54,7 @@ terms:
     takes: [{name: repo, type: Text}]
     gives: Count
     effect: read tickets
-    lowers_to: "[U]"
+    lowers_to: "tickets::tickets_filed_in"
     contract: contracts/rhl-tickets-tickets-filed-in-v2.yaml
 
   # v2: the number of tickets this run files. It is read from the run's own

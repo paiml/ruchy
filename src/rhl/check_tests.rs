@@ -859,16 +859,33 @@ fn test_rhl16_v2_carries_every_v1_term_forward() {
     }
 }
 
+/// The v2 bindings RHL-4 makes (spec Amendment A4); every other v2 term is `[U]`.
+const V2_BINDINGS: &[(&str, &str)] = &[
+    ("disk free of", "fleet::disk_free_of"),
+    ("disk usage of", "fleet::disk_usage_of"),
+    ("tickets filed in", "tickets::tickets_filed_in"),
+    ("file ticket", "tickets::file_ticket"),
+    ("label ticket", "tickets::label_ticket"),
+];
+
 #[test]
-fn test_rhl16_v2_lowers_to_and_sigma_entity_stay_unbound() {
+fn test_rhl4c_v2_lowers_to_is_unbound_or_resolves_through_the_runtime() {
+    use crate::rhl::runtime::{binding_function, UNBOUND};
     for name in ["fleet", "tickets"] {
         let path = root().join(format!("vocab/{name}-v2.yaml"));
         let yaml: serde_yaml_ng::Value =
             serde_yaml_ng::from_str(&read(&path)).expect("v2 vocabulary is YAML");
         assert_eq!(yaml["sigma_entity"].as_str(), Some("[U]"), "{name} v2");
-        let terms = yaml["terms"].as_sequence().expect("terms");
-        for t in terms {
-            assert_eq!(t["lowers_to"].as_str(), Some("[U]"), "{name} v2: {t:?}");
+        for t in v2_vocab(name).terms {
+            let want = V2_BINDINGS
+                .iter()
+                .find(|(term, _)| *term == t.term)
+                .map_or(UNBOUND, |(_, b)| *b);
+            assert_eq!(t.lowers_to, want, "{name} v2: `{}`", t.term);
+            if t.lowers_to != UNBOUND {
+                binding_function(&root(), &t.lowers_to)
+                    .unwrap_or_else(|e| panic!("{name} v2: `{}`: {e}", t.term));
+            }
         }
     }
 }
