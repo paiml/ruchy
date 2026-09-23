@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/08-gx17-runner-load-alert.rhl
+class: "undeclared effect"
+expected_code: RHL-E001
+safe_fix: false

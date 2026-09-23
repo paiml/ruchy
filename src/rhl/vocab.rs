@@ -6,11 +6,11 @@
 //! ([`find_root`]). Every relative path inside the file — a term's `contract:`
 //! and an entity's `instances_from:` — resolves against that same `<root>`.
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
 /// RHL's own closed list of term kinds (§3.4).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TermKind {
     /// A value with no argument, for example `ticket title`.
@@ -26,7 +26,7 @@ pub enum TermKind {
 }
 
 /// One parameter of a term: `{name: path, type: Text}`.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Param {
     /// The parameter name.
     pub name: String,
@@ -36,7 +36,7 @@ pub struct Param {
 }
 
 /// One vocabulary term.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Term {
     /// The spelling, for example `disk free of`.
     pub term: String,
@@ -54,6 +54,11 @@ pub struct Term {
     /// For an entity, the glob that declares its instances.
     #[serde(default)]
     pub instances_from: Option<String>,
+    /// For an action (v2, RHL-16): the attributes its `with … end` block may
+    /// set, each by name with a value of its type. Empty means the action's
+    /// block is checked as ordinary statements, as in v1.
+    #[serde(default)]
+    pub attributes: Vec<Param>,
     /// The contract template, relative to the vocabulary root. A term that
     /// omits it deserializes with an empty path, which names no file, so the
     /// vocabulary is refused with RHL-C001 by name (§3.4) rather than failing
@@ -71,7 +76,7 @@ impl Term {
 }
 
 /// A loaded vocabulary file.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Vocabulary {
     /// The name, for example `fleet`.
     pub vocabulary: String,
@@ -114,14 +119,20 @@ pub fn parse_reference(words: &[&str]) -> Option<(String, u32)> {
 ///
 /// # Errors
 ///
-/// Returns a message when the file cannot be read or parsed, or when it
-/// declares a different name or version than the one asked for.
+/// Returns a message when the file cannot be read or parsed, when it breaks
+/// the vocabulary shape ([`shape_violations`]), or when it declares a
+/// different name or version than the one asked for.
 pub fn load(root: &Path, name: &str, version: u32) -> Result<Vocabulary, String> {
-    let path = root.join("vocab").join(format!("{name}-v{version}.yaml"));
-    let text = std::fs::read_to_string(&path)
-        .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
-    let vocab: Vocabulary = serde_yaml_ng::from_str(&text)
-        .map_err(|e| format!("cannot parse {}: {e}", path.display()))?;
+    let path = vocab_path(root, name, version);
+    let vocab = parse_file(&path)?;
+    let broken = shape_violations(&vocab);
+    if !broken.is_empty() {
+        return Err(format!(
+            "{} breaks the vocabulary shape: {}",
+            path.display(),
+            broken.join("; ")
+        ));
+    }
     if vocab.vocabulary != name || vocab.version != version {
         return Err(format!(
             "{} declares `{}`, not `{name} v{version}`",
@@ -130,6 +141,68 @@ pub fn load(root: &Path, name: &str, version: u32) -> Result<Vocabulary, String>
         ));
     }
     Ok(vocab)
+}
+
+/// Where vocabulary `name` version `version` lives under `root`.
+#[must_use]
+pub fn vocab_path(root: &Path, name: &str, version: u32) -> PathBuf {
+    root.join("vocab").join(format!("{name}-v{version}.yaml"))
+}
+
+/// Read and deserialize one vocabulary file. The fields and the closed list
+/// of kinds are the serde shape of [`Vocabulary`]: a missing `vocabulary`,
+/// `version`, `terms`, `term` or `kind`, an unknown kind, or an attribute or
+/// parameter without a `type` fails here.
+///
+/// # Errors
+///
+/// Returns a message when the file cannot be read or does not have the shape.
+pub fn parse_file(path: &Path) -> Result<Vocabulary, String> {
+    let text = std::fs::read_to_string(path)
+        .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
+    serde_yaml_ng::from_str(&text).map_err(|e| format!("cannot parse {}: {e}", path.display()))
+}
+
+/// The shape rules serde cannot state (`contracts/rhl-vocabulary-shape-v1.yaml`):
+/// an entity names where its instances come from, a unit gives the quantity
+/// it measures, and every spelling, parameter and attribute is non-empty and
+/// typed. One message per violation, naming the term.
+#[must_use]
+pub fn shape_violations(vocab: &Vocabulary) -> Vec<String> {
+    vocab.terms.iter().flat_map(term_violations).collect()
+}
+
+fn term_violations(t: &Term) -> Vec<String> {
+    let mut out = Vec::new();
+    if t.term.trim().is_empty() {
+        out.push("a term has an empty spelling".to_string());
+    }
+    let missing = match t.kind {
+        TermKind::Entity if blank(t.instances_from.as_deref()) => {
+            Some("entity has no `instances_from`")
+        }
+        TermKind::Unit if blank(t.gives.as_deref()) => Some("unit has no `gives`"),
+        _ => None,
+    };
+    out.extend(missing.map(|m| format!("term `{}`: {m}", t.term)));
+    for (what, p) in t
+        .takes
+        .iter()
+        .map(|p| ("parameter", p))
+        .chain(t.attributes.iter().map(|p| ("attribute", p)))
+    {
+        if p.name.trim().is_empty() || p.ty.trim().is_empty() {
+            out.push(format!(
+                "term `{}`: {what} `{}` has no name or no type",
+                t.term, p.name
+            ));
+        }
+    }
+    out
+}
+
+fn blank(value: Option<&str>) -> bool {
+    value.is_none_or(|v| v.trim().is_empty())
 }
 
 /// The terms of `vocab` whose `contract:` file does not exist under `root`.

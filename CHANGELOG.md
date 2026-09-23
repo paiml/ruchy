@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — RHL-16 and RHL-2: vocabulary v2, `ruchy fix --safe`, `ruchy vocab` (RHL-001)
+
+- `vocab/fleet-v2.yaml`, `vocab/tickets-v2.yaml`: every v1 term carried forward,
+  each with its own `-v2` contract. `file ticket` declares the attributes
+  `title` and `label`; `ticket count` (the number of tickets a run files) is a
+  measure with no effect. v1 is unchanged.
+- `docs/rhl/breaks/v2/`: the 12 valid programs rewritten so each checks clean
+  under v2, and the six planted-break classes regenerated from them. Every v2
+  break yields its pre-registered code on the mutated line, new relative to its
+  base; v2 has no known-defect exceptions. `docs/rhl/PREREGISTRATION.sha256`
+  only adds lines. Details: `docs/rhl/rhl-16-v2.md`.
+- The checker reads a `with … end` block under an action that declares
+  attributes as attribute assignments (name and type checked). An unknown
+  attribute with no near match is RHL-V001 with the declared names in
+  `expected`.
+- `ruchy fix --safe <file.rhl>` applies every safe fix, re-checks the whole
+  file, and reverts any fix after which the error count rose. It is idempotent
+  and never applies a fix with two candidates.
+- `ruchy vocab list | show | validate [--format json]`, backed by the checker's
+  own loader. `contracts/rhl-vocabulary-shape-v1.yaml` states the shape every
+  vocabulary satisfies. Details: `docs/rhl/rhl-2.md`.
+
 ### Fixed — RHLGA-1: `ruchy doc` tests no longer rewrite tracked files
 
 - `tests/cli_contract_doc.rs` ran `ruchy doc` with the repository as the

@@ -1,0 +1,25 @@
+use vocabulary fleet v2
+use vocabulary tickets v2
+
+job "gx14 ticket sweep"
+  runs on host gx14
+  every 1 hour
+  may read tickets
+  may write tickets
+
+  let filed be ticket filed in "paiml/infra"
+
+  when filed is above 5
+    file ticket in repo "paiml/infra" with
+      title "gx14 ticket sweep"
+      label "tickets"
+    end
+  end
+
+  expect ticket count is at most 1
+
+  example "gx14 ticket sweep example"
+    given filed is 7
+    then ticket count is 1
+  end
+end

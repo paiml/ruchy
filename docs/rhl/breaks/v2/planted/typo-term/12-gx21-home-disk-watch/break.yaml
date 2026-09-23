@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/12-gx21-home-disk-watch.rhl
+class: "typo'd term"
+expected_code: RHL-V002
+safe_fix: true

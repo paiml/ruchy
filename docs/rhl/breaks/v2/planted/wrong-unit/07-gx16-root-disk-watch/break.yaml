@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/07-gx16-root-disk-watch.rhl
+class: "wrong unit"
+expected_code: RHL-T001
+safe_fix: false

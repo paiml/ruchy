@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/02-gx11-docker-disk-watch.rhl
+class: "missing end"
+expected_code: RHL-P001
+safe_fix: false

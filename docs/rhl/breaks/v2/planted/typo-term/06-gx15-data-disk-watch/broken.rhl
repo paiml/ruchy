@@ -1,0 +1,25 @@
+use vocabulary fleet v2
+use vocabulary tickets v2
+
+job "gx15 data disk watch"
+  runs on host gx15
+  every 1 hour
+  may read disk
+  may write tickets
+
+  let free be disk fre of "/data"
+
+  when free is below 50 GB
+    file ticket in repo "paiml/fleet-ops" with
+      title "gx15 data disk watch"
+      label "fleet"
+    end
+  end
+
+  expect ticket count is at most 1
+
+  example "gx15 data disk watch example"
+    given free is 40 GB
+    then ticket count is 1
+  end
+end

@@ -1,0 +1,25 @@
+use vocabulary fleet v2
+use vocabulary tickets v2
+
+job "gx13 pin check"
+  runs on hosr gx13
+  every 1 hour
+  may read host
+  may write tickets
+
+  let status be pin status of "gx13"
+
+  when status is not "pinned"
+    file ticket in repo "paiml/infra" with
+      title "gx13 pin check"
+      label "pin"
+    end
+  end
+
+  expect ticket count is at most 1
+
+  example "gx13 pin check example"
+    given status is "unpinned"
+    then ticket count is 1
+  end
+end

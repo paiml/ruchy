@@ -32,3 +32,11 @@ When there are errors but no refusal, it exits **1**. With no errors it exits **
 Six codes were pre-registered by RHL-0 in `docs/rhl/breaks/planted/*/*/break.yaml`
 before any checker existed. Their meaning is fixed by that data: `RHL-P001`,
 `RHL-V002`, `RHL-V003`, `RHL-T001`, `RHL-T002` and `RHL-E001`.
+
+## The `expected` set of an unknown attribute
+
+An unknown attribute in the `with` block of an action that declares `attributes:`
+(RHL-16) has `expected` = `{"kind": "attribute", "of": "<action>", "names": [<declared
+attributes>]}`. When no declared attribute is near, the code is `RHL-V001`, which has no
+candidates. The declared names are listed in `expected.names` and not as candidates
+(RHL-2).

@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/06-gx15-data-disk-watch.rhl
+class: "wrong unit"
+expected_code: RHL-T001
+safe_fix: false

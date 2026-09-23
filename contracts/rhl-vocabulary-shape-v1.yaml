@@ -1,0 +1,162 @@
+metadata:
+  version: "1.0.0"
+  author: "RHL-2"
+  description: "RHL-2 vocabulary shape: the shape every vocab/<name>-v<N>.yaml must have for `ruchy check` to load it and `ruchy vocab validate` to pass it. One implementation: src/rhl/vocab.rs (parse_file, shape_violations, missing_contracts)."
+  crate: "ruchy"
+  references:
+    - "RHL-001 §3.4: vocabularies are versioned; every term carries a contract template"
+    - "RHL-001 §5: `ruchy vocab` lists, shows and validates vocabularies"
+    - "docs/rhl/rhl-2.md: the two verbs, the safe-fix rule and this shape"
+
+equations:
+  vocabulary_fields:
+    formula: "∀ f ∈ vocab/*.yaml : has(f, vocabulary) ∧ has(f, version ∈ ℕ) ∧ has(f, terms) ∧ ∀ t ∈ f.terms : has(t, term) ∧ has(t, kind)"
+    domain: "every vocabulary file under a vocabulary root"
+    invariants:
+      - "A file missing `vocabulary`, `version`, `terms`, or a term missing `term` or `kind`, does not deserialize; the loader refuses it and the checker reports RHL-V004"
+      - "A term's spelling is not empty"
+
+  kinds_closed:
+    formula: "∀ t : t.kind ∈ {noun, measure, action, unit, entity}"
+    domain: "every term of every vocabulary file"
+    invariants:
+      - "Any other kind fails to deserialize: RHL-V004"
+
+  every_term_contracted:
+    formula: "∀ t : exists(root / t.contract)"
+    domain: "every term; `contract` resolves against the vocabulary root"
+    invariants:
+      - "A term with no contract, or one naming a missing file, refuses the vocabulary by name: RHL-C001 (NoContractTemplate)"
+
+  parameters_typed:
+    formula: "∀ t, ∀ p ∈ t.takes ∪ t.attributes : p.name ≠ '' ∧ p.type ≠ ''"
+    domain: "every parameter and every attribute of every term"
+    invariants:
+      - "An attribute or parameter with no `type` fails to deserialize; one with an empty name or type breaks the shape: RHL-V004"
+
+  kind_specific_fields:
+    formula: "∀ t : (t.kind = entity ⇒ t.instances_from ≠ '') ∧ (t.kind = unit ⇒ t.gives ≠ '')"
+    domain: "every entity and every unit term"
+    invariants:
+      - "An entity names the glob its instances come from (plan D6)"
+      - "A unit names the quantity type it measures"
+      - "Either violation breaks the shape: RHL-V004"
+
+  one_loader:
+    formula: "load(root, n, v) = Ok ⇔ validate(root/vocab/n-vv.yaml) has no RHL-V004 finding ∧ names n vv"
+    domain: "`ruchy check` (src/rhl/check.rs Loader) and `ruchy vocab validate` (src/rhl/vocab_cli.rs)"
+    invariants:
+      - "The checker and the vocab verb call the same parse and shape functions, so they cannot disagree"
+
+proof_obligations:
+  - type: completeness
+    property: "Every field the shape requires is required by the loader"
+    formal: "missing field ⇒ RHL-V004"
+    applies_to: all
+  - type: invariant
+    property: "Term kinds are RHL's closed list"
+    formal: "kind ∉ {noun, measure, action, unit, entity} ⇒ RHL-V004"
+    applies_to: all
+  - type: completeness
+    property: "Every term carries an existing contract template"
+    formal: "¬exists(root / t.contract) ⇒ RHL-C001"
+    applies_to: all
+  - type: invariant
+    property: "Attributes are typed"
+    formal: "attribute without a type ⇒ RHL-V004"
+    applies_to: all
+  - type: invariant
+    property: "Entities have instances_from and units have gives"
+    formal: "entity without instances_from ∨ unit without gives ⇒ RHL-V004"
+    applies_to: all
+  - type: equivalence
+    property: "vocab validate and the checker share one loader"
+    formal: "shape violation ⇒ `ruchy check` of a program using it reports RHL-V004"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RHL2-SHAPE-001
+    rule: "A well-formed vocabulary passes"
+    test: "test_rhl2_shape_a_well_formed_vocabulary_passes"
+    prediction: "verified"
+    if_fails: "The shape refuses a vocabulary it should accept; every check would be V004"
+  - id: FALSIFY-RHL2-SHAPE-002
+    rule: "The four committed vocabularies have the shape"
+    test: "test_rhl2_shape_every_pre_registered_vocabulary_passes"
+    prediction: "verified"
+    if_fails: "fleet or tickets v1/v2 break the shape they are checked against"
+  - id: FALSIFY-RHL2-SHAPE-003
+    rule: "A missing required field is RHL-V004"
+    test: "test_rhl2_shape_missing_field_is_v004"
+    prediction: "verified"
+    if_fails: "A term without a spelling would load"
+  - id: FALSIFY-RHL2-SHAPE-004
+    rule: "A kind outside the closed list is RHL-V004"
+    test: "test_rhl2_shape_unknown_kind_is_v004"
+    prediction: "verified"
+    if_fails: "The kind list is open and the checker's namespaces are undefined"
+  - id: FALSIFY-RHL2-SHAPE-005
+    rule: "A term with no existing contract is RHL-C001"
+    test: "test_rhl2_shape_term_without_existing_contract_is_c001"
+    prediction: "verified"
+    if_fails: "§3.4 is violated: a term without a contract template is accepted"
+  - id: FALSIFY-RHL2-SHAPE-006
+    rule: "An untyped attribute is RHL-V004"
+    test: "test_rhl2_shape_untyped_attribute_is_v004"
+    prediction: "verified"
+    if_fails: "An attribute value could not be type-checked"
+  - id: FALSIFY-RHL2-SHAPE-007
+    rule: "An entity without instances_from is RHL-V004"
+    test: "test_rhl2_shape_entity_without_instances_from_is_v004"
+    prediction: "verified"
+    if_fails: "An entity's instances have no declared source (plan D6)"
+  - id: FALSIFY-RHL2-SHAPE-008
+    rule: "A unit without gives is RHL-V004"
+    test: "test_rhl2_shape_unit_without_gives_is_v004"
+    prediction: "verified"
+    if_fails: "A quantity's dimension is undefined and unit checks (RHL-T001) are vacuous"
+  - id: FALSIFY-RHL2-SHAPE-009
+    rule: "The checker refuses what vocab validate refuses"
+    test: "test_rhl2_shape_is_the_checkers_loader"
+    prediction: "verified"
+    if_fails: "Two implementations of the shape exist and can disagree"
+  - id: FALSIFY-RHL2-SHAPE-010
+    rule: "vocab validate reports a deleted contract as RHL-C001, exit 2"
+    test: "test_rhl2_vocab_validate_of_a_deleted_contract_is_c001_exit_2"
+    prediction: "verified"
+    if_fails: "The verb does not refuse a vocabulary the checker refuses"
+
+# The shape is a property of YAML files on disk, checked by deserialization
+# and by src/rhl/vocab.rs shape_violations. Kani symbolically executes Rust and
+# cannot reach a file system, so no obligation here is dischargeable by a Kani
+# harness. `pv validate` requires the block; each entry is marked and names the
+# falsification test that discharges it (the pattern of rhl-pre-registration-v1).
+kani_harnesses:
+  - id: KANI-RHL2-SHAPE-001
+    obligation: PO-RHL2-SHAPE-001
+    property: "NOT APPLICABLE — the vocabulary shape is a property of files on disk, outside Kani's reach"
+    bound: 1
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_rhl2_shape_missing_field_is_v004"
+  - id: KANI-RHL2-SHAPE-002
+    obligation: PO-RHL2-SHAPE-006
+    property: "NOT APPLICABLE — one-loader equivalence is a property of two call paths reading one file"
+    bound: 1
+    strategy: bounded_int
+    harness: none
+    status: declared_not_implemented
+    discharged_by: "test_rhl2_shape_is_the_checkers_loader"
+
+qa_gate:
+  id: QA-RHL2-VOCABULARY-SHAPE
+  name: "Every vocabulary has the RHL-2 shape, enforced by the checker's own loader"
+  min_coverage: 1.0
+  max_complexity: 10
+  required_tests:
+    - "test_rhl2_shape_every_pre_registered_vocabulary_passes"
+    - "test_rhl2_shape_term_without_existing_contract_is_c001"
+    - "test_rhl2_shape_entity_without_instances_from_is_v004"
+    - "test_rhl2_shape_unit_without_gives_is_v004"
+    - "test_rhl2_shape_is_the_checkers_loader"

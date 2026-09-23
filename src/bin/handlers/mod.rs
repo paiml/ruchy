@@ -22,6 +22,7 @@ pub mod execution_handler;
 pub mod new;
 pub mod parse_handler;
 pub mod repl_handler;
+pub mod rhl_handler;
 pub mod run_handler;
 pub mod transpile_handler;
 pub mod wasm_handler;

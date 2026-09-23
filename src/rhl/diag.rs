@@ -68,6 +68,14 @@ pub struct Expected {
     /// The tokens the parser would have accepted.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub tokens: Vec<String>,
+    /// The term the expected word belongs to, for example the action
+    /// `file ticket` whose attribute was expected (RHL-2).
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub of: Option<String>,
+    /// The closed set of names allowed at this position, for example the
+    /// attributes an action declares (RHL-2).
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub names: Vec<String>,
 }
 
 /// A known word close to an unknown one.

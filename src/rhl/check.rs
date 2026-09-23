@@ -93,6 +93,12 @@ impl Report {
         }
     }
 
+    /// A report of `diagnostics` alone, for tests of code that consumes reports.
+    #[cfg(test)]
+    pub(crate) fn for_test(file: &str, diagnostics: Vec<Diagnostic>) -> Self {
+        Self::new(file, diagnostics, Vec::new())
+    }
+
     /// The process exit code: 2 for a refusal, 1 for any other error, else 0.
     #[must_use]
     pub fn exit_code(&self) -> i32 {

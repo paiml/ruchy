@@ -1,0 +1,24 @@
+use vocabulary fleet v2
+use vocabulary tickets v2
+
+job "gx11 docker disk watch"
+  runs on host gx11
+  every 1 hour
+  may read disk
+  may write tickets
+
+  let used be disk usage of "/var/lib/docker"
+
+  when used is above 80 GB
+    file ticket in repo "paiml/fleet-ops" with
+      title "gx11 docker disk watch"
+      label "disk"
+    end
+
+  expect ticket count is at most 1
+
+  example "gx11 docker disk watch example"
+    given used is 95 GB
+    then ticket count is 1
+  end
+end

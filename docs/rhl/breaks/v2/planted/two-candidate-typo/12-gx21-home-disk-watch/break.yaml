@@ -1,0 +1,7 @@
+base: docs/rhl/breaks/v2/valid/12-gx21-home-disk-watch.rhl
+class: "two-candidate typo"
+expected_code: RHL-V003
+safe_fix: false
+candidates:
+  - host
+  - hour

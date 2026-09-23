@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/04-gx13-pin-check.rhl
+class: "typo'd term"
+expected_code: RHL-V002
+safe_fix: true

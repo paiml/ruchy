@@ -1,0 +1,67 @@
+# RHL-16 vocabulary v2 (RHL-001 §3.4; roadmap row RHL-16). v1 stays frozen and
+# byte-identical beside this file; v2 carries every v1 term forward unchanged,
+# each with its own v2 contract template, and adds only what the v2 valid
+# programs need (docs/rhl/rhl-16-v2.md). `lowers_to` stays the unbound marker
+# `[U]` on every term until RHL-4 binds it.
+#
+# Sigma binding: unchanged from v1 — see vocab/fleet-v1.yaml's header comment
+# (paiml-ontology.md ONT-001 v4.9 §3.1). The vocabulary FILE is the Sigma
+# entity and its TYPE is not bound; binding it is not a ruchy decision.
+sigma_entity: "[U]"
+
+vocabulary: tickets
+version: 2
+terms:
+  - term: file ticket
+    kind: action
+    takes: [{name: repo, type: Text}]
+    gives: Ticket
+    effect: write tickets
+    # v2: the lines of a `with … end` block after this action are attribute
+    # assignments; each names one of these and gives a value of its type.
+    attributes: [{name: title, type: Text}, {name: label, type: Text}]
+    lowers_to: "[U]"          # bound at RHL-4
+    contract: contracts/rhl-tickets-file-ticket-v2.yaml
+
+  - term: label ticket
+    kind: action
+    takes: [{name: ticket, type: Ticket}, {name: label, type: Text}]
+    gives: Ticket
+    effect: write tickets
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-label-ticket-v2.yaml
+
+  - term: repo
+    kind: entity
+    instances_from: org/repos/*.yaml         # closed world: only declared org repos exist
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-repo-v2.yaml
+
+  - term: ticket title
+    kind: noun
+    gives: Text
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-ticket-title-v2.yaml
+
+  - term: ticket label
+    kind: noun
+    gives: Text
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-ticket-label-v2.yaml
+
+  - term: tickets filed in
+    kind: measure
+    takes: [{name: repo, type: Text}]
+    gives: Count
+    effect: read tickets
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-tickets-filed-in-v2.yaml
+
+  # v2: the number of tickets this run files. It is read from the run's own
+  # plan (RHL-4 binds it), not from the world, so it has NO effect and needs
+  # no `may` line.
+  - term: ticket count
+    kind: measure
+    gives: Count
+    lowers_to: "[U]"
+    contract: contracts/rhl-tickets-ticket-count-v2.yaml

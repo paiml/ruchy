@@ -1,0 +1,4 @@
+base: docs/rhl/breaks/v2/valid/04-gx13-pin-check.rhl
+class: "undeclared effect"
+expected_code: RHL-E001
+safe_fix: false

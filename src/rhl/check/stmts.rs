@@ -1,9 +1,11 @@
 //! Statements: headers, bindings, actions and blocks (spec RHL-001 §3.3).
 
 use super::checker::{app_span, longest_term, Checker};
+use super::lexicon::{LexTerm, Lexicon};
 use super::types::{duration_code, mismatch, Ty, Val};
 use crate::rhl::codes;
-use crate::rhl::tree::{Action, App, Cond, Effect, Phrase, Quantity, Stmt, StmtKind};
+use crate::rhl::diag::Expected;
+use crate::rhl::tree::{Action, App, Cond, Effect, Phrase, Quantity, Span, Stmt, StmtKind, Word};
 use crate::rhl::vocab::{Param, TermKind};
 
 impl Checker<'_> {
@@ -146,9 +148,77 @@ impl Checker<'_> {
 
     fn action(&mut self, a: &Action) {
         self.action_head(a);
-        if let Some(with) = &a.with {
-            self.body(with, false);
+        let Some(with) = &a.with else { return };
+        match attributed_action(self.lex, a) {
+            Some(term) => self.attribute_block(term, with),
+            None => self.body(with, false),
         }
+    }
+
+    /// The `with` block of an action that declares `attributes:` (v2,
+    /// RHL-16): each action-shaped line is an attribute assignment; any other
+    /// statement is checked as usual.
+    fn attribute_block(&mut self, term: &LexTerm, with: &[Stmt]) {
+        for s in with {
+            match &s.kind {
+                StmtKind::Action(line) => self.attribute_line(term, line, s.span),
+                _ => self.stmt(s, false),
+            }
+        }
+    }
+
+    /// `<attribute> <value>`: the attribute must be declared by `term` and the
+    /// value must have its type.
+    fn attribute_line(&mut self, term: &LexTerm, line: &Action, span: Span) {
+        let action = &term.term.term;
+        let App::Call { phrase, args } = &line.head else {
+            let message = format!("a line in the `with` block of `{action}` names an attribute");
+            return self.error(codes::T002, app_span(&line.head), message);
+        };
+        if line.target.is_some() || line.with.is_some() {
+            let message = format!("the attribute `{}` takes only a value", phrase.text());
+            return self.error(codes::T002, span, message);
+        }
+        let attrs = &term.term.attributes;
+        match attrs.iter().find(|p| p.name == phrase.text()) {
+            Some(p) => self.check_args(&p.name, std::slice::from_ref(p), args, phrase.span),
+            None => self.unknown_attribute(term, &phrase.words),
+        }
+    }
+
+    /// An attribute `term` does not declare: V002/V003 for a near miss, as for
+    /// any unknown word, and V001 when nothing is near. V001 means "no
+    /// candidate" (the catalogue), so the declared attributes travel in the
+    /// diagnostic's `expected` set — `{kind: attribute, of, names}` — never as
+    /// candidates (RHL-2's ruling on RHL-16's open question).
+    fn unknown_attribute(&mut self, term: &LexTerm, words: &[Word]) {
+        let action = &term.term.term;
+        let pool: Vec<(String, String)> = term
+            .term
+            .attributes
+            .iter()
+            .map(|p| (p.name.clone(), term.vocab.clone()))
+            .collect();
+        let at = self.diags.len();
+        self.unknown(words, &pool, &format!("attribute of `{action}`"));
+        let Some(d) = self
+            .diags
+            .get_mut(at)
+            .filter(|d| d.code.starts_with("RHL-V"))
+        else {
+            return;
+        };
+        let names: Vec<String> = pool.into_iter().map(|(n, _)| n).collect();
+        if d.code == codes::V001 {
+            let listed: Vec<String> = names.iter().map(|n| format!("`{n}`")).collect();
+            d.message = format!("{}; `{action}` has {}", d.message, listed.join(", "));
+        }
+        d.expected = Some(Expected {
+            kind: Some("attribute".to_string()),
+            of: Some(action.clone()),
+            names,
+            ..Expected::default()
+        });
     }
 
     /// The head of an action statement must be an action term.
@@ -203,6 +273,16 @@ impl Checker<'_> {
         rest.remove(slot);
         Some(rest)
     }
+}
+
+/// The action term that heads `a`, when it declares `attributes:` (v2).
+fn attributed_action<'l>(lex: &'l Lexicon, a: &Action) -> Option<&'l LexTerm> {
+    let App::Call { phrase, .. } = &a.head else {
+        return None;
+    };
+    let (k, t) = longest_term(lex, phrase)?;
+    let whole = k == phrase.words.len() && t.term.kind == TermKind::Action;
+    (whole && !t.term.attributes.is_empty()).then_some(t)
 }
 
 /// How a diagnostic names a value: `a bare number` or its type.

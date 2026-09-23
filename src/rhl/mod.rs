@@ -14,10 +14,12 @@ pub mod check;
 pub mod cli;
 pub mod codes;
 pub mod diag;
+pub mod fix;
 pub mod fmt;
 pub mod parse;
 pub mod tree;
 pub mod vocab;
+pub mod vocab_cli;
 
 lalrpop_util::lalrpop_mod!(grammar, "/rhl/grammar.rs");
 

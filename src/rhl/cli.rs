@@ -1,5 +1,6 @@
 //! The `.rhl` side of the existing `ruchy check` and `ruchy fmt` verbs (spec
-//! RHL-001 §5: extend by file extension, add no verb; plan D8).
+//! RHL-001 §5: extend by file extension; plan D8). The new verbs `ruchy fix`
+//! and `ruchy vocab` (RHL-2) live in [`super::fix`] and [`super::vocab_cli`].
 //!
 //! Everything a verb decides lives here, in the library, so the required
 //! check (`cargo test --lib`, binding B4) covers it. The binary only prints an
@@ -91,7 +92,8 @@ fn render(reports: &[Report], format: OutputFormat) -> String {
     }
 }
 
-fn json<T: serde::Serialize>(value: &T) -> String {
+/// `value` as pretty JSON and a newline.
+pub(crate) fn json<T: serde::Serialize>(value: &T) -> String {
     match serde_json::to_string_pretty(value) {
         Ok(s) => s + "\n",
         Err(e) => format!("{{\"error\": \"cannot serialize the report: {e}\"}}\n"),
@@ -99,7 +101,7 @@ fn json<T: serde::Serialize>(value: &T) -> String {
 }
 
 /// A report for a person: its diagnostics, its unverified instances, a verdict line.
-fn text(report: &Report) -> String {
+pub(crate) fn text(report: &Report) -> String {
     let mut out = render_text(&report.diagnostics);
     for u in &report.unverified {
         out.push_str(&format!(
