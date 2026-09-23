@@ -3917,3 +3917,41 @@ roadmap:
   - parser
   - filed-by:RHLGA-1
   notes: null
+- id: MATCHSCRUT-1
+  github_issue: null
+  item_type: task
+  title: 'MATCHSCRUT-1: match Color::Green { … } parses the scrutinee Color::Green { as a struct literal'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-23T16:44:30Z
+  updated: 2026-09-23T16:44:30Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - filed-by:RHLGA-1
+  notes: null
+- id: ENUMPAT-1
+  github_issue: null
+  item_type: task
+  title: 'ENUMPAT-1: a qualified pattern A::X also matches a value B::X; pattern matching compares only the variant name'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-23T16:44:30Z
+  updated: 2026-09-23T16:44:30Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null

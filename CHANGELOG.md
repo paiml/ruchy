@@ -47,10 +47,22 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   corrected against the current API, Ruchy snippets are fenced `ruchy`,
   placeholder examples that called functions with the wrong arity or invented
   APIs were removed, and crate-private examples are fenced `text`.
+- **TESTRUN-1 (behaviour):** `ruchy test` never ran the `@test` functions of a
+  file with more than one top-level item: they were dropped with the file's
+  block scope, and calling them silently produced a message value that counted
+  as a pass. The runner now evaluates the file as a program and calls each
+  test; a failing assertion fails the run.
+- **ENUMEQ-1 (behaviour):** enum values compare by structure: `Some(3) == Some(3)`,
+  `None == None` and `assert_eq(Some(3), Some(3))` were false or failed (in 4.2.1
+  too). Interpreter and transpiled results are now checked against each other.
+- **OPTPATH-1 / QPAT-1:** the qualified constructors `Option::Some`, `Result::Ok`,
+  `Result::Err` evaluate like the unqualified ones, and qualified patterns such
+  as `Option::Some(v) =>` parse.
 - **FLAKE-1:** the `server::watcher` tests skip, with a printed reason, when the
   host has no inotify instance left; any other error still fails them.
 - Tests: `ruchy doc` tests no longer rewrite tracked `docs/` files.
-- Filed, not fixed here: BYTECODE-1, MAINUNIT-1, EMPTYBLOCK-2, TESTGATE-1.
+- Filed, not fixed here: BYTECODE-1, MAINUNIT-1, EMPTYBLOCK-2, MATCHSCRUT-1,
+  ENUMPAT-1, TESTGATE-1.
 
 ### Added — RHL-3: the YAML surface `.rhl.yaml` and `ruchy convert` (RHL-001)
 
