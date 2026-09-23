@@ -7,7 +7,9 @@
 //! the generic `Err` path, which `main` maps to 1.
 
 use anyhow::Result;
-use ruchy::rhl::cli::{convert_file, Outcome, OutputFormat};
+use ruchy::rhl::cli::{
+    compile_refusal, convert_file, is_rhl, transpile_file, Outcome, OutputFormat,
+};
 use ruchy::rhl::fix::fix_files;
 use ruchy::rhl::vocab_cli::{list_outcome, no_root, resolve_root, show_outcome, validate_outcome};
 use std::path::{Path, PathBuf};
@@ -34,6 +36,38 @@ pub fn handle_fix_command(files: &[PathBuf], safe: bool, format: &str) -> Result
 /// carried by the exit code.
 pub fn handle_convert_command(input: &Path, output: Option<&Path>, to: Option<&str>) -> Result<()> {
     finish(&convert_file(input, output, to))
+}
+
+/// `ruchy transpile`: an RHL file (`.rhl`, `.rhl.yaml`) is checked, lowered
+/// and transpiled by the library (RHL-4); any other file takes the existing
+/// ruchy path unchanged.
+///
+/// # Errors
+///
+/// Returns an error for `--emit` on a non-RHL file, or the ruchy path's error.
+pub fn handle_transpile(
+    file: &Path,
+    output: Option<&Path>,
+    minimal: bool,
+    emit: Option<&str>,
+    verbose: bool,
+) -> Result<()> {
+    if is_rhl(file) {
+        return finish(&transpile_file(file, output, emit));
+    }
+    if emit.is_some() {
+        anyhow::bail!("--emit applies to .rhl and .rhl.yaml files only");
+    }
+    super::handle_transpile_command(file, output, minimal, verbose)
+}
+
+/// `ruchy compile` on an RHL file: declined until RHL-4b (exit 2).
+///
+/// # Errors
+///
+/// Never returns one: the refusal is printed and carried by the exit code.
+pub fn handle_rhl_compile(file: &Path) -> Result<()> {
+    finish(&compile_refusal(file))
 }
 
 /// What `ruchy vocab` was asked to do.

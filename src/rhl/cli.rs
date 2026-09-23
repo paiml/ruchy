@@ -11,6 +11,7 @@
 use super::check::{check, check_yaml, Report};
 use super::diag::{self, render_text};
 use super::fmt::{format, format_source};
+use super::lower::{lower_source, lower_yaml, to_rust, LowerFailure};
 use super::vocab::find_root;
 use super::yaml::{self, is_rhl_yaml};
 use std::path::Path;
@@ -253,6 +254,89 @@ fn failed(stderr: String, exit: i32) -> Outcome {
     }
 }
 
+/// Which stage `ruchy transpile` stops at on an RHL file (spec RHL-001 §5).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Emit {
+    /// The lowered ruchy source (`--emit ruchy`).
+    Ruchy,
+    /// Rust, through ruchy's own parser and transpiler (the default).
+    Rust,
+}
+
+impl Emit {
+    /// Parse `--emit`; absent means Rust.
+    ///
+    /// # Errors
+    ///
+    /// Returns the message to print for a value other than `ruchy` or `rust`.
+    pub fn parse(value: Option<&str>) -> Result<Self, String> {
+        match value {
+            None | Some("rust") => Ok(Self::Rust),
+            Some("ruchy") => Ok(Self::Ruchy),
+            Some(other) => Err(format!("--emit must be `ruchy` or `rust`, not `{other}`\n")),
+        }
+    }
+}
+
+/// `ruchy transpile <file.rhl | file.rhl.yaml> [--emit ruchy|rust] [-o out]`
+/// (RHL-4): check, lower to ruchy, and by default transpile that ruchy to
+/// Rust with the calls `ruchy transpile x.ruchy` makes. Exit 0 on success;
+/// the check's exit code when the program does not check clean; 2 for a
+/// lowering refusal (`RHL-L001`) or an unknown `--emit`; 1 when a file cannot
+/// be read or written or ruchy rejects the lowered source. Diagnostics go to
+/// standard error, so standard output is only code.
+#[must_use]
+pub fn transpile_file(input: &Path, output: Option<&Path>, emit: Option<&str>) -> Outcome {
+    let emit = match Emit::parse(emit) {
+        Ok(e) => e,
+        Err(message) => return failed(message, 2),
+    };
+    let source = match std::fs::read_to_string(input) {
+        Ok(s) => s,
+        Err(e) => return failed(format!("{}: cannot read: {e}\n", input.display()), 1),
+    };
+    let file = input.display().to_string();
+    let root = find_root(input);
+    let lowered = if is_rhl_yaml(input) {
+        lower_yaml(&file, &source, root.as_deref())
+    } else {
+        lower_source(&file, &source, root.as_deref())
+    };
+    let ruchy = match lowered {
+        Ok(r) => r,
+        Err(f) => return failed(render_lower_failure(&f), f.exit_code()),
+    };
+    let text = match emit {
+        Emit::Ruchy => ruchy,
+        Emit::Rust => match to_rust(&ruchy) {
+            Ok(rust) => rust,
+            Err(m) => return failed(format!("{file}: {m}\n"), 1),
+        },
+    };
+    deliver(output.filter(|p| p.as_os_str() != "-"), text)
+}
+
+fn render_lower_failure(f: &LowerFailure) -> String {
+    match f {
+        LowerFailure::Check(report) => text(report),
+        LowerFailure::Refused(d) => render_text(std::slice::from_ref(d)),
+    }
+}
+
+/// `ruchy compile` on an RHL file: declined in RHL-4a, exit 2. A binary
+/// needs `observe` and `apply`, whose bindings are RHL-4b's.
+#[must_use]
+pub fn compile_refusal(input: &Path) -> Outcome {
+    failed(
+        format!(
+            "{}: `ruchy compile` does not take RHL yet: the observe/apply bindings land in RHL-4b; \
+             `ruchy transpile` gives the Rust of `decide`\n",
+            input.display()
+        ),
+        2,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -353,5 +437,42 @@ mod tests {
         );
         let err = format_file_source("x.rhl", "job \"x\"\n  every 1 hour\n").expect_err("no end");
         assert!(err.contains("error[RHL-P001]"), "{err}");
+    }
+    #[test]
+    fn test_rhl4_cli_emit_accepts_ruchy_and_rust_and_defaults_to_rust() {
+        assert_eq!(Emit::parse(None), Ok(Emit::Rust));
+        assert_eq!(Emit::parse(Some("rust")), Ok(Emit::Rust));
+        assert_eq!(Emit::parse(Some("ruchy")), Ok(Emit::Ruchy));
+        assert!(Emit::parse(Some("c")).is_err());
+    }
+
+    #[test]
+    fn test_rhl4_cli_transpile_emits_ruchy_or_rust_and_declines_a_typo() {
+        let path = corpus("docs/rhl/breaks/v2/valid/01-gx10-disk-watch.rhl");
+        let ruchy = transpile_file(&path, None, Some("ruchy"));
+        assert_eq!(ruchy.exit, 0, "{}", ruchy.stderr);
+        assert!(ruchy
+            .stdout
+            .contains("fun decide(facts: Facts) -> Vec<Action>"));
+        let rust = transpile_file(&path, None, None);
+        assert_eq!(rust.exit, 0, "{}", rust.stderr);
+        assert!(rust
+            .stdout
+            .contains("fn decide(facts: Facts) -> Vec<Action>"));
+        assert_eq!(transpile_file(&path, None, Some("c")).exit, 2);
+        let typo = corpus("docs/rhl/breaks/planted/typo-term/01-gx10-disk-watch/broken.rhl");
+        let out = transpile_file(&typo, None, None);
+        assert_eq!(out.exit, 2);
+        assert!(
+            out.stdout.is_empty() && out.stderr.contains("RHL-V002"),
+            "{out:?}"
+        );
+    }
+
+    #[test]
+    fn test_rhl4_cli_compile_of_rhl_is_declined_with_exit_2() {
+        let out = compile_refusal(Path::new("j.rhl"));
+        assert_eq!(out.exit, 2);
+        assert!(out.stderr.contains("RHL-4b"), "{}", out.stderr);
     }
 }

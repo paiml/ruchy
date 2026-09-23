@@ -32,7 +32,7 @@ use handlers::{
     handle_check_command, handle_compile_command, handle_complex_command, handle_eval_command,
     handle_file_execution, handle_fuzz_command, handle_mutations_command, handle_parse_command,
     handle_property_tests_command, handle_repl_command, handle_run_command, handle_stdin_input,
-    handle_test_command, handle_transpile_command, VmMode,
+    handle_test_command, VmMode,
 };
 /// Configuration for code formatting
 #[derive(Debug, Clone)]
@@ -114,6 +114,9 @@ enum Commands {
         /// Use minimal codegen for self-hosting (direct Rust mapping, no optimization)
         #[arg(long)]
         minimal: bool,
+        /// For .rhl/.rhl.yaml files (RHL-4): `ruchy` stops at the lowered ruchy source; `rust` (default) goes on to Rust
+        #[arg(long)]
+        emit: Option<String>,
     },
     /// Compile and run a Ruchy file
     Run {
@@ -1450,7 +1453,17 @@ fn handle_command_dispatch(
             file,
             output,
             minimal,
-        }) => handle_transpile_command(&file, output.as_deref(), minimal, verbose),
+            emit,
+        }) => handlers::rhl_handler::handle_transpile(
+            &file,
+            output.as_deref(),
+            minimal,
+            emit.as_deref(),
+            verbose,
+        ),
+        Some(Commands::Compile { ref file, .. }) if ruchy::rhl::cli::is_rhl(file) => {
+            handlers::rhl_handler::handle_rhl_compile(file)
+        }
         Some(Commands::Run { file }) => handle_run_command(&file, verbose, vm_mode),
         Some(Commands::Compile {
             file,
