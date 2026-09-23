@@ -1,0 +1,4 @@
+warning: profiles for the non root package will be ignored, specify profiles at the workspace root:
+package:   /home/noah/src/ruchy/ruchy-wasm/Cargo.toml
+workspace: /home/noah/src/ruchy/Cargo.toml
+    Blocking waiting for file lock on build directory

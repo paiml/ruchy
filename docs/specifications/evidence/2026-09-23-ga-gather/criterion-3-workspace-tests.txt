@@ -1,0 +1,317 @@
+# cargo test --workspace --no-fail-fast at 270a065c (+ c95afead docs-only), CARGO_TARGET_DIR=/mnt/nvme-raid0/targets/ruchy
+# exit 101
+passed 27573 failed 285 ignored 2773
+## failing binaries (failed count, binary)
+194 tests/probar_wasm_tests.rs
+25 tests/lang_comp_suite.rs
+13 tests/cli_interactive_validation.rs
+11 tests/http_server_cli.rs
+5 tests/bug_033_test_attribute_invalid_rust.rs
+4 tests/quality_001_self_receiver.rs
+4 tests/parser_094_path_separator.rs
+3 tests/stdlib005_compute_hash.rs
+3 tests/cli_contract_sovereign.rs
+2 tests/release_hygiene.rs
+2 tests/parser_defect_010_trait_associated_types.rs
+2 tests/parser_094_property_tests.rs
+2 tests/issue_113_transpiler_type_inference.rs
+2 tests/http_watch_mode.rs
+1 tests/transpiler_defect_016_string_field_borrowing_GREEN.rs
+1 tests/transpiler_defect_015_mutable_string_function_scope_GREEN.rs
+1 tests/tooling_002_renacer_integration.rs
+1 tests/sqlite_001_parser_grammar.rs
+1 tests/runtime_builtins_core.rs
+1 tests/readme_validation.rs
+1 tests/property_eval_builtin.rs
+1 tests/perf_002c_dead_code_elimination.rs
+1 tests/issue_114_usize_casting.rs
+1 tests/dogfood_gates_declared.rs
+1 tests/cli_unify_003_comprehensive_suite.rs
+1 tests/cli_contract_prove.rs
+1 tests/bug_032_range_function_not_transpiled.rs
+## failing tests
+cli_accepts_stdin_input
+cli_error_messages_are_actionable
+cli_eval_flag_executes_inline
+cli_handles_long_running_scripts
+cli_handles_memory_intensive_operations
+cli_run_command_executes_file
+cli_supports_output_redirection
+cli_test_command_runs_tests
+cli_undefined_variable_error_is_clear
+lang_comp::closures::test_langcomp_010_01_basic_closures_example_file
+lang_comp::data_structures::test_langcomp_006_01_arrays_example_file
+lang_comp::data_structures::test_langcomp_006_02_dictionaries_example_file
+lang_comp::data_structures::test_langcomp_006_03_tuples_example_file
+lang_comp::data_structures::test_langcomp_006_04_destructuring_example_file
+lang_comp::error_handling::test_langcomp_012_01_result_type_example_file
+lang_comp::error_handling::test_langcomp_012_02_option_type_example_file
+lang_comp::error_handling::test_langcomp_012_03_try_catch_example_file
+lang_comp::error_handling::test_langcomp_012_04_error_propagation_example_file
+lang_comp::methods::test_langcomp_008_01_string_methods_example_file
+lang_comp::methods::test_langcomp_008_02_array_methods_example_file
+lang_comp::methods::test_langcomp_008_03_integer_methods_example_file
+lang_comp::methods::test_langcomp_008_04_chaining_methods_example_file
+lang_comp::pattern_matching::test_langcomp_009_01_literal_patterns_example_file
+lang_comp::pattern_matching::test_langcomp_009_02_variable_patterns_example_file
+lang_comp::pattern_matching::test_langcomp_009_03_tuple_patterns_example_file
+lang_comp::pattern_matching::test_langcomp_009_04_destructuring_example_file
+lang_comp::ranges::test_langcomp_011_01_basic_ranges_example_file
+lang_comp::ranges::test_langcomp_011_02_range_iteration_example_file
+lang_comp::ranges::test_langcomp_011_03_range_variables_example_file
+lang_comp::ranges::test_langcomp_011_04_range_patterns_example_file
+lang_comp::type_annotations::test_langcomp_007_01_basic_types_example_file
+lang_comp::type_annotations::test_langcomp_007_02_function_types_example_file
+lang_comp::type_annotations::test_langcomp_007_03_collection_types_example_file
+lang_comp::type_annotations::test_langcomp_007_04_type_inference_example_file
+non_tty_omits_interactive_features
+property_module_paths_preserve_colon_colon
+property_nested_module_paths_preserve_all_colons
+property_tests::prop_mixed_receivers
+property_tests::prop_owned_self_preserved
+repl_detects_interactive_tty
+repl_interactive_arithmetic
+repl_interactive_error_recovery
+src/backend/compiler.rs - backend::compiler::compile_source_to_binary_with_context (line 118) - compile
+src/backend/module_loader.rs - backend::module_loader::ParsedModule::has_dependencies (line 360)
+src/backend/module_loader.rs - backend::module_loader::ParsedModule::name (line 336)
+src/backend/module_resolver.rs - backend::module_resolver::ModuleResolver::resolve_imports (line 98)
+src/backend/transpiler/actors.rs - backend::transpiler::actors::Transpiler::transpile_ask (line 151)
+src/backend/transpiler/actors.rs - backend::transpiler::actors::Transpiler::transpile_command (line 187)
+src/backend/transpiler/actors.rs - backend::transpiler::actors::Transpiler::transpile_send (line 129)
+src/backend/transpiler/codegen_minimal.rs - backend::transpiler::codegen_minimal::MinimalCodeGen::gen_expr (line 12)
+src/backend/transpiler/codegen_minimal.rs - backend::transpiler::codegen_minimal::MinimalCodeGen::gen_program (line 315)
+src/backend/transpiler/dataframe_builder.rs - backend::transpiler::dataframe_builder::Transpiler::is_dataframe_builder (line 112)
+src/backend/transpiler/dataframe_builder.rs - backend::transpiler::dataframe_builder::Transpiler::transpile_dataframe_builder (line 18)
+src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::is_dataframe_expr (line 320)
+src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::transpile_dataframe_method (line 163)
+src/backend/transpiler/dataframe.rs - backend::transpiler::dataframe::Transpiler::transpile_dataframe_operation (line 66)
+src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_async_block (line 65)
+src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_async_lambda (line 82)
+src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_await (line 23)
+src/backend/transpiler/expressions_helpers/async_ops.rs - backend::transpiler::expressions::expressions_helpers::async_ops::Transpiler::transpile_throw (line 99)
+src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_object_literal (line 129)
+src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_range (line 106)
+src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_struct_literal (line 179)
+src/backend/transpiler/expressions_helpers/collections.rs - backend::transpiler::expressions::expressions_helpers::collections::Transpiler::transpile_tuple (line 91)
+src/backend/transpiler/expressions_helpers/field_access.rs - backend::transpiler::expressions::expressions_helpers::field_access::Transpiler::transpile_index_access (line 206)
+src/backend/transpiler/expressions_helpers/field_access.rs - backend::transpiler::expressions::expressions_helpers::field_access::Transpiler::transpile_slice (line 232)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_array_init (line 484)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_assign (line 113)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_assign (line 126)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_compound_assign (line 315)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_post_decrement (line 471)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_post_increment (line 443)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_pre_decrement (line 457)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_pre_increment (line 429)
+src/backend/transpiler/expressions.rs - backend::transpiler::expressions::Transpiler::transpile_string_interpolation (line 73)
+src/bench/mod.rs - bench (line 9) - compile
+src/bench/stats.rs - bench::stats::Statistics::std_dev (line 147)
+src/error_recovery_enhanced.rs - error_recovery_enhanced::ErrorRecoveryContext::recovery_statistics (line 228)
+src/frontend/parser/utils_helpers/string_interpolation.rs - frontend::parser::utils::utils_helpers::string_interpolation::parse_string_interpolation (line 12)
+src/middleend/environment.rs - middleend::environment::TypeEnv::bind (line 80)
+src/middleend/environment.rs - middleend::environment::TypeEnv::extend (line 105)
+src/middleend/environment.rs - middleend::environment::TypeEnv::free_vars (line 120)
+src/middleend/environment.rs - middleend::environment::TypeEnv::generalize (line 143)
+src/middleend/environment.rs - middleend::environment::TypeEnv::lookup (line 92)
+src/middleend/infer.rs - middleend::infer::InferenceContext::apply (line 1329)
+src/middleend/infer.rs - middleend::infer::InferenceContext::solve (line 1316)
+src/middleend/mir/builder.rs - middleend::mir::builder::MirBuilder::new (line 22)
+src/middleend/mir/lower.rs - middleend::mir::lower::LoweringContext::new (line 24)
+src/middleend/mir/optimize.rs - middleend::mir::optimize::DeadCodeElimination::new (line 23)
+src/middleend/mir/optimize.rs - middleend::mir::optimize::DeadCodeElimination::new (line 31)
+src/middleend/mir/optimize.rs - middleend::mir::optimize::DeadCodeElimination::new (line 39)
+src/middleend/unify.rs - middleend::unify::Unifier::apply (line 40)
+src/middleend/unify.rs - middleend::unify::Unifier::solve (line 149)
+src/middleend/unify.rs - middleend::unify::Unifier::substitution (line 27)
+src/middleend/unify.rs - middleend::unify::Unifier::unify (line 60)
+src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::incomplete_if_expr (line 227)
+src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::is_sync_token (line 280)
+src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::malformed_let_binding (line 200)
+src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::missing_function_name (line 128)
+src/parser/error_recovery.rs - parser::error_recovery::ErrorRecovery::should_continue (line 255)
+src/parser/error_recovery.rs - parser::error_recovery::RecoveryRules::select_strategy (line 309)
+src/parser/error_recovery.rs - parser::error_recovery::RecoveryRules::synthesize_ast (line 340)
+src/proving/counterexample.rs - proving::counterexample::Counterexample::add_assignment (line 119)
+src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 102)
+src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 78)
+src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 86)
+src/proving/counterexample.rs - proving::counterexample::Counterexample::new (line 94)
+src/proving/prover.rs - proving::prover::InteractiveProver::apply_tactic (line 104)
+src/proving/prover.rs - proving::prover::InteractiveProver::get_available_tactics (line 91)
+src/proving/prover.rs - proving::prover::InteractiveProver::load_script (line 77)
+src/proving/prover.rs - proving::prover::InteractiveProver::new (line 18)
+src/proving/prover.rs - proving::prover::InteractiveProver::new (line 26)
+src/proving/prover.rs - proving::prover::InteractiveProver::new (line 34)
+src/proving/prover.rs - proving::prover::InteractiveProver::set_ml_suggestions (line 64)
+src/proving/prover.rs - proving::prover::InteractiveProver::set_timeout (line 51)
+src/proving/refinement.rs - proving::refinement::LiquidTypeInference::add_constraint (line 491)
+src/proving/refinement.rs - proving::refinement::LiquidTypeInference::infer (line 454)
+src/proving/refinement.rs - proving::refinement::RefinementChecker::check_invariant (line 379)
+src/proving/refinement.rs - proving::refinement::RefinementChecker::declare_var (line 288)
+src/proving/refinement.rs - proving::refinement::RefinementChecker::set_backend (line 275)
+src/proving/refinement.rs - proving::refinement::RefinementType::bounded_int (line 41)
+src/proving/smt.rs - proving::smt::ProofAutomation::prove_equivalence (line 381)
+src/proving/smt.rs - proving::smt::ProofAutomation::prove_implication (line 367)
+src/proving/smt.rs - proving::smt::SmtQuery::add_assumption (line 276)
+src/proving/smt.rs - proving::smt::SmtQuery::add_var (line 263)
+src/proving/smt.rs - proving::smt::SmtSolver::assert (line 123)
+src/proving/smt.rs - proving::smt::SmtSolver::declare_fun (line 106)
+src/proving/smt.rs - proving::smt::SmtSolver::declare_var (line 92)
+src/proving/smt.rs - proving::smt::SmtSolver::new (line 46)
+src/proving/smt.rs - proving::smt::SmtSolver::new (line 54)
+src/proving/smt.rs - proving::smt::SmtSolver::new (line 62)
+src/proving/smt.rs - proving::smt::SmtSolver::set_timeout (line 79)
+src/proving/tactics.rs - proving::tactics::TacticLibrary::all_tactics (line 102)
+src/proving/tactics.rs - proving::tactics::TacticLibrary::default (line 44)
+src/quality/coverage.rs - quality::coverage::CoverageCollector::collect (line 202) - compile
+src/quality/coverage.rs - quality::coverage::CoverageCollector::with_source_dir (line 187)
+src/quality/coverage.rs - quality::coverage::CoverageReport::add_file (line 144)
+src/quality/coverage.rs - quality::coverage::FileCoverage::branch_coverage_percentage (line 48)
+src/quality/coverage.rs - quality::coverage::FileCoverage::line_coverage_percentage (line 23)
+src/quality/formatter_config.rs - quality::formatter_config::FormatterConfig::from_toml (line 117)
+src/quality/formatter.rs - quality::formatter::Formatter::format (line 61)
+src/quality/gates.rs - quality::gates::QualityGateEnforcer::enforce_gates (line 203)
+src/quality/gates.rs - quality::gates::QualityGateEnforcer::load_config (line 178)
+src/quality/gates.rs - quality::gates::QualityGateEnforcer::new (line 166)
+src/quality/linter.rs - quality::linter::Linter::auto_fix (line 772)
+src/quality/linter.rs - quality::linter::Linter::lint (line 217)
+src/quality/linter.rs - quality::linter::Linter::set_rules (line 177)
+src/quality/mod.rs - quality (line 30)
+src/quality/mod.rs - quality (line 58) - compile
+src/quality/mod.rs - quality (line 73) - compile
+src/quality/mod.rs - quality::QualityGates::check (line 242)
+src/quality/mod.rs - quality::QualityGates::update_metrics (line 225)
+src/quality/mod.rs - quality::QualityGates::with_thresholds (line 210)
+src/quality/ruchy_coverage.rs - quality::ruchy_coverage::RuchyCoverage::line_coverage (line 52)
+src/quality/ruchy_coverage.rs - quality::ruchy_coverage::RuchyCoverage::new (line 24)
+src/quality/ruchy_coverage.rs - quality::ruchy_coverage::RuchyCoverage::new (line 32)
+src/quality/scoring.rs - quality::scoring::DependencyTracker::is_stale (line 196)
+src/quality/scoring.rs - quality::scoring::Grade::from_score (line 54)
+src/reporting/ascii.rs - reporting::ascii::sparkline (line 188)
+src/runtime/actor.rs - runtime::actor::ActorContext::find_actor (line 246)
+src/runtime/actor.rs - runtime::actor::ActorContext::stop_child (line 205)
+src/runtime/actor.rs - runtime::actor::ActorRef::ask (line 64)
+src/runtime/actor.rs - runtime::actor::ActorRef::send (line 39)
+src/runtime/assessment.rs - runtime::assessment::GradeReport::add_task_grade (line 670)
+src/runtime/assessment.rs - runtime::assessment::GradeReport::mark_invalid (line 656)
+src/runtime/assessment.rs - runtime::assessment::GradingEngine::grade_submission (line 220)
+src/runtime/completion.rs - runtime::completion::CompletionEngine::get_completions (line 153)
+src/runtime/completion.rs - runtime::completion::CompletionKind::prefix (line 39)
+src/runtime/eval_array.rs - runtime::eval_array::eval_array_concat (line 454)
+src/runtime/eval_array.rs - runtime::eval_array::eval_array_difference (line 576)
+src/runtime/eval_array.rs - runtime::eval_array::eval_array_enumerate (line 213)
+src/runtime/eval_array.rs - runtime::eval_array::eval_array_flatten (line 476)
+src/runtime/eval_array.rs - runtime::eval_array::eval_array_intersection (line 543)
+src/runtime/eval_array.rs - runtime::eval_array::eval_array_sort (line 613)
+src/runtime/eval_array.rs - runtime::eval_array::eval_array_union (line 503)
+src/runtime/eval_builtin.rs - runtime::eval_builtin::eval_timestamp (line 925)
+src/runtime/eval_string_methods.rs - runtime::eval_string_methods::eval_string_as_bytes (line 275)
+src/runtime/eval_string_methods.rs - runtime::eval_string_methods::eval_string_format (line 310)
+src/runtime/inspect.rs - runtime::inspect::Inspector::consume_budget (line 221)
+src/runtime/inspect.rs - runtime::inspect::Inspector::with_style (line 165)
+src/runtime/interpreter_control_flow.rs - runtime::interpreter_control_flow::Interpreter::eval_assign (line 382)
+src/runtime/lazy.rs - runtime::lazy::LazyIterator::collect (line 233)
+src/runtime/lazy.rs - runtime::lazy::LazyIterator::from_vec (line 152)
+src/runtime/lazy.rs - runtime::lazy::LazyIterator::skip (line 211)
+src/runtime/lazy.rs - runtime::lazy::LazyIterator::take (line 193)
+src/runtime/lazy.rs - runtime::lazy::LazyValue::computed (line 39)
+src/runtime/magic.rs - runtime::magic::MagicRegistry::execute (line 84)
+src/runtime/magic.rs - runtime::magic::MagicRegistry::is_magic (line 71)
+src/runtime/magic.rs - runtime::magic::MagicRegistry::register (line 58)
+src/runtime/mod.rs - runtime (line 30) - compile
+src/runtime/mod.rs - runtime (line 39)
+src/runtime/safe_arena.rs - runtime::safe_arena::SafeArena::new (line 24)
+src/runtime/safe_arena.rs - runtime::safe_arena::SafeArena::new (line 32)
+src/runtime/safe_arena.rs - runtime::safe_arena::SafeArena::reset (line 66)
+src/runtime/transaction.rs - runtime::transaction::TransactionalState::arena (line 301)
+src/runtime/transaction.rs - runtime::transaction::TransactionalState::begin_transaction (line 106)
+src/runtime/transaction.rs - runtime::transaction::TransactionalState::new (line 71)
+src/runtime/transaction.rs - runtime::transaction::TransactionalState::new (line 79)
+src/runtime/transaction.rs - runtime::transaction::TransactionalState::new (line 87)
+src/runtime/transaction.rs - runtime::transaction::TransactionLog::log (line 395)
+src/stdlib/fs.rs - stdlib::fs::copy (line 184) - compile
+src/stdlib/fs.rs - stdlib::fs::create_dir_all (line 118) - compile
+src/stdlib/fs.rs - stdlib::fs::create_dir (line 96) - compile
+src/stdlib/fs.rs - stdlib::fs (line 7) - compile
+src/stdlib/fs.rs - stdlib::fs::metadata (line 254) - compile
+src/stdlib/fs.rs - stdlib::fs::read_dir (line 229) - compile
+src/stdlib/fs.rs - stdlib::fs::read (line 73) - compile
+src/stdlib/fs.rs - stdlib::fs::read_to_string (line 28) - compile
+src/stdlib/fs.rs - stdlib::fs::remove_dir (line 162) - compile
+src/stdlib/fs.rs - stdlib::fs::remove_file (line 140) - compile
+src/stdlib/fs.rs - stdlib::fs::rename (line 207) - compile
+src/stdlib/fs.rs - stdlib::fs::write (line 51) - compile
+src/stdlib/html.rs - stdlib::html::HtmlDocument::query_selector (line 110)
+src/stdlib/html.rs - stdlib::html::HtmlDocument::select (line 88)
+src/stdlib/html.rs - stdlib::html::HtmlElement::attr (line 264)
+src/stdlib/html.rs - stdlib::html::HtmlElement::html (line 288)
+src/stdlib/html.rs - stdlib::html::HtmlElement::text (line 249)
+src/stdlib/trueno_bridge.rs - stdlib::trueno_bridge::kahan_sum (line 53)
+src/transpiler/canonical_ast.rs - transpiler::canonical_ast::AstNormalizer::normalize (line 127)
+src/transpiler/canonical_ast.rs - transpiler::canonical_ast::CoreExpr::is_closed (line 378)
+src/transpiler/canonical_ast.rs - transpiler::canonical_ast::CoreExpr::is_normalized (line 359)
+src/transpiler/provenance.rs - transpiler::provenance::ProvenanceTracker::finish (line 135)
+src/transpiler/provenance.rs - transpiler::provenance::TraceDiffer::find_divergence (line 224)
+src/transpiler/reference_interpreter.rs - transpiler::reference_interpreter::Environment::lookup (line 94)
+src/transpiler/reference_interpreter.rs - transpiler::reference_interpreter::Environment::push (line 69)
+src/transpiler/reference_interpreter.rs - transpiler::reference_interpreter::ReferenceInterpreter::get_trace (line 422)
+src/utils/common_patterns.rs - utils::common_patterns::ProgressIndicator::finish (line 235)
+src/wasm/component.rs - wasm::component::ComponentBuilder::add_source (line 351)
+src/wasm/component.rs - wasm::component::ComponentBuilder::new_with_config (line 332)
+src/wasm/demo_converter.rs - wasm::demo_converter::NotebookCell::code (line 22)
+src/wasm/deployment.rs - wasm::deployment::Deployer::add_artifact (line 183)
+src/wasm/deployment.rs - wasm::deployment::Deployer::new (line 167)
+src/wasm/portability.rs - wasm::portability::PortabilityAnalyzer::new_with_config (line 277)
+src/wasm/wit.rs - wasm::wit::WitGenerator::add_type_mapping (line 444)
+src/wasm/wit.rs - wasm::wit::WitGenerator::generate (line 345)
+src/wasm/wit.rs - wasm::wit::WitGenerator::new_with_config (line 315)
+test_072_tool_notebook
+test_bug_032_red_range_in_expression
+test_bug_033_red_multiple_tests
+test_bug_033_red_property_tests_command
+test_bug_033_red_test_with_complex_description
+test_bug_033_red_test_with_description
+test_bug_033_red_transpiled_output_format
+test_bug_syntax_001_attribute_error_message
+test_compute_hash
+test_compute_hash_basic
+test_compute_hash_empty_file
+test_compute_hash_known_md5
+test_contracts_check_with_threshold
+test_defect_015_04_string_field_concatenation_RED
+test_defect_016_01_string_field_concatenation_red
+test_graceful_shutdown_on_sigterm
+test_http002_mime_css
+test_http002_mime_html
+test_http002_mime_javascript
+test_http002_mime_json
+test_http002_mime_wasm
+test_http003_html_coop_header
+test_http003_wasm_coep_header
+test_http003_wasm_coop_header
+test_infra_destroy_missing_file
+test_issue_113_bug_3_vector_return_type
+test_issue_113_full_reproducer_bench_008
+test_issue_114_usize_bench_008_end_to_end
+test_parser_010_book_example
+test_parser_010_default_implementation
+test_parser_094_issue_137_reproduction
+test_parser_094_module_function_call_simple
+test_parser_094_module_function_with_args
+test_parser_094_nested_module_path
+test_perf_002c_dce_async_function_not_eliminated
+test_pmat_092_cargo_lock_present_in_package_list
+test_pmat_092_pmat_work_not_in_package_list
+test_pmat_136_pending_allowlist_is_empty_once_the_gate_lands
+test_prove_missing_file
+test_quality_001_04_owned_self_consuming
+test_quality_001_05_mixed_receiver_types
+test_readme_required_sections
+test_red_ruchy_serve_requires_directory
+test_red_ruchy_serve_shows_startup_message
+test_red_ruchy_serve_starts_server
+test_serve_with_watch_starts_successfully
+test_sqlite_163_associated_types
+test_tooling_002_01_renacer_installed
+test_version_is_5_0

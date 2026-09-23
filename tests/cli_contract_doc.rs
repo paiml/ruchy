@@ -5,8 +5,14 @@ use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
 
-fn ruchy_cmd() -> Command {
-    assert_cmd::cargo::cargo_bin_cmd!("ruchy")
+/// `ruchy doc` writes `docs/<stem>.<ext>` under the current directory, so
+/// every command here runs in a directory the test owns. Taking the directory
+/// as an argument makes a test that forgets it fail to compile (RHLGA-1: the
+/// cwd used to be the repository, and each run rewrote tracked files there).
+fn ruchy_cmd(dir: &std::path::Path) -> Command {
+    let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
+    cmd.current_dir(dir);
+    cmd
 }
 
 #[test]
@@ -15,7 +21,7 @@ fn test_doc_simple_file() {
     let test_file = temp_dir.path().join("simple.ruchy");
     fs::write(&test_file, "fn add(a, b) { a + b }").unwrap();
 
-    ruchy_cmd()
+    ruchy_cmd(temp_dir.path())
         .arg("doc")
         .arg(&test_file)
         .assert()
@@ -24,7 +30,8 @@ fn test_doc_simple_file() {
 
 #[test]
 fn test_doc_missing_file() {
-    ruchy_cmd()
+    let temp_dir = TempDir::new().unwrap();
+    ruchy_cmd(temp_dir.path())
         .arg("doc")
         .arg("nonexistent.ruchy")
         .assert()
@@ -37,7 +44,7 @@ fn test_doc_format_html() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, "fn add(a, b) { a + b }").unwrap();
 
-    ruchy_cmd()
+    ruchy_cmd(temp_dir.path())
         .arg("doc")
         .arg(&test_file)
         .arg("--format")
@@ -52,7 +59,7 @@ fn test_doc_format_markdown() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, "fn add(a, b) { a + b }").unwrap();
 
-    ruchy_cmd()
+    ruchy_cmd(temp_dir.path())
         .arg("doc")
         .arg(&test_file)
         .arg("--format")
@@ -67,10 +74,31 @@ fn test_doc_private_option() {
     let test_file = temp_dir.path().join("test.ruchy");
     fs::write(&test_file, "fn add(a, b) { a + b }").unwrap();
 
-    ruchy_cmd()
+    ruchy_cmd(temp_dir.path())
         .arg("doc")
         .arg(&test_file)
         .arg("--private")
         .assert()
         .code(predicate::ne(2));
+}
+
+/// The output lands in the command's directory, not beside the input file.
+#[test]
+fn test_rhlga_1_doc_output_stays_in_current_dir() {
+    let temp_dir = TempDir::new().unwrap();
+    let test_file = temp_dir.path().join("simple.ruchy");
+    fs::write(&test_file, "fn add(a, b) { a + b }").unwrap();
+
+    ruchy_cmd(temp_dir.path())
+        .arg("doc")
+        .arg(&test_file)
+        .assert()
+        .success();
+    assert!(temp_dir
+        .path()
+        .join("docs")
+        .read_dir()
+        .unwrap()
+        .next()
+        .is_some());
 }

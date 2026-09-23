@@ -1,0 +1,4 @@
+fun d(a: i64) -> i64 { a }
+fun main() {
+  println("y")
+}

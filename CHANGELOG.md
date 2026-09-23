@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — RHLGA-1: `ruchy doc` tests no longer rewrite tracked files
+
+- `tests/cli_contract_doc.rs` ran `ruchy doc` with the repository as the
+  working directory, and `ruchy doc` writes `docs/<stem>.<ext>` there, so every
+  workspace test run rewrote `docs/simple.html`, `docs/test.html` and
+  `docs/test.md`. The test helper now takes the directory to run in, and the
+  three generated files are removed.
+- `docs/rhl/rhlga-1-plan.md`: the plan for RHL-001's remaining rows and the
+  5.0.0 release, ruled by a three-lane quorum. GA measurements so far are in
+  `docs/specifications/evidence/2026-09-23-ga-gather/`.
+
 ### Changed — CIPOOL-1: CI pays for release-class work on release tags only
 
 - Coverage runs on `v*` tags and manual dispatch only. `ci.yml` opts into
