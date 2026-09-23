@@ -206,7 +206,7 @@ fn test_rhl3_the_fixture_is_accepted() {
 }
 
 #[test]
-fn test_rhl3_malformed_yaml_is_p001_with_the_yaml_line_and_column() {
+fn test_rhl3_malformed_yaml_is_p004_with_the_yaml_line_and_column() {
     let e = refused("rhl: 1\ndecls: [\n  - {unit: \n");
     assert!(e.line >= 2, "{e:?}");
     let d = diagnostic("x.rhl.yaml", &e);
@@ -378,7 +378,7 @@ fn test_rhl3_check_on_yaml_runs_the_same_checker() {
 }
 
 #[test]
-fn test_rhl3_check_on_malformed_yaml_is_one_p001() {
+fn test_rhl3_check_on_malformed_yaml_is_one_p004() {
     let rep = check_yaml("x.rhl.yaml", "rhl: 1\ndecls: {\n", None);
     assert_eq!(rep.diagnostics.len(), 1);
     assert_eq!(rep.diagnostics[0].code, "RHL-P004");

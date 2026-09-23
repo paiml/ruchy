@@ -178,7 +178,7 @@ fn test_rhl3_cli_convert_round_trips_both_directions() {
 }
 
 #[test]
-fn test_rhl3_cli_convert_malformed_yaml_is_p001_exit_2() {
+fn test_rhl3_cli_convert_malformed_yaml_is_p004_exit_2() {
     let dir = tempfile::tempdir().expect("temp dir");
     let bad = dir.path().join("x.rhl.yaml");
     std::fs::write(&bad, "rhl: 1\ndecls: [\n").expect("write");

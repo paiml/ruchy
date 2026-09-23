@@ -151,7 +151,7 @@ fn demote_unsafe_fixes(d: &mut Diagnostic, file: &str, source: &str, root: Optio
 ///
 /// Diagnostics carry [`LineSpan::UNKNOWN`] and no fixes: their positions and
 /// edits would be in the RHL text, which is not the file checked. A text that
-/// is not a tree is one `RHL-P001` at the YAML's line and column.
+/// is not a tree is one `RHL-P004` at the YAML's line and column.
 #[must_use]
 pub fn check_yaml(file: &str, source: &str, root: Option<&Path>) -> Report {
     let program = match super::yaml::from_yaml(source) {
