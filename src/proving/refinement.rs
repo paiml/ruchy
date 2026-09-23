@@ -270,28 +270,10 @@ impl RefinementChecker {
         }
     }
     /// Set SMT backend
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::refinement::RefinementChecker;
-    ///
-    /// let mut instance = RefinementChecker::new();
-    /// let result = instance.set_backend();
-    /// // Verify behavior
-    /// ```
     pub fn set_backend(&mut self, backend: SmtBackend) {
         self.backend = backend;
     }
     /// Declare variable
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::refinement::RefinementChecker;
-    ///
-    /// let mut instance = RefinementChecker::new();
-    /// let result = instance.declare_var();
-    /// // Verify behavior
-    /// ```
     pub fn declare_var(&mut self, name: &str, ty: RefinementType) {
         self.env.insert(name.to_string(), ty);
     }
@@ -374,15 +356,6 @@ impl RefinementChecker {
         }
     }
     /// Check invariant preservation
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::refinement::RefinementChecker;
-    ///
-    /// let mut instance = RefinementChecker::new();
-    /// let result = instance.check_invariant();
-    /// // Verify behavior
-    /// ```
     pub fn check_invariant(&self, invariant: &str, body: &str) -> Result<bool> {
         let mut solver = SmtSolver::new(self.backend);
         solver.assert(invariant);
@@ -449,15 +422,6 @@ impl LiquidTypeInference {
         }
     }
     /// Infer refinement type
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::refinement::LiquidTypeInference;
-    ///
-    /// let mut instance = LiquidTypeInference::new();
-    /// let result = instance.infer();
-    /// // Verify behavior
-    /// ```
     pub fn infer(&mut self, expr: &str) -> Result<RefinementType> {
         match expr {
             s if s.parse::<i64>().is_ok() => {
@@ -486,15 +450,6 @@ impl LiquidTypeInference {
         }
     }
     /// Add constraint
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::refinement::LiquidTypeInference;
-    ///
-    /// let mut instance = LiquidTypeInference::new();
-    /// let result = instance.add_constraint();
-    /// // Verify behavior
-    /// ```
     pub fn add_constraint(&mut self, constraint: &str) {
         self.constraints.push(constraint.to_string());
     }

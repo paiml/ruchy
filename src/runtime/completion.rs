@@ -34,15 +34,6 @@ pub enum CompletionKind {
 }
 impl CompletionKind {
     /// Get display prefix (complexity: 1)
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::completion::CompletionKind;
-    ///
-    /// let mut instance = CompletionKind::new();
-    /// let result = instance.prefix();
-    /// // Verify behavior
-    /// ```
     pub fn prefix(&self) -> &str {
         match self {
             CompletionKind::Variable => "var",
@@ -148,15 +139,6 @@ impl CompletionEngine {
         }
     }
     /// Get completions for input (complexity: 8)
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::completion::CompletionEngine;
-    ///
-    /// let mut instance = CompletionEngine::new();
-    /// let result = instance.get_completions();
-    /// // Verify behavior
-    /// ```
     /// # Examples
     ///
     /// ```ignore

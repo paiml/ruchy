@@ -17,15 +17,6 @@ pub struct Notebook {
     pub nbformat_minor: u32,
 }
 impl NotebookCell {
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::demo_converter::NotebookCell;
-    ///
-    /// let mut instance = NotebookCell::new();
-    /// let result = instance.code();
-    /// // Verify behavior
-    /// ```
     pub fn code(source: String) -> Self {
         Self {
             cell_type: "code".to_string(),

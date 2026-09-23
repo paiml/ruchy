@@ -49,15 +49,6 @@ pub enum Grade {
     F,      // [0.00, 0.60) - Fundamental problems
 }
 impl Grade {
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::scoring::Grade;
-    ///
-    /// let mut instance = Grade::new();
-    /// let result = instance.from_score();
-    /// // Verify behavior
-    /// ```
     pub fn from_score(value: f64) -> Self {
         match value {
             v if v >= 0.97 => Grade::APlus,
@@ -191,15 +182,6 @@ impl DependencyTracker {
     pub fn track_dependency(&mut self, file: PathBuf, dependency: PathBuf) {
         self.dependencies.entry(file).or_default().push(dependency);
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::scoring::DependencyTracker;
-    ///
-    /// let mut instance = DependencyTracker::new();
-    /// let result = instance.is_stale();
-    /// // Verify behavior
-    /// ```
     pub fn is_stale(&self, file: &PathBuf) -> bool {
         if let Some(dependencies) = self.dependencies.get(file) {
             for dep in dependencies {

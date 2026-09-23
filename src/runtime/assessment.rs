@@ -215,15 +215,6 @@ impl GradingEngine {
         }
     }
     /// Grade a student submission against an assignment
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::assessment::GradingEngine;
-    ///
-    /// let mut instance = GradingEngine::new();
-    /// let result = instance.grade_submission();
-    /// // Verify behavior
-    /// ```
     pub fn grade_submission(
         &mut self,
         assignment: &Assignment,
@@ -651,29 +642,11 @@ impl GradeReport {
             is_valid: true,
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::assessment::GradeReport;
-    ///
-    /// let mut instance = GradeReport::new();
-    /// let result = instance.mark_invalid();
-    /// // Verify behavior
-    /// ```
     pub fn mark_invalid(&mut self, reason: &str) {
         self.is_valid = false;
         self.violations.push(reason.to_string());
         self.final_grade = 0.0;
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::assessment::GradeReport;
-    ///
-    /// let mut instance = GradeReport::new();
-    /// let result = instance.add_task_grade();
-    /// // Verify behavior
-    /// ```
     pub fn add_task_grade(&mut self, grade: TaskGrade) {
         self.task_grades.push(grade);
     }

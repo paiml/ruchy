@@ -64,15 +64,6 @@ impl Environment {
             bindings: Vec::new(),
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::reference_interpreter::Environment;
-    ///
-    /// let mut instance = Environment::new();
-    /// let result = instance.push();
-    /// // Verify behavior
-    /// ```
     pub fn push(&mut self, value: Value) {
         self.bindings.push(value);
     }
@@ -89,15 +80,6 @@ impl Environment {
         self.bindings.pop();
     }
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::reference_interpreter::Environment;
-    ///
-    /// let mut instance = Environment::new();
-    /// let result = instance.lookup();
-    /// // Verify behavior
-    /// ```
     pub fn lookup(&self, index: &DeBruijnIndex) -> Option<&Value> {
         // De Bruijn indices count from the end
         let pos = self.bindings.len().checked_sub(index.0 + 1)?;
@@ -418,14 +400,6 @@ impl ReferenceInterpreter {
     }
     /// Get execution trace for debugging
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::transpiler::reference_interpreter::get_trace;
-    ///
-    /// let result = get_trace(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn get_trace(&self) -> &[String] {
         &self.trace
     }

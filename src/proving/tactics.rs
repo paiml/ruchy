@@ -39,15 +39,6 @@ pub struct TacticSuggestion {
 }
 impl TacticLibrary {
     /// Create default tactic library
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::tactics::TacticLibrary;
-    ///
-    /// let mut instance = TacticLibrary::new();
-    /// let result = instance.default();
-    /// // Verify behavior
-    /// ```
     pub fn default() -> Self {
         let mut tactics = HashMap::new();
         // Add basic tactics
@@ -97,15 +88,6 @@ impl TacticLibrary {
         }
     }
     /// Get all tactics
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::tactics::TacticLibrary;
-    ///
-    /// let mut instance = TacticLibrary::new();
-    /// let result = instance.all_tactics();
-    /// // Verify behavior
-    /// ```
     pub fn all_tactics(&self) -> Vec<&dyn Tactic> {
         self.tactics
             .values()

@@ -230,15 +230,6 @@ impl ProgressIndicator {
             println!("📊 {}: {}/{}", self.label, self.current, self.total);
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::utils::common_patterns::ProgressIndicator;
-    ///
-    /// let mut instance = ProgressIndicator::new();
-    /// let result = instance.finish();
-    /// // Verify behavior
-    /// ```
     pub fn finish(&self) {
         println!(
             "✅ {} completed: {}/{}",

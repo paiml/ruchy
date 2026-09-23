@@ -53,41 +53,14 @@ impl MagicRegistry {
         registry
     }
     /// Register a new magic command
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::magic::MagicRegistry;
-    ///
-    /// let mut instance = MagicRegistry::new();
-    /// let result = instance.register();
-    /// // Verify behavior
-    /// ```
     pub fn register(&mut self, name: &str, command: Box<dyn MagicCommand>) {
         self.commands.insert(name.to_string(), command);
     }
     /// Check if input is a magic command
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::magic::MagicRegistry;
-    ///
-    /// let mut instance = MagicRegistry::new();
-    /// let result = instance.is_magic();
-    /// // Verify behavior
-    /// ```
     pub fn is_magic(&self, input: &str) -> bool {
         input.starts_with('%') || input.starts_with("%%")
     }
     /// Execute a magic command
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::magic::MagicRegistry;
-    ///
-    /// let mut instance = MagicRegistry::new();
-    /// let result = instance.execute();
-    /// // Verify behavior
-    /// ```
     pub fn execute(&mut self, repl: &mut Repl, input: &str) -> Result<MagicResult> {
         if !self.is_magic(input) {
             return Err(anyhow!("Not a magic command"));

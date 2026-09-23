@@ -23,27 +23,11 @@ impl Unifier {
     }
     /// Get the current substitution
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::unify::substitution;
-    ///
-    /// let result = substitution(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn substitution(&self) -> &Substitution {
         &self.subst
     }
     /// Apply current substitution to a type
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::unify::apply;
-    ///
-    /// let result = apply(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn apply(&self, ty: &MonoType) -> MonoType {
         ty.substitute(&self.subst)
     }
@@ -55,15 +39,6 @@ impl Unifier {
     /// # Errors
     ///
     /// Returns an error if the operation fails
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::unify::Unifier;
-    ///
-    /// let mut instance = Unifier::new();
-    /// let result = instance.unify();
-    /// // Verify behavior
-    /// ```
     pub fn unify(&mut self, t1: &MonoType, t2: &MonoType) -> Result<()> {
         let t1 = self.apply(t1);
         let t2 = self.apply(t2);
@@ -145,14 +120,6 @@ impl Unifier {
     }
     /// Solve a type variable to its final type
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::unify::solve;
-    ///
-    /// let result = solve(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn solve(&self, var: &TyVar) -> MonoType {
         self.subst
             .get(var)

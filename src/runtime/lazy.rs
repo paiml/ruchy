@@ -34,15 +34,6 @@ use crate::runtime::interpreter::Value;
 use anyhow::Result;
 impl LazyValue {
     /// Create a new computed lazy value
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::lazy::LazyValue;
-    ///
-    /// let mut instance = LazyValue::new();
-    /// let result = instance.computed();
-    /// // Verify behavior
-    /// ```
     pub fn computed(value: Value) -> Self {
         LazyValue::Computed(value)
     }
@@ -147,15 +138,6 @@ enum LazyIterState {
 }
 impl LazyIterator {
     /// Create a new lazy iterator from a collection
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::lazy::LazyIterator;
-    ///
-    /// let mut instance = LazyIterator::new();
-    /// let result = instance.from_vec();
-    /// // Verify behavior
-    /// ```
     pub fn from_vec(values: Vec<Value>) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Source(values)),
@@ -189,14 +171,6 @@ impl LazyIterator {
     }
     /// Take first n elements
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::lazy::take;
-    ///
-    /// let result = take(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn take(self, count: usize) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Take {
@@ -207,14 +181,6 @@ impl LazyIterator {
     }
     /// Skip first n elements
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::lazy::skip;
-    ///
-    /// let result = skip(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn skip(self, count: usize) -> Self {
         LazyIterator {
             state: RefCell::new(LazyIterState::Skip {
@@ -228,15 +194,6 @@ impl LazyIterator {
     /// # Errors
     ///
     /// Returns an error if any transformation fails
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::runtime::lazy::LazyIterator;
-    ///
-    /// let mut instance = LazyIterator::new();
-    /// let result = instance.collect();
-    /// // Verify behavior
-    /// ```
     pub fn collect(&self) -> Result<Vec<Value>> {
         match &*self.state.borrow() {
             LazyIterState::Source(values) => Ok(values.clone()),

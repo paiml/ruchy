@@ -88,27 +88,11 @@ impl TypeEnv {
     }
     /// Look up a name in the environment
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::environment::lookup;
-    ///
-    /// let result = lookup("example");
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn lookup(&self, name: &str) -> Option<&TypeScheme> {
         self.bindings.get(name)
     }
     /// Extend the environment with a new binding (functional style)
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::environment::extend;
-    ///
-    /// let result = extend(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn extend(&self, name: impl Into<String>, scheme: TypeScheme) -> Self {
         let mut new_env = self.clone();
         new_env.bind(name, scheme);
@@ -116,14 +100,6 @@ impl TypeEnv {
     }
     /// Get free type variables in the environment
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::environment::free_vars;
-    ///
-    /// let result = free_vars(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn free_vars(&self) -> Vec<crate::middleend::types::TyVar> {
         let mut vars = Vec::new();
         for scheme in self.bindings.values() {
@@ -139,14 +115,6 @@ impl TypeEnv {
     }
     /// Generalize a monomorphic type to a type scheme
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::environment::generalize;
-    ///
-    /// let result = generalize(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn generalize(&self, ty: MonoType) -> TypeScheme {
         let ty_vars = ty.free_vars();
         let env_vars = self.free_vars();

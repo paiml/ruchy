@@ -310,15 +310,6 @@ impl WitGenerator {
         }
     }
     /// Create a new WIT generator with specific config
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::wit::WitGenerator;
-    ///
-    /// let mut instance = WitGenerator::new();
-    /// let result = instance.new_with_config();
-    /// // Verify behavior
-    /// ```
     pub fn new_with_config(config: WitConfig) -> Self {
         Self {
             config,
@@ -340,15 +331,6 @@ impl WitGenerator {
         self
     }
     /// Generate WIT interface from component
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::wit::WitGenerator;
-    ///
-    /// let mut instance = WitGenerator::new();
-    /// let result = instance.generate();
-    /// // Verify behavior
-    /// ```
     pub fn generate(
         &mut self,
         component: &super::component::WasmComponent,
@@ -439,15 +421,6 @@ impl WitGenerator {
         self.generate_from_source("")
     }
     /// Add a custom type mapping
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::wit::WitGenerator;
-    ///
-    /// let mut instance = WitGenerator::new();
-    /// let result = instance.add_type_mapping();
-    /// // Verify behavior
-    /// ```
     pub fn add_type_mapping(&mut self, ruchy_type: String, wit_type: String) {
         self.config.type_mappings.insert(ruchy_type, wit_type);
     }

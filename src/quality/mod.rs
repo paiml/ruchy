@@ -205,30 +205,12 @@ impl QualityGates {
             thresholds: QualityThresholds::default(),
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::mod::QualityGates;
-    ///
-    /// let mut instance = QualityGates::new();
-    /// let result = instance.with_thresholds();
-    /// // Verify behavior
-    /// ```
     pub fn with_thresholds(thresholds: QualityThresholds) -> Self {
         Self {
             metrics: QualityMetrics::default(),
             thresholds,
         }
     }
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::mod::QualityGates;
-    ///
-    /// let mut instance = QualityGates::new();
-    /// let result = instance.update_metrics();
-    /// // Verify behavior
-    /// ```
     pub fn update_metrics(&mut self, metrics: QualityMetrics) {
         self.metrics = metrics;
     }
@@ -237,15 +219,6 @@ impl QualityGates {
     /// # Errors
     ///
     /// Returns an error containing `QualityReport::Fail` if any quality gates are violated
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::quality::mod::QualityGates;
-    ///
-    /// let mut instance = QualityGates::new();
-    /// let result = instance.check();
-    /// // Verify behavior
-    /// ```
     pub fn check(&self) -> Result<QualityReport, QualityReport> {
         let mut violations = Vec::new();
         if self.metrics.test_coverage < self.thresholds.min_test_coverage {

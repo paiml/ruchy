@@ -19,30 +19,6 @@ impl Default for DeadCodeElimination {
 impl DeadCodeElimination {
     /// Create a new DCE pass
     #[must_use]
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::mir::optimize::new;
-    ///
-    /// let result = new(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::mir::optimize::new;
-    ///
-    /// let result = new(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::middleend::mir::optimize::new;
-    ///
-    /// let result = new(());
-    /// assert_eq!(result, Ok(()));
-    /// ```
     pub fn new() -> Self {
         Self {
             live_locals: HashSet::new(),

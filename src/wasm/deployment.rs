@@ -162,14 +162,6 @@ pub enum DeploymentStatus {
 }
 impl Deployer {
     /// Create a new deployer
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::deployment::Deployer;
-    ///
-    /// let instance = Deployer::new();
-    /// // Verify behavior
-    /// ```
     pub fn new(target: DeploymentTarget, config: DeploymentConfig) -> Self {
         Self {
             config,
@@ -178,15 +170,6 @@ impl Deployer {
         }
     }
     /// Add a deployment artifact
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::wasm::deployment::Deployer;
-    ///
-    /// let mut instance = Deployer::new();
-    /// let result = instance.add_artifact();
-    /// // Verify behavior
-    /// ```
     pub fn add_artifact(&mut self, artifact: DeploymentArtifact) {
         self.artifacts.push(artifact);
     }
