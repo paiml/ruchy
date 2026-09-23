@@ -3786,7 +3786,12 @@ roadmap:
   created: 2026-09-23T14:34:36Z
   updated: 2026-09-23T14:34:36Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'Repro (ruchy-book ch19 form): class Calculator { value: i32  new(initial: i32) { self.value = initial }  pub fun add(&mut self, amount: i32) { self.value = self.value + amount }  pub fun get(&self) -> i32 { self.value } }; let mut calc = Calculator::new(10); calc.add(5); println(calc.get()) printed ''Runtime error: Undefined variable: self'' under ruchy run and ruchy -e; must print 15'
+  - 'Root cause: Interpreter::instantiate_class_with_constructor (src/runtime/interpreter_types_class.rs) popped the constructor scope and only then called lookup_variable("self") to copy the field assignments back, so every field-assignment new(...) body failed after running; the init(...) path (instantiate_class_with_args, used by Point(...)) binds a Value::Class and never reads self back, which is why init worked'
+  - 'Fix: run_constructor_body binds self + params, evaluates the body, reads self while the scope is still pushed, and pops on both the success and the error path'
+  - 'tests/classnew_1_class_new_constructor.rs: book example prints 15 (run and -e), two-field constructor, declared field defaults survive, named constructor new square(size) via Rect::square, init form unchanged, &mut self method on let mut binding, constructor body reads self, reference semantics (let b = a; b.set(9); a.v == 9), constructor error reported, transpiled book example compiles with rustc and prints 15'
+  - 'The eval_assign doctest (src/runtime/interpreter_control_flow.rs, Point::new(10, 20) with self.x = x) passes'
   phases: []
   subtasks: []
   estimated_effort: null
@@ -3794,4 +3799,4 @@ roadmap:
   - kind:code
   - runtime
   - filed-by:RHLGA-1
-  notes: null
+  notes: 'Transpiled path was not affected: ruchy transpile emits fn new(initial: i32) -> Self { Self { value: initial } } and rustc runs it to 15. Fields with no declared default and no assignment in new(...) start as nil in the interpreter (not a per-type zero value).'
