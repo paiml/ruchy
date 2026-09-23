@@ -13,11 +13,13 @@
 pub mod check;
 pub mod cli;
 pub mod codes;
+pub mod contract;
 pub mod diag;
 pub mod fix;
 pub mod fmt;
 pub mod lower;
 pub mod parse;
+pub mod receipt;
 pub mod runtime;
 pub mod tree;
 pub mod vocab;

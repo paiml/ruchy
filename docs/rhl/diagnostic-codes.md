@@ -32,6 +32,7 @@ When there are errors but no refusal, it exits **1**. With no errors it exits **
 | `RHL-L001` | construct not lowerable in v0 | — |
 | `RHL-L002` | term has no runtime binding | `EngineUnavailable` |
 | `RHL-X002` | example leaves a fact unset | — |
+| `RHL-C002` | unit contract could not be emitted | `NoContractTemplate` |
 
 Six codes were pre-registered by RHL-0 in `docs/rhl/breaks/planted/*/*/break.yaml`
 before any checker existed. Their meaning is fixed by that data: `RHL-P001`,
@@ -79,3 +80,12 @@ an example that leaves a fact the job reads unset is refused with `RHL-X002`, wh
 the example and the fact, and the command exits 2. A `given` over anything but a fact or
 a `let` bound directly to one, and a `then` or `expect` over anything but a plan measure,
 are `RHL-L001`. See `docs/rhl/rhl-5.md`.
+
+## Diagnostics of the unit contract
+
+RHL-5b adds `RHL-C002` (refusal `NoContractTemplate`), appended to the catalogue in the
+contract family `RHL-C`. `ruchy compile` writes the job's unit contract,
+`<out>.contract.yaml`, before it builds the binary (§9.3: every compiled unit carries a
+`pv` contract, or the compiler refuses by name). When the contract cannot be written,
+`RHL-C002` names the path and the reason, no binary is built, and the command exits 2.
+See `docs/rhl/rhl-5.md`.

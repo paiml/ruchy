@@ -261,6 +261,8 @@ pub enum Emit {
     Ruchy,
     /// Rust, through ruchy's own parser and transpiler (the default).
     Rust,
+    /// The job's unit contract, a `pv` contract (`--emit contract`, RHL-5b).
+    Contract,
 }
 
 impl Emit {
@@ -273,7 +275,10 @@ impl Emit {
         match value {
             None | Some("rust") => Ok(Self::Rust),
             Some("ruchy") => Ok(Self::Ruchy),
-            Some(other) => Err(format!("--emit must be `ruchy` or `rust`, not `{other}`\n")),
+            Some("contract") => Ok(Self::Contract),
+            Some(other) => Err(format!(
+                "--emit must be `ruchy`, `rust` or `contract`, not `{other}`\n"
+            )),
         }
     }
 }
@@ -291,13 +296,19 @@ pub fn transpile_file(input: &Path, output: Option<&Path>, emit: Option<&str>) -
         Ok(e) => e,
         Err(message) => return failed(message, 2),
     };
+    if emit == Emit::Contract {
+        return match contract_of(input) {
+            Ok(c) => deliver(output.filter(|p| p.as_os_str() != "-"), c),
+            Err(out) => out,
+        };
+    }
     let ruchy = match lower_file(input, Form::Decide) {
         Ok(r) => r,
         Err(out) => return out,
     };
     let file = input.display().to_string();
     let text = match emit {
-        Emit::Ruchy => ruchy,
+        Emit::Ruchy | Emit::Contract => ruchy,
         Emit::Rust => match to_rust(&ruchy) {
             Ok(rust) => rust,
             Err(m) => return failed(format!("{file}: {m}\n"), 1),
@@ -338,11 +349,82 @@ pub fn compile_file(input: &Path, output: &Path) -> Outcome {
         Ok(r) => r,
         Err(out) => return out,
     };
+    let contract = match write_contract(input, output) {
+        Ok(c) => c,
+        Err(out) => return out,
+    };
+    let built = build_job(input, &ruchy, output);
+    if built.exit != 0 {
+        return built;
+    }
+    let receipt = super::receipt::build(input, &ruchy, &contract, run_examples(input));
+    match receipt
+        .and_then(|r| std::fs::write(receipt_path(output), r.to_json()).map_err(|e| e.to_string()))
+    {
+        Ok(()) => built,
+        Err(e) => failed(
+            format!("{}: cannot write the receipt: {e}\n", input.display()),
+            1,
+        ),
+    }
+}
+
+/// `<out>.contract.yaml`: where `ruchy compile -o <out>` writes the unit contract.
+#[must_use]
+pub fn contract_path(output: &Path) -> std::path::PathBuf {
+    suffixed(output, ".contract.yaml")
+}
+
+/// `<out>.receipt.json`: where `ruchy compile -o <out>` writes the receipt.
+#[must_use]
+pub fn receipt_path(output: &Path) -> std::path::PathBuf {
+    suffixed(output, ".receipt.json")
+}
+
+fn suffixed(output: &Path, suffix: &str) -> std::path::PathBuf {
+    let mut name = output.as_os_str().to_os_string();
+    name.push(suffix);
+    name.into()
+}
+
+/// The unit contract of `input` (RHL-5b), or the outcome to print.
+fn contract_of(input: &Path) -> Result<String, Outcome> {
+    let source = std::fs::read_to_string(input)
+        .map_err(|e| failed(format!("{}: cannot read: {e}\n", input.display()), 1))?;
+    let file = input.display().to_string();
+    let root = find_root(input);
+    let emitted = if is_rhl_yaml(input) {
+        super::contract::unit_contract_yaml(&file, &source, root.as_deref())
+    } else {
+        super::contract::unit_contract(&file, &source, root.as_deref())
+    };
+    emitted.map_err(|f| failed(render_lower_failure(&f), f.exit_code()))
+}
+
+/// Emit and write `<out>.contract.yaml` before anything is built: a unit
+/// without its contract is refused with `RHL-C002` (§9.3).
+fn write_contract(input: &Path, output: &Path) -> Result<String, Outcome> {
+    let contract = contract_of(input)?;
+    let path = contract_path(output);
+    std::fs::write(&path, &contract).map_err(|e| {
+        let m = format!(
+            "{}: error[{}]: unit contract could not be emitted: cannot write {}: {e}\n",
+            input.display(),
+            super::codes::C002,
+            path.display()
+        );
+        failed(m, 2)
+    })?;
+    Ok(contract)
+}
+
+/// Build the lowered `ruchy` to the binary `output`.
+fn build_job(input: &Path, ruchy: &str, output: &Path) -> Outcome {
     let options = crate::backend::CompileOptions {
         output: output.to_path_buf(),
         ..crate::backend::CompileOptions::default()
     };
-    match crate::backend::compile_source_to_binary(&ruchy, &options) {
+    match crate::backend::compile_source_to_binary(ruchy, &options) {
         Ok(_) => Outcome {
             stdout: String::new(),
             stderr: format!("{}: built {}\n", input.display(), output.display()),
@@ -363,7 +445,11 @@ pub fn run_file(input: &Path, apply: bool) -> Outcome {
         Err(e) => return failed(format!("cannot create a build directory: {e}\n"), 1),
     };
     let bin = dir.path().join("job");
-    let built = compile_file(input, &bin);
+    let ruchy = match lower_file(input, Form::Program) {
+        Ok(r) => r,
+        Err(out) => return out,
+    };
+    let built = build_job(input, &ruchy, &bin);
     if built.exit != 0 {
         return built;
     }
@@ -400,19 +486,10 @@ pub struct ExampleResult {
 /// fails or the build fails; the check's code, or 2 for a lowering refusal.
 #[must_use]
 pub fn test_file(input: &Path, format: OutputFormat) -> Outcome {
-    let ruchy = match lower_file(input, Form::Tests) {
+    let results = match run_examples(input) {
         Ok(r) => r,
         Err(out) => return out,
     };
-    let names = match example_names_of(input) {
-        Ok(n) => n,
-        Err(out) => return out,
-    };
-    let stdout = match build_and_run(input, &ruchy) {
-        Ok(s) => s,
-        Err(out) => return out,
-    };
-    let results = example_results(&names, &stdout);
     let exit = i32::from(results.iter().any(|r| !r.ok));
     let file = input.display().to_string();
     let text = match format {
@@ -424,6 +501,15 @@ pub fn test_file(input: &Path, format: OutputFormat) -> Outcome {
         stderr: String::new(),
         exit,
     }
+}
+
+/// Lower `input`'s examples to the test program, build it, run it, and read
+/// each example's result: the runner `ruchy test` and the receipt share.
+fn run_examples(input: &Path) -> Result<Vec<ExampleResult>, Outcome> {
+    let ruchy = lower_file(input, Form::Tests)?;
+    let names = example_names_of(input)?;
+    let stdout = build_and_run(input, &ruchy)?;
+    Ok(example_results(&names, &stdout))
 }
 
 fn example_names_of(input: &Path) -> Result<Vec<String>, Outcome> {

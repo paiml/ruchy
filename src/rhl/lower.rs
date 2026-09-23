@@ -1386,6 +1386,7 @@ fn is_rhl5(kind: &StmtKind) -> bool {
 mod examples;
 
 pub use examples::example_names;
+pub(crate) use examples::{plan_measure_fn, PLAN_MEASURES};
 
 #[cfg(test)]
 #[path = "lower_tests.rs"]

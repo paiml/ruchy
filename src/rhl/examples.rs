@@ -24,6 +24,12 @@ use crate::rhl::tree::{
 /// the world), and the action term whose occurrences in the plan it counts.
 pub(crate) const PLAN_MEASURES: &[(&str, &str)] = &[("ticket count", "file ticket")];
 
+/// The ruchy function that computes plan measure `term`: `plan_ticket_count`.
+/// The unit contract's formulas name the same function (RHL-5b).
+pub(crate) fn plan_measure_fn(term: &str) -> String {
+    format!("plan_{}", snake(term))
+}
+
 /// A refusal with its code: `RHL-L001`, or `RHL-X002` for an unset fact.
 type Coded = (&'static str, Refusal);
 
@@ -101,7 +107,7 @@ impl Lowerer<'_> {
         if !self.plan_used.contains(term) {
             self.plan_used.push(term);
         }
-        let expr = format!("plan_{}({plan})", snake(term));
+        let expr = format!("{}({plan})", plan_measure_fn(term));
         Ok(Operand::place(expr, Ty::Count))
     }
 
@@ -303,8 +309,8 @@ impl Lowerer<'_> {
             .find(|(t, _)| *t == term)
             .map_or("", |(_, a)| a);
         let head = format!(
-            "// {term}: the number of `{action}` actions in the plan\nfun plan_{}(plan: &Vec<Action>) -> i64 {{\n",
-            snake(term)
+            "// {term}: the number of `{action}` actions in the plan\nfun {}(plan: &Vec<Action>) -> i64 {{\n",
+            plan_measure_fn(term)
         );
         let Some(v) = self.variants.iter().find(|v| v.term == action) else {
             return format!("{head}    0\n}}\n");

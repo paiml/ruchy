@@ -57,6 +57,9 @@ pub const L001: &str = "RHL-L001";
 /// A job that `ruchy compile` or `ruchy run` must build reads or performs a
 /// term whose `lowers_to` is `[U]`: there is nothing to run it with (RHL-4).
 pub const L002: &str = "RHL-L002";
+/// `ruchy compile` could not emit or write the job's unit contract; a unit
+/// without its contract is not built (§9.3, RHL-5b).
+pub const C002: &str = "RHL-C002";
 
 /// Every code, in family order. Append only; never renumber or reuse.
 pub const CATALOGUE: &[CodeInfo] = &[
@@ -82,6 +85,11 @@ pub const CATALOGUE: &[CodeInfo] = &[
         Some("EngineUnavailable"),
     ),
     info(X002, "example leaves a fact unset", None),
+    info(
+        C002,
+        "unit contract could not be emitted",
+        Some("NoContractTemplate"),
+    ),
 ];
 
 const fn info(code: &'static str, title: &'static str, refusal: Option<&'static str>) -> CodeInfo {
