@@ -8,9 +8,10 @@
 //! printed nothing with exit 0.
 //!
 //! Semantics pinned here: after the top-level items run (once, in order),
-//! `main()` is called once when the file defines it. A file that already
-//! calls `main()` as a top-level statement drives `main` itself, so the
-//! runner does not call it a second time. A file without `main` only runs
+//! `main()` is called once when the file defines it. A file whose top-level
+//! code (anything other than a definition) contains a call to `main` drives
+//! `main` itself, so the runner does not call it a second time. A call inside
+//! another function's body does not count: that function only runs if called. A file without `main` only runs
 //! its top-level code.
 
 use std::fs;
@@ -109,7 +110,54 @@ fn test_runmain_1_default_file_path_calls_main() {
     assert_cmd::cargo::cargo_bin_cmd!("ruchy")
         .current_dir(dir.path())
         .arg(&file)
+        .timeout(std::time::Duration::from_secs(10))
         .assert()
+        .success()
+        .stdout("y\n");
+}
+
+const MAIN_Y: &str = "fun main() {\n  println(\"y\")\n  7\n}\n";
+
+#[test]
+fn test_runmain_1_let_bound_main_call_runs_main_once() {
+    run_source(&format!("{MAIN_Y}let r = main()\n"))
+        .success()
+        .stdout("y\n");
+}
+
+#[test]
+fn test_runmain_1_main_call_as_argument_runs_main_once() {
+    run_source(&format!("{MAIN_Y}println(main())\n"))
+        .success()
+        .stdout("y\n7\n");
+}
+
+#[test]
+fn test_runmain_1_main_call_inside_top_level_if_runs_main_once() {
+    run_source(&format!("{MAIN_Y}let c = true\nif c {{ main() }}\n"))
+        .success()
+        .stdout("y\n");
+}
+
+#[test]
+fn test_runmain_1_main_call_before_definition_in_block_runs_once() {
+    run_source(&format!(
+        "fun d(a: i64) -> i64 {{ a }}\n{MAIN_Y}{{\n  let v = main()\n}}\n"
+    ))
+    .success()
+    .stdout("y\n");
+}
+
+#[test]
+fn test_runmain_1_main_call_only_in_uncalled_helper_auto_calls_once() {
+    run_source(&format!("fun helper() {{\n  main()\n}}\n{MAIN_Y}"))
+        .success()
+        .stdout("y\n");
+}
+
+#[test]
+fn test_runmain_1_main_call_only_in_top_level_lambda_auto_calls_once() {
+    run_source(&format!("{MAIN_Y}let f = || main()\n"))
         .success()
         .stdout("y\n");
 }

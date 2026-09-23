@@ -152,10 +152,10 @@ fn top_level_items(program: &Expr) -> &[Expr] {
     }
 }
 
-/// Program defines `main` and does not call it at top level (complexity: 2)
+/// Program defines `main` and its top-level code does not call it (complexity: 2)
 fn should_call_main(program: &Expr) -> bool {
     let items = top_level_items(program);
-    items.iter().any(is_main_definition) && !items.iter().any(is_main_call)
+    items.iter().any(is_main_definition) && !items.iter().any(calls_main)
 }
 
 /// `fun main(...) { ... }` (complexity: 1)
@@ -163,10 +163,48 @@ fn is_main_definition(item: &Expr) -> bool {
     matches!(&item.kind, ExprKind::Function { name, .. } if name == "main")
 }
 
-/// `main(...)` as a statement (complexity: 1)
-fn is_main_call(item: &Expr) -> bool {
-    matches!(&item.kind, ExprKind::Call { func, .. }
-        if matches!(&func.kind, ExprKind::Identifier(name) if name == "main"))
+/// AST kinds whose bodies run only when called, so a `main()` inside them does
+/// not drive `main` from the top level.
+const DEFINITION_KINDS: &[&str] = &[
+    "Function",
+    "Lambda",
+    "AsyncLambda",
+    "Class",
+    "Impl",
+    "Actor",
+    "Trait",
+    "Struct",
+    "TupleStruct",
+    "Enum",
+    "Effect",
+];
+
+/// RUNMAIN-1: running `item` evaluates a call to `main` somewhere outside a
+/// definition body. The AST is walked generically through its serde tree so
+/// every expression kind is covered (complexity: 1).
+fn calls_main(item: &Expr) -> bool {
+    serde_json::to_value(item).is_ok_and(|ast| ast_calls_main(&ast))
+}
+
+/// Serialized-AST walk behind [`calls_main`] (complexity: 5)
+fn ast_calls_main(node: &serde_json::Value) -> bool {
+    match node {
+        serde_json::Value::Object(map) => {
+            if DEFINITION_KINDS.iter().any(|kind| map.contains_key(*kind)) {
+                return false;
+            }
+            map.get("Call").is_some_and(is_main_callee) || map.values().any(ast_calls_main)
+        }
+        serde_json::Value::Array(items) => items.iter().any(ast_calls_main),
+        _ => false,
+    }
+}
+
+/// Serialized `ExprKind::Call` payload whose callee is the identifier `main` (complexity: 1)
+fn is_main_callee(call: &serde_json::Value) -> bool {
+    call.pointer("/func/kind/Identifier")
+        .and_then(serde_json::Value::as_str)
+        == Some("main")
 }
 
 /// The expression `main()` (complexity: 1)
