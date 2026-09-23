@@ -29,6 +29,7 @@ When there are errors but no refusal, it exits **1**. With no errors it exits **
 | `RHL-C001` | no contract template | `NoContractTemplate` |
 | `RHL-X001` | `given`/`then` outside `example` | — |
 | `RHL-P004` | YAML is not an intent tree | — |
+| `RHL-L001` | construct not lowerable in v0 | — |
 
 Six codes were pre-registered by RHL-0 in `docs/rhl/breaks/planted/*/*/break.yaml`
 before any checker existed. Their meaning is fixed by that data: `RHL-P001`,
@@ -52,3 +53,12 @@ when the problem has no one place. `ruchy convert` exits 2 on it; `ruchy check` 
 the verdict `fail` and exits 1, as for a `.rhl` parse failure. Every other diagnostic of
 a `.rhl.yaml` file is the checker's, with the code it has for the `.rhl` form, a span of
 line 0, column 0 (unknown), and no fixes. See `docs/rhl/rhl-3.md`.
+
+## Diagnostics of the lowering to ruchy
+
+RHL-4 adds one code, `RHL-L001`, in a new family `RHL-L` (lowering), appended to the
+catalogue. Lowering runs only on a program that checks clean; `RHL-L001` names a construct
+of such a program that the v0 lowering does not cover (a unit kind other than `job`,
+`give back`, `stop with`, `wait up to`, a measure argument that is not a literal, a noun
+term, a measure with no effect, a type with no v0 representation). `ruchy transpile` exits
+2 on it: the compiler declines rather than guesses. See `docs/rhl/rhl-4.md`.

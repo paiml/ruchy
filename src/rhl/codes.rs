@@ -48,6 +48,9 @@ pub const B001: &str = "RHL-B001";
 pub const C001: &str = "RHL-C001";
 /// `given` or `then` outside an `example` block.
 pub const X001: &str = "RHL-X001";
+/// A construct of a checked program that RHL-4's lowering to ruchy does not
+/// cover in v0; lowering declines rather than guesses (RHL-4).
+pub const L001: &str = "RHL-L001";
 
 /// Every code, in family order. Append only; never renumber or reuse.
 pub const CATALOGUE: &[CodeInfo] = &[
@@ -66,6 +69,7 @@ pub const CATALOGUE: &[CodeInfo] = &[
     info(C001, "no contract template", Some("NoContractTemplate")),
     info(X001, "`given`/`then` outside `example`", None),
     info(P004, "YAML is not an intent tree", None),
+    info(L001, "construct not lowerable in v0", None),
 ];
 
 const fn info(code: &'static str, title: &'static str, refusal: Option<&'static str>) -> CodeInfo {
@@ -92,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_rhl_1_codes_match_the_stable_family_pattern_and_are_unique() {
-        let re = Regex::new(r"^RHL-[PVTEBCX][0-9]{3}$").expect("static regex");
+        let re = Regex::new(r"^RHL-[PVTEBCXL][0-9]{3}$").expect("static regex");
         let mut seen = HashSet::new();
         for c in CATALOGUE {
             assert!(re.is_match(c.code), "{} is not RHL-<family><nnn>", c.code);

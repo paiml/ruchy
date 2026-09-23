@@ -16,6 +16,7 @@ pub mod codes;
 pub mod diag;
 pub mod fix;
 pub mod fmt;
+pub mod lower;
 pub mod parse;
 pub mod tree;
 pub mod vocab;
