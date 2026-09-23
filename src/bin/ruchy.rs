@@ -170,6 +170,22 @@ enum Commands {
         #[arg(long, default_value = "text")]
         format: String,
     },
+    /// Apply the safe fixes of `ruchy check` to .rhl files, in place (RHL-2)
+    Fix {
+        /// The .rhl file(s) to fix
+        files: Vec<PathBuf>,
+        /// Apply only fixes marked safe; the one mode that exists for .rhl files
+        #[arg(long)]
+        safe: bool,
+        /// Output format: text, or json (the check report plus `applied`)
+        #[arg(long, default_value = "text")]
+        format: String,
+    },
+    /// List, show and validate RHL vocabularies (RHL-2)
+    Vocab {
+        #[command(subcommand)]
+        command: VocabCommands,
+    },
     /// Run tests for Ruchy code with optional coverage reporting
     Test {
         /// The test file or directory to run
@@ -1260,6 +1276,46 @@ enum ModelCommands {
     },
 }
 
+/// `ruchy vocab` subcommands (RHL-2). The vocabulary root is `--root`, else
+/// the nearest directory from the current one that holds `vocab/`.
+#[derive(Subcommand, Debug)]
+enum VocabCommands {
+    /// Every vocabulary under the root: name, version, term count
+    List {
+        /// Output format: text or json
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// The vocabulary root (the directory that holds vocab/)
+        #[arg(long)]
+        root: Option<PathBuf>,
+    },
+    /// The terms of one vocabulary, with kind, takes, gives, effect, attributes, contract
+    Show {
+        /// Vocabulary name, for example `fleet`
+        name: String,
+        /// Version, `v2` or `2`
+        version: String,
+        /// Output format: text or json
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// The vocabulary root (the directory that holds vocab/)
+        #[arg(long)]
+        root: Option<PathBuf>,
+    },
+    /// Validate a vocabulary file, or `<name> <version>`, through the checker's loader
+    Validate {
+        /// `<file.yaml>` or `<name> <version>`
+        #[arg(required = true, num_args = 1..=2)]
+        target: Vec<String>,
+        /// Output format: text or json
+        #[arg(long, default_value = "text")]
+        format: String,
+        /// The vocabulary root (the directory that holds vocab/)
+        #[arg(long)]
+        root: Option<PathBuf>,
+    },
+}
+
 #[derive(Subcommand, Debug)]
 enum ContractsCommands {
     /// Generate YAML contract manifests from source
@@ -1417,6 +1473,12 @@ fn handle_command_dispatch(
             watch,
             format,
         }) => handle_check_command(&files, watch, &format),
+        Some(Commands::Fix {
+            files,
+            safe,
+            format,
+        }) => handlers::rhl_handler::handle_fix_command(&files, safe, &format),
+        Some(Commands::Vocab { command }) => handle_vocab(command),
         Some(Commands::Test {
             path,
             watch,
@@ -2118,6 +2180,26 @@ fn check_syntax(file: &Path) -> Result<()> {
             std::process::exit(1);
         }
     }
+}
+
+/// Route `ruchy vocab` (RHL-2) to its handler.
+fn handle_vocab(command: VocabCommands) -> Result<()> {
+    use handlers::rhl_handler::{handle_vocab_command, VocabRequest};
+    let (request, format, root) = match command {
+        VocabCommands::List { format, root } => (VocabRequest::List, format, root),
+        VocabCommands::Show {
+            name,
+            version,
+            format,
+            root,
+        } => (VocabRequest::Show { name, version }, format, root),
+        VocabCommands::Validate {
+            target,
+            format,
+            root,
+        } => (VocabRequest::Validate { target }, format, root),
+    };
+    handle_vocab_command(request, &format, root.as_deref())
 }
 
 #[cfg(test)]
