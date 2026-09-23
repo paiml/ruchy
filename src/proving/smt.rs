@@ -44,25 +44,9 @@ impl SmtSolver {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::smt::SmtSolver;
+    /// use ruchy::proving::smt::{SmtSolver, SmtBackend};
     ///
-    /// let instance = SmtSolver::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::smt::SmtSolver;
-    ///
-    /// let instance = SmtSolver::new();
-    /// // Verify behavior
-    /// ```
-    /// # Examples
-    ///
-    /// ```
-    /// use ruchy::proving::smt::SmtSolver;
-    ///
-    /// let instance = SmtSolver::new();
+    /// let instance = SmtSolver::new(SmtBackend::Z3);
     /// // Verify behavior
     /// ```
     pub fn new(backend: SmtBackend) -> Self {
@@ -77,10 +61,10 @@ impl SmtSolver {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::smt::SmtSolver;
+    /// use ruchy::proving::smt::{SmtSolver, SmtBackend};
     ///
-    /// let mut instance = SmtSolver::new();
-    /// let result = instance.set_timeout();
+    /// let mut instance = SmtSolver::new(SmtBackend::Z3);
+    /// instance.set_timeout(10_000);
     /// // Verify behavior
     /// ```
     pub fn set_timeout(&mut self, timeout_ms: u64) {
@@ -90,10 +74,10 @@ impl SmtSolver {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::smt::SmtSolver;
+    /// use ruchy::proving::smt::{SmtSolver, SmtBackend};
     ///
-    /// let mut instance = SmtSolver::new();
-    /// let result = instance.declare_var();
+    /// let mut instance = SmtSolver::new(SmtBackend::Z3);
+    /// instance.declare_var("x", "Int");
     /// // Verify behavior
     /// ```
     pub fn declare_var(&mut self, name: &str, sort: &str) {
@@ -104,10 +88,10 @@ impl SmtSolver {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::smt::SmtSolver;
+    /// use ruchy::proving::smt::{SmtSolver, SmtBackend};
     ///
-    /// let mut instance = SmtSolver::new();
-    /// let result = instance.declare_fun();
+    /// let mut instance = SmtSolver::new(SmtBackend::Z3);
+    /// instance.declare_fun("f", &["Int", "Bool"], "Real");
     /// // Verify behavior
     /// ```
     pub fn declare_fun(&mut self, name: &str, params: &[&str], ret: &str) {
@@ -121,10 +105,10 @@ impl SmtSolver {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::smt::SmtSolver;
+    /// use ruchy::proving::smt::{SmtSolver, SmtBackend};
     ///
-    /// let mut instance = SmtSolver::new();
-    /// let result = instance.assert();
+    /// let mut instance = SmtSolver::new(SmtBackend::Z3);
+    /// instance.assert("(> x 0)");
     /// // Verify behavior
     /// ```
     pub fn assert(&mut self, expr: &str) {
@@ -263,8 +247,8 @@ impl SmtQuery {
     /// ```
     /// use ruchy::proving::smt::SmtQuery;
     ///
-    /// let mut instance = SmtQuery::new();
-    /// let result = instance.add_var();
+    /// let mut instance = SmtQuery::new("(> x 0)");
+    /// instance.add_var("x", "Int");
     /// // Verify behavior
     /// ```
     pub fn add_var(&mut self, name: &str, sort: &str) {
@@ -276,8 +260,8 @@ impl SmtQuery {
     /// ```
     /// use ruchy::proving::smt::SmtQuery;
     ///
-    /// let mut instance = SmtQuery::new();
-    /// let result = instance.add_assumption();
+    /// let mut instance = SmtQuery::new("(> x 0)");
+    /// instance.add_assumption("(< x 10)");
     /// // Verify behavior
     /// ```
     pub fn add_assumption(&mut self, expr: &str) {
@@ -364,11 +348,12 @@ impl ProofAutomation {
     /// Prove implication
     /// # Examples
     ///
-    /// ```
-    /// use ruchy::proving::smt::ProofAutomation;
+    /// ```no_run
+    /// use ruchy::proving::smt::{ProofAutomation, SmtBackend};
     ///
-    /// let mut instance = ProofAutomation::new();
-    /// let result = instance.prove_implication();
+    /// // Requires an SMT solver binary (e.g. z3) on PATH
+    /// let mut instance = ProofAutomation::new(SmtBackend::Z3);
+    /// let result = instance.prove_implication("(> x 0)", "(>= x 0)");
     /// // Verify behavior
     /// ```
     pub fn prove_implication(&mut self, antecedent: &str, consequent: &str) -> Result<SmtResult> {
@@ -378,11 +363,12 @@ impl ProofAutomation {
     /// Prove equivalence
     /// # Examples
     ///
-    /// ```
-    /// use ruchy::proving::smt::ProofAutomation;
+    /// ```no_run
+    /// use ruchy::proving::smt::{ProofAutomation, SmtBackend};
     ///
-    /// let mut instance = ProofAutomation::new();
-    /// let result = instance.prove_equivalence();
+    /// // Requires an SMT solver binary (e.g. z3) on PATH
+    /// let mut instance = ProofAutomation::new(SmtBackend::Z3);
+    /// let result = instance.prove_equivalence("(> x 0)", "(> x 0)");
     /// // Verify behavior
     /// ```
     pub fn prove_equivalence(&mut self, left: &str, right: &str) -> Result<SmtResult> {
