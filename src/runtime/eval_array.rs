@@ -623,29 +623,111 @@ fn eval_array_sort(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     Ok(Value::Array(Arc::from(sorted)))
 }
 
-/// METHODS-1: order numbers by value and strings lexically; any other pair of
-/// values falls back to comparing their debug text (a stable, total order).
+/// METHODS-1: total order used by `sort()` on mixed arrays.
+///
+/// Values order first by a fixed per-type rank (`nil < bool < number < string <
+/// array < tuple < other`), then within the rank: numbers by exact value (an
+/// integer before an equal float, floats by `total_cmp`), strings lexically,
+/// arrays and tuples lexicographically by this same order, and any other type
+/// by type name then debug text.
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5
+/// Cyclomatic complexity: 1
 fn compare_for_sort(a: &Value, b: &Value) -> std::cmp::Ordering {
-    match (a, b) {
-        (Value::Integer(x), Value::Integer(y)) => x.cmp(y),
-        (Value::String(x), Value::String(y)) => x.cmp(y),
-        _ => match (sort_number(a), sort_number(b)) {
-            (Some(x), Some(y)) => x.total_cmp(&y),
-            _ => format!("{a:?}").cmp(&format!("{b:?}")),
-        },
+    sort_rank(a)
+        .cmp(&sort_rank(b))
+        .then_with(|| compare_same_rank(a, b))
+}
+
+/// Per-type rank of a value for [`compare_for_sort`] (complexity: 7)
+fn sort_rank(value: &Value) -> u8 {
+    match value {
+        Value::Nil => 0,
+        Value::Bool(_) => 1,
+        Value::Integer(_) | Value::Float(_) => 2,
+        Value::String(_) => 3,
+        Value::Array(_) => 4,
+        Value::Tuple(_) => 5,
+        _ => 6,
     }
 }
 
-/// Numeric value of an `Integer` or `Float`, for mixed-number sorting.
-fn sort_number(value: &Value) -> Option<f64> {
-    match value {
-        Value::Integer(n) => Some(*n as f64),
-        Value::Float(f) => Some(*f),
+/// Order two values of the same rank (complexity: 5)
+fn compare_same_rank(a: &Value, b: &Value) -> std::cmp::Ordering {
+    match (a, b) {
+        (Value::Bool(x), Value::Bool(y)) => x.cmp(y),
+        (Value::String(x), Value::String(y)) => x.cmp(y),
+        (Value::Array(x), Value::Array(y)) | (Value::Tuple(x), Value::Tuple(y)) => {
+            compare_sequences(x, y)
+        }
+        _ => compare_numbers(a, b).unwrap_or_else(|| compare_other(a, b)),
+    }
+}
+
+/// Lexicographic order of two sequences under [`compare_for_sort`] (complexity: 1)
+fn compare_sequences(x: &[Value], y: &[Value]) -> std::cmp::Ordering {
+    x.iter()
+        .zip(y.iter())
+        .map(|(a, b)| compare_for_sort(a, b))
+        .find(|ord| ord.is_ne())
+        .unwrap_or_else(|| x.len().cmp(&y.len()))
+}
+
+/// Exact order of two numbers; `None` unless both are `Integer`/`Float` (complexity: 5)
+fn compare_numbers(a: &Value, b: &Value) -> Option<std::cmp::Ordering> {
+    match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => Some(x.cmp(y)),
+        (Value::Float(x), Value::Float(y)) => Some(x.total_cmp(y)),
+        (Value::Integer(i), Value::Float(f)) => Some(compare_int_float(*i, *f)),
+        (Value::Float(f), Value::Integer(i)) => Some(compare_int_float(*i, *f).reverse()),
         _ => None,
     }
+}
+
+/// Exact order of an integer against a float, without rounding the integer.
+/// An integer equal in value to the float orders first (complexity: 1).
+fn compare_int_float(i: i64, f: f64) -> std::cmp::Ordering {
+    float_outside_i64(f).unwrap_or_else(|| {
+        let whole = f.trunc();
+        // In range [-2^63, 2^63): the truncated float is exactly an i64.
+        i.cmp(&(whole as i64)).then(fraction_order(f - whole))
+    })
+}
+
+/// Order of any `i64` against `f` when `f` is NaN (placed where `total_cmp`
+/// puts it, beyond the infinities) or outside the `i64` range (complexity: 4).
+fn float_outside_i64(f: f64) -> Option<std::cmp::Ordering> {
+    use std::cmp::Ordering;
+    const TWO_63: f64 = 9_223_372_036_854_775_808.0;
+    if f.is_nan() {
+        let below = f.is_sign_negative();
+        return Some(if below {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        });
+    }
+    (f >= TWO_63)
+        .then_some(Ordering::Less)
+        .or_else(|| (f < -TWO_63).then_some(Ordering::Greater))
+}
+
+/// Order of an integer against a float with the same whole part, from the
+/// float's (exact) fractional part; a zero fraction puts the integer first
+/// (complexity: 1).
+fn fraction_order(fraction: f64) -> std::cmp::Ordering {
+    if fraction < 0.0 {
+        std::cmp::Ordering::Greater
+    } else {
+        std::cmp::Ordering::Less
+    }
+}
+
+/// Order two values of the catch-all rank: type name, then debug text (complexity: 1)
+fn compare_other(a: &Value, b: &Value) -> std::cmp::Ordering {
+    a.type_name()
+        .cmp(b.type_name())
+        .then_with(|| format!("{a:?}").cmp(&format!("{b:?}")))
 }
 
 /// PIPELINE-001: Reverse array order
@@ -835,3 +917,160 @@ fn eval_array_zip(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Interprete
 #[cfg(test)]
 #[path = "eval_array_tests.rs"]
 mod tests;
+
+/// METHODS-1: `compare_for_sort` must be a total order (sort_by may panic otherwise).
+#[cfg(test)]
+mod sort_order_tests {
+    use super::compare_for_sort;
+    use crate::runtime::Value;
+    use proptest::prelude::*;
+    use std::cmp::Ordering;
+    use std::sync::Arc;
+
+    const TWO_53: i64 = 1 << 53;
+
+    #[test]
+    fn test_methods_1_int_float_compared_exactly_past_2_pow_53() {
+        let big = Value::Integer(TWO_53 + 1);
+        let float = Value::Float(TWO_53 as f64);
+        assert_eq!(compare_for_sort(&big, &float), Ordering::Greater);
+        assert_eq!(compare_for_sort(&float, &big), Ordering::Less);
+    }
+
+    #[test]
+    fn test_methods_1_int_float_triple_is_transitive() {
+        let above = Value::Integer(TWO_53 + 1);
+        let float = Value::Float(TWO_53 as f64);
+        let at = Value::Integer(TWO_53);
+        assert_eq!(compare_for_sort(&at, &float), Ordering::Less);
+        assert_eq!(compare_for_sort(&float, &above), Ordering::Less);
+        assert_eq!(compare_for_sort(&at, &above), Ordering::Less);
+    }
+
+    #[test]
+    fn test_methods_1_equal_int_and_float_put_int_first() {
+        let int = Value::Integer(3);
+        let float = Value::Float(3.0);
+        assert_eq!(compare_for_sort(&int, &float), Ordering::Less);
+        assert_eq!(compare_for_sort(&float, &int), Ordering::Greater);
+    }
+
+    #[test]
+    fn test_methods_1_types_ordered_by_rank() {
+        let ordered = [
+            Value::Nil,
+            Value::Bool(true),
+            Value::Integer(-5),
+            Value::Float(0.5),
+            Value::from_string("a".to_string()),
+            Value::Array(Arc::from(vec![Value::Integer(1)])),
+        ];
+        for pair in ordered.windows(2) {
+            assert_eq!(compare_for_sort(&pair[0], &pair[1]), Ordering::Less);
+        }
+    }
+
+    #[test]
+    fn test_methods_1_nan_and_infinities_order_against_ints() {
+        let int = Value::Integer(i64::MAX);
+        assert_eq!(
+            compare_for_sort(&int, &Value::Float(f64::INFINITY)),
+            Ordering::Less
+        );
+        assert_eq!(
+            compare_for_sort(&int, &Value::Float(f64::NAN)),
+            Ordering::Less
+        );
+        let low = Value::Integer(i64::MIN);
+        assert_eq!(
+            compare_for_sort(&low, &Value::Float(f64::NEG_INFINITY)),
+            Ordering::Greater
+        );
+        assert_eq!(
+            compare_for_sort(&low, &Value::Float(-f64::NAN)),
+            Ordering::Greater
+        );
+    }
+
+    fn arb_number() -> impl Strategy<Value = Value> {
+        prop_oneof![
+            (-3i64..3).prop_map(Value::Integer),
+            (TWO_53 - 3..TWO_53 + 3).prop_map(Value::Integer),
+            any::<i64>().prop_map(Value::Integer),
+            prop::sample::select(vec![
+                0.0,
+                -0.0,
+                1.0,
+                2.5,
+                -1.0,
+                TWO_53 as f64,
+                (TWO_53 + 2) as f64,
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+                f64::NAN,
+                -f64::NAN,
+                i64::MAX as f64,
+                i64::MIN as f64,
+            ])
+            .prop_map(Value::Float),
+            any::<f64>().prop_map(Value::Float),
+        ]
+    }
+
+    fn arb_value() -> impl Strategy<Value = Value> {
+        let leaf = prop_oneof![
+            Just(Value::Nil),
+            any::<bool>().prop_map(Value::Bool),
+            arb_number(),
+            "[a-c]{0,2}".prop_map(Value::from_string),
+            any::<u8>().prop_map(Value::Byte),
+            "[a-b]{1,2}".prop_map(Value::Atom),
+        ];
+        leaf.prop_recursive(2, 12, 3, |inner| {
+            prop_oneof![
+                prop::collection::vec(inner.clone(), 0..3)
+                    .prop_map(|items| Value::Array(Arc::from(items))),
+                prop::collection::vec(inner, 0..3).prop_map(|items| Value::Tuple(Arc::from(items))),
+            ]
+        })
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(2000))]
+
+        #[test]
+        fn prop_methods_1_sort_by_never_panics(mut values in prop::collection::vec(arb_value(), 0..40)) {
+            values.sort_by(compare_for_sort);
+            for pair in values.windows(2) {
+                prop_assert_ne!(compare_for_sort(&pair[0], &pair[1]), Ordering::Greater);
+            }
+        }
+
+        #[test]
+        fn prop_methods_1_comparator_is_antisymmetric(a in arb_value(), b in arb_value()) {
+            prop_assert_eq!(compare_for_sort(&a, &b), compare_for_sort(&b, &a).reverse());
+        }
+
+        #[test]
+        fn prop_methods_1_number_comparator_is_transitive(a in arb_number(), b in arb_number(), c in arb_number()) {
+            let mut sorted = [a, b, c];
+            sorted.sort_by(compare_for_sort);
+            prop_assert_ne!(compare_for_sort(&sorted[0], &sorted[1]), Ordering::Greater);
+            prop_assert_ne!(compare_for_sort(&sorted[1], &sorted[2]), Ordering::Greater);
+            prop_assert_ne!(compare_for_sort(&sorted[0], &sorted[2]), Ordering::Greater);
+        }
+
+        #[test]
+        fn prop_methods_1_comparator_is_transitive(a in arb_value(), b in arb_value(), c in arb_value()) {
+            let ab = compare_for_sort(&a, &b);
+            let bc = compare_for_sort(&b, &c);
+            if ab != Ordering::Greater && bc != Ordering::Greater {
+                let ac = compare_for_sort(&a, &c);
+                prop_assert_ne!(ac, Ordering::Greater);
+                if ab == Ordering::Less || bc == Ordering::Less {
+                    prop_assert_eq!(ac, Ordering::Less);
+                }
+            }
+        }
+    }
+}
