@@ -95,6 +95,10 @@ impl Transpiler {
         // TRANSPILER-007: Clear current function return type after body transpilation
         self.current_function_return_type.replace(None);
 
+        // RHLGA-1: rustc rejects `async fn main` (E0752) and `.await` in a sync fn (E0728).
+        let (body_tokens, is_async) =
+            self.adapt_awaiting_main(name, body, body_tokens, is_async)?;
+
         let return_type_tokens = if needs_lifetime {
             self.generate_return_type_tokens_with_lifetime(name, effective_return_type, body)?
         } else {
@@ -189,6 +193,71 @@ impl Transpiler {
                 }
             }
         }
+    }
+}
+
+impl Transpiler {
+    /// A `main` that awaits gets a `block_on` body and a sync signature; others pass through.
+    /// Complexity: 2
+    fn adapt_awaiting_main(
+        &self,
+        name: &str,
+        body: &Expr,
+        body_tokens: TokenStream,
+        is_async: bool,
+    ) -> Result<(TokenStream, bool)> {
+        if name == "main" && (is_async || Self::tokens_contain_await(&body_tokens)) {
+            Ok((self.generate_block_on_main_body(body)?, false))
+        } else {
+            Ok((body_tokens, is_async))
+        }
+    }
+
+    /// True when the emitted Rust uses the `await` keyword (only legal in an async context).
+    /// Complexity: 3
+    fn tokens_contain_await(tokens: &TokenStream) -> bool {
+        tokens.clone().into_iter().any(|tt| match tt {
+            proc_macro2::TokenTree::Ident(ident) => ident == "await",
+            proc_macro2::TokenTree::Group(group) => Self::tokens_contain_await(&group.stream()),
+            _ => false,
+        })
+    }
+
+    /// Body of a `main` that awaits: the original body runs as an `async move` block driven
+    /// by a thread-parking `block_on` (std only, no unsafe); a non-unit tail is printed.
+    /// Complexity: 2
+    fn generate_block_on_main_body(&self, body: &Expr) -> Result<TokenStream> {
+        let inner = self.generate_body_tokens(body, true)?;
+        let run = quote! { __ruchy_block_on(async move { #inner }) };
+        let tail = if Self::has_non_unit_last_expr(body) {
+            quote! { let __ruchy_main_value = #run; println!("{:?}", __ruchy_main_value); }
+        } else {
+            quote! { #run; }
+        };
+        Ok(quote! {
+            {
+                fn __ruchy_block_on<F: ::std::future::Future>(fut: F) -> F::Output {
+                    struct ThreadWaker(::std::thread::Thread);
+                    impl ::std::task::Wake for ThreadWaker {
+                        fn wake(self: ::std::sync::Arc<Self>) {
+                            self.0.unpark();
+                        }
+                    }
+                    let waker = ::std::task::Waker::from(::std::sync::Arc::new(ThreadWaker(
+                        ::std::thread::current(),
+                    )));
+                    let mut cx = ::std::task::Context::from_waker(&waker);
+                    let mut fut = ::std::pin::pin!(fut);
+                    loop {
+                        if let ::std::task::Poll::Ready(value) = fut.as_mut().poll(&mut cx) {
+                            return value;
+                        }
+                        ::std::thread::park();
+                    }
+                }
+                #tail
+            }
+        })
     }
 }
 
