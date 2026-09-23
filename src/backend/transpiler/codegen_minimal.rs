@@ -11,9 +11,9 @@ impl MinimalCodeGen {
     ///
     /// ```
     /// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
-    /// let expr = Expr::literal(42.into());
+    /// let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
     /// let result = MinimalCodeGen::gen_expr(&expr);
     /// assert!(result.is_ok());
     /// ```
@@ -314,9 +314,9 @@ impl MinimalCodeGen {
     ///
     /// ```
     /// use ruchy::backend::transpiler::codegen_minimal::MinimalCodeGen;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
-    /// let expr = Expr::literal(42.into());
+    /// let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
     /// let result = MinimalCodeGen::gen_program(&expr);
     /// assert!(result.is_ok());
     /// ```

@@ -128,11 +128,11 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let actor = Expr::literal(42.into());
-    /// let message = Expr::literal("hello".into());
+    /// let actor = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+    /// let message = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Span::default());
     /// let result = transpiler.transpile_send(&actor, &message);
     /// assert!(result.is_ok());
     /// ```
@@ -150,11 +150,11 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let actor = Expr::literal(42.into());
-    /// let message = Expr::literal("hello".into());
+    /// let actor = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+    /// let message = Expr::new(ExprKind::Literal(Literal::String("hello".to_string())), Span::default());
     /// let result = transpiler.transpile_ask(&actor, &message);
     /// assert!(result.is_ok());
     /// ```
@@ -186,10 +186,10 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let command = Expr::literal("test_command".into());
+    /// let command = Expr::new(ExprKind::Literal(Literal::String("test_command".to_string())), Span::default());
     /// let result = transpiler.transpile_command(&command);
     /// assert!(result.is_ok());
     /// ```

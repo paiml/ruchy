@@ -65,11 +65,11 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let df = Expr::literal(42.into());
-    /// let operation = Expr::literal("filter".into());
+    /// let df = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
+    /// let operation = Expr::new(ExprKind::Literal(Literal::String("filter".to_string())), Span::default());
     /// let result = transpiler.transpile_dataframe_operation(&df, &operation);
     /// assert!(result.is_ok());
     /// ```
@@ -162,10 +162,10 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let df_expr = Expr::literal(42.into());
+    /// let df_expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
     /// let method = "select";
     /// let args = vec![];
     /// let result = transpiler.transpile_dataframe_method(&df_expr, method, &args);
@@ -319,10 +319,10 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
-    /// let expr = Expr::literal(42.into());
+    /// let expr = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
     /// let result = Transpiler::is_dataframe_expr(&expr);
     /// // Returns boolean, not Result
     /// ```
