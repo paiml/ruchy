@@ -120,6 +120,7 @@ impl FormatterConfig {
     /// let toml = r#"
     /// indent_width = 2
     /// use_tabs = false
+    /// max_line_length = 100
     /// "#;
     ///
     /// let config = FormatterConfig::from_toml(toml).unwrap();

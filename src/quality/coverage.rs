@@ -160,7 +160,7 @@ impl CoverageCollector {
     /// ```
     /// use ruchy::quality::{CoverageCollector, CoverageTool};
     ///
-    /// let collector = CoverageCollector::new(CoverageTool::Tarpaulin)
+    /// let collector = CoverageCollector::new(CoverageTool::LlvmCov)
     ///     .with_source_dir("src");
     /// ```
     #[must_use]
@@ -175,7 +175,7 @@ impl CoverageCollector {
     /// ```no_run
     /// use ruchy::quality::{CoverageCollector, CoverageTool};
     ///
-    /// let collector = CoverageCollector::new(CoverageTool::Tarpaulin);
+    /// let collector = CoverageCollector::new(CoverageTool::LlvmCov);
     /// let report = collector.collect().expect("Failed to collect coverage");
     /// println!("Line coverage: {:.1}%", report.line_coverage_percentage());
     /// ```

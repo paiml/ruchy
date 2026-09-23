@@ -268,7 +268,7 @@ impl TransactionalState {
     /// ```
     /// use ruchy::runtime::transaction::TransactionalState;
     ///
-    /// let state = TransactionalState::new();
+    /// let state = TransactionalState::new(1024 * 1024);
     /// let arena = state.arena();
     /// assert!(arena.used() >= 0);
     /// ```

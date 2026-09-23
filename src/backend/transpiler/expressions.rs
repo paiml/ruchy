@@ -306,7 +306,7 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Span};
+    /// use ruchy::frontend::ast::{BinaryOp, Expr, ExprKind, Span};
     ///
     /// let transpiler = Transpiler::new();
     /// let e0 = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());

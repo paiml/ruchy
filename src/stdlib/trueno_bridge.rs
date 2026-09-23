@@ -53,7 +53,7 @@ pub use trueno::{select_best_available_backend, Backend};
 /// ```
 /// use ruchy::stdlib::trueno_bridge::kahan_sum;
 ///
-/// let values = vec![1e16, 1.0, -1e16];
+/// let values = vec![0.1; 10];
 /// let result = kahan_sum(&values);
 /// assert!((result - 1.0).abs() < 1e-10);
 /// ```

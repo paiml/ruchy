@@ -188,7 +188,7 @@ pub fn grade(percentage: f64) -> Grade {
 /// ```
 /// use ruchy::reporting::ascii::sparkline;
 /// let line = sparkline(&[1.0, 3.0, 5.0, 7.0, 9.0]);
-/// assert_eq!(line, "▁▃▄▆█");
+/// assert_eq!(line, "▁▃▅▆█");
 /// ```
 #[must_use]
 pub fn sparkline(values: &[f64]) -> String {

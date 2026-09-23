@@ -97,10 +97,10 @@ impl ModuleResolver {
     ///
     /// ```
     /// use ruchy::backend::module_resolver::ModuleResolver;
-    /// use ruchy::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     ///
     /// let mut resolver = ModuleResolver::new();
-    /// let ast = Expr::literal(42.into());
+    /// let ast = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
     /// let result = resolver.resolve_imports(ast);
     /// assert!(result.is_ok());
     /// ```

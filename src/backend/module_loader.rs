@@ -336,12 +336,12 @@ impl ParsedModule {
     ///
     /// ```
     /// use ruchy::backend::module_loader::ParsedModule;
-    /// use ruchy::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     /// use std::path::PathBuf;
     /// use std::time::SystemTime;
     ///
     /// let module = ParsedModule {
-    ///     ast: Expr::literal(42.into()),
+    ///     ast: Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default()),
     ///     file_path: PathBuf::from("test.ruchy"),
     ///     dependencies: Vec::new(),
     ///     last_modified: SystemTime::now(),
@@ -360,12 +360,12 @@ impl ParsedModule {
     ///
     /// ```
     /// use ruchy::backend::module_loader::ParsedModule;
-    /// use ruchy::ast::Expr;
+    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
     /// use std::path::PathBuf;
     /// use std::time::SystemTime;
     ///
     /// let module = ParsedModule {
-    ///     ast: Expr::literal(42.into()),
+    ///     ast: Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default()),
     ///     file_path: PathBuf::from("test.ruchy"),
     ///     dependencies: Vec::new(),
     ///     last_modified: SystemTime::now(),

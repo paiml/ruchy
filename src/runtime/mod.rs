@@ -28,26 +28,11 @@
 //! # Examples
 //!
 //! ```no_run
-//! use ruchy::runtime::{Repl, ReplConfig};
+//! use ruchy::runtime::Repl;
 //!
 //! // Start an interactive REPL session
-//! let config = ReplConfig::default();
-//! let mut repl = Repl::new_with_config(config).expect("Repl creation should succeed");
+//! let mut repl = Repl::new(std::env::temp_dir()).expect("Repl creation should succeed");
 //! repl.run().expect("REPL execution should succeed");
-//! ```
-//!
-//! ```
-//! use ruchy::runtime::{ActorSystem, Message, MessageValue};
-//!
-//! // Create an actor system
-//! let mut system = ActorSystem::new();
-//!
-//! // Spawn an echo actor
-//! let echo_ref = system.spawn_echo_actor("echo".to_string()).expect("Spawning actor should succeed");
-//!
-//! // Send a message
-//! let msg = Message::new(MessageValue::String("Hello".to_string()));
-//! // Note: In real usage, you would handle the Result properly
 //! ```
 //!
 //! # Features

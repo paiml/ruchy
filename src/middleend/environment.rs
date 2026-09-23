@@ -78,8 +78,8 @@ impl TypeEnv {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::middleend::environment::{TypeEnv, TypeScheme};
-    /// use ruchy::middleend::types::MonoType;
+    /// use ruchy::middleend::environment::TypeEnv;
+    /// use ruchy::middleend::types::{MonoType, TypeScheme};
     /// let mut env = TypeEnv::new();
     /// env.bind("x", TypeScheme::mono(MonoType::Int));
     /// ```

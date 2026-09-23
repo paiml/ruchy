@@ -48,8 +48,9 @@
 //!     ..Default::default()
 //! };
 //!
-//! let gates = QualityGates::new(metrics, thresholds);
-//! assert!(gates.passes_all_gates());
+//! let mut gates = QualityGates::with_thresholds(thresholds);
+//! gates.update_metrics(metrics);
+//! assert!(gates.check().is_ok());
 //! ```
 //!
 //! ## Coverage Analysis
@@ -58,28 +59,12 @@
 //! ```rust,no_run
 //! use ruchy::quality::{CoverageCollector, CoverageTool};
 //!
-//! let collector = CoverageCollector::new(CoverageTool::LlvmCov);
-//! let report = collector.collect_coverage("src/").unwrap();
+//! let collector = CoverageCollector::new(CoverageTool::LlvmCov).with_source_dir("src");
+//! let report = collector.collect().unwrap();
 //!
-//! println!("Overall coverage: {:.1}%", report.overall_percentage());
-//! for file in report.files() {
-//!     println!("  {}: {:.1}%", file.path(), file.line_coverage());
-//! }
-//! ```
-//!
-//! ## PMAT Integration
-//! Integration with PMAT quality analysis tool:
-//!
-//! ```rust,no_run
-//! use ruchy::quality::scoring::PmatScorer;
-//!
-//! let scorer = PmatScorer::new();
-//! let score = scorer.analyze_project(".")?.overall_grade();
-//!
-//! if score >= 85.0 {
-//!     println!("✅ PMAT A- grade achieved: {:.1}", score);
-//! } else {
-//!     println!("❌ Below A- threshold: {:.1}", score);
+//! println!("Overall coverage: {:.1}%", report.line_coverage_percentage());
+//! for (path, file) in &report.files {
+//!     println!("  {}: {:.1}%", path, file.line_coverage_percentage());
 //! }
 //! ```
 //!
@@ -196,8 +181,6 @@ impl QualityGates {
     /// ```
     /// use ruchy::quality::QualityGates;
     /// let gates = QualityGates::new();
-    /// ```
-    /// // Verify behavior
     /// ```
     pub fn new() -> Self {
         Self {

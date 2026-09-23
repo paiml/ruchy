@@ -65,11 +65,12 @@ impl Transpiler {
     ///
     /// ```
     /// use ruchy::backend::transpiler::Transpiler;
-    /// use ruchy::frontend::ast::{Expr, ExprKind, Literal, Span};
+    /// use ruchy::frontend::ast::{DataFrameOp, Expr, ExprKind, Literal, Span};
     ///
     /// let mut transpiler = Transpiler::new();
     /// let df = Expr::new(ExprKind::Literal(Literal::Integer(42, None)), Span::default());
-    /// let operation = Expr::new(ExprKind::Literal(Literal::String("filter".to_string())), Span::default());
+    /// let condition = Expr::new(ExprKind::Literal(Literal::Bool(true)), Span::default());
+    /// let operation = DataFrameOp::Filter(Box::new(condition));
     /// let result = transpiler.transpile_dataframe_operation(&df, &operation);
     /// assert!(result.is_ok());
     /// ```

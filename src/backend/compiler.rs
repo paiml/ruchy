@@ -116,7 +116,8 @@ pub fn compile_source_to_binary(source: &str, options: &CompileOptions) -> Resul
 ///
 /// # Examples
 /// ```no_run
-/// use ruchy::backend::{compile_source_to_binary_with_context, CompileOptions};
+/// use ruchy::backend::compiler::compile_source_to_binary_with_context;
+/// use ruchy::backend::CompileOptions;
 /// use std::path::Path;
 ///
 /// let source = r#"println!("Hello")"#;

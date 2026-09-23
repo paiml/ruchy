@@ -86,6 +86,8 @@ impl HtmlDocument {
     /// # Examples
     ///
     /// ```
+    /// use ruchy::stdlib::html::HtmlDocument;
+    ///
     /// let html = HtmlDocument::parse("<p class='text'>Hello</p>");
     /// let elements = html.select(".text").unwrap();
     /// assert_eq!(elements.len(), 1);
@@ -108,6 +110,8 @@ impl HtmlDocument {
     /// # Examples
     ///
     /// ```
+    /// use ruchy::stdlib::html::HtmlDocument;
+    ///
     /// let html = HtmlDocument::parse("<p>First</p><p>Second</p>");
     /// let element = html.query_selector("p").unwrap();
     /// assert!(element.is_some());
@@ -247,6 +251,8 @@ impl HtmlElement {
     /// # Examples
     ///
     /// ```
+    /// use ruchy::stdlib::html::HtmlDocument;
+    ///
     /// let html = HtmlDocument::parse("<p>Hello <span>World</span></p>");
     /// let p = html.query_selector("p").unwrap().unwrap();
     /// assert_eq!(p.text(), "Hello World");
@@ -262,6 +268,8 @@ impl HtmlElement {
     /// # Examples
     ///
     /// ```
+    /// use ruchy::stdlib::html::HtmlDocument;
+    ///
     /// let html = HtmlDocument::parse("<a href='test.html'>Link</a>");
     /// let link = html.query_selector("a").unwrap().unwrap();
     /// assert_eq!(link.attr("href"), Some("test.html".to_string()));
@@ -286,6 +294,8 @@ impl HtmlElement {
     /// # Examples
     ///
     /// ```
+    /// use ruchy::stdlib::html::HtmlDocument;
+    ///
     /// let html = HtmlDocument::parse("<div><p>Test</p></div>");
     /// let div = html.query_selector("div").unwrap().unwrap();
     /// assert!(div.html().contains("<p>Test</p>"));

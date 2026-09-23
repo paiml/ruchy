@@ -39,11 +39,10 @@ impl RefinementType {
     /// # Examples
     ///
     /// ```
-    /// use ruchy::proving::refinement::RefinementType;
+    /// use ruchy::proving::refinement::{BaseType, RefinementType};
     ///
-    /// let mut instance = RefinementType::new();
-    /// let result = instance.bounded_int();
-    /// assert_eq!(result, Ok(42));
+    /// let ty = RefinementType::bounded_int(0, 100);
+    /// assert_eq!(ty.base, BaseType::Int);
     /// ```
     pub fn bounded_int(min: i64, max: i64) -> Self {
         Self {
