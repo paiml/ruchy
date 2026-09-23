@@ -241,17 +241,10 @@ impl Transpiler {
         contract_pre_configuration!(name);
         let module_name = format_ident!("{}", name);
         let body_tokens = if let ExprKind::Block(exprs) = &body.kind {
-            let mut module_items = Vec::new();
-            for expr in exprs {
-                match &expr.kind {
-                    ExprKind::Function { .. } => {
-                        module_items.push(self.transpile_function_expr(expr)?);
-                    }
-                    _ => {
-                        module_items.push(self.transpile_expr(expr)?);
-                    }
-                }
-            }
+            let module_items = exprs
+                .iter()
+                .map(|expr| self.transpile_module_item(expr))
+                .collect::<Result<Vec<_>>>()?;
             quote! { #(#module_items)* }
         } else {
             self.transpile_expr(body)?
@@ -262,6 +255,27 @@ impl Transpiler {
                 #body_tokens
             }
         })
+    }
+
+    /// Transpile one item of a module body as a Rust item.
+    ///
+    /// A nested module is emitted as an item (`pub mod b { .. }` when marked
+    /// `pub`), not as an expression whose block body is not an item (NESTEDMOD-1).
+    /// Complexity: 3 (within Toyota Way limits)
+    fn transpile_module_item(&self, expr: &Expr) -> Result<TokenStream> {
+        match &expr.kind {
+            ExprKind::Function { .. } => self.transpile_function_expr(expr),
+            ExprKind::Module { name, body } => {
+                let module = self.transpile_module_declaration(name, body)?;
+                let is_pub = expr.attributes.iter().any(|a| a.name == "pub");
+                Ok(if is_pub {
+                    quote! { pub #module }
+                } else {
+                    module
+                })
+            }
+            _ => self.transpile_expr(expr),
+        }
     }
 
     /// Transpile statement-only block

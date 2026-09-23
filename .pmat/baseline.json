@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-24T00:02:40.736543111Z",
+  "created_at": "2026-09-24T00:02:42.195626747Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -17760,48 +17760,48 @@
     },
     "./src/frontend/parser/functions.rs": {
       "content_hash": [
-        154,
-        113,
-        12,
-        169,
-        17,
-        136,
-        7,
-        230,
-        153,
-        174,
-        6,
-        106,
-        189,
-        76,
-        123,
-        146,
-        35,
-        21,
-        64,
-        30,
-        167,
-        224,
+        95,
+        144,
+        172,
         186,
-        75,
-        247,
-        173,
-        208,
-        6,
-        102,
-        154,
-        123,
-        17
+        131,
+        244,
+        161,
+        180,
+        212,
+        137,
+        122,
+        1,
+        128,
+        217,
+        4,
+        253,
+        10,
+        231,
+        137,
+        124,
+        246,
+        254,
+        145,
+        94,
+        168,
+        3,
+        51,
+        57,
+        26,
+        31,
+        186,
+        250
       ],
       "score": {
         "structural_complexity": 0.0,
         "semantic_complexity": 20.0,
-        "duplication_ratio": 15.78125,
+        "duplication_ratio": 15.897436,
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
         "entropy_score": 5.0,
-        "total": 75.78125,
+        "total": 75.89744,
         "grade": "B",
         "confidence": 1.0,
         "language": "Rust",
@@ -17813,15 +17813,15 @@
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 105 duplicate code patterns"
+            "issue": "Found 104 duplicate code patterns"
           },
           {
             "source_metric": "Duplication",
-            "amount": 4.21875,
+            "amount": 4.1025643,
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Code duplication: 21.1%"
+            "issue": "Code duplication: 20.5%"
           },
           {
             "source_metric": "StructuralComplexity",
@@ -44864,7 +44864,7 @@
   },
   "summary": {
     "total_files": 528,
-    "avg_score": 90.32902,
+    "avg_score": 90.32924,
     "grade_distribution": {
       "A+": 195,
       "A": 176,
