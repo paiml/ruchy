@@ -154,6 +154,10 @@ fn add_utility_functions(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_assert_eq__".to_string()),
     );
     global_env.insert(
+        "assert_ne".to_string(),
+        Value::from_string("__builtin_assert_ne__".to_string()),
+    );
+    global_env.insert(
         "assert".to_string(),
         Value::from_string("__builtin_assert__".to_string()),
     );
@@ -809,7 +813,8 @@ mod tests {
         // Utc direct: Utc (convenience import - Issue #82)
         // parse_json alias: parse_json (Issue #131 - v3.182.0)
         // +1 dir() builtin (object-inspection-consistency spec)
-        assert_eq!(env.len(), 117);
+        // +1 assert_ne() builtin (METHODS-1)
+        assert_eq!(env.len(), 118);
     }
 
     #[test]
@@ -906,7 +911,8 @@ mod tests {
         assert!(env.contains_key("assert_eq"));
         assert!(env.contains_key("assert"));
         assert!(env.contains_key("dir"));
-        assert_eq!(env.len(), 6);
+        assert!(env.contains_key("assert_ne"));
+        assert_eq!(env.len(), 7);
     }
 
     #[test]

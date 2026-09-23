@@ -455,26 +455,26 @@ fn test_len_emoji_r128() {
 // Array/collection edge cases
 #[test]
 fn test_sorted_empty_r128() {
-    let result = eval("sorted([])");
-    assert!(result.contains("[]") || result.is_empty());
+    // METHODS-1: method form; `sorted(a)` is not a global builtin.
+    assert_eq!(eval("[].sorted()"), "[]");
 }
 
 #[test]
 fn test_reversed_empty_r128() {
-    let result = eval("reversed([])");
-    assert!(result.contains("[]") || result.is_empty());
+    // METHODS-1: method form; `reversed(a)` is not a global builtin.
+    assert_eq!(eval("[].reversed()"), "[]");
 }
 
 #[test]
 fn test_sorted_single_r128() {
-    let result = eval("sorted([42])");
-    assert!(result.contains("42"));
+    // METHODS-1: method form; `sorted(a)` is not a global builtin.
+    assert_eq!(eval("[42].sorted()"), "[42]");
 }
 
 #[test]
 fn test_reversed_single_r128() {
-    let result = eval("reversed([42])");
-    assert!(result.contains("42"));
+    // METHODS-1: method form; `reversed(a)` is not a global builtin.
+    assert_eq!(eval("[42].reversed()"), "[42]");
 }
 
 // =========================================================================
@@ -783,15 +783,22 @@ fn test_sleep_float() {
 // === Hash Function ===
 #[test]
 fn test_hash_string() {
-    let result = eval("hash(\"hello\")");
-    // Hash should be consistent
-    assert!(!result.is_empty());
+    // METHODS-1: `hash(x)` does not exist; SHA-256 via `compute_hash` is deterministic
+    let result = super::part1::compute_hash_of("hello");
+    assert_eq!(
+        result,
+        "\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\""
+    );
 }
 
 #[test]
 fn test_hash_int() {
-    let result = eval("hash(42)");
-    assert!(!result.is_empty());
+    // METHODS-1: `hash(x)` does not exist; hash the decimal text of 42 instead
+    let result = super::part1::compute_hash_of("42");
+    assert_eq!(
+        result,
+        "\"73475cb40a568e8da8a045ced110137e159f890ac4da883b6b17dc651b3a8049\""
+    );
 }
 
 // === Additional String Methods via REPL ===
@@ -806,16 +813,14 @@ fn test_string_join() {
 // === Append and Take/Drop ===
 #[test]
 fn test_take_more_than_length() {
-    let result = eval("take([1, 2], 10)");
-    // Should return the original array
-    assert!(result.contains("1") && result.contains("2"));
+    // METHODS-1: method form; `take(a, n)` is not a global builtin.
+    assert_eq!(eval("[1, 2].take(10)"), "[1, 2]");
 }
 
 #[test]
 fn test_drop_more_than_length() {
-    let result = eval("drop([1, 2], 10)");
-    // Just exercise the code path
-    let _ = result;
+    // METHODS-1: method form; `drop(a, n)` is not a global builtin.
+    assert_eq!(eval("[1, 2].drop(10)"), "[]");
 }
 
 // === Additional Coverage for len on DataFrame ===

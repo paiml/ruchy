@@ -1474,7 +1474,14 @@ fn test_builtin_assert_eq() {
 fn test_builtin_assert_ne() {
     let mut interp = Interpreter::new();
     let result = interp.eval_string(r#"assert_ne(1, 2)"#);
-    assert!(result.is_ok());
+    assert_eq!(result.expect("assert_ne(1, 2) should pass"), Value::Nil);
+    let err = interp
+        .eval_string(r#"assert_ne(1, 1)"#)
+        .expect_err("assert_ne(1, 1) should fail");
+    assert_eq!(
+        err.to_string(),
+        "Assertion failed: Assertion failed: expected values to differ, both were Integer(1)"
+    );
 }
 
 #[test]

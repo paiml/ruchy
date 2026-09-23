@@ -239,9 +239,14 @@ fn test_find_array() {
 
 #[test]
 fn test_now() {
+    // METHODS-1: `now()` is not a builtin in the interpreter or the transpiler;
+    // `timestamp()` (milliseconds since the Unix epoch) is the existing equivalent.
     let mut interp = Interpreter::new();
-    let result = interp.eval_string(r#"now()"#);
-    assert!(result.is_ok());
+    let result = interp.eval_string(r#"timestamp()"#);
+    match result {
+        Ok(Value::Integer(ms)) => assert!(ms > 1_600_000_000_000, "timestamp {ms} predates 2020"),
+        other => panic!("timestamp() should return an Integer, got {other:?}"),
+    }
 }
 
 #[test]

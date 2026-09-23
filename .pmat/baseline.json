@@ -1,6 +1,6 @@
 {
   "version": "3.41.1",
-  "created_at": "2026-09-23T14:08:07.114993962Z",
+  "created_at": "2026-09-23T14:08:08.103245469Z",
   "git_context": null,
   "files": {
     "./build.rs": {
@@ -36349,49 +36349,49 @@
     },
     "./src/runtime/interpreter_functions.rs": {
       "content_hash": [
-        227,
-        20,
-        177,
-        14,
-        118,
-        233,
-        185,
-        71,
-        147,
-        34,
-        233,
-        36,
-        104,
-        14,
-        213,
-        147,
         119,
-        75,
-        255,
-        102,
-        54,
-        119,
-        24,
-        57,
-        218,
+        76,
+        12,
+        224,
+        8,
+        143,
         17,
-        136,
-        210,
-        63,
-        70,
-        232,
-        56
+        197,
+        126,
+        20,
+        255,
+        29,
+        209,
+        208,
+        25,
+        229,
+        187,
+        173,
+        37,
+        156,
+        194,
+        176,
+        241,
+        46,
+        194,
+        253,
+        95,
+        119,
+        49,
+        95,
+        135,
+        72
       ],
       "score": {
-        "structural_complexity": 1.0,
+        "structural_complexity": 0.0,
         "semantic_complexity": 20.0,
-        "duplication_ratio": 14.32304,
+        "duplication_ratio": 14.461182,
         "coupling_score": 15.0,
         "doc_coverage": 10.0,
         "consistency_score": 10.0,
         "entropy_score": 5.0,
-        "total": 75.323044,
-        "grade": "B",
+        "total": 74.46118,
+        "grade": "B-",
         "confidence": 1.0,
         "language": "Rust",
         "file_path": "./src/runtime/interpreter_functions.rs",
@@ -36410,15 +36410,15 @@
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Found 99 duplicate code patterns"
+            "issue": "Found 98 duplicate code patterns"
           },
           {
             "source_metric": "Duplication",
-            "amount": 5.67696,
+            "amount": 5.5388184,
             "applied_to": [
               "Duplication"
             ],
-            "issue": "Code duplication: 28.4%"
+            "issue": "Code duplication: 27.7%"
           },
           {
             "source_metric": "StructuralComplexity",
@@ -36426,15 +36426,15 @@
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cognitive complexity: 113"
+            "issue": "High cognitive complexity: 114"
           },
           {
             "source_metric": "StructuralComplexity",
-            "amount": 12.0,
+            "amount": 13.0,
             "applied_to": [
               "StructuralComplexity"
             ],
-            "issue": "High cyclomatic complexity: 54"
+            "issue": "High cyclomatic complexity: 56"
           }
         ],
         "critical_defects_count": 0,
@@ -44145,14 +44145,14 @@
   },
   "summary": {
     "total_files": 519,
-    "avg_score": 90.32025,
+    "avg_score": 90.31859,
     "grade_distribution": {
       "A+": 189,
       "A": 176,
       "A-": 30,
       "B+": 28,
-      "B": 67,
-      "B-": 26,
+      "B": 66,
+      "B-": 27,
       "C": 1,
       "F": 2
     },

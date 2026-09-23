@@ -26,8 +26,9 @@ fn eval_array_nullary_method(
         "unique" => eval_array_unique(arr),
         "enumerate" => eval_array_enumerate(arr),
         "flatten" => eval_array_flatten(arr),
-        "sort" => eval_array_sort(arr),
-        "reverse" => eval_array_reverse(arr),
+        // METHODS-1: `sorted`/`reversed` return a new array, like `sort`/`reverse`
+        "sort" | "sorted" => eval_array_sort(arr),
+        "reverse" | "reversed" => eval_array_reverse(arr),
         "sum" => eval_array_sum(arr),
         "product" => eval_array_product(arr),
         "min" => eval_array_min(arr),
@@ -53,7 +54,8 @@ fn eval_array_unary_method(
         "intersection" => eval_array_intersection(arr, arg),
         "difference" => eval_array_difference(arr, arg),
         "take" => eval_array_take(arr, arg),
-        "skip" => eval_array_skip(arr, arg),
+        // METHODS-1: `drop(n)` is the array without its first n elements
+        "skip" | "drop" => eval_array_skip(arr, arg),
         "zip" => eval_array_zip(arr, arg),
         _ => return None,
     };
@@ -617,12 +619,33 @@ fn eval_array_difference(arr: &Arc<[Value]>, other: &Value) -> Result<Value, Int
 /// ```
 fn eval_array_sort(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
     let mut sorted = arr.to_vec();
-    sorted.sort_by(|a, b| {
-        let a_str = format!("{a:?}");
-        let b_str = format!("{b:?}");
-        a_str.cmp(&b_str)
-    });
+    sorted.sort_by(compare_for_sort);
     Ok(Value::Array(Arc::from(sorted)))
+}
+
+/// METHODS-1: order numbers by value and strings lexically; any other pair of
+/// values falls back to comparing their debug text (a stable, total order).
+///
+/// # Complexity
+/// Cyclomatic complexity: 5
+fn compare_for_sort(a: &Value, b: &Value) -> std::cmp::Ordering {
+    match (a, b) {
+        (Value::Integer(x), Value::Integer(y)) => x.cmp(y),
+        (Value::String(x), Value::String(y)) => x.cmp(y),
+        _ => match (sort_number(a), sort_number(b)) {
+            (Some(x), Some(y)) => x.total_cmp(&y),
+            _ => format!("{a:?}").cmp(&format!("{b:?}")),
+        },
+    }
+}
+
+/// Numeric value of an `Integer` or `Float`, for mixed-number sorting.
+fn sort_number(value: &Value) -> Option<f64> {
+    match value {
+        Value::Integer(n) => Some(*n as f64),
+        Value::Float(f) => Some(*f),
+        _ => None,
+    }
 }
 
 /// PIPELINE-001: Reverse array order

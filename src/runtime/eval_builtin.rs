@@ -205,6 +205,7 @@ fn try_eval_utility_part2(name: &str, args: &[Value]) -> Result<Option<Value>, I
         "__builtin_reverse__" => Ok(Some(eval_reverse(args)?)),
         // Test assertion built-ins for unit testing support
         "__builtin_assert_eq__" => Ok(Some(eval_assert_eq(args)?)),
+        "__builtin_assert_ne__" => Ok(Some(eval_assert_ne(args)?)),
         "__builtin_assert__" => Ok(Some(eval_assert(args)?)),
         "__builtin_dir__" => Ok(Some(eval_dir(args)?)),
         // Advanced array utilities for functional programming patterns

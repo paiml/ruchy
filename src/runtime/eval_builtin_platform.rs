@@ -460,6 +460,27 @@ pub(crate) fn eval_assert_eq(args: &[Value]) -> Result<Value, InterpreterError> 
     }
 }
 
+/// Builtin `assert_ne` function for testing (METHODS-1, parity with the transpiler)
+pub(crate) fn eval_assert_ne(args: &[Value]) -> Result<Value, InterpreterError> {
+    if args.len() < 2 {
+        return Err(InterpreterError::RuntimeError(
+            "assert_ne() expects at least 2 arguments (left, right)".to_string(),
+        ));
+    }
+
+    let left = &args[0];
+    let right = &args[1];
+    if left != right {
+        return Ok(Value::Nil);
+    }
+    let message = if args.len() > 2 {
+        format!("{}", args[2])
+    } else {
+        format!("Assertion failed: expected values to differ, both were {left:?}")
+    };
+    Err(InterpreterError::AssertionFailed(message))
+}
+
 /// Builtin assert function for testing
 pub(crate) fn eval_assert(args: &[Value]) -> Result<Value, InterpreterError> {
     if args.is_empty() {
