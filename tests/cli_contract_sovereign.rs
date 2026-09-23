@@ -511,8 +511,10 @@ fn test_contracts_check_with_threshold() {
         .arg("--min-coverage")
         .arg("80")
         .assert()
-        .success()
-        .stdout(predicate::str::contains("80.0%"));
+        // `fn main() {}` carries no contract: 0.0% < 80.0% must fail the gate.
+        .failure()
+        .stdout(predicate::str::contains("80.0%"))
+        .stderr(predicate::str::contains("below threshold 80.0%"));
 }
 
 // ============================================================================
@@ -558,5 +560,5 @@ fn test_version_is_5_0() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("5.0.0-alpha"));
+        .stdout(predicate::str::contains("ruchy 5.0."));
 }
