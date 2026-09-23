@@ -381,6 +381,144 @@ pub fn run_file(input: &Path, apply: bool) -> Outcome {
     }
 }
 
+/// One example's result, as the test program reported it.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct ExampleResult {
+    /// The example's name.
+    pub name: String,
+    /// True when every `then` and every `expect` held.
+    pub ok: bool,
+    /// The first `then` or `expect` that did not hold.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub failed: Option<String>,
+}
+
+/// `ruchy test <file.rhl | file.rhl.yaml>` (RHL-5): lower the job with one
+/// test per `example` and no `observe`/`apply`, build it with the call `ruchy
+/// compile x.ruchy` makes, run it, and report each example. Exit 0 when every
+/// example holds (a job with no examples reports `0 examples`), 1 when one
+/// fails or the build fails; the check's code, or 2 for a lowering refusal.
+#[must_use]
+pub fn test_file(input: &Path, format: OutputFormat) -> Outcome {
+    let ruchy = match lower_file(input, Form::Tests) {
+        Ok(r) => r,
+        Err(out) => return out,
+    };
+    let names = match example_names_of(input) {
+        Ok(n) => n,
+        Err(out) => return out,
+    };
+    let stdout = match build_and_run(input, &ruchy) {
+        Ok(s) => s,
+        Err(out) => return out,
+    };
+    let results = example_results(&names, &stdout);
+    let exit = i32::from(results.iter().any(|r| !r.ok));
+    let file = input.display().to_string();
+    let text = match format {
+        OutputFormat::Text => test_text(&file, &results),
+        OutputFormat::Json => test_json(&file, &results, exit),
+    };
+    Outcome {
+        stdout: text,
+        stderr: String::new(),
+        exit,
+    }
+}
+
+fn example_names_of(input: &Path) -> Result<Vec<String>, Outcome> {
+    let source = std::fs::read_to_string(input)
+        .map_err(|e| failed(format!("{}: cannot read: {e}\n", input.display()), 1))?;
+    let program = if is_rhl_yaml(input) {
+        yaml::from_yaml(&source).ok()
+    } else {
+        super::parse(&source).ok()
+    };
+    program
+        .map(|p| super::lower::example_names(&p))
+        .ok_or_else(|| failed(format!("{}: does not parse\n", input.display()), 1))
+}
+
+/// Build the test program in a temporary directory and run it with an empty
+/// environment: its standard output.
+fn build_and_run(input: &Path, ruchy: &str) -> Result<String, Outcome> {
+    let dir = tempfile::tempdir()
+        .map_err(|e| failed(format!("cannot create a build directory: {e}\n"), 1))?;
+    let bin = dir.path().join("examples");
+    let options = crate::backend::CompileOptions {
+        output: bin.clone(),
+        ..crate::backend::CompileOptions::default()
+    };
+    crate::backend::compile_source_to_binary(ruchy, &options)
+        .map_err(|e| failed(format!("{}: {e:#}\n", input.display()), 1))?;
+    let out = std::process::Command::new(&bin)
+        .env_clear()
+        .output()
+        .map_err(|e| {
+            failed(
+                format!("{}: cannot run the tests: {e}\n", input.display()),
+                1,
+            )
+        })?;
+    Ok(String::from_utf8_lossy(&out.stdout).to_string())
+}
+
+/// Each example's result from the `rhl-example <n> ok|FAILED <what>` lines;
+/// an example with no line failed (the test program stopped before it).
+fn example_results(names: &[String], stdout: &str) -> Vec<ExampleResult> {
+    names
+        .iter()
+        .enumerate()
+        .map(|(n, name)| {
+            let prefix = format!("rhl-example {n} ");
+            let line = stdout.lines().find_map(|l| l.strip_prefix(&prefix));
+            let failed = match line {
+                Some("ok") => None,
+                Some(rest) => Some(rest.strip_prefix("FAILED ").unwrap_or(rest).to_string()),
+                None => Some("no result: the test program stopped".to_string()),
+            };
+            ExampleResult {
+                name: name.clone(),
+                ok: failed.is_none(),
+                failed,
+            }
+        })
+        .collect()
+}
+
+fn test_text(file: &str, results: &[ExampleResult]) -> String {
+    let mut out = String::new();
+    for r in results {
+        match &r.failed {
+            None => out.push_str(&format!("example \"{}\" … ok\n", r.name)),
+            Some(what) => out.push_str(&format!("example \"{}\" … FAILED ({what})\n", r.name)),
+        }
+    }
+    let failures = results.iter().filter(|r| !r.ok).count();
+    let noun = if results.len() == 1 {
+        "example"
+    } else {
+        "examples"
+    };
+    out.push_str(&format!(
+        "{file}: {} {noun}, {} passed, {failures} failed\n",
+        results.len(),
+        results.len() - failures
+    ));
+    out
+}
+
+fn test_json(file: &str, results: &[ExampleResult], exit: i32) -> String {
+    let failures = results.iter().filter(|r| !r.ok).count();
+    json(&serde_json::json!({
+        "file": file,
+        "examples": results,
+        "passed": results.len() - failures,
+        "failed": failures,
+        "exit": exit,
+    }))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -8,7 +8,7 @@
 
 use anyhow::Result;
 use ruchy::rhl::cli::{
-    compile_file, convert_file, is_rhl, run_file, transpile_file, Outcome, OutputFormat,
+    compile_file, convert_file, is_rhl, run_file, test_file, transpile_file, Outcome, OutputFormat,
 };
 use ruchy::rhl::fix::fix_files;
 use ruchy::rhl::vocab_cli::{list_outcome, no_root, resolve_root, show_outcome, validate_outcome};
@@ -85,6 +85,17 @@ pub fn handle_run(file: &Path, apply: bool) -> Result<Option<()>> {
         anyhow::bail!("--apply applies to .rhl and .rhl.yaml files only");
     }
     Ok(None)
+}
+
+/// `ruchy test [--format text|json]` on an RHL file: build and run the tests
+/// its `example` blocks lower to (RHL-5).
+///
+/// # Errors
+///
+/// Returns an error for a `--format` other than `text` or `json`.
+pub fn handle_rhl_test(file: &Path, format: &str) -> Result<()> {
+    let format = OutputFormat::parse(format).map_err(anyhow::Error::msg)?;
+    finish(&test_file(file, format))
 }
 
 /// What `ruchy vocab` was asked to do.

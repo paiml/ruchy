@@ -1519,6 +1519,11 @@ fn handle_command_dispatch(
         }
         Some(Commands::Vocab { command }) => handle_vocab(command),
         Some(Commands::Test {
+            path: Some(ref path),
+            ref format,
+            ..
+        }) if ruchy::rhl::cli::is_rhl(path) => handlers::rhl_handler::handle_rhl_test(path, format),
+        Some(Commands::Test {
             path,
             watch,
             verbose,
