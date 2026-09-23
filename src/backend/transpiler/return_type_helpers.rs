@@ -157,12 +157,7 @@ pub fn returns_vec(body: &Expr) -> bool {
         ExprKind::Return { value: Some(val) } => returns_vec(val),
 
         // Block - check last expression
-        ExprKind::Block(exprs) => exprs.last().is_some_and(|e| {
-            // Last expression is array literal
-            matches!(&e.kind, ExprKind::List(_))
-            // OR recursively check
-            || returns_vec(e)
-        }),
+        ExprKind::Block(exprs) => exprs.last().is_some_and(|e| block_tail_is_vec(e, exprs)),
 
         // Let expression - check body
         ExprKind::Let { body: let_body, .. } | ExprKind::LetPattern { body: let_body, .. } => {
@@ -171,6 +166,12 @@ pub fn returns_vec(body: &Expr) -> bool {
 
         _ => false,
     }
+}
+
+/// Is the tail `e` of a block `exprs` a Vec: a list literal, a nested Vec-returning
+/// expression, or (ISSUE-113) an identifier bound to a list earlier in the block.
+fn block_tail_is_vec(e: &Expr, exprs: &[Expr]) -> bool {
+    matches!(&e.kind, ExprKind::List(_)) || returns_vec(e) || expr_creates_or_returns_vec(e, exprs)
 }
 
 /// TRANSPILER-013: Check if expression returns an object literal (transpiled to `BTreeMap`)
