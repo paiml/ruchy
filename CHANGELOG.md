@@ -55,6 +55,24 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   `unwrap`/`expect` on an absent value is an error naming it, and so is
   `unwrap_or_default`, whose default type is unknown at runtime. A plain
   object has `get(key)`, returning the value or nil.
+- **(behaviour)** In-place array methods change their receiver, as in Rust
+  (FIELDPOP-1, ARRAYMUT-1). `v.sort()`, `reverse`, `append`, `extend`,
+  `insert`, `remove`, `clear`, `truncate`, `dedup`, `resize` and
+  `extend_from_slice` mutate a local array or a field (`self.items.pop()`)
+  and return what Rust returns: nil, the removed element for `remove`, and the
+  element or nil for `pop`. Before, `sort` and `reverse` returned a copy and
+  left the variable unchanged, a field's `push`/`pop` was lost, and `insert`,
+  `remove`, `clear` and `truncate` were unknown. `sorted`/`reversed` still
+  return a copy. `a.append(b)` does not empty `b`.
+- A `let`-bound array literal that is later grown (`push`, `extend`, `insert`,
+  …) or annotated `Vec<…>` transpiles to `vec![…]`, and so does an array
+  literal for a `Vec<…>` struct field (LETVEC-1, VECLIT-1). Before,
+  `let mut v = [1, 2]; v.push(3)` failed rustc (E0599). `append` transpiles to
+  `extend`.
+- A keyword can name a method or field after `.` or `?.` (`v.extend(x)`,
+  `o.type`), and a struct can declare it (`struct W { type: i32 }`). A Rust
+  reserved word is emitted as `r#type` (EXTENDKW-1, RESFIELD-1).
+- Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
   - they write compiled output (`a.out`, `.rlib`) into temp dirs, never the repository;

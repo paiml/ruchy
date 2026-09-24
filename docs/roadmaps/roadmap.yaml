@@ -4043,7 +4043,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FIELDPOP-1: self.items.pop() inside a method returns the whole array instead of the popped element (interpreter)'
-  status: inprogress
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T05:31:58Z
@@ -4067,7 +4067,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'VECLIT-1: an array literal assigned to a Vec field transpiles to an array, rustc E0308'
-  status: inprogress
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T05:31:58Z
@@ -4090,7 +4090,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'OPTMETHODS-1: the interpreter has no Option/Result methods (Some(3).unwrap() fails) and map.get fails'
-  status: inprogress
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T08:00:00Z
@@ -4112,7 +4112,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'ARRAYMUT-1: in-place array methods do not mutate (v.sort() leaves v unsorted) and insert/remove/clear/truncate are unknown (interpreter)'
-  status: inprogress
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T08:00:00Z
@@ -4133,7 +4133,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'EXTENDKW-1: v.extend([3]) is a parse error "Expected method name, tuple index, or await after ."'
-  status: inprogress
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T08:00:00Z
@@ -4154,7 +4154,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'LETVEC-1: let mut v = [1, 2]; v.push(3) transpiles to a fixed-size Rust array and fails rustc E0599'
-  status: inprogress
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T08:30:00Z
@@ -4175,7 +4175,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RESFIELD-1: a field named by a Rust reserved word (o.match, o.type) transpiles to invalid Rust'
-  status: inprogress
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T08:30:00Z
