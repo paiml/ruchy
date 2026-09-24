@@ -308,3 +308,12 @@ fn test_strrecv_1_option_replace_stays_debug() {
     let src = main_with("    let mut o = Some(1)\n    println(o.replace(2))\n    println(o)");
     check(&src, "Some(1)\nSome(2)\n", false);
 }
+
+// `vec![..]` and `vec![x; n]` receivers and bindings are lists too.
+#[test]
+fn test_strrecv_1_vec_macro_repeat_stays_debug() {
+    let src = main_with(
+        "    let v = vec![1]\n    println(v.repeat(2))\n    let z = vec![0; 2]\n    println(z.repeat(2))\n    println(vec![5].repeat(2))",
+    );
+    check(&src, "[1, 1]\n[0, 0, 0, 0]\n[5, 5]\n", true);
+}

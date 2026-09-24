@@ -343,11 +343,14 @@ impl Transpiler {
         }
     }
 
-    /// STRRECV-1: `expr` is a list literal or a binding recorded as one.
-    /// (complexity: 3)
+    /// STRRECV-1: `expr` is a list literal (`[..]`, `[x; n]`, `vec![..]`,
+    /// `vec![x; n]`) or a binding recorded as one. (complexity: 4)
     fn is_known_list(&self, expr: &Expr) -> bool {
         match &expr.kind {
-            ExprKind::List(_) | ExprKind::ArrayInit { .. } => true,
+            ExprKind::List(_) | ExprKind::ArrayInit { .. } | ExprKind::VecRepeat { .. } => true,
+            ExprKind::Macro { name, .. } | ExprKind::MacroInvocation { name, .. } => {
+                name.trim_end_matches('!') == "vec"
+            }
             ExprKind::Identifier(name) => self
                 .variable_types
                 .borrow()

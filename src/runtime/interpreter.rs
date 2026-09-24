@@ -544,6 +544,8 @@ impl Interpreter {
                 inclusive,
             } => self.eval_range_expr(start, end, *inclusive),
             ExprKind::ArrayInit { value, size } => self.eval_array_init_expr(value, size),
+            // STRRECV-1: `vec![x; n]` builds the same list as `[x; n]`
+            ExprKind::VecRepeat { value, count } => self.eval_array_init_expr(value, count),
             ExprKind::DataFrame { columns } => self.eval_dataframe_literal(columns),
             _ => unreachable!("Non-data-structure expression passed to eval_data_structure_expr"),
         }

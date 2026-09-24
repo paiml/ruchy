@@ -190,14 +190,15 @@ Behaviour changes a program can observe are marked **(behaviour)**.
 - Compiled `println(x.replace(a, b))` prints as text for any receiver (the
   two-argument `replace` is `str::replace`; `Option::replace` takes one), and
   `println(x.repeat(n))` prints as text unless `x` is known to be a list: a
-  list literal, a binding to one, or a binding or parameter annotated
+  list literal (`[..]`, `[x; n]`, `vec![..]`, `vec![x; n]`), a binding to
+  one, or a binding or parameter annotated
   `Vec<T>`/`[T]`. A loop variable, field or call receiver no longer prints
   quoted; a list receiver the transpiler cannot see (an untyped parameter
   bound to a list) now needs an annotation. A plain loop variable over
   `lines()`, `split_whitespace()`, `split(<literal>)` or a list of string
   literals prints as text. A `for`/`while` loop or `+=` as main's last
-  statement is not printed as `()`. Strings have `split_whitespace()` under
-  `ruchy run` (STRRECV-1).
+  statement is not printed as `()`. Strings have `split_whitespace()` and
+  `vec![x; n]` evaluates under `ruchy run` (STRRECV-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
