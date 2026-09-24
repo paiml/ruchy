@@ -14,6 +14,15 @@ Behaviour changes a program can observe are marked **(behaviour)**.
 - **(behaviour)** Method receivers follow the spec (§7.11): a bare `self` is
   owned, and becomes `&mut self` when the method mutates it. Write `&self` for
   a borrowing getter. This reverses the 2026-01 change that always borrowed.
+  Mutation is detected through nested fields, indexes, `++`/`--`, mutating std
+  methods on a field (`push`, `insert`, …) and calls to other mutating
+  methods of the same impl. A trait default method taking an owned `self` gets
+  `where Self: Sized`, so it compiles.
+- A function or method named with a Rust reserved word (`do`, `box`, `typeof`, …)
+  is emitted as a raw identifier (`r#do`) at definition and call.
+- `ruchy fmt` keeps `::` paths. `i32::MAX` transpiles as a path. A user-defined
+  `range` function is no longer mistaken for the builtin. An awaiting `main`
+  with a declared return type (`-> Result<(), String>`) compiles.
 - `module::function()` calls keep `::` in transpiled Rust, and the parser now
   records the difference. A closure stored in a field can be called as
   `(obj.f)(x)`: field accesses carry their real source span, so the call parses.
@@ -23,8 +32,11 @@ Behaviour changes a program can observe are marked **(behaviour)**.
 - A function that returns a `let`-bound `[]` infers `-> Vec<…>`.
 - `range(a, b).count()` (and `sum`/`min`/`max`) compile. A `main` that awaits
   runs on a small in-program executor, with no tokio needed.
-- **(behaviour)** The interpreter's `{:?}` prints what Rust prints (`[1, 2]`,
-  not `Array([Integer(1), …])`). `println("{:?}", x)` and `format!` substitute
+- **(behaviour)** The interpreter's `{:?}` prints what Rust prints for
+  numbers, strings, arrays, tuples, `Option` and `Result` (`[1, 2]`, not
+  `Array([Integer(1), …])`). It differs in two cases: struct fields print sorted
+  by name rather than in declaration order (DEBUGORDER-1), and chars print as
+  strings. `println("{:?}", x)` and `format!` substitute
   like the macro. `format!` no longer quotes its string arguments.
 - **(behaviour)** `compute_hash` returns MD5 (32 hex characters) again, as its
   contract says, using an in-tree RFC 1321 implementation. In 5.0.0-beta.2 a
@@ -36,6 +48,7 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   warning, when the host has no inotify instance left.
 - Tests:
   - they spawn the cargo-built binary;
+  - they write compiled output (`a.out`, `.rlib`) into temp dirs, never the repository;
   - `ruchy serve` tests stop through a shutdown seam instead of serving forever;
   - `release_hygiene` names a dirty tree;
   - pmat-written files are gitignored.

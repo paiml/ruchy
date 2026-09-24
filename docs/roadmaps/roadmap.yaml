@@ -3982,3 +3982,60 @@ roadmap:
   - tests
   - filed-by:RHLGA-1
   notes: null
+- id: DEBUGORDER-1
+  github_issue: null
+  item_type: task
+  title: 'DEBUGORDER-1: interpreter {:?} prints struct fields sorted by name; rustc prints declaration order (Value keeps no field order)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T01:39:25Z
+  updated: 2026-09-24T01:39:25Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  - release:v5.1.0
+  notes: null
+- id: SPAWNKW-1
+  github_issue: null
+  item_type: task
+  title: 'SPAWNKW-1: a trait method named spawn does not parse because spawn is a lexer keyword (SPECIFICATION 7.1 uses fun spawn(self))'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T01:39:25Z
+  updated: 2026-09-24T01:39:25Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  - release:v5.1.0
+  notes: null
+- id: POSTINC-1
+  github_issue: null
+  item_type: task
+  title: 'POSTINC-1: self.count++ as the tail of a unit function emits a value (E0308)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T01:39:26Z
+  updated: 2026-09-24T01:39:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  - release:v5.1.0
+  notes: null
