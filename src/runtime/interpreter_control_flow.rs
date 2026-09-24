@@ -430,60 +430,6 @@ impl Interpreter {
         }
     }
 
-    /// BUG-003: Evaluate array/vector index assignment (arr[i] = value, matrix[i][j] = value)
-    ///
-    /// Handles both simple (arr[0] = 99) and nested (matrix[0][1] = 99) index assignment.
-    /// Complexity: 8 (≤10 target)
-    /// Assign a value into a 2D array: `arr[outer_idx][inner_idx] = val`.
-    fn assign_nested_array(
-        &mut self,
-        arr_name: &str,
-        outer_idx: usize,
-        inner_idx_val: Value,
-        val: Value,
-    ) -> Result<Value, InterpreterError> {
-        let inner_idx = match inner_idx_val {
-            Value::Integer(i) => i as usize,
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "Array index must be an integer".to_string(),
-                ))
-            }
-        };
-
-        let arr = self.lookup_variable(arr_name)?;
-        let Value::Array(ref outer_vec) = arr else {
-            return Err(InterpreterError::RuntimeError(
-                "Cannot index non-array value".to_string(),
-            ));
-        };
-
-        let mut new_outer = outer_vec.to_vec();
-        if outer_idx >= new_outer.len() {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Outer index {outer_idx} out of bounds"
-            )));
-        }
-
-        let Value::Array(ref inner_vec) = new_outer[outer_idx] else {
-            return Err(InterpreterError::RuntimeError(
-                "Cannot index non-array value".to_string(),
-            ));
-        };
-
-        let mut new_inner = inner_vec.to_vec();
-        if inner_idx >= new_inner.len() {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Inner index {inner_idx} out of bounds"
-            )));
-        }
-
-        new_inner[inner_idx] = val.clone();
-        new_outer[outer_idx] = Value::Array(Arc::from(new_inner));
-        self.set_variable(arr_name, Value::Array(Arc::from(new_outer)));
-        Ok(val)
-    }
-
     /// Evaluate field assignment: `obj.field = value`.
     ///
     /// Handles Object, ObjectMut, Class, and Struct field updates.
@@ -539,112 +485,34 @@ impl Interpreter {
         }
     }
 
-    /// Element assignment `object[index] = val`. An array reached through a
-    /// chain containing a field (`o.items[0] = x`, `g.grid[0][1] = x`) is
-    /// rebuilt and written back through the chain; every other object uses
-    /// [`Self::eval_index_assign`].
+    /// Element assignment `object[index] = val`: delegates to
+    /// [`Self::eval_index_assign`], the single element writer.
     fn eval_element_assign(
         &mut self,
         object: &Expr,
         index: &Expr,
         val: Value,
     ) -> Result<Value, InterpreterError> {
-        if !is_chain_through_field(object) {
-            return self.eval_index_assign(object, index, val);
-        }
-        let Value::Array(arr) = self.eval_expr(object)? else {
-            return Err(InterpreterError::RuntimeError(
-                "Cannot index non-array value".to_string(),
-            ));
-        };
-        let Value::Integer(i) = self.eval_expr(index)? else {
-            return Err(InterpreterError::RuntimeError(
-                "Array index must be an integer".to_string(),
-            ));
-        };
-        let mut items = arr.to_vec();
-        let len = items.len();
-        let slot = usize::try_from(i).ok().and_then(|i| items.get_mut(i));
-        let Some(slot) = slot else {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Index {i} out of bounds for array of length {len}"
-            )));
-        };
-        *slot = val.clone();
-        self.write_back(object, Value::Array(Arc::from(items)))?;
-        Ok(val)
+        self.eval_index_assign(object, index, val)
     }
 
+    /// BUG-003 / NESTASSIGN-1 / DICTIDX-1: `object[index] = val` where
+    /// `object` is any place (`v`, `m[0]`, `o.items`, `d["k"]["j"]`). The
+    /// container is read, rebuilt with the new element (an integer index into
+    /// an array, or a string key into an object/dict) and written back
+    /// through `write_back`, so every link of the chain is updated.
+    /// Complexity: 1
     pub(crate) fn eval_index_assign(
         &mut self,
         object: &Expr,
         index: &Expr,
         val: Value,
     ) -> Result<Value, InterpreterError> {
-        match &object.kind {
-            ExprKind::Identifier(arr_name) => {
-                // Simple case: arr[i] = value
-                let idx_val = self.eval_expr(index)?;
-                let idx = match idx_val {
-                    Value::Integer(i) => i as usize,
-                    _ => {
-                        return Err(InterpreterError::RuntimeError(
-                            "Array index must be an integer".to_string(),
-                        ))
-                    }
-                };
-
-                let arr = self.lookup_variable(arr_name)?;
-                match arr {
-                    Value::Array(ref vec) => {
-                        let mut new_vec = vec.to_vec();
-                        if idx < new_vec.len() {
-                            new_vec[idx] = val.clone();
-                            self.set_variable(arr_name, Value::Array(Arc::from(new_vec)));
-                            Ok(val)
-                        } else {
-                            Err(InterpreterError::RuntimeError(format!(
-                                "Index {} out of bounds for array of length {}",
-                                idx,
-                                new_vec.len()
-                            )))
-                        }
-                    }
-                    _ => Err(InterpreterError::RuntimeError(
-                        "Cannot index non-array value".to_string(),
-                    )),
-                }
-            }
-            ExprKind::IndexAccess {
-                object: nested_obj,
-                index: nested_idx,
-            } => {
-                // Nested case: matrix[i][j] = value
-                // Get the outer index first
-                let outer_idx_val = self.eval_expr(nested_idx)?;
-                let outer_idx = match outer_idx_val {
-                    Value::Integer(i) => i as usize,
-                    _ => {
-                        return Err(InterpreterError::RuntimeError(
-                            "Array index must be an integer".to_string(),
-                        ))
-                    }
-                };
-
-                // Get the root array name (only handle Identifier for now)
-                if let ExprKind::Identifier(arr_name) = &nested_obj.kind {
-                    let inner_idx_val = self.eval_expr(index)?;
-                    self.assign_nested_array(arr_name, outer_idx, inner_idx_val, val)
-                } else {
-                    Err(InterpreterError::RuntimeError(
-                        "Complex nested index assignment not yet supported".to_string(),
-                    ))
-                }
-            }
-            _ => Err(InterpreterError::RuntimeError(
-                "Complex array assignment targets not yet supported".to_string(),
-            )),
-        }
+        let container = self.eval_expr(object)?;
+        let key = self.eval_expr(index)?;
+        let updated = with_element(container, &key, val.clone())?;
+        self.write_back(object, updated)?;
+        Ok(val)
     }
 
     /// Evaluate a compound assignment (`x += 1`, `o.a.b -= 2`, `v[i] *= 3`,
@@ -674,15 +542,36 @@ impl Interpreter {
     }
 }
 
-/// IDXCOMPOUND-1: `expr` is a FieldAccess, or an IndexAccess chain with a
-/// FieldAccess somewhere below it (`o.grid[0]`).
-/// Complexity: 3
-fn is_chain_through_field(expr: &Expr) -> bool {
-    match &expr.kind {
-        ExprKind::FieldAccess { .. } => true,
-        ExprKind::IndexAccess { object, .. } => is_chain_through_field(object),
-        _ => false,
+/// DICTIDX-1: `container` with the element at `key` replaced by `val`: an
+/// integer index into an array, or a string key into an object/dict.
+/// Complexity: 4
+fn with_element(container: Value, key: &Value, val: Value) -> Result<Value, InterpreterError> {
+    match (&container, key) {
+        (Value::Array(items), Value::Integer(i)) => with_array_slot(items, *i, val),
+        (Value::Array(_), _) => Err(InterpreterError::RuntimeError(
+            "Array index must be an integer".to_string(),
+        )),
+        (_, Value::String(k)) => {
+            super::interpreter_methods_dispatch::with_field(container.clone(), k, val)
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "Cannot index non-array value".to_string(),
+        )),
     }
+}
+
+/// `items` with slot `i` replaced by `val`; an out-of-range index is an error.
+/// Complexity: 2
+fn with_array_slot(items: &[Value], i: i64, val: Value) -> Result<Value, InterpreterError> {
+    let mut items = items.to_vec();
+    let len = items.len();
+    let Some(slot) = usize::try_from(i).ok().and_then(|i| items.get_mut(i)) else {
+        return Err(InterpreterError::RuntimeError(format!(
+            "Index {i} out of bounds for array of length {len}"
+        )));
+    };
+    *slot = val;
+    Ok(Value::Array(Arc::from(items)))
 }
 
 /// IDXCOMPOUND-1 / IDXPUSHWB-1: `expr` names a place: a variable, or a
@@ -1600,7 +1489,10 @@ mod tests {
 
         let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Outer index"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Index 5 out of bounds"));
     }
 
     #[test]
@@ -1622,7 +1514,10 @@ mod tests {
 
         let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Inner index"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Index 5 out of bounds"));
     }
 
     #[test]
@@ -1660,7 +1555,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("not yet supported"));
+            .contains("Cannot index non-array"));
     }
 
     // ============================================================================
