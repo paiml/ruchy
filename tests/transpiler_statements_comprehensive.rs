@@ -55,6 +55,9 @@ pub fn test() {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args([
             "--crate-type",
             "lib",
@@ -171,6 +174,9 @@ pub fn test(x: i32) -> String {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args([
             "--crate-type",
             "lib",
@@ -292,6 +298,9 @@ pub fn test(x: i32) -> String {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args([
             "--crate-type",
             "lib",
@@ -360,6 +369,9 @@ pub fn test() {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args([
             "--crate-type",
             "lib",
@@ -705,6 +717,9 @@ pub fn calculate(x: i32) -> i32 {
         .expect("Failed to write test file");
 
     let rustc_result = Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args([
             "--crate-type",
             "lib",
