@@ -120,6 +120,8 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   `{:.2}` on a string truncates it.
 - `eprintln` and `eprint` are builtins that write formatted text to stderr
   (EPRINTLN-1).
+- An array literal passed to a parameter annotated `Vec<T>` becomes a `Vec`
+  in compiled code (ARRVECARG-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

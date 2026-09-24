@@ -179,7 +179,10 @@ impl Transpiler {
             // BOOK-COMPAT-017: Array literal to Any parameter (function with inferred Vec<T> type)
             // Convert array [1, 2, 3] to vec via .to_vec() for functions expecting Vec
             // But NOT when expected type is explicit array type [T; N]
-            (ExprKind::List(elements), "Any" | "Unknown") if !elements.is_empty() => {
+            // ARRVECARG-1: likewise for a parameter annotated `Vec<T>`
+            (ExprKind::List(elements), expected)
+                if !elements.is_empty() && expects_vec_param(expected) =>
+            {
                 Ok(quote! { #tokens.to_vec() })
             }
             // Array literal to explicit array type [T; N]: keep as-is
@@ -204,6 +207,13 @@ impl Transpiler {
             _ => Ok(tokens.clone()),
         }
     }
+}
+
+/// ARRVECARG-1: a parameter that takes an array literal as a `Vec`: an
+/// inferred (`Any`/`Unknown`) parameter or one annotated `Vec<T>`.
+/// (complexity: 2)
+fn expects_vec_param(expected: &str) -> bool {
+    matches!(expected, "Any" | "Unknown") || expected.starts_with("Vec<")
 }
 
 // ============================================================================

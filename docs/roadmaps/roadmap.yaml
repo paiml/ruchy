@@ -4528,11 +4528,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'ARRVECARG-1: array literal passed to a Vec<T> parameter transpiles without .to_vec() (E0308)'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T14:00:00Z
-  updated: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: fun n(v: Vec<i32>) -> i32 { v[0] }; fun main() { println("{}", n([1, 2, 3])) }'
