@@ -375,6 +375,18 @@ impl Transpiler {
         }
     }
 
+    /// COUNTITER-1: a call whose Rust form already is an iterator
+    /// (`s.chars()`, `v.iter()`, `it.rev()`, ...). `map`/`filter` are not
+    /// listed: they are emitted with `.collect::<Vec<_>>()`. (complexity: 2)
+    fn is_iterator_method_call(object: &Expr) -> bool {
+        matches!(&object.kind, ExprKind::MethodCall { method, .. } if matches!(
+            method.as_str(),
+            "iter" | "iter_mut" | "into_iter" | "chars" | "bytes" | "char_indices"
+                | "lines" | "split_whitespace" | "enumerate" | "rev" | "skip" | "take"
+                | "step_by" | "zip"
+        ))
+    }
+
     /// `a..b` needs parentheses to take a method; `range(a, b)` emits them itself.
     fn parenthesize_range_literal(obj_tokens: &TokenStream, object: &Expr) -> TokenStream {
         if matches!(object.kind, ExprKind::Range { .. }) {
@@ -398,6 +410,8 @@ impl Transpiler {
         let (iter, copied) = if self.is_range_receiver(object) {
             let range = Self::parenthesize_range_literal(obj_tokens, object);
             (range.clone(), range)
+        } else if Self::is_iterator_method_call(object) {
+            (obj_tokens.clone(), obj_tokens.clone())
         } else {
             (
                 quote! { #obj_tokens.iter() },
@@ -526,6 +540,26 @@ mod tests {
 
     fn int_expr(n: i64) -> Expr {
         make_expr(ExprKind::Literal(Literal::Integer(n, None)))
+    }
+
+    #[test]
+    fn test_countiter_1_count_on_iterator_receiver() {
+        let transpiler = make_transpiler();
+        for (src, want) in [
+            ("s.chars().count()", "s.chars().count()"),
+            ("v.iter().count()", "v.iter().count()"),
+            ("v.count()", "v.iter().count()"),
+        ] {
+            let ast = crate::frontend::parser::Parser::new(src)
+                .parse()
+                .expect("parse");
+            let got = transpiler
+                .transpile_expr(&ast)
+                .expect("transpile")
+                .to_string()
+                .replace(' ', "");
+            assert_eq!(got, want, "{src}");
+        }
     }
 
     fn string_expr(s: &str) -> Expr {
