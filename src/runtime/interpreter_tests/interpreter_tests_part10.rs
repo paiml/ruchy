@@ -849,7 +849,8 @@ fn test_format_macro_excess_placeholders() {
     let mut interp = Interpreter::new();
     // More placeholders than values
     let result = interp.eval_string(r#"format!("{} {} {}", 1)"#);
-    assert!(result.is_ok()); // Should preserve extra placeholders
+    // FMTSPEC-1: rustc rejects missing arguments; so does the interpreter.
+    assert!(result.is_err());
 }
 
 #[test]

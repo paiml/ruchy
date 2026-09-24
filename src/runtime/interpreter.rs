@@ -277,7 +277,7 @@ impl Interpreter {
         match expr_kind {
             ExprKind::Binary { left, op, right } => self.eval_binary_expr(left, *op, right),
             ExprKind::Unary { op, operand } => self.eval_unary_expr(*op, operand),
-            ExprKind::Call { func, args } => self.eval_function_call(func, args),
+            ExprKind::Call { func, args } => self.eval_call_expr(func, args),
             ExprKind::MethodCall {
                 receiver,
                 method,
@@ -373,11 +373,6 @@ impl Interpreter {
         Some(current_value)
     }
 
-    // Value formatting delegated to value_format module
-    // EXTREME TDD: Eliminated 50 lines of duplicate code
-    pub(crate) fn format_string_with_values(format_str: &str, values: &[Value]) -> String {
-        crate::runtime::value_format::format_string_with_values(format_str, values)
-    }
     /// Evaluate miscellaneous expressions.
     /// Delegates to `interpreter_misc_eval` module.
     pub(crate) fn eval_misc_expr(

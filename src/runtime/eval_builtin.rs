@@ -11,11 +11,11 @@
 //! - `eval_builtin_json_ops`: JSON operations (parse, stringify, merge, get, set)
 //! - `eval_builtin_platform`: HTTP, HTML, Process, File, String, and type conversions
 
+use crate::runtime::interpreter_format_calls::{eval_builtin_format, FormatSink};
 use crate::runtime::validation::validate_arg_count;
 use crate::runtime::{InterpreterError, Value};
 
 use std::collections::HashMap;
-use std::io::Write;
 use std::sync::Arc;
 
 // Re-export from sub-modules so that `use super::*` in test modules still works
@@ -78,7 +78,11 @@ fn try_eval_io_function(name: &str, args: &[Value]) -> Result<Option<Value>, Int
         "__builtin_println__" => Ok(Some(eval_println(args)?)),
         "__builtin_print__" => Ok(Some(eval_print(args)?)),
         "__builtin_dbg__" => Ok(Some(eval_dbg(args)?)),
-        _ => Ok(None),
+        // FMTSPEC-1 / EPRINTLN-1 / FORMATFN-1: one format engine for all five
+        _ => match FormatSink::for_marker(name) {
+            Some(sink) => Ok(Some(eval_builtin_format(sink, args)?)),
+            None => Ok(None),
+        },
     }
 }
 
@@ -282,28 +286,25 @@ fn try_eval_dataframe_function(
     }
 }
 
-/// Print values to stdout with newline
-///
-/// Supports printf-style formatting with {} placeholders:
-/// - `println("Count: {}", 42)` → "Count: 42"
-/// - `println("Name: {}, Age: {}", "Alice", 30)` → "Name: Alice, Age: 30"
-///
-/// Format value for println (strings without quotes)
-/// Complexity: 2 (within Toyota Way limits)
+/// Print values to stdout with newline. FMTSPEC-1: the first value is a
+/// Rust format string when more values follow it (`println("{:>5}", 7)`).
+fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
+    eval_builtin_format(FormatSink::Println, args)
+}
+
+/// Print values to stdout without newline, formatted like [`eval_println`].
+fn eval_print(args: &[Value]) -> Result<Value, InterpreterError> {
+    eval_builtin_format(FormatSink::Print, args)
+}
+
+/// Text of one println argument (strings without quotes); unit-test API.
+#[cfg(test)]
 fn format_value_for_println(value: &Value) -> String {
-    match value {
-        Value::String(s) => s.to_string(),
-        other => format!("{other}"),
-    }
+    crate::runtime::value_format::format_value_display(value)
 }
 
-/// Format string with interpolation: `{}` raw, `{:?}` Rust Debug
-fn format_with_interpolation(fmt_str: &str, args: &[Value]) -> String {
-    crate::runtime::value_format::format_string_with_values(fmt_str, args)
-}
-
-/// Join values with spaces
-/// Complexity: 1 (within Toyota Way limits)
+/// Values joined by spaces, as `println(a, b)` prints them; unit-test API.
+#[cfg(test)]
 fn join_values(args: &[Value]) -> String {
     args.iter()
         .map(format_value_for_println)
@@ -311,59 +312,11 @@ fn join_values(args: &[Value]) -> String {
         .join(" ")
 }
 
-/// Format println output
-/// Complexity: 3 (within Toyota Way limits, reduced from 7)
+/// The line `println(args)` prints (an error prints its message); unit-test API.
+#[cfg(test)]
 fn format_println_output(args: &[Value]) -> String {
-    if args.is_empty() {
-        "\n".to_string()
-    } else if let Value::String(fmt_str) = &args[0] {
-        // RHLGA-1: the function form substitutes {} and {:?} like println!()
-        if fmt_str.contains("{}") || fmt_str.contains("{:?}") {
-            format!("{}\n", format_with_interpolation(fmt_str, &args[1..]))
-        } else {
-            format!("{}\n", join_values(args))
-        }
-    } else {
-        format!("{}\n", join_values(args))
-    }
-}
-
-/// Print values to stdout with newline
-/// Complexity: 2 (within Toyota Way limits, reduced from 7)
-fn eval_println(args: &[Value]) -> Result<Value, InterpreterError> {
-    let output = format_println_output(args);
-
-    // Write to output buffer (for notebook capture)
-    if let Ok(mut buf) = crate::runtime::builtins::OUTPUT_BUFFER.lock() {
-        buf.push_str(&output);
-    }
-
-    // Also write to stdout for local REPL use
-    print!("{output}");
-    let _ = std::io::stdout().flush();
-
-    Ok(Value::Nil)
-}
-
-/// Print values to stdout without newline
-///
-fn eval_print(args: &[Value]) -> Result<Value, InterpreterError> {
-    let output = args
-        .iter()
-        .map(|v| format!("{v}"))
-        .collect::<Vec<_>>()
-        .join(" ");
-
-    // Write to output buffer (for notebook capture)
-    if let Ok(mut buf) = crate::runtime::builtins::OUTPUT_BUFFER.lock() {
-        buf.push_str(&output);
-    }
-
-    // Also write to stdout for local REPL use
-    print!("{output}");
-    let _ = std::io::stdout().flush();
-
-    Ok(Value::Nil)
+    crate::runtime::fmt_spec::format_call(args, args.len() > 1, &|_| None)
+        .map_or_else(|e| e, |text| format!("{text}\n"))
 }
 
 /// Debug print with value inspection

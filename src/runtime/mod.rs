@@ -114,8 +114,10 @@ pub mod eval_string;
 pub mod eval_string_interpolation;
 pub mod eval_string_methods;
 pub mod eval_try_catch; // EXTREME TDD: Try/catch error handling
+pub mod fmt_spec; // FMTSPEC-1: Rust std::fmt format strings
 pub mod gc;
 pub mod gc_impl; // EXTREME TDD: Full GC implementation with tests
+pub mod interpreter_format_calls; // FMTSPEC-1: println/print/eprintln/eprint/format
 pub mod type_feedback; // EXTREME TDD: JIT type feedback system (extracted from interpreter.rs)
 pub mod validation;
 pub mod value_format; // EXTREME TDD: Value formatting utilities (extracted from interpreter.rs)

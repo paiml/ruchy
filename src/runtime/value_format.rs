@@ -55,23 +55,14 @@ pub fn format_string_with_values(format_str: &str, values: &[Value]) -> String {
     result
 }
 
-/// Format a value with a format specifier like `:.2` for floats
+/// Format a value with a format specifier like `:.2` (f-string `{x:.2}`).
+/// FMTSPEC-1: the spec is parsed by [`crate::runtime::fmt_spec`], the one
+/// format-spec parser; a spec it refuses leaves the value's plain text.
 pub fn format_value_with_spec(value: &Value, spec: &str) -> String {
-    // Parse format specifier (e.g., ":.2" -> precision 2)
-    if let Some(stripped) = spec.strip_prefix(":.") {
-        if let Ok(precision) = stripped.parse::<usize>() {
-            match value {
-                Value::Float(f) => return format!("{f:.precision$}"),
-                Value::Integer(i) => {
-                    let f = *i as f64;
-                    return format!("{f:.precision$}");
-                }
-                _ => {}
-            }
-        }
-    }
-    // Default formatting if spec doesn't match or isn't supported
-    value.to_string()
+    let text = spec.strip_prefix(':').unwrap_or(spec);
+    crate::runtime::fmt_spec::parse_spec(text)
+        .and_then(|spec| crate::runtime::fmt_spec::format_value(value, &spec))
+        .unwrap_or_else(|_| value.to_string())
 }
 
 /// Format value for debug output (`{:?}`), as rustc prints the transpiled value.
@@ -301,8 +292,9 @@ mod tests {
 
     #[test]
     fn test_spec_integer_as_float() {
+        // FMTSPEC-1: Rust ignores precision for integers
         let result = format_value_with_spec(&Value::Integer(42), ":.2");
-        assert_eq!(result, "42.00");
+        assert_eq!(result, format!("{:.2}", 42));
     }
 
     #[test]
@@ -326,13 +318,14 @@ mod tests {
     #[test]
     fn test_spec_non_numeric_value() {
         let result = format_value_with_spec(&Value::from_string("hello".to_string()), ":.2");
-        assert_eq!(result, "\"hello\"");
+        // FMTSPEC-1: precision truncates a string, as Rust does
+        assert_eq!(result, format!("{:.2}", "hello"));
     }
 
     #[test]
     fn test_spec_bool_value() {
         let result = format_value_with_spec(&Value::Bool(true), ":.2");
-        assert_eq!(result, "true");
+        assert_eq!(result, format!("{:.2}", true));
     }
 
     #[test]
@@ -501,7 +494,7 @@ mod tests {
     #[test]
     fn test_spec_integer_precision_3() {
         let result = format_value_with_spec(&Value::Integer(100), ":.3");
-        assert_eq!(result, "100.000");
+        assert_eq!(result, format!("{:.3}", 100));
     }
 
     #[test]

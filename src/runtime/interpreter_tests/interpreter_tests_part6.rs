@@ -1006,12 +1006,10 @@ fn test_format_macro_missing_values() {
         trailing_comment: None,
         contracts: Vec::new(),
     };
-    let result = interp.eval_expr(&macro_expr).expect("should evaluate");
-    if let Value::String(s) = result {
-        assert!(s.contains("{}"));
-    } else {
-        panic!("Expected string");
-    }
+    // FMTSPEC-1: a field with no argument is an error (rustc rejects it),
+    // not the placeholder text.
+    let err = interp.eval_expr(&macro_expr).unwrap_err();
+    assert!(err.to_string().contains("positional argument"), "{err}");
 }
 
 // ============== Lookup Variable Special Cases ==============
