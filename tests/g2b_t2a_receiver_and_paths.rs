@@ -14,16 +14,18 @@ use ruchy::{Parser, Transpiler};
 use std::path::Path;
 use std::process::Command;
 
-fn scratch_dir(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("g2b_t2a_{}_{name}", std::process::id()));
-    std::fs::create_dir_all(&dir).expect("scratch dir");
-    dir
+/// A scratch directory for one program, removed when the returned guard drops.
+fn scratch_dir(name: &str) -> tempfile::TempDir {
+    tempfile::Builder::new()
+        .prefix(&format!("g2b_t2a_{name}_"))
+        .tempdir()
+        .expect("scratch dir")
 }
 
 fn compile_and_run(rust: &str, name: &str) -> String {
     let dir = scratch_dir(name);
-    let src = dir.join("main.rs");
-    let bin = dir.join("main");
+    let src = dir.path().join("main.rs");
+    let bin = dir.path().join("main");
     std::fs::write(&src, rust).expect("write rust");
     let out = Command::new("rustc")
         .args(["--edition", "2021", "-A", "warnings", "-o"])
@@ -49,7 +51,8 @@ fn transpile(ast: &Expr) -> String {
 }
 
 fn ruchy_run(code: &str, name: &str) -> String {
-    let file = scratch_dir(name).join("prog.ruchy");
+    let dir = scratch_dir(name);
+    let file = dir.path().join("prog.ruchy");
     std::fs::write(&file, code).expect("write ruchy");
     let out = Command::new(env!("CARGO_BIN_EXE_ruchy"))
         .arg("run")

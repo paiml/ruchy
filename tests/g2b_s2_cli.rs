@@ -4,8 +4,11 @@
 //! The command router used to end in `_ => { eprintln!("Command not yet
 //! implemented"); Ok(()) }`, so any `Commands` variant it did not route (e.g.
 //! `prove`) printed that line and exited 0. These tests walk every verb that
-//! `ruchy --help` lists (recursing into nested command groups) and run it on a
-//! trivial input: it must either work or exit non-zero.
+//! `ruchy --help` lists (recursing into nested command groups): each verb's
+//! `--help` must exit 0 without the stub line, and each verb that is safe to run
+//! offline on a trivial file is run on one: it must either work or exit non-zero,
+//! and a verb still running at the timeout fails. Servers, REPLs, network and
+//! package verbs are not run for real, so the test is hermetic.
 
 use assert_cmd::Command;
 use std::path::Path;
@@ -58,27 +61,62 @@ fn leaf_verbs(prefix: &[String]) -> Vec<Vec<String>> {
         .collect()
 }
 
-/// `None` when the verb works (exit 0 without the stub marker), is still
-/// running at the timeout (servers, REPLs), or fails loudly (non-zero exit).
-/// `Some(report)` when it exits 0 while printing the stub marker.
+/// Verbs that run offline on a trivial file, without servers, network, a
+/// registry or a REPL; only these are run for real.
+const SAFE_OFFLINE_VERBS: [&str; 11] = [
+    "parse",
+    "check",
+    "transpile",
+    "ast",
+    "lint",
+    "fmt",
+    "score",
+    "tier",
+    "provability",
+    "prove",
+    "explain",
+];
+
+/// Combined stdout and stderr of a finished command.
+fn output_text(output: &std::process::Output) -> String {
+    format!(
+        "{}{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    )
+}
+
+/// `Some(report)` when `ruchy <verb> --help` fails or prints the stub marker.
+fn broken_help(verb: &[String]) -> Option<String> {
+    let output = ruchy_cmd()
+        .args(verb)
+        .arg("--help")
+        .timeout(PER_VERB_TIMEOUT)
+        .output();
+    let Ok(output) = output else {
+        return Some(format!("`ruchy {} --help` timed out", verb.join(" ")));
+    };
+    let stub = output_text(&output).to_lowercase().contains(STUB_MARKER);
+    (!output.status.success() || stub)
+        .then(|| format!("`ruchy {} --help` failed or is a stub", verb.join(" ")))
+}
+
+/// `None` when the verb works (exit 0 without the stub marker) or fails
+/// loudly (non-zero exit). `Some(report)` when it exits 0 while printing the
+/// stub marker, or is still running at the timeout.
 fn silent_stub(verb: &[String], dir: &Path) -> Option<String> {
-    let output = match ruchy_cmd()
+    let output = ruchy_cmd()
         .current_dir(dir)
         .args(verb)
         .arg("main.ruchy")
         .write_stdin("")
         .timeout(PER_VERB_TIMEOUT)
-        .output()
-    {
-        Ok(output) => output,
-        Err(_) => return None,
+        .output();
+    let Ok(output) = output else {
+        return Some(format!("`ruchy {}` timed out", verb.join(" ")));
     };
-    let text = format!(
-        "{}{}",
-        String::from_utf8_lossy(&output.stdout),
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let is_stub = output.status.success() && text.to_lowercase().contains(STUB_MARKER);
+    let is_stub =
+        output.status.success() && output_text(&output).to_lowercase().contains(STUB_MARKER);
     is_stub.then(|| {
         format!(
             "`ruchy {}` exited 0 printing {STUB_MARKER:?}",
@@ -105,29 +143,30 @@ fn test_g2b_s2_help_lists_the_expected_verbs() {
 }
 
 #[test]
-fn test_g2b_s2_no_verb_silently_succeeds_as_a_stub() {
+fn test_g2b_s2_every_verb_has_a_working_help() {
     let verbs = leaf_verbs(&[]);
     assert!(
         verbs.len() > 40,
         "expected the full verb tree, got {verbs:?}"
     );
-    let failures: Vec<String> = std::thread::scope(|scope| {
-        let handles: Vec<_> = verbs
-            .chunks(verbs.len().div_ceil(8))
-            .map(|chunk| {
-                scope.spawn(move || {
-                    chunk
-                        .iter()
-                        .filter_map(|verb| silent_stub(verb, scratch_dir().path()))
-                        .collect::<Vec<_>>()
-                })
-            })
-            .collect();
-        handles
-            .into_iter()
-            .flat_map(|h| h.join().expect("verb worker panicked"))
-            .collect()
-    });
+    let failures: Vec<String> = verbs.iter().filter_map(|verb| broken_help(verb)).collect();
+    assert!(failures.is_empty(), "broken help:\n{}", failures.join("\n"));
+}
+
+#[test]
+fn test_g2b_s2_no_safe_verb_silently_succeeds_as_a_stub() {
+    let verbs = leaf_verbs(&[]);
+    let safe: Vec<Vec<String>> = SAFE_OFFLINE_VERBS
+        .iter()
+        .map(|name| vec![(*name).to_string()])
+        .collect();
+    for verb in &safe {
+        assert!(verbs.contains(verb), "`ruchy --help` should list {verb:?}");
+    }
+    let failures: Vec<String> = safe
+        .iter()
+        .filter_map(|verb| silent_stub(verb, scratch_dir().path()))
+        .collect();
     assert!(
         failures.is_empty(),
         "silent stubs:\n{}",
