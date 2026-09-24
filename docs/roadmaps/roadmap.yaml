@@ -4086,3 +4086,67 @@ roadmap:
   - transpiler
   - filed-by:RHLGA-1
   notes: null
+- id: OPTMETHODS-1
+  github_issue: null
+  item_type: task
+  title: 'OPTMETHODS-1: the interpreter has no Option/Result methods (Some(3).unwrap() fails) and map.get fails'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:00:00Z
+  updated: 2026-09-24T08:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: Some(3).unwrap() -> "Method unwrap not found for type enum_variant"; Ok(2).unwrap_or(0) and None.unwrap_or(5) fail the same way; {"a": 1}.get("a") -> "Object is missing __type marker"'
+  - 'Ruling (orchestrator, RHLGA-1): the interpreter keeps its nil-for-absent library results (pop/first/get return the element or nil); Option methods accept both representations: Some(v)/Ok(v) and a plain non-nil value act as present, None/Err(e)/nil as absent. So v.pop().unwrap() yields the element, as the transpiled Rust does'
+  - 'Methods: unwrap, expect, unwrap_or, unwrap_or_else, unwrap_or_default, is_some, is_none, is_ok, is_err, map, and_then, ok, ok_or, or, filter where applicable; unwrap/expect on absent is a runtime error naming the value'
+  - 'Acceptance: tests/optmethods_1_option_methods.rs, every method on Some/None/Ok/Err/plain/nil, plus self.items.pop().unwrap() in a struct method returning 3 then 2, differential through rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+- id: ARRAYMUT-1
+  github_issue: null
+  item_type: task
+  title: 'ARRAYMUT-1: in-place array methods do not mutate (v.sort() leaves v unsorted) and insert/remove/clear/truncate are unknown (interpreter)'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:00:00Z
+  updated: 2026-09-24T08:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut v = [3,1,2]; v.sort(); println(v) prints [3, 1, 2]; v.reverse() likewise; v.insert(0, 9) -> "Unknown array method: insert"; remove, clear, truncate the same'
+  - 'Fix: sort, reverse, append, insert, remove, clear, truncate, dedup, extend mutate the receiver in place for a local identifier and for a field receiver (try_field_array_mutation path), returning what Rust returns (unit, or the removed element for remove); sorted/reversed stay functional'
+  - 'Acceptance: tests/arraymut_1_in_place.rs, each method on a local and on self.field, differential through rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+- id: EXTENDKW-1
+  github_issue: null
+  item_type: task
+  title: 'EXTENDKW-1: v.extend([3]) is a parse error "Expected method name, tuple index, or await after ."'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:00:00Z
+  updated: 2026-09-24T08:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut v = [1,2]; v.extend([3]) -> Syntax error: Expected method name, tuple index, or await after .'
+  - 'Fix: a keyword token after . in method position is accepted as a method name (extend and any other contextual keyword), without changing the keyword elsewhere'
+  - 'Acceptance: tests/extendkw_1_keyword_methods.rs parses and transpiles v.extend(x) and each keyword that can follow . as a method name'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
