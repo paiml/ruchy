@@ -3694,7 +3694,9 @@ roadmap:
   created: 2026-09-23T14:07:20Z
   updated: 2026-09-23T14:07:20Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'Repro: fun hello() { println("hi") }; fun main() { let x = 1; hello() }'
+  - 'Acceptance: run and the compiled binary both print exactly hi'
   phases: []
   subtasks: []
   estimated_effort: null
@@ -4403,11 +4405,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'PRINTSTR-1: println(s) with a String/&str variable compiles to println!("{:?}", s) and prints quotes'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T11:30:00Z
-  updated: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let t = s.to_string(); println(t) prints "hi" compiled, hi interpreted'
@@ -4424,11 +4426,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FMTSPEC-1: interpreter println/format ignore width, precision and positional specs ({:>5}, {:.2}, {0})'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T11:30:00Z
-  updated: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: println("[{:>5}] [{:.2}]", 7, 3.14159) prints the placeholders literally'
@@ -4445,11 +4447,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'EPRINTLN-1: interpreter: eprintln/eprint are undefined functions'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T11:30:00Z
-  updated: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
   spec: null
   acceptance_criteria:
   - 'Acceptance: eprintln/eprint write to stderr in the interpreter, as compiled'
@@ -4465,11 +4467,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FORMATFN-1: format("{:?}", v) function form fails: rustc E0423 compiled, Unknown builtin __builtin_format__ interpreted'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T11:30:00Z
-  updated: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
   spec: null
   acceptance_criteria:
   - 'Acceptance: format(...) function form equals format!(...) in both backends'
@@ -4485,11 +4487,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'RETLEN-1: return v.len() in a -> int function is not cast (E0308); INTLEN-1 covered only tails, lets and arguments'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T11:30:00Z
-  updated: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
   spec: null
   acceptance_criteria:
   - 'Acceptance: rustc test for explicit return of len()/count() in int-returning functions'
@@ -4505,11 +4507,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'DICTIDX-1: string-keyed dict index: transpiler emits d["k" as usize]; interpreter d["k"].push(2) errors Array index must be an integer'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T11:30:00Z
-  updated: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let mut d = {"k": [1]}; d["k"].push(2); println("{:?}", d["k"])'
@@ -4522,3 +4524,79 @@ roadmap:
   - transpiler
   - filed-by:RHLGA-1
   notes: null
+- id: ARRVECARG-1
+  github_issue: null
+  item_type: task
+  title: 'ARRVECARG-1: array literal passed to a Vec<T> parameter transpiles without .to_vec() (E0308)'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: fun n(v: Vec<i32>) -> i32 { v[0] }; fun main() { println("{}", n([1, 2, 3])) }'
+  - 'Acceptance: run prints 1; compile succeeds and the binary prints 1'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: DICTTYPE-1
+  github_issue: null
+  item_type: task
+  title: 'DICTTYPE-1: dict literals with non-list values transpile as BTreeMap<String,String>; d["k"] = 5 and d["a"] + d["b"] fail E0308'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut d = {"a": 1, "b": 2}; d["a"] = 5; println("{}", d["a"] + d["b"])'
+  - 'Acceptance: run and the compiled binary both print 7'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: FLOATDISP-1
+  github_issue: null
+  item_type: task
+  title: 'FLOATDISP-1: interpreter prints an integral float with {} as 3.0 where the compiled binary prints 3'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let x = 3.0; println("{} {}", x, 2.5); println(x)'
+  - 'Acceptance: run and the compiled binary print identical text for {} and bare println of a float'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: TMPLEAK-1
+  github_issue: null
+  item_type: task
+  title: 'TMPLEAK-1: ruchy_temp_bin_* binaries leak in the temp dir: notebook and property-tests handlers remove them only on the success path'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: src/bin/handlers/property_tests_handler.rs:316-317 and notebook_handler.rs:32 return with ? before remove_file; 15 files (65M) found in /tmp'
+  - 'Acceptance: the temp binary is removed on every return path (RAII guard); a test asserts no ruchy_temp_bin_ file remains after a failing run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - cli

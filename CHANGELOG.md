@@ -105,6 +105,21 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   with any placeholder (`{:?}`, `{:>5}`, `{0}`, …) uses it as the format
   string when compiled (PRINTLNFMT-1). Before, only `{}` was recognised, so
   `println("{:?}", v)` printed the format string followed by the value.
+- **(behaviour)** A compiled `println(s)` of a single string-typed variable
+  prints the text, not its quoted `{:?}` form (PRINTSTR-1).
+- `format("…", args)` transpiles to `format!` (FORMATFN-1), and an explicit
+  `return v.len()` from an `int` function is cast like a tail (RETLEN-1).
+- A string key works at any link of an index chain: `d["k"]` reads, `d["k"] = v`
+  assigns and `d["k"].push(x)` mutates the map, in the interpreter and in
+  compiled code (DICTIDX-1).
+- **(behaviour)** The interpreter's `println`, `print` and `format` share one
+  formatting engine that follows Rust's `std::fmt` (FMTSPEC-1): width, fill,
+  alignment, sign, `#`, `0`, precision and positional and named arguments.
+  Three results change: a placeholder count that does not match the argument
+  count is an error, `{:.2}` on an integer prints the integer (`42`), and
+  `{:.2}` on a string truncates it.
+- `eprintln` and `eprint` are builtins that write formatted text to stderr
+  (EPRINTLN-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
