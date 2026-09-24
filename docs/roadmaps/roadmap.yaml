@@ -4886,6 +4886,27 @@ roadmap:
   - kind:code
   - runtime
   - milestone:backlog
+- id: HOSTDEP-1
+  github_issue: null
+  item_type: task
+  title: 'HOSTDEP-1: workspace tests ran the ruchy on PATH instead of the built binary, and host-tool checks failed the workspace run'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:10:00Z
+  updated: 2026-09-24T13:10:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'matrix_001..004_native, lang_comp_suite and issue_040 spawn env!("CARGO_BIN_EXE_ruchy"), not Command::new("ruchy"); all pass with no ruchy on PATH (46 intel failures at fb58f641)'
+  - 'Named-environment ignores (G2 acceptance): tooling_002 test 01 (renacer on PATH), opt_global_001 test 03 (llvm-profdata plus the profiles ignored test 02 collects)'
+  - 'cli_unify_003 determinism block runs 1K cases like the other spawn-heavy blocks; 10K cases (20K spawns) timed out at 180 s on intel'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tests
+  - milestone:v5.0.0
 - id: PMAT-140
   github_issue: null
   item_type: task

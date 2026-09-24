@@ -48,6 +48,7 @@ fn test_opt_global_001_02_profile_data_collection() {
 
 /// Test 3: llvm-profdata merge succeeds
 #[test]
+#[ignore = "named environment: llvm-profdata on PATH and the profiles test 02 collects - run in nightly/tier3 only"]
 fn test_opt_global_001_03_profile_merge() {
     // Create dummy profraw file for testing
     fs::create_dir_all("/tmp/pgo-merge-test").unwrap();

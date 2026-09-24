@@ -28,6 +28,7 @@ fn renacer_available() -> bool {
 
 /// Test 1: Verify renacer is installed and accessible
 #[test]
+#[ignore = "named environment: renacer on PATH (cargo install renacer)"]
 fn test_tooling_002_01_renacer_installed() {
     let output = Command::new("renacer").arg("--version").assert().success();
 

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — G2 part 3 (RHLGA-1): tests that depended on the host
+
+- Six integration test binaries (the four `matrix_*_native` suites, `lang_comp_suite`,
+  `issue_040_mutable_match_test`) ran whatever `ruchy` was on `PATH` rather than the
+  binary under test. They now spawn `env!("CARGO_BIN_EXE_ruchy")` (HOSTDEP-1).
+- Two tests that only check that an external tool is installed are ignored with a named
+  environment: renacer (`tooling_002` test 01) and llvm-profdata (`opt_global_001` test 03).
+- The `cli_unify_003` determinism properties run 1,000 cases instead of 10,000; each case
+  spawns `ruchy` twice, and 20,000 spawns exceeded the 180 s test budget.
+
 ### Fixed — G2 part 2 (RHLGA-1): the next round of workspace test failures
 
 Behaviour changes a program can observe are marked **(behaviour)**.
