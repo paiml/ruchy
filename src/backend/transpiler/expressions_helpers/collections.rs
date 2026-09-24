@@ -246,10 +246,10 @@ impl Transpiler {
         // BOOK-COMPAT-007B: Check for auto-boxed recursive types
         let auto_boxed = self.auto_boxed_fields.borrow();
         for (field_name, value) in fields {
-            let field_ident = format_ident!("{}", field_name);
-            // BOOK-COMPAT-002 FIX: Add .to_string() for String fields with string literals
-            // When a struct field is typed as String and the value is a string literal,
-            // we need to add .to_string() for the Rust code to compile correctly.
+            let field_ident = Self::safe_ident(field_name); // RESFIELD-1
+                                                            // BOOK-COMPAT-002 FIX: Add .to_string() for String fields with string literals
+                                                            // When a struct field is typed as String and the value is a string literal,
+                                                            // we need to add .to_string() for the Rust code to compile correctly.
             let field_type = field_types.get(&(base_struct_name.to_string(), field_name.clone()));
             let needs_to_string = matches!(field_type, Some(t) if t == "String")
                 && matches!(&value.kind, ExprKind::Literal(Literal::String(_)));

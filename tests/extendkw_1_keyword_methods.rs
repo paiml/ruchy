@@ -208,13 +208,14 @@ fn test_extendkw_1_05_every_keyword_is_a_field_name() {
 #[test]
 fn test_extendkw_1_05b_reserved_field_access_compiles_with_rustc() {
     // A Ruchy struct cannot declare a keyword-named field yet, so the struct
-    // is supplied in Rust; the field accesses are the transpiler's output.
-    let src = "fun probe(o: Widget) -> i32 {\n    o.type + o.match\n}\n";
+    // and its constructor are supplied in Rust; `probe` and `main` are the
+    // transpiler's output.
+    let src = "fun probe(o: Widget) -> i32 {\n    o.type + o.match\n}\n\nfun main() {\n    println(probe(make_widget()))\n}\n";
     check(src);
     let dir = tempfile::tempdir().expect("tempdir");
     let probe = transpile(dir.path(), src);
     let rust = format!(
-        "struct Widget {{ r#type: i32, r#match: i32 }}\n{probe}\nfn main() {{ println!(\"{{}}\", probe(Widget {{ r#type: 5, r#match: 2 }})); }}\n"
+        "struct Widget {{ r#type: i32, r#match: i32 }}\nfn make_widget() -> Widget {{ Widget {{ r#type: 5, r#match: 2 }} }}\n{probe}"
     );
     assert_eq!(rustc_run(dir.path(), &rust).trim(), "7", "rust:\n{rust}");
 }

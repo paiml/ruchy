@@ -4,7 +4,7 @@ use super::super::Transpiler;
 use crate::frontend::ast::Expr;
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Check if an expression represents a module path (like `std::time`)
@@ -147,7 +147,7 @@ impl Transpiler {
                     let known_methods = [
                         "success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err",
                     ];
-                    let field_ident = format_ident!("{}", field);
+                    let field_ident = Self::safe_ident(field); // RESFIELD-1
 
                     if known_methods.contains(&field) {
                         // Known method - use . and add ()
@@ -167,32 +167,32 @@ impl Transpiler {
             }
             ExprKind::Identifier(name) if name.contains("::") => {
                 // Module path identifier - use :: syntax
-                let field_ident = format_ident!("{}", field);
+                let field_ident = Self::safe_ident(field); // RESFIELD-1
                 Ok(quote! { #obj_tokens::#field_ident })
             }
             ExprKind::Identifier(name) if name == "std" => {
                 // STDLIB-003: std module - use :: syntax for std::time, std::fs, etc.
-                let field_ident = format_ident!("{}", field);
+                let field_ident = Self::safe_ident(field); // RESFIELD-1
                 Ok(quote! { #obj_tokens::#field_ident })
             }
             ExprKind::Identifier(name) if self.module_names.contains(name) => {
                 // ISSUE-103: Module name - use :: syntax for module::function()
                 // Examples: helper::get_message(), logger::log_info()
-                let field_ident = format_ident!("{}", field);
+                let field_ident = Self::safe_ident(field); // RESFIELD-1
                 Ok(quote! { #obj_tokens::#field_ident })
             }
             ExprKind::Identifier(name) if name.chars().next().is_some_and(char::is_uppercase) => {
                 // TRANSPILER-065: Type name (PascalCase) - use :: for associated functions/constructors
                 // Examples: String::from(), Result::Ok(), Vec::new()
                 // Heuristic: Rust types start with uppercase, instances with lowercase
-                let field_ident = format_ident!("{}", field);
+                let field_ident = Self::safe_ident(field); // RESFIELD-1
                 Ok(quote! { #obj_tokens::#field_ident })
             }
             ExprKind::Identifier(name) if Self::is_module_like_identifier(name) => {
                 // PARSER-094: Module-like identifier (lowercase_underscore pattern)
                 // Examples: http_client::http_get(), my_module::function()
                 // Issue #137: Fixes ruchy-lambda AWS Lambda runtime module calls
-                let field_ident = format_ident!("{}", field);
+                let field_ident = Self::safe_ident(field); // RESFIELD-1
                 Ok(quote! { #obj_tokens::#field_ident })
             }
             _ => {
@@ -210,7 +210,7 @@ impl Transpiler {
                     let known_methods = [
                         "success", "exists", "is_empty", "is_some", "is_none", "is_ok", "is_err",
                     ];
-                    let field_ident = format_ident!("{}", field);
+                    let field_ident = Self::safe_ident(field); // RESFIELD-1
 
                     if known_methods.contains(&field) {
                         // Known method - add () for method call

@@ -488,7 +488,7 @@ impl Transpiler {
         let field_tokens: Vec<TokenStream> = fields
             .iter()
             .map(|field| {
-                let field_name = format_ident!("{}", field.name);
+                let field_name = Self::safe_ident(&field.name); // RESFIELD-1
 
                 // BOOK-COMPAT-001: Add lifetime to reference types if needed
                 let field_type = if needs_lifetime {
@@ -567,7 +567,7 @@ impl Transpiler {
             let default_field_tokens: Result<Vec<_>> = fields
                 .iter()
                 .map(|field| -> Result<TokenStream> {
-                    let field_name = format_ident!("{}", field.name);
+                    let field_name = Self::safe_ident(&field.name); // RESFIELD-1
                     if let Some(ref default_expr) = field.default_value {
                         let default_value = self.transpile_expr(default_expr)?;
                         // BOOK-COMPAT-004: Add .to_string() for String fields with string literal defaults

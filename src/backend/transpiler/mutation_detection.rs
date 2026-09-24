@@ -16,6 +16,43 @@ pub const MUTATING_STD_METHODS: &[&str] = &[
     "reverse", "dedup", "retain", "drain", "push_str", "swap", "entry",
 ];
 
+/// LETVEC-1: methods that exist on `Vec` but not on a fixed-size array. A
+/// `let`-bound array literal that is the receiver of one of these must be
+/// emitted as `vec![..]`. `sort`/`reverse` work on arrays and are not listed.
+pub const VEC_ONLY_METHODS: &[&str] = &[
+    "push",
+    "pop",
+    "extend",
+    "insert",
+    "remove",
+    "clear",
+    "truncate",
+    "append",
+    "dedup",
+    "retain",
+    "drain",
+    "resize",
+    "extend_from_slice",
+];
+
+/// LETVEC-1: true when the variable `name` is the receiver of a
+/// [`VEC_ONLY_METHODS`] call anywhere in `expr`.
+pub fn is_grown_as_vec(name: &str, expr: &Expr) -> bool {
+    any_expr(expr, &|e| is_vec_only_call_on(name, e))
+}
+
+/// `name.<m>(..)` with `m` a [`VEC_ONLY_METHODS`] method.
+fn is_vec_only_call_on(name: &str, expr: &Expr) -> bool {
+    let ExprKind::MethodCall {
+        receiver, method, ..
+    } = &expr.kind
+    else {
+        return false;
+    };
+    matches!(&receiver.kind, ExprKind::Identifier(root) if root == name)
+        && VEC_ONLY_METHODS.contains(&method.as_str())
+}
+
 /// Checks if a variable is mutated (reassigned or modified) in an expression tree
 ///
 /// This function traverses the AST recursively to detect writes through a

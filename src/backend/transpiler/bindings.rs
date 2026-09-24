@@ -87,6 +87,7 @@ impl Transpiler {
             ExprKind::List(items) if items.is_empty() => (self.transpile_expr(value)?, true),
             _ => (self.transpile_expr(value)?, false),
         };
+        let value_tokens = Self::growable_list_tokens(name, value, None, body, value_tokens);
 
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
         if matches!(body.kind, ExprKind::Literal(Literal::Unit)) {
@@ -287,6 +288,11 @@ impl Transpiler {
         // Handle value tokens and type hints
         let (value_tokens, needs_vec_type_hint) =
             self.process_let_value_with_type(name, value, type_annotation, is_mutable_var)?;
+        let value_tokens = if is_const {
+            value_tokens
+        } else {
+            Self::growable_list_tokens(name, value, type_annotation, body, value_tokens)
+        };
 
         // Generate type annotation
         let type_tokens = self.generate_type_tokens(type_annotation, needs_vec_type_hint)?;
@@ -304,6 +310,29 @@ impl Transpiler {
                     #body_tokens
                 }
             })
+        }
+    }
+
+    /// LETVEC-1: a non-empty array literal bound by `let` becomes `vec![..]`
+    /// when the binding is annotated `Vec<..>` or is grown later in `body`
+    /// (the receiver of a Vec-only method). Otherwise `tokens` is returned
+    /// unchanged, so a never-grown literal stays a fixed-size array.
+    fn growable_list_tokens(
+        name: &str,
+        value: &Expr,
+        type_annotation: Option<&Type>,
+        body: &Expr,
+        tokens: TokenStream,
+    ) -> TokenStream {
+        let is_literal = matches!(&value.kind, ExprKind::List(items) if !items.is_empty());
+        let text = tokens.to_string();
+        let is_array_tokens = text.starts_with('[') && text.ends_with(']');
+        let needs_vec = type_annotation.is_some_and(is_vec_annotation)
+            || super::mutation_detection::is_grown_as_vec(name, body);
+        if is_literal && is_array_tokens && needs_vec {
+            quote! { vec! #tokens }
+        } else {
+            tokens
         }
     }
 
@@ -506,6 +535,14 @@ impl Transpiler {
     /// Check if an expression creates a Vec that needs conversion to slice
     pub(super) fn value_creates_vec(&self, expr: &Expr) -> bool {
         matches!(expr.kind, ExprKind::List(_))
+    }
+}
+
+/// LETVEC-1: `Vec<..>` annotation (a bare `Vec` or a generic `Vec<T>`).
+fn is_vec_annotation(ty: &Type) -> bool {
+    match &ty.kind {
+        TypeKind::Generic { base, .. } | TypeKind::Named(base) => base == "Vec",
+        _ => false,
     }
 }
 
