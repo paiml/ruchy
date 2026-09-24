@@ -84,6 +84,15 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   `o.type`), and a struct can declare it (`struct W { type: i32 }`). A Rust
   reserved word is emitted as `r#type` (EXTENDKW-1, RESFIELD-1). A `let`
   named `self`, `Self`, `super` or `crate` no longer panics the transpiler.
+  An enum struct variant may name a field with a keyword too (ENUMFIELDKW-1).
+- An assignment through a field and index chain (`o.items[0].z = 5`) takes
+  effect in the interpreter (NESTASSIGN-1) and in compiled code
+  (IDXASSIGN-1). Before, the transpiler assigned to a `.clone()` of the
+  element, so the write was silently lost. Compound assignment, `&mut` and
+  mutating-method receivers on such a chain are emitted as places as well.
+- A method or function whose last expression is a unit-returning call
+  (`self.items.push(x)`) infers no return type (UNITRET-1), and one ending in
+  `len()` or `count()` infers `-> usize` (LENRET-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

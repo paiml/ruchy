@@ -4192,3 +4192,210 @@ roadmap:
   - kind:code
   - transpiler
   - filed-by:RHLGA-1
+- id: NESTASSIGN-1
+  github_issue: null
+  item_type: task
+  title: 'NESTASSIGN-1: nested field assignment through an index chain (o.items[0].z = 5) is lost in the interpreter'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: eval_field_assign accepts an Identifier/FieldAccess/IndexAccess chain and writes back through it'
+  - 'Acceptance: tests/nestassign_1_nested_field_assign.rs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: UNITRET-1
+  github_issue: null
+  item_type: task
+  title: 'UNITRET-1: a method whose tail is a unit-returning call (v.push(x)) infers a non-unit return type'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: function_analysis is_unit_method; unit tails infer no return type'
+  - 'Acceptance: tests/unitret_1_unit_body_return.rs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: ENUMFIELDKW-1
+  github_issue: null
+  item_type: task
+  title: 'ENUMFIELDKW-1: a keyword naming an enum struct-variant field fails to parse / transpile'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: parser enums.rs uses the member-name table; transpile_enum emits safe_ident'
+  - 'Acceptance: tests/enumfieldkw_1.rs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - filed-by:RHLGA-1
+  notes: null
+- id: IDXASSIGN-1
+  github_issue: null
+  item_type: task
+  title: 'IDXASSIGN-1: o.items[0].z = 5 transpiles to o.items[0 as usize].clone().z = 5: the write is silently lost'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: compiled binary prints the old value'
+  - 'Fix: Transpiler::transpile_place emits place chains without clone for =, compound assignment, &mut and mutating-method receivers'
+  - 'Acceptance: tests/idxassign_1_place_targets.rs (8 rustc differential tests)'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: LENRET-1
+  github_issue: null
+  item_type: task
+  title: 'LENRET-1: fun f(xs) { xs.len() } infers -> i32 but len() is usize (E0308)'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: a zero-arg len()/count() tail infers -> usize'
+  - 'Acceptance: tests/unitret_1_unit_body_return.rs test_lenret_1_*'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: PRINTLNFMT-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTLNFMT-1: println("{:?}", v) with one argument compiles to println!("{} {:?}", "{:?}", v) and prints the format string'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("{:?}", v) and println("v={:?}", v) transpile wrong; println("{}", x) and two-argument forms are right'
+  - 'Acceptance: rustc differential test on every placeholder form with one and several arguments'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: INTLEN-1
+  github_issue: null
+  item_type: task
+  title: 'INTLEN-1: let n: int = v.len() (and -> int returning len()) emits i64 = usize without a cast (E0308)'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: rustc differential test for let/return/argument positions annotated int receiving len()/count()'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: COUNTITER-1
+  github_issue: null
+  item_type: task
+  title: 'COUNTITER-1: count() gets .iter() appended even on an iterator (s.chars().count() -> s.chars().iter().count(), E0599); the interpreter has no array count'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: transpile + rustc + interpreter tests for s.chars().count(), xs.iter().count(), v.count() where the interpreter and rustc agree'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: IDXCOMPOUND-1
+  github_issue: null
+  item_type: task
+  title: 'IDXCOMPOUND-1: interpreter: v[1] += 5 fails with Invalid compound assignment target'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: compound assignment to index and field-of-index targets agrees with the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: IDXPUSHWB-1
+  github_issue: null
+  item_type: task
+  title: 'IDXPUSHWB-1: interpreter: t.rows[0].vals.push(9) is not written back to t (prints [1]; compiled prints [1, 9])'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: in-place array methods through an index chain are written back, interpreter agrees with rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
