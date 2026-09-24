@@ -6,7 +6,7 @@
 use crate::frontend::ast::{Expr, ExprKind, Param, Type, TypeKind};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 use super::Transpiler;
 
@@ -24,7 +24,9 @@ impl Transpiler {
         is_pub: bool,
         attributes: &[crate::frontend::ast::Attribute],
     ) -> Result<TokenStream> {
-        let fn_name = format_ident!("{}", name);
+        // RAWIDENT-1: a Rust-reserved-but-not-Ruchy-keyword name (e.g. `do`, `box`,
+        // `typeof`) must be emitted as a raw identifier so rustc accepts the fn.
+        let fn_name = Transpiler::safe_ident(name);
 
         // Check if we need to add lifetime parameter
         let needs_lifetime = super::type_analysis::needs_lifetime_parameter(params, return_type);

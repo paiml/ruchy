@@ -823,10 +823,11 @@ impl Transpiler {
                 } else {
                     quote! {}
                 };
+                // RAWIDENT-1: a named constructor may collide with a reserved word.
                 let method_name = ctor
                     .name
                     .as_ref()
-                    .map_or_else(|| format_ident!("new"), |n| format_ident!("{}", n));
+                    .map_or_else(|| format_ident!("new"), |n| Transpiler::safe_ident(n));
                 let return_type = if let Some(ref ret_ty) = ctor.return_type {
                     let ret_tokens = self.transpile_type(ret_ty)?;
                     quote! { -> #ret_tokens }
@@ -852,7 +853,7 @@ impl Transpiler {
         methods
             .iter()
             .map(|method| {
-                let method_name = format_ident!("{}", method.name);
+                let method_name = Transpiler::safe_ident(&method.name); // RAWIDENT-1
                 let params = self.transpile_params(&method.params)?;
                 let return_type = if let Some(ref ret_ty) = method.return_type {
                     let ret_tokens = self.transpile_type(ret_ty)?;
@@ -1166,8 +1167,8 @@ impl Transpiler {
         method: &TraitMethod,
         mutating: &HashSet<String>,
     ) -> Result<TokenStream> {
-        let method_name = format_ident!("{}", method.name);
-        // TRANSPILER-TRAIT-001: bare `self` in a default method that mutates it is `&mut self`
+        let method_name = Transpiler::safe_ident(&method.name); // RAWIDENT-1
+                                                                // TRANSPILER-TRAIT-001: bare `self` in a default method that mutates it is `&mut self`
         let self_is_mutated = mutating.contains(&method.name);
         let param_tokens: Vec<TokenStream> = method
             .params
@@ -1236,11 +1237,11 @@ impl Transpiler {
         let method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
-                let method_name = format_ident!("{}", method.name);
-                // TRANSPILER-METHOD-SELF-001 FIX: Check if self is mutated in method body
-                // to infer &mut self vs &self when not explicitly annotated
-                // RHLGA-1: bare `self` also mutates through nested/indexed fields, mutating
-                // std methods on a field and calls to mutating sibling methods (fixpoint)
+                let method_name = Transpiler::safe_ident(&method.name); // RAWIDENT-1
+                                                                        // TRANSPILER-METHOD-SELF-001 FIX: Check if self is mutated in method body
+                                                                        // to infer &mut self vs &self when not explicitly annotated
+                                                                        // RHLGA-1: bare `self` also mutates through nested/indexed fields, mutating
+                                                                        // std methods on a field and calls to mutating sibling methods (fixpoint)
                 let self_is_mutated = impl_self_is_mutated(method, &mutating);
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
@@ -1385,8 +1386,8 @@ impl Transpiler {
         let trait_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
-                let method_name = format_ident!("{}", method.name);
-                // Process parameters
+                let method_name = Transpiler::safe_ident(&method.name); // RAWIDENT-1
+                                                                        // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params
                     .iter()
@@ -1421,8 +1422,8 @@ impl Transpiler {
         let impl_method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
-                let method_name = format_ident!("{}", method.name);
-                // Process parameters (same as trait)
+                let method_name = Transpiler::safe_ident(&method.name); // RAWIDENT-1
+                                                                        // Process parameters (same as trait)
                 let param_tokens: Vec<TokenStream> = method
                     .params
                     .iter()

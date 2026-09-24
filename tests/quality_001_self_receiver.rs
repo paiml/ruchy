@@ -434,7 +434,11 @@ mod property_tests {
             // Must have "self" but NOT "&self" or "&mut self"
             let has_self = rust_code.contains(&format!("fn {method_name}(self)"))
                 || rust_code.contains(&format!("fn {method_name} (self)"))
-                || rust_code.contains(&format!("fn {method_name} ( self )"));
+                || rust_code.contains(&format!("fn {method_name} ( self )"))
+                // A Rust reserved word is emitted as a raw identifier (RAWIDENT-1).
+                || rust_code.contains(&format!("fn r#{method_name}(self)"))
+                || rust_code.contains(&format!("fn r#{method_name} (self)"))
+                || rust_code.contains(&format!("fn r#{method_name} ( self )"));
 
             prop_assert!(
                 has_self,
@@ -564,7 +568,11 @@ mod property_tests {
             // For owned self, check the specific method name
             let has_owned_self = rust_code.contains(&format!("fn {consumer}(self)"))
                 || rust_code.contains(&format!("fn {consumer} (self)"))
-                || rust_code.contains(&format!("fn {consumer} ( self )"));
+                || rust_code.contains(&format!("fn {consumer} ( self )"))
+                // A Rust reserved word is emitted as a raw identifier (RAWIDENT-1).
+                || rust_code.contains(&format!("fn r#{consumer}(self)"))
+                || rust_code.contains(&format!("fn r#{consumer} (self)"))
+                || rust_code.contains(&format!("fn r#{consumer} ( self )"));
 
             prop_assert!(
                 has_owned_self,
