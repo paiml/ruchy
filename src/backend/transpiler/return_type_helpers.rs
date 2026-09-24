@@ -343,6 +343,19 @@ pub fn expr_creates_or_returns_vec(expr: &Expr, block_exprs: &[Expr]) -> bool {
     false
 }
 
+/// LENRET-1: the body's tail is a `len()` / `count()` call.
+///
+/// Both are `usize` in the transpiled Rust (an unannotated `let n = v.len()`
+/// is a `usize` as well), so the function returns `usize` rather than an
+/// integer type its tail cannot produce. (complexity: 2)
+#[must_use]
+pub fn returns_usize(body: &Expr) -> bool {
+    get_final_expression(body).is_some_and(|tail| {
+        matches!(&tail.kind, ExprKind::MethodCall { method, args, .. }
+            if args.is_empty() && matches!(method.as_str(), "len" | "count"))
+    })
+}
+
 /// Helper: Get the actual final expression, drilling through Let/Block wrappers
 /// Complexity: 3 (simple recursive pattern matching)
 pub fn get_final_expression(expr: &Expr) -> Option<&Expr> {
@@ -982,5 +995,34 @@ mod tests {
     fn test_returns_string_empty_block() {
         let expr = block(vec![]);
         assert!(!returns_string(&expr));
+    }
+
+    fn method(receiver: Expr, name: &str, args: Vec<Expr>) -> Expr {
+        make_expr(ExprKind::MethodCall {
+            receiver: Box::new(receiver),
+            method: name.to_string(),
+            args,
+        })
+    }
+
+    // LENRET-1: `len()` / `count()` tails are `usize`
+    #[test]
+    fn test_lenret_1_returns_usize_for_len_and_count_tails() {
+        assert!(returns_usize(&method(ident("xs"), "len", vec![])));
+        assert!(returns_usize(&method(ident("xs"), "count", vec![])));
+        let tail_after_stmt = block(vec![ident("k"), method(ident("xs"), "len", vec![])]);
+        assert!(returns_usize(&tail_after_stmt));
+    }
+
+    #[test]
+    fn test_lenret_1_other_tails_are_not_usize() {
+        assert!(!returns_usize(&ident("xs")));
+        assert!(!returns_usize(&method(ident("xs"), "abs", vec![])));
+        assert!(!returns_usize(&method(
+            ident("xs"),
+            "count",
+            vec![ident("c")]
+        )));
+        assert!(!returns_usize(&block(vec![])));
     }
 }

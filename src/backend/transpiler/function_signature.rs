@@ -77,6 +77,10 @@ impl Transpiler {
             return Ok(quote! { -> String });
         }
 
+        if super::return_type_helpers::returns_usize(body) {
+            return Ok(quote! { -> usize });
+        }
+
         // BOOK-COMPAT-017: Check call-site types for numeric return type
         // Check if function has float arguments - if so, infer f64 return type
         let has_float_args =

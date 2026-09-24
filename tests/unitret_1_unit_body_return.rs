@@ -159,3 +159,42 @@ fn test_unitret_1_len_tail_keeps_a_return_type() {
     let src = "fun f(xs: &Vec<i32>) { xs.len() }\n";
     assert!(signature_of_f(&transpile(src)).contains("->"));
 }
+
+// ==================== LENRET-1: usize-valued tails ====================
+// `len()`/`count()` are `usize` in the transpiled Rust (an unannotated
+// `let n = v.len()` is a `usize` too), so a function whose tail is one of
+// them returns `usize` rather than an `i32` it cannot produce.
+
+#[test]
+fn test_lenret_1_len_tail_infers_usize() {
+    let src = "fun f(xs: &Vec<i32>) { xs.len() }\n\
+               fun main() { let v = vec![1, 2, 3]\n println!(\"{}\", f(&v)) }\n";
+    assert!(signature_of_f(&transpile(src)).contains("->usize"));
+    assert_eq!(compile_and_run(src).trim(), "3");
+}
+
+#[test]
+fn test_lenret_1_len_tail_after_statements_and_in_loop_bound() {
+    let src = "fun f(xs: &Vec<i32>) { let k = 1\n xs.len() }\n\
+               fun main() { let v = vec![4, 5]\n let mut t = 0\n \
+               for i in 0..f(&v) { t = t + v[i] }\n println!(\"{} {}\", f(&v), t) }\n";
+    assert_eq!(compile_and_run(src).trim(), "2 9");
+}
+
+#[test]
+fn test_lenret_1_string_len_tail_compiles() {
+    let src = "fun f(s: &str) { s.len() }\nfun main() { println!(\"{}\", f(\"abcd\")) }\n";
+    assert!(signature_of_f(&transpile(src)).contains("->usize"));
+    assert_eq!(compile_and_run(src).trim(), "4");
+}
+
+/// `xs.count()` transpiles to `xs.iter().count()`. (`s.chars().count()` is
+/// emitted as `s.chars().iter().count()`, a separate method-emission defect
+/// reported with this ticket, so it is not used here.)
+#[test]
+fn test_lenret_1_count_tail_compiles() {
+    let src = "fun f(xs: &Vec<i32>) { xs.count() }\n\
+               fun main() { println!(\"{}\", f(&vec![7, 8, 9])) }\n";
+    assert!(signature_of_f(&transpile(src)).contains("->usize"));
+    assert_eq!(compile_and_run(src).trim(), "3");
+}
