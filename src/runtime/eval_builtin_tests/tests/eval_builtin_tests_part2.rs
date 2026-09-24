@@ -662,13 +662,34 @@ fn test_fs_metadata_temp_dir() {
     }
 }
 
+/// RHLGA-1: the walk tests used to walk `env_temp_dir()` — the whole shared
+/// `/tmp` (millions of entries on a busy host, mutated concurrently by other
+/// tests), so their time and memory scaled with the host, not the code. They
+/// walk a private fixture instead: `root/a.txt`, `root/sub/b.txt`, i.e. four
+/// entries at depths 0, 1, 1, 2.
+fn walk_fixture() -> tempfile::TempDir {
+    let dir = tempfile::tempdir().expect("tempdir");
+    std::fs::write(dir.path().join("a.txt"), "a").expect("write a.txt");
+    std::fs::create_dir(dir.path().join("sub")).expect("mkdir sub");
+    std::fs::write(dir.path().join("sub").join("b.txt"), "bb").expect("write b.txt");
+    dir
+}
+
+/// Evaluate `code` with `ROOT` replaced by the fixture path as a string literal.
+fn eval_on_fixture(code: &str) -> String {
+    let dir = walk_fixture();
+    let root = format!("{:?}", dir.path().display().to_string());
+    eval(&code.replace("ROOT", &root))
+}
+
 #[test]
 fn test_walk_temp_dir() {
-    let result = try_eval("walk(env_temp_dir())");
-    if let Some(r) = result {
-        // Should return array of FileEntry objects
-        assert!(r.contains("[") || r.contains("path"));
-    }
+    assert_eq!(eval_on_fixture("walk(ROOT).len()"), "4");
+    let names = eval_on_fixture("walk(ROOT).map(|e| e.name)");
+    assert!(
+        names.contains("a.txt") && names.contains("b.txt"),
+        "{names}"
+    );
 }
 
 #[test]
@@ -914,27 +935,34 @@ fn test_append_file() {
 // === Walk With Options ===
 #[test]
 fn test_walk_with_options_max_depth() {
-    let result = try_eval("walk_with_options(env_temp_dir(), {max_depth: 1})");
-    if let Some(r) = result {
-        assert!(r.contains("[") || r.contains("path"));
-    }
+    assert_eq!(
+        eval_on_fixture("walk_with_options(ROOT, {max_depth: 1}).len()"),
+        "3"
+    );
 }
 
 #[test]
 fn test_walk_with_options_min_depth() {
-    let result = try_eval("walk_with_options(env_temp_dir(), {min_depth: 0})");
-    if let Some(r) = result {
-        assert!(r.contains("[") || r.contains("path"));
-    }
+    assert_eq!(
+        eval_on_fixture("walk_with_options(ROOT, {min_depth: 0}).len()"),
+        "4"
+    );
+    assert_eq!(
+        eval_on_fixture("walk_with_options(ROOT, {min_depth: 1}).len()"),
+        "3"
+    );
+    assert_eq!(
+        eval_on_fixture("walk_with_options(ROOT, {min_depth: 2}).len()"),
+        "1"
+    );
 }
 
 // === Walk Parallel ===
 #[test]
 fn test_walk_parallel() {
-    let result = try_eval("walk_parallel(env_temp_dir())");
-    if let Some(r) = result {
-        assert!(r.contains("[") || r.contains("path"));
-    }
+    assert_eq!(eval_on_fixture("walk_parallel(ROOT).len()"), "4");
+    let sizes = eval_on_fixture("walk_parallel(ROOT).filter(|e| e.is_file).map(|e| e.size)");
+    assert!(sizes.contains('1') && sizes.contains('2'), "{sizes}");
 }
 
 // === Compute Hash ===
