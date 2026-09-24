@@ -46,6 +46,15 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   `ruchy infra …` rejects a missing path or a directory. `ruchy serve` returns
   an error when it cannot bind its port, and `--watch` keeps serving, with a
   warning, when the host has no inotify instance left.
+- **(behaviour)** The interpreter has `Option`/`Result` methods again
+  (OPTMETHODS-1): `unwrap`, `expect`, `unwrap_or`, `unwrap_or_else`,
+  `unwrap_or_default`, `is_some`/`is_none`/`is_ok`/`is_err`, `map`,
+  `and_then`, `ok`, `ok_or`, `or`, `filter`. `Some(v)`, `Ok(v)` and a plain
+  non-nil value are present; `None`, `Err(e)` and nil are absent, so
+  `v.pop().unwrap()` yields the element. A plain value's own methods win.
+  `unwrap`/`expect` on an absent value is an error naming it, and so is
+  `unwrap_or_default`, whose default type is unknown at runtime. A plain
+  object has `get(key)`, returning the value or nil.
 - Tests:
   - they spawn the cargo-built binary;
   - they write compiled output (`a.out`, `.rlib`) into temp dirs, never the repository;

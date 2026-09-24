@@ -7,6 +7,7 @@
 
 use crate::frontend::ast::Expr;
 use crate::runtime::eval_array;
+use crate::runtime::eval_option_methods;
 use crate::runtime::eval_string;
 use crate::runtime::interpreter::DataFrameColumn;
 use crate::runtime::{InterpreterError, Value};
@@ -92,7 +93,13 @@ where
             arg_values,
         ),
         Value::Object(obj) => eval_object_method(obj, base_method, arg_values),
-        _ => eval_generic_method(receiver, base_method, args_empty),
+        _ => eval_option_methods::eval_option_method(
+            receiver,
+            base_method,
+            arg_values,
+            &mut eval_function_call_value,
+        )
+        .unwrap_or_else(|| eval_generic_method(receiver, base_method, args_empty)),
     }
 }
 
@@ -229,18 +236,43 @@ fn try_dispatch_builtin(
     }
 }
 
-/// METHODS-1: `keys`, `values`, `items`/`entries` on a plain object (no `__type`).
+/// OPTMETHODS-1: `map.get(key)` on a plain object: the value, or nil if absent.
+///
+/// # Complexity
+/// Cyclomatic complexity: 3
+fn eval_plain_object_get(
+    obj: &std::collections::HashMap<String, Value>,
+    arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
+    let [key] = arg_values else {
+        return Err(InterpreterError::RuntimeError(format!(
+            "Object method 'get' takes 1 argument, got {}",
+            arg_values.len()
+        )));
+    };
+    let key = match key {
+        Value::String(s) => s.to_string(),
+        other => other.to_string(),
+    };
+    Ok(obj.get(&key).cloned().unwrap_or(Value::Nil))
+}
+
+/// METHODS-1: `keys`, `values`, `items`/`entries` on a plain object (no `__type`),
+/// and `get` (OPTMETHODS-1).
 ///
 /// Entries come back in sorted key order, the order `Display` prints an object in.
 /// Returns `None` for any other method so the caller keeps its error path.
 ///
 /// # Complexity
-/// Cyclomatic complexity: 5
+/// Cyclomatic complexity: 6
 fn eval_plain_object_method(
     obj: &std::collections::HashMap<String, Value>,
     method: &str,
     arg_values: &[Value],
 ) -> Option<Result<Value, InterpreterError>> {
+    if method == "get" {
+        return Some(eval_plain_object_get(obj, arg_values));
+    }
     let project: fn(&String, &Value) -> Value = match method {
         "keys" => |k, _| Value::from_string(k.clone()),
         "values" => |_, v| v.clone(),

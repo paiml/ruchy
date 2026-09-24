@@ -107,6 +107,7 @@ pub mod eval_loops;
 pub mod eval_method;
 pub mod eval_method_dispatch;
 pub mod eval_operations;
+pub mod eval_option_methods; // OPTMETHODS-1: Option/Result methods
 pub mod eval_pattern;
 pub mod eval_pattern_match;
 pub mod eval_string;

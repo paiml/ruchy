@@ -15,6 +15,36 @@ use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
 use std::sync::Arc;
 
+/// Which handler an object's dispatch marker selects, checked in the order
+/// actor, class, struct, `__type`.
+enum ObjectKind {
+    Actor(String),
+    Class(String),
+    Struct(String),
+    Typed(String),
+    Plain,
+}
+
+impl ObjectKind {
+    /// Complexity: 5
+    fn of(obj: &std::collections::HashMap<String, Value>) -> Self {
+        let marker = |key: &str| match obj.get(key) {
+            Some(Value::String(s)) => Some(s.to_string()),
+            _ => None,
+        };
+        if let Some(name) = marker("__actor") {
+            return Self::Actor(name);
+        }
+        if let Some(name) = marker("__class") {
+            return Self::Class(name);
+        }
+        if let Some(name) = marker("__struct_type").or_else(|| marker("__struct")) {
+            return Self::Struct(name);
+        }
+        marker("__type").map_or(Self::Plain, Self::Typed)
+    }
+}
+
 /// FIELDPOP-1: array methods that change their receiver in place — the same
 /// set the interpreter mutates for a local array receiver (`a.push(x)`, `a.pop()`).
 fn is_mutating_array_call(method: &str, arg_count: usize) -> bool {
@@ -292,7 +322,50 @@ impl Interpreter {
         }
     }
 
+    /// Dispatch a method call on an evaluated receiver.
+    ///
+    /// OPTMETHODS-1: `Some`/`None`/`Ok`/`Err`/nil receivers try the `Option`
+    /// methods first; any other receiver reaches them only after its own type
+    /// reported the method unknown, so no existing method is shadowed.
+    ///
+    /// Complexity: 4
     pub(crate) fn dispatch_method_call(
+        &mut self,
+        receiver: &Value,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        use super::eval_option_methods::{is_option_receiver, is_unknown_method_error};
+        let base_method = method.split("::").next().unwrap_or(method);
+        if is_option_receiver(receiver) {
+            if let Some(result) = self.eval_option_method(receiver, base_method, arg_values) {
+                return result;
+            }
+        }
+        let result = self.dispatch_native_method_call(receiver, method, arg_values, args_empty);
+        match result {
+            Err(ref e) if is_unknown_method_error(e, base_method) => self
+                .eval_option_method(receiver, base_method, arg_values)
+                .unwrap_or(result),
+            _ => result,
+        }
+    }
+
+    /// OPTMETHODS-1: `Option`/`Result` method with closure arguments called
+    /// through the interpreter. `None` if `method` is not one of them.
+    fn eval_option_method(
+        &mut self,
+        receiver: &Value,
+        method: &str,
+        arg_values: &[Value],
+    ) -> super::eval_option_methods::OptionMethodResult {
+        let mut call = |f: &Value, args: &[Value]| self.call_function(f.clone(), args);
+        super::eval_option_methods::eval_option_method(receiver, method, arg_values, &mut call)
+    }
+
+    /// Method tables of the receiver's own type (no `Option` bridge).
+    fn dispatch_native_method_call(
         &mut self,
         receiver: &Value,
         method: &str,
@@ -317,100 +390,10 @@ impl Interpreter {
                 self.eval_dataframe_method(columns, base_method, arg_values)
             }
             Value::Object(obj) => {
-                // Check if this is an actor instance
-                if let Some(Value::String(actor_name)) = obj.get("__actor") {
-                    self.eval_actor_instance_method(
-                        obj,
-                        actor_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a class instance
-                else if let Some(Value::String(class_name)) = obj.get("__class") {
-                    self.eval_class_instance_method(
-                        obj,
-                        class_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a struct instance with impl methods
-                else if let Some(Value::String(struct_name)) =
-                    obj.get("__struct_type").or_else(|| obj.get("__struct"))
-                {
-                    self.eval_struct_instance_method(
-                        obj,
-                        struct_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a `DataFrame` builder
-                else if let Some(Value::String(type_str)) = obj.get("__type") {
-                    if type_str.as_ref() == "DataFrameBuilder" {
-                        self.eval_dataframe_builder_method(obj, base_method, arg_values)
-                    } else {
-                        self.eval_object_method(obj, base_method, arg_values, args_empty)
-                    }
-                } else {
-                    self.eval_object_method(obj, base_method, arg_values, args_empty)
-                }
+                self.dispatch_plain_object_method(obj, base_method, arg_values, args_empty)
             }
             Value::ObjectMut(cell_rc) => {
-                // Dispatch mutable objects the same way as immutable ones
-                // Safe borrow: We only read metadata fields to determine dispatch
-                let obj = cell_rc
-                    .lock()
-                    .expect("Mutex poisoned: object lock is corrupted");
-
-                // Check if this is an actor instance
-                if let Some(Value::String(actor_name)) = obj.get("__actor") {
-                    let actor_name = actor_name.clone();
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_actor_instance_method_mut(
-                        cell_rc,
-                        actor_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a class instance
-                else if let Some(Value::String(class_name)) = obj.get("__class") {
-                    let class_name = class_name.clone();
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_class_instance_method_mut(
-                        cell_rc,
-                        class_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a struct instance with impl methods
-                else if let Some(Value::String(struct_name)) =
-                    obj.get("__struct_type").or_else(|| obj.get("__struct"))
-                {
-                    let struct_name = struct_name.clone();
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_struct_instance_method_mut(
-                        cell_rc,
-                        struct_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // ISSUE-116: Check if this is a File object
-                else if let Some(Value::String(type_name)) = obj.get("__type") {
-                    if type_name.as_ref() == "File" {
-                        drop(obj); // Release borrow before recursive call
-                        return self.eval_file_method_mut(cell_rc, base_method, arg_values);
-                    }
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
-                } else {
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
-                }
+                self.dispatch_object_mut_method(cell_rc, base_method, arg_values, args_empty)
             }
             Value::Struct { name, fields } => {
                 // Dispatch struct instance method call
@@ -439,6 +422,67 @@ impl Interpreter {
                 self.eval_html_element_method(elem, base_method, arg_values)
             }
             _ => self.eval_generic_method(receiver, base_method, args_empty),
+        }
+    }
+
+    /// Dispatch a method on an immutable object by its dispatch marker.
+    ///
+    /// Complexity: 5
+    fn dispatch_plain_object_method(
+        &mut self,
+        obj: &std::collections::HashMap<String, Value>,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        match ObjectKind::of(obj) {
+            ObjectKind::Actor(name) => {
+                self.eval_actor_instance_method(obj, &name, method, arg_values)
+            }
+            ObjectKind::Class(name) => {
+                self.eval_class_instance_method(obj, &name, method, arg_values)
+            }
+            ObjectKind::Struct(name) => {
+                self.eval_struct_instance_method(obj, &name, method, arg_values)
+            }
+            ObjectKind::Typed(name) if name == "DataFrameBuilder" => {
+                self.eval_dataframe_builder_method(obj, method, arg_values)
+            }
+            _ => self.eval_object_method(obj, method, arg_values, args_empty),
+        }
+    }
+
+    /// Dispatch a method on a mutable object by its dispatch marker. The lock
+    /// is released before the handler runs.
+    ///
+    /// Complexity: 5
+    fn dispatch_object_mut_method(
+        &mut self,
+        cell_rc: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        let kind = ObjectKind::of(
+            &cell_rc
+                .lock()
+                .expect("Mutex poisoned: object lock is corrupted"),
+        );
+        match kind {
+            ObjectKind::Actor(name) => {
+                self.eval_actor_instance_method_mut(cell_rc, &name, method, arg_values)
+            }
+            ObjectKind::Class(name) => {
+                self.eval_class_instance_method_mut(cell_rc, &name, method, arg_values)
+            }
+            ObjectKind::Struct(name) => {
+                self.eval_struct_instance_method_mut(cell_rc, &name, method, arg_values)
+            }
+            // ISSUE-116: File objects
+            ObjectKind::Typed(name) if name == "File" => {
+                self.eval_file_method_mut(cell_rc, method, arg_values)
+            }
+            _ => self.eval_object_method_mut(cell_rc, method, arg_values, args_empty),
         }
     }
 
