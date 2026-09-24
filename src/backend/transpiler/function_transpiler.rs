@@ -97,7 +97,7 @@ impl Transpiler {
 
         // RHLGA-1: rustc rejects `async fn main` (E0752) and `.await` in a sync fn (E0728).
         let (body_tokens, is_async) =
-            self.adapt_awaiting_main(name, body, body_tokens, is_async)?;
+            self.adapt_awaiting_main(name, body, body_tokens, is_async, effective_return_type)?;
 
         let return_type_tokens = if needs_lifetime {
             self.generate_return_type_tokens_with_lifetime(name, effective_return_type, body)?
@@ -205,9 +205,10 @@ impl Transpiler {
         body: &Expr,
         body_tokens: TokenStream,
         is_async: bool,
+        return_type: Option<&Type>,
     ) -> Result<(TokenStream, bool)> {
         if name == "main" && (is_async || Self::tokens_contain_await(&body_tokens)) {
-            Ok((self.generate_block_on_main_body(body)?, false))
+            Ok((self.generate_block_on_main_body(body, return_type)?, false))
         } else {
             Ok((body_tokens, is_async))
         }
@@ -226,16 +227,49 @@ impl Transpiler {
     /// Body of a `main` that awaits: the original body runs as an `async move` block driven
     /// by a thread-parking `block_on` (std only, no unsafe); a non-unit tail is printed.
     /// Complexity: 2
-    fn generate_block_on_main_body(&self, body: &Expr) -> Result<TokenStream> {
+    fn generate_block_on_main_body(
+        &self,
+        body: &Expr,
+        return_type: Option<&Type>,
+    ) -> Result<TokenStream> {
         let inner = self.generate_body_tokens(body, true)?;
-        let run = quote! { __ruchy_block_on(async move { #inner }) };
-        let tail = if Self::has_non_unit_last_expr(body) {
-            quote! { let __ruchy_main_value = #run; println!("{:?}", __ruchy_main_value); }
-        } else {
-            quote! { #run; }
+        let tail = match self.declared_non_unit_type(return_type)? {
+            // RHLGA-1: a declared return type is main's value; the typed binding pins the
+            // async block's output so `?` inside it resolves
+            Some(ret) => quote! {
+                let __ruchy_main_value: #ret = __ruchy_block_on(async move { #inner });
+                __ruchy_main_value
+            },
+            None => {
+                let run = quote! { __ruchy_block_on(async move { #inner }) };
+                if Self::has_non_unit_last_expr(body) {
+                    quote! { let __ruchy_main_value = #run; println!("{:?}", __ruchy_main_value); }
+                } else {
+                    quote! { #run; }
+                }
+            }
         };
+        let block_on = Self::block_on_fn_tokens();
         Ok(quote! {
             {
+                #block_on
+                #tail
+            }
+        })
+    }
+
+    /// Tokens of a declared return type other than `()`.
+    fn declared_non_unit_type(&self, return_type: Option<&Type>) -> Result<Option<TokenStream>> {
+        let Some(ty) = return_type else {
+            return Ok(None);
+        };
+        let tokens = self.transpile_type(ty)?;
+        Ok((tokens.to_string().replace(' ', "") != "()").then_some(tokens))
+    }
+
+    /// A thread-parking `block_on` (std only, no unsafe) for the awaiting `main`.
+    fn block_on_fn_tokens() -> TokenStream {
+        quote! {
                 fn __ruchy_block_on<F: ::std::future::Future>(fut: F) -> F::Output {
                     struct ThreadWaker(::std::thread::Thread);
                     impl ::std::task::Wake for ThreadWaker {
@@ -255,9 +289,7 @@ impl Transpiler {
                         ::std::thread::park();
                     }
                 }
-                #tail
-            }
-        })
+        }
     }
 }
 
@@ -268,6 +300,54 @@ mod tests {
 
     fn create_transpiler() -> Transpiler {
         Transpiler::new()
+    }
+
+    /// RHLGA-1: the emitted `block_on` parks until woken. The future is Pending on its
+    /// first poll and is woken from another thread, so the park/wake path runs.
+    #[test]
+    fn test_rhlga1_block_on_parks_until_a_pending_future_is_woken() {
+        let block_on = Transpiler::block_on_fn_tokens();
+        let program = format!(
+            "{block_on}\n{}",
+            r#"
+struct WakeLater { polls: u32 }
+impl std::future::Future for WakeLater {
+    type Output = u32;
+    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<u32> {
+        self.polls += 1;
+        if self.polls > 1 {
+            return std::task::Poll::Ready(self.polls);
+        }
+        let waker = cx.waker().clone();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            waker.wake();
+        });
+        std::task::Poll::Pending
+    }
+}
+fn main() {
+    println!("{}", __ruchy_block_on(WakeLater { polls: 0 }));
+}
+"#
+        );
+        let dir = std::env::temp_dir().join(format!("rhlga1_block_on_{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("scratch dir");
+        let (src, bin) = (dir.join("main.rs"), dir.join("main"));
+        std::fs::write(&src, program).expect("write rust");
+        let out = std::process::Command::new("rustc")
+            .args(["--edition", "2021", "-A", "warnings", "-o"])
+            .arg(&bin)
+            .arg(&src)
+            .output()
+            .expect("rustc runs");
+        assert!(
+            out.status.success(),
+            "{}",
+            String::from_utf8_lossy(&out.stderr)
+        );
+        let run = std::process::Command::new(&bin).output().expect("runs");
+        assert_eq!(String::from_utf8_lossy(&run.stdout), "2\n");
     }
 
     #[test]

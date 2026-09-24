@@ -357,12 +357,14 @@ impl Transpiler {
     }
 
     /// RHLGA-1: a range receiver (`a..b`, `range(a, b)`) is already an iterator.
-    fn is_range_receiver(object: &Expr) -> bool {
+    /// `range(..)` is the builtin only when the program defines no `range` function.
+    fn is_range_receiver(&self, object: &Expr) -> bool {
         match &object.kind {
             ExprKind::Range { .. } => true,
             ExprKind::Call { func, args } => {
                 matches!(&func.kind, ExprKind::Identifier(name) if name == "range")
                     && matches!(args.len(), 1 | 2)
+                    && !self.function_signatures.contains_key("range")
             }
             _ => false,
         }
@@ -382,12 +384,13 @@ impl Transpiler {
     /// min/max); a range is called directly, parenthesised when it is a
     /// range literal so the method binds to the whole range.
     fn transpile_collection_aggregate(
+        &self,
         obj_tokens: &TokenStream,
         method: &str,
         method_ident: &proc_macro2::Ident,
         object: &Expr,
     ) -> TokenStream {
-        let (iter, copied) = if Self::is_range_receiver(object) {
+        let (iter, copied) = if self.is_range_receiver(object) {
             let range = Self::parenthesize_range_literal(obj_tokens, object);
             (range.clone(), range)
         } else {
@@ -439,7 +442,7 @@ impl Transpiler {
                 if Transpiler::is_dataframe_expr(object) {
                     self.transpile_dataframe_method(object, method, &[])
                 } else {
-                    Ok(Self::transpile_collection_aggregate(
+                    Ok(self.transpile_collection_aggregate(
                         obj_tokens,
                         method,
                         method_ident,
