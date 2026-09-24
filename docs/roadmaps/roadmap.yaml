@@ -4150,3 +4150,45 @@ roadmap:
   - kind:code
   - runtime
   - filed-by:RHLGA-1
+- id: LETVEC-1
+  github_issue: null
+  item_type: task
+  title: 'LETVEC-1: let mut v = [1, 2]; v.push(3) transpiles to a fixed-size Rust array and fails rustc E0599'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:30:00Z
+  updated: 2026-09-24T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: fun main() { let mut v = [1, 2]; v.push(3); println(v.len()) } -> transpile emits let mut v = [1, 2]; ruchy compile fails E0599 no method push for [{integer}; 2]. Same with a Vec<i32> annotation. Pre-existing in 4.2.1'
+  - 'Fix: an array literal bound by let is emitted as vec![...] when the binding is annotated Vec<...> or the binding is later used with a Vec-only method (push, pop, extend, insert, remove, clear, truncate, append, dedup, retain, drain, resize) or passed where the interpreter semantics require growth; otherwise unchanged'
+  - 'Acceptance: tests/letvec_1_growable_locals.rs, transpile + rustc-compile + run for each Vec-only method on an unannotated and an annotated local, top-level script and fun main, and a fixed array that is never grown stays an array'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+- id: RESFIELD-1
+  github_issue: null
+  item_type: task
+  title: 'RESFIELD-1: a field named by a Rust reserved word (o.match, o.type) transpiles to invalid Rust'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:30:00Z
+  updated: 2026-09-24T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro (after EXTENDKW-1): o.type passes ruchy check, ruchy transpile fails "Failed to parse generated tokens as Rust syntax"; transpile_field_access in expressions_helpers/field_access.rs builds the name with format_ident! instead of safe_ident'
+  - 'Fix: field access, struct field declarations and struct literal field names use safe_ident (r#kw)'
+  - 'Acceptance: tests/extendkw_1_keyword_methods.rs field test asserts transpile + rustc for every reserved-word field name'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
