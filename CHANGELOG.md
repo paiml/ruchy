@@ -134,6 +134,9 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   `1000000000000000000000`, `-0`, `NaN`, `inf` (FLOATDISP-1). `{:?}` and a
   bare `println(x)`, which compiles to `{:?}`, print Rust's Debug text
   (`3.0`, `1e21`, `1e-7`), matching the compiled binary.
+- `property-tests`, `fuzz` and `notebook` remove the compiled
+  `ruchy_temp_bin_*` binary on every return path, not only on success
+  (TMPLEAK-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

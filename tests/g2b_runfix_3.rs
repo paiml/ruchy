@@ -233,3 +233,76 @@ fn test_floatdisp_1_run_matches_compiled_binary() {
     assert_eq!(compiled, "3 2.5\n3.0\n", "compiled binary");
     assert_eq!(ruchy_run(dir.path(), BRIEF_CASE), compiled, "ruchy run");
 }
+
+// --------------------------------------------------------------- TMPLEAK-1
+
+/// The compiled program replaces its own executable with a text file, so the
+/// next execution fails with "Permission denied" and the handler returns `?`.
+const SELF_REPLACING: &str = r#"
+fun main() {
+    let exe = std::env::current_exe().unwrap()
+    std::fs::remove_file(&exe).unwrap()
+    std::fs::write(&exe, "not a binary").unwrap()
+}
+"#;
+
+const PANICKING: &str = r#"
+fun main() {
+    panic("boom")
+}
+"#;
+
+fn leaked_binaries(tmp: &Path) -> Vec<String> {
+    std::fs::read_dir(tmp)
+        .expect("read temp dir")
+        .map(|e| {
+            e.expect("dir entry")
+                .file_name()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .filter(|name| name.starts_with("ruchy_temp_bin_"))
+        .collect()
+}
+
+/// Runs `ruchy <args…> prog.ruchy` with TMPDIR set to a fresh directory,
+/// asserts the command fails, and returns the leaked temp binaries.
+fn leaks_after_failing(args: &[&str], src: &str) -> Vec<String> {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let tmp = dir.path().join("tmp");
+    std::fs::create_dir(&tmp).expect("create TMPDIR");
+    let file = write_source(dir.path(), src);
+    let mut cmd = ruchy();
+    cmd.args(&args[..1])
+        .arg(&file)
+        .args(&args[1..])
+        .env("TMPDIR", &tmp)
+        .timeout(Duration::from_secs(180));
+    let out = cmd.output().expect("spawn ruchy");
+    assert!(!out.status.success(), "the {} run must fail", args[0]);
+    leaked_binaries(&tmp)
+}
+
+#[test]
+fn test_tmpleak_1_property_tests_error_path_removes_binary() {
+    let leaked = leaks_after_failing(&["property-tests", "--cases", "3"], SELF_REPLACING);
+    assert!(leaked.is_empty(), "leaked temp binaries: {leaked:?}");
+}
+
+#[test]
+fn test_tmpleak_1_fuzz_error_path_removes_binary() {
+    let leaked = leaks_after_failing(&["fuzz", "--iterations", "3"], SELF_REPLACING);
+    assert!(leaked.is_empty(), "leaked temp binaries: {leaked:?}");
+}
+
+#[test]
+fn test_tmpleak_1_property_tests_panicking_program_removes_binary() {
+    let leaked = leaks_after_failing(&["property-tests", "--cases", "3"], PANICKING);
+    assert!(leaked.is_empty(), "leaked temp binaries: {leaked:?}");
+}
+
+#[test]
+fn test_tmpleak_1_notebook_failing_program_removes_binary() {
+    let leaked = leaks_after_failing(&["notebook"], PANICKING);
+    assert!(leaked.is_empty(), "leaked temp binaries: {leaked:?}");
+}

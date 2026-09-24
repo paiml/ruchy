@@ -4,7 +4,7 @@
 
 use anyhow::Result;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// Run property test suite via cargo test
 /// Complexity: 3 (Toyota Way: <10)
@@ -106,7 +106,12 @@ pub fn handle_property_tests_command(
 }
 
 /// Compile Ruchy file for property testing
-pub(crate) fn compile_for_property_testing(path: &Path, verbose: bool) -> Result<PathBuf> {
+///
+/// TMPLEAK-1: the binary is removed when the returned path drops.
+pub(crate) fn compile_for_property_testing(
+    path: &Path,
+    verbose: bool,
+) -> Result<tempfile::TempPath> {
     use super::{compile_rust_code, prepare_compilation, transpile_for_execution};
     use crate::handlers::transpile_handler::parse_source;
 
@@ -322,8 +327,7 @@ fn handle_property_tests_single_file(
     if !deterministic {
         test_results.push("Determinism test: FAILED - outputs differ".to_string());
     }
-
-    let _ = fs::remove_file(&binary_path);
+    drop(binary_path);
 
     generate_property_test_report(
         path,

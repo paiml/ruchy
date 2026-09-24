@@ -4585,11 +4585,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'TMPLEAK-1: ruchy_temp_bin_* binaries leak in the temp dir: notebook and property-tests handlers remove them only on the success path'
-  status: planned
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-24T14:00:00Z
-  updated: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: src/bin/handlers/property_tests_handler.rs:316-317 and notebook_handler.rs:32 return with ? before remove_file; 15 files (65M) found in /tmp'
