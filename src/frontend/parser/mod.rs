@@ -51,6 +51,7 @@ mod expressions;
 mod functions;
 mod imports;
 mod macro_parsing;
+mod member_names;
 mod operator_precedence;
 mod types;
 mod utils;

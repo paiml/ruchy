@@ -449,22 +449,12 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         .peek()
         .map_or(receiver.span.end, |(_, s)| s.end);
     // Parse method name or tuple index
+    // EXTENDKW-1: an identifier or any keyword (`extend`, `type`, `match`, ...)
+    if let Some(method) = peek_member_name(state) {
+        state.tokens.advance();
+        return parse_method_or_field_access(state, receiver, method, name_end);
+    }
     match state.tokens.peek() {
-        Some((Token::Identifier(name), _)) => {
-            let method = name.clone();
-            state.tokens.advance();
-            parse_method_or_field_access(state, receiver, method, name_end)
-        }
-        Some((Token::Send, _)) => {
-            // Handle 'send' as a method name (for actors)
-            state.tokens.advance();
-            parse_method_or_field_access(state, receiver, "send".to_string(), name_end)
-        }
-        Some((Token::Ask, _)) => {
-            // Handle 'ask' as a method name (for actors)
-            state.tokens.advance();
-            parse_method_or_field_access(state, receiver, "ask".to_string(), name_end)
-        }
         Some((Token::Integer(index), _)) => {
             // Handle tuple access like t.0, t.1, etc.
             let index = index.clone();
@@ -476,26 +466,23 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
         }
     }
 }
+/// Member name at the cursor after `.`/`?.`, without consuming it (complexity: 1)
+fn peek_member_name(state: &mut ParserState) -> Option<String> {
+    state
+        .tokens
+        .peek()
+        .and_then(|(token, _)| super::member_names::member_name(token))
+}
 pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr> {
     // Skip any comments between '?.' and method name (PARSER-053)
     state.skip_comments();
     // Parse method name or tuple index for optional chaining
+    // EXTENDKW-1: an identifier or any keyword (`extend`, `type`, `match`, ...)
+    if let Some(method) = peek_member_name(state) {
+        state.tokens.advance();
+        return parse_optional_method_or_field_access(state, receiver, method);
+    }
     match state.tokens.peek() {
-        Some((Token::Identifier(name), _)) => {
-            let method = name.clone();
-            state.tokens.advance();
-            parse_optional_method_or_field_access(state, receiver, method)
-        }
-        Some((Token::Send, _)) => {
-            // Handle 'send' as a method name (for actors)
-            state.tokens.advance();
-            parse_optional_method_or_field_access(state, receiver, "send".to_string())
-        }
-        Some((Token::Ask, _)) => {
-            // Handle 'ask' as a method name (for actors)
-            state.tokens.advance();
-            parse_optional_method_or_field_access(state, receiver, "ask".to_string())
-        }
         Some((Token::Integer(index), _)) => {
             // Handle optional tuple access like t?.0, t?.1, etc.
             let index = index.clone();
