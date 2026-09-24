@@ -70,8 +70,13 @@ impl Transpiler {
         // DEFECT-018 FIX: Set loop context flag to enable auto-cloning in function calls
         let was_in_loop = self.in_loop_context.get();
         self.in_loop_context.set(true);
-        let body_tokens = self.transpile_expr(body)?;
+        // PRINTSTRSCOPE-1: the loop variable shadows any outer string record.
+        let loop_pattern = pattern
+            .cloned()
+            .unwrap_or_else(|| Pattern::Identifier(var.to_string()));
+        let body_tokens = self.with_for_scope(&loop_pattern, iter, || self.transpile_expr(body));
         self.in_loop_context.set(was_in_loop);
+        let body_tokens = body_tokens?;
 
         // If we have a pattern, use it for destructuring
         if let Some(pat) = pattern {
@@ -121,7 +126,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         let pattern_tokens = self.transpile_pattern(pattern)?;
-        let then_tokens = self.transpile_expr(then_branch)?;
+        let then_tokens = self.with_pattern_scope(pattern, || self.transpile_expr(then_branch))?;
         if let Some(else_expr) = else_branch {
             let else_tokens = self.transpile_expr(else_expr)?;
             Ok(quote! {
@@ -150,7 +155,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
         let pattern_tokens = self.transpile_pattern(pattern)?;
-        let body_tokens = self.transpile_expr(body)?;
+        let body_tokens = self.with_pattern_scope(pattern, || self.transpile_expr(body))?;
         Ok(quote! {
             while let #pattern_tokens = #expr_tokens {
                 #body_tokens

@@ -401,7 +401,10 @@ impl Transpiler {
     /// Complexity: 2 (within Toyota Way limits)
     fn is_statement_call(func: &Expr) -> bool {
         if let ExprKind::Identifier(name) = &func.kind {
-            matches!(name.as_str(), "println" | "print" | "dbg")
+            matches!(
+                name.as_str(),
+                "println" | "print" | "eprintln" | "eprint" | "dbg"
+            )
         } else {
             false
         }

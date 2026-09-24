@@ -958,8 +958,9 @@ fn test_format_debug_incomplete() {
             "{:?x".to_string(),
         )))],
     });
-    let result = interp.eval_expr(&expr).unwrap();
-    assert!(matches!(result, Value::String(_)));
+    // FMTSPEC-1: an unterminated field is an error, as in rustc.
+    let err = interp.eval_expr(&expr).unwrap_err();
+    assert!(err.to_string().contains("unterminated"), "{err}");
 }
 
 #[test]
@@ -972,8 +973,9 @@ fn test_format_colon_only() {
             "{:x".to_string(),
         )))],
     });
-    let result = interp.eval_expr(&expr).unwrap();
-    assert!(matches!(result, Value::String(_)));
+    // FMTSPEC-1: an unterminated field is an error, as in rustc.
+    let err = interp.eval_expr(&expr).unwrap_err();
+    assert!(err.to_string().contains("unterminated"), "{err}");
 }
 
 #[test]
@@ -986,12 +988,9 @@ fn test_format_excess_placeholders() {
             "{} {} {}".to_string(),
         )))],
     });
-    let result = interp.eval_expr(&expr).unwrap();
-    if let Value::String(s) = result {
-        assert!(s.as_ref().contains("{}"));
-    } else {
-        panic!("Expected String");
-    }
+    // FMTSPEC-1: a field with no argument is an error, as in rustc.
+    let err = interp.eval_expr(&expr).unwrap_err();
+    assert!(err.to_string().contains("positional argument"), "{err}");
 }
 
 // ===== Import Tests =====

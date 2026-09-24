@@ -177,6 +177,9 @@ pub struct Transpiler {
     ///
     /// Maps function names to their parameter types for proper type conversion.
     pub function_signatures: std::collections::HashMap<String, FunctionSignature>,
+    /// MAINUNIT-1: user functions with no declared return type whose body is
+    /// void, so a call to one yields `()` (not printed as `main`'s tail).
+    pub unit_functions: std::collections::HashSet<String>,
     /// Module names that have been imported/defined (Issue #103).
     ///
     /// Tracks module identifiers so field access can use :: syntax for module paths.
@@ -227,6 +230,9 @@ pub struct Transpiler {
     /// Maps function name to a vector of inferred argument types from call sites.
     /// Used when function parameters have no explicit type to infer types from usage.
     pub call_site_arg_types: std::cell::RefCell<std::collections::HashMap<String, Vec<String>>>,
+    /// NESTPUSHLIT-1: bindings whose inner list literals were emitted as
+    /// `vec![..]` (NESTARRVEC-1); an array literal pushed into one is too.
+    pub inner_vec_lists: std::cell::RefCell<std::collections::HashSet<String>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -240,6 +246,7 @@ impl Clone for Transpiler {
             in_loop_context: std::cell::Cell::new(self.in_loop_context.get()),
             mutable_vars: self.mutable_vars.clone(),
             function_signatures: self.function_signatures.clone(),
+            unit_functions: self.unit_functions.clone(),
             module_names: self.module_names.clone(),
             string_vars: std::cell::RefCell::new(self.string_vars.borrow().clone()),
             current_function_return_type: std::cell::RefCell::new(
@@ -262,6 +269,7 @@ impl Clone for Transpiler {
             current_struct_name: std::cell::RefCell::new(self.current_struct_name.borrow().clone()),
             auto_boxed_fields: std::cell::RefCell::new(self.auto_boxed_fields.borrow().clone()),
             call_site_arg_types: std::cell::RefCell::new(self.call_site_arg_types.borrow().clone()),
+            inner_vec_lists: std::cell::RefCell::new(self.inner_vec_lists.borrow().clone()),
         }
     }
 }
@@ -282,6 +290,7 @@ impl Transpiler {
             in_loop_context: std::cell::Cell::new(false),
             mutable_vars: std::collections::HashSet::new(),
             function_signatures: std::collections::HashMap::new(),
+            unit_functions: std::collections::HashSet::new(),
             module_names: std::collections::HashSet::new(),
             string_vars: std::cell::RefCell::new(std::collections::HashSet::new()),
             current_function_return_type: std::cell::RefCell::new(None),
@@ -292,6 +301,7 @@ impl Transpiler {
             current_struct_name: std::cell::RefCell::new(None),
             auto_boxed_fields: std::cell::RefCell::new(std::collections::HashMap::new()),
             call_site_arg_types: std::cell::RefCell::new(std::collections::HashMap::new()),
+            inner_vec_lists: std::cell::RefCell::new(std::collections::HashSet::new()),
         }
     }
     // EXTREME TDD Round 64: generate_value_printing_tokens moved to print_helpers.rs

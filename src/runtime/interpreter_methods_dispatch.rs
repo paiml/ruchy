@@ -15,7 +15,174 @@ use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
 use std::sync::Arc;
 
+use crate::runtime::eval_array::{apply_in_place_array_method, is_in_place_array_method};
+use crate::runtime::interpreter_control_flow::is_place_expr;
+
+/// Which handler an object's dispatch marker selects, checked in the order
+/// actor, class, struct, `__type`.
+enum ObjectKind {
+    Actor(String),
+    Class(String),
+    Struct(String),
+    Typed(String),
+    Plain,
+}
+
+impl ObjectKind {
+    /// Complexity: 5
+    fn of(obj: &std::collections::HashMap<String, Value>) -> Self {
+        let marker = |key: &str| match obj.get(key) {
+            Some(Value::String(s)) => Some(s.to_string()),
+            _ => None,
+        };
+        if let Some(name) = marker("__actor") {
+            return Self::Actor(name);
+        }
+        if let Some(name) = marker("__class") {
+            return Self::Class(name);
+        }
+        if let Some(name) = marker("__struct_type").or_else(|| marker("__struct")) {
+            return Self::Struct(name);
+        }
+        marker("__type").map_or(Self::Plain, Self::Typed)
+    }
+}
+
+/// RHLGA-1 F6: `obj` with `field` set to `val`: a copy for value types, the same
+/// shared value (updated in place) for `ObjectMut` and `Class`.
+pub(crate) fn with_field(obj: Value, field: &str, val: Value) -> Result<Value, InterpreterError> {
+    match obj {
+        Value::Object(map) => {
+            let mut new_map = (*map).clone();
+            new_map.insert(field.to_string(), val);
+            Ok(Value::Object(Arc::new(new_map)))
+        }
+        Value::ObjectMut(ref cell) => {
+            cell.lock()
+                .expect("Mutex poisoned: object lock is corrupted")
+                .insert(field.to_string(), val);
+            Ok(obj)
+        }
+        Value::Class { ref fields, .. } => {
+            fields
+                .write()
+                .expect("RwLock poisoned: class fields lock is corrupted")
+                .insert(field.to_string(), val);
+            Ok(obj)
+        }
+        Value::Struct { name, fields } => {
+            let mut new_fields = (*fields).clone();
+            new_fields.insert(field.to_string(), val);
+            Ok(Value::Struct {
+                name,
+                fields: Arc::new(new_fields),
+            })
+        }
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Cannot access field '{field}' on non-object"
+        ))),
+    }
+}
+
 impl Interpreter {
+    /// FIELDPOP-1 / ARRAYMUT-1: an in-place array method on a field
+    /// (`self.items.pop()`, `s.items.sort()`, `o.items.insert(0, x)`) behaves
+    /// like the same call on a local array: the call returns the method's own
+    /// result and the changed array is written back to the field. The field
+    /// may be nested (`self.inner.items.push(x)`, `s.a.b.sort()`).
+    ///
+    /// IDXPUSHWB-1: the receiver may be any FieldAccess/IndexAccess chain
+    /// rooted at a variable (`m[0].push(x)`, `t.rows[i].vals.sort()`); the
+    /// changed array is stored through `write_back`, the NESTASSIGN-1 writer.
+    ///
+    /// Returns `Ok(None)` when the call is not of that shape, so the caller
+    /// falls through to ordinary method dispatch.
+    fn try_chain_array_mutation(
+        &mut self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<Option<Value>, InterpreterError> {
+        let is_chain = matches!(
+            receiver.kind,
+            ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. }
+        );
+        if !is_chain || !is_place_expr(receiver) || !is_in_place_array_method(method, args.len()) {
+            return Ok(None);
+        }
+        let receiver = &self.freeze_place(receiver)?;
+        let Value::Array(arr) = self.eval_expr(receiver)? else {
+            return Ok(None);
+        };
+        let (items, result) = self.apply_in_place_call(&arr, method, args)?;
+        self.write_back(receiver, Value::Array(Arc::from(items)))?;
+        Ok(Some(result))
+    }
+
+    /// ARRAYMUT-1: an in-place array method on a local array variable
+    /// (`v.push(x)`, `v.pop()`, `v.sort()`, `v.remove(i)`, …) returns the
+    /// method's own result and rebinds the variable to the changed array.
+    /// `env_set_mut` updates the binding in an enclosing scope too, so the
+    /// change survives a call made inside a loop body.
+    ///
+    /// Returns `Ok(None)` when the receiver is not an array variable or the
+    /// method is not in-place, so the caller falls through.
+    fn try_local_array_mutation(
+        &mut self,
+        var_name: &str,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<Option<Value>, InterpreterError> {
+        if !is_in_place_array_method(method, args.len()) {
+            return Ok(None);
+        }
+        let Ok(Value::Array(arr)) = self.lookup_variable(var_name) else {
+            return Ok(None);
+        };
+        let (items, result) = self.apply_in_place_call(&arr, method, args)?;
+        self.env_set_mut(var_name.to_string(), Value::Array(Arc::from(items)));
+        Ok(Some(result))
+    }
+
+    /// RHLGA-1 F5: a method of a user `impl` on an enum value
+    /// (`Maybe::Some(3).unwrap()`) runs with the variant bound to `self`.
+    /// `None` when the enum has no such method.
+    fn eval_enum_instance_method(
+        &mut self,
+        receiver: &Value,
+        enum_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Option<Result<Value, InterpreterError>> {
+        let closure = self
+            .lookup_variable(&format!("{enum_name}::{method}"))
+            .ok()?;
+        if !matches!(closure, Value::Closure { .. }) {
+            return None;
+        }
+        let args: Vec<Value> = std::iter::once(receiver.clone())
+            .chain(arg_values.iter().cloned())
+            .collect();
+        Some(self.call_function(closure, &args))
+    }
+
+    /// Evaluate `args`, then apply the in-place `method` to a copy of `arr`.
+    /// Returns the changed elements and the method's result.
+    fn apply_in_place_call(
+        &mut self,
+        arr: &[Value],
+        method: &str,
+        args: &[Expr],
+    ) -> Result<(Vec<Value>, Value), InterpreterError> {
+        let arg_values = args
+            .iter()
+            .map(|arg| self.eval_expr(arg))
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut items = arr.to_vec();
+        let result = apply_in_place_array_method(&mut items, method, &arg_values)?;
+        Ok((items, result))
+    }
+
     /// Evaluate a method call
     pub(crate) fn eval_method_call(
         &mut self,
@@ -30,69 +197,19 @@ impl Interpreter {
             }
         }
 
-        // Special handling for mutating array methods on simple identifiers
-        // e.g., messages.push(item)
+        // ARRAYMUT-1: in-place array methods on a local array variable
+        // (messages.push(item), v.sort(), v.remove(0)) mutate the binding
         if let ExprKind::Identifier(var_name) = &receiver.kind {
-            if method == "push" && args.len() == 1 {
-                // Get current array value
-                if let Ok(Value::Array(arr)) = self.lookup_variable(var_name) {
-                    // Evaluate the argument
-                    let arg_value = self.eval_expr(&args[0])?;
-
-                    // Create new array with item added
-                    let mut new_arr = arr.to_vec();
-                    new_arr.push(arg_value);
-
-                    // Update the variable binding - CRITICAL: Use env_set_mut to update
-                    // in parent scopes (e.g., when push is called inside while loops)
-                    self.env_set_mut(var_name.clone(), Value::Array(Arc::from(new_arr)));
-
-                    return Ok(Value::Nil); // push returns nil
-                }
-            } else if method == "pop" && args.is_empty() {
-                // Get current array value
-                if let Ok(Value::Array(arr)) = self.lookup_variable(var_name) {
-                    // Create new array with last item removed
-                    let mut new_arr = arr.to_vec();
-                    let popped_value = new_arr.pop().unwrap_or(Value::Nil);
-
-                    // Update the variable binding - CRITICAL: Use env_set_mut to update
-                    // in parent scopes (e.g., when pop is called inside while loops)
-                    self.env_set_mut(var_name.clone(), Value::Array(Arc::from(new_arr)));
-
-                    return Ok(popped_value); // pop returns the removed item
-                }
+            if let Some(result) = self.try_local_array_mutation(var_name, method, args)? {
+                return Ok(result);
             }
         }
 
-        // Special handling for mutating array methods on ObjectMut fields
-        // e.g., self.messages.push(item)
-        if let ExprKind::FieldAccess { object, field } = &receiver.kind {
-            if let Ok(object_value) = self.eval_expr(object) {
-                if let Value::ObjectMut(cell_rc) = object_value {
-                    // Check if this is a mutating array method
-                    if method == "push" && args.len() == 1 {
-                        // Evaluate the argument
-                        let arg_value = self.eval_expr(&args[0])?;
-
-                        // Get mutable access to the object
-                        let mut obj = cell_rc
-                            .lock()
-                            .expect("Mutex poisoned: object lock is corrupted");
-
-                        // Get the field value
-                        if let Some(field_value) = obj.get(field) {
-                            // If it's an array, push to it
-                            if let Value::Array(arr) = field_value {
-                                let mut new_arr = arr.to_vec();
-                                new_arr.push(arg_value);
-                                obj.insert(field.clone(), Value::Array(Arc::from(new_arr)));
-                                return Ok(Value::Nil); // push returns nil
-                            }
-                        }
-                    }
-                }
-            }
+        // FIELDPOP-1 / IDXPUSHWB-1: mutating array methods on a field or an
+        // element (self.items.pop(), m[0].push(x)) return their own result
+        // and write the changed array back through the chain
+        if let Some(result) = self.try_chain_array_mutation(receiver, method, args)? {
+            return Ok(result);
         }
 
         let receiver_value = self.eval_expr(receiver)?;
@@ -275,7 +392,50 @@ impl Interpreter {
         }
     }
 
+    /// Dispatch a method call on an evaluated receiver.
+    ///
+    /// OPTMETHODS-1: `Some`/`None`/`Ok`/`Err`/nil receivers try the `Option`
+    /// methods first; any other receiver reaches them only after its own type
+    /// reported the method unknown, so no existing method is shadowed.
+    ///
+    /// Complexity: 4
     pub(crate) fn dispatch_method_call(
+        &mut self,
+        receiver: &Value,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        use super::eval_option_methods::{is_option_receiver, is_unknown_method_error};
+        let base_method = method.split("::").next().unwrap_or(method);
+        if is_option_receiver(receiver) {
+            if let Some(result) = self.eval_option_method(receiver, base_method, arg_values) {
+                return result;
+            }
+        }
+        let result = self.dispatch_native_method_call(receiver, method, arg_values, args_empty);
+        match result {
+            Err(ref e) if is_unknown_method_error(e, base_method) => self
+                .eval_option_method(receiver, base_method, arg_values)
+                .unwrap_or(result),
+            _ => result,
+        }
+    }
+
+    /// OPTMETHODS-1: `Option`/`Result` method with closure arguments called
+    /// through the interpreter. `None` if `method` is not one of them.
+    fn eval_option_method(
+        &mut self,
+        receiver: &Value,
+        method: &str,
+        arg_values: &[Value],
+    ) -> super::eval_option_methods::OptionMethodResult {
+        let mut call = |f: &Value, args: &[Value]| self.call_function(f.clone(), args);
+        super::eval_option_methods::eval_option_method(receiver, method, arg_values, &mut call)
+    }
+
+    /// Method tables of the receiver's own type (no `Option` bridge).
+    fn dispatch_native_method_call(
         &mut self,
         receiver: &Value,
         method: &str,
@@ -300,100 +460,10 @@ impl Interpreter {
                 self.eval_dataframe_method(columns, base_method, arg_values)
             }
             Value::Object(obj) => {
-                // Check if this is an actor instance
-                if let Some(Value::String(actor_name)) = obj.get("__actor") {
-                    self.eval_actor_instance_method(
-                        obj,
-                        actor_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a class instance
-                else if let Some(Value::String(class_name)) = obj.get("__class") {
-                    self.eval_class_instance_method(
-                        obj,
-                        class_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a struct instance with impl methods
-                else if let Some(Value::String(struct_name)) =
-                    obj.get("__struct_type").or_else(|| obj.get("__struct"))
-                {
-                    self.eval_struct_instance_method(
-                        obj,
-                        struct_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a `DataFrame` builder
-                else if let Some(Value::String(type_str)) = obj.get("__type") {
-                    if type_str.as_ref() == "DataFrameBuilder" {
-                        self.eval_dataframe_builder_method(obj, base_method, arg_values)
-                    } else {
-                        self.eval_object_method(obj, base_method, arg_values, args_empty)
-                    }
-                } else {
-                    self.eval_object_method(obj, base_method, arg_values, args_empty)
-                }
+                self.dispatch_plain_object_method(obj, base_method, arg_values, args_empty)
             }
             Value::ObjectMut(cell_rc) => {
-                // Dispatch mutable objects the same way as immutable ones
-                // Safe borrow: We only read metadata fields to determine dispatch
-                let obj = cell_rc
-                    .lock()
-                    .expect("Mutex poisoned: object lock is corrupted");
-
-                // Check if this is an actor instance
-                if let Some(Value::String(actor_name)) = obj.get("__actor") {
-                    let actor_name = actor_name.clone();
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_actor_instance_method_mut(
-                        cell_rc,
-                        actor_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a class instance
-                else if let Some(Value::String(class_name)) = obj.get("__class") {
-                    let class_name = class_name.clone();
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_class_instance_method_mut(
-                        cell_rc,
-                        class_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // Check if this is a struct instance with impl methods
-                else if let Some(Value::String(struct_name)) =
-                    obj.get("__struct_type").or_else(|| obj.get("__struct"))
-                {
-                    let struct_name = struct_name.clone();
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_struct_instance_method_mut(
-                        cell_rc,
-                        struct_name.as_ref(),
-                        base_method,
-                        arg_values,
-                    )
-                }
-                // ISSUE-116: Check if this is a File object
-                else if let Some(Value::String(type_name)) = obj.get("__type") {
-                    if type_name.as_ref() == "File" {
-                        drop(obj); // Release borrow before recursive call
-                        return self.eval_file_method_mut(cell_rc, base_method, arg_values);
-                    }
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
-                } else {
-                    drop(obj); // Release borrow before recursive call
-                    self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
-                }
+                self.dispatch_object_mut_method(cell_rc, base_method, arg_values, args_empty)
             }
             Value::Struct { name, fields } => {
                 // Dispatch struct instance method call
@@ -413,6 +483,9 @@ impl Interpreter {
                     arg_values,
                 )
             }
+            Value::EnumVariant { enum_name, .. } => self
+                .eval_enum_instance_method(receiver, enum_name, base_method, arg_values)
+                .unwrap_or_else(|| self.eval_generic_method(receiver, base_method, args_empty)),
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlDocument(doc) => {
                 self.eval_html_document_method(doc, base_method, arg_values)
@@ -422,6 +495,67 @@ impl Interpreter {
                 self.eval_html_element_method(elem, base_method, arg_values)
             }
             _ => self.eval_generic_method(receiver, base_method, args_empty),
+        }
+    }
+
+    /// Dispatch a method on an immutable object by its dispatch marker.
+    ///
+    /// Complexity: 5
+    fn dispatch_plain_object_method(
+        &mut self,
+        obj: &std::collections::HashMap<String, Value>,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        match ObjectKind::of(obj) {
+            ObjectKind::Actor(name) => {
+                self.eval_actor_instance_method(obj, &name, method, arg_values)
+            }
+            ObjectKind::Class(name) => {
+                self.eval_class_instance_method(obj, &name, method, arg_values)
+            }
+            ObjectKind::Struct(name) => {
+                self.eval_struct_instance_method(obj, &name, method, arg_values)
+            }
+            ObjectKind::Typed(name) if name == "DataFrameBuilder" => {
+                self.eval_dataframe_builder_method(obj, method, arg_values)
+            }
+            _ => self.eval_object_method(obj, method, arg_values, args_empty),
+        }
+    }
+
+    /// Dispatch a method on a mutable object by its dispatch marker. The lock
+    /// is released before the handler runs.
+    ///
+    /// Complexity: 5
+    fn dispatch_object_mut_method(
+        &mut self,
+        cell_rc: &std::sync::Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
+        method: &str,
+        arg_values: &[Value],
+        args_empty: bool,
+    ) -> Result<Value, InterpreterError> {
+        let kind = ObjectKind::of(
+            &cell_rc
+                .lock()
+                .expect("Mutex poisoned: object lock is corrupted"),
+        );
+        match kind {
+            ObjectKind::Actor(name) => {
+                self.eval_actor_instance_method_mut(cell_rc, &name, method, arg_values)
+            }
+            ObjectKind::Class(name) => {
+                self.eval_class_instance_method_mut(cell_rc, &name, method, arg_values)
+            }
+            ObjectKind::Struct(name) => {
+                self.eval_struct_instance_method_mut(cell_rc, &name, method, arg_values)
+            }
+            // ISSUE-116: File objects
+            ObjectKind::Typed(name) if name == "File" => {
+                self.eval_file_method_mut(cell_rc, method, arg_values)
+            }
+            _ => self.eval_object_method_mut(cell_rc, method, arg_values, args_empty),
         }
     }
 

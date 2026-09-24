@@ -13,7 +13,7 @@ use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern, Type, TypeKind};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Helper: Generate let binding statement with mutability and optional Vec type hint
@@ -69,12 +69,13 @@ impl Transpiler {
         is_mutable: bool,
     ) -> Result<TokenStream> {
         // Handle Rust reserved keywords by prefixing with r#
-        let safe_name = if Self::is_rust_reserved_keyword(name) {
-            format!("r#{name}")
-        } else {
-            name.to_string()
-        };
-        let name_ident = format_ident!("{}", safe_name);
+        // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
+        let name_ident = Self::safe_ident(name);
+        self.track_string_binding(name, value, None);
+        // NESTARRVEC-1: inner array literals of a binding whose elements grow
+        let inner_vec_value = elem_grown_value(name, value, body);
+        let value = inner_vec_value.as_ref().unwrap_or(value);
+        self.track_inner_vec_binding(name, value);
 
         // Auto-detect mutability
         let effective_mutability = is_mutable
@@ -85,8 +86,9 @@ impl Transpiler {
         let (value_tokens, needs_vec_type_hint) = match &value.kind {
             ExprKind::Literal(Literal::String(s)) => (quote! { #s.to_string() }, false),
             ExprKind::List(items) if items.is_empty() => (self.transpile_expr(value)?, true),
-            _ => (self.transpile_expr(value)?, false),
+            _ => (self.transpile_let_value(name, value)?, false),
         };
+        let value_tokens = Self::growable_list_tokens(name, value, None, body, value_tokens);
 
         // HOTFIX: If body is Unit, this is a top-level let statement without scoping
         if matches!(body.kind, ExprKind::Literal(Literal::Unit)) {
@@ -264,12 +266,10 @@ impl Transpiler {
         is_mutable: bool,
         is_const: bool,
     ) -> Result<TokenStream> {
-        let safe_name = if Self::is_rust_reserved_keyword(name) {
-            format!("r#{name}")
-        } else {
-            name.to_string()
-        };
-        let name_ident = format_ident!("{}", safe_name);
+        // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
+        let name_ident = Self::safe_ident(name);
+        self.track_string_binding(name, value, type_annotation);
+        self.track_inner_vec_binding(name, value);
 
         // PARSER-073: Generate const/let keyword based on const attribute
         let is_mutable_var = is_mutable
@@ -287,6 +287,12 @@ impl Transpiler {
         // Handle value tokens and type hints
         let (value_tokens, needs_vec_type_hint) =
             self.process_let_value_with_type(name, value, type_annotation, is_mutable_var)?;
+        let value_tokens = if is_const {
+            value_tokens
+        } else {
+            Self::growable_list_tokens(name, value, type_annotation, body, value_tokens)
+        };
+        let value_tokens = Self::cast_usize_to_annotation(value, type_annotation, value_tokens);
 
         // Generate type annotation
         let type_tokens = self.generate_type_tokens(type_annotation, needs_vec_type_hint)?;
@@ -304,6 +310,104 @@ impl Transpiler {
                     #body_tokens
                 }
             })
+        }
+    }
+
+    /// INTLEN-1: `let n: int = v.len()` casts the `usize` value to the
+    /// annotated integer type. (complexity: 2)
+    fn cast_usize_to_annotation(
+        value: &Expr,
+        type_annotation: Option<&Type>,
+        tokens: TokenStream,
+    ) -> TokenStream {
+        match type_annotation {
+            Some(ty) => super::return_type_helpers::cast_usize_tokens(
+                value,
+                &Self::type_to_string(ty),
+                tokens,
+            ),
+            None => tokens,
+        }
+    }
+
+    /// LETVEC-1: a non-empty array literal bound by `let` becomes `vec![..]`
+    /// when the binding is annotated `Vec<..>` or is grown later in `body`
+    /// (the receiver of a Vec-only method). Otherwise `tokens` is returned
+    /// unchanged, so a never-grown literal stays a fixed-size array.
+    fn growable_list_tokens(
+        name: &str,
+        value: &Expr,
+        type_annotation: Option<&Type>,
+        body: &Expr,
+        tokens: TokenStream,
+    ) -> TokenStream {
+        let is_literal = matches!(&value.kind, ExprKind::List(items) if !items.is_empty());
+        let text = tokens.to_string();
+        let is_array_tokens = text.starts_with('[') && text.ends_with(']');
+        let needs_vec = type_annotation.is_some_and(is_vec_annotation)
+            || super::mutation_detection::is_grown_as_vec(name, body);
+        if is_literal && is_array_tokens && needs_vec {
+            quote! { vec! #tokens }
+        } else {
+            tokens
+        }
+    }
+
+    /// PRINTPARAM-1: the value of `let name = value`; a closure value knows
+    /// the name it is called by. (complexity: 2)
+    fn transpile_let_value(&self, name: &str, value: &Expr) -> Result<TokenStream> {
+        match &value.kind {
+            ExprKind::Lambda { params, body } => {
+                self.transpile_named_lambda(Some(name), params, body)
+            }
+            _ => self.transpile_expr(value),
+        }
+    }
+
+    /// NESTPUSHLIT-1: remember whether `name` is bound to a list literal
+    /// whose inner literals are `vec![..]` (the NESTARRVEC-1 rewrite); any
+    /// other binding of `name` clears the record. (complexity: 2)
+    fn track_inner_vec_binding(&self, name: &str, value: &Expr) {
+        let mut lists = self.inner_vec_lists.borrow_mut();
+        if has_vec_inner_literals(value) {
+            lists.insert(name.to_string());
+        } else {
+            lists.remove(name);
+        }
+    }
+
+    /// NESTPUSHLIT-1: the arguments of `object.push(x)` / `object.insert(i, x)`
+    /// with an array literal `x` as `vec![..]`, when `object` is a binding
+    /// whose inner literals are `vec![..]`; `None` otherwise. (complexity: 4)
+    pub(crate) fn inner_vec_push_args(
+        &self,
+        object: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Option<Vec<Expr>> {
+        let ExprKind::Identifier(name) = &object.kind else {
+            return None;
+        };
+        if !matches!(method, "push" | "insert") || !self.inner_vec_lists.borrow().contains(name) {
+            return None;
+        }
+        let mut rewritten = args.to_vec();
+        let element = rewritten.last_mut()?;
+        *element = list_as_vec(element);
+        Some(rewritten)
+    }
+
+    /// LETVEC-1: transpile one statement of a block. A statement-level `let`
+    /// (Unit body) whose scope is the following siblings `rest` gets its
+    /// array literal emitted as `vec![..]` when a sibling grows the binding.
+    pub(crate) fn transpile_block_statement(
+        &self,
+        expr: &Expr,
+        rest: &[Expr],
+    ) -> Result<TokenStream> {
+        match grown_let_as_vec(expr, rest) {
+            Some(rewritten) => self.transpile_expr(&rewritten),
+            None => self.transpile_expr(expr),
         }
     }
 
@@ -343,7 +447,7 @@ impl Transpiler {
                 self.string_vars.borrow_mut().insert(name.to_string());
                 Ok((self.transpile_expr(value)?, false))
             }
-            _ => Ok((self.transpile_expr(value)?, false)),
+            _ => Ok((self.transpile_let_value(name, value)?, false)),
         }
     }
 
@@ -509,6 +613,93 @@ impl Transpiler {
     }
 }
 
+/// LETVEC-1: a copy of the statement-level `let` `expr` with its non-empty
+/// array literal replaced by `vec![..]`, when a later sibling in `rest` is a
+/// Vec-only method call on the binding; `None` otherwise. NESTARRVEC-1: when
+/// a sibling grows an element (`m[i].push(x)`), the inner literals become
+/// `vec![..]` too.
+fn grown_let_as_vec(expr: &Expr, rest: &[Expr]) -> Option<Expr> {
+    let ExprKind::Let {
+        name, value, body, ..
+    } = &expr.kind
+    else {
+        return None;
+    };
+    let is_list = matches!(&value.kind, ExprKind::List(items) if !items.is_empty());
+    let is_statement = matches!(body.kind, ExprKind::Literal(Literal::Unit));
+    if !is_list || !is_statement {
+        return None;
+    }
+    let grown = super::mutation_detection::is_grown_in_statements(name, rest);
+    let elem_grown = super::mutation_detection::is_elem_grown_in_statements(name, rest);
+    if !grown && !elem_grown {
+        return None;
+    }
+    let inner = if elem_grown {
+        inner_lists_as_vec(value)
+    } else {
+        (**value).clone()
+    };
+    let mut rewritten = expr.clone();
+    if let ExprKind::Let { value, .. } = &mut rewritten.kind {
+        **value = if grown { list_as_vec(&inner) } else { inner };
+    }
+    Some(rewritten)
+}
+
+/// NESTARRVEC-1: `value` with its inner array literals as `vec![..]`, when
+/// `value` is an array literal and `body` grows an element of `name`.
+fn elem_grown_value(name: &str, value: &Expr, body: &Expr) -> Option<Expr> {
+    let is_list = matches!(&value.kind, ExprKind::List(items) if !items.is_empty());
+    (is_list && super::mutation_detection::is_elem_grown_as_vec(name, body))
+        .then(|| inner_lists_as_vec(value))
+}
+
+/// NESTARRVEC-1: a copy of the array literal `value` with each element that
+/// is itself an array literal replaced by `vec![..]`.
+fn inner_lists_as_vec(value: &Expr) -> Expr {
+    let mut rewritten = value.clone();
+    if let ExprKind::List(items) = &mut rewritten.kind {
+        for item in items.iter_mut() {
+            *item = list_as_vec(item);
+        }
+    }
+    rewritten
+}
+
+/// NESTPUSHLIT-1: `value` is a list literal (array or `vec![..]`) with an
+/// element that is a `vec![..]` literal. (complexity: 4)
+fn has_vec_inner_literals(value: &Expr) -> bool {
+    let items = match &value.kind {
+        ExprKind::List(items) => items,
+        ExprKind::MacroInvocation { name, args } if name == "vec" => args,
+        _ => return false,
+    };
+    items
+        .iter()
+        .any(|item| matches!(&item.kind, ExprKind::MacroInvocation { name, .. } if name == "vec"))
+}
+
+/// LETVEC-1: the array literal `list` as `vec![..]`; any other expression unchanged.
+fn list_as_vec(list: &Expr) -> Expr {
+    let mut rewritten = list.clone();
+    if let ExprKind::List(items) = &list.kind {
+        rewritten.kind = ExprKind::MacroInvocation {
+            name: "vec".to_string(),
+            args: items.clone(),
+        };
+    }
+    rewritten
+}
+
+/// LETVEC-1: `Vec<..>` annotation (a bare `Vec` or a generic `Vec<T>`).
+fn is_vec_annotation(ty: &Type) -> bool {
+    match &ty.kind {
+        TypeKind::Generic { base, .. } | TypeKind::Named(base) => base == "Vec",
+        _ => false,
+    }
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -517,6 +708,7 @@ impl Transpiler {
 mod tests {
     use super::*;
     use crate::frontend::ast::Span;
+    use quote::format_ident;
 
     fn make_expr(kind: ExprKind) -> Expr {
         Expr {
@@ -994,5 +1186,20 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = ident_expr("items");
         assert!(!transpiler.value_creates_vec(&expr));
+    }
+
+    /// RHLGA-1 review F7: a keyword that cannot be a raw identifier
+    /// (`self`, `Self`, `super`, `crate`) must not make `let` panic.
+    #[test]
+    fn test_rhlga_1_let_named_non_raw_keyword_does_not_panic() {
+        let transpiler = Transpiler::new();
+        for name in ["self", "Self", "super", "crate"] {
+            let value = int_expr(1);
+            let body = unit_expr();
+            let plain = transpiler.transpile_let(name, &value, &body, false);
+            assert!(plain.is_ok(), "{name}: {plain:?}");
+            let typed = transpiler.transpile_let_with_type(name, None, &value, &body, false, false);
+            assert!(typed.is_ok(), "{name}: {typed:?}");
+        }
     }
 }

@@ -144,17 +144,39 @@ impl Transpiler {
             }
         }
 
+        // DICTIDX-1: `d["k"] = v` inserts into the map
+        if let Some(tokens) = self.try_transpile_map_key_assign(target, value)? {
+            return Ok(tokens);
+        }
+
         // Standard assignment (no deadlock risk)
         let value_tokens = self.transpile_expr(value)?;
 
-        // BUG-003: Handle IndexAccess specially for lvalue (no .clone())
-        if let ExprKind::IndexAccess { .. } = &target.kind {
-            let target_tokens = self.transpile_index_lvalue(target)?;
-            Ok(quote! { #target_tokens = #value_tokens })
-        } else {
-            let target_tokens = self.transpile_expr(target)?;
-            Ok(quote! { #target_tokens = #value_tokens })
+        // BUG-003 / IDXASSIGN-1: the target is a place (no `.clone()` in its chain)
+        let target_tokens = self.transpile_place(target)?;
+        Ok(quote! { #target_tokens = #value_tokens })
+    }
+
+    /// DICTIDX-1: `map["k"] = v` is `map.insert("k".to_string(), v)`; the
+    /// value is converted as a dict-literal value is. (complexity: 2)
+    fn try_transpile_map_key_assign(
+        &self,
+        target: &Expr,
+        value: &Expr,
+    ) -> Result<Option<TokenStream>> {
+        let ExprKind::IndexAccess { object, index } = &target.kind else {
+            return Ok(None);
+        };
+        if !is_string_key(index) {
+            return Ok(None);
         }
+        let obj_tokens = self.transpile_place(object)?;
+        let key_tokens = self.transpile_expr(index)?;
+        // DICTTYPE-1: a typed-value dict stores the value as is
+        let value_tokens = self.map_value_tokens(value, self.is_typed_dict(object))?;
+        Ok(Some(
+            quote! { #obj_tokens.insert(#key_tokens.to_string(), #value_tokens) },
+        ))
     }
 
     /// Check if an expression references a specific variable name
@@ -287,21 +309,58 @@ impl Transpiler {
         }
     }
 
-    /// Transpile `IndexAccess` as an lvalue (no .`clone()`)
-    /// Handles nested cases like matrix[i][j]
-    fn transpile_index_lvalue(&self, expr: &Expr) -> Result<TokenStream> {
+    /// IDXASSIGN-1: transpile `expr` in place (lvalue) position.
+    ///
+    /// A field/index chain that contains an index (`o.items[0].z`,
+    /// `a.b[i].c[j].d`, `m[i][j]`) is emitted with no `.clone()` anywhere in
+    /// it, so the assignment, compound assignment, mutating method call or
+    /// `&mut` borrow reaches the original element instead of a temporary.
+    /// Any other expression is transpiled as a value. (complexity: 4)
+    pub(crate) fn transpile_place(&self, expr: &Expr) -> Result<TokenStream> {
+        if !Self::place_chain_has_index(expr) {
+            return self.transpile_expr(expr);
+        }
         match &expr.kind {
             ExprKind::IndexAccess { object, index } => {
-                // Recursively handle nested IndexAccess
-                let obj_tokens = if matches!(object.kind, ExprKind::IndexAccess { .. }) {
-                    self.transpile_index_lvalue(object)?
-                } else {
-                    self.transpile_expr(object)?
-                };
+                let obj_tokens = self.transpile_place(object)?;
                 let idx_tokens = self.transpile_expr(index)?;
+                if is_string_key(index) {
+                    // DICTIDX-1: a string key reaches the map entry in place
+                    return Ok(
+                        quote! { (*#obj_tokens.get_mut(#idx_tokens).expect("Key not found")) },
+                    );
+                }
                 Ok(quote! { #obj_tokens[#idx_tokens as usize] })
             }
+            ExprKind::FieldAccess { object, field } => {
+                let obj_tokens = self.transpile_place(object)?;
+                let field_tokens = Self::place_field_tokens(field);
+                Ok(quote! { #obj_tokens.#field_tokens })
+            }
             _ => self.transpile_expr(expr),
+        }
+    }
+
+    /// True when a field/index chain contains an index access. (complexity: 3)
+    fn place_chain_has_index(expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::IndexAccess { .. } => true,
+            ExprKind::FieldAccess { object, .. } => Self::place_chain_has_index(object),
+            _ => false,
+        }
+    }
+
+    /// A struct field name or a tuple index (`.0`) of a place. (complexity: 2)
+    fn place_field_tokens(field: &str) -> TokenStream {
+        match field.parse::<usize>() {
+            Ok(index) => {
+                let index = syn::Index::from(index);
+                quote! { #index }
+            }
+            Err(_) => {
+                let ident = Self::safe_ident(field);
+                quote! { #ident }
+            }
         }
     }
     /// Transpiles compound assignment
@@ -346,8 +405,8 @@ impl Transpiler {
             }
         }
 
-        // Standard compound assignment (non-global)
-        let target_tokens = self.transpile_expr(target)?;
+        // Standard compound assignment (non-global); IDXASSIGN-1: target is a place
+        let target_tokens = self.transpile_place(target)?;
         let value_tokens = self.transpile_expr(value)?;
         let op_tokens = Self::get_compound_op_token(op)?;
         Ok(quote! { #target_tokens #op_tokens #value_tokens })
@@ -1225,7 +1284,7 @@ mod tests {
 
     // Test 58: transpile_index_lvalue simple
     #[test]
-    fn test_transpile_index_lvalue_simple() {
+    fn test_transpile_place_index_simple() {
         let transpiler = Transpiler::new();
         let object = Expr::new(ExprKind::Identifier("arr".to_string()), Span::default());
         let index = Expr::new(
@@ -1239,7 +1298,7 @@ mod tests {
             },
             Span::default(),
         );
-        let result = transpiler.transpile_index_lvalue(&expr);
+        let result = transpiler.transpile_place(&expr);
         assert!(result.is_ok());
         let code = result.expect("should succeed").to_string();
         assert!(code.contains("arr"));
@@ -1248,7 +1307,7 @@ mod tests {
 
     // Test 59: transpile_index_lvalue nested
     #[test]
-    fn test_transpile_index_lvalue_nested() {
+    fn test_transpile_place_index_nested() {
         let transpiler = Transpiler::new();
         let matrix = Expr::new(ExprKind::Identifier("matrix".to_string()), Span::default());
         let i = Expr::new(
@@ -1273,18 +1332,58 @@ mod tests {
             },
             Span::default(),
         );
-        let result = transpiler.transpile_index_lvalue(&expr);
+        let result = transpiler.transpile_place(&expr);
         assert!(result.is_ok());
         let code = result.expect("should succeed").to_string();
         assert!(code.contains("matrix"));
+        assert!(!code.contains("clone"), "{code}");
+    }
+
+    // IDXASSIGN-1: a field of an indexed element is a place, not a clone
+    #[test]
+    fn test_transpile_place_field_of_index_has_no_clone() {
+        let transpiler = Transpiler::new();
+        let items = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(Expr::new(
+                    ExprKind::Identifier("o".to_string()),
+                    Span::default(),
+                )),
+                field: "items".to_string(),
+            },
+            Span::default(),
+        );
+        let elem = Expr::new(
+            ExprKind::IndexAccess {
+                object: Box::new(items),
+                index: Box::new(Expr::new(
+                    ExprKind::Literal(Literal::Integer(0, None)),
+                    Span::default(),
+                )),
+            },
+            Span::default(),
+        );
+        let expr = Expr::new(
+            ExprKind::FieldAccess {
+                object: Box::new(elem),
+                field: "z".to_string(),
+            },
+            Span::default(),
+        );
+        let code = transpiler
+            .transpile_place(&expr)
+            .expect("place transpiles")
+            .to_string()
+            .replace(' ', "");
+        assert_eq!(code, "o.items[0asusize].z");
     }
 
     // Test 60: transpile_index_lvalue non-index
     #[test]
-    fn test_transpile_index_lvalue_non_index() {
+    fn test_transpile_place_index_non_index() {
         let transpiler = Transpiler::new();
         let expr = Expr::new(ExprKind::Identifier("x".to_string()), Span::default());
-        let result = transpiler.transpile_index_lvalue(&expr);
+        let result = transpiler.transpile_place(&expr);
         assert!(result.is_ok());
     }
 
@@ -1967,4 +2066,10 @@ mod tests {
         let code = result.to_string();
         assert!(code.contains("42"), "Literal should pass through unchanged");
     }
+}
+
+/// DICTIDX-1: `index` is a string literal, i.e. a map key rather than a
+/// position (only a position gets the `as usize` cast). (complexity: 1)
+pub(crate) fn is_string_key(index: &Expr) -> bool {
+    matches!(&index.kind, ExprKind::Literal(Literal::String(_)))
 }

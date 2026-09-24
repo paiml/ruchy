@@ -77,6 +77,10 @@ impl Transpiler {
             return Ok(quote! { -> String });
         }
 
+        if super::return_type_helpers::returns_usize(body) {
+            return Ok(quote! { -> usize });
+        }
+
         // BOOK-COMPAT-017: Check call-site types for numeric return type
         // Check if function has float arguments - if so, infer f64 return type
         let has_float_args =
@@ -323,6 +327,9 @@ impl Transpiler {
     /// Complexity: 4 (within Toyota Way limits)
     pub(crate) fn format_regular_attribute_impl(&self, attr: &Attribute) -> TokenStream {
         let attr_name = format_ident!("{}", attr.name);
+        if attr.name == "test" {
+            return Self::format_test_attribute(&attr.args);
+        }
         if attr.args.is_empty() {
             quote! { #[#attr_name] }
         } else {
@@ -333,6 +340,16 @@ impl Transpiler {
                 quote! { #[#attr_name] }
             }
         }
+    }
+
+    /// BUG-033: Rust's `#[test]` takes no arguments; `@test("description")`
+    /// keeps its description as a doc comment on the test function.
+    fn format_test_attribute(args: &[String]) -> TokenStream {
+        if args.is_empty() {
+            return quote! { #[test] };
+        }
+        let doc = args.join(", ").trim_matches('"').to_string();
+        quote! { #[doc = #doc] #[test] }
     }
 
     /// Compute final return type (handles special cases)

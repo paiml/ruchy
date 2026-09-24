@@ -277,7 +277,7 @@ impl Interpreter {
         match expr_kind {
             ExprKind::Binary { left, op, right } => self.eval_binary_expr(left, *op, right),
             ExprKind::Unary { op, operand } => self.eval_unary_expr(*op, operand),
-            ExprKind::Call { func, args } => self.eval_function_call(func, args),
+            ExprKind::Call { func, args } => self.eval_call_expr(func, args),
             ExprKind::MethodCall {
                 receiver,
                 method,
@@ -373,11 +373,6 @@ impl Interpreter {
         Some(current_value)
     }
 
-    // Value formatting delegated to value_format module
-    // EXTREME TDD: Eliminated 50 lines of duplicate code
-    pub(crate) fn format_string_with_values(format_str: &str, values: &[Value]) -> String {
-        crate::runtime::value_format::format_string_with_values(format_str, values)
-    }
     /// Evaluate miscellaneous expressions.
     /// Delegates to `interpreter_misc_eval` module.
     pub(crate) fn eval_misc_expr(
@@ -549,6 +544,8 @@ impl Interpreter {
                 inclusive,
             } => self.eval_range_expr(start, end, *inclusive),
             ExprKind::ArrayInit { value, size } => self.eval_array_init_expr(value, size),
+            // STRRECV-1: `vec![x; n]` builds the same list as `[x; n]`
+            ExprKind::VecRepeat { value, count } => self.eval_array_init_expr(value, count),
             ExprKind::DataFrame { columns } => self.eval_dataframe_literal(columns),
             _ => unreachable!("Non-data-structure expression passed to eval_data_structure_expr"),
         }

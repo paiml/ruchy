@@ -227,12 +227,17 @@ fn parse_private_keyword(state: &mut ParserState) {
 pub(in crate::frontend::parser) fn parse_single_struct_field(
     state: &mut ParserState,
 ) -> Result<(String, Type, Option<Expr>)> {
-    let field_name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-        let name = n.clone();
-        state.tokens.advance();
-        name
-    } else {
-        bail!("Expected field name");
+    // RESFIELD-1: a keyword is a field name too (`type: i32`), as after '.'
+    let field_name = match state
+        .tokens
+        .peek()
+        .and_then(|(token, _)| crate::frontend::parser::member_names::member_name(token))
+    {
+        Some(name) => {
+            state.tokens.advance();
+            name
+        }
+        None => bail!("Expected field name"),
     };
 
     state.tokens.expect(&Token::Colon)?;

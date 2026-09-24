@@ -752,8 +752,9 @@ mod tests {
                 println("Hello from compiled Ruchy!");
             }
         "#;
+        let dir = tempfile::TempDir::new().expect("temp dir");
         let options = CompileOptions {
-            output: PathBuf::from("/tmp/test_ruchy_binary"),
+            output: dir.path().join("out"),
             ..Default::default()
         };
         // This might fail if the transpiler doesn't support the syntax yet
@@ -1185,8 +1186,9 @@ mod tests {
         ];
 
         for source in complex_sources {
+            let dir = tempfile::TempDir::new().expect("temp dir");
             let options = CompileOptions {
-                output: PathBuf::from("/tmp/complex_test"),
+                output: dir.path().join("out"),
                 ..Default::default()
             };
 
@@ -1391,10 +1393,17 @@ mod property_tests_compiler {
         #[test]
         fn test_compile_source_to_binary_never_panics(input: String) {
             // Limit input size to avoid timeout
-            let _input = if input.len() > 100 { &input[..100] } else { &input[..] };
+            let input: String = input.chars().take(100).collect();
+            // COMPILERACE-1: a random input can be a valid program (for example
+            // an empty one), so the binary goes into a temp dir, never a.out in
+            // the crate root.
+            let dir = tempfile::TempDir::new().expect("operation should succeed in test");
+            let options = CompileOptions {
+                output: dir.path().join("out"),
+                ..Default::default()
+            };
             // Function should not panic on any input, even invalid syntax
             let result = std::panic::catch_unwind(|| {
-                let options = CompileOptions::default();
                 let _ = compile_source_to_binary(&input, &options);
             });
             // Assert that no panic occurred (Result can be Ok or Err, but no panic)

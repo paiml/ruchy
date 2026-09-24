@@ -29,7 +29,7 @@
 //!
 //! Extracted from expressions.rs to improve maintainability (TDG Structural improvement).
 
-use crate::frontend::ast::{Attribute, Expr, ExprKind, Span};
+use crate::frontend::ast::{Expr, ExprKind, Span};
 use crate::frontend::lexer::Token;
 use crate::frontend::parser::{bail, ParserState, Result};
 
@@ -88,8 +88,7 @@ fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
     let mut exprs = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        let is_pub = parse_visibility_modifier(state);
-        exprs.push(parse_module_item(state, is_pub)?);
+        exprs.push(parse_module_item(state)?);
         skip_optional_semicolon(state);
     }
 
@@ -97,39 +96,20 @@ fn parse_module_body(state: &mut ParserState) -> Result<Expr> {
     Ok(Expr::new(ExprKind::Block(exprs), start_span))
 }
 
-/// Parse visibility modifier (pub)
-fn parse_visibility_modifier(state: &mut ParserState) -> bool {
-    if matches!(state.tokens.peek(), Some((Token::Pub, _))) {
-        state.tokens.advance();
-        true
-    } else {
-        false
-    }
-}
-
-/// Parse module item (function, use statement, nested module, or expression)
-fn parse_module_item(state: &mut ParserState, is_pub: bool) -> Result<Expr> {
+/// Parse module item: a `pub` item or a private item/expression.
+///
+/// A `pub` item inside a module is parsed exactly like one at the top level
+/// (`pub fun`, `pub struct`, `pub enum`, `pub mod`, `pub use`, `pub(crate) ..`),
+/// so nested modules and public types are accepted (NESTEDMOD-1).
+fn parse_module_item(state: &mut ParserState) -> Result<Expr> {
     match state.tokens.peek() {
+        Some((Token::Pub, span)) => {
+            let span = *span;
+            super::visibility_modifiers::parse_pub_token(state, span)
+        }
         // DEFECT-PARSER-015 FIX: Accept both 'fun' and 'fn' for functions
         Some((Token::Fun | Token::Fn, _)) => {
-            crate::frontend::parser::functions::parse_function_with_visibility(state, is_pub)
-        }
-        Some((Token::Use, _)) if is_pub => {
-            state.tokens.advance();
-            crate::frontend::parser::parse_use_statement_with_visibility(state, true)
-        }
-        // DEFECT-PARSER-015 FIX: Allow pub mod
-        Some((Token::Mod | Token::Module, _)) if is_pub => {
-            let mut expr = parse_module_declaration(state)?;
-            expr.attributes.push(Attribute {
-                name: "pub".to_string(),
-                args: vec![],
-                span: expr.span,
-            });
-            Ok(expr)
-        }
-        _ if is_pub => {
-            bail!("'pub' can only be used with function declarations, use statements, or module declarations")
+            crate::frontend::parser::functions::parse_function_with_visibility(state, false)
         }
         _ => crate::frontend::parser::parse_expr_recursive(state),
     }

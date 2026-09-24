@@ -16,25 +16,40 @@ use crate::runtime::interpreter::{Interpreter, LoopControlOrError};
 use crate::runtime::{InterpreterError, Value};
 use std::sync::Arc;
 
+/// The names a `for` loop binds per element: its pattern, or (for callers
+/// without a parsed pattern) a single variable.
+#[derive(Clone, Copy)]
+pub(crate) struct ForBinding<'a> {
+    pub(crate) var: &'a str,
+    pub(crate) pattern: Option<&'a Pattern>,
+}
+
+impl<'a> From<&'a str> for ForBinding<'a> {
+    fn from(var: &'a str) -> Self {
+        Self { var, pattern: None }
+    }
+}
+
 impl Interpreter {
     /// Evaluate a for loop
     pub(crate) fn eval_for_loop(
         &mut self,
         label: Option<&String>,
         var: &str,
-        _pattern: Option<&Pattern>,
+        pattern: Option<&Pattern>,
         iter: &Expr,
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
         let iter_value = self.eval_expr(iter)?;
+        let binding = ForBinding { var, pattern };
 
         match iter_value {
-            Value::Array(ref arr) => self.eval_for_array_iteration(label, var, arr, body),
+            Value::Array(ref arr) => self.eval_for_array_iteration(label, binding, arr, body),
             Value::Range {
                 ref start,
                 ref end,
                 inclusive,
-            } => self.eval_for_range_iteration(label, var, start, end, inclusive, body),
+            } => self.eval_for_range_iteration(label, binding, start, end, inclusive, body),
             _ => Err(InterpreterError::TypeError(
                 "For loop requires an iterable".to_string(),
             )),
@@ -46,15 +61,14 @@ impl Interpreter {
     pub(crate) fn eval_for_array_iteration(
         &mut self,
         label: Option<&String>,
-        loop_var: &str,
+        binding: ForBinding<'_>,
         arr: &[Value],
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
         let mut last_value = Value::nil();
 
         for item in arr {
-            self.set_variable(loop_var, item.clone());
-            match self.eval_loop_body_with_control_flow(body) {
+            match self.eval_for_iteration(binding, item.clone(), body) {
                 Ok(value) => last_value = value,
                 Err(LoopControlOrError::Break(break_label, break_val)) => {
                     // If break has no label or matches this loop's label, break here
@@ -90,7 +104,7 @@ impl Interpreter {
     pub(crate) fn eval_for_range_iteration(
         &mut self,
         label: Option<&String>,
-        loop_var: &str,
+        binding: ForBinding<'_>,
         start: &Value,
         end: &Value,
         inclusive: bool,
@@ -100,8 +114,7 @@ impl Interpreter {
         let mut last_value = Value::nil();
 
         for i in self.create_range_iterator(start_val, end_val, inclusive) {
-            self.set_variable(loop_var, Value::Integer(i));
-            match self.eval_loop_body_with_control_flow(body) {
+            match self.eval_for_iteration(binding, Value::Integer(i), body) {
                 Ok(value) => last_value = value,
                 Err(LoopControlOrError::Break(break_label, break_val)) => {
                     if break_label.is_none() || break_label.as_deref() == label.map(String::as_str)
@@ -126,6 +139,45 @@ impl Interpreter {
         }
 
         Ok(last_value)
+    }
+
+    /// FORLEAK-1: one iteration of a `for` loop. The loop pattern is bound in
+    /// a scope of its own, so a same-named outer binding is shadowed, not
+    /// overwritten; assignments to outer variables in the body still reach
+    /// them.
+    fn eval_for_iteration(
+        &mut self,
+        binding: ForBinding<'_>,
+        item: Value,
+        body: &Expr,
+    ) -> Result<Value, LoopControlOrError> {
+        self.push_scope();
+        let result = self
+            .bind_for_item(binding, item)
+            .map_err(LoopControlOrError::Error)
+            .and_then(|()| self.eval_loop_body_with_control_flow(body));
+        self.pop_scope();
+        result
+    }
+
+    /// Bind one loop element to the loop pattern in the current scope.
+    fn bind_for_item(
+        &mut self,
+        binding: ForBinding<'_>,
+        item: Value,
+    ) -> Result<(), InterpreterError> {
+        let bindings = match binding.pattern {
+            Some(pattern) => self.try_pattern_match(pattern, &item)?.ok_or_else(|| {
+                InterpreterError::RuntimeError(format!(
+                    "for-loop pattern does not match element {item}"
+                ))
+            })?,
+            None => vec![(binding.var.to_string(), item)],
+        };
+        for (name, value) in bindings {
+            self.env_set(name, value);
+        }
+        Ok(())
     }
 
     /// Extract integer bounds from range values
@@ -423,234 +475,205 @@ impl Interpreter {
             }
             ExprKind::FieldAccess { object, field } => self.eval_field_assign(object, field, val),
             // BUG-003: Support array index assignment (arr[i] = value)
-            ExprKind::IndexAccess { object, index } => self.eval_index_assign(object, index, val),
+            ExprKind::IndexAccess { object, index } => self.eval_element_assign(object, index, val),
             _ => Err(InterpreterError::RuntimeError(
                 "Invalid assignment target".to_string(),
             )),
         }
     }
 
-    /// BUG-003: Evaluate array/vector index assignment (arr[i] = value, matrix[i][j] = value)
-    ///
-    /// Handles both simple (arr[0] = 99) and nested (matrix[0][1] = 99) index assignment.
-    /// Complexity: 8 (≤10 target)
-    /// Assign a value into a 2D array: `arr[outer_idx][inner_idx] = val`.
-    fn assign_nested_array(
-        &mut self,
-        arr_name: &str,
-        outer_idx: usize,
-        inner_idx_val: Value,
-        val: Value,
-    ) -> Result<Value, InterpreterError> {
-        let inner_idx = match inner_idx_val {
-            Value::Integer(i) => i as usize,
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "Array index must be an integer".to_string(),
-                ))
-            }
-        };
-
-        let arr = self.lookup_variable(arr_name)?;
-        let Value::Array(ref outer_vec) = arr else {
-            return Err(InterpreterError::RuntimeError(
-                "Cannot index non-array value".to_string(),
-            ));
-        };
-
-        let mut new_outer = outer_vec.to_vec();
-        if outer_idx >= new_outer.len() {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Outer index {outer_idx} out of bounds"
-            )));
-        }
-
-        let Value::Array(ref inner_vec) = new_outer[outer_idx] else {
-            return Err(InterpreterError::RuntimeError(
-                "Cannot index non-array value".to_string(),
-            ));
-        };
-
-        let mut new_inner = inner_vec.to_vec();
-        if inner_idx >= new_inner.len() {
-            return Err(InterpreterError::RuntimeError(format!(
-                "Inner index {inner_idx} out of bounds"
-            )));
-        }
-
-        new_inner[inner_idx] = val.clone();
-        new_outer[outer_idx] = Value::Array(Arc::from(new_inner));
-        self.set_variable(arr_name, Value::Array(Arc::from(new_outer)));
-        Ok(val)
-    }
-
     /// Evaluate field assignment: `obj.field = value`.
     ///
     /// Handles Object, ObjectMut, Class, and Struct field updates.
-    fn eval_field_assign(
+    ///
+    /// NESTASSIGN-1: `object` may be a chain rooted at a variable
+    /// (`o.inner.z = 5`, `self.a.b = x`, `o.items[0].z = 5`): each value-typed
+    /// parent is rebuilt with the new field or element and written to its own
+    /// parent, ending at the variable. This is the single chain writer; the
+    /// in-place array methods on fields (`s.a.items.push(x)`) use it too.
+    pub(crate) fn eval_field_assign(
         &mut self,
         object: &Expr,
         field: &str,
         val: Value,
     ) -> Result<Value, InterpreterError> {
-        let ExprKind::Identifier(obj_name) = &object.kind else {
-            return Err(InterpreterError::RuntimeError(
-                "Complex field access not supported".to_string(),
-            ));
+        let object = &self.freeze_place(object)?;
+        let parent = match &object.kind {
+            ExprKind::Identifier(obj_name) => self.lookup_variable(obj_name)?,
+            ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. } => {
+                self.eval_expr(object)?
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "Invalid field assignment target".to_string(),
+                ))
+            }
         };
-        let obj = self.lookup_variable(obj_name)?;
+        let updated = super::interpreter_methods_dispatch::with_field(parent, field, val.clone())?;
+        self.write_back(object, updated)?;
+        Ok(val)
+    }
 
-        match obj {
-            Value::Object(ref map) => {
-                let mut new_map = (**map).clone();
-                new_map.insert(field.to_string(), val.clone());
-                self.set_variable(obj_name, Value::Object(Arc::new(new_map)));
-                Ok(val)
+    /// NESTASSIGN-1: store `updated` at the place `target` names: a variable,
+    /// a field of a chain, or an element of an array.
+    pub(crate) fn write_back(
+        &mut self,
+        target: &Expr,
+        updated: Value,
+    ) -> Result<Value, InterpreterError> {
+        match &target.kind {
+            ExprKind::Identifier(name) => {
+                self.set_variable(name, updated.clone());
+                Ok(updated)
             }
-            Value::ObjectMut(ref cell) => {
-                cell.lock()
-                    .expect("Mutex poisoned: object lock is corrupted")
-                    .insert(field.to_string(), val.clone());
-                Ok(val)
+            ExprKind::FieldAccess { object, field } => {
+                self.eval_field_assign(object, field, updated)
             }
-            Value::Class { ref fields, .. } => {
-                fields
-                    .write()
-                    .expect("RwLock poisoned: class fields lock is corrupted")
-                    .insert(field.to_string(), val.clone());
-                Ok(val)
+            ExprKind::IndexAccess { object, index } => {
+                self.eval_element_assign(object, index, updated)
             }
-            Value::Struct {
-                ref name,
-                ref fields,
-            } => {
-                let mut new_fields = (**fields).clone();
-                new_fields.insert(field.to_string(), val.clone());
-                let new_struct = Value::Struct {
-                    name: name.clone(),
-                    fields: Arc::new(new_fields),
-                };
-                self.set_variable(obj_name, new_struct);
-                Ok(val)
-            }
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Cannot access field '{field}' on non-object"
-            ))),
+            _ => Err(InterpreterError::RuntimeError(
+                "Invalid assignment target".to_string(),
+            )),
         }
     }
 
+    /// Element assignment `object[index] = val`: delegates to
+    /// [`Self::eval_index_assign`], the single element writer.
+    fn eval_element_assign(
+        &mut self,
+        object: &Expr,
+        index: &Expr,
+        val: Value,
+    ) -> Result<Value, InterpreterError> {
+        self.eval_index_assign(object, index, val)
+    }
+
+    /// BUG-003 / NESTASSIGN-1 / DICTIDX-1: `object[index] = val` where
+    /// `object` is any place (`v`, `m[0]`, `o.items`, `d["k"]["j"]`). The
+    /// container is read, rebuilt with the new element (an integer index into
+    /// an array, or a string key into an object/dict) and written back
+    /// through `write_back`, so every link of the chain is updated.
+    /// Complexity: 1
     pub(crate) fn eval_index_assign(
         &mut self,
         object: &Expr,
         index: &Expr,
         val: Value,
     ) -> Result<Value, InterpreterError> {
-        match &object.kind {
-            ExprKind::Identifier(arr_name) => {
-                // Simple case: arr[i] = value
-                let idx_val = self.eval_expr(index)?;
-                let idx = match idx_val {
-                    Value::Integer(i) => i as usize,
-                    _ => {
-                        return Err(InterpreterError::RuntimeError(
-                            "Array index must be an integer".to_string(),
-                        ))
-                    }
-                };
-
-                let arr = self.lookup_variable(arr_name)?;
-                match arr {
-                    Value::Array(ref vec) => {
-                        let mut new_vec = vec.to_vec();
-                        if idx < new_vec.len() {
-                            new_vec[idx] = val.clone();
-                            self.set_variable(arr_name, Value::Array(Arc::from(new_vec)));
-                            Ok(val)
-                        } else {
-                            Err(InterpreterError::RuntimeError(format!(
-                                "Index {} out of bounds for array of length {}",
-                                idx,
-                                new_vec.len()
-                            )))
-                        }
-                    }
-                    _ => Err(InterpreterError::RuntimeError(
-                        "Cannot index non-array value".to_string(),
-                    )),
-                }
-            }
-            ExprKind::IndexAccess {
-                object: nested_obj,
-                index: nested_idx,
-            } => {
-                // Nested case: matrix[i][j] = value
-                // Get the outer index first
-                let outer_idx_val = self.eval_expr(nested_idx)?;
-                let outer_idx = match outer_idx_val {
-                    Value::Integer(i) => i as usize,
-                    _ => {
-                        return Err(InterpreterError::RuntimeError(
-                            "Array index must be an integer".to_string(),
-                        ))
-                    }
-                };
-
-                // Get the root array name (only handle Identifier for now)
-                if let ExprKind::Identifier(arr_name) = &nested_obj.kind {
-                    let inner_idx_val = self.eval_expr(index)?;
-                    self.assign_nested_array(arr_name, outer_idx, inner_idx_val, val)
-                } else {
-                    Err(InterpreterError::RuntimeError(
-                        "Complex nested index assignment not yet supported".to_string(),
-                    ))
-                }
-            }
-            _ => Err(InterpreterError::RuntimeError(
-                "Complex array assignment targets not yet supported".to_string(),
-            )),
-        }
+        let object = &self.freeze_place(object)?;
+        let container = self.eval_expr(object)?;
+        let key = self.eval_expr(index)?;
+        let updated = with_element(container, &key, val.clone())?;
+        self.write_back(object, updated)?;
+        Ok(val)
     }
 
-    /// Evaluate a compound assignment
-    /// Complexity: 6
+    /// Evaluate a compound assignment (`x += 1`, `o.a.b -= 2`, `v[i] *= 3`,
+    /// `o.items[0].z %= 4`).
+    ///
+    /// IDXCOMPOUND-1: the target may be any place `write_back` accepts: a
+    /// variable, or a FieldAccess/IndexAccess chain rooted at one. The current
+    /// value is read through the chain and the result is written back through
+    /// the same path plain assignment uses.
+    /// Complexity: 2
     pub(crate) fn eval_compound_assign(
         &mut self,
         target: &Expr,
         op: AstBinaryOp,
         value: &Expr,
     ) -> Result<Value, InterpreterError> {
-        // Get current value
-        let current = match &target.kind {
-            ExprKind::Identifier(name) => self.lookup_variable(name)?,
-            ExprKind::FieldAccess { object, field } => self.eval_field_access(object, field)?,
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "Invalid compound assignment target".to_string(),
-                ))
-            }
-        };
-
-        // Compute new value
+        if !is_place_expr(target) {
+            return Err(InterpreterError::RuntimeError(
+                "Invalid compound assignment target".to_string(),
+            ));
+        }
+        let target = &self.freeze_place(target)?;
+        let current = self.eval_expr(target)?;
         let rhs = self.eval_expr(value)?;
         let new_val = self.apply_binary_op(&current, op, &rhs)?;
-
-        // Assign back
-        match &target.kind {
-            ExprKind::Identifier(name) => {
-                self.set_variable(name, new_val.clone());
-            }
-            ExprKind::FieldAccess { object, field } => {
-                // Reuse eval_field_assign which handles all object types
-                self.eval_field_assign(object, field, new_val.clone())?;
-            }
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "Complex assignment targets not supported in compound assignment".to_string(),
-                ))
-            }
-        }
-
+        self.write_back(target, new_val.clone())?;
         Ok(new_val)
+    }
+
+    /// IDXEVAL1-1: `place` with every index expression of its chain replaced
+    /// by the literal of its value, evaluated once, left to right. Reading the
+    /// frozen place and writing it back then runs no index expression again,
+    /// so `v[next()] += 1` and `m[f()][j] = x` call `next`/`f` once, as
+    /// compiled code does. An index value with no literal form (a range, a
+    /// float) is left as written; the write rejects such a key anyway.
+    /// Complexity: 3
+    pub(crate) fn freeze_place(&mut self, place: &Expr) -> Result<Expr, InterpreterError> {
+        let mut frozen = place.clone();
+        match &mut frozen.kind {
+            ExprKind::FieldAccess { object, .. } => **object = self.freeze_place(object)?,
+            ExprKind::IndexAccess { object, index } => {
+                **object = self.freeze_place(object)?;
+                let key = self.eval_expr(index)?;
+                if let Some(literal) = key_literal(&key) {
+                    index.kind = ExprKind::Literal(literal);
+                }
+            }
+            _ => {}
+        }
+        Ok(frozen)
+    }
+}
+
+/// IDXEVAL1-1: the literal that evaluates to the index `key`, for the key
+/// types an element write accepts (an integer, a string, an atom).
+/// Complexity: 4
+fn key_literal(key: &Value) -> Option<Literal> {
+    match key {
+        Value::Integer(i) => Some(Literal::Integer(*i, None)),
+        Value::String(s) => Some(Literal::String(s.to_string())),
+        Value::Atom(a) => Some(Literal::Atom(a.clone())),
+        _ => None,
+    }
+}
+
+/// DICTIDX-1: `container` with the element at `key` replaced by `val`: an
+/// integer index into an array, or a string key into an object/dict.
+/// Complexity: 4
+fn with_element(container: Value, key: &Value, val: Value) -> Result<Value, InterpreterError> {
+    match (&container, key) {
+        (Value::Array(items), Value::Integer(i)) => with_array_slot(items, *i, val),
+        (Value::Array(_), _) => Err(InterpreterError::RuntimeError(
+            "Array index must be an integer".to_string(),
+        )),
+        (_, Value::String(k)) => {
+            super::interpreter_methods_dispatch::with_field(container.clone(), k, val)
+        }
+        _ => Err(InterpreterError::RuntimeError(
+            "Cannot index non-array value".to_string(),
+        )),
+    }
+}
+
+/// `items` with slot `i` replaced by `val`; an out-of-range index is an error.
+/// Complexity: 2
+fn with_array_slot(items: &[Value], i: i64, val: Value) -> Result<Value, InterpreterError> {
+    let mut items = items.to_vec();
+    let len = items.len();
+    let Some(slot) = usize::try_from(i).ok().and_then(|i| items.get_mut(i)) else {
+        return Err(InterpreterError::RuntimeError(format!(
+            "Index {i} out of bounds for array of length {len}"
+        )));
+    };
+    *slot = val;
+    Ok(Value::Array(Arc::from(items)))
+}
+
+/// IDXCOMPOUND-1 / IDXPUSHWB-1: `expr` names a place: a variable, or a
+/// FieldAccess/IndexAccess chain whose root is a variable.
+/// Complexity: 3
+pub(crate) fn is_place_expr(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Identifier(_) => true,
+        ExprKind::FieldAccess { object, .. } | ExprKind::IndexAccess { object, .. } => {
+            is_place_expr(object)
+        }
+        _ => false,
     }
 }
 
@@ -742,7 +765,7 @@ mod tests {
         let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
 
         let result = interp
-            .eval_for_array_iteration(None, "x", &[], &body)
+            .eval_for_array_iteration(None, "x".into(), &[], &body)
             .unwrap();
         assert_eq!(result, Value::nil());
     }
@@ -757,7 +780,7 @@ mod tests {
         let body = make_expr(ExprKind::Identifier("x".to_string()));
 
         let result = interp
-            .eval_for_array_iteration(None, "x", &arr, &body)
+            .eval_for_array_iteration(None, "x".into(), &arr, &body)
             .unwrap();
         // Last value is 3
         assert_eq!(result, Value::Integer(3));
@@ -776,7 +799,7 @@ mod tests {
         let body = make_expr(ExprKind::Identifier("i".to_string()));
 
         let result = interp
-            .eval_for_range_iteration(None, "i", &start, &end, false, &body)
+            .eval_for_range_iteration(None, "i".into(), &start, &end, false, &body)
             .unwrap();
         // Last value is 2 (exclusive)
         assert_eq!(result, Value::Integer(2));
@@ -791,7 +814,7 @@ mod tests {
         let body = make_expr(ExprKind::Identifier("i".to_string()));
 
         let result = interp
-            .eval_for_range_iteration(None, "i", &start, &end, true, &body)
+            .eval_for_range_iteration(None, "i".into(), &start, &end, true, &body)
             .unwrap();
         // Last value is 3 (inclusive)
         assert_eq!(result, Value::Integer(3));
@@ -1556,7 +1579,10 @@ mod tests {
 
         let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Outer index"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Index 5 out of bounds"));
     }
 
     #[test]
@@ -1578,7 +1604,10 @@ mod tests {
 
         let result = interp.eval_index_assign(&outer_access, &outer_idx, Value::Integer(99));
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Inner index"));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Index 5 out of bounds"));
     }
 
     #[test]
@@ -1616,7 +1645,7 @@ mod tests {
         assert!(result
             .unwrap_err()
             .to_string()
-            .contains("not yet supported"));
+            .contains("Cannot index non-array"));
     }
 
     // ============================================================================
@@ -1701,7 +1730,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_assign_complex_field_target() {
+    fn test_eval_assign_nested_field_target_writes_back() {
         let mut interp = make_interpreter();
 
         // Set up nested object
@@ -1711,22 +1740,72 @@ mod tests {
         outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
         interp.set_variable("obj", Value::Object(Arc::new(outer)));
 
-        // obj.inner.z = 5  -- complex target (object is a FieldAccess, not Identifier)
-        let target = make_expr(ExprKind::FieldAccess {
-            object: Box::new(make_expr(ExprKind::FieldAccess {
-                object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
-                field: "inner".to_string(),
-            })),
-            field: "z".to_string(),
-        });
+        // NESTASSIGN-1: obj.inner.z = 5 writes through `inner` back to `obj`
+        let target = nested_z_target("obj");
         let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
 
         let result = interp.eval_assign(&target, &value);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Complex field access not supported"));
+        assert_eq!(result.expect("nested field assign"), Value::Integer(5));
+        assert_eq!(nested_z(&mut interp), Value::Integer(5));
+    }
+
+    /// `<root>.inner.z` as an assignment target.
+    fn nested_z_target(root: &str) -> Expr {
+        make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::FieldAccess {
+                object: Box::new(make_expr(ExprKind::Identifier(root.to_string()))),
+                field: "inner".to_string(),
+            })),
+            field: "z".to_string(),
+        })
+    }
+
+    /// The current value of `obj.inner.z`.
+    fn nested_z(interp: &mut Interpreter) -> Value {
+        let target = nested_z_target("obj");
+        interp.eval_expr(&target).expect("obj.inner.z is readable")
+    }
+
+    #[test]
+    fn test_eval_assign_field_on_non_object_is_error() {
+        let mut interp = make_interpreter();
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), Value::Integer(3));
+        interp.set_variable("obj", Value::Object(Arc::new(outer)));
+
+        // obj.inner.z = 5 where obj.inner is an integer
+        let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
+        let err = interp
+            .eval_assign(&nested_z_target("obj"), &value)
+            .expect_err("field of an integer is not assignable");
+        assert!(err.to_string().contains("non-object"), "{err}");
+        // the failed assignment leaves obj unchanged
+        let inner = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
+            field: "inner".to_string(),
+        });
+        assert_eq!(
+            interp.eval_expr(&inner).expect("obj.inner"),
+            Value::Integer(3)
+        );
+    }
+
+    #[test]
+    fn test_eval_assign_field_on_call_result_is_error() {
+        let mut interp = make_interpreter();
+        // (1).z = 5: the object is neither a variable nor a chain rooted at one
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Literal(Literal::Integer(1, None)))),
+            field: "z".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
+        let err = interp
+            .eval_assign(&target, &value)
+            .expect_err("a literal has no assignable field");
+        assert!(
+            err.to_string().contains("Invalid field assignment target"),
+            "{err}"
+        );
     }
 
     #[test]
@@ -1812,7 +1891,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_compound_assign_complex_field_access_error() {
+    fn test_eval_compound_assign_nested_field() {
         let mut interp = make_interpreter();
 
         // Set up nested object
@@ -1822,22 +1901,13 @@ mod tests {
         outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
         interp.set_variable("obj", Value::Object(Arc::new(outer)));
 
-        // obj.inner.z += 1  -- complex field access not supported
-        let target = make_expr(ExprKind::FieldAccess {
-            object: Box::new(make_expr(ExprKind::FieldAccess {
-                object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
-                field: "inner".to_string(),
-            })),
-            field: "z".to_string(),
-        });
+        // NESTASSIGN-1: obj.inner.z += 1 reads and writes through the chain
+        let target = nested_z_target("obj");
         let value = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
 
         let result = interp.eval_compound_assign(&target, AstBinaryOp::Add, &value);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Complex field access not supported"));
+        assert_eq!(result.expect("nested compound assign"), Value::Integer(6));
+        assert_eq!(nested_z(&mut interp), Value::Integer(6));
     }
 
     #[test]

@@ -8280,12 +8280,13 @@ fn test_sqlite_162_where_clauses() {
 
 #[test]
 fn test_sqlite_163_associated_types() {
-    // Associated types
+    // Associated types, in SPECIFICATION.md syntax (`-> Option<Self::Item>`, cf. §actors
+    // `-> Option<Self::Response>`); a `): T` return type is not Ruchy syntax.
     assert_parses(
         r"
         trait Iterator {
             type Item
-            fun next(self): Option<Self.Item>
+            fun next(self) -> Option<Self::Item>
         }
     ",
     );

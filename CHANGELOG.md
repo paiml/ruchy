@@ -7,6 +7,206 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — G2 part 2 (RHLGA-1): the next round of workspace test failures
+
+Behaviour changes a program can observe are marked **(behaviour)**.
+
+- **(behaviour)** Method receivers follow the spec (§7.11): a bare `self` is
+  owned, and becomes `&mut self` when the method mutates it. Write `&self` for
+  a borrowing getter. This reverses the 2026-01 change that always borrowed.
+  Mutation is detected through nested fields, indexes, `++`/`--`, mutating std
+  methods on a field (`push`, `insert`, …) and calls to other mutating
+  methods of the same impl. The mutating std methods include `resize` and
+  `extend_from_slice`, and passing `&mut self.field` to a call mutates `self`.
+  A trait default method taking an owned `self` gets
+  `where Self: Sized`, so it compiles.
+- A function or method named with a Rust reserved word (`do`, `box`, `typeof`, …)
+  is emitted as a raw identifier (`r#do`) at definition and call.
+- `ruchy fmt` keeps `::` paths. `i32::MAX` transpiles as a path. A user-defined
+  `range` function is no longer mistaken for the builtin. An awaiting `main`
+  with a declared return type (`-> Result<(), String>`) compiles.
+- `module::function()` calls keep `::` in transpiled Rust, and the parser now
+  records the difference. A closure stored in a field can be called as
+  `(obj.f)(x)`: field accesses carry their real source span, so the call parses.
+- Nested `pub mod` and `pub` items inside a module parse and transpile.
+- `@test("…")` transpiles to `#[doc = "…"] #[test]`, and `#[derive(Debug)]` is
+  accepted, as the 5.0 attribute grammar says.
+- A function that returns a `let`-bound `[]` infers `-> Vec<…>`.
+- `range(a, b).count()` (and `sum`/`min`/`max`) compile. A `main` that awaits
+  runs on a small in-program executor, with no tokio needed.
+- **(behaviour)** The interpreter's `{:?}` prints what Rust prints for
+  numbers, strings, arrays, tuples, `Option` and `Result` (`[1, 2]`, not
+  `Array([Integer(1), …])`). It differs in two cases: struct fields print sorted
+  by name rather than in declaration order (DEBUGORDER-1), and chars print as
+  strings. `println("{:?}", x)` and `format!` substitute
+  like the macro. `format!` no longer quotes its string arguments.
+- **(behaviour)** `compute_hash` returns MD5 (32 hex characters) again, as its
+  contract says, using an in-tree RFC 1321 implementation. In 5.0.0-beta.2 a
+  dependency cleanup had silently made it SHA-256.
+- **(behaviour)** CLI routing is exhaustive, so no verb can print "not yet
+  implemented" and exit 0. `ruchy prove` now reaches the prover.
+  `ruchy infra …` rejects a missing path or a directory. `ruchy serve` returns
+  an error when it cannot bind its port, and `--watch` keeps serving, with a
+  warning, when the host has no inotify instance left.
+- **(behaviour)** The interpreter has `Option`/`Result` methods again
+  (OPTMETHODS-1): `unwrap`, `expect`, `unwrap_or`, `unwrap_or_else`,
+  `unwrap_or_default`, `is_some`/`is_none`/`is_ok`/`is_err`, `map`,
+  `and_then`, `ok`, `ok_or`, `or`, `filter`. `Some(v)`, `Ok(v)` and a plain
+  non-nil value are present; `None`, `Err(e)` and nil are absent, so
+  `v.pop().unwrap()` yields the element. A plain value's own methods win.
+  `unwrap`/`expect` on an absent value is an error naming it, and so is
+  `unwrap_or_default`, whose default type is unknown at runtime. A plain
+  object has `get(key)`, returning the value or nil. Only the builtin
+  `Option`/`Result` variants take these methods first: a user enum's own
+  `Some`/`None` variant keeps its `impl` methods, which the interpreter now
+  dispatches on enum values.
+- **(behaviour)** In-place array methods change their receiver, as in Rust
+  (FIELDPOP-1, ARRAYMUT-1). `v.sort()`, `reverse`, `append`, `extend`,
+  `insert`, `remove`, `clear`, `truncate`, `dedup`, `resize` and
+  `extend_from_slice` mutate a local array or a field (`self.items.pop()`)
+  and return what Rust returns: nil, the removed element for `remove`, and the
+  element or nil for `pop`. Before, `sort` and `reverse` returned a copy and
+  left the variable unchanged, a field's `push`/`pop` was lost, and `insert`,
+  `remove`, `clear` and `truncate` were unknown. A nested field
+  (`self.inner.items.push(x)`, `o.a.b.sort()`) is written back too.
+  `sorted`/`reversed` still
+  return a copy. `a.append(b)` does not empty `b`.
+- A `let`-bound array literal that is later grown (`push`, `extend`, `insert`,
+  …) or annotated `Vec<…>` transpiles to `vec![…]`, and so does an array
+  literal for a `Vec<…>` struct field (LETVEC-1, VECLIT-1). Before,
+  `let mut v = [1, 2]; v.push(3)` failed rustc (E0599). The scan follows
+  scope: growth after a shadowing `let v = …`, or inside a closure or block
+  that re-binds `v`, does not count for the outer `v`.
+- **(behaviour)** `a.append(b)` transpiles to `a.extend_from_slice(&b)`, so `b`
+  (a `Vec` or an array) stays usable afterwards, as in the interpreter. Before,
+  it transpiled to `a.push(b)`.
+- A keyword can name a method or field after `.` or `?.` (`v.extend(x)`,
+  `o.type`), and a struct can declare it (`struct W { type: i32 }`). A Rust
+  reserved word is emitted as `r#type` (EXTENDKW-1, RESFIELD-1). A `let`
+  named `self`, `Self`, `super` or `crate` no longer panics the transpiler.
+  An enum struct variant may name a field with a keyword too (ENUMFIELDKW-1).
+- An assignment through a field and index chain (`o.items[0].z = 5`) takes
+  effect in the interpreter (NESTASSIGN-1) and in compiled code
+  (IDXASSIGN-1). Before, the transpiler assigned to a `.clone()` of the
+  element, so the write was silently lost. Compound assignment, `&mut` and
+  mutating-method receivers on such a chain are emitted as places as well.
+- A method or function whose last expression is a unit-returning call
+  (`self.items.push(x)`) infers no return type (UNITRET-1), and one ending in
+  `len()` or `count()` infers `-> usize` (LENRET-1). A `len()` or `count()`
+  that meets an `int` annotation, an `int` return tail or an `int` parameter
+  is cast (INTLEN-1).
+- The interpreter accepts compound assignment to an index or field chain
+  (`v[1] += 5`, `o.items[0].z -= 1`) (IDXCOMPOUND-1), and in-place array
+  methods through an index chain (`t.rows[0].vals.push(9)`) are written back
+  (IDXPUSHWB-1). `count()` works on arrays and on `chars()`, `iter()` and
+  `bytes()` in the interpreter, and the transpiler no longer adds `.iter()` to
+  a receiver that is already an iterator (COUNTITER-1).
+- **(behaviour)** A `print`/`println` whose first argument is a string literal
+  with any placeholder (`{:?}`, `{:>5}`, `{0}`, …) uses it as the format
+  string when compiled (PRINTLNFMT-1). Before, only `{}` was recognised, so
+  `println("{:?}", v)` printed the format string followed by the value.
+- **(behaviour)** A compiled `println(s)` of a single string-typed variable
+  prints the text, not its quoted `{:?}` form (PRINTSTR-1).
+- `format("…", args)` transpiles to `format!` (FORMATFN-1), and an explicit
+  `return v.len()` from an `int` function is cast like a tail (RETLEN-1).
+- A string key works at any link of an index chain: `d["k"]` reads, `d["k"] = v`
+  assigns and `d["k"].push(x)` mutates the map, in the interpreter and in
+  compiled code (DICTIDX-1).
+- **(behaviour)** The interpreter's `println`, `print` and `format` share one
+  formatting engine that follows Rust's `std::fmt` (FMTSPEC-1): width, fill,
+  alignment, sign, `#`, `0`, precision and positional and named arguments.
+  Three results change: a placeholder count that does not match the argument
+  count is an error, `{:.2}` on an integer prints the integer (`42`), and
+  `{:.2}` on a string truncates it.
+- `eprintln` and `eprint` are builtins that write formatted text to stderr
+  (EPRINTLN-1).
+- An array literal passed to a parameter annotated `Vec<T>` becomes a `Vec`
+  in compiled code (ARRVECARG-1).
+- A call to a unit-returning user function as the last statement of `main`
+  is no longer wrapped in `println!("{:?}", ..)`, so the compiled program does
+  not print `()` (MAINUNIT-1).
+- A dict literal whose values are all ints, all floats or all bools keeps that
+  value type in compiled code instead of `BTreeMap<String, String>`, so
+  `d["a"] = 5` and `d["a"] + d["b"]` compile; string and mixed dicts are
+  unchanged (DICTTYPE-1).
+- **(behaviour)** The interpreter prints a float under `{}` (in `println`,
+  `format` and f-strings) as Rust's f64 Display does: `3`, not `3.0`;
+  `1000000000000000000000`, `-0`, `NaN`, `inf` (FLOATDISP-1). `{:?}` and a
+  bare `println(x)`, which compiles to `{:?}`, print Rust's Debug text
+  (`3.0`, `1e21`, `1e-7`), matching the compiled binary.
+- `property-tests`, `fuzz` and `notebook` remove the compiled
+  `ruchy_temp_bin_*` binary on every return path, not only on success
+  (TMPLEAK-1).
+- A single-argument `println` prints with `{}` only for a name that is a
+  string in the current scope: a for-loop variable, closure parameter, or
+  match / if-let / while-let binding that re-binds a string variable drops
+  its string record until the scope ends, and `replace` / `repeat` count as
+  string results only on a string receiver (`[1].repeat(2)` is a `Vec`).
+  Before, both printed a `Vec` with `{}` and failed rustc (PRINTSTRSCOPE-1).
+- The interpreter evaluates each index expression of a compound assignment
+  (`v[next()] += 1`), a nested-index assignment (`m[f()][1] = 9`) or an
+  in-place array method on an element (`m[f()].push(x)`) once, as compiled
+  code does; it used to run it again to write the place back (IDXEVAL1-1).
+- **(behaviour)** The interpreter treats the first argument of `println`,
+  `print`, `eprintln`, `eprint` and `format` as a format template only when
+  it is a string literal, as the transpiler does: `let s = "{}"; println(s, 1)`
+  prints `{} 1`, not `1` (FMTTEMPLATE-1).
+- **(behaviour)** A format string that never uses one of its positional
+  arguments is an error in the interpreter, as rustc rejects it:
+  `println("{}", 1, 2)` and `println("{0} {0}", 1, 2)` fail with
+  "argument never used"; an explicit `{1}` counts as a use (FMTEXTRA-1).
+- A nested array literal whose elements are grown through an index
+  (`m[0].push(9)`, `m[i].insert(0, x)`) is transpiled with `vec![..]` inner
+  literals, so `let mut m = [[1], [2]]; m[0].push(9)` compiles and prints
+  `[[1, 9], [2]]` instead of failing rustc E0599 (NESTARRVEC-1).
+- A call to a let-bound closure whose body is unit, as the last statement
+  of main, is no longer printed: `let f = |n| println(n); f(7)` prints `7`,
+  not `7` then `()` (CLOSUREUNIT-1).
+- **(behaviour)** A `for` loop binds its variable or pattern in a scope of
+  its own for each iteration: `let x = "a"; for x in [[1]] { }; println(x)`
+  prints `a`, not `[1]`, and `for (k, v) in pairs` binds `k` and `v` to the
+  tuple's fields instead of `k` to the whole tuple. Assignments to outer
+  variables in the body still persist (FORLEAK-1).
+- Arrays have `repeat(n)`, as Rust slices do: `[1].repeat(2)` is `[1, 1]`;
+  a negative count is an error (ARRREPEAT-1).
+- **(behaviour)** `format`, `println`, `print`, `eprintln` and `eprint`
+  called through a variable or parameter (`let g = format; g(t, 1)`) follow
+  the FMTTEMPLATE-1 rule: only a string literal first argument is a
+  template, so a non-literal one prints `{} 1` (FORMATVAL-1).
+- An untyped function or closure parameter whose emitted type is `String`
+  or `&str` (a closure's from its call sites) prints with `{}`:
+  `fun p(s) { println(s) }; p("hi")` prints `hi`, not `"hi"` (PRINTPARAM-1).
+- An array literal pushed or inserted into a list whose inner literals
+  became `vec![..]` (NESTARRVEC-1) is emitted as `vec![..]` too, so
+  `m[0].push(2); m.push([3])` compiles and prints `[[1, 2], [3]]`
+  (NESTPUSHLIT-1).
+- Arrays have `clone`, `to_vec` and `to_owned`; tuples and strings have
+  `clone` and `to_owned`; plain objects have `clone`. A clone is
+  independent: writes to it leave the original unchanged (ARRCLONE-1).
+- `ruchy run` prints a lone string literal passed to `println`/`print`
+  verbatim, as the compiled binary does: `println("{}")` prints `{}`, not a
+  format error, and `println("x{{")` prints `x{{`. `format("x{{")` is still
+  a template and returns `x{` (LONELIT-1).
+- Compiled `println(x.replace(a, b))` prints as text for any receiver (the
+  two-argument `replace` is `str::replace`; `Option::replace` takes one), and
+  `println(x.repeat(n))` prints as text unless `x` is known to be a list: a
+  list literal (`[..]`, `[x; n]`, `vec![..]`, `vec![x; n]`), a binding to
+  one, or a binding or parameter annotated
+  `Vec<T>`/`[T]`. A loop variable, field or call receiver no longer prints
+  quoted; a list receiver the transpiler cannot see (an untyped parameter
+  bound to a list) now needs an annotation. A plain loop variable over
+  `lines()`, `split_whitespace()`, `split(<literal>)` or a list of string
+  literals prints as text. A `for`/`while` loop or `+=` as main's last
+  statement is not printed as `()`. Strings have `split_whitespace()` and
+  `vec![x; n]` evaluates under `ruchy run` (STRRECV-1).
+- Mutation detection walks every expression kind, including macro arguments.
+- Tests:
+  - they spawn the cargo-built binary;
+  - they write compiled output (`a.out`, `.rlib`) into temp dirs, never the repository;
+  - `ruchy serve` tests stop through a shutdown seam instead of serving forever;
+  - `release_hygiene` names a dirty tree;
+  - pmat-written files are gitignored.
+
 ### Added — RHL-4, RHL-5, RHL-6, RHL-9: RHL compiles, tests, contracts and talks MCP (RHL-001, experimental)
 
 - **Lowering (RHL-4):** a checked `job` lowers to Ruchy source, following spec

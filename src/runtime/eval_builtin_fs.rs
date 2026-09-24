@@ -487,10 +487,7 @@ pub(crate) fn eval_compute_hash(args: &[Value]) -> Result<Value, InterpreterErro
             let content = std::fs::read(path.as_ref()).map_err(|e| {
                 InterpreterError::RuntimeError(format!("Failed to read file '{path}': {e}"))
             })?;
-            use sha2::{Digest, Sha256};
-            let mut hasher = Sha256::new();
-            hasher.update(&content);
-            let hash_string = format!("{:x}", hasher.finalize());
+            let hash_string = crate::stdlib::hash::md5_hex(&content);
             Ok(Value::String(hash_string.into()))
         }
         _ => Err(InterpreterError::RuntimeError(
