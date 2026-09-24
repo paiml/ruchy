@@ -258,8 +258,11 @@ fn print_startup_banner(host: &str, port: u16, directory: &Path, watch: bool, wa
     }
 }
 
-/// Run server in watch mode with file change detection
-/// Complexity: 8 (Toyota Way: <10)
+/// Run server in watch mode with file change detection.
+///
+/// A server that ends on its own (e.g. the address cannot be bound) returns
+/// its error, as in normal mode.
+/// Complexity: 3 (Toyota Way: <10)
 #[cfg(feature = "notebook")]
 #[allow(clippy::too_many_arguments)]
 fn run_watch_mode(
@@ -288,37 +291,61 @@ fn run_watch_mode(
         );
     };
     loop {
-        let addr = format!("{}:{}", host, port);
-        let app_clone = app.clone();
-        let server_handle = runtime.spawn(async move {
-            let listener = tokio::net::TcpListener::bind(&addr).await?;
-
-            if verbose {
-                println!("✅ Server started ({} workers)", num_cpus);
-            }
-
-            axum::serve(listener, app_clone).await
-        });
-
-        // Poll for file changes AND shutdown signal
-        loop {
-            // Check for shutdown signal
-            if shutdown_rx.try_recv().is_ok() {
-                print_shutdown_message();
-                server_handle.abort();
-                return Ok(());
-            }
-
-            if let Some(changed_files) = watcher.check_changes() {
-                handle_file_changes(&changed_files, watch_wasm, verbose);
-                server_handle.abort();
-                print_restart_message();
-                break;
-            }
-
-            std::thread::sleep(std::time::Duration::from_millis(100));
+        let server_handle = spawn_server(runtime, app.clone(), host, port, verbose, num_cpus);
+        if let Some(outcome) = serve_until_change(
+            runtime,
+            server_handle,
+            &mut watcher,
+            watch_wasm,
+            verbose,
+            shutdown_rx,
+        ) {
+            return outcome;
         }
     }
+}
+
+/// Serve until shutdown is requested or the server task ends (`Some`, the
+/// outcome) or a watched file changes (`None`, the server has stopped and its
+/// address is free to bind again).
+/// Complexity: 3 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn serve_until_change(
+    runtime: &tokio::runtime::Runtime,
+    mut server_handle: tokio::task::JoinHandle<std::io::Result<()>>,
+    watcher: &mut ruchy::server::watcher::FileWatcher,
+    watch_wasm: bool,
+    verbose: bool,
+    shutdown_rx: &std::sync::mpsc::Receiver<()>,
+) -> Option<Result<()>> {
+    while !stopped_on_change(runtime, &mut server_handle, watcher, watch_wasm, verbose) {
+        if let Some(outcome) = poll_server(runtime, &mut server_handle, shutdown_rx) {
+            return Some(outcome);
+        }
+        std::thread::sleep(std::time::Duration::from_millis(100));
+    }
+    None
+}
+
+/// When a watched file changed: handle it, stop the server and wait for the
+/// aborted task so its listener is closed before the restart rebinds (`true`).
+/// Complexity: 2 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn stopped_on_change(
+    runtime: &tokio::runtime::Runtime,
+    server_handle: &mut tokio::task::JoinHandle<std::io::Result<()>>,
+    watcher: &mut ruchy::server::watcher::FileWatcher,
+    watch_wasm: bool,
+    verbose: bool,
+) -> bool {
+    let Some(changed_files) = watcher.check_changes() else {
+        return false;
+    };
+    handle_file_changes(&changed_files, watch_wasm, verbose);
+    server_handle.abort();
+    let _ = runtime.block_on(server_handle);
+    print_restart_message();
+    true
 }
 
 /// Open the file watcher for `directory`, or `None` (with a warning on stderr)
@@ -439,8 +466,23 @@ fn run_normal_mode(
     num_cpus: usize,
     shutdown_rx: &std::sync::mpsc::Receiver<()>,
 ) -> Result<()> {
+    let server_handle = spawn_server(runtime, app, host, port, verbose, num_cpus);
+    wait_for_shutdown_or_exit(runtime, server_handle, shutdown_rx)
+}
+
+/// Spawn the server task: bind `host:port`, then serve `app` on it.
+/// Complexity: 2 (Toyota Way: <10)
+#[cfg(feature = "notebook")]
+fn spawn_server(
+    runtime: &tokio::runtime::Runtime,
+    app: axum::Router,
+    host: &str,
+    port: u16,
+    verbose: bool,
+    num_cpus: usize,
+) -> tokio::task::JoinHandle<std::io::Result<()>> {
     let addr = format!("{}:{}", host, port);
-    let server_handle = runtime.spawn(async move {
+    runtime.spawn(async move {
         let listener = tokio::net::TcpListener::bind(&addr).await?;
 
         if verbose {
@@ -448,9 +490,7 @@ fn run_normal_mode(
         }
 
         axum::serve(listener, app).await
-    });
-
-    wait_for_shutdown_or_exit(runtime, server_handle, shutdown_rx)
+    })
 }
 
 /// Block until shutdown is requested (abort the server, `Ok`) or the server
@@ -691,6 +731,39 @@ mod tests {
             watch_wasm: false,
         };
         serve_until(&request, stopped).expect("watch mode stops");
+    }
+
+    /// RHLGA-1: watch mode on an address it cannot bind returns the bind error
+    /// promptly instead of watching files with no server behind them.
+    #[test]
+    #[cfg(feature = "notebook")]
+    fn test_serve_until_watch_mode_reports_a_port_in_use() {
+        let temp_dir = TempDir::new().unwrap();
+        let taken = std::net::TcpListener::bind("127.0.0.1:0").expect("bind port 0");
+        let port = taken.local_addr().expect("local addr").port();
+        let dir = temp_dir.path().to_path_buf();
+        let (done_tx, done_rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let (_tx, rx) = std::sync::mpsc::channel::<()>();
+            let request = ServeRequest {
+                directory: &dir,
+                port,
+                host: "127.0.0.1",
+                verbose: false,
+                watch: true,
+                debounce: 50,
+                pid_file: None,
+                watch_wasm: false,
+            };
+            let outcome = serve_until(&request, move || rx).map_err(|e| e.to_string());
+            let _ = done_tx.send(outcome);
+        });
+        let outcome = done_rx
+            .recv_timeout(std::time::Duration::from_secs(20))
+            .expect("watch mode must return when the server cannot bind");
+        let err = outcome.expect_err("port is taken");
+        assert!(err.to_lowercase().contains("in use"), "{err}");
+        drop(taken);
     }
 
     // ===== EXTREME TDD Round 145 - Serve Handler Tests =====
