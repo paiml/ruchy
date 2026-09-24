@@ -113,12 +113,35 @@ fn any_expr(expr: &Expr, pred: &dyn Fn(&Expr) -> bool) -> bool {
 }
 
 /// The direct sub-expressions searched for mutations.
+///
+/// Every expression kind that holds a sub-expression evaluated as part of the
+/// enclosing body is walked. The kinds are split across small category
+/// helpers chained through their `_ =>` fallbacks: this function (sequences,
+/// control flow, single-child wrappers), [`binding_sub_expressions`] (let,
+/// try/catch, effect handlers, pipelines, two-operand forms),
+/// [`call_sub_expressions`] (calls, actor asks, slices, data frame
+/// operations) and [`literal_sub_expressions`] (struct, object, string,
+/// comprehension and data frame literals).
+///
+/// Deliberately NOT walked:
+/// - the item definitions `Module`, `Export`, `ExportDefault`, `Struct`,
+///   `TupleStruct`, `Class`, `Enum`, `Trait`, `Impl`, `Actor`, `Effect` and
+///   `Extension`: they are top-level items whose bodies are other methods
+///   with their own receivers, so a `self` write inside one is not a write to
+///   the enclosing method's `self`;
+/// - the leaves `Literal`, `Identifier`, `QualifiedName`, `None`,
+///   `Continue`, `Command`, `ModuleDeclaration`, `Import`, `ImportAll`,
+///   `ImportDefault`, `ExportList`, `ReExport` and `TypeAlias`, which hold no
+///   sub-expression.
 fn sub_expressions(expr: &Expr) -> Vec<&Expr> {
     match &expr.kind {
-        ExprKind::Block(exprs) | ExprKind::List(exprs) | ExprKind::Tuple(exprs) => {
-            exprs.iter().collect()
-        }
-        ExprKind::Macro { args, .. } => args.iter().collect(),
+        ExprKind::Block(exprs)
+        | ExprKind::List(exprs)
+        | ExprKind::Tuple(exprs)
+        | ExprKind::Set(exprs)
+        | ExprKind::InfraBlock { body: exprs }
+        | ExprKind::Macro { args: exprs, .. }
+        | ExprKind::MacroInvocation { args: exprs, .. } => exprs.iter().collect(),
         ExprKind::If {
             condition,
             then_branch,
@@ -130,75 +153,173 @@ fn sub_expressions(expr: &Expr) -> Vec<&Expr> {
             else_branch,
             ..
         } => with_optional(vec![expr, then_branch], else_branch.as_deref()),
-        ExprKind::While {
-            condition, body, ..
-        } => vec![&**condition, &**body],
-        ExprKind::WhileLet { expr, body, .. }
-        | ExprKind::For {
-            iter: expr, body, ..
-        } => {
-            vec![&**expr, &**body]
-        }
         ExprKind::Match { expr, arms } => std::iter::once(&**expr)
-            .chain(arms.iter().map(|arm| &*arm.body))
+            .chain(
+                arms.iter()
+                    .flat_map(|arm| arm.guard.as_deref().into_iter().chain([&*arm.body])),
+            )
             .collect(),
-        ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
-            vec![&**value, &**body]
+        ExprKind::Return { value } | ExprKind::Break { value, .. } | ExprKind::Yield { value } => {
+            value.as_deref().into_iter().collect()
         }
-        ExprKind::Binary { left, right, .. } => vec![&**left, &**right],
-        ExprKind::Loop { body, .. }
-        | ExprKind::Function { body, .. }
-        | ExprKind::Lambda { body, .. }
-        | ExprKind::Unary { operand: body, .. }
-        | ExprKind::Try { expr: body }
-        | ExprKind::Await { expr: body }
-        | ExprKind::FieldAccess { object: body, .. } => vec![&**body],
-        // An assignment evaluates its target place as well as its value, so a
-        // mutation nested in either is found (e.g. `v[{ self.n += 1; 0 }] = 2`).
-        ExprKind::Assign { target, value } | ExprKind::CompoundAssign { target, value, .. } => {
-            vec![&**target, &**value]
-        }
-        ExprKind::IndexAccess { object, index } => vec![&**object, &**index],
-        ExprKind::Return { value } => with_optional(Vec::new(), value.as_deref()),
-        ExprKind::Call { func, args } => std::iter::once(&**func).chain(args).collect(),
-        ExprKind::MethodCall { receiver, args, .. } => {
-            std::iter::once(&**receiver).chain(args).collect()
-        }
-        _ => value_sub_expressions(expr),
+        _ => single_sub_expression(expr)
+            .map(|e| vec![e])
+            .unwrap_or_else(|| binding_sub_expressions(expr)),
     }
 }
 
-/// Sub-expressions of the value-building forms (constructors, casts, literals
-/// with fields, ranges), so a mutation nested inside one is not missed.
-fn value_sub_expressions(expr: &Expr) -> Vec<&Expr> {
+/// The one sub-expression of a single-child form (wrappers, closures, `++`/`--`).
+fn single_sub_expression(expr: &Expr) -> Option<&Expr> {
     match &expr.kind {
-        ExprKind::Throw { expr: e }
+        ExprKind::Loop { body: e, .. }
+        | ExprKind::Function { body: e, .. }
+        | ExprKind::Lambda { body: e, .. }
+        | ExprKind::AsyncLambda { body: e, .. }
+        | ExprKind::AsyncBlock { body: e }
+        | ExprKind::Lazy { expr: e }
+        | ExprKind::Unary { operand: e, .. }
+        | ExprKind::Try { expr: e }
+        | ExprKind::Await { expr: e }
+        | ExprKind::FieldAccess { object: e, .. }
+        | ExprKind::OptionalFieldAccess { object: e, .. }
+        | ExprKind::Throw { expr: e }
         | ExprKind::Ok { value: e }
         | ExprKind::Err { error: e }
         | ExprKind::Some { value: e }
         | ExprKind::TypeCast { expr: e, .. }
         | ExprKind::Spawn { actor: e }
-        | ExprKind::OptionalFieldAccess { object: e, .. } => vec![&**e],
+        | ExprKind::Spread { expr: e }
+        | ExprKind::Signal { initial_value: e } => Some(&**e),
+        // The target place of `++`/`--` is evaluated too (`v[{ self.n += 1; 0 }]++`).
+        ExprKind::PreIncrement { target: e }
+        | ExprKind::PostIncrement { target: e }
+        | ExprKind::PreDecrement { target: e }
+        | ExprKind::PostDecrement { target: e } => Some(&**e),
+        _ => None,
+    }
+}
+
+/// Sub-expressions of the binding, handler and two-operand forms.
+fn binding_sub_expressions(expr: &Expr) -> Vec<&Expr> {
+    match &expr.kind {
+        ExprKind::Let {
+            value,
+            body,
+            else_block,
+            ..
+        }
+        | ExprKind::LetPattern {
+            value,
+            body,
+            else_block,
+            ..
+        } => with_optional(vec![value, body], else_block.as_deref()),
+        ExprKind::TryCatch {
+            try_block,
+            catch_clauses,
+            finally_block,
+        } => std::iter::once(&**try_block)
+            .chain(catch_clauses.iter().map(|c| &*c.body))
+            .chain(finally_block.as_deref())
+            .collect(),
+        ExprKind::Handle { expr, handlers } => std::iter::once(&**expr)
+            .chain(handlers.iter().map(|h| &*h.body))
+            .collect(),
+        ExprKind::Pipeline { expr, stages } => std::iter::once(&**expr)
+            .chain(stages.iter().map(|s| &*s.op))
+            .collect(),
         ExprKind::Ternary {
             condition,
             true_expr,
             false_expr,
-        } => {
-            vec![&**condition, &**true_expr, &**false_expr]
+        } => vec![&**condition, &**true_expr, &**false_expr],
+        // An assignment evaluates its target place as well as its value, so a
+        // mutation nested in either is found (e.g. `v[{ self.n += 1; 0 }] = 2`).
+        ExprKind::Assign {
+            target: a,
+            value: b,
         }
-        ExprKind::Send { actor, message } => vec![&**actor, &**message],
-        ExprKind::ArrayInit { value, size } => vec![&**value, &**size],
-        ExprKind::Range { start, end, .. } => vec![&**start, &**end],
-        ExprKind::Break { value, .. } => value.as_deref().into_iter().collect(),
-        ExprKind::Set(items) => items.iter().collect(),
-        ExprKind::OptionalMethodCall { receiver, args, .. } => {
-            std::iter::once(&**receiver).chain(args).collect()
+        | ExprKind::CompoundAssign {
+            target: a,
+            value: b,
+            ..
         }
+        | ExprKind::Binary {
+            left: a, right: b, ..
+        }
+        | ExprKind::IndexAccess {
+            object: a,
+            index: b,
+        }
+        | ExprKind::While {
+            condition: a,
+            body: b,
+            ..
+        }
+        | ExprKind::WhileLet {
+            expr: a, body: b, ..
+        }
+        | ExprKind::For {
+            iter: a, body: b, ..
+        }
+        | ExprKind::Range {
+            start: a, end: b, ..
+        }
+        | ExprKind::ArrayInit { value: a, size: b }
+        | ExprKind::VecRepeat { value: a, count: b }
+        | ExprKind::Send {
+            actor: a,
+            message: b,
+        }
+        | ExprKind::ActorSend {
+            actor: a,
+            message: b,
+        }
+        | ExprKind::ActorQuery {
+            actor: a,
+            message: b,
+        } => vec![&**a, &**b],
+        _ => call_sub_expressions(expr),
+    }
+}
+
+/// Sub-expressions of calls, actor asks, slices and data frame operations.
+fn call_sub_expressions(expr: &Expr) -> Vec<&Expr> {
+    match &expr.kind {
+        ExprKind::Call { func: r, args }
+        | ExprKind::MethodCall {
+            receiver: r, args, ..
+        }
+        | ExprKind::OptionalMethodCall {
+            receiver: r, args, ..
+        } => std::iter::once(&**r).chain(args).collect(),
+        ExprKind::Ask {
+            actor,
+            message,
+            timeout,
+        } => with_optional(vec![actor, message], timeout.as_deref()),
+        ExprKind::Slice { object, start, end } => std::iter::once(&**object)
+            .chain(start.as_deref())
+            .chain(end.as_deref())
+            .collect(),
+        ExprKind::DataFrameOperation { source, operation } => std::iter::once(&**source)
+            .chain(data_frame_op_expr(operation))
+            .collect(),
         _ => literal_sub_expressions(expr),
     }
 }
 
-/// Sub-expressions of struct, object and interpolated-string literals.
+/// The expression argument of a data frame operation (`filter(pred)`, `join(other)`).
+fn data_frame_op_expr(op: &crate::frontend::ast::DataFrameOp) -> Option<&Expr> {
+    use crate::frontend::ast::DataFrameOp;
+    match op {
+        DataFrameOp::Filter(e) | DataFrameOp::Join { other: e, .. } => Some(&**e),
+        _ => None,
+    }
+}
+
+/// Sub-expressions of struct, object, interpolated-string, comprehension and
+/// data frame literals.
 fn literal_sub_expressions(expr: &Expr) -> Vec<&Expr> {
     match &expr.kind {
         ExprKind::StructLiteral { fields, base, .. } => fields
@@ -221,8 +342,30 @@ fn literal_sub_expressions(expr: &Expr) -> Vec<&Expr> {
                 | crate::frontend::ast::StringPart::ExprWithFormat { expr: e, .. } => Some(&**e),
             })
             .collect(),
+        ExprKind::ListComprehension { element, clauses }
+        | ExprKind::SetComprehension { element, clauses } => std::iter::once(&**element)
+            .chain(clause_exprs(clauses))
+            .collect(),
+        ExprKind::DictComprehension {
+            key,
+            value,
+            clauses,
+        } => [&**key, &**value]
+            .into_iter()
+            .chain(clause_exprs(clauses))
+            .collect(),
+        ExprKind::DataFrame { columns } => columns.iter().flat_map(|c| &c.values).collect(),
         _ => Vec::new(),
     }
+}
+
+/// The iterables and filter conditions of comprehension clauses.
+fn clause_exprs(
+    clauses: &[crate::frontend::ast::ComprehensionClause],
+) -> impl Iterator<Item = &Expr> {
+    clauses
+        .iter()
+        .flat_map(|c| std::iter::once(&*c.iterable).chain(c.condition.as_deref()))
 }
 
 /// `required` (as plain references) followed by `optional` when present.
@@ -937,6 +1080,538 @@ mod tests {
                 form.kind
             );
         }
+    }
+
+    // ==================== Walk-every-kind table (G2BFA2) ====================
+
+    /// `self.n += 1`: the mutation every table case nests.
+    fn bump() -> Expr {
+        let self_n = make_expr(ExprKind::FieldAccess {
+            object: Box::new(ident("self")),
+            field: "n".to_string(),
+        });
+        compound_assign(self_n, int_lit(1))
+    }
+
+    fn bx(e: Expr) -> Box<Expr> {
+        Box::new(e)
+    }
+
+    fn clause(
+        iterable: Expr,
+        condition: Option<Expr>,
+    ) -> crate::frontend::ast::ComprehensionClause {
+        crate::frontend::ast::ComprehensionClause {
+            variable: "i".to_string(),
+            iterable: bx(iterable),
+            condition: condition.map(bx),
+        }
+    }
+
+    /// One case per walked expression kind (and per walked field where a kind
+    /// holds several), each nesting `self.n += 1`. Deleting any walk arm fails
+    /// exactly the cases naming that kind.
+    #[allow(clippy::too_many_lines)]
+    fn walk_cases() -> Vec<(&'static str, Expr)> {
+        use crate::frontend::ast::{
+            CatchClause, DataFrameColumn, DataFrameOp, EffectHandler, JoinType, ObjectField,
+            PipelineStage, StringPart,
+        };
+        let e = make_expr;
+        let wild_arm = |guard: Option<Expr>, body: Expr| MatchArm {
+            pattern: Pattern::Wildcard,
+            guard: guard.map(bx),
+            body: bx(body),
+            span: Span::default(),
+        };
+        let let_else = |else_block: Expr| ExprKind::Let {
+            name: "y".to_string(),
+            type_annotation: None,
+            value: bx(int_lit(1)),
+            body: bx(int_lit(0)),
+            is_mutable: false,
+            else_block: Some(bx(else_block)),
+        };
+        let try_catch = |t: Expr, c: Expr, f: Option<Expr>| ExprKind::TryCatch {
+            try_block: bx(t),
+            catch_clauses: vec![CatchClause {
+                pattern: Pattern::Wildcard,
+                body: bx(c),
+            }],
+            finally_block: f.map(bx),
+        };
+        vec![
+            // ---- walked before commit 0383bc72
+            ("Block", block(vec![bump()])),
+            ("List", e(ExprKind::List(vec![bump()]))),
+            ("Tuple", e(ExprKind::Tuple(vec![bump()]))),
+            (
+                "Macro",
+                e(ExprKind::Macro {
+                    name: "sql".into(),
+                    args: vec![bump()],
+                }),
+            ),
+            ("If", if_expr(bool_lit(true), bump(), None)),
+            (
+                "IfLet",
+                e(ExprKind::IfLet {
+                    pattern: Pattern::Wildcard,
+                    expr: bx(int_lit(1)),
+                    then_branch: bx(bump()),
+                    else_branch: None,
+                }),
+            ),
+            ("While", while_expr(bool_lit(true), bump())),
+            (
+                "WhileLet",
+                e(ExprKind::WhileLet {
+                    label: None,
+                    pattern: Pattern::Wildcard,
+                    expr: bx(int_lit(1)),
+                    body: bx(bump()),
+                }),
+            ),
+            ("For", for_expr("i", ident("v"), bump())),
+            (
+                "Match arm body",
+                match_expr(int_lit(1), vec![wild_arm(None, bump())]),
+            ),
+            ("Let value", let_expr("y", bump(), int_lit(0))),
+            ("Binary", binary(int_lit(1), bump())),
+            (
+                "Loop",
+                e(ExprKind::Loop {
+                    label: None,
+                    body: bx(bump()),
+                }),
+            ),
+            ("Lambda", lambda(vec![], bump())),
+            ("Unary", unary(bump())),
+            ("Try", e(ExprKind::Try { expr: bx(bump()) })),
+            ("Await", e(ExprKind::Await { expr: bx(bump()) })),
+            ("CompoundAssign value", compound_assign(ident("z"), bump())),
+            (
+                "Return",
+                e(ExprKind::Return {
+                    value: Some(bx(bump())),
+                }),
+            ),
+            ("Call", call(ident("f"), vec![bump()])),
+            ("MethodCall", method_call(ident("o"), "m", vec![bump()])),
+            // ---- arms added in commit 0383bc72
+            ("Some", e(ExprKind::Some { value: bx(bump()) })),
+            ("Ok", e(ExprKind::Ok { value: bx(bump()) })),
+            ("Err", e(ExprKind::Err { error: bx(bump()) })),
+            ("Throw", e(ExprKind::Throw { expr: bx(bump()) })),
+            (
+                "TypeCast",
+                e(ExprKind::TypeCast {
+                    expr: bx(bump()),
+                    target_type: "i64".into(),
+                }),
+            ),
+            (
+                "Ternary",
+                e(ExprKind::Ternary {
+                    condition: bx(bool_lit(true)),
+                    true_expr: bx(int_lit(0)),
+                    false_expr: bx(bump()),
+                }),
+            ),
+            ("Spawn", e(ExprKind::Spawn { actor: bx(bump()) })),
+            (
+                "OptionalFieldAccess",
+                e(ExprKind::OptionalFieldAccess {
+                    object: bx(bump()),
+                    field: "f".into(),
+                }),
+            ),
+            (
+                "Send",
+                e(ExprKind::Send {
+                    actor: bx(ident("a")),
+                    message: bx(bump()),
+                }),
+            ),
+            (
+                "ArrayInit",
+                e(ExprKind::ArrayInit {
+                    value: bx(int_lit(0)),
+                    size: bx(bump()),
+                }),
+            ),
+            (
+                "Range",
+                e(ExprKind::Range {
+                    start: bx(int_lit(0)),
+                    end: bx(bump()),
+                    inclusive: false,
+                }),
+            ),
+            (
+                "Break",
+                e(ExprKind::Break {
+                    label: None,
+                    value: Some(bx(bump())),
+                }),
+            ),
+            ("Set", e(ExprKind::Set(vec![bump()]))),
+            (
+                "OptionalMethodCall",
+                e(ExprKind::OptionalMethodCall {
+                    receiver: bx(ident("o")),
+                    method: "m".into(),
+                    args: vec![bump()],
+                }),
+            ),
+            (
+                "StructLiteral",
+                e(ExprKind::StructLiteral {
+                    name: "P".into(),
+                    fields: vec![("x".into(), bump())],
+                    base: None,
+                }),
+            ),
+            (
+                "ObjectLiteral",
+                e(ExprKind::ObjectLiteral {
+                    fields: vec![ObjectField::KeyValue {
+                        key: "k".into(),
+                        value: bump(),
+                    }],
+                }),
+            ),
+            (
+                "StringInterpolation",
+                e(ExprKind::StringInterpolation {
+                    parts: vec![StringPart::Expr(bx(bump()))],
+                }),
+            ),
+            (
+                "FieldAccess",
+                e(ExprKind::FieldAccess {
+                    object: bx(bump()),
+                    field: "f".into(),
+                }),
+            ),
+            (
+                "IndexAccess",
+                e(ExprKind::IndexAccess {
+                    object: bx(ident("v")),
+                    index: bx(bump()),
+                }),
+            ),
+            (
+                "Assign target",
+                assign(
+                    e(ExprKind::IndexAccess {
+                        object: bx(ident("v")),
+                        index: bx(bump()),
+                    }),
+                    int_lit(2),
+                ),
+            ),
+            // ---- kinds the round-3 review found unwalked
+            (
+                "MacroInvocation",
+                e(ExprKind::MacroInvocation {
+                    name: "println".into(),
+                    args: vec![bump()],
+                }),
+            ),
+            (
+                "VecRepeat",
+                e(ExprKind::VecRepeat {
+                    value: bx(int_lit(0)),
+                    count: bx(bump()),
+                }),
+            ),
+            ("TryCatch try_block", e(try_catch(bump(), int_lit(0), None))),
+            (
+                "TryCatch catch body",
+                e(try_catch(int_lit(0), bump(), None)),
+            ),
+            (
+                "TryCatch finally_block",
+                e(try_catch(int_lit(0), int_lit(0), Some(bump()))),
+            ),
+            ("Let else_block", e(let_else(bump()))),
+            (
+                "LetPattern else_block",
+                e(ExprKind::LetPattern {
+                    pattern: Pattern::Wildcard,
+                    type_annotation: None,
+                    value: bx(int_lit(1)),
+                    body: bx(int_lit(0)),
+                    is_mutable: false,
+                    else_block: Some(bx(bump())),
+                }),
+            ),
+            (
+                "MatchArm guard",
+                match_expr(int_lit(1), vec![wild_arm(Some(bump()), int_lit(0))]),
+            ),
+            ("AsyncBlock", e(ExprKind::AsyncBlock { body: bx(bump()) })),
+            (
+                "AsyncLambda",
+                e(ExprKind::AsyncLambda {
+                    params: vec![],
+                    body: bx(bump()),
+                }),
+            ),
+            ("Lazy", e(ExprKind::Lazy { expr: bx(bump()) })),
+            (
+                "Slice object",
+                e(ExprKind::Slice {
+                    object: bx(bump()),
+                    start: None,
+                    end: None,
+                }),
+            ),
+            (
+                "Slice start",
+                e(ExprKind::Slice {
+                    object: bx(ident("v")),
+                    start: Some(bx(bump())),
+                    end: None,
+                }),
+            ),
+            (
+                "Slice end",
+                e(ExprKind::Slice {
+                    object: bx(ident("v")),
+                    start: None,
+                    end: Some(bx(bump())),
+                }),
+            ),
+            ("Spread", e(ExprKind::Spread { expr: bx(bump()) })),
+            (
+                "Pipeline expr",
+                e(ExprKind::Pipeline {
+                    expr: bx(bump()),
+                    stages: vec![],
+                }),
+            ),
+            (
+                "Pipeline stage",
+                e(ExprKind::Pipeline {
+                    expr: bx(ident("v")),
+                    stages: vec![PipelineStage {
+                        op: bx(bump()),
+                        span: Span::default(),
+                    }],
+                }),
+            ),
+            (
+                "ListComprehension element",
+                e(ExprKind::ListComprehension {
+                    element: bx(bump()),
+                    clauses: vec![clause(ident("v"), None)],
+                }),
+            ),
+            (
+                "ListComprehension iterable",
+                e(ExprKind::ListComprehension {
+                    element: bx(ident("i")),
+                    clauses: vec![clause(bump(), None)],
+                }),
+            ),
+            (
+                "ListComprehension condition",
+                e(ExprKind::ListComprehension {
+                    element: bx(ident("i")),
+                    clauses: vec![clause(ident("v"), Some(bump()))],
+                }),
+            ),
+            (
+                "SetComprehension",
+                e(ExprKind::SetComprehension {
+                    element: bx(bump()),
+                    clauses: vec![clause(ident("v"), None)],
+                }),
+            ),
+            (
+                "DictComprehension key",
+                e(ExprKind::DictComprehension {
+                    key: bx(bump()),
+                    value: bx(ident("i")),
+                    clauses: vec![clause(ident("v"), None)],
+                }),
+            ),
+            (
+                "DictComprehension value",
+                e(ExprKind::DictComprehension {
+                    key: bx(ident("i")),
+                    value: bx(bump()),
+                    clauses: vec![clause(ident("v"), None)],
+                }),
+            ),
+            (
+                "DictComprehension clause",
+                e(ExprKind::DictComprehension {
+                    key: bx(ident("i")),
+                    value: bx(ident("i")),
+                    clauses: vec![clause(bump(), None)],
+                }),
+            ),
+            (
+                "Ask",
+                e(ExprKind::Ask {
+                    actor: bx(ident("a")),
+                    message: bx(bump()),
+                    timeout: None,
+                }),
+            ),
+            (
+                "Ask timeout",
+                e(ExprKind::Ask {
+                    actor: bx(ident("a")),
+                    message: bx(ident("m")),
+                    timeout: Some(bx(bump())),
+                }),
+            ),
+            (
+                "ActorSend",
+                e(ExprKind::ActorSend {
+                    actor: bx(ident("a")),
+                    message: bx(bump()),
+                }),
+            ),
+            (
+                "ActorQuery",
+                e(ExprKind::ActorQuery {
+                    actor: bx(ident("a")),
+                    message: bx(bump()),
+                }),
+            ),
+            (
+                "Handle expr",
+                e(ExprKind::Handle {
+                    expr: bx(bump()),
+                    handlers: vec![],
+                }),
+            ),
+            (
+                "Handle handler body",
+                e(ExprKind::Handle {
+                    expr: bx(ident("x")),
+                    handlers: vec![EffectHandler {
+                        operation: "op".into(),
+                        params: vec![],
+                        body: bx(bump()),
+                    }],
+                }),
+            ),
+            (
+                "Yield",
+                e(ExprKind::Yield {
+                    value: Some(bx(bump())),
+                }),
+            ),
+            (
+                "Signal",
+                e(ExprKind::Signal {
+                    initial_value: bx(bump()),
+                }),
+            ),
+            (
+                "DataFrameOperation source",
+                e(ExprKind::DataFrameOperation {
+                    source: bx(bump()),
+                    operation: DataFrameOp::Head(1),
+                }),
+            ),
+            (
+                "DataFrameOperation filter",
+                e(ExprKind::DataFrameOperation {
+                    source: bx(ident("df")),
+                    operation: DataFrameOp::Filter(bx(bump())),
+                }),
+            ),
+            (
+                "DataFrameOperation join",
+                e(ExprKind::DataFrameOperation {
+                    source: bx(ident("df")),
+                    operation: DataFrameOp::Join {
+                        other: bx(bump()),
+                        on: vec![],
+                        how: JoinType::Inner,
+                    },
+                }),
+            ),
+            (
+                "DataFrame column",
+                e(ExprKind::DataFrame {
+                    columns: vec![DataFrameColumn {
+                        name: "c".into(),
+                        values: vec![bump()],
+                    }],
+                }),
+            ),
+            ("InfraBlock", e(ExprKind::InfraBlock { body: vec![bump()] })),
+            (
+                "PreIncrement target",
+                pre_increment(e(ExprKind::IndexAccess {
+                    object: bx(ident("v")),
+                    index: bx(bump()),
+                })),
+            ),
+            (
+                "PostIncrement target",
+                post_increment(e(ExprKind::IndexAccess {
+                    object: bx(ident("v")),
+                    index: bx(bump()),
+                })),
+            ),
+            (
+                "PreDecrement target",
+                pre_decrement(e(ExprKind::IndexAccess {
+                    object: bx(ident("v")),
+                    index: bx(bump()),
+                })),
+            ),
+            (
+                "PostDecrement target",
+                post_decrement(e(ExprKind::IndexAccess {
+                    object: bx(ident("v")),
+                    index: bx(bump()),
+                })),
+            ),
+        ]
+    }
+
+    #[test]
+    fn test_g2bfa2_self_mutation_found_in_every_walked_kind() {
+        let missed: Vec<&str> = walk_cases()
+            .iter()
+            .filter(|(_, expr)| !is_variable_mutated("self", expr))
+            .map(|(kind, _)| *kind)
+            .collect();
+        assert!(missed.is_empty(), "self mutation missed inside: {missed:?}");
+    }
+
+    #[test]
+    fn test_g2bfa2_self_mutation_found_by_is_self_mutated_in_every_walked_kind() {
+        let none = HashSet::new();
+        for (kind, expr) in walk_cases() {
+            assert!(
+                is_self_mutated(&expr, &none),
+                "is_self_mutated missed {kind}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_g2bfa2_no_false_positive_without_a_mutation() {
+        let quiet = make_expr(ExprKind::MacroInvocation {
+            name: "println".into(),
+            args: vec![make_expr(ExprKind::FieldAccess {
+                object: Box::new(ident("self")),
+                field: "n".to_string(),
+            })],
+        });
+        assert!(!is_variable_mutated("self", &quiet));
     }
 
     #[test]
