@@ -4043,13 +4043,18 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FIELDPOP-1: self.items.pop() inside a method returns the whole array instead of the popped element (interpreter)'
-  status: planned
+  status: inprogress
   priority: critical
   assigned_to: null
   created: 2026-09-24T05:31:58Z
   updated: 2026-09-24T05:31:58Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'Repro: struct Stack { items: Vec<i32> } with fun pop_one(&mut self) -> i32 { self.items.pop().unwrap() }; ruchy run failed "Unknown array method: unwrap" (self.items.pop() returned the remaining array [1, 2]) and s.items.len() stayed 3; s.items.push(x) / o.items.pop() on a struct variable or object literal did not change the field either'
+  - 'Root cause: Interpreter::eval_method_call special-cased push/pop only for an identifier receiver and push only for an ObjectMut field; any other field receiver was evaluated to a copy and dispatched to eval_array_method, whose functional pop/push return the updated copy, and nothing wrote the copy back to the field'
+  - 'Fix: try_field_array_mutation (interpreter_methods_dispatch.rs) runs push/pop on a field rooted at an identifier (self, a struct/object/class variable), returns the element (nil when empty) or nil for push, and writes the array back through eval_field_assign (Struct rebinds, Object copies, ObjectMut/Class mutate in place)'
+  - 'tests/fieldpop_1_field_methods.rs: self/struct/object/class field push+pop, while-loop persistence, empty pop, field-vs-local parity for pop/push/sorted/reversed/drop/append/sort/reverse/len, differential through rustc; 3/3 hand mutants caught'
+  - 'Open: the exact repro still fails in the interpreter with "Unknown integer method: unwrap" because array pop returns the raw element (not Option) and the interpreter has no Option unwrap (Some(3).unwrap() fails: Method unwrap not found for type enum_variant)'
   phases: []
   subtasks: []
   estimated_effort: null

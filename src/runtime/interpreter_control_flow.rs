@@ -487,7 +487,7 @@ impl Interpreter {
     /// Evaluate field assignment: `obj.field = value`.
     ///
     /// Handles Object, ObjectMut, Class, and Struct field updates.
-    fn eval_field_assign(
+    pub(crate) fn eval_field_assign(
         &mut self,
         object: &Expr,
         field: &str,

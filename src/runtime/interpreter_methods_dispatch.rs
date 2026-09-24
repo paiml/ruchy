@@ -15,7 +15,48 @@ use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
 use std::sync::Arc;
 
+/// FIELDPOP-1: array methods that change their receiver in place — the same
+/// set the interpreter mutates for a local array receiver (`a.push(x)`, `a.pop()`).
+fn is_mutating_array_call(method: &str, arg_count: usize) -> bool {
+    matches!((method, arg_count), ("push", 1) | ("pop", 0))
+}
+
 impl Interpreter {
+    /// FIELDPOP-1: `obj.field.push(x)` / `obj.field.pop()` on an array field
+    /// behave like the same call on a local array: the call returns the
+    /// method's own result (`pop` → the removed element, `nil` when empty;
+    /// `push` → `nil`) and the changed array is written back to the field.
+    ///
+    /// Returns `Ok(None)` when the call is not of that shape, so the caller
+    /// falls through to ordinary method dispatch.
+    fn try_field_array_mutation(
+        &mut self,
+        receiver: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<Option<Value>, InterpreterError> {
+        let ExprKind::FieldAccess { object, field } = &receiver.kind else {
+            return Ok(None);
+        };
+        let rooted = matches!(object.kind, ExprKind::Identifier(_));
+        if !rooted || !is_mutating_array_call(method, args.len()) {
+            return Ok(None);
+        }
+        let Value::Array(arr) = self.eval_expr(receiver)? else {
+            return Ok(None);
+        };
+        let mut items = arr.to_vec();
+        let result = match args.first() {
+            Some(arg) => {
+                items.push(self.eval_expr(arg)?);
+                Value::Nil
+            }
+            None => items.pop().unwrap_or(Value::Nil),
+        };
+        self.eval_field_assign(object, field, Value::Array(Arc::from(items)))?;
+        Ok(Some(result))
+    }
+
     /// Evaluate a method call
     pub(crate) fn eval_method_call(
         &mut self,
@@ -65,34 +106,10 @@ impl Interpreter {
             }
         }
 
-        // Special handling for mutating array methods on ObjectMut fields
-        // e.g., self.messages.push(item)
-        if let ExprKind::FieldAccess { object, field } = &receiver.kind {
-            if let Ok(object_value) = self.eval_expr(object) {
-                if let Value::ObjectMut(cell_rc) = object_value {
-                    // Check if this is a mutating array method
-                    if method == "push" && args.len() == 1 {
-                        // Evaluate the argument
-                        let arg_value = self.eval_expr(&args[0])?;
-
-                        // Get mutable access to the object
-                        let mut obj = cell_rc
-                            .lock()
-                            .expect("Mutex poisoned: object lock is corrupted");
-
-                        // Get the field value
-                        if let Some(field_value) = obj.get(field) {
-                            // If it's an array, push to it
-                            if let Value::Array(arr) = field_value {
-                                let mut new_arr = arr.to_vec();
-                                new_arr.push(arg_value);
-                                obj.insert(field.clone(), Value::Array(Arc::from(new_arr)));
-                                return Ok(Value::Nil); // push returns nil
-                            }
-                        }
-                    }
-                }
-            }
+        // FIELDPOP-1: mutating array methods on a field (self.items.pop(),
+        // s.items.push(x)) return their own result and write the field back
+        if let Some(result) = self.try_field_array_mutation(receiver, method, args)? {
+            return Ok(result);
         }
 
         let receiver_value = self.eval_expr(receiver)?;
