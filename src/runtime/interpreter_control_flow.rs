@@ -445,6 +445,7 @@ impl Interpreter {
         field: &str,
         val: Value,
     ) -> Result<Value, InterpreterError> {
+        let object = &self.freeze_place(object)?;
         let parent = match &object.kind {
             ExprKind::Identifier(obj_name) => self.lookup_variable(obj_name)?,
             ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. } => {
@@ -508,6 +509,7 @@ impl Interpreter {
         index: &Expr,
         val: Value,
     ) -> Result<Value, InterpreterError> {
+        let object = &self.freeze_place(object)?;
         let container = self.eval_expr(object)?;
         let key = self.eval_expr(index)?;
         let updated = with_element(container, &key, val.clone())?;
@@ -534,11 +536,47 @@ impl Interpreter {
                 "Invalid compound assignment target".to_string(),
             ));
         }
+        let target = &self.freeze_place(target)?;
         let current = self.eval_expr(target)?;
         let rhs = self.eval_expr(value)?;
         let new_val = self.apply_binary_op(&current, op, &rhs)?;
         self.write_back(target, new_val.clone())?;
         Ok(new_val)
+    }
+
+    /// IDXEVAL1-1: `place` with every index expression of its chain replaced
+    /// by the literal of its value, evaluated once, left to right. Reading the
+    /// frozen place and writing it back then runs no index expression again,
+    /// so `v[next()] += 1` and `m[f()][j] = x` call `next`/`f` once, as
+    /// compiled code does. An index value with no literal form (a range, a
+    /// float) is left as written; the write rejects such a key anyway.
+    /// Complexity: 3
+    pub(crate) fn freeze_place(&mut self, place: &Expr) -> Result<Expr, InterpreterError> {
+        let mut frozen = place.clone();
+        match &mut frozen.kind {
+            ExprKind::FieldAccess { object, .. } => **object = self.freeze_place(object)?,
+            ExprKind::IndexAccess { object, index } => {
+                **object = self.freeze_place(object)?;
+                let key = self.eval_expr(index)?;
+                if let Some(literal) = key_literal(&key) {
+                    index.kind = ExprKind::Literal(literal);
+                }
+            }
+            _ => {}
+        }
+        Ok(frozen)
+    }
+}
+
+/// IDXEVAL1-1: the literal that evaluates to the index `key`, for the key
+/// types an element write accepts (an integer, a string, an atom).
+/// Complexity: 4
+fn key_literal(key: &Value) -> Option<Literal> {
+    match key {
+        Value::Integer(i) => Some(Literal::Integer(*i, None)),
+        Value::String(s) => Some(Literal::String(s.to_string())),
+        Value::Atom(a) => Some(Literal::Atom(a.clone())),
+        _ => None,
     }
 }
 

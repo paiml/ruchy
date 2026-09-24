@@ -143,6 +143,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   its string record until the scope ends, and `replace` / `repeat` count as
   string results only on a string receiver (`[1].repeat(2)` is a `Vec`).
   Before, both printed a `Vec` with `{}` and failed rustc (PRINTSTRSCOPE-1).
+- The interpreter evaluates each index expression of a compound assignment
+  (`v[next()] += 1`), a nested-index assignment (`m[f()][1] = 9`) or an
+  in-place array method on an element (`m[f()].push(x)`) once, as compiled
+  code does; it used to run it again to write the place back (IDXEVAL1-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

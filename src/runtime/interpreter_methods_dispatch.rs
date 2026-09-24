@@ -110,6 +110,7 @@ impl Interpreter {
         if !is_chain || !is_place_expr(receiver) || !is_in_place_array_method(method, args.len()) {
             return Ok(None);
         }
+        let receiver = &self.freeze_place(receiver)?;
         let Value::Array(arr) = self.eval_expr(receiver)? else {
             return Ok(None);
         };

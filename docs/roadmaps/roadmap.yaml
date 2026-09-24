@@ -4604,11 +4604,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'IDXEVAL1-1: interpreter evaluates the index expression of a compound or nested-index assignment twice (read + write_back); compiled code evaluates it once'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T13:00:00Z
-  updated: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: v[next()] += 1 or m[f()][j] = x with a side-effecting index'
