@@ -4900,6 +4900,7 @@ roadmap:
   - 'matrix_001..004_native, lang_comp_suite and issue_040 spawn env!("CARGO_BIN_EXE_ruchy"), not Command::new("ruchy"); all pass with no ruchy on PATH (46 intel failures at fb58f641)'
   - 'Named-environment ignores (G2 acceptance): tooling_002 test 01 (renacer on PATH), opt_global_001 test 03 (llvm-profdata plus the profiles ignored test 02 collects)'
   - 'cli_unify_003 determinism block runs 1K cases like the other spawn-heavy blocks; 10K cases (20K spawns) timed out at 180 s on intel'
+  - 'opt_global_001 test 03 merges the collected /tmp/pgo-test-*.profraw files and asserts success (G2c quorum, agy lane)'
   phases: []
   subtasks: []
   estimated_effort: null

@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   comprehension in the interpreter is tracked as SETCOMP-1 (#247).
 - Two tests that only check that an external tool is installed are ignored with a named
   environment: renacer (`tooling_002` test 01) and llvm-profdata (`opt_global_001` test 03).
+  Test 03 now passes the profiles test 02 collects (it passed a literal glob that
+  `Command` never expands) and asserts that the merge succeeds, not only that it spawned.
 - The `cli_unify_003` determinism properties run 1,000 cases instead of 10,000; each case
   spawns `ruchy` twice, and 20,000 spawns exceeded the 180 s test budget.
 
