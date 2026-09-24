@@ -95,7 +95,8 @@ impl Transpiler {
             return self.transpile_field_access(object, field);
         }
         let obj_tokens = self.transpile_expr(object)?;
-        let field_ident = format_ident!("{}", field);
+        // A reserved segment used as a value (`let f = m::do`) is raw (`m::r#do`).
+        let field_ident = Self::safe_ident(field);
         Ok(quote! { #obj_tokens::#field_ident })
     }
 

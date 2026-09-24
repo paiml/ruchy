@@ -5,6 +5,8 @@
 //!    (`println!`, `format!`, `vec!`, `assert!`) as `MacroInvocation`; a
 //!    mutation of `self` inside one must still make the receiver `&mut self`,
 //!    or rustc rejects the method (E0596).
+//! 2. A `::` path used as a value (not called), `let f = m::do`, emits a
+//!    reserved segment as a raw identifier.
 //!
 //! Every program is transpiled, compiled with rustc and run.
 
@@ -136,4 +138,29 @@ fn test_g2bfa2_mutation_inside_macro_invocation_matches_run() {
 
     assert_eq!(binary_stdout, "1\n2\ndone\n");
     assert_eq!(binary_stdout, interpreter_stdout);
+}
+
+// ------------------------------------ 2. reserved `::` segment as a value
+
+const PATH_VALUE: &str = r"mod m {
+    pub fun do() -> i32 {
+        7
+    }
+}
+
+fun main() {
+    let f = m::do
+    println(f())
+}
+";
+
+#[test]
+fn test_rawident_1_path_used_as_value_is_raw_and_compiles() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let rust = transpile(&write_source(dir.path(), PATH_VALUE));
+    assert!(
+        squash(&rust).contains("m::r#do;"),
+        "`m::do` as a value must be `m::r#do`:\n{rust}"
+    );
+    assert_eq!(compiled_stdout(dir.path(), &rust), "7\n");
 }
