@@ -4676,3 +4676,98 @@ roadmap:
   labels:
   - kind:code
   - transpiler
+- id: FORLEAK-1
+  github_issue: null
+  item_type: task
+  title: 'FORLEAK-1: interpreter for-loop variable leaks into the enclosing scope and overwrites a same-named outer binding'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T14:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let x = "a"; for x in [[1]] { }; println(x)  prints [1]'
+  - 'Acceptance: after the loop the outer x is unchanged ("a"); run matches the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: ARRREPEAT-1
+  github_issue: null
+  item_type: task
+  title: 'ARRREPEAT-1: interpreter arrays have no repeat method (Unknown array method: repeat); Rust slices have repeat'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T14:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let v = [1]; println("{:?}", v.repeat(2))'
+  - 'Acceptance: run prints [1, 1] like the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: NESTARRVEC-1
+  github_issue: null
+  item_type: task
+  title: 'NESTARRVEC-1: a nested array literal transpiles to a fixed-size array, so m[i].push(x) fails rustc E0599'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T14:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut m = [[1], [2]]; m[0].push(9); println("{:?}", m)'
+  - 'Acceptance: compiled prints [[1, 9], [2]] like ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: CLOSUREUNIT-1
+  github_issue: null
+  item_type: task
+  title: 'CLOSUREUNIT-1: a unit-returning closure call as the last statement of main is printed as () (MAINUNIT-1 covers user functions only)'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T14:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let f = |s| println(s); f("hi")  as the last statement of main'
+  - 'Acceptance: compiled prints only hi'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: FORMATVAL-1
+  github_issue: null
+  item_type: task
+  title: 'FORMATVAL-1: the format builtin called as a value (eval_builtin.rs:318) still treats a non-literal first argument as a template when args.len() > 1'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T14:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let t = "{}"; let g = format; println(g(t, 1))'
+  - 'Acceptance: run agrees with compiled / FMTTEMPLATE-1 rule'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
