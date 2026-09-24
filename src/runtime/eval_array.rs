@@ -18,7 +18,11 @@ fn eval_array_nullary_method(
     method: &str,
 ) -> Option<Result<Value, InterpreterError>> {
     let result = match method {
-        "len" | "length" => eval_array_len(arr),
+        // COUNTITER-1: `count()` on an array, or on what `chars()`, `bytes()`
+        // and `iter()` return (arrays in the interpreter), is its length
+        "len" | "length" | "count" => eval_array_len(arr),
+        // COUNTITER-1: `iter()` is the array itself, so `v.iter().count()` works
+        "iter" => Ok(Value::Array(Arc::clone(arr))),
         "first" => eval_array_first(arr),
         "last" => eval_array_last(arr),
         "is_empty" => eval_array_is_empty(arr),

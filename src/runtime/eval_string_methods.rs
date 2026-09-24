@@ -51,7 +51,8 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "parse" | "to_int" | "to_integer" => eval_string_parse(s),
         "timestamp" => eval_string_timestamp(s),
         "to_rfc3339" => Ok(Value::from_string(s.to_string())),
-        "as_bytes" => eval_string_as_bytes(s),
+        // COUNTITER-1: `bytes()` yields the same UTF-8 bytes as `as_bytes()`
+        "as_bytes" | "bytes" => eval_string_as_bytes(s),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown zero-argument string method: {method}"
         ))),
