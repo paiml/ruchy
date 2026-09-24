@@ -57,6 +57,42 @@ fn is_field_chain_rooted(expr: &Expr) -> bool {
     }
 }
 
+/// RHLGA-1 F6: `obj` with `field` set to `val`: a copy for value types, the same
+/// shared value (updated in place) for `ObjectMut` and `Class`.
+pub(crate) fn with_field(obj: Value, field: &str, val: Value) -> Result<Value, InterpreterError> {
+    match obj {
+        Value::Object(map) => {
+            let mut new_map = (*map).clone();
+            new_map.insert(field.to_string(), val);
+            Ok(Value::Object(Arc::new(new_map)))
+        }
+        Value::ObjectMut(ref cell) => {
+            cell.lock()
+                .expect("Mutex poisoned: object lock is corrupted")
+                .insert(field.to_string(), val);
+            Ok(obj)
+        }
+        Value::Class { ref fields, .. } => {
+            fields
+                .write()
+                .expect("RwLock poisoned: class fields lock is corrupted")
+                .insert(field.to_string(), val);
+            Ok(obj)
+        }
+        Value::Struct { name, fields } => {
+            let mut new_fields = (*fields).clone();
+            new_fields.insert(field.to_string(), val);
+            Ok(Value::Struct {
+                name,
+                fields: Arc::new(new_fields),
+            })
+        }
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Cannot access field '{field}' on non-object"
+        ))),
+    }
+}
+
 impl Interpreter {
     /// FIELDPOP-1 / ARRAYMUT-1: an in-place array method on a field
     /// (`self.items.pop()`, `s.items.sort()`, `o.items.insert(0, x)`) behaves
@@ -82,8 +118,28 @@ impl Interpreter {
             return Ok(None);
         };
         let (items, result) = self.apply_in_place_call(&arr, method, args)?;
-        self.eval_field_assign(object, field, Value::Array(Arc::from(items)))?;
+        self.write_field_chain(object, field, Value::Array(Arc::from(items)))?;
         Ok(Some(result))
+    }
+
+    /// RHLGA-1 F6: write `val` to `object.field` where `object` is a field
+    /// chain rooted at a variable: each value-typed parent is rebuilt with
+    /// the new field and written to its own parent, ending at the variable.
+    fn write_field_chain(
+        &mut self,
+        object: &Expr,
+        field: &str,
+        val: Value,
+    ) -> Result<(), InterpreterError> {
+        let ExprKind::FieldAccess {
+            object: parent,
+            field: parent_field,
+        } = &object.kind
+        else {
+            return self.eval_field_assign(object, field, val).map(|_| ());
+        };
+        let updated = with_field(self.eval_expr(object)?, field, val)?;
+        self.write_field_chain(parent, parent_field, updated)
     }
 
     /// ARRAYMUT-1: an in-place array method on a local array variable
