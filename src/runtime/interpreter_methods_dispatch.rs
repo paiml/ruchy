@@ -16,6 +16,7 @@ use crate::runtime::{InterpreterError, Value};
 use std::sync::Arc;
 
 use crate::runtime::eval_array::{apply_in_place_array_method, is_in_place_array_method};
+use crate::runtime::interpreter_control_flow::is_place_expr;
 
 /// Which handler an object's dispatch marker selects, checked in the order
 /// actor, class, struct, `__type`.
@@ -44,16 +45,6 @@ impl ObjectKind {
             return Self::Struct(name);
         }
         marker("__type").map_or(Self::Plain, Self::Typed)
-    }
-}
-
-/// RHLGA-1 F6: `x`, `x.a`, `x.a.b`, …: a field chain rooted at a variable,
-/// which `eval_field_assign` can write back through.
-fn is_field_chain_rooted(expr: &Expr) -> bool {
-    match &expr.kind {
-        ExprKind::Identifier(_) => true,
-        ExprKind::FieldAccess { object, .. } => is_field_chain_rooted(object),
-        _ => false,
     }
 }
 
@@ -100,25 +91,30 @@ impl Interpreter {
     /// result and the changed array is written back to the field. The field
     /// may be nested (`self.inner.items.push(x)`, `s.a.b.sort()`).
     ///
+    /// IDXPUSHWB-1: the receiver may be any FieldAccess/IndexAccess chain
+    /// rooted at a variable (`m[0].push(x)`, `t.rows[i].vals.sort()`); the
+    /// changed array is stored through `write_back`, the NESTASSIGN-1 writer.
+    ///
     /// Returns `Ok(None)` when the call is not of that shape, so the caller
     /// falls through to ordinary method dispatch.
-    fn try_field_array_mutation(
+    fn try_chain_array_mutation(
         &mut self,
         receiver: &Expr,
         method: &str,
         args: &[Expr],
     ) -> Result<Option<Value>, InterpreterError> {
-        let ExprKind::FieldAccess { object, field } = &receiver.kind else {
-            return Ok(None);
-        };
-        if !is_field_chain_rooted(object) || !is_in_place_array_method(method, args.len()) {
+        let is_chain = matches!(
+            receiver.kind,
+            ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. }
+        );
+        if !is_chain || !is_place_expr(receiver) || !is_in_place_array_method(method, args.len()) {
             return Ok(None);
         }
         let Value::Array(arr) = self.eval_expr(receiver)? else {
             return Ok(None);
         };
         let (items, result) = self.apply_in_place_call(&arr, method, args)?;
-        self.eval_field_assign(object, field, Value::Array(Arc::from(items)))?;
+        self.write_back(receiver, Value::Array(Arc::from(items)))?;
         Ok(Some(result))
     }
 
@@ -208,9 +204,10 @@ impl Interpreter {
             }
         }
 
-        // FIELDPOP-1: mutating array methods on a field (self.items.pop(),
-        // s.items.push(x)) return their own result and write the field back
-        if let Some(result) = self.try_field_array_mutation(receiver, method, args)? {
+        // FIELDPOP-1 / IDXPUSHWB-1: mutating array methods on a field or an
+        // element (self.items.pop(), m[0].push(x)) return their own result
+        // and write the changed array back through the chain
+        if let Some(result) = self.try_chain_array_mutation(receiver, method, args)? {
             return Ok(result);
         }
 

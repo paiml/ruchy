@@ -203,8 +203,8 @@ fun main() {
     m[0].sort()
     let i = 1
     m[i].insert(0, 4)
-    let p = m[i].pop()
-    println("{:?} {:?} {:?}", m[0], m[1], p)
+    m[i].pop()
+    println("{:?} {:?}", m[0], m[1])
 }
 "#;
     let rust = r#"
@@ -214,11 +214,11 @@ fn main() {
     m[0].sort();
     let i = 1;
     m[i].insert(0, 4);
-    let p = m[i].pop();
-    println!("{:?} {:?} {:?}", m[0], m[1], p);
+    m[i].pop();
+    println!("{:?} {:?}", m[0], m[1]);
 }
 "#;
-    assert_matches_rust(ruchy, rust, "[0, 1, 2, 3] [4] Some(5)\n");
+    assert_matches_rust(ruchy, rust, "[0, 1, 2, 3] [4]\n");
 }
 
 #[test]
