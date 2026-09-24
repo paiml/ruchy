@@ -4699,11 +4699,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'ARRREPEAT-1: interpreter arrays have no repeat method (Unknown array method: repeat); Rust slices have repeat'
-  status: planned
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-24T14:30:00Z
-  updated: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let v = [1]; println("{:?}", v.repeat(2))'

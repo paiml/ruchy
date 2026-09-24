@@ -167,6 +167,8 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   prints `a`, not `[1]`, and `for (k, v) in pairs` binds `k` and `v` to the
   tuple's fields instead of `k` to the whole tuple. Assignments to outer
   variables in the body still persist (FORLEAK-1).
+- Arrays have `repeat(n)`, as Rust slices do: `[1].repeat(2)` is `[1, 1]`;
+  a negative count is an error (ARRREPEAT-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

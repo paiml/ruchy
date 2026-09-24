@@ -144,3 +144,34 @@ fn test_forleak_1_if_let_while_let_match_do_not_leak() {
         "3\n1\n4\n1\n5\n1\n",
     );
 }
+
+// ------------------------------------------------------------ ARRREPEAT-1
+
+#[test]
+fn test_arrrepeat_1_repeat_twice() {
+    assert_run_matches_compiled("let v = [1]\nprintln(\"{:?}\", v.repeat(2))\n", "[1, 1]\n");
+}
+
+#[test]
+fn test_arrrepeat_1_repeat_keeps_order_and_zero_is_empty() {
+    assert_run_prints(
+        "let v = [1, 2]\nprintln(\"{:?}\", v.repeat(3))\nprintln(\"{:?}\", v.repeat(0))\nprintln(\"{:?}\", v)\n",
+        "[1, 2, 1, 2, 1, 2]\n[]\n[1, 2]\n",
+    );
+}
+
+#[test]
+fn test_arrrepeat_1_negative_count_is_error() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let out = run_cmd(dir.path(), "let v = [1]\nprintln(\"{:?}\", v.repeat(-1))\n")
+        .output()
+        .expect("spawn ruchy run");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(!out.status.success(), "ruchy run accepted: {stderr}");
+    assert!(stderr.contains("repeat"), "stderr lacks repeat: {stderr}");
+}
+
+#[test]
+fn test_arrrepeat_1_string_repeat_unchanged() {
+    assert_run_prints("println(\"{}\", \"ab\".repeat(2))\n", "abab\n");
+}

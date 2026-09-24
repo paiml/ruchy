@@ -61,6 +61,7 @@ fn eval_array_unary_method(
         // METHODS-1: `drop(n)` is the array without its first n elements
         "skip" | "drop" => eval_array_skip(arr, arg),
         "zip" => eval_array_zip(arr, arg),
+        "repeat" => eval_array_repeat(arr, arg),
         _ => return None,
     };
     Some(result)
@@ -436,6 +437,21 @@ fn eval_array_join(arr: &Arc<[Value]>, separator: &Value) -> Result<Value, Inter
             "Array.join() expects a string argument".to_string(),
         )),
     }
+}
+
+/// ARRREPEAT-1: the array repeated `count` times, like Rust `slice::repeat`.
+fn eval_array_repeat(arr: &Arc<[Value]>, count: &Value) -> Result<Value, InterpreterError> {
+    let times = match count {
+        Value::Integer(n) => usize::try_from(*n).ok(),
+        _ => None,
+    }
+    .ok_or_else(|| {
+        InterpreterError::RuntimeError(format!(
+            "Array.repeat() expects a non-negative integer, got {count}"
+        ))
+    })?;
+    let items = (0..times).flat_map(|_| arr.iter().cloned()).collect();
+    Ok(Value::from_array(items))
 }
 
 /// Remove duplicate elements from array
