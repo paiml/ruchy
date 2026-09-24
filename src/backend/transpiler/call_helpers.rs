@@ -97,7 +97,14 @@ impl Transpiler {
                             }
                             base_tokens = quote! { #base_tokens.clone() };
                         }
-                        self.apply_string_coercion(arg, &base_tokens, expected_type)
+                        let tokens =
+                            self.apply_string_coercion(arg, &base_tokens, expected_type)?;
+                        // INTLEN-1: a `usize` argument to an integer parameter is cast.
+                        Ok(super::return_type_helpers::cast_usize_tokens(
+                            arg,
+                            expected_type,
+                            tokens,
+                        ))
                     } else {
                         // DEFECT-018 FIX: Auto-clone Identifier arguments in loop contexts
                         // to prevent "use of moved value" errors on subsequent iterations

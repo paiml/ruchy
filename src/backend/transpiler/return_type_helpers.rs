@@ -350,10 +350,81 @@ pub fn expr_creates_or_returns_vec(expr: &Expr, block_exprs: &[Expr]) -> bool {
 /// integer type its tail cannot produce. (complexity: 2)
 #[must_use]
 pub fn returns_usize(body: &Expr) -> bool {
-    get_final_expression(body).is_some_and(|tail| {
-        matches!(&tail.kind, ExprKind::MethodCall { method, args, .. }
-            if args.is_empty() && matches!(method.as_str(), "len" | "count"))
-    })
+    get_final_expression(body).is_some_and(is_usize_expr)
+}
+
+/// INTLEN-1: `expr` is a zero-argument `len()` / `count()` call, a `usize`
+/// in the transpiled Rust. (complexity: 2)
+#[must_use]
+pub fn is_usize_expr(expr: &Expr) -> bool {
+    matches!(&expr.kind, ExprKind::MethodCall { method, args, .. }
+        if args.is_empty() && matches!(method.as_str(), "len" | "count"))
+}
+
+/// INTLEN-1: the signed/unsigned Rust integer type (other than `usize`) that
+/// the Ruchy type name `ty` denotes, if any. (complexity: 2)
+#[must_use]
+pub fn usize_cast_target(ty: &str) -> Option<&'static str> {
+    match ty {
+        "int" | "i64" => Some("i64"),
+        "i32" => Some("i32"),
+        "u32" => Some("u32"),
+        "u64" => Some("u64"),
+        "isize" => Some("isize"),
+        _ => None,
+    }
+}
+
+/// INTLEN-1: `tokens` (the transpiled `expr`) cast to the integer type `ty`
+/// when `expr` is a `usize`; unchanged otherwise. (complexity: 2)
+#[must_use]
+pub fn cast_usize_tokens(expr: &Expr, ty: &str, tokens: TokenStream) -> TokenStream {
+    match usize_cast_target(ty) {
+        Some(target) if is_usize_expr(expr) => {
+            let target = proc_macro2::Ident::new(target, proc_macro2::Span::call_site());
+            quote! { (#tokens as #target) }
+        }
+        _ => tokens,
+    }
+}
+
+/// INTLEN-1: `body` with its `usize` tail wrapped in a cast to the declared
+/// integer return type `ty`; `None` when no cast is needed. (complexity: 5)
+#[must_use]
+pub fn cast_usize_tail(body: &Expr, ty: &str) -> Option<Expr> {
+    let target = usize_cast_target(ty)?;
+    let mut out = body.clone();
+    let tail = final_expression_mut(&mut out)?;
+    if !is_usize_expr(tail) {
+        return None;
+    }
+    let inner = std::mem::replace(tail, Expr::new(ExprKind::Literal(Literal::Unit), tail.span));
+    *tail = Expr::new(
+        ExprKind::TypeCast {
+            expr: Box::new(inner),
+            target_type: target.to_string(),
+        },
+        body.span,
+    );
+    Some(out)
+}
+
+/// Mutable twin of `get_final_expression`. (complexity: 4)
+fn final_expression_mut(expr: &mut Expr) -> Option<&mut Expr> {
+    let is_wrapper = matches!(
+        &expr.kind,
+        ExprKind::Block(_) | ExprKind::Let { .. } | ExprKind::LetPattern { .. }
+    );
+    if !is_wrapper {
+        return Some(expr);
+    }
+    match &mut expr.kind {
+        ExprKind::Block(exprs) => exprs.last_mut().and_then(final_expression_mut),
+        ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
+            final_expression_mut(body)
+        }
+        _ => None,
+    }
 }
 
 /// Helper: Get the actual final expression, drilling through Let/Block wrappers
@@ -463,6 +534,26 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_intlen_1_cast_usize_tail_and_tokens() {
+        let parse = |src: &str| {
+            crate::frontend::parser::Parser::new(src)
+                .parse()
+                .expect("parse")
+        };
+        let len = parse("xs.len()");
+        let cast = cast_usize_tail(&len, "int").expect("int tail is cast");
+        assert!(
+            matches!(&cast.kind, ExprKind::TypeCast { target_type, .. } if target_type == "i64")
+        );
+        assert!(cast_usize_tail(&len, "usize").is_none());
+        assert!(cast_usize_tail(&parse("xs.first()"), "int").is_none());
+        let tokens = cast_usize_tokens(&len, "i32", quote! { xs.len() }).to_string();
+        assert_eq!(tokens.replace(' ', ""), "(xs.len()asi32)");
+        let plain = cast_usize_tokens(&parse("x"), "int", quote! { x }).to_string();
+        assert_eq!(plain, "x");
+    }
     use crate::frontend::ast::{Expr, ExprKind, Literal, Span};
 
     fn make_expr(kind: ExprKind) -> Expr {

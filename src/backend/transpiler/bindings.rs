@@ -285,6 +285,7 @@ impl Transpiler {
         } else {
             Self::growable_list_tokens(name, value, type_annotation, body, value_tokens)
         };
+        let value_tokens = Self::cast_usize_to_annotation(value, type_annotation, value_tokens);
 
         // Generate type annotation
         let type_tokens = self.generate_type_tokens(type_annotation, needs_vec_type_hint)?;
@@ -302,6 +303,23 @@ impl Transpiler {
                     #body_tokens
                 }
             })
+        }
+    }
+
+    /// INTLEN-1: `let n: int = v.len()` casts the `usize` value to the
+    /// annotated integer type. (complexity: 2)
+    fn cast_usize_to_annotation(
+        value: &Expr,
+        type_annotation: Option<&Type>,
+        tokens: TokenStream,
+    ) -> TokenStream {
+        match type_annotation {
+            Some(ty) => super::return_type_helpers::cast_usize_tokens(
+                value,
+                &Self::type_to_string(ty),
+                tokens,
+            ),
+            None => tokens,
         }
     }
 

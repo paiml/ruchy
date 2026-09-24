@@ -241,6 +241,13 @@ impl Transpiler {
         )
     }
 
+    /// INTLEN-1: `fun f(..) -> int { xs.len() }` gets its `usize` tail cast
+    /// to the declared integer type; `None` when the body needs no change.
+    fn usize_tail_cast_body(body: &Expr, return_type: Option<&Type>) -> Option<Expr> {
+        let ty = Self::type_to_string(return_type?);
+        super::return_type_helpers::cast_usize_tail(body, &ty)
+    }
+
     /// Transpile function with contract clauses (PMAT-001: Ruchy 5.0 Silver level)
     ///
     /// Contract clauses are transpiled to `debug_assert!` calls:
@@ -259,6 +266,8 @@ impl Transpiler {
         contracts: &[crate::frontend::ast::ContractClause],
     ) -> Result<TokenStream> {
         contract_pre_bce!();
+        let cast_body = Self::usize_tail_cast_body(body, return_type);
+        let body = cast_body.as_ref().unwrap_or(body);
         if contracts.is_empty() {
             return self.transpile_function_impl(
                 name,
