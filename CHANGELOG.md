@@ -16,7 +16,9 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   a borrowing getter. This reverses the 2026-01 change that always borrowed.
   Mutation is detected through nested fields, indexes, `++`/`--`, mutating std
   methods on a field (`push`, `insert`, …) and calls to other mutating
-  methods of the same impl. A trait default method taking an owned `self` gets
+  methods of the same impl. The mutating std methods include `resize` and
+  `extend_from_slice`, and passing `&mut self.field` to a call mutates `self`.
+  A trait default method taking an owned `self` gets
   `where Self: Sized`, so it compiles.
 - A function or method named with a Rust reserved word (`do`, `box`, `typeof`, …)
   is emitted as a raw identifier (`r#do`) at definition and call.
@@ -54,7 +56,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   `v.pop().unwrap()` yields the element. A plain value's own methods win.
   `unwrap`/`expect` on an absent value is an error naming it, and so is
   `unwrap_or_default`, whose default type is unknown at runtime. A plain
-  object has `get(key)`, returning the value or nil.
+  object has `get(key)`, returning the value or nil. Only the builtin
+  `Option`/`Result` variants take these methods first: a user enum's own
+  `Some`/`None` variant keeps its `impl` methods, which the interpreter now
+  dispatches on enum values.
 - **(behaviour)** In-place array methods change their receiver, as in Rust
   (FIELDPOP-1, ARRAYMUT-1). `v.sort()`, `reverse`, `append`, `extend`,
   `insert`, `remove`, `clear`, `truncate`, `dedup`, `resize` and
@@ -62,16 +67,23 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   and return what Rust returns: nil, the removed element for `remove`, and the
   element or nil for `pop`. Before, `sort` and `reverse` returned a copy and
   left the variable unchanged, a field's `push`/`pop` was lost, and `insert`,
-  `remove`, `clear` and `truncate` were unknown. `sorted`/`reversed` still
+  `remove`, `clear` and `truncate` were unknown. A nested field
+  (`self.inner.items.push(x)`, `o.a.b.sort()`) is written back too.
+  `sorted`/`reversed` still
   return a copy. `a.append(b)` does not empty `b`.
 - A `let`-bound array literal that is later grown (`push`, `extend`, `insert`,
   …) or annotated `Vec<…>` transpiles to `vec![…]`, and so does an array
   literal for a `Vec<…>` struct field (LETVEC-1, VECLIT-1). Before,
-  `let mut v = [1, 2]; v.push(3)` failed rustc (E0599). `append` transpiles to
-  `extend`.
+  `let mut v = [1, 2]; v.push(3)` failed rustc (E0599). The scan follows
+  scope: growth after a shadowing `let v = …`, or inside a closure or block
+  that re-binds `v`, does not count for the outer `v`.
+- **(behaviour)** `a.append(b)` transpiles to `a.extend_from_slice(&b)`, so `b`
+  (a `Vec` or an array) stays usable afterwards, as in the interpreter. Before,
+  it transpiled to `a.push(b)`.
 - A keyword can name a method or field after `.` or `?.` (`v.extend(x)`,
   `o.type`), and a struct can declare it (`struct W { type: i32 }`). A Rust
-  reserved word is emitted as `r#type` (EXTENDKW-1, RESFIELD-1).
+  reserved word is emitted as `r#type` (EXTENDKW-1, RESFIELD-1). A `let`
+  named `self`, `Self`, `super` or `crate` no longer panics the transpiler.
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
