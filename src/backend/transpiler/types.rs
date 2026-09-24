@@ -1056,7 +1056,7 @@ impl Transpiler {
                         let field_defs: Vec<TokenStream> = fields
                             .iter()
                             .map(|field| {
-                                let field_name = format_ident!("{}", field.name);
+                                let field_name = Transpiler::safe_ident(&field.name); // ENUMFIELDKW-1
                                 let ty = &field.ty;
                                 let t = self.transpile_type(ty);
                                 let field_type = t.unwrap_or_else(|_| quote! { _ });
