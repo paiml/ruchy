@@ -292,3 +292,54 @@ fun main() {
     let squashed: String = rust.chars().filter(|c| !c.is_whitespace()).collect();
     assert!(squashed.contains("fixed:[7,8]"), "rust:\n{rust}");
 }
+
+// ---------- RHLGA-1 review F6: in-place methods on nested fields ----------
+
+const NESTED: &str = "struct Inner { items: Vec<i32> }
+struct Outer { inner: Inner }
+";
+
+#[test]
+fn test_fieldpop_1_11_nested_self_field_push_persists() {
+    let src = format!(
+        "{NESTED}impl Outer {{
+    fun add(&mut self, x: i32) {{
+        self.inner.items.push(x)
+    }}
+}}
+fun main() {{
+    let mut o = Outer {{ inner: Inner {{ items: vec![1] }} }}
+    o.add(5)
+    o.add(3)
+    println(o.inner.items)
+}}
+"
+    );
+    assert_eq!(run_file(&src), "[1, 5, 3]\n");
+}
+
+#[test]
+fn test_fieldpop_1_12_nested_local_field_sort_and_pop_persist() {
+    let src = format!(
+        "{NESTED}fun main() {{
+    let mut o = Outer {{ inner: Inner {{ items: vec![3, 1, 2] }} }}
+    o.inner.items.sort()
+    println(o.inner.items)
+    println(o.inner.items.pop())
+    println(o.inner.items)
+}}
+"
+    );
+    assert_eq!(run_file(&src), "[1, 2, 3]\n3\n[1, 2]\n");
+}
+
+#[test]
+fn test_fieldpop_1_13_object_literal_nested_field_push_persists() {
+    let src = "fun main() {
+    let mut o = { a: { b: [1] } }
+    o.a.b.push(2)
+    println(o.a.b)
+}
+";
+    assert_eq!(run_file(src), "[1, 2]\n");
+}

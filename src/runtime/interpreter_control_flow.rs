@@ -487,55 +487,68 @@ impl Interpreter {
     /// Evaluate field assignment: `obj.field = value`.
     ///
     /// Handles Object, ObjectMut, Class, and Struct field updates.
+    /// `object` is a variable or a field chain rooted at one (`o.inner.items = …`): a value-typed parent is
+    /// rebuilt with the new field and written back to its own parent in turn.
     pub(crate) fn eval_field_assign(
         &mut self,
         object: &Expr,
         field: &str,
         val: Value,
     ) -> Result<Value, InterpreterError> {
-        let ExprKind::Identifier(obj_name) = &object.kind else {
-            return Err(InterpreterError::RuntimeError(
-                "Complex field access not supported".to_string(),
-            ));
-        };
-        let obj = self.lookup_variable(obj_name)?;
-
-        match obj {
-            Value::Object(ref map) => {
-                let mut new_map = (**map).clone();
-                new_map.insert(field.to_string(), val.clone());
-                self.set_variable(obj_name, Value::Object(Arc::new(new_map)));
+        /// `obj` with `field` set to `val`: a copy for value types, the same
+        /// shared value (updated in place) for `ObjectMut` and `Class`.
+        fn with_field(obj: Value, field: &str, val: Value) -> Result<Value, InterpreterError> {
+            match obj {
+                Value::Object(map) => {
+                    let mut new_map = (*map).clone();
+                    new_map.insert(field.to_string(), val);
+                    Ok(Value::Object(Arc::new(new_map)))
+                }
+                Value::ObjectMut(ref cell) => {
+                    cell.lock()
+                        .expect("Mutex poisoned: object lock is corrupted")
+                        .insert(field.to_string(), val);
+                    Ok(obj)
+                }
+                Value::Class { ref fields, .. } => {
+                    fields
+                        .write()
+                        .expect("RwLock poisoned: class fields lock is corrupted")
+                        .insert(field.to_string(), val);
+                    Ok(obj)
+                }
+                Value::Struct { name, fields } => {
+                    let mut new_fields = (*fields).clone();
+                    new_fields.insert(field.to_string(), val);
+                    Ok(Value::Struct {
+                        name,
+                        fields: Arc::new(new_fields),
+                    })
+                }
+                _ => Err(InterpreterError::RuntimeError(format!(
+                    "Cannot access field '{field}' on non-object"
+                ))),
+            }
+        }
+        match &object.kind {
+            ExprKind::Identifier(obj_name) => {
+                let obj = self.lookup_variable(obj_name)?;
+                let updated = with_field(obj, field, val.clone())?;
+                self.set_variable(obj_name, updated);
                 Ok(val)
             }
-            Value::ObjectMut(ref cell) => {
-                cell.lock()
-                    .expect("Mutex poisoned: object lock is corrupted")
-                    .insert(field.to_string(), val.clone());
-                Ok(val)
-            }
-            Value::Class { ref fields, .. } => {
-                fields
-                    .write()
-                    .expect("RwLock poisoned: class fields lock is corrupted")
-                    .insert(field.to_string(), val.clone());
-                Ok(val)
-            }
-            Value::Struct {
-                ref name,
-                ref fields,
+            ExprKind::FieldAccess {
+                object: parent,
+                field: parent_field,
             } => {
-                let mut new_fields = (**fields).clone();
-                new_fields.insert(field.to_string(), val.clone());
-                let new_struct = Value::Struct {
-                    name: name.clone(),
-                    fields: Arc::new(new_fields),
-                };
-                self.set_variable(obj_name, new_struct);
+                let obj = self.eval_expr(object)?;
+                let updated = with_field(obj, field, val.clone())?;
+                self.eval_field_assign(parent, parent_field, updated)?;
                 Ok(val)
             }
-            _ => Err(InterpreterError::RuntimeError(format!(
-                "Cannot access field '{field}' on non-object"
-            ))),
+            _ => Err(InterpreterError::RuntimeError(
+                "Complex field access not supported".to_string(),
+            )),
         }
     }
 

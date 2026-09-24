@@ -47,11 +47,22 @@ impl ObjectKind {
     }
 }
 
+/// RHLGA-1 F6: `x`, `x.a`, `x.a.b`, …: a field chain rooted at a variable,
+/// which `eval_field_assign` can write back through.
+fn is_field_chain_rooted(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Identifier(_) => true,
+        ExprKind::FieldAccess { object, .. } => is_field_chain_rooted(object),
+        _ => false,
+    }
+}
+
 impl Interpreter {
     /// FIELDPOP-1 / ARRAYMUT-1: an in-place array method on a field
     /// (`self.items.pop()`, `s.items.sort()`, `o.items.insert(0, x)`) behaves
     /// like the same call on a local array: the call returns the method's own
-    /// result and the changed array is written back to the field.
+    /// result and the changed array is written back to the field. The field
+    /// may be nested (`self.inner.items.push(x)`, `s.a.b.sort()`).
     ///
     /// Returns `Ok(None)` when the call is not of that shape, so the caller
     /// falls through to ordinary method dispatch.
@@ -64,8 +75,7 @@ impl Interpreter {
         let ExprKind::FieldAccess { object, field } = &receiver.kind else {
             return Ok(None);
         };
-        let rooted = matches!(object.kind, ExprKind::Identifier(_));
-        if !rooted || !is_in_place_array_method(method, args.len()) {
+        if !is_field_chain_rooted(object) || !is_in_place_array_method(method, args.len()) {
             return Ok(None);
         }
         let Value::Array(arr) = self.eval_expr(receiver)? else {
@@ -99,6 +109,28 @@ impl Interpreter {
         let (items, result) = self.apply_in_place_call(&arr, method, args)?;
         self.env_set_mut(var_name.to_string(), Value::Array(Arc::from(items)));
         Ok(Some(result))
+    }
+
+    /// RHLGA-1 F5: a method of a user `impl` on an enum value
+    /// (`Maybe::Some(3).unwrap()`) runs with the variant bound to `self`.
+    /// `None` when the enum has no such method.
+    fn eval_enum_instance_method(
+        &mut self,
+        receiver: &Value,
+        enum_name: &str,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Option<Result<Value, InterpreterError>> {
+        let closure = self
+            .lookup_variable(&format!("{enum_name}::{method}"))
+            .ok()?;
+        if !matches!(closure, Value::Closure { .. }) {
+            return None;
+        }
+        let args: Vec<Value> = std::iter::once(receiver.clone())
+            .chain(arg_values.iter().cloned())
+            .collect();
+        Some(self.call_function(closure, &args))
     }
 
     /// Evaluate `args`, then apply the in-place `method` to a copy of `arr`.
@@ -417,6 +449,9 @@ impl Interpreter {
                     arg_values,
                 )
             }
+            Value::EnumVariant { enum_name, .. } => self
+                .eval_enum_instance_method(receiver, enum_name, base_method, arg_values)
+                .unwrap_or_else(|| self.eval_generic_method(receiver, base_method, args_empty)),
             #[cfg(not(target_arch = "wasm32"))]
             Value::HtmlDocument(doc) => {
                 self.eval_html_document_method(doc, base_method, arg_values)

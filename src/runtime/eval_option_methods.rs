@@ -53,17 +53,25 @@ pub fn is_unknown_method_error(err: &InterpreterError, method: &str) -> bool {
     names_method && (msg.contains("Unknown") || msg.contains("not found"))
 }
 
-/// The variant name and payload of a `Some`/`None`/`Ok`/`Err` value.
+/// The variant name and payload of a builtin `Some`/`None`/`Ok`/`Err` value.
+/// The interpreter builds those with enum name `Option`/`Result`; an empty
+/// name is accepted too. A user enum's own `Some`/`None`/`Ok`/`Err` variant
+/// (`enum Maybe { Some(i32), None }`) is not one: its methods dispatch normally.
 ///
 /// # Complexity
-/// Cyclomatic complexity: 3
+/// Cyclomatic complexity: 4
 fn variant_payload(receiver: &Value) -> Option<(&str, Option<&Value>)> {
     let Value::EnumVariant {
-        variant_name, data, ..
+        enum_name,
+        variant_name,
+        data,
     } = receiver
     else {
         return None;
     };
+    if !matches!(enum_name.as_str(), "" | "Option" | "Result") {
+        return None;
+    }
     let payload = data.as_ref().and_then(|d| d.first());
     match variant_name.as_str() {
         "Some" | "None" | "Ok" | "Err" => Some((variant_name.as_str(), payload)),

@@ -336,3 +336,27 @@ fn test_optmethods_1_13_differential_pop_unwrap_through_rustc() {
     );
     assert_eq!(differential(&src), "3\n2\n1\n0\ntrue\n");
 }
+
+// ---------- RHLGA-1 review F5: a user enum's `Some`/`None` is not Option ----------
+
+#[test]
+fn test_optmethods_1_14_user_enum_variant_named_some_keeps_its_methods() {
+    let src = "enum Maybe { Some(i32), None }
+impl Maybe {
+    fun unwrap(self) -> i32 {
+        42
+    }
+    fun is_some(self) -> bool {
+        false
+    }
+}
+fun main() {
+    let m = Maybe::Some(3)
+    println(m.unwrap())
+    println(m.is_some())
+    let n = Maybe::None
+    println(n.unwrap())
+}
+";
+    assert_eq!(run_file(src), "42\nfalse\n42\n");
+}
