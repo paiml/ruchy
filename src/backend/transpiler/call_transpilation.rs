@@ -469,7 +469,8 @@ impl Transpiler {
             | "substring" | "strip" | "lstrip" | "rstrip" | "startswith" | "endswith" | "split"
             | "replace" => self.transpile_string_methods(obj_tokens, method, arg_tokens),
             // List methods
-            "append" => Ok(quote! { #obj_tokens.push(#(#arg_tokens),*) }),
+            // LETVEC-1: Ruchy append(x) adds x's elements (by value), like extend
+            "append" => Ok(quote! { #obj_tokens.extend(#(#arg_tokens),*) }),
             "extend" => Ok(quote! { #obj_tokens.extend(#(#arg_tokens),*) }),
             // Collection methods
             "push" | "pop" | "contains" => {
@@ -648,7 +649,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dispatch_append_to_push() {
+    fn test_dispatch_append_to_extend() {
         let transpiler = make_transpiler();
         let obj_tokens = quote! { vec };
         let arg_tokens = vec![quote! { 42 }];
@@ -657,7 +658,7 @@ mod tests {
         let result = transpiler
             .dispatch_method_by_category(&obj_tokens, "append", &method_ident, &arg_tokens, &object)
             .unwrap();
-        assert!(result.to_string().contains("push"));
+        assert!(result.to_string().contains("extend"));
     }
 
     #[test]

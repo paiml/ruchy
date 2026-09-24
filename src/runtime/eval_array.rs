@@ -119,9 +119,11 @@ where
 pub(crate) fn is_in_place_array_method(method: &str, arg_count: usize) -> bool {
     matches!(
         (method, arg_count),
-        ("push" | "append" | "extend" | "remove" | "truncate", 1)
-            | ("pop" | "sort" | "reverse" | "clear" | "dedup", 0)
-            | ("insert", 2)
+        (
+            "push" | "append" | "extend" | "extend_from_slice" | "remove" | "truncate",
+            1
+        ) | ("pop" | "sort" | "reverse" | "clear" | "dedup", 0)
+            | ("insert" | "resize", 2)
     )
 }
 
@@ -169,10 +171,14 @@ fn apply_in_place_with_args(
 ) -> Result<Value, InterpreterError> {
     match (method, args) {
         ("push", [item]) => items.push(item.clone()),
-        ("append" | "extend", [other]) => items.extend(iterable_items(method, other)?),
+        ("append" | "extend" | "extend_from_slice", [other]) => {
+            items.extend(iterable_items(method, other)?);
+        }
         ("remove", [index]) => return remove_at(items, index),
         ("truncate", [len]) => items.truncate(index_arg("truncate", len)?),
         ("insert", [index, item]) => insert_at(items, index, item)?,
+        // LETVEC-1: resize(n, x) pads with clones of x or truncates to n
+        ("resize", [len, item]) => items.resize(index_arg("resize", len)?, item.clone()),
         _ => return Err(unknown_in_place(method)),
     }
     Ok(Value::Nil)

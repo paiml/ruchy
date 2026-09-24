@@ -167,20 +167,13 @@ fn test_letvec_1_08_dedup() {
 }
 
 #[test]
-fn test_letvec_1_09_append_makes_a_vec() {
-    // `append` is emitted as `push` by call_transpilation.rs, which rustc
-    // rejects on a Vec<i32>; only the binding shape is asserted here.
-    for (label, src) in forms("append([7, 8])") {
-        let rust = transpile_str(&src);
-        assert!(
-            squash(&rust).contains("vec![3,1,2,2]"),
-            "{label}: expected a vec![..] binding in:\n{rust}"
-        );
-    }
+fn test_letvec_1_09_append() {
+    assert_grows_like_interpreter("append([7, 8])", "[3, 1, 2, 2, 7, 8]\n6\n");
 }
 
 #[test]
 fn test_letvec_1_10_retain() {
+    // retain/drain are not interpreter array methods: rustc output only.
     assert_grows("retain(|x| *x > 1)", "[3, 2, 2]\n3\n");
 }
 
@@ -191,12 +184,12 @@ fn test_letvec_1_11_drain() {
 
 #[test]
 fn test_letvec_1_12_resize() {
-    assert_grows("resize(6, 0)", "[3, 1, 2, 2, 0, 0]\n6\n");
+    assert_grows_like_interpreter("resize(6, 0)", "[3, 1, 2, 2, 0, 0]\n6\n");
 }
 
 #[test]
 fn test_letvec_1_13_extend_from_slice() {
-    assert_grows("extend_from_slice(&[7])", "[3, 1, 2, 2, 7]\n5\n");
+    assert_grows_like_interpreter("extend_from_slice(&[7])", "[3, 1, 2, 2, 7]\n5\n");
 }
 
 #[test]

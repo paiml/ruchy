@@ -207,16 +207,11 @@ fn test_extendkw_1_05_every_keyword_is_a_field_name() {
 
 #[test]
 fn test_extendkw_1_05b_reserved_field_access_compiles_with_rustc() {
-    // A Ruchy struct cannot declare a keyword-named field yet, so the struct
-    // and its constructor are supplied in Rust; `probe` and `main` are the
-    // transpiler's output.
-    let src = "fun probe(o: Widget) -> i32 {\n    o.type + o.match\n}\n\nfun main() {\n    println(probe(make_widget()))\n}\n";
+    // RESFIELD-1: keyword field names in a declaration, a literal and an access.
+    let src = "struct Widget {\n    type: i32,\n    match: i32,\n}\n\nfun probe(o: Widget) -> i32 {\n    o.type + o.match\n}\n\nfun main() {\n    println(probe(Widget { type: 5, match: 2 }))\n}\n";
     check(src);
     let dir = tempfile::tempdir().expect("tempdir");
-    let probe = transpile(dir.path(), src);
-    let rust = format!(
-        "struct Widget {{ r#type: i32, r#match: i32 }}\nfn make_widget() -> Widget {{ Widget {{ r#type: 5, r#match: 2 }} }}\n{probe}"
-    );
+    let rust = transpile(dir.path(), src);
     assert_eq!(rustc_run(dir.path(), &rust).trim(), "7", "rust:\n{rust}");
 }
 

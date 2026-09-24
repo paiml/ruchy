@@ -336,6 +336,20 @@ impl Transpiler {
         }
     }
 
+    /// LETVEC-1: transpile one statement of a block. A statement-level `let`
+    /// (Unit body) whose scope is the following siblings `rest` gets its
+    /// array literal emitted as `vec![..]` when a sibling grows the binding.
+    pub(crate) fn transpile_block_statement(
+        &self,
+        expr: &Expr,
+        rest: &[Expr],
+    ) -> Result<TokenStream> {
+        match grown_let_as_vec(expr, rest) {
+            Some(rewritten) => self.transpile_expr(&rewritten),
+            None => self.transpile_expr(expr),
+        }
+    }
+
     /// Process value for let-with-type, handling string/list conversions
     fn process_let_value_with_type(
         &self,
@@ -536,6 +550,38 @@ impl Transpiler {
     pub(super) fn value_creates_vec(&self, expr: &Expr) -> bool {
         matches!(expr.kind, ExprKind::List(_))
     }
+}
+
+/// LETVEC-1: a copy of the statement-level `let` `expr` with its non-empty
+/// array literal replaced by `vec![..]`, when a later sibling in `rest` is a
+/// Vec-only method call on the binding; `None` otherwise.
+fn grown_let_as_vec(expr: &Expr, rest: &[Expr]) -> Option<Expr> {
+    let ExprKind::Let {
+        name, value, body, ..
+    } = &expr.kind
+    else {
+        return None;
+    };
+    let ExprKind::List(items) = &value.kind else {
+        return None;
+    };
+    let is_statement = matches!(body.kind, ExprKind::Literal(Literal::Unit));
+    let grown = rest
+        .iter()
+        .any(|e| super::mutation_detection::is_grown_as_vec(name, e));
+    if items.is_empty() || !is_statement || !grown {
+        return None;
+    }
+    let mut vec_value = (**value).clone();
+    vec_value.kind = ExprKind::MacroInvocation {
+        name: "vec".to_string(),
+        args: items.clone(),
+    };
+    let mut rewritten = expr.clone();
+    if let ExprKind::Let { value, .. } = &mut rewritten.kind {
+        **value = vec_value;
+    }
+    Some(rewritten)
 }
 
 /// LETVEC-1: `Vec<..>` annotation (a bare `Vec` or a generic `Vec<T>`).
