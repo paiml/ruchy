@@ -4642,11 +4642,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FMTEXTRA-1: interpreter format engine silently ignores extra arguments; rustc rejects them, CHANGELOG says a count mismatch is an error'
-  status: planned
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-24T13:00:00Z
-  updated: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: println("{}", 1, 2)'

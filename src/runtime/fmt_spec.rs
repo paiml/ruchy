@@ -272,16 +272,42 @@ pub fn render(
 ) -> Result<String, String> {
     let mut out = String::new();
     let mut next = 0;
+    let mut used = vec![false; args.len()];
     for piece in pieces {
         match piece {
             Piece::Text(text) => out.push_str(text),
             Piece::Field(arg, spec) => {
+                mark_used(arg, next, &mut used);
                 let value = resolve(arg, args, &mut next, named)?;
                 out.push_str(&format_value(&value, spec)?);
             }
         }
     }
+    check_all_used(&used)?;
     Ok(out)
+}
+
+/// FMTEXTRA-1: record the positional argument `arg` refers to (`{}` takes
+/// the next one, `{0}` names one); a named field uses none.
+fn mark_used(arg: &ArgRef, next: usize, used: &mut [bool]) {
+    let slot = match arg {
+        ArgRef::Next => next,
+        ArgRef::Index(i) => *i,
+        ArgRef::Name(_) => return,
+    };
+    if let Some(flag) = used.get_mut(slot) {
+        *flag = true;
+    }
+}
+
+/// FMTEXTRA-1: Rust rejects a positional argument the template never uses.
+fn check_all_used(used: &[bool]) -> Result<(), String> {
+    match used.iter().position(|u| !u) {
+        Some(i) => Err(format!(
+            "argument never used: positional argument {i} is not referenced by the format string"
+        )),
+        None => Ok(()),
+    }
 }
 
 fn resolve(
@@ -326,8 +352,9 @@ pub fn format_str(
 ///
 /// With `template`, the first value is the format string. A template with no
 /// fields and extra arguments keeps the historical ruchy form
-/// (`println("a", 1)` prints `a 1`), which Rust rejects at compile time.
-/// Without a template the values are joined by spaces.
+/// (`println("a", 1)` prints `a 1`), as the transpiler does. A template with
+/// fields must use every argument (FMTEXTRA-1). Without a template the values
+/// are joined by spaces.
 pub fn format_call(
     values: &[Value],
     template: bool,

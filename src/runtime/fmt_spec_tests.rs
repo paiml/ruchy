@@ -191,3 +191,48 @@ proptest! {
         prop_assert_eq!(ours(idx, &s(&v), w, p), rust_ref!(idx, v.as_str(), w, p));
     }
 }
+
+#[test]
+fn test_fmtextra_1_extra_positional_argument_is_an_error() {
+    let err = fmt("{}", &[Value::Integer(1), Value::Integer(2)]).unwrap_err();
+    assert!(err.contains("argument never used"), "{err}");
+    assert!(err.contains("argument 1"), "{err}");
+}
+
+#[test]
+fn test_fmtextra_1_unreferenced_explicit_index_is_an_error() {
+    let err = fmt("{0} {0}", &[Value::Integer(1), Value::Integer(2)]).unwrap_err();
+    assert!(err.contains("argument 1"), "{err}");
+    let err = fmt("{1}", &[Value::Integer(1), Value::Integer(2)]).unwrap_err();
+    assert!(err.contains("argument 0"), "{err}");
+}
+
+#[test]
+fn test_fmtextra_1_explicit_indices_count_as_uses() {
+    let args = [Value::Integer(1), Value::Integer(2)];
+    assert_eq!(
+        fmt("{1} {0} {}", &args).unwrap(),
+        format!("{1} {0} {}", 1, 2)
+    );
+    assert_eq!(fmt("{} {0}", &args[..1]).unwrap(), format!("{} {0}", 1));
+    assert_eq!(fmt("{0}{}{}", &args).unwrap(), format!("{0}{}{}", 1, 2));
+}
+
+#[test]
+fn test_fmtextra_1_named_fields_leave_positional_arguments_unused() {
+    let named = |n: &str| (n == "x").then_some(Value::Integer(5));
+    let err = format_str("{x}", &[Value::Integer(1)], &named).unwrap_err();
+    assert!(err.contains("argument never used"), "{err}");
+    assert_eq!(
+        format_str("{x} {}", &[Value::Integer(1)], &named).unwrap(),
+        "5 1"
+    );
+}
+
+#[test]
+fn test_fmtextra_1_format_call_template_with_extra_argument_errors() {
+    let named = |_: &str| None;
+    let values = [s("{}"), Value::Integer(1), Value::Integer(2)];
+    assert!(format_call(&values, true, &named).is_err());
+    assert_eq!(format_call(&values, false, &named).unwrap(), "{} 1 2");
+}

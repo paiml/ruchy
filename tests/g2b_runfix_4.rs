@@ -87,6 +87,18 @@ fn assert_run_prints(src: &str, expected: &str) {
     );
 }
 
+/// `ruchy compile` rejects `src`, and `ruchy run` fails with `needle` on
+/// stderr.
+fn assert_both_reject(src: &str, needle: &str) {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let (mut cmd, _) = compile_cmd(dir.path(), src);
+    cmd.assert().failure();
+    let out = run_cmd(dir.path(), src).output().expect("spawn ruchy run");
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(!out.status.success(), "ruchy run accepted: {stderr}");
+    assert!(stderr.contains(needle), "stderr lacks {needle:?}: {stderr}");
+}
+
 // ------------------------------------------------------------- IDXEVAL1-1
 
 const COUNTER: &str = r#"
@@ -177,5 +189,44 @@ fun main() {
 }
 "#,
         "{} 1\nx={} y={} 2 3\na 1\n4 and 5\n",
+    );
+}
+
+// ------------------------------------------------------------- FMTEXTRA-1
+
+#[test]
+fn test_fmtextra_1_extra_positional_argument_is_rejected() {
+    assert_both_reject(
+        r#"
+fun main() {
+    println("{} {}", 1, 2, 3)
+}
+"#,
+        "argument never used",
+    );
+}
+
+#[test]
+fn test_fmtextra_1_unreferenced_explicit_index_is_rejected() {
+    assert_both_reject(
+        r#"
+fun main() {
+    println("{0} {0}", 1, 2)
+}
+"#,
+        "argument never used",
+    );
+}
+
+#[test]
+fn test_fmtextra_1_explicit_indices_count_as_uses() {
+    assert_run_matches_compiled(
+        r#"
+fun main() {
+    println("{1} {0} {}", 1, 2)
+    println("{} {0}", 3)
+}
+"#,
+        "2 1 1\n3 3\n",
     );
 }

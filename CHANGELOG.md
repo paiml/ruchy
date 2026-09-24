@@ -151,6 +151,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   `print`, `eprintln`, `eprint` and `format` as a format template only when
   it is a string literal, as the transpiler does: `let s = "{}"; println(s, 1)`
   prints `{} 1`, not `1` (FMTTEMPLATE-1).
+- **(behaviour)** A format string that never uses one of its positional
+  arguments is an error in the interpreter, as rustc rejects it:
+  `println("{}", 1, 2)` and `println("{0} {0}", 1, 2)` fail with
+  "argument never used"; an explicit `{1}` counts as a use (FMTEXTRA-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
