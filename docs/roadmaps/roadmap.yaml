@@ -4771,3 +4771,60 @@ roadmap:
   labels:
   - kind:code
   - runtime
+- id: PRINTPARAM-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTPARAM-1: an untyped function or closure parameter inferred as String is printed by println with {:?}, so the compiled program prints "hi" with quotes'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: fun p(s) { println(s) }; p("hi")   and   let f = |s| println(s); f("hi")'
+  - 'Acceptance: compiled prints hi without quotes, like ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: ARRCLONE-1
+  github_issue: null
+  item_type: task
+  title: 'ARRCLONE-1: interpreter arrays have no clone method (Unknown array method: clone)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let a = [1]; let b = a.clone(); println("{:?}", b)'
+  - 'Acceptance: run prints [1] like the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: NESTPUSHLIT-1
+  github_issue: null
+  item_type: task
+  title: 'NESTPUSHLIT-1: pushing an array literal into a list whose inner elements became vec! (NESTARRVEC-1) fails rustc E0308'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut m = [[1]]; m[0].push(2); m.push([3]); println("{:?}", m)'
+  - 'Acceptance: compiled prints [[1, 2], [3]] like ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
