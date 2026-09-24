@@ -281,6 +281,14 @@ pub struct Expr {
 pub const PATH_ACCESS_MARKER: &str = "::";
 
 impl Expr {
+    /// True when this expression is a `FieldAccess` written with `::` (a path
+    /// segment), false for `obj.field` and every other expression.
+    #[must_use]
+    pub fn is_path_access(&self) -> bool {
+        matches!(self.kind, ExprKind::FieldAccess { .. })
+            && self.attributes.iter().any(|a| a.name == PATH_ACCESS_MARKER)
+    }
+
     /// Creates a new expression with the given kind and span.
     ///
     /// This is the primary constructor for building AST nodes. The expression
@@ -301,14 +309,6 @@ impl Expr {
     ///     Span::new(0, 4)
     /// );
     /// ```
-    /// True when this expression is a `FieldAccess` written with `::` (a path
-    /// segment), false for `obj.field` and every other expression.
-    #[must_use]
-    pub fn is_path_access(&self) -> bool {
-        matches!(self.kind, ExprKind::FieldAccess { .. })
-            && self.attributes.iter().any(|a| a.name == PATH_ACCESS_MARKER)
-    }
-
     #[must_use]
     pub fn new(kind: ExprKind, span: Span) -> Self {
         Self {

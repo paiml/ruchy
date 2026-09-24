@@ -9,7 +9,7 @@
 #![allow(clippy::expect_used)]
 #![allow(clippy::unwrap_used)]
 
-use ruchy::frontend::ast::{Expr, ExprKind};
+use ruchy::frontend::ast::Expr;
 use ruchy::{Parser, Transpiler};
 use std::path::Path;
 use std::process::Command;
@@ -87,9 +87,8 @@ fun main() {
 }
 
 /// A three-segment path `std::cmp::max(..)`, compiled with rustc. The
-/// interpreter has no `std::cmp` (`Object has no field named 'cmp'`) and a
-/// nested `pub mod`/`pub struct` inside a `mod` does not parse or transpile, so
-/// this case is transpiler-only.
+/// interpreter has no `std::cmp` (`Object has no field named 'cmp'`), so this
+/// case is transpiler-only.
 #[test]
 fn test_g2b_t5_02_nested_path_call() {
     let code = r#"
@@ -119,46 +118,22 @@ fun main() {
     assert!(rust.contains("Point :: new"), "{rust}");
 }
 
-/// Replace the callee `probe` of every Call with `object.field` (a `.` access).
-fn retarget_probe(expr: &mut Expr, object: &str, field: &str) {
-    if let ExprKind::Call { func, .. } = &mut expr.kind {
-        if matches!(&func.kind, ExprKind::Identifier(n) if n == "probe") {
-            let obj = Expr::new(ExprKind::Identifier(object.to_string()), func.span);
-            let access = ExprKind::FieldAccess {
-                object: Box::new(obj),
-                field: field.to_string(),
-            };
-            **func = Expr::new(access, func.span);
-        }
-    }
-    match &mut expr.kind {
-        ExprKind::Block(items) => items
-            .iter_mut()
-            .for_each(|e| retarget_probe(e, object, field)),
-        ExprKind::Function { body, .. } => retarget_probe(body, object, field),
-        _ => {}
-    }
-}
-
 /// A field holding a fn pointer, called through `(h.f)(3)`. The callee is a
 /// `.` FieldAccess (not a path), so Rust needs `(h.f)(3)`, not `h::f(3)`.
-/// The AST is built from source with a `probe` callee retargeted to `h.f`
-/// because the parser splits `(h.f)(3)` inside a block (FieldAccess span 0..0).
 #[test]
 fn test_g2b_t5_04_field_callee_is_not_a_path() {
     let code = r#"
 struct Holder { f: fn(i32) -> i32 }
 fun double(x: i32) -> i32 { x * 2 }
 fun apply(h: Holder) -> i32 {
-    probe(3)
+    (h.f)(3)
 }
 fun main() {
     let h = Holder { f: double }
     println!("{}", apply(h))
 }
 "#;
-    let mut ast = Parser::new(code).parse().expect("parses");
-    retarget_probe(&mut ast, "h", "f");
+    let ast = Parser::new(code).parse().expect("parses");
     let rust = transpile(&ast);
     assert!(
         !rust.contains("h :: f"),
