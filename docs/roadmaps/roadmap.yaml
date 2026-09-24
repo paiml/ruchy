@@ -4680,11 +4680,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FORLEAK-1: interpreter for-loop variable leaks into the enclosing scope and overwrites a same-named outer binding'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T14:30:00Z
-  updated: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let x = "a"; for x in [[1]] { }; println(x)  prints [1]'

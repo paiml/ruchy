@@ -16,25 +16,40 @@ use crate::runtime::interpreter::{Interpreter, LoopControlOrError};
 use crate::runtime::{InterpreterError, Value};
 use std::sync::Arc;
 
+/// The names a `for` loop binds per element: its pattern, or (for callers
+/// without a parsed pattern) a single variable.
+#[derive(Clone, Copy)]
+pub(crate) struct ForBinding<'a> {
+    pub(crate) var: &'a str,
+    pub(crate) pattern: Option<&'a Pattern>,
+}
+
+impl<'a> From<&'a str> for ForBinding<'a> {
+    fn from(var: &'a str) -> Self {
+        Self { var, pattern: None }
+    }
+}
+
 impl Interpreter {
     /// Evaluate a for loop
     pub(crate) fn eval_for_loop(
         &mut self,
         label: Option<&String>,
         var: &str,
-        _pattern: Option<&Pattern>,
+        pattern: Option<&Pattern>,
         iter: &Expr,
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
         let iter_value = self.eval_expr(iter)?;
+        let binding = ForBinding { var, pattern };
 
         match iter_value {
-            Value::Array(ref arr) => self.eval_for_array_iteration(label, var, arr, body),
+            Value::Array(ref arr) => self.eval_for_array_iteration(label, binding, arr, body),
             Value::Range {
                 ref start,
                 ref end,
                 inclusive,
-            } => self.eval_for_range_iteration(label, var, start, end, inclusive, body),
+            } => self.eval_for_range_iteration(label, binding, start, end, inclusive, body),
             _ => Err(InterpreterError::TypeError(
                 "For loop requires an iterable".to_string(),
             )),
@@ -46,15 +61,14 @@ impl Interpreter {
     pub(crate) fn eval_for_array_iteration(
         &mut self,
         label: Option<&String>,
-        loop_var: &str,
+        binding: ForBinding<'_>,
         arr: &[Value],
         body: &Expr,
     ) -> Result<Value, InterpreterError> {
         let mut last_value = Value::nil();
 
         for item in arr {
-            self.set_variable(loop_var, item.clone());
-            match self.eval_loop_body_with_control_flow(body) {
+            match self.eval_for_iteration(binding, item.clone(), body) {
                 Ok(value) => last_value = value,
                 Err(LoopControlOrError::Break(break_label, break_val)) => {
                     // If break has no label or matches this loop's label, break here
@@ -90,7 +104,7 @@ impl Interpreter {
     pub(crate) fn eval_for_range_iteration(
         &mut self,
         label: Option<&String>,
-        loop_var: &str,
+        binding: ForBinding<'_>,
         start: &Value,
         end: &Value,
         inclusive: bool,
@@ -100,8 +114,7 @@ impl Interpreter {
         let mut last_value = Value::nil();
 
         for i in self.create_range_iterator(start_val, end_val, inclusive) {
-            self.set_variable(loop_var, Value::Integer(i));
-            match self.eval_loop_body_with_control_flow(body) {
+            match self.eval_for_iteration(binding, Value::Integer(i), body) {
                 Ok(value) => last_value = value,
                 Err(LoopControlOrError::Break(break_label, break_val)) => {
                     if break_label.is_none() || break_label.as_deref() == label.map(String::as_str)
@@ -126,6 +139,45 @@ impl Interpreter {
         }
 
         Ok(last_value)
+    }
+
+    /// FORLEAK-1: one iteration of a `for` loop. The loop pattern is bound in
+    /// a scope of its own, so a same-named outer binding is shadowed, not
+    /// overwritten; assignments to outer variables in the body still reach
+    /// them.
+    fn eval_for_iteration(
+        &mut self,
+        binding: ForBinding<'_>,
+        item: Value,
+        body: &Expr,
+    ) -> Result<Value, LoopControlOrError> {
+        self.push_scope();
+        let result = self
+            .bind_for_item(binding, item)
+            .map_err(LoopControlOrError::Error)
+            .and_then(|()| self.eval_loop_body_with_control_flow(body));
+        self.pop_scope();
+        result
+    }
+
+    /// Bind one loop element to the loop pattern in the current scope.
+    fn bind_for_item(
+        &mut self,
+        binding: ForBinding<'_>,
+        item: Value,
+    ) -> Result<(), InterpreterError> {
+        let bindings = match binding.pattern {
+            Some(pattern) => self.try_pattern_match(pattern, &item)?.ok_or_else(|| {
+                InterpreterError::RuntimeError(format!(
+                    "for-loop pattern does not match element {item}"
+                ))
+            })?,
+            None => vec![(binding.var.to_string(), item)],
+        };
+        for (name, value) in bindings {
+            self.env_set(name, value);
+        }
+        Ok(())
     }
 
     /// Extract integer bounds from range values
@@ -713,7 +765,7 @@ mod tests {
         let body = make_expr(ExprKind::Literal(Literal::Integer(42, None)));
 
         let result = interp
-            .eval_for_array_iteration(None, "x", &[], &body)
+            .eval_for_array_iteration(None, "x".into(), &[], &body)
             .unwrap();
         assert_eq!(result, Value::nil());
     }
@@ -728,7 +780,7 @@ mod tests {
         let body = make_expr(ExprKind::Identifier("x".to_string()));
 
         let result = interp
-            .eval_for_array_iteration(None, "x", &arr, &body)
+            .eval_for_array_iteration(None, "x".into(), &arr, &body)
             .unwrap();
         // Last value is 3
         assert_eq!(result, Value::Integer(3));
@@ -747,7 +799,7 @@ mod tests {
         let body = make_expr(ExprKind::Identifier("i".to_string()));
 
         let result = interp
-            .eval_for_range_iteration(None, "i", &start, &end, false, &body)
+            .eval_for_range_iteration(None, "i".into(), &start, &end, false, &body)
             .unwrap();
         // Last value is 2 (exclusive)
         assert_eq!(result, Value::Integer(2));
@@ -762,7 +814,7 @@ mod tests {
         let body = make_expr(ExprKind::Identifier("i".to_string()));
 
         let result = interp
-            .eval_for_range_iteration(None, "i", &start, &end, true, &body)
+            .eval_for_range_iteration(None, "i".into(), &start, &end, true, &body)
             .unwrap();
         // Last value is 3 (inclusive)
         assert_eq!(result, Value::Integer(3));

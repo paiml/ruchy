@@ -162,6 +162,11 @@ Behaviour changes a program can observe are marked **(behaviour)**.
 - A call to a let-bound closure whose body is unit, as the last statement
   of main, is no longer printed: `let f = |n| println(n); f(7)` prints `7`,
   not `7` then `()` (CLOSUREUNIT-1).
+- **(behaviour)** A `for` loop binds its variable or pattern in a scope of
+  its own for each iteration: `let x = "a"; for x in [[1]] { }; println(x)`
+  prints `a`, not `[1]`, and `for (k, v) in pairs` binds `k` and `v` to the
+  tuple's fields instead of `k` to the whole tuple. Assignments to outer
+  variables in the body still persist (FORLEAK-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
