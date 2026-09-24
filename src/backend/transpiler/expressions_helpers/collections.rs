@@ -149,9 +149,10 @@ impl Transpiler {
         &self,
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
-        // DICTIDX-1: a dict whose values are all lists maps to `Vec`s
-        if list_valued_fields(fields) {
-            return self.transpile_list_valued_object(fields);
+        // DICTIDX-1 / DICTTYPE-1: a dict whose values are all lists, ints,
+        // floats or bools keeps its value type
+        if typed_value_fields(fields) {
+            return self.transpile_typed_value_object(fields);
         }
         let field_tokens = self.collect_hashmap_field_tokens(fields)?;
         // DEFECT-DICT-DETERMINISM FIX: Use BTreeMap for deterministic key ordering
@@ -165,8 +166,9 @@ impl Transpiler {
         })
     }
     /// DICTIDX-1: `{"k": [..], ..}` is a `BTreeMap<String, Vec<_>>`, so
-    /// `d["k"].push(x)` and `{:?}` work on the real list. (complexity: 3)
-    fn transpile_list_valued_object(
+    /// `d["k"].push(x)` and `{:?}` work on the real list; DICTTYPE-1: likewise
+    /// `{"k": 1, ..}` is a map of ints (floats, bools). (complexity: 3)
+    fn transpile_typed_value_object(
         &self,
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
@@ -943,12 +945,72 @@ mod tests {
     }
 }
 
-/// DICTIDX-1: a non-empty dict literal whose values are all list literals
-/// (no spread). (complexity: 3)
-fn list_valued_fields(fields: &[crate::frontend::ast::ObjectField]) -> bool {
+/// DICTTYPE-1: `variable_types` record of a binding to a dict literal whose
+/// values keep their type (see [`typed_value_fields`]).
+pub(crate) const TYPED_DICT_VAR_TYPE: &str = "__ruchy_typed_dict";
+
+/// DICTTYPE-1: the class of a dict value that keeps its own type in the map.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DictValueKind {
+    List,
+    Int,
+    Float,
+    Bool,
+}
+
+/// DICTTYPE-1: the typed class of a dict value, if it has one: a list
+/// literal, an int, float or bool literal, or a negated number.
+/// (complexity: 6)
+fn dict_value_kind(value: &Expr) -> Option<DictValueKind> {
+    use crate::frontend::ast::UnaryOp;
+    match &value.kind {
+        ExprKind::List(_) => Some(DictValueKind::List),
+        ExprKind::Literal(Literal::Integer(..)) => Some(DictValueKind::Int),
+        ExprKind::Literal(Literal::Float(_)) => Some(DictValueKind::Float),
+        ExprKind::Literal(Literal::Bool(_)) => Some(DictValueKind::Bool),
+        ExprKind::Unary {
+            op: UnaryOp::Negate,
+            operand,
+        } => dict_value_kind(operand)
+            .filter(|k| matches!(k, DictValueKind::Int | DictValueKind::Float)),
+        _ => None,
+    }
+}
+
+/// DICTIDX-1 / DICTTYPE-1: a non-empty dict literal (no spread) whose values
+/// are all of one typed class: all lists, all ints, all floats or all bools.
+/// Other dicts (strings, mixed) stay `BTreeMap<String, String>`.
+/// (complexity: 4)
+fn typed_value_fields(fields: &[crate::frontend::ast::ObjectField]) -> bool {
     use crate::frontend::ast::ObjectField;
-    !fields.is_empty()
-        && fields.iter().all(|f| {
-            matches!(f, ObjectField::KeyValue { value, .. } if matches!(value.kind, ExprKind::List(_)))
-        })
+    let mut kinds = fields.iter().map(|f| match f {
+        ObjectField::KeyValue { value, .. } => dict_value_kind(value),
+        ObjectField::Spread { .. } => None,
+    });
+    match kinds.next() {
+        Some(Some(first)) => kinds.all(|k| k == Some(first)),
+        _ => false,
+    }
+}
+
+impl Transpiler {
+    /// DICTTYPE-1: record whether the binding `name` holds a typed-value dict
+    /// literal; a rebinding to anything else clears the record. (complexity: 3)
+    pub(crate) fn track_typed_dict_binding(&self, name: &str, value: &Expr) {
+        let typed =
+            matches!(&value.kind, ExprKind::ObjectLiteral { fields } if typed_value_fields(fields));
+        let mut types = self.variable_types.borrow_mut();
+        if typed {
+            types.insert(name.to_string(), TYPED_DICT_VAR_TYPE.to_string());
+        } else if types.get(name).is_some_and(|t| t == TYPED_DICT_VAR_TYPE) {
+            types.remove(name);
+        }
+    }
+
+    /// DICTTYPE-1: `expr` names a binding recorded as a typed-value dict.
+    /// (complexity: 2)
+    pub(crate) fn is_typed_dict(&self, expr: &Expr) -> bool {
+        matches!(&expr.kind, ExprKind::Identifier(name)
+            if self.variable_types.borrow().get(name).is_some_and(|t| t == TYPED_DICT_VAR_TYPE))
+    }
 }

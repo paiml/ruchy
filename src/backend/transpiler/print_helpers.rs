@@ -290,10 +290,12 @@ impl Transpiler {
 
     /// PRINTSTR-1: record whether the binding `name` holds a string, from its
     /// annotation when present, else from its value. A rebinding to a
-    /// non-string clears the record. (complexity: 2)
+    /// non-string clears the record. DICTTYPE-1: a typed-value dict literal
+    /// is recorded too. (complexity: 2)
     pub(crate) fn track_string_binding(&self, name: &str, value: &Expr, ty: Option<&Type>) {
         let is_string = ty.map_or_else(|| self.is_display_string(value), is_string_annotation);
         self.set_string_var(name, is_string);
+        self.track_typed_dict_binding(name, value);
     }
 
     /// PRINTSTR-1: parameters of the function being transpiled; string

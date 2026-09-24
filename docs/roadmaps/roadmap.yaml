@@ -4547,11 +4547,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'DICTTYPE-1: dict literals with non-list values transpile as BTreeMap<String,String>; d["k"] = 5 and d["a"] + d["b"] fail E0308'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T14:00:00Z
-  updated: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let mut d = {"a": 1, "b": 2}; d["a"] = 5; println("{}", d["a"] + d["b"])'

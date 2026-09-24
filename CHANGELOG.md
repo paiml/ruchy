@@ -125,6 +125,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
 - A call to a unit-returning user function as the last statement of `main`
   is no longer wrapped in `println!("{:?}", ..)`, so the compiled program does
   not print `()` (MAINUNIT-1).
+- A dict literal whose values are all ints, all floats or all bools keeps that
+  value type in compiled code instead of `BTreeMap<String, String>`, so
+  `d["a"] = 5` and `d["a"] + d["b"]` compile; string and mixed dicts are
+  unchanged (DICTTYPE-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

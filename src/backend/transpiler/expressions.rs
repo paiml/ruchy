@@ -172,7 +172,8 @@ impl Transpiler {
         }
         let obj_tokens = self.transpile_place(object)?;
         let key_tokens = self.transpile_expr(index)?;
-        let value_tokens = self.map_value_tokens(value, false)?;
+        // DICTTYPE-1: a typed-value dict stores the value as is
+        let value_tokens = self.map_value_tokens(value, self.is_typed_dict(object))?;
         Ok(Some(
             quote! { #obj_tokens.insert(#key_tokens.to_string(), #value_tokens) },
         ))
