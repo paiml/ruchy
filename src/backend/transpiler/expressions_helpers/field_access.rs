@@ -77,6 +77,28 @@ impl Transpiler {
             .any(|prefix| name.starts_with(prefix))
     }
 
+    /// Transpile a `FieldAccess` node. When the parser marked it as written with
+    /// `::` ([`Expr::is_path_access`]) it is a path segment (`i32::MAX`,
+    /// `helpers::double`); otherwise the separator is guessed from the object by
+    /// [`Self::transpile_field_access`].
+    pub fn transpile_field_access_node(
+        &self,
+        access: &Expr,
+        object: &Expr,
+        field: &str,
+    ) -> Result<TokenStream> {
+        let is_ident = field
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_alphabetic() || c == '_');
+        if !(access.is_path_access() && is_ident) {
+            return self.transpile_field_access(object, field);
+        }
+        let obj_tokens = self.transpile_expr(object)?;
+        let field_ident = format_ident!("{}", field);
+        Ok(quote! { #obj_tokens::#field_ident })
+    }
+
     pub fn transpile_field_access(&self, object: &Expr, field: &str) -> Result<TokenStream> {
         use crate::frontend::ast::ExprKind;
         let obj_tokens = self.transpile_expr(object)?;
