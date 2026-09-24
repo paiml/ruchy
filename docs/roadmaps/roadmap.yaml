@@ -4718,11 +4718,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'NESTARRVEC-1: a nested array literal transpiles to a fixed-size array, so m[i].push(x) fails rustc E0599'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T14:30:00Z
-  updated: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let mut m = [[1], [2]]; m[0].push(9); println("{:?}", m)'

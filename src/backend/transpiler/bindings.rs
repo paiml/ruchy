@@ -72,6 +72,9 @@ impl Transpiler {
         // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
         let name_ident = Self::safe_ident(name);
         self.track_string_binding(name, value, None);
+        // NESTARRVEC-1: inner array literals of a binding whose elements grow
+        let inner_vec_value = elem_grown_value(name, value, body);
+        let value = inner_vec_value.as_ref().unwrap_or(value);
 
         // Auto-detect mutability
         let effective_mutability = is_mutable
@@ -566,7 +569,9 @@ impl Transpiler {
 
 /// LETVEC-1: a copy of the statement-level `let` `expr` with its non-empty
 /// array literal replaced by `vec![..]`, when a later sibling in `rest` is a
-/// Vec-only method call on the binding; `None` otherwise.
+/// Vec-only method call on the binding; `None` otherwise. NESTARRVEC-1: when
+/// a sibling grows an element (`m[i].push(x)`), the inner literals become
+/// `vec![..]` too.
 fn grown_let_as_vec(expr: &Expr, rest: &[Expr]) -> Option<Expr> {
     let ExprKind::Let {
         name, value, body, ..
@@ -574,24 +579,58 @@ fn grown_let_as_vec(expr: &Expr, rest: &[Expr]) -> Option<Expr> {
     else {
         return None;
     };
-    let ExprKind::List(items) = &value.kind else {
-        return None;
-    };
+    let is_list = matches!(&value.kind, ExprKind::List(items) if !items.is_empty());
     let is_statement = matches!(body.kind, ExprKind::Literal(Literal::Unit));
-    let grown = super::mutation_detection::is_grown_in_statements(name, rest);
-    if items.is_empty() || !is_statement || !grown {
+    if !is_list || !is_statement {
         return None;
     }
-    let mut vec_value = (**value).clone();
-    vec_value.kind = ExprKind::MacroInvocation {
-        name: "vec".to_string(),
-        args: items.clone(),
+    let grown = super::mutation_detection::is_grown_in_statements(name, rest);
+    let elem_grown = super::mutation_detection::is_elem_grown_in_statements(name, rest);
+    if !grown && !elem_grown {
+        return None;
+    }
+    let inner = if elem_grown {
+        inner_lists_as_vec(value)
+    } else {
+        (**value).clone()
     };
     let mut rewritten = expr.clone();
     if let ExprKind::Let { value, .. } = &mut rewritten.kind {
-        **value = vec_value;
+        **value = if grown { list_as_vec(&inner) } else { inner };
     }
     Some(rewritten)
+}
+
+/// NESTARRVEC-1: `value` with its inner array literals as `vec![..]`, when
+/// `value` is an array literal and `body` grows an element of `name`.
+fn elem_grown_value(name: &str, value: &Expr, body: &Expr) -> Option<Expr> {
+    let is_list = matches!(&value.kind, ExprKind::List(items) if !items.is_empty());
+    (is_list && super::mutation_detection::is_elem_grown_as_vec(name, body))
+        .then(|| inner_lists_as_vec(value))
+}
+
+/// NESTARRVEC-1: a copy of the array literal `value` with each element that
+/// is itself an array literal replaced by `vec![..]`.
+fn inner_lists_as_vec(value: &Expr) -> Expr {
+    let mut rewritten = value.clone();
+    if let ExprKind::List(items) = &mut rewritten.kind {
+        for item in items.iter_mut() {
+            *item = list_as_vec(item);
+        }
+    }
+    rewritten
+}
+
+/// LETVEC-1: the array literal `list` as `vec![..]`; any other expression unchanged.
+fn list_as_vec(list: &Expr) -> Expr {
+    let mut rewritten = list.clone();
+    if let ExprKind::List(items) = &list.kind {
+        rewritten.kind = ExprKind::MacroInvocation {
+            name: "vec".to_string(),
+            args: items.clone(),
+        };
+    }
+    rewritten
 }
 
 /// LETVEC-1: `Vec<..>` annotation (a bare `Vec` or a generic `Vec<T>`).

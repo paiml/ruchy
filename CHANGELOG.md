@@ -155,6 +155,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   arguments is an error in the interpreter, as rustc rejects it:
   `println("{}", 1, 2)` and `println("{0} {0}", 1, 2)` fail with
   "argument never used"; an explicit `{1}` counts as a use (FMTEXTRA-1).
+- A nested array literal whose elements are grown through an index
+  (`m[0].push(9)`, `m[i].insert(0, x)`) is transpiled with `vec![..]` inner
+  literals, so `let mut m = [[1], [2]]; m[0].push(9)` compiles and prints
+  `[[1, 9], [2]]` instead of failing rustc E0599 (NESTARRVEC-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

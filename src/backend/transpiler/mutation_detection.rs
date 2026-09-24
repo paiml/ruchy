@@ -54,6 +54,9 @@ pub const VEC_ONLY_METHODS: &[&str] = &[
     "extend_from_slice",
 ];
 
+/// Which receiver of a [`VEC_ONLY_METHODS`] call counts as growing `name`.
+type GrowCall = fn(&str, &Expr) -> bool;
+
 /// LETVEC-1: true when the variable `name` is the receiver of a
 /// [`VEC_ONLY_METHODS`] call in `expr` that refers to this binding of `name`.
 ///
@@ -61,26 +64,37 @@ pub const VEC_ONLY_METHODS: &[&str] = &[
 /// to the outer binding, its body and the block statements after it do not),
 /// and a closure or nested function with a parameter `name` is skipped.
 pub fn is_grown_as_vec(name: &str, expr: &Expr) -> bool {
-    if is_vec_only_call_on(name, expr) {
+    grown_by(name, expr, is_vec_only_call_on)
+}
+
+/// NESTARRVEC-1: like [`is_grown_as_vec`], but for an element of `name`: true
+/// when `name[i]` is the receiver of a [`VEC_ONLY_METHODS`] call in `expr`.
+pub fn is_elem_grown_as_vec(name: &str, expr: &Expr) -> bool {
+    grown_by(name, expr, is_vec_only_call_on_elem)
+}
+
+/// The scope-following scan of [`is_grown_as_vec`] with the call test `is_call`.
+fn grown_by(name: &str, expr: &Expr, is_call: GrowCall) -> bool {
+    if is_call(name, expr) {
         return true;
     }
     match &expr.kind {
-        ExprKind::Block(exprs) => is_grown_in_statements(name, exprs),
+        ExprKind::Block(exprs) => grown_in_statements_by(name, exprs, is_call),
         ExprKind::Let {
             name: bound,
             value,
             else_block,
             ..
         } if bound == name => {
-            is_grown_as_vec(name, value)
+            grown_by(name, value, is_call)
                 || else_block
                     .as_deref()
-                    .is_some_and(|e| is_grown_as_vec(name, e))
+                    .is_some_and(|e| grown_by(name, e, is_call))
         }
         _ if binds_param(name, expr) => false,
         _ => sub_expressions(expr)
             .into_iter()
-            .any(|e| is_grown_as_vec(name, e)),
+            .any(|e| grown_by(name, e, is_call)),
     }
 }
 
@@ -98,8 +112,18 @@ fn binds_param(name: &str, expr: &Expr) -> bool {
 /// LETVEC-1: [`is_grown_as_vec`] over a statement sequence: the statements
 /// are scanned in order until one of them re-binds `name` with a `let`.
 pub fn is_grown_in_statements(name: &str, statements: &[Expr]) -> bool {
+    grown_in_statements_by(name, statements, is_vec_only_call_on)
+}
+
+/// NESTARRVEC-1: [`is_elem_grown_as_vec`] over a statement sequence.
+pub fn is_elem_grown_in_statements(name: &str, statements: &[Expr]) -> bool {
+    grown_in_statements_by(name, statements, is_vec_only_call_on_elem)
+}
+
+/// The statement scan of [`is_grown_in_statements`] with the call test `is_call`.
+fn grown_in_statements_by(name: &str, statements: &[Expr], is_call: GrowCall) -> bool {
     for statement in statements {
-        if is_grown_as_vec(name, statement) {
+        if grown_by(name, statement, is_call) {
             return true;
         }
         if matches!(&statement.kind, ExprKind::Let { name: bound, .. } if bound == name) {
@@ -118,6 +142,21 @@ fn is_vec_only_call_on(name: &str, expr: &Expr) -> bool {
         return false;
     };
     matches!(&receiver.kind, ExprKind::Identifier(root) if root == name)
+        && VEC_ONLY_METHODS.contains(&method.as_str())
+}
+
+/// NESTARRVEC-1: `name[i].<m>(..)` with `m` a [`VEC_ONLY_METHODS`] method.
+fn is_vec_only_call_on_elem(name: &str, expr: &Expr) -> bool {
+    let ExprKind::MethodCall {
+        receiver, method, ..
+    } = &expr.kind
+    else {
+        return false;
+    };
+    let ExprKind::IndexAccess { object, .. } = &receiver.kind else {
+        return false;
+    };
+    matches!(&object.kind, ExprKind::Identifier(root) if root == name)
         && VEC_ONLY_METHODS.contains(&method.as_str())
 }
 
