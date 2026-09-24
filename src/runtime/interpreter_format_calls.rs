@@ -135,7 +135,10 @@ impl Interpreter {
         args: &[Expr],
     ) -> Result<Value, InterpreterError> {
         let (positional, named) = self.eval_format_args(args)?;
-        let template = args.first().is_some_and(is_string_literal) || positional.len() > 1;
+        // FMTTEMPLATE-1: only a string literal is a format template, as in
+        // the transpiler; `println(s, 1)` prints its arguments joined by
+        // spaces.
+        let template = args.first().is_some_and(is_string_literal);
         let resolve = |name: &str| {
             named
                 .iter()

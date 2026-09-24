@@ -160,3 +160,22 @@ fun main() {
     );
     assert_run_prints(&src, "index 1\n[[1, 7], [2]] 1\n");
 }
+
+// ---------------------------------------------------------- FMTTEMPLATE-1
+
+#[test]
+fn test_fmttemplate_1_variable_first_arg_is_not_a_template() {
+    assert_run_matches_compiled(
+        r#"
+fun main() {
+    let s = "{}"
+    println(s, 1)
+    let t = "x={} y={}"
+    println(t, 2, 3)
+    println("a", 1)
+    println("{} and {}", 4, 5)
+}
+"#,
+        "{} 1\nx={} y={} 2 3\na 1\n4 and 5\n",
+    );
+}

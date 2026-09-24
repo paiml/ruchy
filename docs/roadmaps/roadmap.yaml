@@ -4623,11 +4623,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FMTTEMPLATE-1: interpreter println/print with a non-literal first argument and 2+ args treats it as a format template; compiled code treats only a string literal as one'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T13:00:00Z
-  updated: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let s = "{}"; println(s, 1)'

@@ -147,6 +147,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   (`v[next()] += 1`), a nested-index assignment (`m[f()][1] = 9`) or an
   in-place array method on an element (`m[f()].push(x)`) once, as compiled
   code does; it used to run it again to write the place back (IDXEVAL1-1).
+- **(behaviour)** The interpreter treats the first argument of `println`,
+  `print`, `eprintln`, `eprint` and `format` as a format template only when
+  it is a string literal, as the transpiler does: `let s = "{}"; println(s, 1)`
+  prints `{} 1`, not `1` (FMTTEMPLATE-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
