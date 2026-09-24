@@ -822,8 +822,9 @@ mod tests {
     #[test]
     fn test_assign_nested_value() {
         let nested_assign = assign(ident("y"), assign(ident("x"), int_lit(1)));
-        // Note: Assignment in value position doesn't mutate x as target
-        assert!(!is_variable_mutated("x", &nested_assign));
+        // `y = (x = 1)` assigns x: an assignment mutates its target wherever it
+        // appears (G2BFA2; this test used to pin the narrower walk that missed it).
+        assert!(is_variable_mutated("x", &nested_assign));
     }
 
     #[test]
@@ -837,7 +838,7 @@ mod tests {
         let ret = make_expr(ExprKind::Return {
             value: Some(Box::new(assign(ident("x"), int_lit(1)))),
         });
-        // Return value is evaluated but doesn't count as mutation
-        assert!(!is_variable_mutated("x", &ret));
+        // `return (x = 1)` assigns x before returning (G2BFA2).
+        assert!(is_variable_mutated("x", &ret));
     }
 }
