@@ -175,3 +175,34 @@ fn test_arrrepeat_1_negative_count_is_error() {
 fn test_arrrepeat_1_string_repeat_unchanged() {
     assert_run_prints("println(\"{}\", \"ab\".repeat(2))\n", "abab\n");
 }
+
+// ------------------------------------------------------------ FORMATVAL-1
+
+#[test]
+fn test_formatval_1_format_value_non_literal_is_not_template() {
+    assert_run_prints(
+        "let t = \"{}\"\nlet g = format\nprintln(\"{}\", g(t, 1))\n",
+        "{} 1\n",
+    );
+}
+
+#[test]
+fn test_formatval_1_format_value_literal_is_template() {
+    assert_run_prints(
+        "let g = format\nprintln(\"{}\", g(\"{}-{}\", 1, 2))\n",
+        "1-2\n",
+    );
+}
+
+#[test]
+fn test_formatval_1_println_value_non_literal_is_not_template() {
+    assert_run_prints("let t = \"{}\"\nlet p = println\np(t, 1)\n", "{} 1\n");
+}
+
+#[test]
+fn test_formatval_1_format_parameter_follows_literal_rule() {
+    assert_run_prints(
+        "fun h(f, t) {\n    println(\"{}\", f(t, 1))\n    println(\"{}\", f(\"{}!\", 2))\n}\nh(format, \"{}\")\n",
+        "{} 1\n2!\n",
+    );
+}

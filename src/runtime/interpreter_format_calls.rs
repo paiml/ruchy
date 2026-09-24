@@ -42,6 +42,7 @@ impl FormatSink {
         Self::for_name(name)
     }
 
+    #[cfg(test)]
     fn marker(self) -> &'static str {
         match self {
             Self::Print => "__builtin_print__",
@@ -78,8 +79,10 @@ fn format_error(e: String) -> InterpreterError {
     InterpreterError::RuntimeError(format!("format error: {e}"))
 }
 
-/// The builtin path (no scope): `println` called through a value. The first
-/// value is a format string when more values follow it.
+/// The builtin path (no scope and no argument expressions): a format builtin
+/// called where only values exist, e.g. from a non-identifier callee. Calls
+/// through a name take `Interpreter::eval_format_call` (FORMATVAL-1); here
+/// the first value is a format string when more values follow it.
 pub fn eval_builtin_format(sink: FormatSink, args: &[Value]) -> Result<Value, InterpreterError> {
     let template = args.len() > 1;
     let text = fmt_spec::format_call(args, template, &|_| None).map_err(format_error)?;
@@ -117,13 +120,16 @@ impl Interpreter {
         }
     }
 
+    /// FORMATVAL-1: any identifier bound to an output/format builtin
+    /// (`println`, or `g` after `let g = format`, or a parameter holding
+    /// one) formats with the argument expressions, so the FMTTEMPLATE-1
+    /// literal rule applies however the builtin is reached by name.
     fn format_sink_for(&self, func: &Expr) -> Option<FormatSink> {
         let ExprKind::Identifier(name) = &func.kind else {
             return None;
         };
-        let sink = FormatSink::for_name(name)?;
         match self.lookup_variable(name) {
-            Ok(Value::String(marker)) if marker.as_ref() == sink.marker() => Some(sink),
+            Ok(Value::String(marker)) => FormatSink::for_marker(&marker),
             _ => None,
         }
     }

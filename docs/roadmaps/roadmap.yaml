@@ -4756,11 +4756,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FORMATVAL-1: the format builtin called as a value (eval_builtin.rs:318) still treats a non-literal first argument as a template when args.len() > 1'
-  status: planned
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-24T14:30:00Z
-  updated: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let t = "{}"; let g = format; println(g(t, 1))'

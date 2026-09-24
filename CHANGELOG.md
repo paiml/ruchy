@@ -169,6 +169,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   variables in the body still persist (FORLEAK-1).
 - Arrays have `repeat(n)`, as Rust slices do: `[1].repeat(2)` is `[1, 1]`;
   a negative count is an error (ARRREPEAT-1).
+- **(behaviour)** `format`, `println`, `print`, `eprintln` and `eprint`
+  called through a variable or parameter (`let g = format; g(t, 1)`) follow
+  the FMTTEMPLATE-1 rule: only a string literal first argument is a
+  template, so a non-literal one prints `{} 1` (FORMATVAL-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
