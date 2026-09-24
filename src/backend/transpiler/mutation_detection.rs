@@ -164,6 +164,63 @@ fn sub_expressions(expr: &Expr) -> Vec<&Expr> {
         ExprKind::MethodCall { receiver, args, .. } => {
             std::iter::once(&**receiver).chain(args).collect()
         }
+        _ => value_sub_expressions(expr),
+    }
+}
+
+/// Sub-expressions of the value-building forms (constructors, casts, literals
+/// with fields, ranges), so a mutation nested inside one is not missed.
+fn value_sub_expressions(expr: &Expr) -> Vec<&Expr> {
+    match &expr.kind {
+        ExprKind::Throw { expr: e }
+        | ExprKind::Ok { value: e }
+        | ExprKind::Err { error: e }
+        | ExprKind::Some { value: e }
+        | ExprKind::TypeCast { expr: e, .. }
+        | ExprKind::Spawn { actor: e }
+        | ExprKind::OptionalFieldAccess { object: e, .. } => vec![&**e],
+        ExprKind::Ternary {
+            condition,
+            true_expr,
+            false_expr,
+        } => {
+            vec![&**condition, &**true_expr, &**false_expr]
+        }
+        ExprKind::Send { actor, message } => vec![&**actor, &**message],
+        ExprKind::ArrayInit { value, size } => vec![&**value, &**size],
+        ExprKind::Range { start, end, .. } => vec![&**start, &**end],
+        ExprKind::Break { value, .. } => value.as_deref().into_iter().collect(),
+        ExprKind::Set(items) => items.iter().collect(),
+        ExprKind::OptionalMethodCall { receiver, args, .. } => {
+            std::iter::once(&**receiver).chain(args).collect()
+        }
+        _ => literal_sub_expressions(expr),
+    }
+}
+
+/// Sub-expressions of struct, object and interpolated-string literals.
+fn literal_sub_expressions(expr: &Expr) -> Vec<&Expr> {
+    match &expr.kind {
+        ExprKind::StructLiteral { fields, base, .. } => fields
+            .iter()
+            .map(|(_, e)| e)
+            .chain(base.as_deref())
+            .collect(),
+        ExprKind::ObjectLiteral { fields } => fields
+            .iter()
+            .map(|f| match f {
+                crate::frontend::ast::ObjectField::KeyValue { value, .. } => value,
+                crate::frontend::ast::ObjectField::Spread { expr } => expr,
+            })
+            .collect(),
+        ExprKind::StringInterpolation { parts } => parts
+            .iter()
+            .filter_map(|p| match p {
+                crate::frontend::ast::StringPart::Text(_) => None,
+                crate::frontend::ast::StringPart::Expr(e)
+                | crate::frontend::ast::StringPart::ExprWithFormat { expr: e, .. } => Some(&**e),
+            })
+            .collect(),
         _ => Vec::new(),
     }
 }
@@ -838,6 +895,48 @@ mod tests {
         });
         let stmt = assign(place, int_lit(2));
         assert!(is_variable_mutated("self", &stmt));
+    }
+
+    #[test]
+    fn test_self_mutation_nested_in_value_forms() {
+        let bump = || {
+            let self_n = make_expr(ExprKind::FieldAccess {
+                object: Box::new(ident("self")),
+                field: "n".to_string(),
+            });
+            compound_assign(self_n, int_lit(1))
+        };
+        let forms = vec![
+            make_expr(ExprKind::Some {
+                value: Box::new(bump()),
+            }),
+            make_expr(ExprKind::TypeCast {
+                expr: Box::new(bump()),
+                target_type: "i64".to_string(),
+            }),
+            make_expr(ExprKind::Ternary {
+                condition: Box::new(int_lit(1)),
+                true_expr: Box::new(bump()),
+                false_expr: Box::new(int_lit(0)),
+            }),
+            make_expr(ExprKind::Range {
+                start: Box::new(bump()),
+                end: Box::new(int_lit(3)),
+                inclusive: false,
+            }),
+            make_expr(ExprKind::StructLiteral {
+                name: "P".to_string(),
+                fields: vec![("x".to_string(), bump())],
+                base: None,
+            }),
+        ];
+        for form in &forms {
+            assert!(
+                is_variable_mutated("self", form),
+                "missed in {:?}",
+                form.kind
+            );
+        }
     }
 
     #[test]
