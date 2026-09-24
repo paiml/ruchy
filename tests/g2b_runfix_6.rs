@@ -139,3 +139,36 @@ fn test_arrclone_1_object_clone_is_independent() {
         "1\n5\n",
     );
 }
+
+// ------------------------------------------------------------- LONELIT-1
+
+// A lone string literal passed to println/print is printed verbatim by the
+// compiled binary (the transpiler escapes its braces); `ruchy run` agrees.
+#[test]
+fn test_lonelit_1_lone_println_literal_is_verbatim() {
+    assert_run_matches_compiled(
+        "println(\"{}\")\nprintln(\"x{{\")\nprintln(\"a}\")\n",
+        "{}\nx{{\na}\n",
+    );
+}
+
+#[test]
+fn test_lonelit_1_lone_print_literal_is_verbatim() {
+    assert_run_matches_compiled("print(\"{{}}\")\nprintln(\"\")\n", "{{}}\n");
+}
+
+#[test]
+fn test_lonelit_1_lone_literal_does_not_capture_names() {
+    assert_run_matches_compiled("let x = 1\nprintln(\"{x}\")\n", "{x}\n");
+}
+
+// `format` with a lone literal is `format!(lit)`: still a template.
+#[test]
+fn test_lonelit_1_lone_format_literal_is_template() {
+    assert_run_matches_compiled("let s = format(\"x{{\")\nprintln(s)\n", "x{\n");
+}
+
+#[test]
+fn test_lonelit_1_literal_with_args_is_template() {
+    assert_run_matches_compiled("println(\"{}!\", 1)\nprintln(\"{{{}}}\", 2)\n", "1!\n{2}\n");
+}

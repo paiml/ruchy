@@ -143,8 +143,11 @@ impl Interpreter {
         let (positional, named) = self.eval_format_args(args)?;
         // FMTTEMPLATE-1: only a string literal is a format template, as in
         // the transpiler; `println(s, 1)` prints its arguments joined by
-        // spaces.
-        let template = args.first().is_some_and(is_string_literal);
+        // spaces. LONELIT-1: a lone literal is a template only for
+        // `format` (`format!(lit)`); println/print print it verbatim, as the
+        // transpiler escapes its braces.
+        let template = args.first().is_some_and(is_string_literal)
+            && (args.len() > 1 || matches!(sink, FormatSink::Return));
         let resolve = |name: &str| {
             named
                 .iter()

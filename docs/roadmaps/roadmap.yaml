@@ -4828,3 +4828,22 @@ roadmap:
   labels:
   - kind:code
   - transpiler
+- id: LONELIT-1
+  github_issue: null
+  item_type: task
+  title: 'LONELIT-1: interpreter println/print parse a lone string literal as a format template; the compiled binary prints it verbatim'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T19:00:00Z
+  updated: 2026-09-24T19:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("{}") is a runtime format error under ruchy run; the compiled binary prints {} (found by the G2b final quorum, second sonnet seat)'
+  - 'Acceptance: tests/g2b_runfix_6.rs test_lonelit_1_* compare ruchy run with the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
