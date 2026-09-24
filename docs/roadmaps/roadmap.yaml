@@ -4039,3 +4039,41 @@ roadmap:
   - filed-by:RHLGA-1
   - release:v5.1.0
   notes: null
+- id: FIELDPOP-1
+  github_issue: null
+  item_type: task
+  title: 'FIELDPOP-1: self.items.pop() inside a method returns the whole array instead of the popped element (interpreter)'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T05:31:58Z
+  updated: 2026-09-24T05:31:58Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: VECLIT-1
+  github_issue: null
+  item_type: task
+  title: 'VECLIT-1: an array literal assigned to a Vec field transpiles to an array, rustc E0308'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T05:31:58Z
+  updated: 2026-09-24T05:31:58Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
