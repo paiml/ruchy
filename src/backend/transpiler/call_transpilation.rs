@@ -143,6 +143,9 @@ impl Transpiler {
         if let Some(result) = self.try_transpile_print_macro(func_tokens, base_name, args)? {
             return Ok(Some(result));
         }
+        if let Some(result) = self.try_transpile_format_fn(name, args)? {
+            return Ok(Some(result));
+        }
 
         // len(x) → x.len()
         if base_name == "len" && args.len() == 1 {

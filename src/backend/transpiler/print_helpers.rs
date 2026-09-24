@@ -317,16 +317,41 @@ impl Transpiler {
         }
     }
 
-    /// FORMATFN-1: `func(args)` is the function form of `format!`: `format`
-    /// with a string-literal format argument and no user `format` function.
-    /// (complexity: 3)
-    pub(crate) fn is_format_fn_call(&self, func: &Expr, args: &[Expr]) -> bool {
-        matches!(&func.kind, ExprKind::Identifier(n) if n == "format")
+    /// FORMATFN-1: `func(args)` is the function form of `format!`.
+    /// (complexity: 2)
+    fn is_format_fn_call(&self, func: &Expr, args: &[Expr]) -> bool {
+        matches!(&func.kind, ExprKind::Identifier(n) if self.is_format_fn(n, args))
+    }
+
+    /// FORMATFN-1: `name(args)` is `format` with a string-literal format
+    /// argument, and no user function named `format` exists. (complexity: 3)
+    fn is_format_fn(&self, name: &str, args: &[Expr]) -> bool {
+        name == "format"
             && matches!(
                 args.first().map(|a| &a.kind),
                 Some(ExprKind::Literal(Literal::String(_)))
             )
             && !self.function_signatures.contains_key("format")
+    }
+
+    /// FORMATFN-1: `format(fmt, ..)` transpiles exactly like `format!(fmt, ..)`.
+    /// (complexity: 2)
+    pub(crate) fn try_transpile_format_fn(
+        &self,
+        name: &str,
+        args: &[Expr],
+    ) -> Result<Option<TokenStream>> {
+        if !self.is_format_fn(name, args) {
+            return Ok(None);
+        }
+        let macro_expr = Expr::new(
+            ExprKind::MacroInvocation {
+                name: "format".to_string(),
+                args: args.to_vec(),
+            },
+            args[0].span,
+        );
+        self.transpile_expr(&macro_expr).map(Some)
     }
 }
 
