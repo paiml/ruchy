@@ -192,19 +192,31 @@ fn test_extendkw_1_04_every_keyword_is_a_method_name() {
 
 #[test]
 fn test_extendkw_1_05_every_keyword_is_a_field_name() {
+    // RESFIELD-1: a field named by a Rust reserved word transpiles to `r#kw`.
     for kw in all_keywords() {
-        check(&field_src(kw));
-    }
-    // Only Ruchy-only keywords are asserted through transpile: a field access
-    // named by a Rust reserved word is emitted without r# by the transpiler.
-    for kw in RUCHY_ONLY.iter().copied() {
-        let rust = squash(&transpile_str(&field_src(kw)));
+        let src = field_src(kw);
+        check(&src);
+        let rust = squash(&transpile_str(&src));
         let want = format!("o.{}", rust_member(kw));
         assert!(
             rust.contains(&want),
             "`o.{kw}`: expected `{want}` in:\n{rust}"
         );
     }
+}
+
+#[test]
+fn test_extendkw_1_05b_reserved_field_access_compiles_with_rustc() {
+    // A Ruchy struct cannot declare a keyword-named field yet, so the struct
+    // is supplied in Rust; the field accesses are the transpiler's output.
+    let src = "fun probe(o: Widget) -> i32 {\n    o.type + o.match\n}\n";
+    check(src);
+    let dir = tempfile::tempdir().expect("tempdir");
+    let probe = transpile(dir.path(), src);
+    let rust = format!(
+        "struct Widget {{ r#type: i32, r#match: i32 }}\n{probe}\nfn main() {{ println!(\"{{}}\", probe(Widget {{ r#type: 5, r#match: 2 }})); }}\n"
+    );
+    assert_eq!(rustc_run(dir.path(), &rust).trim(), "7", "rust:\n{rust}");
 }
 
 #[test]
