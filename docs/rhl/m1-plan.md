@@ -88,3 +88,25 @@ deviation list (D2), and the verdict (`B > A`, `B ≤ A`, or `Unknown{reason}`).
 A quorum split on D1–D8 after one amendment round → operator. The harness cannot give both
 arms the same `TaskCtx` → operator. Any measurement tuned after seeing results → void, redo
 with a new seed and say so.
+
+## §5 Rulings — grill quorum, 2026-09-24 `[V]`
+
+Three lanes (gemini-3.1-pro-high, gemini-3.8-flash-high, gemini-3.7-flash-high; author Claude),
+all exit 0 with tree witnesses: **3/3 PASS with amendments**. Adopted:
+
+| D | Ruling |
+|---|---|
+| D1 | ACCEPT, plus: pin the model id and **temperature 0**, and log every prompt and full response. |
+| D2 | ACCEPT (3/3): F8 runs before RHL-10, as spec §8 orders; path B without constrained decoding is a lower bound. Plus: if B ≤ A **and** path B's failures are parse errors, the verdict is `Unknown{"unconstrained decoding"}`, not a falsification. |
+| D3 | ACCEPT (3/3). |
+| D4 | AMEND (3/3): the refusal channel must be symmetric. Both arms get the HARNESS.md sentence verbatim and refuse the same way, by answering `Err(TaskError::Ambiguous { reason: "…" })`; for path B the harness turns that answer into a `run` returning it. No `AMBIGUOUS:` line. |
+| D5 | AMEND (2/3): v3 terms map **1:1 onto primitive** `TaskCtx` accessors and `Report` fields — no compound terms. M1a's acceptance uses a **synthetic fixture outside `docs/rhl/corpus/`**, never a hand-written solution to a corpus task (HARNESS.md: "Do not write a solution here"). |
+| D6 | AMEND (3/3): the fairness audit spans **model families** (spec: one agy, one Claude, one apr; where a family is unavailable the report says which and why), checks every `tests.rs` against the HARNESS.md signatures, and is committed before the first model call. Unfair tasks go to corpus v1 (public diff, manifest re-hash); v0 stays byte-identical. |
+| D7 | ACCEPT, plus: success = clean check **and** the program's examples pass **and** its tree equals the base tree under canonical declaration order. |
+| D8 | ACCEPT (3/3). |
+
+**Corpus defects already found (verified by the orchestrator, for the D6 audit):**
+task 01 `tests.rs:5` calls `with_host("runner-01")` while HARNESS.md:51 declares
+`with_host(HostRecord)`, so it cannot compile against the contract; task 12 `tests.rs:13`
+asserts a `report.values` key `total_free_bytes` that its `intent.en` never names, so neither
+arm can know it (lanes report the same gap in 13 and 14).
