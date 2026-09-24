@@ -4866,3 +4866,23 @@ roadmap:
   labels:
   - kind:code
   - transpiler
+- id: DEADDISPATCH-1
+  github_issue: null
+  item_type: task
+  title: 'DEADDISPATCH-1: duplicate string/generic method dispatch (src/runtime/eval_string.rs, eval_generic_method in eval_method_dispatch.rs) is unreachable and drifts from the live copies'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T21:00:00Z
+  updated: 2026-09-24T21:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Found by the ARRCLONE-1 worker and seen again in STRRECV-1: split_whitespace was added to eval_string_methods.rs only'
+  - 'Acceptance: one dispatch per receiver kind; pmat query --literal "Unknown zero-argument string method" returns one site'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - milestone:backlog
