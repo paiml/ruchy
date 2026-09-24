@@ -44,7 +44,7 @@ impl Transpiler {
             return None;
         }
         let segments = Self::callee_path_segments(func)?;
-        let idents = segments.iter().map(|s| format_ident!("{}", s));
+        let idents = segments.iter().map(|s| Self::safe_ident(s));
         Some(quote! { #(#idents)::* })
     }
 

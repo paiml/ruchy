@@ -139,3 +139,32 @@ fn test_rawident_1_03_transpiled_binary_matches_interpreter() {
     assert_eq!(binary_stdout, interpreter_stdout);
     assert_eq!(binary_stdout, "5\n10\n105\n");
 }
+
+/// Test 4: a reserved word reached through a `::` path (`m::r#do()`) is raw too,
+/// so the module path call compiles (review round 2 of G2 part 2).
+#[test]
+fn test_rawident_1_04_module_path_call_is_raw() {
+    let dir = tempfile::tempdir().expect("temp dir");
+    let file = write_source(
+        dir.path(),
+        "mod m {\n    pub fun do() -> i32 {\n        7\n    }\n}\n\nfun main() {\n    println(m::do())\n}\n",
+    );
+    let mut transpile = ruchy();
+    transpile.arg("transpile").arg(&file);
+    let rust = stdout_of(transpile, "ruchy transpile");
+    assert!(rust.contains("r#do"), "expected r#do in:\n{rust}");
+
+    let main_rs = dir.path().join("main.rs");
+    let bin = dir.path().join("rawident_path_bin");
+    std::fs::write(&main_rs, &rust).expect("write main.rs");
+    let mut rustc = Command::new("rustc");
+    rustc
+        .args(["--edition", "2021", "-A", "warnings", "-o"])
+        .arg(&bin)
+        .arg(&main_rs)
+        .timeout(Duration::from_secs(120));
+    stdout_of(rustc, &format!("rustc on transpiled Rust:\n{rust}\n"));
+    let mut run_bin = Command::new(&bin);
+    run_bin.timeout(Duration::from_secs(30));
+    assert_eq!(stdout_of(run_bin, "transpiled binary"), "7\n");
+}

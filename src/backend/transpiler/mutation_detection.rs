@@ -152,8 +152,13 @@ fn sub_expressions(expr: &Expr) -> Vec<&Expr> {
         | ExprKind::Unary { operand: body, .. }
         | ExprKind::Try { expr: body }
         | ExprKind::Await { expr: body }
-        | ExprKind::Assign { value: body, .. }
-        | ExprKind::CompoundAssign { value: body, .. } => vec![&**body],
+        | ExprKind::FieldAccess { object: body, .. } => vec![&**body],
+        // An assignment evaluates its target place as well as its value, so a
+        // mutation nested in either is found (e.g. `v[{ self.n += 1; 0 }] = 2`).
+        ExprKind::Assign { target, value } | ExprKind::CompoundAssign { target, value, .. } => {
+            vec![&**target, &**value]
+        }
+        ExprKind::IndexAccess { object, index } => vec![&**object, &**index],
         ExprKind::Return { value } => with_optional(Vec::new(), value.as_deref()),
         ExprKind::Call { func, args } => std::iter::once(&**func).chain(args).collect(),
         ExprKind::MethodCall { receiver, args, .. } => {
@@ -817,6 +822,22 @@ mod tests {
             op: BinaryOp::Multiply,
         });
         assert!(is_variable_mutated("x", &nested_compound));
+    }
+
+    #[test]
+    fn test_self_mutation_nested_in_an_index_target() {
+        // v[{ self.n += 1 }] = 2 — the index evaluates a mutation of `self`.
+        let self_n = make_expr(ExprKind::FieldAccess {
+            object: Box::new(ident("self")),
+            field: "n".to_string(),
+        });
+        let bump = compound_assign(self_n, int_lit(1));
+        let place = make_expr(ExprKind::IndexAccess {
+            object: Box::new(ident("v")),
+            index: Box::new(bump),
+        });
+        let stmt = assign(place, int_lit(2));
+        assert!(is_variable_mutated("self", &stmt));
     }
 
     #[test]
