@@ -129,6 +129,11 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   value type in compiled code instead of `BTreeMap<String, String>`, so
   `d["a"] = 5` and `d["a"] + d["b"]` compile; string and mixed dicts are
   unchanged (DICTTYPE-1).
+- **(behaviour)** The interpreter prints a float under `{}` (in `println`,
+  `format` and f-strings) as Rust's f64 Display does: `3`, not `3.0`;
+  `1000000000000000000000`, `-0`, `NaN`, `inf` (FLOATDISP-1). `{:?}` and a
+  bare `println(x)`, which compiles to `{:?}`, print Rust's Debug text
+  (`3.0`, `1e21`, `1e-7`), matching the compiled binary.
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

@@ -348,11 +348,24 @@ pub fn format_call(
 }
 
 fn join_display(values: &[Value]) -> String {
-    values
-        .iter()
-        .map(format_value_display)
-        .collect::<Vec<_>>()
-        .join(" ")
+    values.iter().map(bare_text).collect::<Vec<_>>().join(" ")
+}
+
+/// FLOATDISP-1: text of a bare `println(v)` argument. The transpiler emits
+/// `{:?}` for a non-string argument, so a float keeps Rust's Debug text
+/// (`3.0`, `1e21`).
+fn bare_text(value: &Value) -> String {
+    match value {
+        Value::Float(_) => rust_debug(value),
+        _ => format_value_display(value),
+    }
+}
+
+/// FLOATDISP-1: a float under `{}`, as Rust's `impl Display for f64` writes
+/// it (`3`, `2.5`, `1000000000000000000000`, `NaN`, `inf`, `-0`).
+#[must_use]
+pub fn display_float(f: f64) -> String {
+    format!("{f}")
 }
 
 /// Format one value under a spec.
@@ -445,7 +458,7 @@ fn float_digits(f: f64, spec: &Spec) -> Result<String, String> {
         (Kind::UpperExp, Some(p)) => format!("{a:.p$E}"),
         (Kind::UpperExp, None) => format!("{a:E}"),
         (Kind::Display | Kind::Debug, Some(p)) => format!("{a:.p$}"),
-        (Kind::Display, None) => format_value_display(&Value::Float(a)),
+        (Kind::Display, None) => display_float(a),
         (Kind::Debug, None) => rust_debug(&Value::Float(a)),
         (kind, _) => {
             return Err(format!(

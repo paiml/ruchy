@@ -4566,11 +4566,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'FLOATDISP-1: interpreter prints an integral float with {} as 3.0 where the compiled binary prints 3'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T14:00:00Z
-  updated: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let x = 3.0; println("{} {}", x, 2.5); println(x)'
