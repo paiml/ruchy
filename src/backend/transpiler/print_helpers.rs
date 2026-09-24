@@ -91,15 +91,15 @@ impl Transpiler {
     ) -> Result<Option<TokenStream>> {
         contract_pre_configuration!();
         contract_post_configuration!(&"ok");
-        if !(base_name == "println"
-            || base_name == "print"
-            || base_name == "dbg"
-            || base_name == "panic")
-        {
+        if !matches!(
+            base_name,
+            "println" | "print" | "eprintln" | "eprint" | "dbg" | "panic"
+        ) {
             return Ok(None);
         }
         // Handle single argument with string interpolation
-        if (base_name == "println" || base_name == "print") && args.len() == 1 {
+        let is_print = matches!(base_name, "println" | "print" | "eprintln" | "eprint");
+        if is_print && args.len() == 1 {
             if let ExprKind::StringInterpolation { parts } = &args[0].kind {
                 return Ok(Some(
                     self.transpile_print_with_interpolation(base_name, parts)?,
@@ -182,7 +182,7 @@ impl Transpiler {
         } else {
             // Multiple arguments - check if first is format string
             if let ExprKind::Literal(Literal::String(format_str)) = &args[0].kind {
-                if format_str.contains("{}") {
+                if has_format_placeholder(format_str) {
                     // First argument is a format string, rest are values
                     let format_arg = &all_args[0];
                     let value_args = &all_args[1..];
@@ -251,6 +251,23 @@ impl Transpiler {
     }
 }
 
+/// PRINTLNFMT-1: `s` contains at least one `{…}` placeholder (`{}`, `{:?}`,
+/// `{name}`, `{0}`, `{:>5}`, ...), so it is a format string. `{{` escapes
+/// do not count. (complexity: 4)
+#[must_use]
+pub fn has_format_placeholder(s: &str) -> bool {
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c != '{' {
+            continue;
+        }
+        if chars.next_if_eq(&'{').is_none() {
+            return chars.any(|c| c == '}');
+        }
+    }
+    false
+}
+
 // ============================================================================
 // Tests
 // ============================================================================
@@ -285,6 +302,18 @@ mod tests {
 
     fn interpolation_expr(parts: Vec<StringPart>) -> Expr {
         make_expr(ExprKind::StringInterpolation { parts })
+    }
+
+    #[test]
+    fn test_printlnfmt_1_has_format_placeholder() {
+        for s in [
+            "{}", "{:?}", "v={:?}", "{:#?}", "{name}", "{0}", "{:>5}|", "{:.2}", "{{ {}",
+        ] {
+            assert!(has_format_placeholder(s), "{s}");
+        }
+        for s in ["", "plain", "{{}}", "{{x}}", "{", "}{"] {
+            assert!(!has_format_placeholder(s), "{s}");
+        }
     }
 
     // ========================================================================

@@ -144,15 +144,20 @@ impl Transpiler {
         matches!(&expr.kind, ExprKind::Literal(Literal::Unit))
             || matches!(
                 &expr.kind,
-                ExprKind::Call { func, .. } if matches!(&func.kind, ExprKind::Identifier(name) if name == "println" || name == "print")
+                ExprKind::Call { func, .. } if matches!(&func.kind, ExprKind::Identifier(name) if Self::is_print_name(name))
             )
             || matches!(
                 &expr.kind,
-                ExprKind::MacroInvocation { name, .. } if name == "println" || name == "print"
+                ExprKind::MacroInvocation { name, .. } if Self::is_print_name(name)
             )
             || matches!(&expr.kind, ExprKind::Assign { .. })
             || matches!(&expr.kind, ExprKind::Return { value: None })
             || matches!(&expr.kind, ExprKind::Return { value: Some(_) }) // Return with value is still unit for main
+    }
+
+    /// PRINTLNFMT-1: the print builtins, all unit-valued (stdout and stderr).
+    fn is_print_name(name: &str) -> bool {
+        matches!(name, "println" | "print" | "eprintln" | "eprint")
     }
 
     /// BOOK-COMPAT-015: Generate main body that prints the last expression
