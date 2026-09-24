@@ -151,6 +151,14 @@ pub fn is_void_expression(expr: &Expr) -> bool {
     }
 }
 
+/// RETUNIT-1: a function whose name reads as numeric (`add`, `double`) returns
+/// a number only when its body ends in a value; `fun add(n) { total += n }`
+/// returns `()`. (complexity: 1)
+#[must_use]
+pub fn is_numeric_named_value_function(name: &str, body: &Expr) -> bool {
+    looks_like_numeric_function(name) && has_non_unit_expression(body)
+}
+
 /// Check if expression has a non-unit value (i.e., returns something meaningful)
 #[must_use]
 pub fn has_non_unit_expression(body: &Expr) -> bool {

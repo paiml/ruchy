@@ -1233,7 +1233,11 @@ fn try_parse_comprehension(state: &mut ParserState, start_span: Span) -> Result<
     match state.tokens.peek() {
         Some((Token::For, _)) => {
             // This is a set comprehension: {expr for x in iter}
-            parse_set_comprehension_continuation(state, first_expr, start_span)
+            // BLOCKFOR-1: `{ stmt \n for x in xs { .. } }` is a block whose second
+            // statement is a for loop; restore so the block parser takes it.
+            parse_set_comprehension_continuation(state, first_expr, start_span).inspect_err(|_| {
+                state.tokens.set_position(saved_position);
+            })
         }
         Some((Token::Colon, _)) => {
             // This might be a dict comprehension: {key: value for x in iter}

@@ -84,22 +84,11 @@ impl Transpiler {
         self.current_function_return_type
             .replace(effective_return_type.cloned());
 
-        // DEFECT-012 FIX: Generate body tokens with special handling for String return type
-        let body_tokens = if let Some(ret_type) = effective_return_type {
-            if super::type_analysis::is_string_type(ret_type)
-                && super::type_analysis::body_needs_string_conversion(body)
-            {
-                self.generate_body_tokens_with_string_conversion(body, is_async)?
-            } else {
-                self.generate_body_tokens(body, is_async)?
-            }
-        } else if name == "main" && self.has_non_unit_last_expr(body) {
-            // BOOK-COMPAT-015: Main functions that end with a non-unit expression
-            // should print it instead of trying to return it
-            self.generate_main_body_with_print(body, is_async)?
-        } else {
-            self.generate_body_tokens(body, is_async)?
-        };
+        // GLOBALSHADOW-1: a parameter hides the mutable global of the same name
+        let param_names: Vec<String> = params.iter().map(Param::name).collect();
+        let body_tokens = self.with_globals_shadowed(&param_names, || {
+            self.generate_function_body(name, body, is_async, effective_return_type)
+        })?;
 
         // TRANSPILER-007: Clear current function return type after body transpilation
         self.current_function_return_type.replace(None);
@@ -125,6 +114,32 @@ impl Transpiler {
             &body_tokens,
             attributes,
         )
+    }
+
+    /// DEFECT-012 FIX: Generate body tokens with special handling for String return type
+    /// (complexity: 5)
+    fn generate_function_body(
+        &self,
+        name: &str,
+        body: &Expr,
+        is_async: bool,
+        effective_return_type: Option<&Type>,
+    ) -> Result<TokenStream> {
+        if let Some(ret_type) = effective_return_type {
+            if super::type_analysis::is_string_type(ret_type)
+                && super::type_analysis::body_needs_string_conversion(body)
+            {
+                self.generate_body_tokens_with_string_conversion(body, is_async)
+            } else {
+                self.generate_body_tokens(body, is_async)
+            }
+        } else if name == "main" && self.has_non_unit_last_expr(body) {
+            // BOOK-COMPAT-015: Main functions that end with a non-unit expression
+            // should print it instead of trying to return it
+            self.generate_main_body_with_print(body, is_async)
+        } else {
+            self.generate_body_tokens(body, is_async)
+        }
     }
 
     /// BOOK-COMPAT-015: Check if body has a non-unit last expression

@@ -4928,6 +4928,88 @@ roadmap:
   - kind:code
   - transpiler
   - milestone:v5.0.0
+- id: GLOBALSHADOW-1
+  github_issue: null
+  item_type: task
+  title: 'GLOBALSHADOW-1: a parameter, closure/for/pattern binding or let named like a mutable global read the global (and rustc rejected the parameter, E0530)'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'Mutable globals are emitted as static __global_<name>, so no parameter or pattern shadows a static'
+  - 'with_globals_shadowed hides a name from global_vars for the lexical scope of fn params, closure/for/match/if-let binders, let, let-pattern and let-else bodies'
+  - 'x += x on a global reads the guard (no second lock)'
+  - 'tests/g2b_transfix_7.rs: 6 globalshadow tests, compiled and interpreted output agree'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - milestone:v5.0.0
+- id: RETUNIT-1
+  github_issue: null
+  item_type: task
+  title: 'RETUNIT-1: a function named like arithmetic (add, double, sum) got -> i32 even when its body ends in an assignment'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'The numeric-name heuristic applies only when the body ends in a value (is_numeric_named_value_function)'
+  - 'tests/g2b_transfix_7.rs: 3 retunit tests'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - milestone:v5.0.0
+- id: BLOCKFOR-1
+  github_issue: null
+  item_type: task
+  title: 'BLOCKFOR-1: a block whose first statement is an expression followed by a for loop was parsed as a set comprehension (Unexpected token: RightBrace)'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'try_parse_comprehension restores the token position when the set-comprehension continuation fails, so the block parser takes it'
+  - 'A multi-line set comprehension still parses (SetComprehension node)'
+  - 'tests/g2b_transfix_7.rs: 3 blockfor tests; interpreter set comprehension filed as SETCOMP-1 (#247)'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - milestone:v5.0.0
+- id: SETCOMP-1
+  github_issue: 247
+  item_type: task
+  title: 'SETCOMP-1: the interpreter has no SetComprehension evaluation; needs a decision on the set Value representation'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - '{x * 2 for x in [1, 2, 2]} evaluates in run and transpile with set semantics'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - milestone:backlog
 - id: PMAT-140
   github_issue: null
   item_type: task

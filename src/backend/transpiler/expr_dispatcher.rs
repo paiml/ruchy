@@ -88,6 +88,36 @@ impl Transpiler {
         }
     }
 
+    /// GLOBALSHADOW-1: the Rust static that holds the mutable global `name`.
+    /// rustc forbids a parameter or pattern from shadowing a static (E0530),
+    /// so the static never carries the Ruchy name. (complexity: 1)
+    pub(crate) fn global_static_ident(name: &str) -> proc_macro2::Ident {
+        proc_macro2::Ident::new(&format!("__global_{name}"), proc_macro2::Span::call_site())
+    }
+
+    /// GLOBALSHADOW-1: run `f` with `names` bound locally, so an identifier
+    /// among them reads the local, not the global of the same name.
+    /// (complexity: 2)
+    pub(crate) fn with_globals_shadowed<T>(&self, names: &[String], f: impl FnOnce() -> T) -> T {
+        let shadowed: Vec<String> = {
+            let mut globals = self
+                .global_vars
+                .write()
+                .expect("rwlock should not be poisoned");
+            names
+                .iter()
+                .filter(|n| globals.remove(*n))
+                .cloned()
+                .collect()
+        };
+        let result = f();
+        self.global_vars
+            .write()
+            .expect("rwlock should not be poisoned")
+            .extend(shadowed);
+        result
+    }
+
     /// Main expression transpilation dispatcher
     ///
     /// Routes expressions to specialized handlers based on ExprKind.

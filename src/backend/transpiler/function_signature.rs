@@ -93,7 +93,7 @@ impl Transpiler {
         if has_float_args && super::function_analysis::has_non_unit_expression(body) {
             return Ok(quote! { -> f64 });
         }
-        if super::function_analysis::looks_like_numeric_function(name) {
+        if super::function_analysis::is_numeric_named_value_function(name, body) {
             if has_float_args {
                 return Ok(quote! { -> f64 });
             }

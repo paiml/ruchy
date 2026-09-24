@@ -5,6 +5,13 @@
 //! - RAWIDENT-2: a Ruchy identifier that is a Rust reserved word (`box`, `do`,
 //!   `typeof`, ...) in a binding position (mutable global, function or closure
 //!   parameter, `for` variable, pattern) is emitted as a raw identifier.
+//! - GLOBALSHADOW-1: a parameter, closure parameter, `for` variable or `let`
+//!   named like a mutable global reads and writes the local, and the program
+//!   compiles (rustc forbids shadowing a static, E0530).
+//! - RETUNIT-1: a function named like arithmetic (`add`, `double`) whose
+//!   body ends in an assignment or a print returns `()`, not `i32`.
+//! - BLOCKFOR-1: a block whose first statement is an expression and whose
+//!   next statement is a `for` loop parses as a block, not a set comprehension.
 
 use assert_cmd::Command;
 use std::path::Path;
@@ -170,4 +177,90 @@ fn test_rawident_2_every_reserved_word_ruchy_accepts() {
             "fun bump({w}: i32) -> i32 {{ {w} + 1 }}\nfun main() {{\n    for {w} in [1] {{ println(bump({w})) }}\n    let f = |{w}| {w} + 1\n    println(f(2))\n}}\n"
         ));
     }
+}
+
+const GLOBAL_X: &str = "let mut x = 10\nfun touch() {\n    x = x + 1\n}\n";
+
+#[test]
+fn test_globalshadow_1_parameter_shadows_mutable_global() {
+    check(&format!("{GLOBAL_X}fun bump(x: i32) -> i32 {{ x + 1 }}\ntouch()\nprintln(bump(1))\nprintln(x)\n"), "2\n11\n");
+}
+
+#[test]
+fn test_globalshadow_1_mutable_parameter_assigns_the_local() {
+    check(&format!("{GLOBAL_X}fun dbl(mut x: i32) -> i32 {{\n    x = x * 2\n    x\n}}\ntouch()\nprintln(dbl(4))\nprintln(x)\n"), "8\n11\n");
+}
+
+#[test]
+fn test_globalshadow_1_closure_parameter_shadows_mutable_global() {
+    check(&format!("{GLOBAL_X}fun main() {{\n    touch()\n    let f = |x| x * 3\n    println(f(2))\n    println(x)\n}}\n"), "6\n11\n");
+}
+
+#[test]
+fn test_globalshadow_1_for_variable_shadows_mutable_global() {
+    check(&format!("{GLOBAL_X}fun main() {{\n    touch()\n    for x in [1, 2] {{ println(x) }}\n    println(x)\n}}\n"), "1\n2\n11\n");
+}
+
+#[test]
+fn test_globalshadow_1_let_in_function_shadows_mutable_global() {
+    check(&format!("{GLOBAL_X}fun local() -> i32 {{\n    let x = 5\n    x + 1\n}}\ntouch()\nprintln(local())\nprintln(x)\n"), "6\n11\n");
+}
+
+#[test]
+fn test_globalshadow_1_global_still_updates_through_functions() {
+    check(
+        &format!("{GLOBAL_X}fun add(n: i32) {{\n    x += n\n}}\ntouch()\nadd(5)\nprintln(x)\n"),
+        "16\n",
+    );
+}
+
+#[test]
+fn test_blockfor_1_call_then_for_loop_in_function() {
+    check(
+        "fun main() {\n    println(0)\n    for i in [1, 2] { println(i) }\n}\n",
+        "0\n1\n2\n",
+    );
+}
+
+#[test]
+fn test_blockfor_1_identifier_then_for_loop_in_block() {
+    check("fun main() {\n    let n = 3\n    let r = {\n        n\n        for i in 0..2 { println(i) }\n        n\n    }\n    println(r)\n}\n", "0\n1\n3\n");
+}
+
+#[test]
+fn test_blockfor_1_multiline_set_comprehension_still_parses() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = write_source(dir.path(), "let s = {x * 2\n for x in [1, 2, 2]}\n");
+    let out = ruchy()
+        .arg("ast")
+        .arg(&path)
+        .output()
+        .expect("run ruchy ast");
+    assert!(
+        out.status.success(),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(String::from_utf8_lossy(&out.stdout).contains("SetComprehension"));
+}
+
+#[test]
+fn test_retunit_1_add_ending_in_compound_assign_returns_unit() {
+    check(
+        "fun add(n: i32) {\n    let mut y = 1\n    y += n\n    println(y)\n    y += n\n}\nadd(2)\n",
+        "3\n",
+    );
+}
+
+#[test]
+fn test_retunit_1_double_ending_in_assign_returns_unit() {
+    check(
+        "let mut t = 1\nfun double() {\n    t = t * 2\n}\ndouble()\ndouble()\nprintln(t)\n",
+        "4\n",
+    );
+}
+
+#[test]
+fn test_retunit_1_add_with_value_still_returns_number() {
+    check("fun add(a: i32, b: i32) -> i32 { a + b }\nfun sum(a, b) { a + b }\nprintln(add(2, 3))\nprintln(sum(4, 5))\n", "5\n9\n");
 }

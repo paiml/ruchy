@@ -611,7 +611,7 @@ process()
     let transpiled = String::from_utf8(output.stdout).expect("operation should succeed in test");
 
     // Simple string assignment doesn't need guard
-    assert!(transpiled.contains("static text"));
+    assert!(transpiled.contains("static __global_text"));
 
     let _ = fs::remove_file(&ruchy_path);
 }

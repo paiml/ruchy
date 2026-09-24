@@ -56,6 +56,7 @@ impl Transpiler {
                 )
                 .contains(name)
             {
+                let ident = Self::global_static_ident(name); // GLOBALSHADOW-1
                 quote! { *#ident.lock().expect("LazyLock Mutex poisoned - indicates panic while accessing global variable") }
             } else {
                 quote! { #ident }

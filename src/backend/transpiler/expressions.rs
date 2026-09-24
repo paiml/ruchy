@@ -8,7 +8,7 @@ use crate::frontend::ast::{
 };
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 #[path = "expressions_helpers/mod.rs"]
 mod expressions_helpers;
@@ -215,7 +215,7 @@ impl Transpiler {
         var_name: &str,
         value: &Expr,
     ) -> Result<TokenStream> {
-        let var_ident = Self::safe_ident(var_name); // RAWIDENT-2
+        let var_ident = Self::global_static_ident(var_name); // GLOBALSHADOW-1
 
         // Transpile value, but temporarily disable global wrapping
         // We'll manually wrap with guard access
@@ -392,8 +392,9 @@ impl Transpiler {
                 .expect("rwlock should not be poisoned")
                 .contains(target_name)
             {
-                let var_ident = format_ident!("{}", target_name);
-                let value_tokens = self.transpile_expr(value)?;
+                let var_ident = Self::global_static_ident(target_name); // GLOBALSHADOW-1
+                                                                        // `x += x` reads the guard, never a second lock (deadlock)
+                let value_tokens = self.transpile_expr_for_guard(value, target_name)?;
                 let op_tokens = Self::get_compound_op_token(op)?;
 
                 return Ok(quote! {
