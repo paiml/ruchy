@@ -191,3 +191,102 @@ fn test_nestpushlit_1_no_elem_growth_keeps_arrays() {
     );
     check(&src, "[[1], [3]]\n", true);
 }
+
+// ------------------------------------------------------------ STRRECV-1
+
+// `replace`/`repeat` on a receiver the transpiler cannot prove is a string
+// (a for-loop variable, a struct field, `String::from(..)`) print as text.
+#[test]
+fn test_strrecv_1_for_variable_replace_prints_text() {
+    let src = main_with(
+        r#"    let text = "ab\ncd"
+    for line in text.lines() {
+        println(line.replace("a", "b"))
+    }"#,
+    );
+    check(&src, "bb\ncd\n", true);
+}
+
+#[test]
+fn test_strrecv_1_field_replace_prints_text() {
+    let src = format!(
+        "struct P {{ name: String }}\n{}",
+        main_with(
+            r#"    let p = P { name: String::from("xa") }
+    println(p.name.replace("x", "y"))"#
+        )
+    );
+    check(&src, "ya\n", true);
+}
+
+#[test]
+fn test_strrecv_1_call_receiver_repeat_prints_text() {
+    let src = main_with(
+        r#"    let s = String::from("q")
+    println(s.repeat(2))
+    println(String::from("z").repeat(3))"#,
+    );
+    check(&src, "qq\nzzz\n", true);
+}
+
+// A list receiver still prints its `repeat` with `{:?}` (PRINTSTRSCOPE-1).
+#[test]
+fn test_strrecv_1_list_repeat_stays_debug() {
+    let src = main_with(
+        r#"    let v = [1]
+    println(v.repeat(2))
+    println([2].repeat(2))"#,
+    );
+    check(&src, "[1, 1]\n[2, 2]\n", true);
+}
+
+// A string rebinding of a list name prints its `repeat` as text again.
+#[test]
+fn test_strrecv_1_list_name_rebound_to_string() {
+    let src = main_with(
+        r#"    let v = [1]
+    println(v.len())
+    let v = String::from("ab")
+    println(v.repeat(2))"#,
+    );
+    check(&src, "1\nabab\n", true);
+}
+
+// A loop variable over string items prints as text.
+#[test]
+fn test_strrecv_1_loop_variable_over_string_items() {
+    let src = main_with(
+        r#"    let text = "a b\nc"
+    for line in text.lines() {
+        println(line)
+    }
+    for w in text.split_whitespace() {
+        println(w)
+    }
+    for p in "x,y".split(",") {
+        println(p)
+    }
+    for s in ["m", "n"] {
+        println(s)
+    }"#,
+    );
+    check(&src, "a b\nc\na\nb\nc\nx\ny\nm\nn\n", true);
+}
+
+// A for loop, a while loop or a compound assignment as main's last
+// statement is unit: the compiled binary prints nothing for it.
+#[test]
+fn test_strrecv_1_trailing_loops_are_unit() {
+    let src = main_with(
+        r#"    let mut i = 0
+    while i < 2 {
+        i += 1
+    }
+    println(i)
+    for k in [1] {
+        println(k)
+    }"#,
+    );
+    check(&src, "2\n1\n", true);
+    check(&main_with("    let mut j = 1\n    j += 1"), "", true);
+}

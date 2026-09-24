@@ -49,6 +49,12 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "trim_end" => Ok(Value::from_string(s.trim_end().to_string())),
         "chars" => eval_string_chars(s),
         "lines" => eval_string_lines(s),
+        // STRRECV-1: whitespace-separated words, as `str::split_whitespace`
+        "split_whitespace" => Ok(Value::from_array(
+            s.split_whitespace()
+                .map(|w| Value::from_string(w.to_string()))
+                .collect(),
+        )),
         "parse" | "to_int" | "to_integer" => eval_string_parse(s),
         "timestamp" => eval_string_timestamp(s),
         "to_rfc3339" => Ok(Value::from_string(s.to_string())),

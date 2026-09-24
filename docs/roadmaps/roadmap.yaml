@@ -4847,3 +4847,22 @@ roadmap:
   labels:
   - kind:code
   - runtime
+- id: STRRECV-1
+  github_issue: null
+  item_type: task
+  title: 'STRRECV-1: compiled println of replace/repeat on an untracked string receiver prints quoted ({:?}); ruchy run prints text'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T20:00:00Z
+  updated: 2026-09-24T20:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: for line in text.lines() { println(line.replace("a","b")) } prints "bb" quoted when compiled (found by G2b round-2 quorum, sonnet seat); a trailing for loop in main printed ()'
+  - 'Acceptance: tests/g2b_transfix_6.rs test_strrecv_1_* compare compiled stdout with ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler

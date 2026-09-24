@@ -74,7 +74,7 @@ impl Transpiler {
         let loop_pattern = pattern
             .cloned()
             .unwrap_or_else(|| Pattern::Identifier(var.to_string()));
-        let body_tokens = self.with_pattern_scope(&loop_pattern, || self.transpile_expr(body));
+        let body_tokens = self.with_for_scope(&loop_pattern, iter, || self.transpile_expr(body));
         self.in_loop_context.set(was_in_loop);
         let body_tokens = body_tokens?;
 

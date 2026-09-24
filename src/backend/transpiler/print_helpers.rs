@@ -246,6 +246,10 @@ impl Transpiler {
 /// PRINTSTR-1: the type tag `variable_types` holds for a string binding.
 const STRING_VAR_TYPE: &str = "String";
 
+/// STRRECV-1: the type tag `variable_types` holds for a binding to a list
+/// literal, whose `repeat` is a `Vec`.
+const LIST_VAR_TYPE: &str = "Vec";
+
 /// PRINTSTR-1: methods whose result prints as text on every receiver they
 /// exist on (`to_string` on anything, the case/trim methods on `str`/`char`).
 const STRING_RESULT_METHODS: &[&str] = &[
@@ -257,8 +261,10 @@ const STRING_RESULT_METHODS: &[&str] = &[
     "trim_end",
 ];
 
-/// PRINTSTRSCOPE-1: methods whose result is a `String` only on a string
-/// receiver (`[1].repeat(2)` is a `Vec`, `Option::replace` an `Option`).
+/// PRINTSTRSCOPE-1: methods whose result is a `String` except on a list
+/// receiver (`[1].repeat(2)` is a `Vec`); STRRECV-1: an untracked receiver
+/// (a loop variable, a field, a call) counts as a string, as `ruchy run`
+/// prints it.
 const STRING_RECEIVER_METHODS: &[&str] = &["replace", "repeat"];
 
 impl Transpiler {
@@ -301,6 +307,11 @@ impl Transpiler {
     pub(crate) fn track_string_binding(&self, name: &str, value: &Expr, ty: Option<&Type>) {
         let is_string = ty.map_or_else(|| self.is_display_string(value), is_string_annotation);
         self.set_string_var(name, is_string);
+        if ty.is_none() && self.is_known_list(value) {
+            self.variable_types
+                .borrow_mut()
+                .insert(name.to_string(), LIST_VAR_TYPE.to_string());
+        }
         self.track_typed_dict_binding(name, value);
     }
 
@@ -316,10 +327,25 @@ impl Transpiler {
     }
 
     /// PRINTSTRSCOPE-1: `receiver.method(..)` is a string: a text-printing
-    /// method, or `replace`/`repeat` on a string receiver. (complexity: 3)
+    /// method, or `replace`/`repeat` on a receiver that is not a list
+    /// (STRRECV-1). (complexity: 3)
     fn is_string_method_result(&self, receiver: &Expr, method: &str) -> bool {
         STRING_RESULT_METHODS.contains(&method)
-            || (STRING_RECEIVER_METHODS.contains(&method) && self.is_display_string(receiver))
+            || (STRING_RECEIVER_METHODS.contains(&method) && !self.is_known_list(receiver))
+    }
+
+    /// STRRECV-1: `expr` is a list literal or a binding recorded as one.
+    /// (complexity: 3)
+    fn is_known_list(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::List(_) | ExprKind::ArrayInit { .. } => true,
+            ExprKind::Identifier(name) => self
+                .variable_types
+                .borrow()
+                .get(name)
+                .is_some_and(|t| t == LIST_VAR_TYPE),
+            _ => false,
+        }
     }
 
     /// PRINTSTRSCOPE-1: run `f` while each `(name, is_string)` binder
@@ -362,6 +388,23 @@ impl Transpiler {
             .map(|name| (name, false))
             .collect();
         self.with_string_scope(&binders, f)
+    }
+
+    /// STRRECV-1: run `f` in the scope of a for loop's binders; a plain loop
+    /// variable over string items (see [`is_string_items`]) is a string.
+    /// (complexity: 2)
+    pub(crate) fn with_for_scope<T>(
+        &self,
+        pattern: &Pattern,
+        iter: &Expr,
+        f: impl FnOnce() -> T,
+    ) -> T {
+        match pattern {
+            Pattern::Identifier(name) if is_string_items(iter) => {
+                self.with_string_scope(&[(name.clone(), true)], f)
+            }
+            _ => self.with_pattern_scope(pattern, f),
+        }
     }
 
     /// PRINTSTRSCOPE-1: run `f` in the scope of closure parameters; a
@@ -417,12 +460,16 @@ impl Transpiler {
         }
     }
 
-    /// PRINTSTR-1: set or clear the string record of `name`. (complexity: 3)
+    /// PRINTSTR-1: set or clear the string record of `name`; STRRECV-1: a
+    /// rebinding also clears its list record. (complexity: 3)
     fn set_string_var(&self, name: &str, is_string: bool) {
         let mut types = self.variable_types.borrow_mut();
         if is_string {
             types.insert(name.to_string(), STRING_VAR_TYPE.to_string());
-        } else if types.get(name).is_some_and(|t| t == STRING_VAR_TYPE) {
+        } else if types
+            .get(name)
+            .is_some_and(|t| t == STRING_VAR_TYPE || t == LIST_VAR_TYPE)
+        {
             types.remove(name);
         }
     }
@@ -462,6 +509,29 @@ impl Transpiler {
             args[0].span,
         );
         self.transpile_expr(&macro_expr).map(Some)
+    }
+}
+
+/// STRRECV-1: iterating `iter` yields strings: `lines()`,
+/// `split_whitespace()`, `split(<string or char literal>)`, or a list of
+/// string literals. (complexity: 4)
+fn is_string_items(iter: &Expr) -> bool {
+    match &iter.kind {
+        ExprKind::MethodCall { method, args, .. } => match method.as_str() {
+            "lines" | "split_whitespace" => args.is_empty(),
+            "split" => matches!(
+                args.first().map(|a| &a.kind),
+                Some(ExprKind::Literal(Literal::String(_) | Literal::Char(_)))
+            ),
+            _ => false,
+        },
+        ExprKind::List(items) => {
+            !items.is_empty()
+                && items
+                    .iter()
+                    .all(|i| matches!(i.kind, ExprKind::Literal(Literal::String(_))))
+        }
+        _ => false,
     }
 }
 

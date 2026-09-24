@@ -171,6 +171,14 @@ impl Transpiler {
                 ExprKind::MacroInvocation { name, .. } if Self::is_print_name(name)
             )
             || matches!(&expr.kind, ExprKind::Assign { .. })
+            // STRRECV-1: loops without a break value and compound assignment
+            || matches!(
+                &expr.kind,
+                ExprKind::For { .. }
+                    | ExprKind::While { .. }
+                    | ExprKind::WhileLet { .. }
+                    | ExprKind::CompoundAssign { .. }
+            )
             || matches!(&expr.kind, ExprKind::Return { value: None })
             || matches!(&expr.kind, ExprKind::Return { value: Some(_) }) // Return with value is still unit for main
     }

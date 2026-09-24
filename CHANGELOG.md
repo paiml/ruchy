@@ -187,6 +187,13 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   verbatim, as the compiled binary does: `println("{}")` prints `{}`, not a
   format error, and `println("x{{")` prints `x{{`. `format("x{{")` is still
   a template and returns `x{` (LONELIT-1).
+- Compiled `println(x.replace(..))` and `println(x.repeat(n))` print as text
+  unless `x` is a list literal or a binding to one; a loop variable, field or
+  call receiver no longer prints quoted. A plain loop variable over
+  `lines()`, `split_whitespace()`, `split(<literal>)` or a list of string
+  literals prints as text. A `for`/`while` loop or `+=` as main's last
+  statement is not printed as `()`. Strings have `split_whitespace()` under
+  `ruchy run` (STRRECV-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
