@@ -199,6 +199,23 @@ impl Transpiler {
     /// let result = transpiler.transpile_struct_literal("Point", &fields, None);
     /// assert!(result.is_ok());
     /// ```
+    /// VECLIT-1: an array literal initializing a field declared `Vec<…>` is
+    /// emitted as `vec![…]`; a Rust array does not coerce to `Vec` (E0308).
+    fn transpile_field_value(
+        &self,
+        field_type: Option<&String>,
+        value: &Expr,
+    ) -> Result<TokenStream> {
+        let tokens = self.transpile_expr(value)?;
+        let is_list = matches!(value.kind, ExprKind::List(_));
+        let is_vec_field = field_type.is_some_and(|t| is_vec_type_name(t));
+        let is_array_tokens = tokens.to_string().starts_with('[');
+        if is_list && is_vec_field && is_array_tokens {
+            return Ok(quote! { vec! #tokens });
+        }
+        Ok(tokens)
+    }
+
     pub fn transpile_struct_literal(
         &self,
         name: &str,
@@ -254,7 +271,7 @@ impl Transpiler {
                     field_tokens.push(quote! { #field_ident: Some(Box::new(#inner_tokens)) });
                 }
             } else {
-                let value_tokens = self.transpile_expr(value)?;
+                let value_tokens = self.transpile_field_value(field_type, value)?;
                 if needs_to_string {
                     field_tokens.push(quote! { #field_ident: #value_tokens.to_string() });
                 } else {
@@ -310,6 +327,12 @@ impl Transpiler {
             }
         }
     }
+}
+
+/// VECLIT-1: the recorded type of a struct field is `Vec` or a
+/// `Vec<…>` generic (stored as the `TypeKind` debug text by the struct pass).
+fn is_vec_type_name(type_name: &str) -> bool {
+    type_name == "Vec" || type_name.starts_with("Generic { base: \"Vec\"")
 }
 
 #[cfg(test)]

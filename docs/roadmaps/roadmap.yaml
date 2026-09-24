@@ -4067,13 +4067,17 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'VECLIT-1: an array literal assigned to a Vec field transpiles to an array, rustc E0308'
-  status: planned
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-09-24T05:31:58Z
   updated: 2026-09-24T05:31:58Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'Repro: struct Stack { items: Vec<i32> }; let s = Stack { items: [1, 2, 3] } transpiled to Stack { items: [1, 2, 3] } and rustc failed E0308 (expected Vec<i32>, found [{integer}; 3])'
+  - 'Root cause: transpile_struct_literal emitted every field value with transpile_expr and never consulted the recorded field type except for String; ExprKind::List emits a Rust array literal, which does not coerce to Vec'
+  - 'Fix: transpile_field_value (expressions_helpers/collections.rs) prefixes vec! when the value is a list literal and the field type recorded by the struct pass is Vec or Generic { base: "Vec" }; fixed-size [T; N] fields keep the array literal'
+  - 'tests/fieldpop_1_field_methods.rs test_veclit_1_*: rustc differential for Vec<i32> and Vec<Vec<i32>> fields plus an [i32; 2] field; hand mutant (Generic Vec not recognised) caught'
   phases: []
   subtasks: []
   estimated_effort: null

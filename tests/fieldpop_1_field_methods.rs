@@ -261,3 +261,34 @@ fun main() {{
     );
     differential(&src);
 }
+
+// ---------- VECLIT-1: an array literal for a `Vec<…>` struct field ----------
+
+#[test]
+fn test_veclit_1_01_array_literal_for_vec_field_compiles_as_vec() {
+    let src = format!(
+        "{STACK}fun main() {{
+    let mut s = Stack {{ items: [1, 2, 3] }}
+    s.items.push(4)
+    println(s.items.len())
+}}
+"
+    );
+    let rust = differential(&src);
+    let squashed: String = rust.chars().filter(|c| !c.is_whitespace()).collect();
+    assert!(squashed.contains("items:vec![1,2,3]"), "rust:\n{rust}");
+}
+
+#[test]
+fn test_veclit_1_02_nested_vec_field_and_fixed_array_field_untouched() {
+    let src = "struct Grid { rows: Vec<Vec<i32>>, fixed: [i32; 2] }
+fun main() {
+    let g = Grid { rows: [vec![1], vec![2, 3]], fixed: [7, 8] }
+    println(g.rows.len())
+    println(g.fixed[1])
+}
+";
+    let rust = differential(src);
+    let squashed: String = rust.chars().filter(|c| !c.is_whitespace()).collect();
+    assert!(squashed.contains("fixed:[7,8]"), "rust:\n{rust}");
+}
