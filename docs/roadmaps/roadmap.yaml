@@ -4302,7 +4302,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'PRINTLNFMT-1: println("{:?}", v) with one argument compiles to println!("{} {:?}", "{:?}", v) and prints the format string'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T10:30:00Z
@@ -4323,7 +4323,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'INTLEN-1: let n: int = v.len() (and -> int returning len()) emits i64 = usize without a cast (E0308)'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T10:30:00Z
@@ -4343,7 +4343,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'COUNTITER-1: count() gets .iter() appended even on an iterator (s.chars().count() -> s.chars().iter().count(), E0599); the interpreter has no array count'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T10:30:00Z
@@ -4363,7 +4363,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'IDXCOMPOUND-1: interpreter: v[1] += 5 fails with Invalid compound assignment target'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T10:30:00Z
@@ -4383,7 +4383,7 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'IDXPUSHWB-1: interpreter: t.rows[0].vals.push(9) is not written back to t (prints [1]; compiled prints [1, 9])'
-  status: planned
+  status: completed
   priority: critical
   assigned_to: null
   created: 2026-09-24T10:30:00Z
@@ -4397,5 +4397,128 @@ roadmap:
   labels:
   - kind:code
   - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: PRINTSTR-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTSTR-1: println(s) with a String/&str variable compiles to println!("{:?}", s) and prints quotes'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T11:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let t = s.to_string(); println(t) prints "hi" compiled, hi interpreted'
+  - 'Acceptance: rustc differential for println/print of str, String, format! results and numbers'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: FMTSPEC-1
+  github_issue: null
+  item_type: task
+  title: 'FMTSPEC-1: interpreter println/format ignore width, precision and positional specs ({:>5}, {:.2}, {0})'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T11:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("[{:>5}] [{:.2}]", 7, 3.14159) prints the placeholders literally'
+  - 'Acceptance: interpreter output equals rustc for fill/align/width/precision/positional/named specs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: EPRINTLN-1
+  github_issue: null
+  item_type: task
+  title: 'EPRINTLN-1: interpreter: eprintln/eprint are undefined functions'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T11:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: eprintln/eprint write to stderr in the interpreter, as compiled'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: FORMATFN-1
+  github_issue: null
+  item_type: task
+  title: 'FORMATFN-1: format("{:?}", v) function form fails: rustc E0423 compiled, Unknown builtin __builtin_format__ interpreted'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T11:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: format(...) function form equals format!(...) in both backends'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: RETLEN-1
+  github_issue: null
+  item_type: task
+  title: 'RETLEN-1: return v.len() in a -> int function is not cast (E0308); INTLEN-1 covered only tails, lets and arguments'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T11:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: rustc test for explicit return of len()/count() in int-returning functions'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: DICTIDX-1
+  github_issue: null
+  item_type: task
+  title: 'DICTIDX-1: string-keyed dict index: transpiler emits d["k" as usize]; interpreter d["k"].push(2) errors Array index must be an integer'
+  status: planned
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T11:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut d = {"k": [1]}; d["k"].push(2); println("{:?}", d["k"])'
+  - 'Acceptance: dict read, assignment and in-place method through a string key agree between interpreter and rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
   - filed-by:RHLGA-1
   notes: null

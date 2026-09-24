@@ -92,7 +92,19 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   mutating-method receivers on such a chain are emitted as places as well.
 - A method or function whose last expression is a unit-returning call
   (`self.items.push(x)`) infers no return type (UNITRET-1), and one ending in
-  `len()` or `count()` infers `-> usize` (LENRET-1).
+  `len()` or `count()` infers `-> usize` (LENRET-1). A `len()` or `count()`
+  that meets an `int` annotation, an `int` return tail or an `int` parameter
+  is cast (INTLEN-1).
+- The interpreter accepts compound assignment to an index or field chain
+  (`v[1] += 5`, `o.items[0].z -= 1`) (IDXCOMPOUND-1), and in-place array
+  methods through an index chain (`t.rows[0].vals.push(9)`) are written back
+  (IDXPUSHWB-1). `count()` works on arrays and on `chars()`, `iter()` and
+  `bytes()` in the interpreter, and the transpiler no longer adds `.iter()` to
+  a receiver that is already an iterator (COUNTITER-1).
+- **(behaviour)** A `print`/`println` whose first argument is a string literal
+  with any placeholder (`{:?}`, `{:>5}`, `{0}`, …) uses it as the format
+  string when compiled (PRINTLNFMT-1). Before, only `{}` was recognised, so
+  `println("{:?}", v)` printed the format string followed by the value.
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
