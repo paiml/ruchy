@@ -205,8 +205,12 @@ fn test_handle_advanced_command_repl() {
         record: None,
         max_depth: 100,
     };
+    // Main routes this verb before the router; the router must refuse it
+    // rather than report a silent success (G2B-S2). Running it here would
+    // publish or block on stdin; its handler has its own tests.
     let result = handle_advanced_command(command);
-    assert!(result.is_ok());
+    let err = result.expect_err("the router must not accept a main-routed verb");
+    assert!(err.to_string().contains("routing"), "{err}");
 }
 
 #[test]
@@ -217,7 +221,8 @@ fn test_handle_advanced_command_parse() {
     let command = Commands::Parse {
         file: temp_file.path().to_path_buf(),
     };
-    let result = handle_advanced_command(command);
+    // Main routes this verb itself; exercise that real route.
+    let result = handle_command_dispatch(Some(command), false, VmMode::Ast);
     assert!(result.is_ok());
 }
 
@@ -232,7 +237,8 @@ fn test_handle_advanced_command_transpile() {
         minimal: false,
         emit: None,
     };
-    let result = handle_advanced_command(command);
+    // Main routes this verb itself; exercise that real route.
+    let result = handle_command_dispatch(Some(command), false, VmMode::Ast);
     assert!(result.is_ok());
 }
 
@@ -241,9 +247,10 @@ fn test_handle_advanced_command_compile() {
     let temp_file = NamedTempFile::new().expect("Failed to create temporary test file");
     fs::write(&temp_file, "let x = 42").expect("Failed to write test content to temporary file");
 
+    let out_dir = tempfile::TempDir::new().expect("temp dir");
     let command = Commands::Compile {
         file: temp_file.path().to_path_buf(),
-        output: PathBuf::from("test.out"),
+        output: out_dir.path().join("test.out"),
         opt_level: "2".to_string(),
         optimize: None,
         strip: false,
@@ -255,7 +262,8 @@ fn test_handle_advanced_command_compile() {
         pgo: false,
         embed_models: Vec::new(),
     };
-    let result = handle_advanced_command(command);
+    // Main routes this verb itself; exercise that real route.
+    let result = handle_command_dispatch(Some(command), false, VmMode::Ast);
     assert!(result.is_ok());
 }
 
@@ -269,7 +277,8 @@ fn test_handle_advanced_command_check() {
         watch: false,
         format: "text".to_string(),
     };
-    let result = handle_advanced_command(command);
+    // Main routes this verb itself; exercise that real route.
+    let result = handle_command_dispatch(Some(command), false, VmMode::Ast);
     assert!(result.is_ok());
 }
 
@@ -423,8 +432,12 @@ fn test_handle_advanced_command_publish() {
         dry_run: true,
         allow_dirty: false,
     };
+    // Main routes this verb before the router; the router must refuse it
+    // rather than report a silent success (G2B-S2). Running it here would
+    // publish or block on stdin; its handler has its own tests.
     let result = handle_advanced_command(command);
-    assert!(result.is_ok());
+    let err = result.expect_err("the router must not accept a main-routed verb");
+    assert!(err.to_string().contains("routing"), "{err}");
 }
 
 #[test]
