@@ -423,7 +423,7 @@ impl Interpreter {
             }
             ExprKind::FieldAccess { object, field } => self.eval_field_assign(object, field, val),
             // BUG-003: Support array index assignment (arr[i] = value)
-            ExprKind::IndexAccess { object, index } => self.eval_index_assign(object, index, val),
+            ExprKind::IndexAccess { object, index } => self.eval_element_assign(object, index, val),
             _ => Err(InterpreterError::RuntimeError(
                 "Invalid assignment target".to_string(),
             )),
@@ -487,20 +487,86 @@ impl Interpreter {
     /// Evaluate field assignment: `obj.field = value`.
     ///
     /// Handles Object, ObjectMut, Class, and Struct field updates.
+    ///
+    /// NESTASSIGN-1: `object` may be a chain rooted at a variable
+    /// (`o.inner.z = 5`, `self.a.b = x`, `o.items[0].z = 5`): each value-typed
+    /// parent is rebuilt with the new field or element and written to its own
+    /// parent, ending at the variable. This is the single chain writer; the
+    /// in-place array methods on fields (`s.a.items.push(x)`) use it too.
     pub(crate) fn eval_field_assign(
         &mut self,
         object: &Expr,
         field: &str,
         val: Value,
     ) -> Result<Value, InterpreterError> {
-        let ExprKind::Identifier(obj_name) = &object.kind else {
+        let parent = match &object.kind {
+            ExprKind::Identifier(obj_name) => self.lookup_variable(obj_name)?,
+            ExprKind::FieldAccess { .. } | ExprKind::IndexAccess { .. } => {
+                self.eval_expr(object)?
+            }
+            _ => {
+                return Err(InterpreterError::RuntimeError(
+                    "Invalid field assignment target".to_string(),
+                ))
+            }
+        };
+        let updated = super::interpreter_methods_dispatch::with_field(parent, field, val.clone())?;
+        self.write_back(object, updated)?;
+        Ok(val)
+    }
+
+    /// NESTASSIGN-1: store `updated` at the place `target` names: a variable,
+    /// a field of a chain, or an element of an array.
+    fn write_back(&mut self, target: &Expr, updated: Value) -> Result<Value, InterpreterError> {
+        match &target.kind {
+            ExprKind::Identifier(name) => {
+                self.set_variable(name, updated.clone());
+                Ok(updated)
+            }
+            ExprKind::FieldAccess { object, field } => {
+                self.eval_field_assign(object, field, updated)
+            }
+            ExprKind::IndexAccess { object, index } => {
+                self.eval_element_assign(object, index, updated)
+            }
+            _ => Err(InterpreterError::RuntimeError(
+                "Invalid assignment target".to_string(),
+            )),
+        }
+    }
+
+    /// Element assignment `object[index] = val`. An array reached through a
+    /// field chain (`o.items[0] = x`) is rebuilt and written back through the
+    /// chain; every other object uses [`Self::eval_index_assign`].
+    fn eval_element_assign(
+        &mut self,
+        object: &Expr,
+        index: &Expr,
+        val: Value,
+    ) -> Result<Value, InterpreterError> {
+        let ExprKind::FieldAccess { .. } = &object.kind else {
+            return self.eval_index_assign(object, index, val);
+        };
+        let Value::Array(arr) = self.eval_expr(object)? else {
             return Err(InterpreterError::RuntimeError(
-                "Complex field access not supported".to_string(),
+                "Cannot index non-array value".to_string(),
             ));
         };
-        let obj = self.lookup_variable(obj_name)?;
-        let updated = super::interpreter_methods_dispatch::with_field(obj, field, val.clone())?;
-        self.set_variable(obj_name, updated);
+        let Value::Integer(i) = self.eval_expr(index)? else {
+            return Err(InterpreterError::RuntimeError(
+                "Array index must be an integer".to_string(),
+            ));
+        };
+        let mut items = arr.to_vec();
+        let len = items.len();
+        let slot = usize::try_from(i).ok().and_then(|i| items.get_mut(i));
+        let Some(slot) = slot else {
+            return Err(InterpreterError::RuntimeError(format!(
+                "Index {i} out of bounds for array of length {len}"
+            )));
+        };
+        *slot = val.clone();
+        self.write_back(object, Value::Array(Arc::from(items)))?;
         Ok(val)
     }
 
@@ -1666,7 +1732,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_assign_complex_field_target() {
+    fn test_eval_assign_nested_field_target_writes_back() {
         let mut interp = make_interpreter();
 
         // Set up nested object
@@ -1676,22 +1742,72 @@ mod tests {
         outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
         interp.set_variable("obj", Value::Object(Arc::new(outer)));
 
-        // obj.inner.z = 5  -- complex target (object is a FieldAccess, not Identifier)
-        let target = make_expr(ExprKind::FieldAccess {
-            object: Box::new(make_expr(ExprKind::FieldAccess {
-                object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
-                field: "inner".to_string(),
-            })),
-            field: "z".to_string(),
-        });
+        // NESTASSIGN-1: obj.inner.z = 5 writes through `inner` back to `obj`
+        let target = nested_z_target("obj");
         let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
 
         let result = interp.eval_assign(&target, &value);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Complex field access not supported"));
+        assert_eq!(result.expect("nested field assign"), Value::Integer(5));
+        assert_eq!(nested_z(&mut interp), Value::Integer(5));
+    }
+
+    /// `<root>.inner.z` as an assignment target.
+    fn nested_z_target(root: &str) -> Expr {
+        make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::FieldAccess {
+                object: Box::new(make_expr(ExprKind::Identifier(root.to_string()))),
+                field: "inner".to_string(),
+            })),
+            field: "z".to_string(),
+        })
+    }
+
+    /// The current value of `obj.inner.z`.
+    fn nested_z(interp: &mut Interpreter) -> Value {
+        let target = nested_z_target("obj");
+        interp.eval_expr(&target).expect("obj.inner.z is readable")
+    }
+
+    #[test]
+    fn test_eval_assign_field_on_non_object_is_error() {
+        let mut interp = make_interpreter();
+        let mut outer = HashMap::new();
+        outer.insert("inner".to_string(), Value::Integer(3));
+        interp.set_variable("obj", Value::Object(Arc::new(outer)));
+
+        // obj.inner.z = 5 where obj.inner is an integer
+        let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
+        let err = interp
+            .eval_assign(&nested_z_target("obj"), &value)
+            .expect_err("field of an integer is not assignable");
+        assert!(err.to_string().contains("non-object"), "{err}");
+        // the failed assignment leaves obj unchanged
+        let inner = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
+            field: "inner".to_string(),
+        });
+        assert_eq!(
+            interp.eval_expr(&inner).expect("obj.inner"),
+            Value::Integer(3)
+        );
+    }
+
+    #[test]
+    fn test_eval_assign_field_on_call_result_is_error() {
+        let mut interp = make_interpreter();
+        // (1).z = 5: the object is neither a variable nor a chain rooted at one
+        let target = make_expr(ExprKind::FieldAccess {
+            object: Box::new(make_expr(ExprKind::Literal(Literal::Integer(1, None)))),
+            field: "z".to_string(),
+        });
+        let value = make_expr(ExprKind::Literal(Literal::Integer(5, None)));
+        let err = interp
+            .eval_assign(&target, &value)
+            .expect_err("a literal has no assignable field");
+        assert!(
+            err.to_string().contains("Invalid field assignment target"),
+            "{err}"
+        );
     }
 
     #[test]
@@ -1777,7 +1893,7 @@ mod tests {
     }
 
     #[test]
-    fn test_eval_compound_assign_complex_field_access_error() {
+    fn test_eval_compound_assign_nested_field() {
         let mut interp = make_interpreter();
 
         // Set up nested object
@@ -1787,22 +1903,13 @@ mod tests {
         outer.insert("inner".to_string(), Value::Object(Arc::new(inner)));
         interp.set_variable("obj", Value::Object(Arc::new(outer)));
 
-        // obj.inner.z += 1  -- complex field access not supported
-        let target = make_expr(ExprKind::FieldAccess {
-            object: Box::new(make_expr(ExprKind::FieldAccess {
-                object: Box::new(make_expr(ExprKind::Identifier("obj".to_string()))),
-                field: "inner".to_string(),
-            })),
-            field: "z".to_string(),
-        });
+        // NESTASSIGN-1: obj.inner.z += 1 reads and writes through the chain
+        let target = nested_z_target("obj");
         let value = make_expr(ExprKind::Literal(Literal::Integer(1, None)));
 
         let result = interp.eval_compound_assign(&target, AstBinaryOp::Add, &value);
-        assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Complex field access not supported"));
+        assert_eq!(result.expect("nested compound assign"), Value::Integer(6));
+        assert_eq!(nested_z(&mut interp), Value::Integer(6));
     }
 
     #[test]

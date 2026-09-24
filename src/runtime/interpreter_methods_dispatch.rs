@@ -118,28 +118,8 @@ impl Interpreter {
             return Ok(None);
         };
         let (items, result) = self.apply_in_place_call(&arr, method, args)?;
-        self.write_field_chain(object, field, Value::Array(Arc::from(items)))?;
+        self.eval_field_assign(object, field, Value::Array(Arc::from(items)))?;
         Ok(Some(result))
-    }
-
-    /// RHLGA-1 F6: write `val` to `object.field` where `object` is a field
-    /// chain rooted at a variable: each value-typed parent is rebuilt with
-    /// the new field and written to its own parent, ending at the variable.
-    fn write_field_chain(
-        &mut self,
-        object: &Expr,
-        field: &str,
-        val: Value,
-    ) -> Result<(), InterpreterError> {
-        let ExprKind::FieldAccess {
-            object: parent,
-            field: parent_field,
-        } = &object.kind
-        else {
-            return self.eval_field_assign(object, field, val).map(|_| ());
-        };
-        let updated = with_field(self.eval_expr(object)?, field, val)?;
-        self.write_field_chain(parent, parent_field, updated)
     }
 
     /// ARRAYMUT-1: an in-place array method on a local array variable
