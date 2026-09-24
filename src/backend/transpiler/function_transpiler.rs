@@ -39,6 +39,9 @@ impl Transpiler {
             modified_type_params.insert(0, "'a".to_string());
         }
 
+        // PRINTSTR-1: string parameters print with Display.
+        self.track_string_params(params);
+
         // TRANSPILER-004 FIX: Track String-typed parameters for proper concat transpilation
         // Before processing function body, register all String parameters in string_vars
         // This enables is_definitely_string() to detect them for `a + b` → `format!()` or `a + &b`

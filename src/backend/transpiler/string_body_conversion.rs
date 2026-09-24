@@ -109,6 +109,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let name_ident = format_ident!("{}", name);
         let is_mutable_var = self.check_mutability(name, is_mutable, let_body);
+        self.track_string_binding(name, value, type_annotation);
         let value_tokens =
             self.convert_value_for_string_context(name, value, type_annotation, is_mutable_var)?;
         let let_body_tokens = self.transpile_expr(let_body)?;

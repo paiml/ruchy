@@ -9,7 +9,7 @@
 //! **EXTREME TDD Round 64**: Extracted from statements.rs and mod.rs for modularization.
 
 use super::Transpiler;
-use crate::frontend::ast::{Expr, ExprKind, Literal};
+use crate::frontend::ast::{Expr, ExprKind, Literal, Type, TypeKind};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -109,8 +109,9 @@ impl Transpiler {
             if !matches!(&args[0].kind, ExprKind::Literal(Literal::String(_))) {
                 let arg_tokens = self.transpile_expr(&args[0])?;
                 // DEFECT-DICT-DETERMINISM FIX: Use Debug format with BTreeMap (deterministic)
-                // BTreeMap Debug format is sorted, so {:?} is safe and deterministic
-                let format_str = "{:?}";
+                // BTreeMap Debug format is sorted, so {:?} is safe and deterministic.
+                // PRINTSTR-1: a known string prints with Display (no quotes).
+                let format_str = self.value_placeholder(&args[0]);
                 return Ok(Some(quote! { #func_tokens!(#format_str, #arg_tokens) }));
             }
         }
@@ -191,25 +192,15 @@ impl Transpiler {
                     ))
                 } else {
                     // First argument is regular string, treat all as separate values
-                    let format_parts: Vec<_> = args
-                        .iter()
-                        .map(|arg| match &arg.kind {
-                            ExprKind::Literal(Literal::String(_)) => "{}",
-                            _ => "{:?}",
-                        })
-                        .collect();
+                    let format_parts: Vec<_> =
+                        args.iter().map(|arg| self.value_placeholder(arg)).collect();
                     let format_str = format_parts.join(" ");
                     Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
                 }
             } else {
                 // No format string, treat all as separate values
-                let format_parts: Vec<_> = args
-                    .iter()
-                    .map(|arg| match &arg.kind {
-                        ExprKind::Literal(Literal::String(_)) => "{}",
-                        _ => "{:?}",
-                    })
-                    .collect();
+                let format_parts: Vec<_> =
+                    args.iter().map(|arg| self.value_placeholder(arg)).collect();
                 let format_str = format_parts.join(" ");
                 Ok(Some(quote! { #func_tokens!(#format_str, #(#all_args),*) }))
             }
@@ -248,6 +239,103 @@ impl Transpiler {
                 }
             }
         }
+    }
+}
+
+/// PRINTSTR-1: the type tag `variable_types` holds for a string binding.
+const STRING_VAR_TYPE: &str = "String";
+
+/// PRINTSTR-1: methods whose result is a `String`/`&str` in the transpiled Rust.
+const STRING_RESULT_METHODS: &[&str] = &[
+    "to_string",
+    "to_uppercase",
+    "to_lowercase",
+    "trim",
+    "trim_start",
+    "trim_end",
+    "replace",
+    "repeat",
+];
+
+impl Transpiler {
+    /// PRINTSTR-1: `{}` for an expression known to be a string, `{:?}` for
+    /// anything else (a number prints the same either way). (complexity: 2)
+    pub(crate) fn value_placeholder(&self, expr: &Expr) -> &'static str {
+        if self.is_display_string(expr) {
+            "{}"
+        } else {
+            "{:?}"
+        }
+    }
+
+    /// PRINTSTR-1: `expr` is a string in the transpiled Rust: a literal,
+    /// an interpolation, `format!`/`format(..)`, a string-returning method,
+    /// or a variable/parameter recorded as a string. (complexity: 6)
+    pub(crate) fn is_display_string(&self, expr: &Expr) -> bool {
+        match &expr.kind {
+            ExprKind::Literal(Literal::String(_)) | ExprKind::StringInterpolation { .. } => true,
+            ExprKind::Macro { name, .. } | ExprKind::MacroInvocation { name, .. } => {
+                name.trim_end_matches('!') == "format"
+            }
+            ExprKind::Call { func, args } => self.is_format_fn_call(func, args),
+            ExprKind::MethodCall { method, .. } => STRING_RESULT_METHODS.contains(&method.as_str()),
+            ExprKind::Identifier(name) => self
+                .variable_types
+                .borrow()
+                .get(name)
+                .is_some_and(|t| t == STRING_VAR_TYPE),
+            _ => false,
+        }
+    }
+
+    /// PRINTSTR-1: record whether the binding `name` holds a string, from its
+    /// annotation when present, else from its value. A rebinding to a
+    /// non-string clears the record. (complexity: 2)
+    pub(crate) fn track_string_binding(&self, name: &str, value: &Expr, ty: Option<&Type>) {
+        let is_string = ty.map_or_else(|| self.is_display_string(value), is_string_annotation);
+        self.set_string_var(name, is_string);
+    }
+
+    /// PRINTSTR-1: parameters of the function being transpiled; string
+    /// records of earlier functions are dropped first. (complexity: 2)
+    pub(crate) fn track_string_params(&self, params: &[crate::frontend::ast::Param]) {
+        self.variable_types
+            .borrow_mut()
+            .retain(|_, t| t != STRING_VAR_TYPE);
+        for param in params {
+            self.set_string_var(&param.name(), is_string_annotation(&param.ty));
+        }
+    }
+
+    /// PRINTSTR-1: set or clear the string record of `name`. (complexity: 3)
+    fn set_string_var(&self, name: &str, is_string: bool) {
+        let mut types = self.variable_types.borrow_mut();
+        if is_string {
+            types.insert(name.to_string(), STRING_VAR_TYPE.to_string());
+        } else if types.get(name).is_some_and(|t| t == STRING_VAR_TYPE) {
+            types.remove(name);
+        }
+    }
+
+    /// FORMATFN-1: `func(args)` is the function form of `format!`: `format`
+    /// with a string-literal format argument and no user `format` function.
+    /// (complexity: 3)
+    pub(crate) fn is_format_fn_call(&self, func: &Expr, args: &[Expr]) -> bool {
+        matches!(&func.kind, ExprKind::Identifier(n) if n == "format")
+            && matches!(
+                args.first().map(|a| &a.kind),
+                Some(ExprKind::Literal(Literal::String(_)))
+            )
+            && !self.function_signatures.contains_key("format")
+    }
+}
+
+/// PRINTSTR-1: `ty` is `String`, `str` or a reference to one. (complexity: 3)
+fn is_string_annotation(ty: &Type) -> bool {
+    match &ty.kind {
+        TypeKind::Named(name) => matches!(name.as_str(), "String" | "str" | "&str"),
+        TypeKind::Reference { inner, .. } => is_string_annotation(inner),
+        _ => false,
     }
 }
 

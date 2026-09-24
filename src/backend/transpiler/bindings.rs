@@ -71,6 +71,7 @@ impl Transpiler {
         // Handle Rust reserved keywords by prefixing with r#
         // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
         let name_ident = Self::safe_ident(name);
+        self.track_string_binding(name, value, None);
 
         // Auto-detect mutability
         let effective_mutability = is_mutable
@@ -263,6 +264,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
         let name_ident = Self::safe_ident(name);
+        self.track_string_binding(name, value, type_annotation);
 
         // PARSER-073: Generate const/let keyword based on const attribute
         let is_mutable_var = is_mutable
