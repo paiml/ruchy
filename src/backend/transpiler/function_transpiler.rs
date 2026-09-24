@@ -89,7 +89,7 @@ impl Transpiler {
             } else {
                 self.generate_body_tokens(body, is_async)?
             }
-        } else if name == "main" && Self::has_non_unit_last_expr(body) {
+        } else if name == "main" && self.has_non_unit_last_expr(body) {
             // BOOK-COMPAT-015: Main functions that end with a non-unit expression
             // should print it instead of trying to return it
             self.generate_main_body_with_print(body, is_async)?
@@ -124,20 +124,27 @@ impl Transpiler {
     }
 
     /// BOOK-COMPAT-015: Check if body has a non-unit last expression
-    fn has_non_unit_last_expr(body: &Expr) -> bool {
+    /// (MAINUNIT-1: a call to a unit-returning user function is unit)
+    fn has_non_unit_last_expr(&self, body: &Expr) -> bool {
         match &body.kind {
-            ExprKind::Block(exprs) => {
-                if let Some(last) = exprs.last() {
-                    Self::has_non_unit_last_expr(last)
-                } else {
-                    false
-                }
-            }
+            ExprKind::Block(exprs) => exprs
+                .last()
+                .is_some_and(|last| self.has_non_unit_last_expr(last)),
             ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-                Self::has_non_unit_last_expr(body)
+                self.has_non_unit_last_expr(body)
             }
-            _ => !Self::is_unit_expr(body),
+            _ => !Self::is_unit_expr(body) && !self.is_unit_function_call(body),
         }
+    }
+
+    /// MAINUNIT-1: a call to a user function recorded as returning `()`.
+    /// (complexity: 2)
+    fn is_unit_function_call(&self, expr: &Expr) -> bool {
+        matches!(
+            &expr.kind,
+            ExprKind::Call { func, .. }
+                if matches!(&func.kind, ExprKind::Identifier(name) if self.unit_functions.contains(name))
+        )
     }
 
     /// Check if expression is a unit expression (doesn't return a value)
@@ -252,7 +259,7 @@ impl Transpiler {
             },
             None => {
                 let run = quote! { __ruchy_block_on(async move { #inner }) };
-                if Self::has_non_unit_last_expr(body) {
+                if self.has_non_unit_last_expr(body) {
                     quote! { let __ruchy_main_value = #run; println!("{:?}", __ruchy_main_value); }
                 } else {
                     quote! { #run; }

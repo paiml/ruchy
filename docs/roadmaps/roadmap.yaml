@@ -3688,11 +3688,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'MAINUNIT-1: a unit-returning call as the last statement of main is transpiled as println!("{:?}", f()) and prints ()'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-23T14:07:20Z
-  updated: 2026-09-23T14:07:20Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: fun hello() { println("hi") }; fun main() { let x = 1; hello() }'

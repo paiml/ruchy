@@ -122,6 +122,9 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   (EPRINTLN-1).
 - An array literal passed to a parameter annotated `Vec<T>` becomes a `Vec`
   in compiled code (ARRVECARG-1).
+- A call to a unit-returning user function as the last statement of `main`
+  is no longer wrapped in `println!("{:?}", ..)`, so the compiled program does
+  not print `()` (MAINUNIT-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
