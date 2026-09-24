@@ -15,6 +15,8 @@ use crate::runtime::interpreter::Interpreter;
 use crate::runtime::{InterpreterError, Value};
 use std::sync::Arc;
 
+use crate::runtime::eval_array::{apply_in_place_array_method, is_in_place_array_method};
+
 /// Which handler an object's dispatch marker selects, checked in the order
 /// actor, class, struct, `__type`.
 enum ObjectKind {
@@ -45,17 +47,11 @@ impl ObjectKind {
     }
 }
 
-/// FIELDPOP-1: array methods that change their receiver in place — the same
-/// set the interpreter mutates for a local array receiver (`a.push(x)`, `a.pop()`).
-fn is_mutating_array_call(method: &str, arg_count: usize) -> bool {
-    matches!((method, arg_count), ("push", 1) | ("pop", 0))
-}
-
 impl Interpreter {
-    /// FIELDPOP-1: `obj.field.push(x)` / `obj.field.pop()` on an array field
-    /// behave like the same call on a local array: the call returns the
-    /// method's own result (`pop` → the removed element, `nil` when empty;
-    /// `push` → `nil`) and the changed array is written back to the field.
+    /// FIELDPOP-1 / ARRAYMUT-1: an in-place array method on a field
+    /// (`self.items.pop()`, `s.items.sort()`, `o.items.insert(0, x)`) behaves
+    /// like the same call on a local array: the call returns the method's own
+    /// result and the changed array is written back to the field.
     ///
     /// Returns `Ok(None)` when the call is not of that shape, so the caller
     /// falls through to ordinary method dispatch.
@@ -69,22 +65,57 @@ impl Interpreter {
             return Ok(None);
         };
         let rooted = matches!(object.kind, ExprKind::Identifier(_));
-        if !rooted || !is_mutating_array_call(method, args.len()) {
+        if !rooted || !is_in_place_array_method(method, args.len()) {
             return Ok(None);
         }
         let Value::Array(arr) = self.eval_expr(receiver)? else {
             return Ok(None);
         };
-        let mut items = arr.to_vec();
-        let result = match args.first() {
-            Some(arg) => {
-                items.push(self.eval_expr(arg)?);
-                Value::Nil
-            }
-            None => items.pop().unwrap_or(Value::Nil),
-        };
+        let (items, result) = self.apply_in_place_call(&arr, method, args)?;
         self.eval_field_assign(object, field, Value::Array(Arc::from(items)))?;
         Ok(Some(result))
+    }
+
+    /// ARRAYMUT-1: an in-place array method on a local array variable
+    /// (`v.push(x)`, `v.pop()`, `v.sort()`, `v.remove(i)`, …) returns the
+    /// method's own result and rebinds the variable to the changed array.
+    /// `env_set_mut` updates the binding in an enclosing scope too, so the
+    /// change survives a call made inside a loop body.
+    ///
+    /// Returns `Ok(None)` when the receiver is not an array variable or the
+    /// method is not in-place, so the caller falls through.
+    fn try_local_array_mutation(
+        &mut self,
+        var_name: &str,
+        method: &str,
+        args: &[Expr],
+    ) -> Result<Option<Value>, InterpreterError> {
+        if !is_in_place_array_method(method, args.len()) {
+            return Ok(None);
+        }
+        let Ok(Value::Array(arr)) = self.lookup_variable(var_name) else {
+            return Ok(None);
+        };
+        let (items, result) = self.apply_in_place_call(&arr, method, args)?;
+        self.env_set_mut(var_name.to_string(), Value::Array(Arc::from(items)));
+        Ok(Some(result))
+    }
+
+    /// Evaluate `args`, then apply the in-place `method` to a copy of `arr`.
+    /// Returns the changed elements and the method's result.
+    fn apply_in_place_call(
+        &mut self,
+        arr: &[Value],
+        method: &str,
+        args: &[Expr],
+    ) -> Result<(Vec<Value>, Value), InterpreterError> {
+        let arg_values = args
+            .iter()
+            .map(|arg| self.eval_expr(arg))
+            .collect::<Result<Vec<_>, _>>()?;
+        let mut items = arr.to_vec();
+        let result = apply_in_place_array_method(&mut items, method, &arg_values)?;
+        Ok((items, result))
     }
 
     /// Evaluate a method call
@@ -101,38 +132,11 @@ impl Interpreter {
             }
         }
 
-        // Special handling for mutating array methods on simple identifiers
-        // e.g., messages.push(item)
+        // ARRAYMUT-1: in-place array methods on a local array variable
+        // (messages.push(item), v.sort(), v.remove(0)) mutate the binding
         if let ExprKind::Identifier(var_name) = &receiver.kind {
-            if method == "push" && args.len() == 1 {
-                // Get current array value
-                if let Ok(Value::Array(arr)) = self.lookup_variable(var_name) {
-                    // Evaluate the argument
-                    let arg_value = self.eval_expr(&args[0])?;
-
-                    // Create new array with item added
-                    let mut new_arr = arr.to_vec();
-                    new_arr.push(arg_value);
-
-                    // Update the variable binding - CRITICAL: Use env_set_mut to update
-                    // in parent scopes (e.g., when push is called inside while loops)
-                    self.env_set_mut(var_name.clone(), Value::Array(Arc::from(new_arr)));
-
-                    return Ok(Value::Nil); // push returns nil
-                }
-            } else if method == "pop" && args.is_empty() {
-                // Get current array value
-                if let Ok(Value::Array(arr)) = self.lookup_variable(var_name) {
-                    // Create new array with last item removed
-                    let mut new_arr = arr.to_vec();
-                    let popped_value = new_arr.pop().unwrap_or(Value::Nil);
-
-                    // Update the variable binding - CRITICAL: Use env_set_mut to update
-                    // in parent scopes (e.g., when pop is called inside while loops)
-                    self.env_set_mut(var_name.clone(), Value::Array(Arc::from(new_arr)));
-
-                    return Ok(popped_value); // pop returns the removed item
-                }
+            if let Some(result) = self.try_local_array_mutation(var_name, method, args)? {
+                return Ok(result);
             }
         }
 

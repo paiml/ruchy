@@ -110,6 +110,163 @@ where
     }
 }
 
+/// ARRAYMUT-1: array methods that change their receiver in place, as `Vec`
+/// methods do in Rust. The interpreter applies them to a local array or a
+/// field and writes the changed array back (see `apply_in_place_array_method`).
+///
+/// # Complexity
+/// Cyclomatic complexity: 1
+pub(crate) fn is_in_place_array_method(method: &str, arg_count: usize) -> bool {
+    matches!(
+        (method, arg_count),
+        ("push" | "append" | "extend" | "remove" | "truncate", 1)
+            | ("pop" | "sort" | "reverse" | "clear" | "dedup", 0)
+            | ("insert", 2)
+    )
+}
+
+/// ARRAYMUT-1: apply an in-place method to `items`, returning what the Rust
+/// `Vec` method returns: the removed element for `remove`, the popped element
+/// (or `nil` when empty) for `pop`, and `nil` for every other method.
+///
+/// # Errors
+/// Out-of-range `insert`/`remove`, a non-integer index, a non-iterable
+/// `append`/`extend` argument, or a method outside `is_in_place_array_method`.
+///
+/// # Complexity
+/// Cyclomatic complexity: 2
+pub(crate) fn apply_in_place_array_method(
+    items: &mut Vec<Value>,
+    method: &str,
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    match args {
+        [] => apply_in_place_nullary(items, method),
+        _ => apply_in_place_with_args(items, method, args),
+    }
+}
+
+/// # Complexity
+/// Cyclomatic complexity: 7
+fn apply_in_place_nullary(items: &mut Vec<Value>, method: &str) -> Result<Value, InterpreterError> {
+    match method {
+        "pop" => return Ok(items.pop().unwrap_or(Value::Nil)),
+        "sort" => items.sort_by(compare_for_sort),
+        "reverse" => items.reverse(),
+        "clear" => items.clear(),
+        "dedup" => items.dedup_by(|a, b| values_equal(a, b)),
+        _ => return Err(unknown_in_place(method)),
+    }
+    Ok(Value::Nil)
+}
+
+/// # Complexity
+/// Cyclomatic complexity: 7
+fn apply_in_place_with_args(
+    items: &mut Vec<Value>,
+    method: &str,
+    args: &[Value],
+) -> Result<Value, InterpreterError> {
+    match (method, args) {
+        ("push", [item]) => items.push(item.clone()),
+        ("append" | "extend", [other]) => items.extend(iterable_items(method, other)?),
+        ("remove", [index]) => return remove_at(items, index),
+        ("truncate", [len]) => items.truncate(index_arg("truncate", len)?),
+        ("insert", [index, item]) => insert_at(items, index, item)?,
+        _ => return Err(unknown_in_place(method)),
+    }
+    Ok(Value::Nil)
+}
+
+fn unknown_in_place(method: &str) -> InterpreterError {
+    InterpreterError::RuntimeError(format!("Unknown array method: {method}"))
+}
+
+/// A non-negative integer argument used as an index or length.
+///
+/// # Complexity
+/// Cyclomatic complexity: 3
+fn index_arg(method: &str, value: &Value) -> Result<usize, InterpreterError> {
+    match value {
+        Value::Integer(i) => usize::try_from(*i).map_err(|_| {
+            InterpreterError::RuntimeError(format!("{method}: index must be non-negative, got {i}"))
+        }),
+        other => Err(InterpreterError::RuntimeError(format!(
+            "{method}: index must be an integer, got {}",
+            other.type_name()
+        ))),
+    }
+}
+
+/// # Complexity
+/// Cyclomatic complexity: 2
+fn remove_at(items: &mut Vec<Value>, index: &Value) -> Result<Value, InterpreterError> {
+    let i = index_arg("remove", index)?;
+    if i >= items.len() {
+        return Err(InterpreterError::RuntimeError(format!(
+            "remove: index {i} out of range for array of length {}",
+            items.len()
+        )));
+    }
+    Ok(items.remove(i))
+}
+
+/// # Complexity
+/// Cyclomatic complexity: 2
+fn insert_at(items: &mut Vec<Value>, index: &Value, item: &Value) -> Result<(), InterpreterError> {
+    let i = index_arg("insert", index)?;
+    if i > items.len() {
+        return Err(InterpreterError::RuntimeError(format!(
+            "insert: index {i} out of range for array of length {}",
+            items.len()
+        )));
+    }
+    items.insert(i, item.clone());
+    Ok(())
+}
+
+/// The elements an `append`/`extend` argument contributes: an array's or a
+/// tuple's elements, or the integers of an integer range.
+///
+/// # Complexity
+/// Cyclomatic complexity: 4
+fn iterable_items(method: &str, value: &Value) -> Result<Vec<Value>, InterpreterError> {
+    match value {
+        Value::Array(arr) => Ok(arr.to_vec()),
+        Value::Tuple(elems) => Ok(elems.to_vec()),
+        Value::Range {
+            start,
+            end,
+            inclusive,
+        } => range_items(method, start, end, *inclusive),
+        other => Err(InterpreterError::RuntimeError(format!(
+            "{method}: expected an array, got {}",
+            other.type_name()
+        ))),
+    }
+}
+
+/// # Complexity
+/// Cyclomatic complexity: 3
+fn range_items(
+    method: &str,
+    start: &Value,
+    end: &Value,
+    inclusive: bool,
+) -> Result<Vec<Value>, InterpreterError> {
+    let (Value::Integer(lo), Value::Integer(hi)) = (start, end) else {
+        return Err(InterpreterError::RuntimeError(format!(
+            "{method}: expected an integer range"
+        )));
+    };
+    let values: Vec<Value> = if inclusive {
+        (*lo..=*hi).map(Value::Integer).collect()
+    } else {
+        (*lo..*hi).map(Value::Integer).collect()
+    };
+    Ok(values)
+}
+
 // No-argument array methods (complexity <= 3 each)
 
 fn eval_array_len(arr: &Arc<[Value]>) -> Result<Value, InterpreterError> {
@@ -1072,5 +1229,107 @@ mod sort_order_tests {
                 }
             }
         }
+    }
+}
+
+/// ARRAYMUT-1: in-place methods change the receiver and return Rust's result.
+/// `extend` is covered here because `.extend(` does not parse yet (EXTENDKW-1).
+#[cfg(test)]
+mod in_place_tests {
+    use super::{apply_in_place_array_method, is_in_place_array_method};
+    use crate::runtime::Value;
+    use std::sync::Arc;
+
+    fn ints(values: &[i64]) -> Vec<Value> {
+        values.iter().copied().map(Value::Integer).collect()
+    }
+
+    fn apply(items: &mut Vec<Value>, method: &str, args: &[Value]) -> Value {
+        apply_in_place_array_method(items, method, args).expect("in-place method succeeds")
+    }
+
+    #[test]
+    fn test_arraymut_1_extend_with_array_appends_elements() {
+        let mut items = ints(&[1, 2]);
+        let other = Value::Array(Arc::from(ints(&[3, 4])));
+        assert_eq!(apply(&mut items, "extend", &[other]), Value::Nil);
+        assert_eq!(items, ints(&[1, 2, 3, 4]));
+    }
+
+    #[test]
+    fn test_arraymut_1_extend_with_ranges_appends_integers() {
+        let mut items = ints(&[0]);
+        apply(
+            &mut items,
+            "extend",
+            &[Value::from_range(
+                Value::Integer(1),
+                Value::Integer(3),
+                false,
+            )],
+        );
+        apply(
+            &mut items,
+            "extend",
+            &[Value::from_range(
+                Value::Integer(7),
+                Value::Integer(8),
+                true,
+            )],
+        );
+        assert_eq!(items, ints(&[0, 1, 2, 7, 8]));
+    }
+
+    #[test]
+    fn test_arraymut_1_extend_with_tuple_appends_elements() {
+        let mut items = Vec::new();
+        let tuple = Value::Tuple(Arc::from(ints(&[5, 6])));
+        apply(&mut items, "extend", &[tuple]);
+        assert_eq!(items, ints(&[5, 6]));
+    }
+
+    #[test]
+    fn test_arraymut_1_extend_rejects_non_iterable() {
+        let mut items = ints(&[1]);
+        let err = apply_in_place_array_method(&mut items, "extend", &[Value::Integer(3)]);
+        assert!(err.is_err());
+        assert_eq!(items, ints(&[1]));
+    }
+
+    #[test]
+    fn test_arraymut_1_pop_and_push_keep_their_results() {
+        let mut items = ints(&[1]);
+        assert_eq!(apply(&mut items, "push", &[Value::Integer(2)]), Value::Nil);
+        assert_eq!(apply(&mut items, "pop", &[]), Value::Integer(2));
+        assert_eq!(apply(&mut items, "pop", &[]), Value::Integer(1));
+        assert_eq!(apply(&mut items, "pop", &[]), Value::Nil);
+    }
+
+    #[test]
+    fn test_arraymut_1_bad_indices_are_errors() {
+        let mut items = ints(&[1, 2]);
+        let bad = [
+            ("remove", vec![Value::Integer(2)]),
+            ("remove", vec![Value::Integer(-1)]),
+            ("insert", vec![Value::Integer(3), Value::Integer(0)]),
+            ("truncate", vec![Value::from_string("x".to_string())]),
+        ];
+        for (method, args) in bad {
+            assert!(
+                apply_in_place_array_method(&mut items, method, &args).is_err(),
+                "{method}"
+            );
+        }
+        assert_eq!(items, ints(&[1, 2]));
+    }
+
+    #[test]
+    fn test_arraymut_1_table_matches_arity() {
+        assert!(is_in_place_array_method("insert", 2));
+        assert!(!is_in_place_array_method("insert", 1));
+        assert!(is_in_place_array_method("sort", 0));
+        assert!(!is_in_place_array_method("sort", 1));
+        assert!(!is_in_place_array_method("sorted", 0));
+        assert!(!is_in_place_array_method("reversed", 0));
     }
 }
