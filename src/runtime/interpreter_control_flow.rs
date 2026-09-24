@@ -517,7 +517,11 @@ impl Interpreter {
 
     /// NESTASSIGN-1: store `updated` at the place `target` names: a variable,
     /// a field of a chain, or an element of an array.
-    fn write_back(&mut self, target: &Expr, updated: Value) -> Result<Value, InterpreterError> {
+    pub(crate) fn write_back(
+        &mut self,
+        target: &Expr,
+        updated: Value,
+    ) -> Result<Value, InterpreterError> {
         match &target.kind {
             ExprKind::Identifier(name) => {
                 self.set_variable(name, updated.clone());
@@ -536,17 +540,18 @@ impl Interpreter {
     }
 
     /// Element assignment `object[index] = val`. An array reached through a
-    /// field chain (`o.items[0] = x`) is rebuilt and written back through the
-    /// chain; every other object uses [`Self::eval_index_assign`].
+    /// chain containing a field (`o.items[0] = x`, `g.grid[0][1] = x`) is
+    /// rebuilt and written back through the chain; every other object uses
+    /// [`Self::eval_index_assign`].
     fn eval_element_assign(
         &mut self,
         object: &Expr,
         index: &Expr,
         val: Value,
     ) -> Result<Value, InterpreterError> {
-        let ExprKind::FieldAccess { .. } = &object.kind else {
+        if !is_chain_through_field(object) {
             return self.eval_index_assign(object, index, val);
-        };
+        }
         let Value::Array(arr) = self.eval_expr(object)? else {
             return Err(InterpreterError::RuntimeError(
                 "Cannot index non-array value".to_string(),
@@ -642,46 +647,54 @@ impl Interpreter {
         }
     }
 
-    /// Evaluate a compound assignment
-    /// Complexity: 6
+    /// Evaluate a compound assignment (`x += 1`, `o.a.b -= 2`, `v[i] *= 3`,
+    /// `o.items[0].z %= 4`).
+    ///
+    /// IDXCOMPOUND-1: the target may be any place `write_back` accepts: a
+    /// variable, or a FieldAccess/IndexAccess chain rooted at one. The current
+    /// value is read through the chain and the result is written back through
+    /// the same path plain assignment uses.
+    /// Complexity: 2
     pub(crate) fn eval_compound_assign(
         &mut self,
         target: &Expr,
         op: AstBinaryOp,
         value: &Expr,
     ) -> Result<Value, InterpreterError> {
-        // Get current value
-        let current = match &target.kind {
-            ExprKind::Identifier(name) => self.lookup_variable(name)?,
-            ExprKind::FieldAccess { object, field } => self.eval_field_access(object, field)?,
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "Invalid compound assignment target".to_string(),
-                ))
-            }
-        };
-
-        // Compute new value
+        if !is_place_expr(target) {
+            return Err(InterpreterError::RuntimeError(
+                "Invalid compound assignment target".to_string(),
+            ));
+        }
+        let current = self.eval_expr(target)?;
         let rhs = self.eval_expr(value)?;
         let new_val = self.apply_binary_op(&current, op, &rhs)?;
-
-        // Assign back
-        match &target.kind {
-            ExprKind::Identifier(name) => {
-                self.set_variable(name, new_val.clone());
-            }
-            ExprKind::FieldAccess { object, field } => {
-                // Reuse eval_field_assign which handles all object types
-                self.eval_field_assign(object, field, new_val.clone())?;
-            }
-            _ => {
-                return Err(InterpreterError::RuntimeError(
-                    "Complex assignment targets not supported in compound assignment".to_string(),
-                ))
-            }
-        }
-
+        self.write_back(target, new_val.clone())?;
         Ok(new_val)
+    }
+}
+
+/// IDXCOMPOUND-1: `expr` is a FieldAccess, or an IndexAccess chain with a
+/// FieldAccess somewhere below it (`o.grid[0]`).
+/// Complexity: 3
+fn is_chain_through_field(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::FieldAccess { .. } => true,
+        ExprKind::IndexAccess { object, .. } => is_chain_through_field(object),
+        _ => false,
+    }
+}
+
+/// IDXCOMPOUND-1 / IDXPUSHWB-1: `expr` names a place: a variable, or a
+/// FieldAccess/IndexAccess chain whose root is a variable.
+/// Complexity: 3
+pub(crate) fn is_place_expr(expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Identifier(_) => true,
+        ExprKind::FieldAccess { object, .. } | ExprKind::IndexAccess { object, .. } => {
+            is_place_expr(object)
+        }
+        _ => false,
     }
 }
 
