@@ -4600,3 +4600,79 @@ roadmap:
   labels:
   - kind:code
   - cli
+- id: IDXEVAL1-1
+  github_issue: null
+  item_type: task
+  title: 'IDXEVAL1-1: interpreter evaluates the index expression of a compound or nested-index assignment twice (read + write_back); compiled code evaluates it once'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T13:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: v[next()] += 1 or m[f()][j] = x with a side-effecting index'
+  - 'Acceptance: the index expression is evaluated exactly once in the interpreter; run and compiled output agree'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: FMTTEMPLATE-1
+  github_issue: null
+  item_type: task
+  title: 'FMTTEMPLATE-1: interpreter println/print with a non-literal first argument and 2+ args treats it as a format template; compiled code treats only a string literal as one'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T13:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let s = "{}"; println(s, 1)'
+  - 'Acceptance: run and the compiled binary print identical text'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: FMTEXTRA-1
+  github_issue: null
+  item_type: task
+  title: 'FMTEXTRA-1: interpreter format engine silently ignores extra arguments; rustc rejects them, CHANGELOG says a count mismatch is an error'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T13:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("{}", 1, 2)'
+  - 'Acceptance: the interpreter reports an argument-count error for extra arguments, as CHANGELOG FMTSPEC-1 states'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: PRINTSTRSCOPE-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTSTRSCOPE-1: PRINTSTR-1 string tracking is scope-unaware and STRING_RESULT_METHODS matches any receiver, so a shadowing for/closure/match binding or v.repeat(n) on a Vec emits {} and fails rustc'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T13:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let x = "a"; for x in [[1]] { println(x) }  and  let v = [1]; println(v.repeat(2))'
+  - 'Acceptance: shadowed or non-string receivers print with {:?} and compile; string cases keep {}'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
