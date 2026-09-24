@@ -261,12 +261,6 @@ const STRING_RESULT_METHODS: &[&str] = &[
     "trim_end",
 ];
 
-/// PRINTSTRSCOPE-1: methods whose result is a `String` except on a list
-/// receiver (`[1].repeat(2)` is a `Vec`); STRRECV-1: an untracked receiver
-/// (a loop variable, a field, a call) counts as a string, as `ruchy run`
-/// prints it.
-const STRING_RECEIVER_METHODS: &[&str] = &["replace", "repeat"];
-
 impl Transpiler {
     /// PRINTSTR-1: `{}` for an expression known to be a string, `{:?}` for
     /// anything else (a number prints the same either way). (complexity: 2)
@@ -289,8 +283,10 @@ impl Transpiler {
             }
             ExprKind::Call { func, args } => self.is_format_fn_call(func, args),
             ExprKind::MethodCall {
-                receiver, method, ..
-            } => self.is_string_method_result(receiver, method),
+                receiver,
+                method,
+                args,
+            } => self.is_string_method_result(receiver, method, args),
             ExprKind::Identifier(name) => self
                 .variable_types
                 .borrow()
@@ -307,11 +303,10 @@ impl Transpiler {
     pub(crate) fn track_string_binding(&self, name: &str, value: &Expr, ty: Option<&Type>) {
         let is_string = ty.map_or_else(|| self.is_display_string(value), is_string_annotation);
         self.set_string_var(name, is_string);
-        if ty.is_none() && self.is_known_list(value) {
-            self.variable_types
-                .borrow_mut()
-                .insert(name.to_string(), LIST_VAR_TYPE.to_string());
-        }
+        self.set_list_var(
+            name,
+            ty.map_or_else(|| self.is_known_list(value), is_list_annotation),
+        );
         self.track_typed_dict_binding(name, value);
     }
 
@@ -320,18 +315,32 @@ impl Transpiler {
     pub(crate) fn track_string_params(&self, params: &[Param]) {
         self.variable_types
             .borrow_mut()
-            .retain(|_, t| t != STRING_VAR_TYPE);
+            .retain(|_, t| t != STRING_VAR_TYPE && t != LIST_VAR_TYPE);
         for param in params {
             self.set_string_var(&param.name(), is_string_annotation(&param.ty));
+            self.set_list_var(&param.name(), is_list_annotation(&param.ty));
         }
     }
 
     /// PRINTSTRSCOPE-1: `receiver.method(..)` is a string: a text-printing
-    /// method, or `replace`/`repeat` on a receiver that is not a list
-    /// (STRRECV-1). (complexity: 3)
-    fn is_string_method_result(&self, receiver: &Expr, method: &str) -> bool {
-        STRING_RESULT_METHODS.contains(&method)
-            || (STRING_RECEIVER_METHODS.contains(&method) && !self.is_known_list(receiver))
+    /// method; STRRECV-1: `replace(from, to)` (`Option::replace` takes one
+    /// argument), or `repeat` on a receiver not known to be a list.
+    /// (complexity: 4)
+    fn is_string_method_result(&self, receiver: &Expr, method: &str, args: &[Expr]) -> bool {
+        match method {
+            "replace" => args.len() == 2,
+            "repeat" => !self.is_known_list(receiver),
+            _ => STRING_RESULT_METHODS.contains(&method),
+        }
+    }
+
+    /// STRRECV-1: record `name` as a list binding (or leave it). (complexity: 2)
+    fn set_list_var(&self, name: &str, is_list: bool) {
+        if is_list {
+            self.variable_types
+                .borrow_mut()
+                .insert(name.to_string(), LIST_VAR_TYPE.to_string());
+        }
     }
 
     /// STRRECV-1: `expr` is a list literal or a binding recorded as one.
@@ -509,6 +518,17 @@ impl Transpiler {
             args[0].span,
         );
         self.transpile_expr(&macro_expr).map(Some)
+    }
+}
+
+/// STRRECV-1: `ty` is a list type: `[T]`, `[T; N]`, `Vec<T>`, or a
+/// reference to one. (complexity: 4)
+fn is_list_annotation(ty: &Type) -> bool {
+    match &ty.kind {
+        TypeKind::List(_) | TypeKind::Array { .. } => true,
+        TypeKind::Generic { base, .. } => base == "Vec",
+        TypeKind::Reference { inner, .. } => is_list_annotation(inner),
+        _ => false,
     }
 }
 

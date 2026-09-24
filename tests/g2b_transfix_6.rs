@@ -290,3 +290,21 @@ fn test_strrecv_1_trailing_loops_are_unit() {
     check(&src, "2\n1\n", true);
     check(&main_with("    let mut j = 1\n    j += 1"), "", true);
 }
+
+// A list-typed parameter or annotated binding keeps `repeat` on `{:?}`
+// (a `{}` would not build: `Vec` has no Display).
+#[test]
+fn test_strrecv_1_list_typed_param_repeat_stays_debug() {
+    let src = format!(
+        "fun f(v: Vec<i32>) {{\n    println(v.repeat(2))\n}}\n{}",
+        main_with("    let w: Vec<i32> = vec![3]\n    println(w.repeat(2))\n    f(vec![1])")
+    );
+    check(&src, "[3, 3]\n[1, 1]\n", true);
+}
+
+// `Option::replace` takes one argument and is not a string.
+#[test]
+fn test_strrecv_1_option_replace_stays_debug() {
+    let src = main_with("    let mut o = Some(1)\n    println(o.replace(2))\n    println(o)");
+    check(&src, "Some(1)\nSome(2)\n", false);
+}

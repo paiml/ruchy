@@ -187,9 +187,13 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   verbatim, as the compiled binary does: `println("{}")` prints `{}`, not a
   format error, and `println("x{{")` prints `x{{`. `format("x{{")` is still
   a template and returns `x{` (LONELIT-1).
-- Compiled `println(x.replace(..))` and `println(x.repeat(n))` print as text
-  unless `x` is a list literal or a binding to one; a loop variable, field or
-  call receiver no longer prints quoted. A plain loop variable over
+- Compiled `println(x.replace(a, b))` prints as text for any receiver (the
+  two-argument `replace` is `str::replace`; `Option::replace` takes one), and
+  `println(x.repeat(n))` prints as text unless `x` is known to be a list: a
+  list literal, a binding to one, or a binding or parameter annotated
+  `Vec<T>`/`[T]`. A loop variable, field or call receiver no longer prints
+  quoted; a list receiver the transpiler cannot see (an untyped parameter
+  bound to a list) now needs an annotation. A plain loop variable over
   `lines()`, `split_whitespace()`, `split(<literal>)` or a list of string
   literals prints as text. A `for`/`while` loop or `+=` as main's last
   statement is not printed as `()`. Strings have `split_whitespace()` under
