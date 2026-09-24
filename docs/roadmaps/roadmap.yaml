@@ -4886,3 +4886,21 @@ roadmap:
   - kind:code
   - runtime
   - milestone:backlog
+- id: PMAT-140
+  github_issue: null
+  item_type: task
+  title: 'ORCH-001: orchestrator routing rule (AUTO-IMPL-SKILL-003)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-08T07:11:10Z
+  updated: 2026-09-08T07:11:10Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:docs
+  - orch-routing
+  notes: null

@@ -650,3 +650,11 @@ Closes: TICKET-ID
 ## Documentation Standards
 
 Use precise, factual language. No hyperbole. Focus on technical accuracy. Never create docs proactively unless requested.
+<!-- paiml-implement:orch-routing v1 (AUTO-IMPL-SKILL-003) -->
+Orchestrator model is routed by ticket class, not by habit.
+- Default orchestrator for any ticket here: `claude --model opus`. Workers per paiml-implement §11.
+- `--model fable` only for a ticket labelled `orch:fable` whose roadmap `notes:` carries `orch-basis:<Q3|M>=3|state|release|stop>` (a `kind:docs` ticket may also carry `orch-basis:spec`); `model-gate.sh` refuses every other Fable session at Phase 0.
+- Review, plan grill, five-whys, research, and single-module implementation go to agy lanes (`agy-lane.sh --mode goal|grillme|plan|teamwork`) before any Claude subagent. The orchestrator re-runs every acceptance command; a lane's verdict is a claim.
+- One open ticket per Claude session (`goal.sh set` refuses a second ticket while the first is open; `goal.sh release` at the receipt frees the session for the next).
+- Fable is the reserve bucket: while `quota.sh binding` prints `fable_binding=true`, no new Fable session opens here except for an `orch:fable` ticket.
+<!-- /paiml-implement:orch-routing -->
