@@ -10,6 +10,7 @@ use crate::frontend::ast::{
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
+use std::collections::HashSet;
 use syn::Lifetime;
 
 /// Generate self-receiver tokens for a `self` parameter.
@@ -39,6 +40,70 @@ fn self_receiver_tokens_owned(ty: &TypeKind) -> TokenStream {
     } else {
         quote! { self }
     }
+}
+
+/// The `self` parameter of a method, when its first parameter is `self`.
+fn self_param(params: &[crate::frontend::ast::Param]) -> Option<&crate::frontend::ast::Param> {
+    params.first().filter(|p| p.name() == "self")
+}
+
+/// Declared `&mut self`: mutates `self` whatever its body does.
+fn declares_mut_self(params: &[crate::frontend::ast::Param]) -> bool {
+    self_param(params)
+        .is_some_and(|p| matches!(p.ty.kind, TypeKind::Reference { is_mut: true, .. }))
+}
+
+/// Bare `self` (neither a reference nor `mut self`): the receiver is inferred from the body.
+fn has_inferred_self(params: &[crate::frontend::ast::Param]) -> bool {
+    self_param(params)
+        .is_some_and(|p| !p.is_mutable && !matches!(p.ty.kind, TypeKind::Reference { .. }))
+}
+
+/// The receiver is emitted by value (`self` / `mut self`), see [`self_receiver_tokens`].
+fn has_by_value_receiver(params: &[crate::frontend::ast::Param], mutated: bool) -> bool {
+    self_param(params).is_some_and(|p| {
+        !matches!(p.ty.kind, TypeKind::Reference { .. }) && (p.is_mutable || !mutated)
+    })
+}
+
+/// Methods of one impl that mutate `self` (fixpoint over sibling calls).
+fn impl_mutating_methods(methods: &[ImplMethod]) -> HashSet<String> {
+    let seed = methods
+        .iter()
+        .filter(|m| declares_mut_self(&m.params))
+        .map(|m| m.name.clone())
+        .collect();
+    let candidates: Vec<(&str, &crate::frontend::ast::Expr)> = methods
+        .iter()
+        .filter(|m| has_inferred_self(&m.params))
+        .map(|m| (m.name.as_str(), &*m.body))
+        .collect();
+    mutation_detection::mutating_self_methods(&candidates, seed)
+}
+
+/// Whether an impl method's `self` is mutated: from the impl fixpoint for a bare
+/// `self`, from the body for an explicit receiver.
+fn impl_self_is_mutated(method: &ImplMethod, mutating: &HashSet<String>) -> bool {
+    if has_inferred_self(&method.params) {
+        mutating.contains(&method.name)
+    } else {
+        mutation_detection::is_variable_mutated("self", &method.body)
+    }
+}
+
+/// Methods of one trait that mutate `self`; only default bodies can be inspected.
+fn trait_mutating_methods(methods: &[TraitMethod]) -> HashSet<String> {
+    let seed = methods
+        .iter()
+        .filter(|m| declares_mut_self(&m.params))
+        .map(|m| m.name.clone())
+        .collect();
+    let candidates: Vec<(&str, &crate::frontend::ast::Expr)> = methods
+        .iter()
+        .filter(|m| has_inferred_self(&m.params))
+        .filter_map(|m| m.body.as_deref().map(|body| (m.name.as_str(), body)))
+        .collect();
+    mutation_detection::mutating_self_methods(&candidates, seed)
 }
 
 impl Transpiler {
@@ -1063,66 +1128,11 @@ impl Transpiler {
             })
             .collect();
 
-        let method_tokens: Result<Vec<_>> = methods
+        let mutating = trait_mutating_methods(methods);
+        let method_tokens = methods
             .iter()
-            .map(|method| {
-                let method_name = format_ident!("{}", method.name);
-                // TRANSPILER-TRAIT-001 FIX: Determine if self is mutated for &mut self inference
-                // For traits with default implementations, check the body for mutations
-                let self_is_mutated = method.body.as_ref().is_some_and(|body| {
-                    crate::backend::transpiler::mutation_detection::is_variable_mutated(
-                        "self", body,
-                    )
-                });
-                // Process parameters
-                let param_tokens: Vec<TokenStream> = method
-                    .params
-                    .iter()
-                    .enumerate()
-                    .map(|(i, param)| {
-                        if i == 0 && (param.name() == "self" || param.name() == "&self") {
-                            // TRANSPILER-TRAIT-001 FIX: Handle self parameter consistently
-                            if param.name().starts_with('&') {
-                                // Legacy: name-based detection (e.g., "&self" as name)
-                                quote! { &self }
-                            } else {
-                                self_receiver_tokens(param, self_is_mutated)
-                            }
-                        } else {
-                            let param_name = format_ident!("{}", param.name());
-                            let type_tokens = self
-                                .transpile_type(&param.ty)
-                                .unwrap_or_else(|_| quote! { _ });
-                            quote! { #param_name: #type_tokens }
-                        }
-                    })
-                    .collect();
-                // Process return type
-                let return_type_tokens = if let Some(ref ty) = method.return_type {
-                    let ty_tokens = self.transpile_type(ty)?;
-                    quote! { -> #ty_tokens }
-                } else {
-                    quote! {}
-                };
-                // TRANSPILER-TRAIT-001 FIX: Trait methods cannot have visibility modifiers
-                // In Rust, trait method declarations are implicitly public.
-                // Adding `pub` causes prettyplease to fail with "not implemented: TraitItem::Verbatim"
-                // Process method body (if default implementation)
-                if let Some(ref body) = method.body {
-                    let body_tokens = self.transpile_expr(body)?;
-                    Ok(quote! {
-                        fn #method_name(#(#param_tokens),*) #return_type_tokens {
-                            #body_tokens
-                        }
-                    })
-                } else {
-                    Ok(quote! {
-                        fn #method_name(#(#param_tokens),*) #return_type_tokens;
-                    })
-                }
-            })
-            .collect();
-        let method_tokens = method_tokens?;
+            .map(|method| self.transpile_trait_method(method, &mutating))
+            .collect::<Result<Vec<_>>>()?;
         let type_param_tokens: Vec<_> = type_params
             .iter()
             .map(|p| Self::parse_type_param_to_tokens(p))
@@ -1148,6 +1158,67 @@ impl Transpiler {
             })
         }
     }
+    /// One trait method: a declaration, or a default method when it has a body.
+    /// A default method whose receiver is by value gets `where Self: Sized` (the
+    /// body moves `self`, rustc E0277 otherwise); a bodiless one needs no bound.
+    fn transpile_trait_method(
+        &self,
+        method: &TraitMethod,
+        mutating: &HashSet<String>,
+    ) -> Result<TokenStream> {
+        let method_name = format_ident!("{}", method.name);
+        // TRANSPILER-TRAIT-001: bare `self` in a default method that mutates it is `&mut self`
+        let self_is_mutated = mutating.contains(&method.name);
+        let param_tokens: Vec<TokenStream> = method
+            .params
+            .iter()
+            .enumerate()
+            .map(|(i, param)| self.trait_param_tokens(i, param, self_is_mutated))
+            .collect();
+        let return_type_tokens = match method.return_type {
+            Some(ref ty) => {
+                let ty_tokens = self.transpile_type(ty)?;
+                quote! { -> #ty_tokens }
+            }
+            None => quote! {},
+        };
+        // TRANSPILER-TRAIT-001: trait methods carry no visibility (implicitly public)
+        let Some(ref body) = method.body else {
+            return Ok(quote! { fn #method_name(#(#param_tokens),*) #return_type_tokens; });
+        };
+        let body_tokens = self.transpile_expr(body)?;
+        let sized_bound = if has_by_value_receiver(&method.params, self_is_mutated) {
+            quote! { where Self: Sized }
+        } else {
+            quote! {}
+        };
+        Ok(quote! {
+            fn #method_name(#(#param_tokens),*) #return_type_tokens #sized_bound {
+                #body_tokens
+            }
+        })
+    }
+
+    /// Parameter `i` of a trait method; the first one may be the `self` receiver.
+    fn trait_param_tokens(
+        &self,
+        i: usize,
+        param: &crate::frontend::ast::Param,
+        self_is_mutated: bool,
+    ) -> TokenStream {
+        match param.name().as_str() {
+            // Legacy: name-based detection ("&self" as the parameter name)
+            "&self" if i == 0 => quote! { &self },
+            "self" if i == 0 => self_receiver_tokens(param, self_is_mutated),
+            _ => {
+                let param_name = format_ident!("{}", param.name());
+                let type_tokens = self
+                    .transpile_type(&param.ty)
+                    .unwrap_or_else(|_| quote! { _ });
+                quote! { #param_name: #type_tokens }
+            }
+        }
+    }
     /// Transpiles impl blocks
     pub fn transpile_impl(
         &self,
@@ -1161,17 +1232,16 @@ impl Transpiler {
         // e.g., "Container<T>" -> "Container"
         let base_type = for_type.split('<').next().unwrap_or(for_type).trim();
         let type_ident = format_ident!("{}", base_type);
+        let mutating = impl_mutating_methods(methods);
         let method_tokens: Result<Vec<_>> = methods
             .iter()
             .map(|method| {
                 let method_name = format_ident!("{}", method.name);
                 // TRANSPILER-METHOD-SELF-001 FIX: Check if self is mutated in method body
                 // to infer &mut self vs &self when not explicitly annotated
-                let self_is_mutated =
-                    crate::backend::transpiler::mutation_detection::is_variable_mutated(
-                        "self",
-                        &method.body,
-                    );
+                // RHLGA-1: bare `self` also mutates through nested/indexed fields, mutating
+                // std methods on a field and calls to mutating sibling methods (fixpoint)
+                let self_is_mutated = impl_self_is_mutated(method, &mutating);
                 // Process parameters
                 let param_tokens: Vec<TokenStream> = method
                     .params

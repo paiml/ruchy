@@ -1,16 +1,28 @@
 //! Mutation detection for transpiler
 //!
 //! This module provides functions to detect if variables are mutated
-//! (reassigned or modified) within expression trees.
+//! (reassigned or modified) within expression trees, and whether a method
+//! body mutates `self` (for `&mut self` receiver inference).
 
 use crate::frontend::ast::{Expr, ExprKind};
+use std::collections::HashSet;
+
+/// Std methods that take `&mut self`. A call of one of these on a field of
+/// `self` (`self.items.push(x)`, `self.buf.push_str(s)`, `self.map.entry(k)`)
+/// mutates `self`. The list is deliberately closed: a method not listed here
+/// is treated as non-mutating unless it is a mutating method of the same impl.
+pub const MUTATING_STD_METHODS: &[&str] = &[
+    "push", "pop", "insert", "remove", "clear", "extend", "append", "truncate", "sort", "sort_by",
+    "reverse", "dedup", "retain", "drain", "push_str", "swap", "entry",
+];
 
 /// Checks if a variable is mutated (reassigned or modified) in an expression tree
 ///
-/// This function traverses the AST recursively to detect:
-/// - Direct assignments (`x = value`)
-/// - Compound assignments (`x += 1`, `x -= 1`, etc.)
-/// - Increment/decrement operations (`x++`, `++x`, `x--`, `--x`)
+/// This function traverses the AST recursively to detect writes through a
+/// place rooted at the variable:
+/// - Direct assignments (`x = value`, `x.a.b = value`, `x.v[i] = value`)
+/// - Compound assignments (`x += 1`, `x.f -= 1`, etc.)
+/// - Increment/decrement operations (`x++`, `++x`, `x.f--`, `--x.f`)
 ///
 /// # Examples
 /// ```ignore
@@ -19,104 +31,141 @@ use crate::frontend::ast::{Expr, ExprKind};
 /// assert!(is_variable_mutated("x", &expr));
 /// ```
 pub fn is_variable_mutated(name: &str, expr: &Expr) -> bool {
+    any_expr(expr, &|e| writes_place_rooted_at(name, e))
+}
+
+/// True when a method body mutates `self`: a write through a place rooted at
+/// `self`, a [`MUTATING_STD_METHODS`] call on a field of `self`, or a call
+/// `self.m(..)` where `m` is in `mutating_methods` (methods of the same impl
+/// already known to mutate `self`).
+pub fn is_self_mutated(body: &Expr, mutating_methods: &HashSet<String>) -> bool {
+    any_expr(body, &|e| {
+        writes_place_rooted_at("self", e) || is_self_mutating_call(e, mutating_methods)
+    })
+}
+
+/// Fixpoint over the methods of one impl/trait: the set of method names that
+/// mutate `self`, directly or by calling another mutating method of the set.
+/// `seed` holds methods known to mutate up front (declared `&mut self`);
+/// `candidates` are the `(name, body)` pairs whose receiver is inferred.
+pub fn mutating_self_methods(
+    candidates: &[(&str, &Expr)],
+    seed: HashSet<String>,
+) -> HashSet<String> {
+    let mut mutating = seed;
+    loop {
+        let newly: Vec<String> = candidates
+            .iter()
+            .filter(|(name, body)| !mutating.contains(*name) && is_self_mutated(body, &mutating))
+            .map(|(name, _)| (*name).to_string())
+            .collect();
+        if newly.is_empty() {
+            return mutating;
+        }
+        mutating.extend(newly);
+    }
+}
+
+/// `self.<m>(..)` with `m` a mutating sibling, or `self.<place>.<m>(..)` with
+/// `m` a mutating std method.
+fn is_self_mutating_call(expr: &Expr, mutating_methods: &HashSet<String>) -> bool {
+    let ExprKind::MethodCall {
+        receiver, method, ..
+    } = &expr.kind
+    else {
+        return false;
+    };
+    match &receiver.kind {
+        ExprKind::Identifier(root) => root == "self" && mutating_methods.contains(method),
+        _ => {
+            place_root(receiver) == Some("self") && MUTATING_STD_METHODS.contains(&method.as_str())
+        }
+    }
+}
+
+/// Assignment, compound assignment or `++`/`--` whose target place is rooted at `name`.
+fn writes_place_rooted_at(name: &str, expr: &Expr) -> bool {
     match &expr.kind {
-        // Direct assignment to the variable
-        ExprKind::Assign { target, value: _ } => {
-            if let ExprKind::Identifier(var_name) = &target.kind {
-                if var_name == name {
-                    return true;
-                }
-            }
-            // TRANSPILER-METHOD-SELF-001 FIX: Detect field mutation (self.field = value)
-            if let ExprKind::FieldAccess { object, .. } = &target.kind {
-                if let ExprKind::Identifier(var_name) = &object.kind {
-                    if var_name == name {
-                        return true;
-                    }
-                }
-            }
-            false
-        }
-        // Compound assignment (+=, -=, etc.)
-        ExprKind::CompoundAssign {
-            target, value: _, ..
-        } => {
-            if let ExprKind::Identifier(var_name) = &target.kind {
-                if var_name == name {
-                    return true;
-                }
-            }
-            // TRANSPILER-METHOD-SELF-001 FIX: Detect field compound assignment (self.field += value)
-            if let ExprKind::FieldAccess { object, .. } = &target.kind {
-                if let ExprKind::Identifier(var_name) = &object.kind {
-                    if var_name == name {
-                        return true;
-                    }
-                }
-            }
-            false
-        }
-        // Pre/Post increment/decrement
-        ExprKind::PreIncrement { target }
+        ExprKind::Assign { target, .. }
+        | ExprKind::CompoundAssign { target, .. }
+        | ExprKind::PreIncrement { target }
         | ExprKind::PostIncrement { target }
         | ExprKind::PreDecrement { target }
-        | ExprKind::PostDecrement { target } => {
-            if let ExprKind::Identifier(var_name) = &target.kind {
-                if var_name == name {
-                    return true;
-                }
-            }
-            false
+        | ExprKind::PostDecrement { target } => place_root(target) == Some(name),
+        _ => false,
+    }
+}
+
+/// Root variable of a place expression: `x`, `x.a.b`, `x[i]`, `x.v[i].c` all give `x`.
+fn place_root(expr: &Expr) -> Option<&str> {
+    match &expr.kind {
+        ExprKind::Identifier(name) => Some(name.as_str()),
+        ExprKind::FieldAccess { object, .. } | ExprKind::IndexAccess { object, .. } => {
+            place_root(object)
         }
-        // Check in blocks
-        ExprKind::Block(exprs) => exprs.iter().any(|e| is_variable_mutated(name, e)),
-        // Check in if branches
+        _ => None,
+    }
+}
+
+/// True when `pred` holds for `expr` or any expression nested in it.
+fn any_expr(expr: &Expr, pred: &dyn Fn(&Expr) -> bool) -> bool {
+    pred(expr) || sub_expressions(expr).into_iter().any(|e| any_expr(e, pred))
+}
+
+/// The direct sub-expressions searched for mutations.
+fn sub_expressions(expr: &Expr) -> Vec<&Expr> {
+    match &expr.kind {
+        ExprKind::Block(exprs) | ExprKind::List(exprs) | ExprKind::Tuple(exprs) => {
+            exprs.iter().collect()
+        }
+        ExprKind::Macro { args, .. } => args.iter().collect(),
         ExprKind::If {
             condition,
             then_branch,
             else_branch,
-        } => {
-            is_variable_mutated(name, condition)
-                || is_variable_mutated(name, then_branch)
-                || else_branch
-                    .as_ref()
-                    .is_some_and(|e| is_variable_mutated(name, e))
-        }
-        // Check in while loops
+        } => with_optional(vec![condition, then_branch], else_branch.as_deref()),
+        ExprKind::IfLet {
+            expr,
+            then_branch,
+            else_branch,
+            ..
+        } => with_optional(vec![expr, then_branch], else_branch.as_deref()),
         ExprKind::While {
             condition, body, ..
-        } => is_variable_mutated(name, condition) || is_variable_mutated(name, body),
-        // Check in for loops
-        ExprKind::For { body, .. } => is_variable_mutated(name, body),
-        // Check in match expressions
-        ExprKind::Match { expr, arms } => {
-            is_variable_mutated(name, expr)
-                || arms.iter().any(|arm| is_variable_mutated(name, &arm.body))
+        } => vec![&**condition, &**body],
+        ExprKind::WhileLet { expr, body, .. }
+        | ExprKind::For {
+            iter: expr, body, ..
+        } => {
+            vec![&**expr, &**body]
         }
-        // Check in nested let expressions
-        ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-            is_variable_mutated(name, body)
+        ExprKind::Match { expr, arms } => std::iter::once(&**expr)
+            .chain(arms.iter().map(|arm| &*arm.body))
+            .collect(),
+        ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
+            vec![&**value, &**body]
         }
-        // Check in function bodies
-        ExprKind::Function { body, .. } => is_variable_mutated(name, body),
-        // Check in lambda bodies
-        ExprKind::Lambda { body, .. } => is_variable_mutated(name, body),
-        // Check binary operations
-        ExprKind::Binary { left, right, .. } => {
-            is_variable_mutated(name, left) || is_variable_mutated(name, right)
-        }
-        // Check unary operations
-        ExprKind::Unary { operand, .. } => is_variable_mutated(name, operand),
-        // Check function/method calls
-        ExprKind::Call { func, args } => {
-            is_variable_mutated(name, func) || args.iter().any(|a| is_variable_mutated(name, a))
-        }
+        ExprKind::Binary { left, right, .. } => vec![&**left, &**right],
+        ExprKind::Loop { body, .. }
+        | ExprKind::Function { body, .. }
+        | ExprKind::Lambda { body, .. }
+        | ExprKind::Unary { operand: body, .. }
+        | ExprKind::Try { expr: body }
+        | ExprKind::Await { expr: body }
+        | ExprKind::Assign { value: body, .. }
+        | ExprKind::CompoundAssign { value: body, .. } => vec![&**body],
+        ExprKind::Return { value } => with_optional(Vec::new(), value.as_deref()),
+        ExprKind::Call { func, args } => std::iter::once(&**func).chain(args).collect(),
         ExprKind::MethodCall { receiver, args, .. } => {
-            is_variable_mutated(name, receiver) || args.iter().any(|a| is_variable_mutated(name, a))
+            std::iter::once(&**receiver).chain(args).collect()
         }
-        // Other expressions don't contain mutations
-        _ => false,
+        _ => Vec::new(),
     }
+}
+
+/// `required` (as plain references) followed by `optional` when present.
+fn with_optional<'a>(required: Vec<&'a Box<Expr>>, optional: Option<&'a Expr>) -> Vec<&'a Expr> {
+    required.into_iter().map(|e| &**e).chain(optional).collect()
 }
 
 #[cfg(test)]
