@@ -4907,6 +4907,27 @@ roadmap:
   - kind:code
   - tests
   - milestone:v5.0.0
+- id: RAWIDENT-2
+  github_issue: null
+  item_type: task
+  title: 'RAWIDENT-2: a Ruchy identifier that is a Rust reserved word (box, do, typeof, extern, ...) in a binding position transpiled to invalid Rust'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T14:30:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'Found by transpiler_deadlock_fix prop_no_deadlock_on_any_global_assignment on intel at 18b5c78f (minimal input var_name = "box")'
+  - 'Mutable/const globals, fn, method, actor-handler, effect and closure parameters, for variables, patterns and catch bindings go through safe_ident'
+  - 'tests/g2b_transfix_7.rs: 9 tests, every Rust reserved word Ruchy lexes as an identifier transpiles in each position'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - milestone:v5.0.0
 - id: PMAT-140
   github_issue: null
   item_type: task

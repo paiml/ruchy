@@ -220,7 +220,7 @@ impl Transpiler {
             .iter()
             .enumerate()
             .map(|(idx, p)| {
-                let param_name = format_ident!("{}", p.name());
+                let param_name = Self::safe_ident(&p.name()); // RAWIDENT-2
 
                 // Handle special Rust receiver syntax (&self, &mut self, self)
                 if p.name() == "self" {

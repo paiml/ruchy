@@ -1009,7 +1009,7 @@ impl Transpiler {
                 } else {
                     // Regular parameter
                     // TRANSPILER-005 FIX: Preserve mut keyword for mutable parameters
-                    let param_ident = format_ident!("{}", param_name);
+                    let param_ident = Self::safe_ident(&param_name); // RAWIDENT-2
                     let type_tokens = self.transpile_type(&param.ty)?;
                     if param.is_mutable {
                         Ok(quote! { mut #param_ident: #type_tokens })
@@ -1212,7 +1212,7 @@ impl Transpiler {
             "&self" if i == 0 => quote! { &self },
             "self" if i == 0 => self_receiver_tokens(param, self_is_mutated),
             _ => {
-                let param_name = format_ident!("{}", param.name());
+                let param_name = Self::safe_ident(&param.name()); // RAWIDENT-2
                 let type_tokens = self
                     .transpile_type(&param.ty)
                     .unwrap_or_else(|_| quote! { _ });
@@ -1255,7 +1255,7 @@ impl Transpiler {
                             // QUALITY-001 + TRANSPILER-METHOD-SELF-001: self receiver
                             self_receiver_tokens(param, self_is_mutated)
                         } else {
-                            let param_name = format_ident!("{}", param.name());
+                            let param_name = Self::safe_ident(&param.name()); // RAWIDENT-2
                             let type_tokens = self
                                 .transpile_type(&param.ty)
                                 .unwrap_or_else(|_| quote! { _ });
@@ -1342,7 +1342,7 @@ impl Transpiler {
             let param_tokens: Vec<TokenStream> = params
                 .iter()
                 .map(|p| {
-                    let param_name = format_ident!("{}", p.name());
+                    let param_name = Self::safe_ident(&p.name()); // RAWIDENT-2
                     let type_tokens = self
                         .transpile_type(&p.ty)
                         .unwrap_or_else(|_| quote! { i32 });
@@ -1396,7 +1396,7 @@ impl Transpiler {
                             // QUALITY-001: self receiver (owned fallback for extend)
                             self_receiver_tokens_owned(&param.ty.kind)
                         } else {
-                            let param_name = format_ident!("{}", param.name());
+                            let param_name = Self::safe_ident(&param.name()); // RAWIDENT-2
                             let type_tokens = self
                                 .transpile_type(&param.ty)
                                 .unwrap_or_else(|_| quote! { _ });
@@ -1436,7 +1436,7 @@ impl Transpiler {
                                 quote! { self }
                             }
                         } else {
-                            let param_name = format_ident!("{}", param.name());
+                            let param_name = Self::safe_ident(&param.name()); // RAWIDENT-2
                             let type_tokens = self
                                 .transpile_type(&param.ty)
                                 .unwrap_or_else(|_| quote! { _ });

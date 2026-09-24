@@ -657,7 +657,7 @@ impl Transpiler {
     /// Transpile a function parameter
     /// Complexity: 3 (within Toyota Way limits)
     fn transpile_param(&self, param: &Param) -> Result<TokenStream> {
-        let name = format_ident!("{}", param.name());
+        let name = Self::safe_ident(&param.name()); // RAWIDENT-2
         let type_tokens = self.transpile_type(&param.ty)?;
         Ok(quote! { #name: #type_tokens })
     }

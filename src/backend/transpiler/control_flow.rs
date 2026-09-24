@@ -14,7 +14,7 @@ use super::Transpiler;
 use crate::frontend::ast::{CatchClause, Expr, ExprKind, Pattern};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Transpiles if expressions with optional else branch
@@ -88,7 +88,7 @@ impl Transpiler {
             })
         } else {
             // Fall back to simple variable
-            let var_ident = format_ident!("{}", var);
+            let var_ident = Self::safe_ident(var); // RAWIDENT-2
             Ok(quote! {
                 for #var_ident in #iter_tokens {
                     #body_tokens
@@ -190,7 +190,7 @@ impl Transpiler {
         }
         // Generate the catch handling
         let catch_pattern = if let Pattern::Identifier(name) = &catch_clauses[0].pattern {
-            let ident = format_ident!("{}", name);
+            let ident = Self::safe_ident(name); // RAWIDENT-2
             quote! { #ident }
         } else {
             quote! { _e }

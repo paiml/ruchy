@@ -75,7 +75,7 @@ impl Transpiler {
                 let param_names: Vec<_> = handler
                     .params
                     .iter()
-                    .map(|p| format_ident!("{}", p.name()))
+                    .map(|p| Self::safe_ident(&p.name())) // RAWIDENT-2
                     .collect();
                 let body_tokens = self.transpile_expr(&handler.body)?;
                 if param_names.len() == 1 {

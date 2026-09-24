@@ -51,7 +51,7 @@ impl Transpiler {
         let param_strs: Vec<String> = params
             .iter()
             .map(|p| {
-                let name = p.name();
+                let name = Self::safe_ident(&p.name()).to_string(); // RAWIDENT-2
                 let ty_str = self
                     .transpile_type(&p.ty)
                     .map_or_else(|_| "_".to_string(), |t| t.to_string());

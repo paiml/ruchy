@@ -78,7 +78,7 @@ impl Transpiler {
                 }
             }
             Pattern::Identifier(name) => {
-                let ident = format_ident!("{}", name);
+                let ident = Self::safe_ident(name); // RAWIDENT-2
                 Ok(quote! { #ident })
             }
             Pattern::QualifiedName(parts) => {

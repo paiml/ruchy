@@ -78,7 +78,7 @@ fn transpile_operation_params(
         .iter()
         .map(|param| {
             let param_name = match &param.pattern {
-                Pattern::Identifier(name) => syn::parse_str::<syn::Ident>(name)?,
+                Pattern::Identifier(name) => Transpiler::safe_ident(name), // RAWIDENT-2
                 _ => bail!("Only identifier patterns supported in effect operation parameters"),
             };
             let param_type = transpiler.transpile_type(&param.ty)?;

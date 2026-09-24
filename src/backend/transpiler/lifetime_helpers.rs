@@ -10,7 +10,7 @@ use super::Transpiler;
 use crate::frontend::ast::{Expr, Param, Type, TypeKind};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Generate parameter tokens with lifetime annotations
@@ -38,7 +38,7 @@ impl Transpiler {
         func_name: &str,
         param_index: usize,
     ) -> Result<TokenStream> {
-        let param_name = format_ident!("{}", param.name());
+        let param_name = Self::safe_ident(&param.name()); // RAWIDENT-2
 
         // Handle special Rust receiver syntax
         if param.name() == "self" {

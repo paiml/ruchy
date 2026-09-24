@@ -215,7 +215,7 @@ impl Transpiler {
         var_name: &str,
         value: &Expr,
     ) -> Result<TokenStream> {
-        let var_ident = format_ident!("{}", var_name);
+        let var_ident = Self::safe_ident(var_name); // RAWIDENT-2
 
         // Transpile value, but temporarily disable global wrapping
         // We'll manually wrap with guard access
