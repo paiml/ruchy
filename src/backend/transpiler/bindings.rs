@@ -75,6 +75,7 @@ impl Transpiler {
         // NESTARRVEC-1: inner array literals of a binding whose elements grow
         let inner_vec_value = elem_grown_value(name, value, body);
         let value = inner_vec_value.as_ref().unwrap_or(value);
+        self.track_inner_vec_binding(name, value);
 
         // Auto-detect mutability
         let effective_mutability = is_mutable
@@ -268,6 +269,7 @@ impl Transpiler {
         // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
         let name_ident = Self::safe_ident(name);
         self.track_string_binding(name, value, type_annotation);
+        self.track_inner_vec_binding(name, value);
 
         // PARSER-073: Generate const/let keyword based on const attribute
         let is_mutable_var = is_mutable
@@ -360,6 +362,39 @@ impl Transpiler {
             }
             _ => self.transpile_expr(value),
         }
+    }
+
+    /// NESTPUSHLIT-1: remember whether `name` is bound to a list literal
+    /// whose inner literals are `vec![..]` (the NESTARRVEC-1 rewrite); any
+    /// other binding of `name` clears the record. (complexity: 2)
+    fn track_inner_vec_binding(&self, name: &str, value: &Expr) {
+        let mut lists = self.inner_vec_lists.borrow_mut();
+        if has_vec_inner_literals(value) {
+            lists.insert(name.to_string());
+        } else {
+            lists.remove(name);
+        }
+    }
+
+    /// NESTPUSHLIT-1: the arguments of `object.push(x)` / `object.insert(i, x)`
+    /// with an array literal `x` as `vec![..]`, when `object` is a binding
+    /// whose inner literals are `vec![..]`; `None` otherwise. (complexity: 4)
+    pub(crate) fn inner_vec_push_args(
+        &self,
+        object: &Expr,
+        method: &str,
+        args: &[Expr],
+    ) -> Option<Vec<Expr>> {
+        let ExprKind::Identifier(name) = &object.kind else {
+            return None;
+        };
+        if !matches!(method, "push" | "insert") || !self.inner_vec_lists.borrow().contains(name) {
+            return None;
+        }
+        let mut rewritten = args.to_vec();
+        let element = rewritten.last_mut()?;
+        *element = list_as_vec(element);
+        Some(rewritten)
     }
 
     /// LETVEC-1: transpile one statement of a block. A statement-level `let`
@@ -630,6 +665,19 @@ fn inner_lists_as_vec(value: &Expr) -> Expr {
         }
     }
     rewritten
+}
+
+/// NESTPUSHLIT-1: `value` is a list literal (array or `vec![..]`) with an
+/// element that is a `vec![..]` literal. (complexity: 4)
+fn has_vec_inner_literals(value: &Expr) -> bool {
+    let items = match &value.kind {
+        ExprKind::List(items) => items,
+        ExprKind::MacroInvocation { name, args } if name == "vec" => args,
+        _ => return false,
+    };
+    items
+        .iter()
+        .any(|item| matches!(&item.kind, ExprKind::MacroInvocation { name, .. } if name == "vec"))
 }
 
 /// LETVEC-1: the array literal `list` as `vec![..]`; any other expression unchanged.

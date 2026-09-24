@@ -371,6 +371,10 @@ impl Transpiler {
         args: &[Expr],
     ) -> Result<TokenStream> {
         contract_pre_configuration!();
+        // NESTPUSHLIT-1: an array literal pushed into a list of vec! literals.
+        if let Some(args) = self.inner_vec_push_args(object, method, args) {
+            return self.transpile_method_call_impl(object, method, &args);
+        }
         self.transpile_method_call_impl(object, method, args)
     }
 

@@ -230,6 +230,9 @@ pub struct Transpiler {
     /// Maps function name to a vector of inferred argument types from call sites.
     /// Used when function parameters have no explicit type to infer types from usage.
     pub call_site_arg_types: std::cell::RefCell<std::collections::HashMap<String, Vec<String>>>,
+    /// NESTPUSHLIT-1: bindings whose inner list literals were emitted as
+    /// `vec![..]` (NESTARRVEC-1); an array literal pushed into one is too.
+    pub inner_vec_lists: std::cell::RefCell<std::collections::HashSet<String>>,
 }
 impl Default for Transpiler {
     fn default() -> Self {
@@ -266,6 +269,7 @@ impl Clone for Transpiler {
             current_struct_name: std::cell::RefCell::new(self.current_struct_name.borrow().clone()),
             auto_boxed_fields: std::cell::RefCell::new(self.auto_boxed_fields.borrow().clone()),
             call_site_arg_types: std::cell::RefCell::new(self.call_site_arg_types.borrow().clone()),
+            inner_vec_lists: std::cell::RefCell::new(self.inner_vec_lists.borrow().clone()),
         }
     }
 }
@@ -297,6 +301,7 @@ impl Transpiler {
             current_struct_name: std::cell::RefCell::new(None),
             auto_boxed_fields: std::cell::RefCell::new(std::collections::HashMap::new()),
             call_site_arg_types: std::cell::RefCell::new(std::collections::HashMap::new()),
+            inner_vec_lists: std::cell::RefCell::new(std::collections::HashSet::new()),
         }
     }
     // EXTREME TDD Round 64: generate_value_printing_tokens moved to print_helpers.rs

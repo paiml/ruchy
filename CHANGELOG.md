@@ -176,6 +176,10 @@ Behaviour changes a program can observe are marked **(behaviour)**.
 - An untyped function or closure parameter whose emitted type is `String`
   or `&str` (a closure's from its call sites) prints with `{}`:
   `fun p(s) { println(s) }; p("hi")` prints `hi`, not `"hi"` (PRINTPARAM-1).
+- An array literal pushed or inserted into a list whose inner literals
+  became `vec![..]` (NESTARRVEC-1) is emitted as `vec![..]` too, so
+  `m[0].push(2); m.push([3])` compiles and prints `[[1, 2], [3]]`
+  (NESTPUSHLIT-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

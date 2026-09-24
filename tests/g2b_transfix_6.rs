@@ -5,6 +5,9 @@
 //! - PRINTPARAM-1: an untyped function or closure parameter whose emitted
 //!   (or call-site inferred) type is `String` prints with `{}` through
 //!   `println(s)`. Before, `p("hi")` and `f("hi")` printed `"hi"` with quotes.
+//! - NESTPUSHLIT-1: pushing or inserting an array literal into a binding
+//!   whose inner literals became `vec![..]` (NESTARRVEC-1) emits the argument
+//!   as `vec![..]` too. Before, rustc refused it (E0308).
 
 use assert_cmd::Command;
 use std::path::Path;
@@ -142,4 +145,49 @@ fn test_printparam_1_closure_list_param_keeps_debug() {
         "a non-string parameter keeps {{:?}}:\n{rust}"
     );
     check(&src, "[1, 2]\n", true);
+}
+
+// ------------------------------------------------------------ NESTPUSHLIT-1
+
+#[test]
+fn test_nestpushlit_1_push_literal_after_elem_growth() {
+    let src = main_with(
+        r#"    let mut m = [[1]]
+    m[0].push(2)
+    m.push([3])
+    println("{:?}", m)"#,
+    );
+    check(&src, "[[1, 2], [3]]\n", true);
+}
+
+#[test]
+fn test_nestpushlit_1_insert_literal_after_elem_growth() {
+    let src = main_with(
+        r#"    let mut m = [[1]]
+    m[0].push(2)
+    m.insert(0, [5, 6])
+    println("{:?}", m)"#,
+    );
+    check(&src, "[[5, 6], [1, 2]]\n", true);
+}
+
+#[test]
+fn test_nestpushlit_1_pushed_literal_grown_later() {
+    let src = main_with(
+        r#"    let mut m = [[1]]
+    m.push([3])
+    m[1].push(4)
+    println("{:?}", m)"#,
+    );
+    check(&src, "[[1], [3, 4]]\n", true);
+}
+
+#[test]
+fn test_nestpushlit_1_no_elem_growth_keeps_arrays() {
+    let src = main_with(
+        r#"    let mut m = [[1]]
+    m.push([3])
+    println("{:?}", m)"#,
+    );
+    check(&src, "[[1], [3]]\n", true);
 }

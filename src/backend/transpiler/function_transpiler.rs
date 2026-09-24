@@ -41,6 +41,8 @@ impl Transpiler {
 
         // PRINTSTR-1: string parameters print with Display.
         self.track_string_params(params);
+        // NESTPUSHLIT-1: nested-vec records of earlier functions end here.
+        self.inner_vec_lists.borrow_mut().clear();
 
         // TRANSPILER-004 FIX: Track String-typed parameters for proper concat transpilation
         // Before processing function body, register all String parameters in string_vars
