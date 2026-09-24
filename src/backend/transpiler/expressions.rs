@@ -144,12 +144,38 @@ impl Transpiler {
             }
         }
 
+        // DICTIDX-1: `d["k"] = v` inserts into the map
+        if let Some(tokens) = self.try_transpile_map_key_assign(target, value)? {
+            return Ok(tokens);
+        }
+
         // Standard assignment (no deadlock risk)
         let value_tokens = self.transpile_expr(value)?;
 
         // BUG-003 / IDXASSIGN-1: the target is a place (no `.clone()` in its chain)
         let target_tokens = self.transpile_place(target)?;
         Ok(quote! { #target_tokens = #value_tokens })
+    }
+
+    /// DICTIDX-1: `map["k"] = v` is `map.insert("k".to_string(), v)`; the
+    /// value is converted as a dict-literal value is. (complexity: 2)
+    fn try_transpile_map_key_assign(
+        &self,
+        target: &Expr,
+        value: &Expr,
+    ) -> Result<Option<TokenStream>> {
+        let ExprKind::IndexAccess { object, index } = &target.kind else {
+            return Ok(None);
+        };
+        if !is_string_key(index) {
+            return Ok(None);
+        }
+        let obj_tokens = self.transpile_place(object)?;
+        let key_tokens = self.transpile_expr(index)?;
+        let value_tokens = self.map_value_tokens(value, false)?;
+        Ok(Some(
+            quote! { #obj_tokens.insert(#key_tokens.to_string(), #value_tokens) },
+        ))
     }
 
     /// Check if an expression references a specific variable name
@@ -297,6 +323,12 @@ impl Transpiler {
             ExprKind::IndexAccess { object, index } => {
                 let obj_tokens = self.transpile_place(object)?;
                 let idx_tokens = self.transpile_expr(index)?;
+                if is_string_key(index) {
+                    // DICTIDX-1: a string key reaches the map entry in place
+                    return Ok(
+                        quote! { (*#obj_tokens.get_mut(#idx_tokens).expect("Key not found")) },
+                    );
+                }
                 Ok(quote! { #obj_tokens[#idx_tokens as usize] })
             }
             ExprKind::FieldAccess { object, field } => {
@@ -2033,4 +2065,10 @@ mod tests {
         let code = result.to_string();
         assert!(code.contains("42"), "Literal should pass through unchanged");
     }
+}
+
+/// DICTIDX-1: `index` is a string literal, i.e. a map key rather than a
+/// position (only a position gets the `as usize` cast). (complexity: 1)
+pub(crate) fn is_string_key(index: &Expr) -> bool {
+    matches!(&index.kind, ExprKind::Literal(Literal::String(_)))
 }

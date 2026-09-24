@@ -149,6 +149,10 @@ impl Transpiler {
         &self,
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
+        // DICTIDX-1: a dict whose values are all lists maps to `Vec`s
+        if list_valued_fields(fields) {
+            return self.transpile_list_valued_object(fields);
+        }
         let field_tokens = self.collect_hashmap_field_tokens(fields)?;
         // DEFECT-DICT-DETERMINISM FIX: Use BTreeMap for deterministic key ordering
         // BTreeMap maintains sorted order, HashMap has non-deterministic iteration order
@@ -160,6 +164,42 @@ impl Transpiler {
             }
         })
     }
+    /// DICTIDX-1: `{"k": [..], ..}` is a `BTreeMap<String, Vec<_>>`, so
+    /// `d["k"].push(x)` and `{:?}` work on the real list. (complexity: 3)
+    fn transpile_list_valued_object(
+        &self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<TokenStream> {
+        use crate::frontend::ast::ObjectField;
+        let mut inserts = Vec::new();
+        for field in fields {
+            if let ObjectField::KeyValue { key, value } = field {
+                let value_tokens = self.map_value_tokens(value, true)?;
+                inserts.push(quote! { map.insert(#key.to_string(), #value_tokens); });
+            }
+        }
+        Ok(quote! {
+            {
+                let mut map: std::collections::BTreeMap<String, _> = std::collections::BTreeMap::new();
+                #(#inserts)*
+                map
+            }
+        })
+    }
+
+    /// DICTIDX-1: a dict value as stored in the map: a list literal is a
+    /// `Vec`; anything else is kept as is when `typed`, else stringified
+    /// (the `BTreeMap<String, String>` of a dict with non-list values).
+    /// (complexity: 3)
+    pub(crate) fn map_value_tokens(&self, value: &Expr, typed: bool) -> Result<TokenStream> {
+        let tokens = self.transpile_expr(value)?;
+        Ok(match &value.kind {
+            ExprKind::List(_) => quote! { #tokens.to_vec() },
+            _ if typed => tokens,
+            _ => quote! { (#tokens).to_string() },
+        })
+    }
+
     fn collect_hashmap_field_tokens(
         &self,
         fields: &[crate::frontend::ast::ObjectField],
@@ -901,4 +941,14 @@ mod tests {
         assert!(result_str.contains("HashSet"));
         assert!(result_str.contains("insert"));
     }
+}
+
+/// DICTIDX-1: a non-empty dict literal whose values are all list literals
+/// (no spread). (complexity: 3)
+fn list_valued_fields(fields: &[crate::frontend::ast::ObjectField]) -> bool {
+    use crate::frontend::ast::ObjectField;
+    !fields.is_empty()
+        && fields.iter().all(|f| {
+            matches!(f, ObjectField::KeyValue { value, .. } if matches!(value.kind, ExprKind::List(_)))
+        })
 }
