@@ -321,7 +321,12 @@ impl Transpiler {
             }
         }
 
-        let obj_tokens = self.transpile_expr(object)?;
+        // IDXASSIGN-1: a mutating method's receiver chain is a place
+        let obj_tokens = if super::mutation_detection::MUTATING_STD_METHODS.contains(&method) {
+            self.transpile_place(object)?
+        } else {
+            self.transpile_expr(object)?
+        };
         let method_ident = Transpiler::safe_ident(method); // RAWIDENT-1
         let arg_tokens: Result<Vec<_>> = args.iter().map(|a| self.transpile_expr(a)).collect();
         let arg_tokens = arg_tokens?;

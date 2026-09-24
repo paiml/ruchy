@@ -165,9 +165,8 @@ fun main() {
     assert_both(src, "9\n2\n3\n");
 }
 
-/// Interpreter only: the transpiler emits `o.items[0 as usize].clone().z = 5`,
-/// which assigns to a temporary (a separate transpiler defect, reported with
-/// this ticket), so the rustc differential is not asserted here.
+/// IDXASSIGN-1: the transpiler used to emit `o.items[0 as usize].clone().z = 5`,
+/// which assigned to a temporary; the compiled binary must now agree.
 #[test]
 fn test_nestassign_1_06_index_in_chain_assign() {
     let src = "struct In { z: i32 }
@@ -181,7 +180,7 @@ fun main() {
     println(o.items[1].z)
 }
 ";
-    assert_eq!(run_file(src), "6\n7\n");
+    assert_both(src, "6\n7\n");
 }
 
 #[test]
