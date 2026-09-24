@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — G2 part 2 (RHLGA-1): the next round of workspace test failures
+
+Behaviour changes a program can observe are marked **(behaviour)**.
+
+- **(behaviour)** Method receivers follow the spec (§7.11): a bare `self` is
+  owned, and becomes `&mut self` when the method mutates it. Write `&self` for
+  a borrowing getter. This reverses the 2026-01 change that always borrowed.
+- `module::function()` calls keep `::` in transpiled Rust, and the parser now
+  records the difference. A closure stored in a field can be called as
+  `(obj.f)(x)`: field accesses carry their real source span, so the call parses.
+- Nested `pub mod` and `pub` items inside a module parse and transpile.
+- `@test("…")` transpiles to `#[doc = "…"] #[test]`, and `#[derive(Debug)]` is
+  accepted, as the 5.0 attribute grammar says.
+- A function that returns a `let`-bound `[]` infers `-> Vec<…>`.
+- `range(a, b).count()` (and `sum`/`min`/`max`) compile. A `main` that awaits
+  runs on a small in-program executor, with no tokio needed.
+- **(behaviour)** The interpreter's `{:?}` prints what Rust prints (`[1, 2]`,
+  not `Array([Integer(1), …])`). `println("{:?}", x)` and `format!` substitute
+  like the macro. `format!` no longer quotes its string arguments.
+- **(behaviour)** `compute_hash` returns MD5 (32 hex characters) again, as its
+  contract says, using an in-tree RFC 1321 implementation. In 5.0.0-beta.2 a
+  dependency cleanup had silently made it SHA-256.
+- **(behaviour)** CLI routing is exhaustive, so no verb can print "not yet
+  implemented" and exit 0. `ruchy prove` now reaches the prover.
+  `ruchy infra …` rejects a missing path or a directory. `ruchy serve` returns
+  an error when it cannot bind its port, and `--watch` keeps serving, with a
+  warning, when the host has no inotify instance left.
+- Tests:
+  - they spawn the cargo-built binary;
+  - `ruchy serve` tests stop through a shutdown seam instead of serving forever;
+  - `release_hygiene` names a dirty tree;
+  - pmat-written files are gitignored.
+
 ### Added — RHL-4, RHL-5, RHL-6, RHL-9: RHL compiles, tests, contracts and talks MCP (RHL-001, experimental)
 
 - **Lowering (RHL-4):** a checked `job` lowers to Ruchy source, following spec

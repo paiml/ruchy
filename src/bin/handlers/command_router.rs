@@ -662,6 +662,7 @@ fn dispatch_tooling(command: crate::Commands) -> Result<()> {
         | crate::Commands::Fix { .. }
         | crate::Commands::Convert { .. }
         | crate::Commands::Vocab { .. }
+        | crate::Commands::Explain { .. }
         | crate::Commands::Test { .. }
         | crate::Commands::PropertyTests { .. }
         | crate::Commands::Mutations { .. }
