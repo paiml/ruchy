@@ -4794,11 +4794,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'ARRCLONE-1: interpreter arrays have no clone method (Unknown array method: clone)'
-  status: planned
+  status: completed
   priority: medium
   assigned_to: null
   created: 2026-09-24T16:00:00Z
-  updated: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let a = [1]; let b = a.clone(); println("{:?}", b)'

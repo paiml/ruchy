@@ -180,6 +180,9 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   became `vec![..]` (NESTARRVEC-1) is emitted as `vec![..]` too, so
   `m[0].push(2); m.push([3])` compiles and prints `[[1, 2], [3]]`
   (NESTPUSHLIT-1).
+- Arrays have `clone`, `to_vec` and `to_owned`; tuples and strings have
+  `clone` and `to_owned`; plain objects have `clone`. A clone is
+  independent: writes to it leave the original unchanged (ARRCLONE-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

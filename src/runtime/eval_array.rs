@@ -23,6 +23,9 @@ fn eval_array_nullary_method(
         "len" | "length" | "count" => eval_array_len(arr),
         // COUNTITER-1: `iter()` is the array itself, so `v.iter().count()` works
         "iter" => Ok(Value::Array(Arc::clone(arr))),
+        // ARRCLONE-1: a copy of the array; writes to either copy the shared
+        // storage first, so the copies stay independent
+        "clone" | "to_vec" | "to_owned" => Ok(Value::Array(Arc::clone(arr))),
         "first" => eval_array_first(arr),
         "last" => eval_array_last(arr),
         "is_empty" => eval_array_is_empty(arr),

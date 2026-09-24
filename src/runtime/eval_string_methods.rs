@@ -38,7 +38,8 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "len" | "length" => Ok(Value::Integer(s.len() as i64)),
         "to_upper" | "to_uppercase" | "upper" => Ok(Value::from_string(s.to_uppercase())),
         "to_lower" | "to_lowercase" | "lower" => Ok(Value::from_string(s.to_lowercase())),
-        "to_string" => Ok(Value::from_string(s.to_string())),
+        // ARRCLONE-1: `clone`/`to_owned` copy the string, like `to_string`
+        "to_string" | "clone" | "to_owned" => Ok(Value::from_string(s.to_string())),
         "is_empty" => Ok(Value::Bool(s.is_empty())),
         "is_numeric" => Ok(Value::Bool(s.chars().all(char::is_numeric))),
         "is_alphabetic" => Ok(Value::Bool(s.chars().all(char::is_alphabetic))),

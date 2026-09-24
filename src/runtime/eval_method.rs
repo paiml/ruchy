@@ -139,7 +139,7 @@ pub fn eval_integer_method(
 /// Evaluate generic methods available on all types
 ///
 /// # Complexity
-/// Cyclomatic complexity: 3 (within Toyota Way limits)
+/// Cyclomatic complexity: 5 (within Toyota Way limits)
 pub fn eval_generic_method(
     receiver: &Value,
     method: &str,
@@ -147,6 +147,12 @@ pub fn eval_generic_method(
 ) -> Result<Value, InterpreterError> {
     if method == "to_string" && args_empty {
         Ok(Value::from_string(receiver.to_string()))
+    } else if matches!(method, "clone" | "to_owned")
+        && args_empty
+        && matches!(receiver, Value::Tuple(_))
+    {
+        // ARRCLONE-1: tuples are immutable values, so the clone is the tuple
+        Ok(receiver.clone())
     } else {
         Err(InterpreterError::RuntimeError(format!(
             "Method '{}' not found for type {}",

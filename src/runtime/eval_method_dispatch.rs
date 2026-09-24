@@ -264,15 +264,26 @@ fn eval_plain_object_get(
 /// Returns `None` for any other method so the caller keeps its error path.
 ///
 /// # Complexity
-/// Cyclomatic complexity: 6
+/// Cyclomatic complexity: 8
 fn eval_plain_object_method(
     obj: &std::collections::HashMap<String, Value>,
     method: &str,
     arg_values: &[Value],
 ) -> Option<Result<Value, InterpreterError>> {
-    if method == "get" {
-        return Some(eval_plain_object_get(obj, arg_values));
+    match method {
+        "get" => Some(eval_plain_object_get(obj, arg_values)),
+        // ARRCLONE-1: a copy of the map; field writes on it leave `obj` unchanged
+        "clone" if arg_values.is_empty() => Some(Ok(Value::Object(Arc::new(obj.clone())))),
+        _ => eval_plain_object_projection(obj, method, arg_values),
     }
+}
+
+/// `keys`, `values`, `items`/`entries` of a plain object, sorted by key
+fn eval_plain_object_projection(
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Option<Result<Value, InterpreterError>> {
     let project: fn(&String, &Value) -> Value = match method {
         "keys" => |k, _| Value::from_string(k.clone()),
         "values" => |_, v| v.clone(),
