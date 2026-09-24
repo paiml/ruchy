@@ -137,6 +137,12 @@ Behaviour changes a program can observe are marked **(behaviour)**.
 - `property-tests`, `fuzz` and `notebook` remove the compiled
   `ruchy_temp_bin_*` binary on every return path, not only on success
   (TMPLEAK-1).
+- A single-argument `println` prints with `{}` only for a name that is a
+  string in the current scope: a for-loop variable, closure parameter, or
+  match / if-let / while-let binding that re-binds a string variable drops
+  its string record until the scope ends, and `replace` / `repeat` count as
+  string results only on a string receiver (`[1].repeat(2)` is a `Vec`).
+  Before, both printed a `Vec` with `{}` and failed rustc (PRINTSTRSCOPE-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;

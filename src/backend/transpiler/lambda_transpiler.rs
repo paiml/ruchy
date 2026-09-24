@@ -19,7 +19,8 @@ impl Transpiler {
         params: &[Param],
         body: &Expr,
     ) -> Result<TokenStream> {
-        let body_tokens = self.transpile_expr(body)?;
+        // PRINTSTRSCOPE-1: parameters shadow outer string records.
+        let body_tokens = self.with_param_scope(params, || self.transpile_expr(body))?;
 
         if params.is_empty() {
             return Ok(quote! { move || #body_tokens });
@@ -57,7 +58,8 @@ impl Transpiler {
         params: &[Param],
         body: &Expr,
     ) -> Result<TokenStream> {
-        let body_tokens = self.transpile_expr(body)?;
+        // PRINTSTRSCOPE-1: parameters shadow outer string records.
+        let body_tokens = self.with_param_scope(params, || self.transpile_expr(body))?;
 
         if params.is_empty() {
             return Ok(quote! { move || async move { #body_tokens } });

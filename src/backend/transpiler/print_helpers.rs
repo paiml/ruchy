@@ -8,8 +8,9 @@
 //!
 //! **EXTREME TDD Round 64**: Extracted from statements.rs and mod.rs for modularization.
 
+use super::pattern_bindings::extract_pattern_bindings;
 use super::Transpiler;
-use crate::frontend::ast::{Expr, ExprKind, Literal, Type, TypeKind};
+use crate::frontend::ast::{Expr, ExprKind, Literal, Param, Pattern, Type, TypeKind};
 use anyhow::Result;
 use proc_macro2::TokenStream;
 use quote::quote;
@@ -245,7 +246,8 @@ impl Transpiler {
 /// PRINTSTR-1: the type tag `variable_types` holds for a string binding.
 const STRING_VAR_TYPE: &str = "String";
 
-/// PRINTSTR-1: methods whose result is a `String`/`&str` in the transpiled Rust.
+/// PRINTSTR-1: methods whose result prints as text on every receiver they
+/// exist on (`to_string` on anything, the case/trim methods on `str`/`char`).
 const STRING_RESULT_METHODS: &[&str] = &[
     "to_string",
     "to_uppercase",
@@ -253,9 +255,11 @@ const STRING_RESULT_METHODS: &[&str] = &[
     "trim",
     "trim_start",
     "trim_end",
-    "replace",
-    "repeat",
 ];
+
+/// PRINTSTRSCOPE-1: methods whose result is a `String` only on a string
+/// receiver (`[1].repeat(2)` is a `Vec`, `Option::replace` an `Option`).
+const STRING_RECEIVER_METHODS: &[&str] = &["replace", "repeat"];
 
 impl Transpiler {
     /// PRINTSTR-1: `{}` for an expression known to be a string, `{:?}` for
@@ -278,7 +282,9 @@ impl Transpiler {
                 name.trim_end_matches('!') == "format"
             }
             ExprKind::Call { func, args } => self.is_format_fn_call(func, args),
-            ExprKind::MethodCall { method, .. } => STRING_RESULT_METHODS.contains(&method.as_str()),
+            ExprKind::MethodCall {
+                receiver, method, ..
+            } => self.is_string_method_result(receiver, method),
             ExprKind::Identifier(name) => self
                 .variable_types
                 .borrow()
@@ -300,13 +306,72 @@ impl Transpiler {
 
     /// PRINTSTR-1: parameters of the function being transpiled; string
     /// records of earlier functions are dropped first. (complexity: 2)
-    pub(crate) fn track_string_params(&self, params: &[crate::frontend::ast::Param]) {
+    pub(crate) fn track_string_params(&self, params: &[Param]) {
         self.variable_types
             .borrow_mut()
             .retain(|_, t| t != STRING_VAR_TYPE);
         for param in params {
             self.set_string_var(&param.name(), is_string_annotation(&param.ty));
         }
+    }
+
+    /// PRINTSTRSCOPE-1: `receiver.method(..)` is a string: a text-printing
+    /// method, or `replace`/`repeat` on a string receiver. (complexity: 3)
+    fn is_string_method_result(&self, receiver: &Expr, method: &str) -> bool {
+        STRING_RESULT_METHODS.contains(&method)
+            || (STRING_RECEIVER_METHODS.contains(&method) && self.is_display_string(receiver))
+    }
+
+    /// PRINTSTRSCOPE-1: run `f` while each `(name, is_string)` binder
+    /// re-binds `name` (a shadowing binder drops the outer string record);
+    /// the prior `variable_types` entries of those names are restored after.
+    /// (complexity: 3)
+    pub(crate) fn with_string_scope<T>(
+        &self,
+        binders: &[(String, bool)],
+        f: impl FnOnce() -> T,
+    ) -> T {
+        let saved: Vec<(String, Option<String>)> = binders
+            .iter()
+            .map(|(name, _)| {
+                (
+                    name.clone(),
+                    self.variable_types.borrow().get(name).cloned(),
+                )
+            })
+            .collect();
+        for (name, is_string) in binders {
+            self.set_string_var(name, *is_string);
+        }
+        let result = f();
+        let mut types = self.variable_types.borrow_mut();
+        for (name, entry) in saved.into_iter().rev() {
+            match entry {
+                Some(ty) => types.insert(name, ty),
+                None => types.remove(&name),
+            };
+        }
+        result
+    }
+
+    /// PRINTSTRSCOPE-1: run `f` in the scope of the names `pattern` binds
+    /// (for-loop, match arm, if-let, while-let). (complexity: 1)
+    pub(crate) fn with_pattern_scope<T>(&self, pattern: &Pattern, f: impl FnOnce() -> T) -> T {
+        let binders: Vec<(String, bool)> = extract_pattern_bindings(pattern)
+            .into_iter()
+            .map(|name| (name, false))
+            .collect();
+        self.with_string_scope(&binders, f)
+    }
+
+    /// PRINTSTRSCOPE-1: run `f` in the scope of closure parameters; a
+    /// `String`/`&str`-annotated parameter is a string. (complexity: 1)
+    pub(crate) fn with_param_scope<T>(&self, params: &[Param], f: impl FnOnce() -> T) -> T {
+        let binders: Vec<(String, bool)> = params
+            .iter()
+            .map(|p| (p.name(), is_string_annotation(&p.ty)))
+            .collect();
+        self.with_string_scope(&binders, f)
     }
 
     /// PRINTSTR-1: set or clear the string record of `name`. (complexity: 3)
