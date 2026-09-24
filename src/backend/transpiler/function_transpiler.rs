@@ -124,14 +124,20 @@ impl Transpiler {
     }
 
     /// BOOK-COMPAT-015: Check if body has a non-unit last expression
-    /// (MAINUNIT-1: a call to a unit-returning user function is unit)
+    /// (MAINUNIT-1: a call to a unit-returning user function is unit;
+    /// CLOSUREUNIT-1: so is a call to a let-bound closure with a unit body)
     fn has_non_unit_last_expr(&self, body: &Expr) -> bool {
+        self.has_non_unit_tail(body) && !tail_calls_unit_closure(body)
+    }
+
+    /// BOOK-COMPAT-015: the last expression of `body` is not unit.
+    fn has_non_unit_tail(&self, body: &Expr) -> bool {
         match &body.kind {
             ExprKind::Block(exprs) => exprs
                 .last()
-                .is_some_and(|last| self.has_non_unit_last_expr(last)),
+                .is_some_and(|last| self.has_non_unit_tail(last)),
             ExprKind::Let { body, .. } | ExprKind::LetPattern { body, .. } => {
-                self.has_non_unit_last_expr(body)
+                self.has_non_unit_tail(body)
             }
             _ => !Self::is_unit_expr(body) && !self.is_unit_function_call(body),
         }
@@ -307,6 +313,55 @@ impl Transpiler {
                     }
                 }
         }
+    }
+}
+
+/// CLOSUREUNIT-1: the last expression of `body` calls a closure bound by a
+/// `let` earlier in `body` whose body is unit (the latest binding of the
+/// name wins, so a shadowing value closure is still printed).
+fn tail_calls_unit_closure(body: &Expr) -> bool {
+    let mut closures = std::collections::HashMap::new();
+    tail_with_closures(body, &mut closures)
+}
+
+/// CLOSUREUNIT-1: walk the statement chain of `expr` to its tail, recording
+/// in `closures` whether each let-bound name is a unit-bodied closure.
+fn tail_with_closures<'a>(
+    expr: &'a Expr,
+    closures: &mut std::collections::HashMap<&'a str, bool>,
+) -> bool {
+    match &expr.kind {
+        ExprKind::Block(exprs) => {
+            let Some((last, init)) = exprs.split_last() else {
+                return false;
+            };
+            init.iter()
+                .for_each(|e| record_closure_binding(e, closures));
+            tail_with_closures(last, closures)
+        }
+        ExprKind::Let { body, .. } => {
+            record_closure_binding(expr, closures);
+            tail_with_closures(body, closures)
+        }
+        ExprKind::Call { func, .. } => matches!(
+            &func.kind,
+            ExprKind::Identifier(name) if closures.get(name.as_str()) == Some(&true)
+        ),
+        _ => false,
+    }
+}
+
+/// CLOSUREUNIT-1: record whether the `let` `expr` binds a unit-bodied closure.
+fn record_closure_binding<'a>(
+    expr: &'a Expr,
+    closures: &mut std::collections::HashMap<&'a str, bool>,
+) {
+    if let ExprKind::Let { name, value, .. } = &expr.kind {
+        let is_unit_closure = matches!(
+            &value.kind,
+            ExprKind::Lambda { body, .. } if super::function_analysis::is_void_expression(body)
+        );
+        closures.insert(name.as_str(), is_unit_closure);
     }
 }
 

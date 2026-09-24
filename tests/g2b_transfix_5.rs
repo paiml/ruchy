@@ -5,6 +5,11 @@
 //! - NESTARRVEC-1: when an element of a nested array literal binding is
 //!   grown through an index (`m[0].push(9)`), the inner literals are emitted
 //!   as `vec![..]` too. Before, they stayed fixed-size arrays (E0599).
+//! - CLOSUREUNIT-1: a call to a let-bound closure whose body is unit, as the
+//!   last statement of main, is not printed. Before, main printed `()`.
+//!   (An untyped parameter printed with `println(s)` still uses `{:?}`, so
+//!   `f("hi")` through `|s|` prints `"hi"`: a separate defect, also hit by
+//!   `fun p(s)`; these tests type the parameter or pass an integer.)
 
 use assert_cmd::Command;
 use std::path::Path;
@@ -141,4 +146,62 @@ fn test_nestarrvec_1_ungrown_nested_stays_array() {
         "no vec! for an ungrown literal:\n{rust}"
     );
     check(&src, "[[1], [2]]\n", true);
+}
+
+// ------------------------------------------------------------- CLOSUREUNIT-1
+
+#[test]
+fn test_closureunit_1_unit_closure_last_in_main() {
+    let src = main_with(
+        r#"    let f = |s: String| println(s)
+    f("hi")"#,
+    );
+    check(&src, "hi\n", true);
+}
+
+#[test]
+fn test_closureunit_1_untyped_int_closure_last_in_main() {
+    let src = main_with(
+        r#"    let f = |n| println(n)
+    f(7)"#,
+    );
+    check(&src, "7\n", true);
+}
+
+#[test]
+fn test_closureunit_1_shadowed_by_value_closure_still_printed() {
+    let src = main_with(
+        r#"    let f = |n| println(n)
+    f(1)
+    let f = |n| n * 3
+    f(2)"#,
+    );
+    check(&src, "1\n6\n", false);
+}
+
+#[test]
+fn test_closureunit_1_unit_closure_last_top_level() {
+    let src = "let f = |s: String| println(s)\nf(\"hi\")\n";
+    check(src, "hi\n", true);
+}
+
+#[test]
+fn test_closureunit_1_block_body_closure_last() {
+    let src = main_with(
+        r#"    let g = |n| {
+        let d = n * 2
+        println(d)
+    }
+    g(4)"#,
+    );
+    check(&src, "8\n", true);
+}
+
+#[test]
+fn test_closureunit_1_value_closure_still_printed() {
+    let src = main_with(
+        r#"    let h = |n| n + 1
+    h(41)"#,
+    );
+    check(&src, "42\n", false);
 }

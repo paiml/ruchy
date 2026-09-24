@@ -4737,11 +4737,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'CLOSUREUNIT-1: a unit-returning closure call as the last statement of main is printed as () (MAINUNIT-1 covers user functions only)'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T14:30:00Z
-  updated: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: let f = |s| println(s); f("hi")  as the last statement of main'
