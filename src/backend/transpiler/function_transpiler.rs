@@ -67,6 +67,8 @@ impl Transpiler {
         } else {
             self.generate_param_tokens(params, body, name)?
         };
+        // PRINTPARAM-1: an inferred String/&str parameter prints with Display.
+        self.track_emitted_string_params(&param_tokens);
 
         // Check for #[test] attribute and override return type if found
         let has_test_attribute = attributes.iter().any(|attr| attr.name == "test");

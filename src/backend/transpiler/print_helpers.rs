@@ -367,11 +367,54 @@ impl Transpiler {
     /// PRINTSTRSCOPE-1: run `f` in the scope of closure parameters; a
     /// `String`/`&str`-annotated parameter is a string. (complexity: 1)
     pub(crate) fn with_param_scope<T>(&self, params: &[Param], f: impl FnOnce() -> T) -> T {
+        self.with_closure_param_scope(None, params, f)
+    }
+
+    /// PRINTPARAM-1: [`Self::with_param_scope`] for a closure bound to
+    /// `closure`: an untyped parameter is a string when every recorded call
+    /// site passes a string literal at its position. (complexity: 1)
+    pub(crate) fn with_closure_param_scope<T>(
+        &self,
+        closure: Option<&str>,
+        params: &[Param],
+        f: impl FnOnce() -> T,
+    ) -> T {
         let binders: Vec<(String, bool)> = params
             .iter()
-            .map(|p| (p.name(), is_string_annotation(&p.ty)))
+            .enumerate()
+            .map(|(i, p)| (p.name(), self.is_string_closure_param(closure, i, p)))
             .collect();
         self.with_string_scope(&binders, f)
+    }
+
+    /// PRINTPARAM-1: an annotated parameter is a string by its annotation; an
+    /// untyped one by the call-site type of `closure` at `index`. (complexity: 3)
+    fn is_string_closure_param(&self, closure: Option<&str>, index: usize, param: &Param) -> bool {
+        if !matches!(&param.ty.kind, TypeKind::Named(n) if n == "_") {
+            return is_string_annotation(&param.ty);
+        }
+        closure
+            .and_then(|name| self.get_call_site_param_type(name, index))
+            .is_some_and(|ty| ty == STRING_VAR_TYPE)
+    }
+
+    /// PRINTPARAM-1: record the parameters whose emitted type is `String` or
+    /// `&str`; `param_tokens` holds one `name: Type` per parameter, so an
+    /// inferred type counts like an annotation. (complexity: 3)
+    pub(crate) fn track_emitted_string_params(&self, param_tokens: &[TokenStream]) {
+        for tokens in param_tokens {
+            let text = tokens.to_string();
+            let Some((name, ty)) = text.split_once(':') else {
+                continue;
+            };
+            if is_string_type_text(ty.trim()) {
+                let name = name
+                    .trim()
+                    .trim_start_matches("mut ")
+                    .trim_start_matches("r#");
+                self.set_string_var(name, true);
+            }
+        }
     }
 
     /// PRINTSTR-1: set or clear the string record of `name`. (complexity: 3)
@@ -420,6 +463,12 @@ impl Transpiler {
         );
         self.transpile_expr(&macro_expr).map(Some)
     }
+}
+
+/// PRINTPARAM-1: the emitted type text `ty` is `String`, `&str` or
+/// `&'a str`. (complexity: 3)
+fn is_string_type_text(ty: &str) -> bool {
+    ty == "String" || ty == "& str" || (ty.starts_with("& '") && ty.ends_with(" str"))
 }
 
 /// PRINTSTR-1: `ty` is `String`, `str` or a reference to one. (complexity: 3)

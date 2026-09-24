@@ -85,7 +85,7 @@ impl Transpiler {
         let (value_tokens, needs_vec_type_hint) = match &value.kind {
             ExprKind::Literal(Literal::String(s)) => (quote! { #s.to_string() }, false),
             ExprKind::List(items) if items.is_empty() => (self.transpile_expr(value)?, true),
-            _ => (self.transpile_expr(value)?, false),
+            _ => (self.transpile_let_value(name, value)?, false),
         };
         let value_tokens = Self::growable_list_tokens(name, value, None, body, value_tokens);
 
@@ -351,6 +351,17 @@ impl Transpiler {
         }
     }
 
+    /// PRINTPARAM-1: the value of `let name = value`; a closure value knows
+    /// the name it is called by. (complexity: 2)
+    fn transpile_let_value(&self, name: &str, value: &Expr) -> Result<TokenStream> {
+        match &value.kind {
+            ExprKind::Lambda { params, body } => {
+                self.transpile_named_lambda(Some(name), params, body)
+            }
+            _ => self.transpile_expr(value),
+        }
+    }
+
     /// LETVEC-1: transpile one statement of a block. A statement-level `let`
     /// (Unit body) whose scope is the following siblings `rest` gets its
     /// array literal emitted as `vec![..]` when a sibling grows the binding.
@@ -401,7 +412,7 @@ impl Transpiler {
                 self.string_vars.borrow_mut().insert(name.to_string());
                 Ok((self.transpile_expr(value)?, false))
             }
-            _ => Ok((self.transpile_expr(value)?, false)),
+            _ => Ok((self.transpile_let_value(name, value)?, false)),
         }
     }
 

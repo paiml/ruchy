@@ -4775,11 +4775,11 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'PRINTPARAM-1: an untyped function or closure parameter inferred as String is printed by println with {:?}, so the compiled program prints "hi" with quotes'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-24T16:00:00Z
-  updated: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T20:00:00Z
   spec: null
   acceptance_criteria:
   - 'Repro: fun p(s) { println(s) }; p("hi")   and   let f = |s| println(s); f("hi")'

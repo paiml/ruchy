@@ -173,6 +173,9 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   called through a variable or parameter (`let g = format; g(t, 1)`) follow
   the FMTTEMPLATE-1 rule: only a string literal first argument is a
   template, so a non-literal one prints `{} 1` (FORMATVAL-1).
+- An untyped function or closure parameter whose emitted type is `String`
+  or `&str` (a closure's from its call sites) prints with `{}`:
+  `fun p(s) { println(s) }; p("hi")` prints `hi`, not `"hi"` (PRINTPARAM-1).
 - Mutation detection walks every expression kind, including macro arguments.
 - Tests:
   - they spawn the cargo-built binary;
