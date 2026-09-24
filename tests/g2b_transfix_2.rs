@@ -156,15 +156,17 @@ fn test_formatfn_1_display_placeholders() {
 
 #[test]
 fn test_retlen_1_explicit_return_len() {
-    let src = "fun n(v: Vec<i32>) -> int {\n    return v.len()\n}\n\
-               fun main() {\n    println(n([1, 2, 3]))\n}\n";
+    // A String argument: an array literal passed to a `Vec` parameter is a
+    // separate defect (no `.to_vec()`), kept out of this case.
+    let src = "fun n(s: String) -> int {\n    return s.len()\n}\n\
+               fun main() {\n    println(n(\"abc\".to_string()))\n}\n";
     check(src, "3\n", true);
 }
 
 #[test]
 fn test_retlen_1_early_return_in_if_branch() {
-    let src = "fun m(v: Vec<i32>) -> int {\n    if v.len() > 2 {\n        return v.len()\n    }\n    return 0\n}\n\
-               fun main() {\n    println(m([1, 2, 3]))\n    println(m([1]))\n}\n";
+    let src = "fun m(s: String) -> int {\n    if s.len() > 2 {\n        return s.len()\n    }\n    return 0\n}\n\
+               fun main() {\n    println(m(\"abc\".to_string()))\n    println(m(\"a\".to_string()))\n}\n";
     check(src, "3\n0\n", true);
 }
 
