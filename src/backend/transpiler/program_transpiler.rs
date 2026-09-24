@@ -260,19 +260,16 @@ impl Transpiler {
     /// Transpile one item of a module body as a Rust item.
     ///
     /// A nested module is emitted as an item (`pub mod b { .. }` when marked
-    /// `pub`), not as an expression whose block body is not an item (NESTEDMOD-1).
+    /// `pub`, `pub(crate)`/`pub(super)` as recorded), not as an expression whose
+    /// block body is not an item (NESTEDMOD-1).
     /// Complexity: 3 (within Toyota Way limits)
     fn transpile_module_item(&self, expr: &Expr) -> Result<TokenStream> {
         match &expr.kind {
             ExprKind::Function { .. } => self.transpile_function_expr(expr),
             ExprKind::Module { name, body } => {
                 let module = self.transpile_module_declaration(name, body)?;
-                let is_pub = expr.attributes.iter().any(|a| a.name == "pub");
-                Ok(if is_pub {
-                    quote! { pub #module }
-                } else {
-                    module
-                })
+                let visibility = module_visibility(expr);
+                Ok(quote! { #visibility #module })
             }
             _ => self.transpile_expr(expr),
         }
@@ -669,6 +666,21 @@ impl Transpiler {
 // ============================================================================
 // Tests
 // ============================================================================
+
+/// The visibility the parser recorded on a module item: `pub`, `pub(crate)`,
+/// `pub(super)`, or nothing for a private module. `pub(in path)` records no
+/// argument and is emitted as `pub`.
+/// Complexity: 3 (within Toyota Way limits)
+fn module_visibility(expr: &Expr) -> TokenStream {
+    let Some(attr) = expr.attributes.iter().find(|a| a.name == "pub") else {
+        return TokenStream::new();
+    };
+    match attr.args.first().map(String::as_str) {
+        Some("crate") => quote! { pub(crate) },
+        Some("super") => quote! { pub(super) },
+        _ => quote! { pub },
+    }
+}
 
 #[cfg(test)]
 mod tests {
