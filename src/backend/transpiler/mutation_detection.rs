@@ -4,16 +4,35 @@
 //! (reassigned or modified) within expression trees, and whether a method
 //! body mutates `self` (for `&mut self` receiver inference).
 
-use crate::frontend::ast::{Expr, ExprKind};
+use crate::frontend::ast::{Expr, ExprKind, UnaryOp};
 use std::collections::HashSet;
 
 /// Std methods that take `&mut self`. A call of one of these on a field of
 /// `self` (`self.items.push(x)`, `self.buf.push_str(s)`, `self.map.entry(k)`)
 /// mutates `self`. The list is deliberately closed: a method not listed here
 /// is treated as non-mutating unless it is a mutating method of the same impl.
+/// It is a superset of [`VEC_ONLY_METHODS`] and of the interpreter's in-place
+/// array methods (`runtime::eval_array::is_in_place_array_method`).
 pub const MUTATING_STD_METHODS: &[&str] = &[
-    "push", "pop", "insert", "remove", "clear", "extend", "append", "truncate", "sort", "sort_by",
-    "reverse", "dedup", "retain", "drain", "push_str", "swap", "entry",
+    "push",
+    "pop",
+    "insert",
+    "remove",
+    "clear",
+    "extend",
+    "extend_from_slice",
+    "append",
+    "truncate",
+    "resize",
+    "sort",
+    "sort_by",
+    "reverse",
+    "dedup",
+    "retain",
+    "drain",
+    "push_str",
+    "swap",
+    "entry",
 ];
 
 /// LETVEC-1: methods that exist on `Vec` but not on a fixed-size array. A
@@ -36,9 +55,58 @@ pub const VEC_ONLY_METHODS: &[&str] = &[
 ];
 
 /// LETVEC-1: true when the variable `name` is the receiver of a
-/// [`VEC_ONLY_METHODS`] call anywhere in `expr`.
+/// [`VEC_ONLY_METHODS`] call in `expr` that refers to this binding of `name`.
+///
+/// The scan follows scope: a `let name = …` ends it (its value still refers
+/// to the outer binding, its body and the block statements after it do not),
+/// and a closure or nested function with a parameter `name` is skipped.
 pub fn is_grown_as_vec(name: &str, expr: &Expr) -> bool {
-    any_expr(expr, &|e| is_vec_only_call_on(name, e))
+    if is_vec_only_call_on(name, expr) {
+        return true;
+    }
+    match &expr.kind {
+        ExprKind::Block(exprs) => is_grown_in_statements(name, exprs),
+        ExprKind::Let {
+            name: bound,
+            value,
+            else_block,
+            ..
+        } if bound == name => {
+            is_grown_as_vec(name, value)
+                || else_block
+                    .as_deref()
+                    .is_some_and(|e| is_grown_as_vec(name, e))
+        }
+        _ if binds_param(name, expr) => false,
+        _ => sub_expressions(expr)
+            .into_iter()
+            .any(|e| is_grown_as_vec(name, e)),
+    }
+}
+
+/// A closure or nested function with a parameter called `name`.
+fn binds_param(name: &str, expr: &Expr) -> bool {
+    match &expr.kind {
+        ExprKind::Lambda { params, .. } | ExprKind::Function { params, .. } => {
+            params.iter().any(|p| p.name() == name)
+        }
+        ExprKind::AsyncLambda { params, .. } => params.iter().any(|p| p == name),
+        _ => false,
+    }
+}
+
+/// LETVEC-1: [`is_grown_as_vec`] over a statement sequence: the statements
+/// are scanned in order until one of them re-binds `name` with a `let`.
+pub fn is_grown_in_statements(name: &str, statements: &[Expr]) -> bool {
+    for statement in statements {
+        if is_grown_as_vec(name, statement) {
+            return true;
+        }
+        if matches!(&statement.kind, ExprKind::Let { name: bound, .. } if bound == name) {
+            return false;
+        }
+    }
+    false
 }
 
 /// `name.<m>(..)` with `m` a [`VEC_ONLY_METHODS`] method.
@@ -120,9 +188,14 @@ fn is_self_mutating_call(expr: &Expr, mutating_methods: &HashSet<String>) -> boo
     }
 }
 
-/// Assignment, compound assignment or `++`/`--` whose target place is rooted at `name`.
+/// Assignment, compound assignment or `++`/`--` whose target place is rooted
+/// at `name`, or a `&mut <place rooted at name>` borrow (passed to a call).
 fn writes_place_rooted_at(name: &str, expr: &Expr) -> bool {
     match &expr.kind {
+        ExprKind::Unary {
+            op: UnaryOp::MutableReference,
+            operand,
+        } => place_root(operand) == Some(name),
         ExprKind::Assign { target, .. }
         | ExprKind::CompoundAssign { target, .. }
         | ExprKind::PreIncrement { target }
@@ -413,7 +486,7 @@ fn with_optional<'a>(required: Vec<&'a Box<Expr>>, optional: Option<&'a Expr>) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frontend::ast::{BinaryOp, Literal, MatchArm, Pattern, Span, UnaryOp};
+    use crate::frontend::ast::{BinaryOp, Literal, MatchArm, Pattern, Span};
 
     // ==================== Test Helpers ====================
 
@@ -1672,5 +1745,27 @@ mod tests {
         });
         // `return (x = 1)` assigns x before returning (G2BFA2).
         assert!(is_variable_mutated("x", &ret));
+    }
+
+    /// RHLGA-1 review F3: every Vec-only method and every in-place array
+    /// method the interpreter knows is a mutating std method, so a call of
+    /// one on `self.<field>` infers `&mut self`.
+    #[test]
+    fn test_rhlga_1_mutating_std_methods_cover_in_place_tables() {
+        let in_place = [
+            "push", "pop", "insert", "remove", "clear", "extend", "append",
+        ]
+        .into_iter()
+        .chain(["truncate", "sort", "reverse", "dedup", "resize"])
+        .chain(["extend_from_slice", "retain", "drain", "sort_by"]);
+        for method in in_place.chain(VEC_ONLY_METHODS.iter().copied()) {
+            let is_runtime_in_place =
+                (0..3).any(|n| crate::runtime::eval_array::is_in_place_array_method(method, n));
+            let known = VEC_ONLY_METHODS.contains(&method) || is_runtime_in_place;
+            assert!(
+                !known || MUTATING_STD_METHODS.contains(&method),
+                "{method} is in-place but not in MUTATING_STD_METHODS"
+            );
+        }
     }
 }

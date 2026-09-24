@@ -13,7 +13,7 @@ use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern, Type, TypeKind};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Helper: Generate let binding statement with mutability and optional Vec type hint
@@ -69,12 +69,8 @@ impl Transpiler {
         is_mutable: bool,
     ) -> Result<TokenStream> {
         // Handle Rust reserved keywords by prefixing with r#
-        let safe_name = if Self::is_rust_reserved_keyword(name) {
-            format!("r#{name}")
-        } else {
-            name.to_string()
-        };
-        let name_ident = format_ident!("{}", safe_name);
+        // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
+        let name_ident = Self::safe_ident(name);
 
         // Auto-detect mutability
         let effective_mutability = is_mutable
@@ -265,12 +261,8 @@ impl Transpiler {
         is_mutable: bool,
         is_const: bool,
     ) -> Result<TokenStream> {
-        let safe_name = if Self::is_rust_reserved_keyword(name) {
-            format!("r#{name}")
-        } else {
-            name.to_string()
-        };
-        let name_ident = format_ident!("{}", safe_name);
+        // RHLGA-1 F7: `safe_ident` never r#-escapes `self`/`Self`/`super`/`crate`.
+        let name_ident = Self::safe_ident(name);
 
         // PARSER-073: Generate const/let keyword based on const attribute
         let is_mutable_var = is_mutable
@@ -566,9 +558,7 @@ fn grown_let_as_vec(expr: &Expr, rest: &[Expr]) -> Option<Expr> {
         return None;
     };
     let is_statement = matches!(body.kind, ExprKind::Literal(Literal::Unit));
-    let grown = rest
-        .iter()
-        .any(|e| super::mutation_detection::is_grown_as_vec(name, e));
+    let grown = super::mutation_detection::is_grown_in_statements(name, rest);
     if items.is_empty() || !is_statement || !grown {
         return None;
     }
@@ -600,6 +590,7 @@ fn is_vec_annotation(ty: &Type) -> bool {
 mod tests {
     use super::*;
     use crate::frontend::ast::Span;
+    use quote::format_ident;
 
     fn make_expr(kind: ExprKind) -> Expr {
         Expr {
@@ -1077,5 +1068,20 @@ mod tests {
         let transpiler = Transpiler::new();
         let expr = ident_expr("items");
         assert!(!transpiler.value_creates_vec(&expr));
+    }
+
+    /// RHLGA-1 review F7: a keyword that cannot be a raw identifier
+    /// (`self`, `Self`, `super`, `crate`) must not make `let` panic.
+    #[test]
+    fn test_rhlga_1_let_named_non_raw_keyword_does_not_panic() {
+        let transpiler = Transpiler::new();
+        for name in ["self", "Self", "super", "crate"] {
+            let value = int_expr(1);
+            let body = unit_expr();
+            let plain = transpiler.transpile_let(name, &value, &body, false);
+            assert!(plain.is_ok(), "{name}: {plain:?}");
+            let typed = transpiler.transpile_let_with_type(name, None, &value, &body, false, false);
+            assert!(typed.is_ok(), "{name}: {typed:?}");
+        }
     }
 }

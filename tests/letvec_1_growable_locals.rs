@@ -236,3 +236,64 @@ fn test_letvec_1_17_growth_inside_nested_block() {
     assert_eq!(expected, "4\n");
     assert_eq!(compile_and_run(dir.path(), src), expected);
 }
+
+// ---------- RHLGA-1 review F1: the scan follows scope ----------
+
+#[test]
+fn test_letvec_1_18_shadowing_let_ends_the_scan() {
+    let src = "fun main() {\n    let v = [1, 2]\n    println(v.len())\n    let mut v = [3]\n    v.push(4)\n    println(v.len())\n}\n";
+    let dir = tempfile::tempdir().expect("tempdir");
+    let rust = squash(&transpile(dir.path(), src));
+    assert!(
+        rust.contains("letv=[1,2];"),
+        "outer v stays an array:\n{rust}"
+    );
+    assert!(
+        rust.contains("letmutv=vec![3];"),
+        "the shadowing v becomes a vec:\n{rust}"
+    );
+    assert_eq!(compile_and_run(dir.path(), src), "2\n2\n");
+}
+
+#[test]
+fn test_letvec_1_19_nested_block_rebinding_does_not_count() {
+    let src = "fun main() {\n    let v = [1, 2]\n    if true {\n        let mut v = [5]\n        v.push(6)\n        println(v.len())\n    }\n    println(v.len())\n}\n";
+    let dir = tempfile::tempdir().expect("tempdir");
+    let rust = squash(&transpile(dir.path(), src));
+    assert!(
+        rust.contains("letv=[1,2];"),
+        "outer v stays an array:\n{rust}"
+    );
+    assert_eq!(compile_and_run(dir.path(), src), "2\n2\n");
+}
+
+#[test]
+fn test_letvec_1_20_closure_param_rebinding_does_not_count() {
+    let src =
+        "fun main() {\n    let v = [1, 2]\n    let f = |v| v.push(3)\n    println(v.len())\n}\n";
+    let rust = squash(&transpile_str(src));
+    assert!(
+        rust.contains("letv=[1,2];"),
+        "outer v stays an array:\n{rust}"
+    );
+}
+
+#[test]
+fn test_letvec_1_21_shadowing_value_still_sees_the_outer_binding() {
+    let src = "fun main() {\n    let mut v = [1]\n    let v = { v.push(2); v }\n    println(v.len())\n}\n";
+    let rust = squash(&transpile_str(src));
+    assert!(rust.contains("letmutv=vec![1];"), "outer v grows:\n{rust}");
+}
+
+// ---------- RHLGA-1 review F2: append copies the argument in ----------
+
+#[test]
+fn test_letvec_1_22_append_leaves_argument_usable_through_rustc() {
+    let src = "fun main() {\n    let mut a = [1, 2]\n    let mut b = [3]\n    b.push(4)\n    a.append(b)\n    println(a)\n    println(b)\n    let c = [5, 6]\n    a.append(c)\n    println(a.len() + c.len())\n}\n";
+    let dir = tempfile::tempdir().expect("tempdir");
+    let expected = interpret(dir.path(), src);
+    assert_eq!(expected, "[1, 2, 3, 4]\n[3, 4]\n8\n");
+    let rust = squash(&transpile(dir.path(), src));
+    assert!(rust.contains("a.extend_from_slice(&b)"), "rust:\n{rust}");
+    assert_eq!(compile_and_run(dir.path(), src), expected);
+}

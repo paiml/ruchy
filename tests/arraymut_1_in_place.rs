@@ -258,3 +258,54 @@ fun main() {{
 "
     ));
 }
+
+// ---------- RHLGA-1 review F3/F4: `&mut self` inference ----------
+
+/// Transpile, compile with rustc, run; the rustc output.
+fn through_rustc(src: &str) -> String {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let rust = transpile(dir.path(), src);
+    rustc_run(dir.path(), &rust)
+}
+
+#[test]
+fn test_arraymut_1_16_resize_and_extend_from_slice_infer_mut_self() {
+    let src = "struct Bag { items: Vec<i32> }
+impl Bag {
+    fun grow(self) {
+        self.items.resize(3, 0)
+    }
+    fun more(self) {
+        self.items.extend_from_slice(&[9])
+    }
+}
+fun main() {
+    let mut b = Bag { items: vec![1] }
+    b.grow()
+    b.more()
+    println(b.items)
+}
+";
+    assert_eq!(through_rustc(src), "[1, 0, 0, 9]\n");
+}
+
+#[test]
+fn test_arraymut_1_17_mut_borrow_of_self_field_infers_mut_self() {
+    let src = "struct Bag { items: Vec<i32> }
+fun add_one(xs: &mut Vec<i32>) -> usize {
+    xs.push(1)
+    xs.len()
+}
+impl Bag {
+    fun fill(self) -> usize {
+        add_one(&mut self.items)
+    }
+}
+fun main() {
+    let mut b = Bag { items: vec![7] }
+    println(b.fill())
+    println(b.items)
+}
+";
+    assert_eq!(through_rustc(src), "2\n[7, 1]\n");
+}
