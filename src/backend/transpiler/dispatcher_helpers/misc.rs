@@ -13,6 +13,13 @@ impl Transpiler {
         target_type: &str,
     ) -> Result<TokenStream> {
         let expr_tokens = self.transpile_expr(expr)?;
+        // TRANSPILER-155: `as` binds tighter than binary operators in Rust,
+        // so `(a % b) as f64` must keep its parentheses.
+        let expr_tokens = if Self::cast_operand_is_atomic(expr) {
+            expr_tokens
+        } else {
+            quote! { (#expr_tokens) }
+        };
         // Map Ruchy types to Rust types
         let rust_type = match target_type {
             "i32" => quote! { i32 },
@@ -29,6 +36,21 @@ impl Transpiler {
             _ => bail!("Unsupported cast target type: {target_type}"),
         };
         Ok(quote! { (#expr_tokens as #rust_type) })
+    }
+
+    /// An operand that binds at least as tightly as `as`, so a cast of it
+    /// needs no parentheses (TRANSPILER-155).
+    fn cast_operand_is_atomic(expr: &Expr) -> bool {
+        matches!(
+            expr.kind,
+            ExprKind::Identifier(_)
+                | ExprKind::Literal(_)
+                | ExprKind::Call { .. }
+                | ExprKind::MethodCall { .. }
+                | ExprKind::FieldAccess { .. }
+                | ExprKind::IndexAccess { .. }
+                | ExprKind::TypeCast { .. }
+        )
     }
 
     pub(in crate::backend::transpiler) fn transpile_control_misc_expr(

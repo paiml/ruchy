@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — TRANSPILER-155 (#155): casts keep their parentheses; `use std::time::Instant` is emitted
+
+- A cast of a compound operand keeps its parentheses: `(idx % 100) as f64`
+  was emitted as `idx % 100 as f64`, which casts only `100` (Rust `as` binds
+  tighter than `%`, `*`, `+`). Atomic operands (names, literals, calls,
+  field and index access, casts) are left unwrapped.
+- `use std::time::Instant` (and `Duration`, `SystemTime`, `UNIX_EPOCH`, …) is
+  emitted as the Rust `use`; before, it was replaced by the ruchy time helper
+  module, so `Instant` was not in scope. `use std::time;` still gets the helpers.
+- The issue's matrix benchmark compiles and prints the correct checksum
+  (`tests/issue_155_cast_parens_std_time.rs`, 9 tests).
+
 ### Added — RHL-4, RHL-5, RHL-6, RHL-9: RHL compiles, tests, contracts and talks MCP (RHL-001, experimental)
 
 - **Lowering (RHL-4):** a checked `job` lowers to Ruchy source, following spec
