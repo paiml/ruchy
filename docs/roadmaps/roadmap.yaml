@@ -4000,3 +4000,24 @@ roadmap:
   - kind:docs
   - orch-routing
   notes: null
+- id: PMAT-254
+  github_issue: 254
+  item_type: task
+  title: README claims derived and enforced by pv contract + SHACL shape
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-09-25T10:12:49Z
+  updated: 2026-09-25T10:12:49Z
+  spec: contracts/ruchy-readme-v1.yaml
+  acceptance_criteria:
+  - pv validate contracts/ruchy-readme-v1.yaml exits 0
+  - pv lint contracts --gate shapes verdict Pass with focus_nodes_n>=1
+  - cargo test --lib readme_contract passes
+  - cargo test --test readme_contract passes against the built binary
+  - planted wrong count, broken example path, missing section each turn a gate RED
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels: []
+  notes: null
