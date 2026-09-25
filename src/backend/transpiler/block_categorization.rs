@@ -179,7 +179,7 @@ impl Transpiler {
                     if *is_mutable && global_var_names.contains(name) {
                         // Transpile value to get initializer
                         let value_tokens = self.transpile_expr(value)?;
-                        let var_name = Self::safe_ident(name); // RAWIDENT-2
+                        let var_name = Self::global_static_ident(name); // GLOBALSHADOW-1
 
                         // TRANSPILER-SCOPE: Infer type from literal or use annotation
                         // Static variables can't use `_` placeholder, need explicit type

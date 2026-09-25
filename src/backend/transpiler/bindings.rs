@@ -99,13 +99,16 @@ impl Transpiler {
                 &value_tokens,
             ))
         } else {
-            self.transpile_let_with_body(
-                &name_ident,
-                effective_mutability,
-                needs_vec_type_hint,
-                &value_tokens,
-                body,
-            )
+            // GLOBALSHADOW-1: the body sees the local, not a global of the same name
+            self.with_globals_shadowed(&[name.to_string()], || {
+                self.transpile_let_with_body(
+                    &name_ident,
+                    effective_mutability,
+                    needs_vec_type_hint,
+                    &value_tokens,
+                    body,
+                )
+            })
         }
     }
 
@@ -221,7 +224,9 @@ impl Transpiler {
         if matches!(body.kind, ExprKind::Literal(Literal::Unit)) {
             self.transpile_let_pattern_unit_body(pattern, &value_tokens, &pattern_tokens)
         } else {
-            let body_tokens = self.transpile_expr(body)?;
+            // GLOBALSHADOW-1: the body sees the pattern's bindings, not globals
+            let bound = super::pattern_bindings::extract_pattern_bindings(pattern);
+            let body_tokens = self.with_globals_shadowed(&bound, || self.transpile_expr(body))?;
             Ok(quote! {
                 {
                     let #pattern_tokens = #value_tokens;
@@ -303,7 +308,9 @@ impl Transpiler {
                 #var_keyword #name_ident #type_tokens = #value_tokens;
             })
         } else {
-            let body_tokens = self.transpile_expr(body)?;
+            // GLOBALSHADOW-1: the body sees the local, not a global of the same name
+            let body_tokens =
+                self.with_globals_shadowed(&[name.to_string()], || self.transpile_expr(body))?;
             Ok(quote! {
                 {
                     #var_keyword #name_ident #type_tokens = #value_tokens;
@@ -534,10 +541,12 @@ impl Transpiler {
         body: &Expr,
         else_block: &Expr,
     ) -> Result<TokenStream> {
-        let name_ident = syn::Ident::new(name, proc_macro2::Span::call_site());
+        let name_ident = Self::safe_ident(name); // RAWIDENT-2
         let value_tokens = self.transpile_expr(value)?;
         let else_tokens = self.transpile_expr(else_block)?;
-        let body_tokens = self.transpile_expr(body)?;
+        // GLOBALSHADOW-1: the body sees the local, not a global of the same name
+        let body_tokens =
+            self.with_globals_shadowed(&[name.to_string()], || self.transpile_expr(body))?;
 
         Ok(quote! {
             {
@@ -561,9 +570,10 @@ impl Transpiler {
         let pattern_tokens = self.transpile_pattern(pattern)?;
         let value_tokens = self.transpile_expr(value)?;
         let else_tokens = self.transpile_expr(else_block)?;
-        let body_tokens = self.transpile_expr(body)?;
-
         let bound_vars = super::pattern_bindings::extract_pattern_bindings(pattern);
+        // GLOBALSHADOW-1: the body sees the pattern's bindings, not globals
+        let body_tokens =
+            self.with_globals_shadowed(&bound_vars, || self.transpile_expr(body))?;
 
         if bound_vars.is_empty() {
             bail!("Let-else pattern must bind at least one variable");

@@ -381,7 +381,8 @@ impl Transpiler {
         for (name, is_string) in binders {
             self.set_string_var(name, *is_string);
         }
-        let result = f();
+        let names: Vec<String> = binders.iter().map(|(name, _)| name.clone()).collect();
+        let result = self.with_globals_shadowed(&names, f); // GLOBALSHADOW-1
         let mut types = self.variable_types.borrow_mut();
         for (name, entry) in saved.into_iter().rev() {
             match entry {
