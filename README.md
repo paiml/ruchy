@@ -1,210 +1,117 @@
 <div align="center">
+
+<img src=".github/ruchy-hero.svg" alt="ruchy" width="800">
+
+<h1>Ruchy</h1>
+
 [![CI](https://github.com/paiml/ruchy/actions/workflows/ci.yml/badge.svg)](https://github.com/paiml/ruchy/actions/workflows/ci.yml)
-
-<p align="center">
-  <img src=".github/ruchy-hero.svg" alt="ruchy" width="800">
-</p>
-
-<h1 align="center">Ruchy</h1>
-
-<p align="center">
-  <b>Modern Language for Data Science and Scientific Computing</b>
-</p>
-
-<p align="center">
-  <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License"></a>
-  <a href="https://crates.io/crates/ruchy"><img src="https://img.shields.io/crates/v/ruchy.svg" alt="Crates.io"></a>
+[![Crates.io](https://img.shields.io/crates/v/ruchy.svg)](https://crates.io/crates/ruchy)
 [![Documentation](https://docs.rs/ruchy/badge.svg)](https://docs.rs/ruchy)
-  <a href="https://github.com/paiml/ruchy"><img src="https://img.shields.io/badge/tests-16102%20passing-green.svg" alt="Tests"></a>
-</p>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 </div>
 
----
+Ruchy is a programming language with Python-like syntax. A program runs in the
+built-in interpreter, or is transpiled to Rust and compiled to a native binary.
 
-A modern, expressive programming language for data science and scientific computing, featuring a self-hosting compiler, comprehensive tooling, and enterprise-grade quality standards.
+This README is checked by [`contracts/ruchy-readme-v1.yaml`](contracts/ruchy-readme-v1.yaml):
+every example below is a file under `examples/readme/` that CI runs against the
+`ruchy` binary built from the same commit.
 
-## Table of Contents
+## Install
 
-- [Installation](#installation)
-- [Quick Start](#quick-start)
-- [Features](#features)
-- [Language Features](#language-features)
-- [Core Commands](#core-commands)
-- [Safety & Concurrency](#safety--concurrency)
-- [WebAssembly](#webassembly)
-- [MCP Server](#mcp-server)
-- [Contributing](#contributing)
-- [License](#license)
-
-## Features
-
-- **Self-Hosting Compiler**: Compiles Ruchy source to native binaries via Rust transpilation
-- **Interactive REPL**: Full-featured read-eval-print loop for exploratory programming
-- **Pattern Matching**: Algebraic data types with exhaustive match expressions
-- **Labeled Loops**: Named loop control with break/continue to outer scopes
-- **Async/Await**: First-class async support with tokio runtime
-- **Thread Safety**: All globals are thread-safe by default via `LazyLock<Mutex<T>>`
-- **WebAssembly**: Compile to WASM for browser and edge deployment
-- **MCP Server**: Model Context Protocol integration for Claude
-- **16,102 Tests**: Comprehensive test suite with zero clippy warnings
-
-## Installation
+The current version is a pre-release, so name it explicitly:
 
 ```bash
-cargo install ruchy
+cargo install ruchy --version 5.0.0-beta.2
 ```
 
-## Quick Start
+Plain `cargo install ruchy` installs the latest stable release instead.
+
+## Quick start
 
 ```bash
-# Start interactive REPL
-ruchy
-
-# Run a script
-ruchy script.ruchy
-
-# Evaluate expression
+ruchy examples/readme/hello.ruchy
 ruchy -e "println(1 + 2)"
-
-# Compile to binary
-ruchy compile script.ruchy -o myapp
+ruchy check examples/readme/match.ruchy
+ruchy transpile examples/readme/collections.ruchy
+ruchy compile examples/readme/collections.ruchy -o collections
 ```
 
-## Language Features
+Running `ruchy` with no arguments starts the REPL.
+
+## Examples
+
+Functions and f-strings (`examples/readme/hello.ruchy`):
 
 ```ruchy
-// Variables and functions
 let name = "Ruchy"
 fun greet(who) {
     println(f"Hello, {who}!")
 }
 greet(name)
+```
 
-// Pattern matching
+Pattern matching (`examples/readme/match.ruchy`):
+
+```ruchy
 let value = Some(42)
 match value {
     Some(x) => println(f"Got {x}"),
     None => println("Nothing"),
 }
+```
 
-// Labeled loops (v4.0)
-'outer: for i in 0..10 {
-    for j in 0..10 {
+Labeled loops (`examples/readme/loops.ruchy`):
+
+```ruchy
+let mut found = 0
+'outer: for i in 1..10 {
+    for j in 1..10 {
         if i * j > 50 {
+            found = i * j
             break 'outer
         }
     }
 }
+println(f"First product over 50: {found}")
+```
 
-// Collections
+Collections (`examples/readme/collections.ruchy`):
+
+```ruchy
 let numbers = [1, 2, 3, 4, 5]
 let doubled = numbers.map(|x| x * 2)
 println(f"Doubled: {doubled:?}")
 ```
 
-## Core Commands
+## Commands
+
+`ruchy --help` lists every subcommand. The ones used most:
 
 | Command | Description |
 |---------|-------------|
-| `ruchy` | Start interactive REPL |
-| `ruchy <file>` | Run a Ruchy script |
-| `ruchy -e "<code>"` | Evaluate expression |
-| `ruchy compile <file>` | Compile to binary |
-| `ruchy transpile <file>` | Transpile to Rust |
-| `ruchy check <file>` | Syntax check |
-| `ruchy lint <file>` | Lint code |
-| `ruchy fmt <path>` | Format code |
-| `ruchy test <path>` | Run tests |
-
-## Safety & Concurrency
-
-Ruchy generates **100% safe Rust code** with full concurrency support:
-
-- Thread-safe globals via `LazyLock<Mutex<T>>`
-- Full async/await support (tokio runtime)
-- Channels, atomics, and all Rust concurrency primitives
-- Zero unsafe code in generated output
-
-```ruchy
-// Thread-safe by default
-let mut counter = 0
-
-fun increment() {
-    counter = counter + 1  // Thread-safe
-}
-
-// Async functions
-async fun fetch(url: String) -> String {
-    let response = http::get(url).await?
-    response.text().await
-}
-```
-
-## WebAssembly
-
-```bash
-# Compile to WASM
-ruchy wasm compile script.ruchy -o output.wasm
-
-# Run WASM module
-ruchy wasm run output.wasm
-```
-
-## MCP Server
-
-Ruchy provides a Model Context Protocol server for Claude integration:
-
-```bash
-cargo install ruchy --features mcp
-```
-
-Add to Claude Desktop config:
-```json
-{
-  "mcpServers": {
-    "ruchy": {
-      "command": "ruchy",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-## Quality Standards
-
-- **16,102 tests** passing
-- **Zero clippy warnings**
-- **200-point falsification** validation framework
-- **Toyota Way** quality principles
-- **PMAT A+** code standards
+| `ruchy run` | Run a script (also `ruchy <file>`) |
+| `ruchy repl` | Start the interactive REPL |
+| `ruchy check` | Check syntax |
+| `ruchy transpile` | Transpile to Rust |
+| `ruchy compile` | Compile to a native binary |
+| `ruchy lint` | Lint a file |
+| `ruchy test` | Run `@test` functions |
+| `ruchy wasm` | Compile to a WebAssembly module |
 
 ## Documentation
 
-- [Language Specification](docs/SPECIFICATION.md)
-- [Development Roadmap](docs/roadmaps/roadmap.yaml)
-- [Ruchy Book](https://github.com/paiml/ruchy-book) - Comprehensive guide
-- 🤖 [Coursera Hugging Face AI Development Specialization](https://www.coursera.org/specializations/hugging-face-ai-development) - Build Production AI systems with Hugging Face in Pure Rust
-
-## Contributing
-
-Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) guide for details.
-
+- [Language specification](docs/SPECIFICATION.md)
+- [Roadmap](docs/roadmaps/roadmap.yaml)
+- [Contributing](CONTRIBUTING.md)
+- [Ruchy Book](https://github.com/paiml/ruchy-book)
+- [Ruchy Cookbook](https://github.com/paiml/ruchy-cookbook)
 
 ## MSRV
 
-Minimum Supported Rust Version: **1.91** — the aprender monorepo crates (`aprender`,
-`aprender-core`, `aprender-compute` 0.65) declare `rust-version = 1.91`, so the workspace
-cannot honestly claim less [PMAT-094].
-
-## See Also
-
-- [Cookbook](https://github.com/paiml/ruchy-cookbook)
+Minimum supported Rust version: **1.91**.
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
-## Author
-
-Noah Gift - [github.com/paiml/ruchy](https://github.com/paiml/ruchy)
+MIT. See [LICENSE](LICENSE).

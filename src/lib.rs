@@ -194,6 +194,10 @@ mod rhl_pre_registration;
 // docs for why it lives in src/ rather than tests/.
 #[cfg(test)]
 mod advisory_ignore_gate;
+// PMAT-254: README claims extractor + contract gate (contracts/ruchy-readme-v1.yaml).
+// Test-only; lives in src/ because CI runs `cargo test --lib`.
+#[cfg(test)]
+mod readme_contract;
 #[cfg(test)]
 mod test_config {
     use std::sync::Once;

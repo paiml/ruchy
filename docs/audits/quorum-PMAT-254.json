@@ -1,0 +1,60 @@
+{
+  "ticket": "PMAT-254",
+  "pr": 256,
+  "head": "d7387791ad0e2c8834e37e1e0d0035bf92f103fd",
+  "base": "origin/main",
+  "brief_sha256": "6870ec322688ce8a318b8bbcb61a8aa230ed9c5bef85ac81a5f32e3a91bff2cd",
+  "shape": "claude-sonnet-5 + agy gemini-3.1-pro-high + claude-haiku-4-5 (operator rule 2026-09-24)",
+  "author": {
+    "model": "claude-opus-5-5",
+    "family": "claude"
+  },
+  "degraded": "same-family: 2 of 3 lanes are claude family (sonnet, haiku); author opus-5-5 excluded per rule",
+  "lanes": [
+    {
+      "model": "gemini-3.1-pro-high",
+      "model_measured": "gemini-3.1-pro-high",
+      "family": "gemini",
+      "model_source": "measured",
+      "executor": "agy",
+      "verdict": "PASS",
+      "summary": "The diff successfully and cleanly implements all requirements of PMAT-254. \n- It extracts claims to `contracts/ruchy-readme-claims.json` from `README.md` and validates them against the SHACL shape in `contracts/ruchy-readme-v1.yaml`. \n- `tests/readme_contract.rs` builds and tests the `ruchy` binary, verifying that every example file runs correctly against its `.expected` output, quick start commands exit 0, and listed subcommands are available. \n- `src/readme_contract.rs` safely grades the shape in-process for `cargo test --lib` avoiding CI dependencies on `pv`, while proving freshness and preventing regressions. \n- The tests explicitly encode constraints like missing sections, broken paths, and hand-typed counts (via `test_pmat_254_no_hand_typed_counts` etc.), ensuring the gate will reliably turn RED if they are planted. \n- The CI configuration correctly waits for both `ci` and `readme-contract` jobs without weakening any existing gates. \n\nEverything is fully verified and consistent.",
+      "findings": []
+    },
+    {
+      "model": "claude-sonnet-5",
+      "family": "claude",
+      "model_source": "flag",
+      "executor": "claude -p",
+      "verdict": "PASS",
+      "summary": "Diff matches PMAT-254: README rewritten with each example backed by a file+.expected, a pv-style contract (contracts/ruchy-readme-v1.yaml) whose SHACL shape is graded both in-process (src/readme_contract.rs, cargo test --lib) and against the built binary (tests/readme_contract.rs, new readme-contract CI job). Traced the extractor logic (fences/prose parsing, version/msrv/sections/examples/commands/links regexes) against the new README text and the committed contracts/ruchy-readme-claims.json line-by-line; all 7 sections, 4 examples, 8 commands, 5 shell_commands and 7 links reproduce correctly, including the deliberate exclusion of external https:// links via the `[^)#:]+` pattern. Cargo.toml's added `rust-version.workspace = true` correctly resolves to the pre-existing `1.91` workspace value the test checks against. The CI gate job change (`needs: [ci, readme-contract]`) strengthens, not weakens, the merge gate. No evidence the diff does anything the ticket forbids or asserts something the diff doesn't back.",
+      "findings": [
+        {
+          "file": "docs/roadmaps/roadmap.yaml",
+          "line": 4014,
+          "claim": "Roadmap acceptance criteria list `pv validate contracts/ruchy-readme-v1.yaml exits 0` and `pv lint contracts --gate shapes verdict Pass with focus_nodes_n>=1`, but no step in this diff (CI workflow or tests) invokes the `pv` binary anywhere — the shape is only graded by an in-process Rust reimplementation (`grade_shape` in src/readme_contract.rs).",
+          "grounding": "measured",
+          "fix": "Not blocking: ticket status is InProgress at 50% and CHANGELOG does not claim pv was wired into CI, so this reads as a known-remaining phase rather than a misrepresentation. Flagging so the pv wiring isn't forgotten before PMAT-254 is marked done."
+        },
+        {
+          "file": ".github/workflows/ci.yml",
+          "line": 55,
+          "claim": "Comment asserts \"sovereign-ci runs `cargo test --lib` only\", which is the mechanism relied on to execute `test_pmat_254_claims_json_is_fresh` (the freshness check tying README.md to contracts/ruchy-readme-claims.json) — but the sovereign-ci reusable workflow itself is not part of this diff and its `cargo test --lib` invocation cannot be confirmed here.",
+          "grounding": "asserted",
+          "fix": "No action needed for this review; noted as an unverifiable external dependency, not a defect in the diff."
+        }
+      ]
+    },
+    {
+      "model": "claude-haiku-4-5-20251001",
+      "family": "claude",
+      "model_source": "flag",
+      "executor": "claude -p",
+      "verdict": "PASS",
+      "summary": "PMAT-254 implementation is complete and correct. README claims are extracted, enforced by SHACL shape, validated by library and integration tests, and integrated into CI. All examples are present with expected output files, commands are verifiable, links resolve, and incorrect claims (test counts, wrong wasm commands) have been removed. The diff implements all acceptance criteria: contract definition, extraction, shape validation, binary-level test execution, and planted falsification control.",
+      "findings": []
+    }
+  ],
+  "agreed": true,
+  "agy_artifact_diff_sha256": "55be5ec778c3773b6da69ca555cc23479399c80ac9babf0ef7c69d13330b005f"
+}
