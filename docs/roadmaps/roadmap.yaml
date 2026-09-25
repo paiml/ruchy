@@ -4964,6 +4964,7 @@ roadmap:
   acceptance_criteria:
   - 'The numeric-name heuristic applies only when the body ends in a value (is_numeric_named_value_function)'
   - 'tests/g2b_transfix_7.rs: 3 retunit tests'
+  - 'The lifetime path (infer_return_type_with_lifetime) uses the same heuristic; 2 lifetime_helpers unit tests (G2c quorum round 2, gemini-3.1-pro lane)'
   phases: []
   subtasks: []
   estimated_effort: null

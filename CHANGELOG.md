@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   read the global, and a parameter failed to compile (rustc E0530). The generated static
   for global `x` is now named `__global_x` (GLOBALSHADOW-1).
 - A function named like arithmetic (`add`, `double`, `sum`) whose body ends in an
-  assignment no longer gets `-> i32` (RETUNIT-1).
+  assignment no longer gets `-> i32` (RETUNIT-1), on the lifetime path too.
 - A block whose first statement is an expression and whose next statement is a `for`
   loop no longer fails to parse as a set comprehension (BLOCKFOR-1). Evaluating a set
   comprehension in the interpreter is tracked as SETCOMP-1 (#247).
