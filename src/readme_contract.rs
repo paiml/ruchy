@@ -284,10 +284,15 @@ fn example_files() -> Vec<String> {
     v
 }
 
+/// Parse the WHOLE file and evaluate it. `Interpreter::eval_string` uses
+/// `parse_expr`, which stops after the first expression, so a syntax error
+/// later in an example would pass unseen.
 fn evaluate(src: &str) -> Result<(), String> {
-    let mut interp = crate::runtime::interpreter::Interpreter::new();
-    interp
-        .eval_string(src)
+    let expr = crate::frontend::parser::Parser::new(src)
+        .parse()
+        .map_err(|e| e.to_string())?;
+    crate::runtime::interpreter::Interpreter::new()
+        .eval_expr(&expr)
         .map(|_| ())
         .map_err(|e| e.to_string())
 }
