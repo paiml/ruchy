@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — TEST-163 (#163): the CRLF function-definition test runs by default
+
+- `tests/issue_163_windows_line_endings.rs` test 02 was still `#[ignore]`d as
+  RED after CRLF support landed; it passes and now runs by default.
+
 ### Added — RHL-4, RHL-5, RHL-6, RHL-9: RHL compiles, tests, contracts and talks MCP (RHL-001, experimental)
 
 - **Lowering (RHL-4):** a checked `job` lowers to Ruchy source, following spec

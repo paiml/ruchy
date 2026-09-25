@@ -4000,3 +4000,24 @@ roadmap:
   - kind:docs
   - orch-routing
   notes: null
+- id: TEST-163
+  github_issue: 163
+  item_type: task
+  title: 'TEST-163: CRLF line endings parse; the issue #163 test 02 is no longer ignored'
+  status: inprogress
+  priority: medium
+  assigned_to: null
+  created: 2026-09-25T09:00:00Z
+  updated: 2026-09-25T09:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'tests/issue_163_windows_line_endings.rs test 02 (CRLF function definition, ruchy run) runs by default and passes; it was ignored as RED after the fix landed'
+  - 'All 6 issue #163 tests pass; ruchy transpile and ruchy run of a CRLF hello world give the same output as LF'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tests
+  - milestone:v5.0.0
+  notes: 'Verified 2026-09-25 on main: CRLF and LF hello world give byte-identical ruchy run output; test 02 passes under --ignored.'
