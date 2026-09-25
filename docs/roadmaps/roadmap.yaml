@@ -4000,3 +4000,28 @@ roadmap:
   - kind:docs
   - orch-routing
   notes: null
+- id: TRANSPILER-155
+  github_issue: 155
+  item_type: task
+  title: 'TRANSPILER-155: a cast of a compound operand loses its parentheses ((a % b) as f64 emits a % b as f64), and use std::time::{Instant, Duration} is dropped'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-09-25T07:30:00Z
+  updated: 2026-09-25T07:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'transpile_type_cast parenthesizes a non-atomic operand: (idx % 5) as f64, ((idx * 2) % 5) as f64 and (idx + 1) as f64 / 2.0 compile and print what ruchy run prints'
+  - 'An atomic operand (identifier, literal, call, method call, field, index, cast) is emitted without added parentheses; a cast operand is atomic because a cast chain (x as i64 as f64) is left-associative Rust'
+  - 'use std::time::Instant, use std::time::Duration and use std::time::{Instant, Duration} emit the Rust use; a ruchy std::time module import still emits the time helper module'
+  - 'The other public std::time items (SystemTime, SystemTimeError, TryFromFloatSecsError, UNIX_EPOCH) emit the Rust use too; they were dropped the same way: use std::time::{SystemTime, UNIX_EPOCH} compiles and runs'
+  - 'The issue #155 matrix benchmark compiles and prints RESULT: equal to the naive f64 checksum'
+  - 'tests/issue_155_cast_parens_std_time.rs: 8+ tests, RED before the fix, one per acceptance line'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - milestone:v5.0.0
+  notes: 'vec![x, n] from the issue title is already fixed on main (4982960e). The interpreter has no std::time::Instant and use-imported HashMap::new() fails at runtime; filed separately.'
