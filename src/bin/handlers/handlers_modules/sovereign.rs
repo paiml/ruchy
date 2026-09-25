@@ -20,7 +20,7 @@ use ruchy::stdlib::simular_bridge::{SimConfig, SimResult};
 
 /// Handle `ruchy infra plan <file>`.
 pub fn handle_infra_plan(file: &Path) -> anyhow::Result<()> {
-    verify_file_exists(file, "infra plan")?;
+    verify_regular_file(file, "infra plan")?;
     println!("[ruchy infra plan] {}", file.display());
     let plan = InfraPlan::empty();
     println!("  {}", plan.summary());
@@ -32,7 +32,7 @@ pub fn handle_infra_plan(file: &Path) -> anyhow::Result<()> {
 
 /// Handle `ruchy infra apply <file>`.
 pub fn handle_infra_apply(file: &Path, auto_approve: bool) -> anyhow::Result<()> {
-    verify_file_exists(file, "infra apply")?;
+    verify_regular_file(file, "infra apply")?;
     println!("[ruchy infra apply] {}", file.display());
     let plan = InfraPlan::empty();
     if !auto_approve && plan.has_changes() {
@@ -48,7 +48,7 @@ pub fn handle_infra_apply(file: &Path, auto_approve: bool) -> anyhow::Result<()>
 
 /// Handle `ruchy infra drift <file>`.
 pub fn handle_infra_drift(file: &Path) -> anyhow::Result<()> {
-    verify_file_exists(file, "infra drift")?;
+    verify_regular_file(file, "infra drift")?;
     println!("[ruchy infra drift] {}", file.display());
     let state = InfraState::empty();
     if state.resource_count() == 0 {
@@ -69,7 +69,7 @@ pub fn handle_infra_status() -> anyhow::Result<()> {
 
 /// Handle `ruchy infra destroy <file>`.
 pub fn handle_infra_destroy(file: &Path, auto_approve: bool) -> anyhow::Result<()> {
-    verify_file_exists(file, "infra destroy")?;
+    verify_regular_file(file, "infra destroy")?;
     println!("[ruchy infra destroy] {}", file.display());
     let state = InfraState::empty();
     if state.resource_count() == 0 {
@@ -691,6 +691,16 @@ fn verify_file_exists(file: &Path, cmd: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Infra specs are files: a directory (e.g. `/nonexistent` on hosts where it
+/// exists) must be an error, not a silent no-op (G2B-S2).
+fn verify_regular_file(file: &Path, cmd: &str) -> anyhow::Result<()> {
+    verify_file_exists(file, cmd)?;
+    if !file.is_file() {
+        anyhow::bail!("[ruchy {cmd}] {} is not a file", file.display());
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -744,6 +754,23 @@ mod tests {
     fn test_infra_destroy_no_resources() {
         let f = temp_file();
         assert!(handle_infra_destroy(f.path(), true).is_ok());
+    }
+
+    /// G2B-S2: `ruchy infra destroy /nonexistent` exited 0 on hosts where
+    /// `/nonexistent` is a directory; an infra spec must be a regular file.
+    #[test]
+    fn test_infra_destroy_missing_file_is_error() {
+        assert!(handle_infra_destroy(&missing_path(), true).is_err());
+    }
+
+    #[test]
+    fn test_infra_commands_reject_a_directory() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let err = handle_infra_destroy(dir.path(), true).expect_err("directory is not a spec");
+        assert!(err.to_string().contains("not a file"), "got: {err}");
+        assert!(handle_infra_plan(dir.path()).is_err());
+        assert!(handle_infra_apply(dir.path(), true).is_err());
+        assert!(handle_infra_drift(dir.path()).is_err());
     }
 
     #[test]

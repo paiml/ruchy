@@ -3688,13 +3688,15 @@ roadmap:
   github_issue: null
   item_type: task
   title: 'MAINUNIT-1: a unit-returning call as the last statement of main is transpiled as println!("{:?}", f()) and prints ()'
-  status: planned
+  status: completed
   priority: high
   assigned_to: null
   created: 2026-09-23T14:07:20Z
-  updated: 2026-09-23T14:07:20Z
+  updated: 2026-09-24T18:00:00Z
   spec: null
-  acceptance_criteria: []
+  acceptance_criteria:
+  - 'Repro: fun hello() { println("hi") }; fun main() { let x = 1; hello() }'
+  - 'Acceptance: run and the compiled binary both print exactly hi'
   phases: []
   subtasks: []
   estimated_effort: null
@@ -3982,6 +3984,1034 @@ roadmap:
   - tests
   - filed-by:RHLGA-1
   notes: null
+- id: DEBUGORDER-1
+  github_issue: null
+  item_type: task
+  title: 'DEBUGORDER-1: interpreter {:?} prints struct fields sorted by name; rustc prints declaration order (Value keeps no field order)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T01:39:25Z
+  updated: 2026-09-24T01:39:25Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  - release:v5.1.0
+  notes: null
+- id: SPAWNKW-1
+  github_issue: null
+  item_type: task
+  title: 'SPAWNKW-1: a trait method named spawn does not parse because spawn is a lexer keyword (SPECIFICATION 7.1 uses fun spawn(self))'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T01:39:25Z
+  updated: 2026-09-24T01:39:25Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  - release:v5.1.0
+  notes: null
+- id: POSTINC-1
+  github_issue: null
+  item_type: task
+  title: 'POSTINC-1: self.count++ as the tail of a unit function emits a value (E0308)'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T01:39:26Z
+  updated: 2026-09-24T01:39:26Z
+  spec: null
+  acceptance_criteria: []
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - filed-by:RHLGA-1
+  - release:v5.1.0
+  notes: null
+- id: FIELDPOP-1
+  github_issue: null
+  item_type: task
+  title: 'FIELDPOP-1: self.items.pop() inside a method returns the whole array instead of the popped element (interpreter)'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T05:31:58Z
+  updated: 2026-09-24T05:31:58Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: struct Stack { items: Vec<i32> } with fun pop_one(&mut self) -> i32 { self.items.pop().unwrap() }; ruchy run failed "Unknown array method: unwrap" (self.items.pop() returned the remaining array [1, 2]) and s.items.len() stayed 3; s.items.push(x) / o.items.pop() on a struct variable or object literal did not change the field either'
+  - 'Root cause: Interpreter::eval_method_call special-cased push/pop only for an identifier receiver and push only for an ObjectMut field; any other field receiver was evaluated to a copy and dispatched to eval_array_method, whose functional pop/push return the updated copy, and nothing wrote the copy back to the field'
+  - 'Fix: try_field_array_mutation (interpreter_methods_dispatch.rs) runs push/pop on a field rooted at an identifier (self, a struct/object/class variable), returns the element (nil when empty) or nil for push, and writes the array back through eval_field_assign (Struct rebinds, Object copies, ObjectMut/Class mutate in place)'
+  - 'tests/fieldpop_1_field_methods.rs: self/struct/object/class field push+pop, while-loop persistence, empty pop, field-vs-local parity for pop/push/sorted/reversed/drop/append/sort/reverse/len, differential through rustc; 3/3 hand mutants caught'
+  - 'Open: the exact repro still fails in the interpreter with "Unknown integer method: unwrap" because array pop returns the raw element (not Option) and the interpreter has no Option unwrap (Some(3).unwrap() fails: Method unwrap not found for type enum_variant)'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: VECLIT-1
+  github_issue: null
+  item_type: task
+  title: 'VECLIT-1: an array literal assigned to a Vec field transpiles to an array, rustc E0308'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T05:31:58Z
+  updated: 2026-09-24T05:31:58Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: struct Stack { items: Vec<i32> }; let s = Stack { items: [1, 2, 3] } transpiled to Stack { items: [1, 2, 3] } and rustc failed E0308 (expected Vec<i32>, found [{integer}; 3])'
+  - 'Root cause: transpile_struct_literal emitted every field value with transpile_expr and never consulted the recorded field type except for String; ExprKind::List emits a Rust array literal, which does not coerce to Vec'
+  - 'Fix: transpile_field_value (expressions_helpers/collections.rs) prefixes vec! when the value is a list literal and the field type recorded by the struct pass is Vec or Generic { base: "Vec" }; fixed-size [T; N] fields keep the array literal'
+  - 'tests/fieldpop_1_field_methods.rs test_veclit_1_*: rustc differential for Vec<i32> and Vec<Vec<i32>> fields plus an [i32; 2] field; hand mutant (Generic Vec not recognised) caught'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: OPTMETHODS-1
+  github_issue: null
+  item_type: task
+  title: 'OPTMETHODS-1: the interpreter has no Option/Result methods (Some(3).unwrap() fails) and map.get fails'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:00:00Z
+  updated: 2026-09-24T08:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: Some(3).unwrap() -> "Method unwrap not found for type enum_variant"; Ok(2).unwrap_or(0) and None.unwrap_or(5) fail the same way; {"a": 1}.get("a") -> "Object is missing __type marker"'
+  - 'Ruling (orchestrator, RHLGA-1): the interpreter keeps its nil-for-absent library results (pop/first/get return the element or nil); Option methods accept both representations: Some(v)/Ok(v) and a plain non-nil value act as present, None/Err(e)/nil as absent. So v.pop().unwrap() yields the element, as the transpiled Rust does'
+  - 'Methods: unwrap, expect, unwrap_or, unwrap_or_else, unwrap_or_default, is_some, is_none, is_ok, is_err, map, and_then, ok, ok_or, or, filter where applicable; unwrap/expect on absent is a runtime error naming the value'
+  - 'Acceptance: tests/optmethods_1_option_methods.rs, every method on Some/None/Ok/Err/plain/nil, plus self.items.pop().unwrap() in a struct method returning 3 then 2, differential through rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+- id: ARRAYMUT-1
+  github_issue: null
+  item_type: task
+  title: 'ARRAYMUT-1: in-place array methods do not mutate (v.sort() leaves v unsorted) and insert/remove/clear/truncate are unknown (interpreter)'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:00:00Z
+  updated: 2026-09-24T08:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut v = [3,1,2]; v.sort(); println(v) prints [3, 1, 2]; v.reverse() likewise; v.insert(0, 9) -> "Unknown array method: insert"; remove, clear, truncate the same'
+  - 'Fix: sort, reverse, append, insert, remove, clear, truncate, dedup, extend mutate the receiver in place for a local identifier and for a field receiver (try_field_array_mutation path), returning what Rust returns (unit, or the removed element for remove); sorted/reversed stay functional'
+  - 'Acceptance: tests/arraymut_1_in_place.rs, each method on a local and on self.field, differential through rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+- id: EXTENDKW-1
+  github_issue: null
+  item_type: task
+  title: 'EXTENDKW-1: v.extend([3]) is a parse error "Expected method name, tuple index, or await after ."'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:00:00Z
+  updated: 2026-09-24T08:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut v = [1,2]; v.extend([3]) -> Syntax error: Expected method name, tuple index, or await after .'
+  - 'Fix: a keyword token after . in method position is accepted as a method name (extend and any other contextual keyword), without changing the keyword elsewhere'
+  - 'Acceptance: tests/extendkw_1_keyword_methods.rs parses and transpiles v.extend(x) and each keyword that can follow . as a method name'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+- id: LETVEC-1
+  github_issue: null
+  item_type: task
+  title: 'LETVEC-1: let mut v = [1, 2]; v.push(3) transpiles to a fixed-size Rust array and fails rustc E0599'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:30:00Z
+  updated: 2026-09-24T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: fun main() { let mut v = [1, 2]; v.push(3); println(v.len()) } -> transpile emits let mut v = [1, 2]; ruchy compile fails E0599 no method push for [{integer}; 2]. Same with a Vec<i32> annotation. Pre-existing in 4.2.1'
+  - 'Fix: an array literal bound by let is emitted as vec![...] when the binding is annotated Vec<...> or the binding is later used with a Vec-only method (push, pop, extend, insert, remove, clear, truncate, append, dedup, retain, drain, resize) or passed where the interpreter semantics require growth; otherwise unchanged'
+  - 'Acceptance: tests/letvec_1_growable_locals.rs, transpile + rustc-compile + run for each Vec-only method on an unannotated and an annotated local, top-level script and fun main, and a fixed array that is never grown stays an array'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+- id: RESFIELD-1
+  github_issue: null
+  item_type: task
+  title: 'RESFIELD-1: a field named by a Rust reserved word (o.match, o.type) transpiles to invalid Rust'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T08:30:00Z
+  updated: 2026-09-24T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro (after EXTENDKW-1): o.type passes ruchy check, ruchy transpile fails "Failed to parse generated tokens as Rust syntax"; transpile_field_access in expressions_helpers/field_access.rs builds the name with format_ident! instead of safe_ident'
+  - 'Fix: field access, struct field declarations and struct literal field names use safe_ident (r#kw)'
+  - 'Acceptance: tests/extendkw_1_keyword_methods.rs field test asserts transpile + rustc for every reserved-word field name'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+- id: NESTASSIGN-1
+  github_issue: null
+  item_type: task
+  title: 'NESTASSIGN-1: nested field assignment through an index chain (o.items[0].z = 5) is lost in the interpreter'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: eval_field_assign accepts an Identifier/FieldAccess/IndexAccess chain and writes back through it'
+  - 'Acceptance: tests/nestassign_1_nested_field_assign.rs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: UNITRET-1
+  github_issue: null
+  item_type: task
+  title: 'UNITRET-1: a method whose tail is a unit-returning call (v.push(x)) infers a non-unit return type'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: function_analysis is_unit_method; unit tails infer no return type'
+  - 'Acceptance: tests/unitret_1_unit_body_return.rs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: ENUMFIELDKW-1
+  github_issue: null
+  item_type: task
+  title: 'ENUMFIELDKW-1: a keyword naming an enum struct-variant field fails to parse / transpile'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: parser enums.rs uses the member-name table; transpile_enum emits safe_ident'
+  - 'Acceptance: tests/enumfieldkw_1.rs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - filed-by:RHLGA-1
+  notes: null
+- id: IDXASSIGN-1
+  github_issue: null
+  item_type: task
+  title: 'IDXASSIGN-1: o.items[0].z = 5 transpiles to o.items[0 as usize].clone().z = 5: the write is silently lost'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: compiled binary prints the old value'
+  - 'Fix: Transpiler::transpile_place emits place chains without clone for =, compound assignment, &mut and mutating-method receivers'
+  - 'Acceptance: tests/idxassign_1_place_targets.rs (8 rustc differential tests)'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: LENRET-1
+  github_issue: null
+  item_type: task
+  title: 'LENRET-1: fun f(xs) { xs.len() } infers -> i32 but len() is usize (E0308)'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Fix: a zero-arg len()/count() tail infers -> usize'
+  - 'Acceptance: tests/unitret_1_unit_body_return.rs test_lenret_1_*'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: PRINTLNFMT-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTLNFMT-1: println("{:?}", v) with one argument compiles to println!("{} {:?}", "{:?}", v) and prints the format string'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("{:?}", v) and println("v={:?}", v) transpile wrong; println("{}", x) and two-argument forms are right'
+  - 'Acceptance: rustc differential test on every placeholder form with one and several arguments'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: INTLEN-1
+  github_issue: null
+  item_type: task
+  title: 'INTLEN-1: let n: int = v.len() (and -> int returning len()) emits i64 = usize without a cast (E0308)'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: rustc differential test for let/return/argument positions annotated int receiving len()/count()'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: COUNTITER-1
+  github_issue: null
+  item_type: task
+  title: 'COUNTITER-1: count() gets .iter() appended even on an iterator (s.chars().count() -> s.chars().iter().count(), E0599); the interpreter has no array count'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: transpile + rustc + interpreter tests for s.chars().count(), xs.iter().count(), v.count() where the interpreter and rustc agree'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: IDXCOMPOUND-1
+  github_issue: null
+  item_type: task
+  title: 'IDXCOMPOUND-1: interpreter: v[1] += 5 fails with Invalid compound assignment target'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: compound assignment to index and field-of-index targets agrees with the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: IDXPUSHWB-1
+  github_issue: null
+  item_type: task
+  title: 'IDXPUSHWB-1: interpreter: t.rows[0].vals.push(9) is not written back to t (prints [1]; compiled prints [1, 9])'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T10:30:00Z
+  updated: 2026-09-24T10:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: in-place array methods through an index chain are written back, interpreter agrees with rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: PRINTSTR-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTSTR-1: println(s) with a String/&str variable compiles to println!("{:?}", s) and prints quotes'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let t = s.to_string(); println(t) prints "hi" compiled, hi interpreted'
+  - 'Acceptance: rustc differential for println/print of str, String, format! results and numbers'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: FMTSPEC-1
+  github_issue: null
+  item_type: task
+  title: 'FMTSPEC-1: interpreter println/format ignore width, precision and positional specs ({:>5}, {:.2}, {0})'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("[{:>5}] [{:.2}]", 7, 3.14159) prints the placeholders literally'
+  - 'Acceptance: interpreter output equals rustc for fill/align/width/precision/positional/named specs'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: EPRINTLN-1
+  github_issue: null
+  item_type: task
+  title: 'EPRINTLN-1: interpreter: eprintln/eprint are undefined functions'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: eprintln/eprint write to stderr in the interpreter, as compiled'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - filed-by:RHLGA-1
+  notes: null
+- id: FORMATFN-1
+  github_issue: null
+  item_type: task
+  title: 'FORMATFN-1: format("{:?}", v) function form fails: rustc E0423 compiled, Unknown builtin __builtin_format__ interpreted'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: format(...) function form equals format!(...) in both backends'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: RETLEN-1
+  github_issue: null
+  item_type: task
+  title: 'RETLEN-1: return v.len() in a -> int function is not cast (E0308); INTLEN-1 covered only tails, lets and arguments'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Acceptance: rustc test for explicit return of len()/count() in int-returning functions'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: DICTIDX-1
+  github_issue: null
+  item_type: task
+  title: 'DICTIDX-1: string-keyed dict index: transpiler emits d["k" as usize]; interpreter d["k"].push(2) errors Array index must be an integer'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T11:30:00Z
+  updated: 2026-09-24T14:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut d = {"k": [1]}; d["k"].push(2); println("{:?}", d["k"])'
+  - 'Acceptance: dict read, assignment and in-place method through a string key agree between interpreter and rustc'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - filed-by:RHLGA-1
+  notes: null
+- id: ARRVECARG-1
+  github_issue: null
+  item_type: task
+  title: 'ARRVECARG-1: array literal passed to a Vec<T> parameter transpiles without .to_vec() (E0308)'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: fun n(v: Vec<i32>) -> i32 { v[0] }; fun main() { println("{}", n([1, 2, 3])) }'
+  - 'Acceptance: run prints 1; compile succeeds and the binary prints 1'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: DICTTYPE-1
+  github_issue: null
+  item_type: task
+  title: 'DICTTYPE-1: dict literals with non-list values transpile as BTreeMap<String,String>; d["k"] = 5 and d["a"] + d["b"] fail E0308'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut d = {"a": 1, "b": 2}; d["a"] = 5; println("{}", d["a"] + d["b"])'
+  - 'Acceptance: run and the compiled binary both print 7'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: FLOATDISP-1
+  github_issue: null
+  item_type: task
+  title: 'FLOATDISP-1: interpreter prints an integral float with {} as 3.0 where the compiled binary prints 3'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let x = 3.0; println("{} {}", x, 2.5); println(x)'
+  - 'Acceptance: run and the compiled binary print identical text for {} and bare println of a float'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: TMPLEAK-1
+  github_issue: null
+  item_type: task
+  title: 'TMPLEAK-1: ruchy_temp_bin_* binaries leak in the temp dir: notebook and property-tests handlers remove them only on the success path'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T14:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: src/bin/handlers/property_tests_handler.rs:316-317 and notebook_handler.rs:32 return with ? before remove_file; 15 files (65M) found in /tmp'
+  - 'Acceptance: the temp binary is removed on every return path (RAII guard); a test asserts no ruchy_temp_bin_ file remains after a failing run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - cli
+- id: IDXEVAL1-1
+  github_issue: null
+  item_type: task
+  title: 'IDXEVAL1-1: interpreter evaluates the index expression of a compound or nested-index assignment twice (read + write_back); compiled code evaluates it once'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: v[next()] += 1 or m[f()][j] = x with a side-effecting index'
+  - 'Acceptance: the index expression is evaluated exactly once in the interpreter; run and compiled output agree'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: FMTTEMPLATE-1
+  github_issue: null
+  item_type: task
+  title: 'FMTTEMPLATE-1: interpreter println/print with a non-literal first argument and 2+ args treats it as a format template; compiled code treats only a string literal as one'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let s = "{}"; println(s, 1)'
+  - 'Acceptance: run and the compiled binary print identical text'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: FMTEXTRA-1
+  github_issue: null
+  item_type: task
+  title: 'FMTEXTRA-1: interpreter format engine silently ignores extra arguments; rustc rejects them, CHANGELOG says a count mismatch is an error'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("{}", 1, 2)'
+  - 'Acceptance: the interpreter reports an argument-count error for extra arguments, as CHANGELOG FMTSPEC-1 states'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: PRINTSTRSCOPE-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTSTRSCOPE-1: PRINTSTR-1 string tracking is scope-unaware and STRING_RESULT_METHODS matches any receiver, so a shadowing for/closure/match binding or v.repeat(n) on a Vec emits {} and fails rustc'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let x = "a"; for x in [[1]] { println(x) }  and  let v = [1]; println(v.repeat(2))'
+  - 'Acceptance: shadowed or non-string receivers print with {:?} and compile; string cases keep {}'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: FORLEAK-1
+  github_issue: null
+  item_type: task
+  title: 'FORLEAK-1: interpreter for-loop variable leaks into the enclosing scope and overwrites a same-named outer binding'
+  status: completed
+  priority: critical
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let x = "a"; for x in [[1]] { }; println(x)  prints [1]'
+  - 'Acceptance: after the loop the outer x is unchanged ("a"); run matches the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: ARRREPEAT-1
+  github_issue: null
+  item_type: task
+  title: 'ARRREPEAT-1: interpreter arrays have no repeat method (Unknown array method: repeat); Rust slices have repeat'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let v = [1]; println("{:?}", v.repeat(2))'
+  - 'Acceptance: run prints [1, 1] like the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: NESTARRVEC-1
+  github_issue: null
+  item_type: task
+  title: 'NESTARRVEC-1: a nested array literal transpiles to a fixed-size array, so m[i].push(x) fails rustc E0599'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut m = [[1], [2]]; m[0].push(9); println("{:?}", m)'
+  - 'Acceptance: compiled prints [[1, 9], [2]] like ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: CLOSUREUNIT-1
+  github_issue: null
+  item_type: task
+  title: 'CLOSUREUNIT-1: a unit-returning closure call as the last statement of main is printed as () (MAINUNIT-1 covers user functions only)'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let f = |s| println(s); f("hi")  as the last statement of main'
+  - 'Acceptance: compiled prints only hi'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: FORMATVAL-1
+  github_issue: null
+  item_type: task
+  title: 'FORMATVAL-1: the format builtin called as a value (eval_builtin.rs:318) still treats a non-literal first argument as a template when args.len() > 1'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let t = "{}"; let g = format; println(g(t, 1))'
+  - 'Acceptance: run agrees with compiled / FMTTEMPLATE-1 rule'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: PRINTPARAM-1
+  github_issue: null
+  item_type: task
+  title: 'PRINTPARAM-1: an untyped function or closure parameter inferred as String is printed by println with {:?}, so the compiled program prints "hi" with quotes'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T20:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: fun p(s) { println(s) }; p("hi")   and   let f = |s| println(s); f("hi")'
+  - 'Acceptance: compiled prints hi without quotes, like ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: ARRCLONE-1
+  github_issue: null
+  item_type: task
+  title: 'ARRCLONE-1: interpreter arrays have no clone method (Unknown array method: clone)'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T18:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let a = [1]; let b = a.clone(); println("{:?}", b)'
+  - 'Acceptance: run prints [1] like the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: NESTPUSHLIT-1
+  github_issue: null
+  item_type: task
+  title: 'NESTPUSHLIT-1: pushing an array literal into a list whose inner elements became vec! (NESTARRVEC-1) fails rustc E0308'
+  status: completed
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T20:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: let mut m = [[1]]; m[0].push(2); m.push([3]); println("{:?}", m)'
+  - 'Acceptance: compiled prints [[1, 2], [3]] like ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: LONELIT-1
+  github_issue: null
+  item_type: task
+  title: 'LONELIT-1: interpreter println/print parse a lone string literal as a format template; the compiled binary prints it verbatim'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T19:00:00Z
+  updated: 2026-09-24T19:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: println("{}") is a runtime format error under ruchy run; the compiled binary prints {} (found by the G2b final quorum, second sonnet seat)'
+  - 'Acceptance: tests/g2b_runfix_6.rs test_lonelit_1_* compare ruchy run with the compiled binary'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+- id: STRRECV-1
+  github_issue: null
+  item_type: task
+  title: 'STRRECV-1: compiled println of replace/repeat on an untracked string receiver prints quoted ({:?}); ruchy run prints text'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T20:00:00Z
+  updated: 2026-09-24T20:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Repro: for line in text.lines() { println(line.replace("a","b")) } prints "bb" quoted when compiled (found by G2b round-2 quorum, sonnet seat); a trailing for loop in main printed ()'
+  - 'Acceptance: tests/g2b_transfix_6.rs test_strrecv_1_* compare compiled stdout with ruchy run'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+- id: DEADDISPATCH-1
+  github_issue: null
+  item_type: task
+  title: 'DEADDISPATCH-1: duplicate string/generic method dispatch (src/runtime/eval_string.rs, eval_generic_method in eval_method_dispatch.rs) is unreachable and drifts from the live copies'
+  status: planned
+  priority: medium
+  assigned_to: null
+  created: 2026-09-24T21:00:00Z
+  updated: 2026-09-24T21:00:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Found by the ARRCLONE-1 worker and seen again in STRRECV-1: split_whitespace was added to eval_string_methods.rs only'
+  - 'Acceptance: one dispatch per receiver kind; pmat query --literal "Unknown zero-argument string method" returns one site'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - milestone:backlog
+- id: HOSTDEP-1
+  github_issue: null
+  item_type: task
+  title: 'HOSTDEP-1: workspace tests ran the ruchy on PATH instead of the built binary, and host-tool checks failed the workspace run'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T13:10:00Z
+  updated: 2026-09-24T13:10:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'matrix_001..004_native, lang_comp_suite and issue_040 spawn env!("CARGO_BIN_EXE_ruchy"), not Command::new("ruchy"); all pass with no ruchy on PATH (46 intel failures at fb58f641)'
+  - 'Named-environment ignores (G2 acceptance): tooling_002 test 01 (renacer on PATH), opt_global_001 test 03 (llvm-profdata plus the profiles ignored test 02 collects)'
+  - 'cli_unify_003 determinism block runs 1K cases like the other spawn-heavy blocks; 10K cases (20K spawns) timed out at 180 s on intel'
+  - 'opt_global_001 test 03 merges the collected /tmp/pgo-test-*.profraw files and asserts success (G2c quorum, agy lane)'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - tests
+  - milestone:v5.0.0
+- id: RAWIDENT-2
+  github_issue: null
+  item_type: task
+  title: 'RAWIDENT-2: a Ruchy identifier that is a Rust reserved word (box, do, typeof, extern, ...) in a binding position transpiled to invalid Rust'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T14:30:00Z
+  updated: 2026-09-24T14:30:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'Found by transpiler_deadlock_fix prop_no_deadlock_on_any_global_assignment on intel at 18b5c78f (minimal input var_name = "box")'
+  - 'Mutable/const globals, fn, method, actor-handler, effect and closure parameters, for variables, patterns and catch bindings go through safe_ident'
+  - 'tests/g2b_transfix_7.rs: 9 tests, every Rust reserved word Ruchy lexes as an identifier transpiles in each position'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - milestone:v5.0.0
+- id: GLOBALSHADOW-1
+  github_issue: null
+  item_type: task
+  title: 'GLOBALSHADOW-1: a parameter, closure/for/pattern binding or let named like a mutable global read the global (and rustc rejected the parameter, E0530)'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'Mutable globals are emitted as static __global_<name>, so no parameter or pattern shadows a static'
+  - 'with_globals_shadowed hides a name from global_vars for the lexical scope of fn params, closure/for/match/if-let binders, let, let-pattern and let-else bodies'
+  - 'x += x on a global reads the guard (no second lock)'
+  - 'tests/g2b_transfix_7.rs: 6 globalshadow tests, compiled and interpreted output agree'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - milestone:v5.0.0
+- id: RETUNIT-1
+  github_issue: null
+  item_type: task
+  title: 'RETUNIT-1: a function named like arithmetic (add, double, sum) got -> i32 even when its body ends in an assignment'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'The numeric-name heuristic applies only when the body ends in a value (is_numeric_named_value_function)'
+  - 'tests/g2b_transfix_7.rs: 3 retunit tests'
+  - 'The lifetime path (infer_return_type_with_lifetime) uses the same heuristic; 2 lifetime_helpers unit tests (G2c quorum round 2, gemini-3.1-pro lane)'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - transpiler
+  - milestone:v5.0.0
+- id: BLOCKFOR-1
+  github_issue: null
+  item_type: task
+  title: 'BLOCKFOR-1: a block whose first statement is an expression followed by a for loop was parsed as a set comprehension (Unexpected token: RightBrace)'
+  status: completed
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - 'try_parse_comprehension restores the token position when the set-comprehension continuation fails, so the block parser takes it'
+  - 'A multi-line set comprehension still parses (SetComprehension node)'
+  - 'tests/g2b_transfix_7.rs: 3 blockfor tests; interpreter set comprehension filed as SETCOMP-1 (#247)'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - parser
+  - milestone:v5.0.0
+- id: SETCOMP-1
+  github_issue: 247
+  item_type: task
+  title: 'SETCOMP-1: the interpreter has no SetComprehension evaluation; needs a decision on the set Value representation'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-09-24T16:00:00Z
+  updated: 2026-09-24T16:00:00Z
+  spec: docs/rhl/rhlga-1-plan.md
+  acceptance_criteria:
+  - '{x * 2 for x in [1, 2, 2]} evaluates in run and transpile with set semantics'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - runtime
+  - milestone:backlog
 - id: PMAT-140
   github_issue: null
   item_type: task

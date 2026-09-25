@@ -1848,7 +1848,7 @@ fn test_format_value_for_println_integer() {
 
 #[test]
 fn test_format_with_interpolation_multiple() {
-    let result = format_with_interpolation(
+    let result = crate::runtime::value_format::format_string_with_values(
         "{} + {} = {}",
         &[Value::Integer(1), Value::Integer(2), Value::Integer(3)],
     );

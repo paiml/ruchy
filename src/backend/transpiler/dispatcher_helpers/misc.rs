@@ -54,12 +54,27 @@ impl Transpiler {
                 // In match arms, return is an expression and shouldn't have trailing semicolon
                 if let Some(val_expr) = value {
                     let val_tokens = self.transpile_expr(val_expr)?;
+                    let val_tokens = self.cast_usize_return(val_expr, val_tokens);
                     Ok(quote! { return #val_tokens })
                 } else {
                     Ok(quote! { return })
                 }
             }
             _ => unreachable!(),
+        }
+    }
+
+    /// RETLEN-1: an explicit `return <len()/count()>` in a function whose
+    /// declared return type is an integer type is cast to it (INTLEN-1 casts
+    /// only tails, lets and arguments). (complexity: 2)
+    fn cast_usize_return(&self, value: &Expr, tokens: TokenStream) -> TokenStream {
+        match self.current_function_return_type.borrow().as_ref() {
+            Some(ty) => crate::backend::transpiler::return_type_helpers::cast_usize_tokens(
+                value,
+                &Self::type_to_string(ty),
+                tokens,
+            ),
+            None => tokens,
         }
     }
 

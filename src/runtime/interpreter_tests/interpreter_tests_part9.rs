@@ -432,7 +432,7 @@ fn test_binary_op_gt() {
 
 #[test]
 fn test_format_string_with_values() {
-    let result = Interpreter::format_string_with_values(
+    let result = crate::runtime::value_format::format_string_with_values(
         "x={}, y={}",
         &[Value::Integer(10), Value::Integer(20)],
     );

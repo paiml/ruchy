@@ -149,6 +149,11 @@ impl Transpiler {
         &self,
         fields: &[crate::frontend::ast::ObjectField],
     ) -> Result<TokenStream> {
+        // DICTIDX-1 / DICTTYPE-1: a dict whose values are all lists, ints,
+        // floats or bools keeps its value type
+        if typed_value_fields(fields) {
+            return self.transpile_typed_value_object(fields);
+        }
         let field_tokens = self.collect_hashmap_field_tokens(fields)?;
         // DEFECT-DICT-DETERMINISM FIX: Use BTreeMap for deterministic key ordering
         // BTreeMap maintains sorted order, HashMap has non-deterministic iteration order
@@ -160,6 +165,43 @@ impl Transpiler {
             }
         })
     }
+    /// DICTIDX-1: `{"k": [..], ..}` is a `BTreeMap<String, Vec<_>>`, so
+    /// `d["k"].push(x)` and `{:?}` work on the real list; DICTTYPE-1: likewise
+    /// `{"k": 1, ..}` is a map of ints (floats, bools). (complexity: 3)
+    fn transpile_typed_value_object(
+        &self,
+        fields: &[crate::frontend::ast::ObjectField],
+    ) -> Result<TokenStream> {
+        use crate::frontend::ast::ObjectField;
+        let mut inserts = Vec::new();
+        for field in fields {
+            if let ObjectField::KeyValue { key, value } = field {
+                let value_tokens = self.map_value_tokens(value, true)?;
+                inserts.push(quote! { map.insert(#key.to_string(), #value_tokens); });
+            }
+        }
+        Ok(quote! {
+            {
+                let mut map: std::collections::BTreeMap<String, _> = std::collections::BTreeMap::new();
+                #(#inserts)*
+                map
+            }
+        })
+    }
+
+    /// DICTIDX-1: a dict value as stored in the map: a list literal is a
+    /// `Vec`; anything else is kept as is when `typed`, else stringified
+    /// (the `BTreeMap<String, String>` of a dict with non-list values).
+    /// (complexity: 3)
+    pub(crate) fn map_value_tokens(&self, value: &Expr, typed: bool) -> Result<TokenStream> {
+        let tokens = self.transpile_expr(value)?;
+        Ok(match &value.kind {
+            ExprKind::List(_) => quote! { #tokens.to_vec() },
+            _ if typed => tokens,
+            _ => quote! { (#tokens).to_string() },
+        })
+    }
+
     fn collect_hashmap_field_tokens(
         &self,
         fields: &[crate::frontend::ast::ObjectField],
@@ -199,6 +241,23 @@ impl Transpiler {
     /// let result = transpiler.transpile_struct_literal("Point", &fields, None);
     /// assert!(result.is_ok());
     /// ```
+    /// VECLIT-1: an array literal initializing a field declared `Vec<…>` is
+    /// emitted as `vec![…]`; a Rust array does not coerce to `Vec` (E0308).
+    fn transpile_field_value(
+        &self,
+        field_type: Option<&String>,
+        value: &Expr,
+    ) -> Result<TokenStream> {
+        let tokens = self.transpile_expr(value)?;
+        let is_list = matches!(value.kind, ExprKind::List(_));
+        let is_vec_field = field_type.is_some_and(|t| is_vec_type_name(t));
+        let is_array_tokens = tokens.to_string().starts_with('[');
+        if is_list && is_vec_field && is_array_tokens {
+            return Ok(quote! { vec! #tokens });
+        }
+        Ok(tokens)
+    }
+
     pub fn transpile_struct_literal(
         &self,
         name: &str,
@@ -229,10 +288,10 @@ impl Transpiler {
         // BOOK-COMPAT-007B: Check for auto-boxed recursive types
         let auto_boxed = self.auto_boxed_fields.borrow();
         for (field_name, value) in fields {
-            let field_ident = format_ident!("{}", field_name);
-            // BOOK-COMPAT-002 FIX: Add .to_string() for String fields with string literals
-            // When a struct field is typed as String and the value is a string literal,
-            // we need to add .to_string() for the Rust code to compile correctly.
+            let field_ident = Self::safe_ident(field_name); // RESFIELD-1
+                                                            // BOOK-COMPAT-002 FIX: Add .to_string() for String fields with string literals
+                                                            // When a struct field is typed as String and the value is a string literal,
+                                                            // we need to add .to_string() for the Rust code to compile correctly.
             let field_type = field_types.get(&(base_struct_name.to_string(), field_name.clone()));
             let needs_to_string = matches!(field_type, Some(t) if t == "String")
                 && matches!(&value.kind, ExprKind::Literal(Literal::String(_)));
@@ -254,7 +313,7 @@ impl Transpiler {
                     field_tokens.push(quote! { #field_ident: Some(Box::new(#inner_tokens)) });
                 }
             } else {
-                let value_tokens = self.transpile_expr(value)?;
+                let value_tokens = self.transpile_field_value(field_type, value)?;
                 if needs_to_string {
                     field_tokens.push(quote! { #field_ident: #value_tokens.to_string() });
                 } else {
@@ -310,6 +369,12 @@ impl Transpiler {
             }
         }
     }
+}
+
+/// VECLIT-1: the recorded type of a struct field is `Vec` or a
+/// `Vec<…>` generic (stored as the `TypeKind` debug text by the struct pass).
+fn is_vec_type_name(type_name: &str) -> bool {
+    type_name == "Vec" || type_name.starts_with("Generic { base: \"Vec\"")
 }
 
 #[cfg(test)]
@@ -877,5 +942,75 @@ mod tests {
         let result_str = result.to_string();
         assert!(result_str.contains("HashSet"));
         assert!(result_str.contains("insert"));
+    }
+}
+
+/// DICTTYPE-1: `variable_types` record of a binding to a dict literal whose
+/// values keep their type (see [`typed_value_fields`]).
+pub(crate) const TYPED_DICT_VAR_TYPE: &str = "__ruchy_typed_dict";
+
+/// DICTTYPE-1: the class of a dict value that keeps its own type in the map.
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DictValueKind {
+    List,
+    Int,
+    Float,
+    Bool,
+}
+
+/// DICTTYPE-1: the typed class of a dict value, if it has one: a list
+/// literal, an int, float or bool literal, or a negated number.
+/// (complexity: 6)
+fn dict_value_kind(value: &Expr) -> Option<DictValueKind> {
+    use crate::frontend::ast::UnaryOp;
+    match &value.kind {
+        ExprKind::List(_) => Some(DictValueKind::List),
+        ExprKind::Literal(Literal::Integer(..)) => Some(DictValueKind::Int),
+        ExprKind::Literal(Literal::Float(_)) => Some(DictValueKind::Float),
+        ExprKind::Literal(Literal::Bool(_)) => Some(DictValueKind::Bool),
+        ExprKind::Unary {
+            op: UnaryOp::Negate,
+            operand,
+        } => dict_value_kind(operand)
+            .filter(|k| matches!(k, DictValueKind::Int | DictValueKind::Float)),
+        _ => None,
+    }
+}
+
+/// DICTIDX-1 / DICTTYPE-1: a non-empty dict literal (no spread) whose values
+/// are all of one typed class: all lists, all ints, all floats or all bools.
+/// Other dicts (strings, mixed) stay `BTreeMap<String, String>`.
+/// (complexity: 4)
+fn typed_value_fields(fields: &[crate::frontend::ast::ObjectField]) -> bool {
+    use crate::frontend::ast::ObjectField;
+    let mut kinds = fields.iter().map(|f| match f {
+        ObjectField::KeyValue { value, .. } => dict_value_kind(value),
+        ObjectField::Spread { .. } => None,
+    });
+    match kinds.next() {
+        Some(Some(first)) => kinds.all(|k| k == Some(first)),
+        _ => false,
+    }
+}
+
+impl Transpiler {
+    /// DICTTYPE-1: record whether the binding `name` holds a typed-value dict
+    /// literal; a rebinding to anything else clears the record. (complexity: 3)
+    pub(crate) fn track_typed_dict_binding(&self, name: &str, value: &Expr) {
+        let typed =
+            matches!(&value.kind, ExprKind::ObjectLiteral { fields } if typed_value_fields(fields));
+        let mut types = self.variable_types.borrow_mut();
+        if typed {
+            types.insert(name.to_string(), TYPED_DICT_VAR_TYPE.to_string());
+        } else if types.get(name).is_some_and(|t| t == TYPED_DICT_VAR_TYPE) {
+            types.remove(name);
+        }
+    }
+
+    /// DICTTYPE-1: `expr` names a binding recorded as a typed-value dict.
+    /// (complexity: 2)
+    pub(crate) fn is_typed_dict(&self, expr: &Expr) -> bool {
+        matches!(&expr.kind, ExprKind::Identifier(name)
+            if self.variable_types.borrow().get(name).is_some_and(|t| t == TYPED_DICT_VAR_TYPE))
     }
 }

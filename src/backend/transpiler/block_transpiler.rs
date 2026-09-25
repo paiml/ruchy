@@ -9,7 +9,7 @@ use super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind, PipelineStage};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Transpile block expressions with smart brace handling
@@ -29,7 +29,7 @@ impl Transpiler {
 
         let mut statements = Vec::new();
         for (i, expr) in exprs.iter().enumerate() {
-            let expr_tokens = self.transpile_expr(expr)?;
+            let expr_tokens = self.transpile_block_statement(expr, &exprs[i + 1..])?;
             let is_last = i == exprs.len() - 1;
             let is_let = Self::is_let_expr(expr);
 
@@ -88,7 +88,7 @@ impl Transpiler {
                 Ok(quote! { #func_tokens(#prev #(, #arg_tokens)*) })
             }
             ExprKind::MethodCall { method, args, .. } => {
-                let method_ident = format_ident!("{}", method);
+                let method_ident = Transpiler::safe_ident(method); // RAWIDENT-1
                 let arg_tokens: Result<Vec<_>> =
                     args.iter().map(|a| self.transpile_expr(a)).collect();
                 let arg_tokens = arg_tokens?;
@@ -109,7 +109,7 @@ impl Transpiler {
 
         let mut statements = Vec::new();
         for (i, expr) in exprs.iter().enumerate() {
-            let expr_tokens = self.transpile_expr(expr)?;
+            let expr_tokens = self.transpile_block_statement(expr, &exprs[i + 1..])?;
             let is_last = i == exprs.len() - 1;
             let is_let = Self::is_let_expr(expr);
 

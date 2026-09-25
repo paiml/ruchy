@@ -58,6 +58,7 @@ pub mod simular_bridge; // Pillar 7: Simulation Engine // Pillar 4: Shell Transp
 // === Utility Modules ===
 pub mod env;
 pub mod fs;
+pub mod hash;
 pub mod json;
 pub mod logging;
 pub mod path;

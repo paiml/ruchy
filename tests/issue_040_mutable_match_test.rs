@@ -233,7 +233,7 @@ println(counter)
 "
             );
 
-            let output = Command::new("ruchy")
+            let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
                 .arg("-e")
                 .arg(&code)
                 .output()
@@ -269,7 +269,7 @@ println(x)
 "
                 );
 
-                let output = Command::new("ruchy")
+                let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
                     .arg("-e")
                     .arg(&code)
                     .output()

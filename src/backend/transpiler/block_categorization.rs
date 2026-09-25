@@ -15,7 +15,7 @@ use super::{BlockCategorization, Transpiler};
 use crate::frontend::ast::{Expr, ExprKind};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Categorize block expressions into functions, statements, modules, imports, globals
@@ -146,7 +146,7 @@ impl Transpiler {
                     if const_var_names.contains(name) {
                         // Transpile value to get initializer
                         let value_tokens = self.transpile_expr(value)?;
-                        let const_name = format_ident!("{}", name);
+                        let const_name = Self::safe_ident(name); // RAWIDENT-2
 
                         // Const declarations MUST have explicit type annotation
                         let type_token = if let Some(ref type_ann) = type_annotation {
@@ -179,7 +179,7 @@ impl Transpiler {
                     if *is_mutable && global_var_names.contains(name) {
                         // Transpile value to get initializer
                         let value_tokens = self.transpile_expr(value)?;
-                        let var_name = format_ident!("{}", name);
+                        let var_name = Self::global_static_ident(name); // GLOBALSHADOW-1
 
                         // TRANSPILER-SCOPE: Infer type from literal or use annotation
                         // Static variables can't use `_` placeholder, need explicit type
@@ -401,7 +401,10 @@ impl Transpiler {
     /// Complexity: 2 (within Toyota Way limits)
     fn is_statement_call(func: &Expr) -> bool {
         if let ExprKind::Identifier(name) = &func.kind {
-            matches!(name.as_str(), "println" | "print" | "dbg")
+            matches!(
+                name.as_str(),
+                "println" | "print" | "eprintln" | "eprint" | "dbg"
+            )
         } else {
             false
         }

@@ -19,7 +19,21 @@ impl Transpiler {
         params: &[Param],
         body: &Expr,
     ) -> Result<TokenStream> {
-        let body_tokens = self.transpile_expr(body)?;
+        self.transpile_named_lambda(None, params, body)
+    }
+
+    /// PRINTPARAM-1: a closure bound by `let <name> = |..| ..`; its untyped
+    /// parameters take the call-site types of `name` for print placeholders.
+    /// Complexity: 3
+    pub(crate) fn transpile_named_lambda(
+        &self,
+        name: Option<&str>,
+        params: &[Param],
+        body: &Expr,
+    ) -> Result<TokenStream> {
+        // PRINTSTRSCOPE-1: parameters shadow outer string records.
+        let body_tokens =
+            self.with_closure_param_scope(name, params, || self.transpile_expr(body))?;
 
         if params.is_empty() {
             return Ok(quote! { move || #body_tokens });
@@ -37,7 +51,7 @@ impl Transpiler {
         let param_strs: Vec<String> = params
             .iter()
             .map(|p| {
-                let name = p.name();
+                let name = Self::safe_ident(&p.name()).to_string(); // RAWIDENT-2
                 let ty_str = self
                     .transpile_type(&p.ty)
                     .map_or_else(|_| "_".to_string(), |t| t.to_string());
@@ -57,7 +71,8 @@ impl Transpiler {
         params: &[Param],
         body: &Expr,
     ) -> Result<TokenStream> {
-        let body_tokens = self.transpile_expr(body)?;
+        // PRINTSTRSCOPE-1: parameters shadow outer string records.
+        let body_tokens = self.with_param_scope(params, || self.transpile_expr(body))?;
 
         if params.is_empty() {
             return Ok(quote! { move || async move { #body_tokens } });

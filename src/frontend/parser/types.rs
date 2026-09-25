@@ -17,13 +17,18 @@ fn parse_struct_base(state: &mut ParserState) -> Result<Option<Box<Expr>>> {
 }
 
 // Helper: Parse field name identifier (complexity: 2)
+// RESFIELD-1: a keyword is a field name in a struct literal too (`type: 5`)
 fn parse_field_name(state: &mut ParserState) -> Result<String> {
-    if let Some((Token::Identifier(name), _)) = state.tokens.peek() {
-        let name = name.clone();
-        state.tokens.advance();
-        Ok(name)
-    } else {
-        bail!("Expected field name");
+    let name = state
+        .tokens
+        .peek()
+        .and_then(|(token, _)| crate::frontend::parser::member_names::member_name(token));
+    match name {
+        Some(name) => {
+            state.tokens.advance();
+            Ok(name)
+        }
+        None => bail!("Expected field name"),
     }
 }
 

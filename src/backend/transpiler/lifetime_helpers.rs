@@ -10,7 +10,7 @@ use super::Transpiler;
 use crate::frontend::ast::{Expr, Param, Type, TypeKind};
 use anyhow::Result;
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     /// Generate parameter tokens with lifetime annotations
@@ -38,7 +38,7 @@ impl Transpiler {
         func_name: &str,
         param_index: usize,
     ) -> Result<TokenStream> {
-        let param_name = format_ident!("{}", param.name());
+        let param_name = Self::safe_ident(&param.name()); // RAWIDENT-2
 
         // Handle special Rust receiver syntax
         if param.name() == "self" {
@@ -154,7 +154,13 @@ impl Transpiler {
             return Ok(quote! { -> impl Fn(i32) -> i32 });
         }
 
-        if super::function_analysis::looks_like_numeric_function(name) {
+        // LENRET-1: a `len()` / `count()` tail is a `usize`
+        if super::return_type_helpers::returns_usize(body) {
+            return Ok(quote! { -> usize });
+        }
+
+        // RETUNIT-1: a numeric name alone does not make a value-returning body
+        if super::function_analysis::is_numeric_named_value_function(name, body) {
             return Ok(quote! { -> i32 });
         }
 
@@ -435,6 +441,29 @@ mod tests {
             .unwrap();
         let token_str = result.to_string();
         assert!(token_str.contains("i32"));
+    }
+
+    // RETUNIT-1: the lifetime path agrees with the plain path
+    #[test]
+    fn test_retunit_1_lifetime_path_numeric_name_ending_in_assign_is_unit() {
+        let transpiler = make_transpiler();
+        let body = make_expr(ExprKind::Assign {
+            target: Box::new(ident_expr("last")),
+            value: Box::new(int_expr(7)),
+        });
+        let result = transpiler
+            .infer_return_type_with_lifetime("add", &body)
+            .unwrap();
+        assert!(result.is_empty(), "expected unit, got `{result}`");
+    }
+
+    #[test]
+    fn test_retunit_1_lifetime_path_numeric_name_with_value_is_i32() {
+        let transpiler = make_transpiler();
+        let result = transpiler
+            .infer_return_type_with_lifetime("add", &ident_expr("x"))
+            .unwrap();
+        assert!(result.to_string().contains("i32"));
     }
 
     #[test]

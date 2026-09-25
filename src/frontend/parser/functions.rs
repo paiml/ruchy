@@ -443,64 +443,46 @@ pub fn parse_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr
     }
     // Skip any comments between '.' and method name (PARSER-053)
     state.skip_comments();
+    // End of the member name: a field access spans `receiver.name`
+    let name_end = state
+        .tokens
+        .peek()
+        .map_or(receiver.span.end, |(_, s)| s.end);
     // Parse method name or tuple index
+    // EXTENDKW-1: an identifier or any keyword (`extend`, `type`, `match`, ...)
+    if let Some(method) = peek_member_name(state) {
+        state.tokens.advance();
+        return parse_method_or_field_access(state, receiver, method, name_end);
+    }
     match state.tokens.peek() {
-        Some((Token::Identifier(name), _)) => {
-            let method = name.clone();
-            state.tokens.advance();
-            parse_method_or_field_access(state, receiver, method)
-        }
-        Some((Token::Send, _)) => {
-            // Handle 'send' as a method name (for actors)
-            state.tokens.advance();
-            parse_method_or_field_access(state, receiver, "send".to_string())
-        }
-        Some((Token::Ask, _)) => {
-            // Handle 'ask' as a method name (for actors)
-            state.tokens.advance();
-            parse_method_or_field_access(state, receiver, "ask".to_string())
-        }
         Some((Token::Integer(index), _)) => {
             // Handle tuple access like t.0, t.1, etc.
             let index = index.clone();
             state.tokens.advance();
-            Ok(Expr {
-                kind: ExprKind::FieldAccess {
-                    object: Box::new(receiver),
-                    field: index,
-                },
-                span: Span { start: 0, end: 0 },
-                attributes: Vec::new(),
-                leading_comments: Vec::new(),
-                trailing_comment: None,
-                contracts: Vec::new(),
-            })
+            Ok(create_field_access(receiver, index, name_end))
         }
         _ => {
             bail!("Expected method name, tuple index, or 'await' after '.'");
         }
     }
 }
+/// Member name at the cursor after `.`/`?.`, without consuming it (complexity: 1)
+fn peek_member_name(state: &mut ParserState) -> Option<String> {
+    state
+        .tokens
+        .peek()
+        .and_then(|(token, _)| super::member_names::member_name(token))
+}
 pub fn parse_optional_method_call(state: &mut ParserState, receiver: Expr) -> Result<Expr> {
     // Skip any comments between '?.' and method name (PARSER-053)
     state.skip_comments();
     // Parse method name or tuple index for optional chaining
+    // EXTENDKW-1: an identifier or any keyword (`extend`, `type`, `match`, ...)
+    if let Some(method) = peek_member_name(state) {
+        state.tokens.advance();
+        return parse_optional_method_or_field_access(state, receiver, method);
+    }
     match state.tokens.peek() {
-        Some((Token::Identifier(name), _)) => {
-            let method = name.clone();
-            state.tokens.advance();
-            parse_optional_method_or_field_access(state, receiver, method)
-        }
-        Some((Token::Send, _)) => {
-            // Handle 'send' as a method name (for actors)
-            state.tokens.advance();
-            parse_optional_method_or_field_access(state, receiver, "send".to_string())
-        }
-        Some((Token::Ask, _)) => {
-            // Handle 'ask' as a method name (for actors)
-            state.tokens.advance();
-            parse_optional_method_or_field_access(state, receiver, "ask".to_string())
-        }
         Some((Token::Integer(index), _)) => {
             // Handle optional tuple access like t?.0, t?.1, etc.
             let index = index.clone();
@@ -526,6 +508,7 @@ fn parse_method_or_field_access(
     state: &mut ParserState,
     receiver: Expr,
     method: String,
+    name_end: usize,
 ) -> Result<Expr> {
     // PARSER-069 FIX: Check for turbofish generics (::) before checking for method call
     // Example: "42".parse::<i32>() has :: after parse, not (
@@ -551,7 +534,7 @@ fn parse_method_or_field_access(
         parse_method_call_access(state, receiver, method_name)
     } else {
         // Field access
-        Ok(create_field_access(receiver, method_name))
+        Ok(create_field_access(receiver, method_name, name_end))
     }
 }
 /// Parse method call with arguments (complexity: 6)
@@ -757,14 +740,18 @@ fn create_method_call(receiver: Expr, method: String, args: Vec<Expr>) -> Expr {
         contracts: Vec::new(),
     }
 }
-/// Create a field access expression (complexity: 1)
-fn create_field_access(receiver: Expr, field: String) -> Expr {
+/// Create a field access expression spanning `receiver.field` (complexity: 1)
+///
+/// The span must end at the field name: a postfix call `(obj.f)(x)` is only
+/// taken when the `(` is on the same line as the end of its callee (PARENCALL-1).
+fn create_field_access(receiver: Expr, field: String, field_end: usize) -> Expr {
+    let span = Span::new(receiver.span.start.min(field_end), field_end);
     Expr {
         kind: ExprKind::FieldAccess {
             object: Box::new(receiver),
             field,
         },
-        span: Span { start: 0, end: 0 },
+        span,
         attributes: Vec::new(),
         leading_comments: Vec::new(),
         trailing_comment: None,

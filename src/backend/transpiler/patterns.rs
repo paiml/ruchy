@@ -29,10 +29,13 @@ impl Transpiler {
         let mut arm_tokens = Vec::new();
         for arm in arms {
             let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
-            let body_tokens = self.transpile_expr(&arm.body)?;
+            // PRINTSTRSCOPE-1: arm bindings shadow outer string records.
+            let body_tokens =
+                self.with_pattern_scope(&arm.pattern, || self.transpile_expr(&arm.body))?;
             // Handle pattern guards if present
             if let Some(guard_expr) = &arm.guard {
-                let guard_tokens = self.transpile_expr(guard_expr)?;
+                let guard_tokens =
+                    self.with_pattern_scope(&arm.pattern, || self.transpile_expr(guard_expr))?;
                 arm_tokens.push(quote! {
                     #pattern_tokens if #guard_tokens => #body_tokens
                 });
@@ -75,7 +78,7 @@ impl Transpiler {
                 }
             }
             Pattern::Identifier(name) => {
-                let ident = format_ident!("{}", name);
+                let ident = Self::safe_ident(name); // RAWIDENT-2
                 Ok(quote! { #ident })
             }
             Pattern::QualifiedName(parts) => {

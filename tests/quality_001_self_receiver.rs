@@ -15,6 +15,19 @@
 
 use ruchy::{Parser, Transpiler};
 
+/// Compile `rust_code` as a library with rustc inside a scratch directory, so
+/// neither the source nor the `.rlib` lands in `/tmp` or the crate root.
+fn rustc_lib(rust_code: &str) -> std::io::Result<std::process::Output> {
+    let dir = tempfile::tempdir()?;
+    let src = dir.path().join("lib.rs");
+    std::fs::write(&src, rust_code)?;
+    std::process::Command::new("rustc")
+        .args(["--crate-type", "lib", "--out-dir"])
+        .arg(dir.path())
+        .arg(&src)
+        .output()
+}
+
 /// Test 1: Basic &self method - should preserve reference
 #[test]
 fn test_quality_001_01_immutable_self_reference() {
@@ -88,12 +101,7 @@ pub fn test() -> String {
     let rust_code = result.unwrap().to_string();
 
     // Verify rustc compilation succeeds
-    std::fs::write("/tmp/quality_001_02_output.rs", &rust_code).expect("Failed to write test file");
-
-    let rustc_result = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/quality_001_02_output.rs"])
-        .output()
-        .expect("Failed to run rustc");
+    let rustc_result = rustc_lib(&rust_code).expect("Failed to run rustc");
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
@@ -258,12 +266,7 @@ impl LambdaRuntime {
     );
 
     // Verify it compiles
-    std::fs::write("/tmp/quality_001_06_output.rs", &rust_code).expect("Failed to write test file");
-
-    let rustc_result = std::process::Command::new("rustc")
-        .args(["--crate-type", "lib", "/tmp/quality_001_06_output.rs"])
-        .output()
-        .expect("Failed to run rustc");
+    let rustc_result = rustc_lib(&rust_code).expect("Failed to run rustc");
 
     if !rustc_result.status.success() {
         let stderr = String::from_utf8_lossy(&rustc_result.stderr);
@@ -431,7 +434,11 @@ mod property_tests {
             // Must have "self" but NOT "&self" or "&mut self"
             let has_self = rust_code.contains(&format!("fn {method_name}(self)"))
                 || rust_code.contains(&format!("fn {method_name} (self)"))
-                || rust_code.contains(&format!("fn {method_name} ( self )"));
+                || rust_code.contains(&format!("fn {method_name} ( self )"))
+                // A Rust reserved word is emitted as a raw identifier (RAWIDENT-1).
+                || rust_code.contains(&format!("fn r#{method_name}(self)"))
+                || rust_code.contains(&format!("fn r#{method_name} (self)"))
+                || rust_code.contains(&format!("fn r#{method_name} ( self )"));
 
             prop_assert!(
                 has_self,
@@ -489,13 +496,8 @@ mod property_tests {
 
             let rust_code = result.unwrap().to_string();
 
-            // Write to temp file and verify rustc compilation
-            let temp_file = format!("/tmp/quality_001_prop_{struct_name}.rs");
-            std::fs::write(&temp_file, &rust_code).ok();
-
-            let rustc_result = std::process::Command::new("rustc")
-                .args(["--crate-type", "lib", &temp_file])
-                .output();
+            // Verify rustc compilation in a scratch directory
+            let rustc_result = rustc_lib(&rust_code);
 
             prop_assume!(rustc_result.is_ok());
             let output = rustc_result.unwrap();
@@ -506,9 +508,6 @@ mod property_tests {
                 "Property violation: Multiple &self calls cause move error:\n{}",
                 String::from_utf8_lossy(&output.stderr)
             );
-
-            // Cleanup
-            std::fs::remove_file(&temp_file).ok();
         }
 
         /// Property 5: Mixed receiver types in same impl block
@@ -569,7 +568,11 @@ mod property_tests {
             // For owned self, check the specific method name
             let has_owned_self = rust_code.contains(&format!("fn {consumer}(self)"))
                 || rust_code.contains(&format!("fn {consumer} (self)"))
-                || rust_code.contains(&format!("fn {consumer} ( self )"));
+                || rust_code.contains(&format!("fn {consumer} ( self )"))
+                // A Rust reserved word is emitted as a raw identifier (RAWIDENT-1).
+                || rust_code.contains(&format!("fn r#{consumer}(self)"))
+                || rust_code.contains(&format!("fn r#{consumer} (self)"))
+                || rust_code.contains(&format!("fn r#{consumer} ( self )"));
 
             prop_assert!(
                 has_owned_self,

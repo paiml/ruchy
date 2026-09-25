@@ -241,17 +241,10 @@ impl Transpiler {
         contract_pre_configuration!(name);
         let module_name = format_ident!("{}", name);
         let body_tokens = if let ExprKind::Block(exprs) = &body.kind {
-            let mut module_items = Vec::new();
-            for expr in exprs {
-                match &expr.kind {
-                    ExprKind::Function { .. } => {
-                        module_items.push(self.transpile_function_expr(expr)?);
-                    }
-                    _ => {
-                        module_items.push(self.transpile_expr(expr)?);
-                    }
-                }
-            }
+            let module_items = exprs
+                .iter()
+                .map(|expr| self.transpile_module_item(expr))
+                .collect::<Result<Vec<_>>>()?;
             quote! { #(#module_items)* }
         } else {
             self.transpile_expr(body)?
@@ -262,6 +255,24 @@ impl Transpiler {
                 #body_tokens
             }
         })
+    }
+
+    /// Transpile one item of a module body as a Rust item.
+    ///
+    /// A nested module is emitted as an item (`pub mod b { .. }` when marked
+    /// `pub`, `pub(crate)`/`pub(super)` as recorded), not as an expression whose
+    /// block body is not an item (NESTEDMOD-1).
+    /// Complexity: 3 (within Toyota Way limits)
+    fn transpile_module_item(&self, expr: &Expr) -> Result<TokenStream> {
+        match &expr.kind {
+            ExprKind::Function { .. } => self.transpile_function_expr(expr),
+            ExprKind::Module { name, body } => {
+                let module = self.transpile_module_declaration(name, body)?;
+                let visibility = module_visibility(expr);
+                Ok(quote! { #visibility #module })
+            }
+            _ => self.transpile_expr(expr),
+        }
     }
 
     /// Transpile statement-only block
@@ -646,7 +657,7 @@ impl Transpiler {
     /// Transpile a function parameter
     /// Complexity: 3 (within Toyota Way limits)
     fn transpile_param(&self, param: &Param) -> Result<TokenStream> {
-        let name = format_ident!("{}", param.name());
+        let name = Self::safe_ident(&param.name()); // RAWIDENT-2
         let type_tokens = self.transpile_type(&param.ty)?;
         Ok(quote! { #name: #type_tokens })
     }
@@ -655,6 +666,21 @@ impl Transpiler {
 // ============================================================================
 // Tests
 // ============================================================================
+
+/// The visibility the parser recorded on a module item: `pub`, `pub(crate)`,
+/// `pub(super)`, or nothing for a private module. `pub(in path)` records no
+/// argument and is emitted as `pub`.
+/// Complexity: 3 (within Toyota Way limits)
+fn module_visibility(expr: &Expr) -> TokenStream {
+    let Some(attr) = expr.attributes.iter().find(|a| a.name == "pub") else {
+        return TokenStream::new();
+    };
+    match attr.args.first().map(String::as_str) {
+        Some("crate") => quote! { pub(crate) },
+        Some("super") => quote! { pub(super) },
+        _ => quote! { pub },
+    }
+}
 
 #[cfg(test)]
 mod tests {

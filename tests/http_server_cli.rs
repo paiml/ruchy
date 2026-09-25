@@ -26,6 +26,22 @@ fn find_available_port() -> u16 {
         .port()
 }
 
+/// Helper: Block until the server accepts TCP connections on `port`.
+///
+/// Polls for readiness instead of sleeping a fixed interval, so a slow debug
+/// build under parallel load does not race the first request.
+#[cfg(feature = "notebook")]
+fn wait_for_port(port: u16) {
+    let deadline = std::time::Instant::now() + Duration::from_secs(15);
+    while std::time::Instant::now() < deadline {
+        if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
+            return;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    panic!("ruchy serve did not accept connections on port {port} within 15s");
+}
+
 /// Helper: Create test directory with files
 fn create_test_dir() -> TempDir {
     let dir = TempDir::new().expect("Failed to create temp dir");
@@ -73,6 +89,7 @@ fn test_red_ruchy_serve_requires_directory() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_red_ruchy_serve_starts_server() {
     // RED: This MUST fail - ruchy serve doesn't exist yet
     use std::process::{Command, Stdio};
@@ -94,8 +111,7 @@ fn test_red_ruchy_serve_starts_server() {
         .spawn()
         .expect("Failed to spawn server");
 
-    // Give server time to start
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     // Test HTTP request
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/index.html"));
@@ -107,6 +123,25 @@ fn test_red_ruchy_serve_starts_server() {
 
     // Cleanup
     child.kill().expect("Failed to kill server");
+}
+
+#[test]
+#[cfg(not(feature = "notebook"))]
+fn test_serve_without_notebook_feature_names_the_rebuild_flag() {
+    // The server tests in this file need a binary built with `--features notebook`;
+    // default builds must say so instead of failing opaquely.
+    println!(
+        "ENVIRONMENT: ruchy built without the notebook feature; server tests are compiled out"
+    );
+    let test_dir = create_test_dir();
+    ruchy_cmd()
+        .arg("serve")
+        .arg(test_dir.path())
+        .arg("--port")
+        .arg(find_available_port().to_string())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("--features notebook"));
 }
 
 #[test]
@@ -141,6 +176,7 @@ fn test_red_ruchy_serve_default_port_8080() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_red_ruchy_serve_shows_startup_message() {
     // RED: This MUST fail - ruchy serve doesn't exist yet
     let test_dir = create_test_dir();
@@ -220,6 +256,7 @@ mod property_tests {
 // ============================================================================
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http002_mime_html() {
     let test_dir = TempDir::new().unwrap();
     std::fs::write(
@@ -240,7 +277,7 @@ fn test_http002_mime_html() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/index.html")).unwrap();
     assert_eq!(response.status(), 200);
@@ -250,6 +287,7 @@ fn test_http002_mime_html() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http002_mime_css() {
     let test_dir = TempDir::new().unwrap();
     std::fs::write(test_dir.path().join("style.css"), "body { margin: 0; }").unwrap();
@@ -266,7 +304,7 @@ fn test_http002_mime_css() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/style.css")).unwrap();
     assert_eq!(response.status(), 200);
@@ -276,6 +314,7 @@ fn test_http002_mime_css() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http002_mime_javascript() {
     let test_dir = TempDir::new().unwrap();
     std::fs::write(test_dir.path().join("app.js"), "console.log('test');").unwrap();
@@ -292,7 +331,7 @@ fn test_http002_mime_javascript() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/app.js")).unwrap();
     assert_eq!(response.status(), 200);
@@ -311,6 +350,7 @@ fn test_http002_mime_javascript() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http002_mime_wasm() {
     // CRITICAL: WASM files MUST have application/wasm MIME type
     let test_dir = TempDir::new().unwrap();
@@ -333,7 +373,7 @@ fn test_http002_mime_wasm() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/module.wasm")).unwrap();
     assert_eq!(response.status(), 200);
@@ -347,6 +387,7 @@ fn test_http002_mime_wasm() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http002_mime_json() {
     let test_dir = TempDir::new().unwrap();
     std::fs::write(test_dir.path().join("data.json"), r#"{"test": true}"#).unwrap();
@@ -363,7 +404,7 @@ fn test_http002_mime_json() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/data.json")).unwrap();
     assert_eq!(response.status(), 200);
@@ -380,6 +421,7 @@ fn test_http002_mime_json() {
 // ============================================================================
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http003_wasm_coop_header() {
     // CRITICAL: WASM files MUST have Cross-Origin-Opener-Policy for SharedArrayBuffer
     let test_dir = TempDir::new().unwrap();
@@ -401,7 +443,7 @@ fn test_http003_wasm_coop_header() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/app.wasm")).unwrap();
     assert_eq!(response.status(), 200);
@@ -418,6 +460,7 @@ fn test_http003_wasm_coop_header() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http003_wasm_coep_header() {
     // CRITICAL: WASM files MUST have Cross-Origin-Embedder-Policy for SharedArrayBuffer
     let test_dir = TempDir::new().unwrap();
@@ -439,7 +482,7 @@ fn test_http003_wasm_coep_header() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/app.wasm")).unwrap();
     assert_eq!(response.status(), 200);
@@ -456,6 +499,7 @@ fn test_http003_wasm_coep_header() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_http003_html_coop_header() {
     // HTML files serving WASM also need COOP/COEP headers
     let test_dir = TempDir::new().unwrap();
@@ -477,7 +521,7 @@ fn test_http003_html_coop_header() {
         .spawn()
         .expect("Failed to spawn server");
 
-    std::thread::sleep(Duration::from_millis(500));
+    wait_for_port(port);
 
     let response = reqwest::blocking::get(format!("http://127.0.0.1:{port}/index.html")).unwrap();
     assert_eq!(response.status(), 200);

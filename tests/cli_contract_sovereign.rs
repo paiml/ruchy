@@ -91,6 +91,32 @@ fn test_infra_destroy_missing_file() {
         .failure();
 }
 
+/// G2B-S2: a path that is missing on every host (`/nonexistent` is a real
+/// directory on some machines, so the test above also covers "not a file").
+#[test]
+fn test_infra_destroy_path_missing_everywhere() {
+    let dir = TempDir::new().unwrap();
+    ruchy_cmd()
+        .arg("infra")
+        .arg("destroy")
+        .arg(dir.path().join("absent.ruchy"))
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("File not found"));
+}
+
+#[test]
+fn test_infra_destroy_directory_is_not_a_spec() {
+    let dir = TempDir::new().unwrap();
+    ruchy_cmd()
+        .arg("infra")
+        .arg("destroy")
+        .arg(dir.path())
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("not a file"));
+}
+
 // ============================================================================
 // ruchy sim
 // ============================================================================
@@ -511,8 +537,10 @@ fn test_contracts_check_with_threshold() {
         .arg("--min-coverage")
         .arg("80")
         .assert()
-        .success()
-        .stdout(predicate::str::contains("80.0%"));
+        // `fn main() {}` carries no contract: 0.0% < 80.0% must fail the gate.
+        .failure()
+        .stdout(predicate::str::contains("80.0%"))
+        .stderr(predicate::str::contains("below threshold 80.0%"));
 }
 
 // ============================================================================
@@ -558,5 +586,5 @@ fn test_version_is_5_0() {
         .arg("--version")
         .assert()
         .success()
-        .stdout(predicate::str::contains("5.0.0-alpha"));
+        .stdout(predicate::str::contains("ruchy 5.0."));
 }
