@@ -4012,10 +4012,11 @@ roadmap:
   spec: null
   acceptance_criteria:
   - 'transpile_type_cast parenthesizes a non-atomic operand: (idx % 5) as f64, ((idx * 2) % 5) as f64 and (idx + 1) as f64 / 2.0 compile and print what ruchy run prints'
-  - 'An atomic operand (identifier, literal, call, method call, field, index) is emitted without added parentheses'
+  - 'An atomic operand (identifier, literal, call, method call, field, index, cast) is emitted without added parentheses; a cast operand is atomic because a cast chain (x as i64 as f64) is left-associative Rust'
   - 'use std::time::Instant, use std::time::Duration and use std::time::{Instant, Duration} emit the Rust use; a ruchy std::time module import still emits the time helper module'
+  - 'The other public std::time items (SystemTime, SystemTimeError, TryFromFloatSecsError, UNIX_EPOCH) emit the Rust use too; they were dropped the same way: use std::time::{SystemTime, UNIX_EPOCH} compiles and runs'
   - 'The issue #155 matrix benchmark compiles and prints RESULT: equal to the naive f64 checksum'
-  - 'tests/issue_155_cast_parens_std_time.rs: 8+ tests, RED before the fix'
+  - 'tests/issue_155_cast_parens_std_time.rs: 8+ tests, RED before the fix, one per acceptance line'
   phases: []
   subtasks: []
   estimated_effort: null

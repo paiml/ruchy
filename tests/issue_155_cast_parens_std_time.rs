@@ -94,7 +94,7 @@ fn test_transpiler_155_02_cast_of_nested_binary_keeps_parens() {
 
 #[test]
 fn test_transpiler_155_03_cast_then_divide() {
-    let src = main_with("  let idx = 7\n  let c = (idx + 2) as f64 / 2.0\n  println!(\"{}\", c)");
+    let src = main_with("  let idx = 8\n  let c = (idx + 1) as f64 / 2.0\n  println!(\"{}\", c)");
     assert_agree(&src, "4.5");
 }
 
@@ -105,15 +105,48 @@ fn test_transpiler_155_04_cast_of_method_call() {
     assert_agree(&src, "1.5");
 }
 
+const ATOMIC_OPERANDS_PROGRAM: &str = r#"struct P { x: i32 }
+fun f() -> i32 { 3 }
+fun main() {
+  let x = 3
+  let v = [1, 2, 3]
+  let p = P { x: 4 }
+  let a = x as f64
+  let b = 5 as f64
+  let c = f() as f64
+  let d = v.len() as f64
+  let e = p.x as f64
+  let g = v[0] as f64
+  let h = x as i64 as f64
+  println!("{} {} {} {} {} {} {}", a, b, c, d, e, g, h)
+}
+"#;
+
 #[test]
-fn test_transpiler_155_05_atomic_operand_gets_no_added_parens() {
-    let rust = transpile(&main_with(
-        "  let x = 3\n  let y = x as f64\n  println!(\"{}\", y)",
-    ));
-    assert!(rust.contains("x as f64"), "cast missing in:\n{rust}");
-    assert!(
-        !rust.contains("(x) as f64"),
-        "atomic operand wrapped in:\n{rust}"
+fn test_transpiler_155_05_atomic_operands_get_no_added_parens() {
+    let rust = transpile(ATOMIC_OPERANDS_PROGRAM);
+    // One pair of parentheses wraps each whole cast; none is added around
+    // the operand (identifier, literal, call, method call, field, index, cast).
+    for cast in [
+        "(x as f64)",
+        "(5 as f64)",
+        "(f() as f64)",
+        "(v.len() as f64)",
+        "(p.x as f64)",
+        "(v[0 as usize].clone() as f64)",
+        "((x as i64) as f64)",
+    ] {
+        assert!(rust.contains(cast), "expected `{cast}` in:\n{rust}");
+    }
+    for wrapped in ["((x) as f64)", "((5) as f64)", "((f()) as f64)", "((((x"] {
+        assert!(
+            !rust.contains(wrapped),
+            "operand wrapped: `{wrapped}` in:\n{rust}"
+        );
+    }
+    assert_eq!(
+        compile_and_run(ATOMIC_OPERANDS_PROGRAM).trim(),
+        "3 5 3 3 4 1 3"
     );
 }
 
@@ -141,6 +174,12 @@ fn test_transpiler_155_08_ruchy_time_module_import_keeps_helpers() {
         rust.contains("fn now_millis"),
         "time helper module dropped in:\n{rust}"
     );
+}
+
+#[test]
+fn test_transpiler_155_10_use_std_time_system_time_is_emitted() {
+    let src = "use std::time::{SystemTime, UNIX_EPOCH};\nfun main() {\n  let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()\n  println!(\"{}\", secs > 1000000000)\n}\n";
+    assert_eq!(compile_and_run(src).trim(), "true");
 }
 
 /// The naive checksum the issue's benchmark prints for n = 128.
