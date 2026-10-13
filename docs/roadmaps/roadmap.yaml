@@ -4041,3 +4041,25 @@ roadmap:
   - kind:code
   notes: null
   epic: 238
+- id: PMAT-260
+  github_issue: 260
+  item_type: task
+  title: 'SEC-4: main red on RustSec — quinn-proto 0.11.16 and wasmtime 47.0.4 (cargo audit), unsafe-libyaml (cargo deny)'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-10-13T22:30:34Z
+  updated: 2026-10-13T22:50:00Z
+  spec: null
+  acceptance_criteria:
+  - 'cargo audit exits 0 with 0 vulnerabilities: quinn-proto 0.11.16 -> 0.11.18 in Cargo.lock (RUSTSEC-2026-0338..0342, patched >=0.11.18) and wasmtime 47.0.4 -> 48.0.5 (Cargo.toml req 48.0.4; RUSTSEC-2026-0315, 0316, 0325, 0326, 0327, patched >=48.0.4). No audit.toml, deny.toml or advisory-ignores.yaml entry is added.'
+  - 'cargo build --lib --features notebook compiles against wasmtime 48 with no source change; cargo test --lib --features notebook -- notebook::testing::sandbox bench::wasm passes; cargo test --lib (default features) passes.'
+  - 'PMAT-259 (2fa3d1c7, serde_yaml/serde_yaml_ng removed from ruchy''s normal and build edges) is folded in unchanged. cargo deny check advisories still reports RUSTSEC-2024-0449 (unsafe-libyaml) until upstream releases, through four default-feature paths: provable-contracts 0.3.1 (dev; serde_yaml normal dep), jugar-probar 1.0.4 (dev; serde_yaml_ng), aprender-compute 0.65.2 (build; serde_yaml_ng, paiml/aprender#5205) and ruchy''s own serde_yaml_ng dev-dependency (the PMAT-259 differential oracle).'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - security
+  - kind:code
+  notes: 'quinn-proto is a lock-only surface: no ruchy feature set compiles it (cargo tree -i quinn-proto --all-features --target all is empty); it enters Cargo.lock through reqwest 0.13 (pmcp). See SEC-2 on the lock audit surface being wider than the build.'
+  epic: 238
