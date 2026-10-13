@@ -1,0 +1,349 @@
+{
+  "ticket": "PMAT-257",
+  "base": "origin/main",
+  "base_resolved": "origin/main",
+  "base_note": "no origin/origin/main exists; judged against the local ref",
+  "head": "8eb1bf11d16ecb4afb31cd79eafc5b1a52efdd88",
+  "diff_sha256": "2e119946ce683fbf187d745d17ea49216231a07505607ea5613c8b67df5ae68a",
+  "width": 3,
+  "executor": "agy",
+  "prompt_mode": "inline",
+  "prompt_bytes": 13351,
+  "prompt_sha256": "cf300ea0d893f945c4ab376097711b1bd4cea0cf29757474e7c03826572d5c8f",
+  "author": {
+    "model": "claude-opus-5-5",
+    "family": "claude",
+    "source": "flag"
+  },
+  "agreed": false,
+  "lanes": [
+    {
+      "lane": 1,
+      "status": "SUCCESS",
+      "verdict": "FAIL",
+      "summary": "FAIL: `scripts/binary_snapshot.sh` weakens/breaks the required `--twice` determinism check by comparing `$work/a` to itself (`cmp -s \"$work/a\" \"$work/a\"`) instead of comparing `$work/a` to `$work/b` at line 168 (introduced in commit 8eb1bf11d16ecb4afb31cd79eafc5b1a52efdd88).",
+      "findings": [
+        {
+          "claim": "The `--twice` determinism check in `scripts/binary_snapshot.sh` compares `$work/a` against itself (`if cmp -s \"$work/a\" \"$work/a\"; then`) instead of comparing `$work/a` against `$work/b`. As a result, `bash scripts/binary_snapshot.sh --twice` is a tautology that always succeeds and prints `DETERMINISTIC` even if the two generated snapshots (`$work/a` and `$work/b`) differ, rendering the `NON-DETERMINISTIC` failure path on lines 172-173 unreachable and violating the ticket's `--twice` determinism requirement.",
+          "file": "scripts/binary_snapshot.sh",
+          "fix": "Change line 168 from `if cmp -s \"$work/a\" \"$work/a\"; then` to `if cmp -s \"$work/a\" \"$work/b\"; then`.",
+          "grounding": "cited",
+          "line": 168
+        }
+      ],
+      "raw_bytes": 3324,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "grounding_check": "parity",
+      "role": "independent",
+      "model": "gemini-4-argon-high",
+      "model_measured": "gemini-4-argon-high",
+      "model_source": "measured",
+      "family": "gemini",
+      "executor": "agy",
+      "brief_sha256": "cf300ea0d893f945c4ab376097711b1bd4cea0cf29757474e7c03826572d5c8f",
+      "trace": {
+        "input_sha256": "f2e52e84d58a40c03ac8068be00c80bbe858b7851f95dc7b084fd069d3dd2e74",
+        "output_sha256": "ce549b06b9240ee888f8336d46c771b633bf4a0c9d1dcc1d511c9fc8e54054fc",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "gemini-4-argon-high",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "gemini-4-argon-high",
+            "family": "gemini",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 2,
+      "status": "SUCCESS",
+      "verdict": "FAIL",
+      "summary": "The --twice determinism check compares snapshot a with itself, so it always reports DETERMINISTIC. The ticket's acceptance criterion 3 is therefore not backed by the diff.",
+      "findings": [
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 168,
+          "claim": "`cmp -s \"$work/a\" \"$work/a\"` compares file a to itself. File b is written but never compared, so `--twice` prints DETERMINISTIC regardless of the real output. The ticket requires 'two snapshots of one build byte-identical'. The fix is `cmp -s \"$work/a\" \"$work/b\"`.",
+          "grounding": "measured",
+          "fix": "Change the comparison to cmp -s \"$work/a\" \"$work/b\"."
+        }
+      ],
+      "raw_bytes": 2151,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "executor": "claude-code",
+      "grounding_check": "parity",
+      "role": "counted",
+      "model": "claude-sonnet-5-5",
+      "model_measured": "claude-sonnet-5-5",
+      "model_source": "flag",
+      "family": "claude",
+      "brief_sha256": "cf300ea0d893f945c4ab376097711b1bd4cea0cf29757474e7c03826572d5c8f",
+      "trace": {
+        "input_sha256": "d6d2db7d8d4b219695a3bc16f71c9add19ecd4e0849e671599692ae0c00b551b",
+        "output_sha256": "7ac122a3f0a062615e5c0ca0a3d2cad92ec265a8553845e006916d2542583a81",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "claude-sonnet-5-5",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "claude-sonnet-5-5",
+            "family": "claude",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 3,
+      "status": "SUCCESS",
+      "verdict": "FAIL",
+      "summary": "The diff fails acceptance criterion 3: the --twice determinism check has a critical bug where it compares $work/a to itself instead of comparing the two independently-generated snapshots $work/a and $work/b.",
+      "findings": [
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 167,
+          "claim": "The determinism check compares $work/a to itself instead of comparing $work/a to $work/b, causing it to always report DETERMINISTIC even if snapshots differ",
+          "grounding": "cited",
+          "fix": "Change line 167 from 'if cmp -s \"$work/a\" \"$work/a\"; then' to 'if cmp -s \"$work/a\" \"$work/b\"; then'"
+        }
+      ],
+      "raw_bytes": 2079,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "executor": "claude-code",
+      "grounding_check": "parity",
+      "role": "counted",
+      "model": "claude-haiku-4-5",
+      "model_measured": "claude-haiku-4-5",
+      "model_source": "flag",
+      "family": "claude",
+      "brief_sha256": "cf300ea0d893f945c4ab376097711b1bd4cea0cf29757474e7c03826572d5c8f",
+      "trace": {
+        "input_sha256": "e4f3436272c0d8012db2d1fab7cf1858233315c1ecfc86ca5c49181441e53646",
+        "output_sha256": "08303b3f59b204ee8e3b53ce8df2464f48397ce2312680f5f7e3cdcf0f53e7fc",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "claude-haiku-4-5",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "claude-haiku-4-5",
+            "family": "claude",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    }
+  ],
+  "dissent": [
+    {
+      "lane": 1,
+      "verdict": "FAIL",
+      "summary": "FAIL: `scripts/binary_snapshot.sh` weakens/breaks the required `--twice` determinism check by comparing `$work/a` to itself (`cmp -s \"$work/a\" \"$work/a\"`) instead of comparing `$work/a` to `$work/b` at line 168 (introduced in commit 8eb1bf11d16ecb4afb31cd79eafc5b1a52efdd88).",
+      "findings": [
+        {
+          "claim": "The `--twice` determinism check in `scripts/binary_snapshot.sh` compares `$work/a` against itself (`if cmp -s \"$work/a\" \"$work/a\"; then`) instead of comparing `$work/a` against `$work/b`. As a result, `bash scripts/binary_snapshot.sh --twice` is a tautology that always succeeds and prints `DETERMINISTIC` even if the two generated snapshots (`$work/a` and `$work/b`) differ, rendering the `NON-DETERMINISTIC` failure path on lines 172-173 unreachable and violating the ticket's `--twice` determinism requirement.",
+          "file": "scripts/binary_snapshot.sh",
+          "fix": "Change line 168 from `if cmp -s \"$work/a\" \"$work/a\"; then` to `if cmp -s \"$work/a\" \"$work/b\"; then`.",
+          "grounding": "cited",
+          "line": 168
+        }
+      ]
+    },
+    {
+      "lane": 2,
+      "verdict": "FAIL",
+      "summary": "The --twice determinism check compares snapshot a with itself, so it always reports DETERMINISTIC. The ticket's acceptance criterion 3 is therefore not backed by the diff.",
+      "findings": [
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 168,
+          "claim": "`cmp -s \"$work/a\" \"$work/a\"` compares file a to itself. File b is written but never compared, so `--twice` prints DETERMINISTIC regardless of the real output. The ticket requires 'two snapshots of one build byte-identical'. The fix is `cmp -s \"$work/a\" \"$work/b\"`.",
+          "grounding": "measured",
+          "fix": "Change the comparison to cmp -s \"$work/a\" \"$work/b\"."
+        }
+      ]
+    },
+    {
+      "lane": 3,
+      "verdict": "FAIL",
+      "summary": "The diff fails acceptance criterion 3: the --twice determinism check has a critical bug where it compares $work/a to itself instead of comparing the two independently-generated snapshots $work/a and $work/b.",
+      "findings": [
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 167,
+          "claim": "The determinism check compares $work/a to itself instead of comparing $work/a to $work/b, causing it to always report DETERMINISTIC even if snapshots differ",
+          "grounding": "cited",
+          "fix": "Change line 167 from 'if cmp -s \"$work/a\" \"$work/a\"; then' to 'if cmp -s \"$work/a\" \"$work/b\"; then'"
+        }
+      ]
+    }
+  ],
+  "dedup": [
+    {
+      "file": "scripts/binary_snapshot.sh",
+      "line": 167,
+      "lanes_agreeing": [
+        3
+      ],
+      "claims": [
+        "The determinism check compares $work/a to itself instead of comparing $work/a to $work/b, causing it to always report DETERMINISTIC even if snapshots differ"
+      ]
+    },
+    {
+      "file": "scripts/binary_snapshot.sh",
+      "line": 168,
+      "lanes_agreeing": [
+        1,
+        2
+      ],
+      "claims": [
+        "The `--twice` determinism check in `scripts/binary_snapshot.sh` compares `$work/a` against itself (`if cmp -s \"$work/a\" \"$work/a\"; then`) instead of comparing `$work/a` against `$work/b`. As a result, `bash scripts/binary_snapshot.sh --twice` is a tautology that always succeeds and prints `DETERMINISTIC` even if the two generated snapshots (`$work/a` and `$work/b`) differ, rendering the `NON-DETERMINISTIC` failure path on lines 172-173 unreachable and violating the ticket's `--twice` determinism requirement.",
+        "`cmp -s \"$work/a\" \"$work/a\"` compares file a to itself. File b is written but never compared, so `--twice` prints DETERMINISTIC regardless of the real output. The ticket requires 'two snapshots of one build byte-identical'. The fix is `cmp -s \"$work/a\" \"$work/b\"`."
+      ]
+    }
+  ],
+  "uncovered": [],
+  "coverage_source": "lanes",
+  "partial": false,
+  "partial_reasons": [],
+  "fallback": {
+    "same_family_width": 2,
+    "chain": [
+      {
+        "model": "gemini-4-argon-high",
+        "family": "gemini",
+        "disposition": "configured"
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "family": "claude",
+        "disposition": "claude-code",
+        "why": "run by Claude Code on its own budget: a configured seat runs every round, a fallback step only when every non-Claude family is measured out (PMAT-360, operator standing rule)"
+      },
+      {
+        "model": "claude-haiku-4-5",
+        "family": "claude",
+        "disposition": "claude-code",
+        "why": "run by Claude Code on its own budget: a configured seat runs every round, a fallback step only when every non-Claude family is measured out (PMAT-360, operator standing rule)"
+      },
+      {
+        "model": "claude-opus-5-5",
+        "family": "claude",
+        "disposition": "excluded-self-review",
+        "why": "the author's own model id (claude-opus-5-5) — a model never reviews its own diff, at any width (R-15a identity bar)"
+      },
+      {
+        "model": "qwen3.5",
+        "family": "qwen",
+        "disposition": "not-run",
+        "why": "no quorum.local_lane in the config — the aprender lane has no model to load"
+      }
+    ],
+    "precheck": [
+      {
+        "family": "gemini",
+        "model": "gemini-4-argon-high",
+        "probe": 1,
+        "outcome": "live"
+      }
+    ],
+    "degraded": null,
+    "prah": {
+      "source": "none",
+      "path": null,
+      "why": "no --prah, none on PATH, and no install receipt at /mnt/nvme-raid0/tmp/infra-38-snap/qcfg/install-receipt.json"
+    },
+    "bucket": {
+      "ledger": "/home/noah/.local/state/paiml-implement/agy-bucket.jsonl",
+      "window_s": 18000,
+      "pace": "off",
+      "buckets": {
+        "gemini": {
+          "bucket": "gemini",
+          "state": "unmeasured",
+          "reason": "agy-bucket.sh could not read the ledger; the bucket is not consulted this round"
+        }
+      },
+      "closed": []
+    }
+  },
+  "auto_merge": {
+    "checked": false,
+    "was_armed": false,
+    "disarmed": false,
+    "note": "no --pr given: nothing to disarm"
+  },
+  "cheap_seat": "claude-haiku-4-5",
+  "advisory_lane": {
+    "state": "unavailable",
+    "counts": false,
+    "row": {
+      "NotRun": "Busy"
+    },
+    "verdict": "unavailable",
+    "why": "no host answered inside the budget",
+    "served_by": null,
+    "gpu_proof": null,
+    "apr": null,
+    "apr_binary_sha256": null,
+    "apr_tag": null,
+    "apr_commit": null,
+    "apr_build_why": null,
+    "model": null,
+    "model_sha256": null,
+    "rc": 2,
+    "wall_s": 0,
+    "collected_s": 212,
+    "budget_s": 196,
+    "budget_basis": "ledger: 2 x p95 98 s over 126 gx10-cuda Verdict rows",
+    "brief": {
+      "bytes": 13351,
+      "sent_bytes": 13520,
+      "max_bytes": 196608
+    },
+    "trace": {
+      "input_sha256": "ce810f70961ed46012e84a6aee0e0316d784693f3bb9d38b212878b2719b8800",
+      "raw": "advisory.json"
+    },
+    "attempts": [
+      {
+        "host": "gx10",
+        "ok": false,
+        "wall_s": 0,
+        "error": "busy: executor yielded (unit inactive; last yield: 2026-10-03T00:47:22Z host=gx10-a5b5 event=stopped gpu-priority lock=/tmp/apr-gpu.priority)",
+        "ts": "2026-10-13T17:27:35.299Z",
+        "wall_ms": 572,
+        "request_id": "01a1364e-2c80-743e-b266-6149b543c29e",
+        "load1": 3.63,
+        "cold": null
+      }
+    ],
+    "ledger": "/home/noah/.local/state/paiml-implement/advisory-ledger.jsonl",
+    "raw": "advisory.json",
+    "agrees_with_counted": null,
+    "counted": "NOT-AGREED"
+  },
+  "lint": {
+    "ok": true,
+    "output": "receipt complete: kind=artifact lanes=3 author=claude-opus-5-5/claude same_family=2/2"
+  }
+}

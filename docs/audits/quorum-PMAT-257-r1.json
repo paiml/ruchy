@@ -1,0 +1,339 @@
+{
+  "ticket": "PMAT-257",
+  "base": "origin/main",
+  "base_resolved": "origin/main",
+  "base_note": "no origin/origin/main exists; judged against the local ref",
+  "head": "0e2d5b2a239029e7a48432ba87c053df27aff20b",
+  "diff_sha256": "71b896d10e86620e5b54cec7398e9615c4904373645f967a56109993063300f8",
+  "width": 3,
+  "executor": "agy",
+  "prompt_mode": "inline",
+  "prompt_bytes": 13351,
+  "prompt_sha256": "f51c8293ef83105b8c63c6c3d3929edc4b6c0d6f845349b6094561c73460a04c",
+  "author": {
+    "model": "claude-opus-5-5",
+    "family": "claude",
+    "source": "flag"
+  },
+  "agreed": false,
+  "lanes": [
+    {
+      "lane": 1,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "PMAT-257 adds scripts/binary_snapshot.sh, commits the binary-snapshot/v1 record in evidence/binary/snapshot.jsonl for the workspace's ruchy bin target, and updates docs/roadmaps/roadmap.yaml. Foregrounds checks confirm pv lint contracts --gate shapes exits 0 with 0 findings (extract:binary fired with 1 binary entity), snapshot.jsonl hashes match the receipt, and scripts/binary_snapshot.sh passes bash -n, shellcheck -S error, and bashrs lint with 0 errors. No refutations found.",
+      "findings": [
+        {
+          "claim": "pv lint contracts --gate shapes exits 0 with verdict Pass, findings [], and by_entity_type.binary = 1 on HEAD (0e2d5b2a239029e7a48432ba87c053df27aff20b).",
+          "file": "evidence/binary/snapshot.jsonl",
+          "grounding": "measured",
+          "line": 1
+        },
+        {
+          "claim": "evidence/binary/snapshot.jsonl sha256 matches the commit receipt (8e3aa40b392bd480c312702ab98dbd37aa875d12d2a8a61b709fcf9e285c6f13) and version_sha256 matches 'ruchy 5.0.0-beta.2' (dc549b2dcdf83622af2e26cc5aa540231c1eb836d3256d3238ebdf189ded642c), recording the single workspace bin target ruchy/ruchy with its CLI surface (--eval, --format, --trace, --verbose, --vm-mode, positional FILE, and 79 subcommand paths).",
+          "file": "evidence/binary/snapshot.jsonl",
+          "grounding": "measured",
+          "line": 1
+        },
+        {
+          "claim": "scripts/binary_snapshot.sh passes bash -n, shellcheck -S error, and bashrs lint with 0 errors, enforces anti-vacuity when zero bin targets are found ([ \"$n\" -ge 1 ]), and implements --twice byte-for-byte determinism verification.",
+          "file": "scripts/binary_snapshot.sh",
+          "grounding": "measured",
+          "line": 163
+        },
+        {
+          "claim": "docs/roadmaps/roadmap.yaml records PMAT-257 acceptance criteria and metadata matching the ticket scope.",
+          "file": "docs/roadmaps/roadmap.yaml",
+          "grounding": "cited",
+          "line": 4024
+        }
+      ],
+      "raw_bytes": 4785,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "grounding_check": "parity",
+      "role": "independent",
+      "model": "gemini-4-argon-high",
+      "model_measured": "gemini-4-argon-high",
+      "model_source": "measured",
+      "family": "gemini",
+      "executor": "agy",
+      "brief_sha256": "f51c8293ef83105b8c63c6c3d3929edc4b6c0d6f845349b6094561c73460a04c",
+      "trace": {
+        "input_sha256": "5207a05122f9d1c152516d84bf27a4548ee67ad35a6fc3f8c883857bb086ce83",
+        "output_sha256": "4abd5880fbeecc4c2732f2dd14a01ee6d6afc8adc40dff4c8bce9c3f282a325d",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "gemini-4-argon-high",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "gemini-4-argon-high",
+            "family": "gemini",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 2,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "I found nothing that refutes the diff. It adds only what PMAT-257 asks for: the snapshot script, one snapshot line, and the roadmap row. The snapshot has one line for the workspace's one bin target, which I checked against Cargo.toml. I ran no build, `bashrs lint` or `pv lint`, so those acceptance results are unverified by me. The lane witness file was not found in the worktree git dir, so tree_witness is omitted.",
+      "findings": [],
+      "raw_bytes": 1766,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "executor": "claude-code",
+      "grounding_check": "parity",
+      "role": "counted",
+      "model": "claude-sonnet-5-5",
+      "model_measured": "claude-sonnet-5-5",
+      "model_source": "flag",
+      "family": "claude",
+      "brief_sha256": "f51c8293ef83105b8c63c6c3d3929edc4b6c0d6f845349b6094561c73460a04c",
+      "trace": {
+        "input_sha256": "3ea3d2d4396e2d4b0faa6d031e8d939704b9bde6e66172d31e901de408bf2124",
+        "output_sha256": "7af296f55e8bb9e30338735c4bdebf557e378bf96ca32348961e2887ad627f68",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "claude-sonnet-5-5",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "claude-sonnet-5-5",
+            "family": "claude",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 3,
+      "status": "SUCCESS",
+      "verdict": "FAIL",
+      "summary": "The snapshot's git_sha (f9ff1749) doesn't match the commit (0e2d5b2a) where it's being introduced. The script uses `git rev-parse HEAD` to set git_sha at runtime, so if executed at the current commit, it should have 0e2d5b2a. This violates criterion 2: the snapshot must be \"written by scripts/binary_snapshot.sh\" as it exists in this commit.",
+      "findings": [
+        {
+          "file": "evidence/binary/snapshot.jsonl",
+          "line": 1,
+          "claim": "git_sha field contains f9ff1749 instead of current commit 0e2d5b2a, violating criterion 2 that snapshot be 'written by scripts/binary_snapshot.sh'",
+          "grounding": "cited"
+        }
+      ],
+      "raw_bytes": 2089,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "executor": "claude-code",
+      "grounding_check": "parity",
+      "role": "counted",
+      "model": "claude-haiku-4-5",
+      "model_measured": "claude-haiku-4-5",
+      "model_source": "flag",
+      "family": "claude",
+      "brief_sha256": "f51c8293ef83105b8c63c6c3d3929edc4b6c0d6f845349b6094561c73460a04c",
+      "trace": {
+        "input_sha256": "03a33aacb427dca5974b5d208a3e50002170344660e6a7fc78acc08fe7b161b7",
+        "output_sha256": "cd8f13596496a4ac69b1a9e4845df51445308a42e2ca00371a28fbf6f13d4a1e",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "claude-haiku-4-5",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "claude-haiku-4-5",
+            "family": "claude",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    }
+  ],
+  "dissent": [
+    {
+      "lane": 3,
+      "verdict": "FAIL",
+      "summary": "The snapshot's git_sha (f9ff1749) doesn't match the commit (0e2d5b2a) where it's being introduced. The script uses `git rev-parse HEAD` to set git_sha at runtime, so if executed at the current commit, it should have 0e2d5b2a. This violates criterion 2: the snapshot must be \"written by scripts/binary_snapshot.sh\" as it exists in this commit.",
+      "findings": [
+        {
+          "file": "evidence/binary/snapshot.jsonl",
+          "line": 1,
+          "claim": "git_sha field contains f9ff1749 instead of current commit 0e2d5b2a, violating criterion 2 that snapshot be 'written by scripts/binary_snapshot.sh'",
+          "grounding": "cited"
+        }
+      ]
+    }
+  ],
+  "dedup": [
+    {
+      "file": "docs/roadmaps/roadmap.yaml",
+      "line": 4024,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "docs/roadmaps/roadmap.yaml records PMAT-257 acceptance criteria and metadata matching the ticket scope."
+      ]
+    },
+    {
+      "file": "evidence/binary/snapshot.jsonl",
+      "line": 1,
+      "lanes_agreeing": [
+        1,
+        3
+      ],
+      "claims": [
+        "evidence/binary/snapshot.jsonl sha256 matches the commit receipt (8e3aa40b392bd480c312702ab98dbd37aa875d12d2a8a61b709fcf9e285c6f13) and version_sha256 matches 'ruchy 5.0.0-beta.2' (dc549b2dcdf83622af2e26cc5aa540231c1eb836d3256d3238ebdf189ded642c), recording the single workspace bin target ruchy/ruchy with its CLI surface (--eval, --format, --trace, --verbose, --vm-mode, positional FILE, and 79 subcommand paths).",
+        "git_sha field contains f9ff1749 instead of current commit 0e2d5b2a, violating criterion 2 that snapshot be 'written by scripts/binary_snapshot.sh'",
+        "pv lint contracts --gate shapes exits 0 with verdict Pass, findings [], and by_entity_type.binary = 1 on HEAD (0e2d5b2a239029e7a48432ba87c053df27aff20b)."
+      ]
+    },
+    {
+      "file": "scripts/binary_snapshot.sh",
+      "line": 163,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "scripts/binary_snapshot.sh passes bash -n, shellcheck -S error, and bashrs lint with 0 errors, enforces anti-vacuity when zero bin targets are found ([ \"$n\" -ge 1 ]), and implements --twice byte-for-byte determinism verification."
+      ]
+    }
+  ],
+  "uncovered": [],
+  "coverage_source": "lanes",
+  "partial": false,
+  "partial_reasons": [],
+  "fallback": {
+    "same_family_width": 2,
+    "chain": [
+      {
+        "model": "gemini-4-argon-high",
+        "family": "gemini",
+        "disposition": "configured"
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "family": "claude",
+        "disposition": "claude-code",
+        "why": "run by Claude Code on its own budget: a configured seat runs every round, a fallback step only when every non-Claude family is measured out (PMAT-360, operator standing rule)"
+      },
+      {
+        "model": "claude-haiku-4-5",
+        "family": "claude",
+        "disposition": "claude-code",
+        "why": "run by Claude Code on its own budget: a configured seat runs every round, a fallback step only when every non-Claude family is measured out (PMAT-360, operator standing rule)"
+      },
+      {
+        "model": "claude-opus-5-5",
+        "family": "claude",
+        "disposition": "excluded-self-review",
+        "why": "the author's own model id (claude-opus-5-5) — a model never reviews its own diff, at any width (R-15a identity bar)"
+      },
+      {
+        "model": "qwen3.5",
+        "family": "qwen",
+        "disposition": "not-run",
+        "why": "no quorum.local_lane in the config — the aprender lane has no model to load"
+      }
+    ],
+    "precheck": [
+      {
+        "family": "gemini",
+        "model": "gemini-4-argon-high",
+        "probe": 1,
+        "outcome": "live"
+      }
+    ],
+    "degraded": null,
+    "prah": {
+      "source": "none",
+      "path": null,
+      "why": "no --prah, none on PATH, and no install receipt at /mnt/nvme-raid0/tmp/infra-38-snap/qcfg/install-receipt.json"
+    },
+    "bucket": {
+      "ledger": "/home/noah/.local/state/paiml-implement/agy-bucket.jsonl",
+      "window_s": 18000,
+      "pace": "off",
+      "buckets": {
+        "gemini": {
+          "bucket": "gemini",
+          "state": "unmeasured",
+          "reason": "agy-bucket.sh could not read the ledger; the bucket is not consulted this round"
+        }
+      },
+      "closed": []
+    }
+  },
+  "auto_merge": {
+    "checked": true,
+    "was_armed": false,
+    "disarmed": false,
+    "note": "auto-merge not armed"
+  },
+  "cheap_seat": "claude-haiku-4-5",
+  "advisory_lane": {
+    "state": "unavailable",
+    "counts": false,
+    "row": {
+      "NotRun": "Busy"
+    },
+    "verdict": "unavailable",
+    "why": "no host answered inside the budget",
+    "served_by": null,
+    "gpu_proof": null,
+    "apr": null,
+    "apr_binary_sha256": null,
+    "apr_tag": null,
+    "apr_commit": null,
+    "apr_build_why": null,
+    "model": null,
+    "model_sha256": null,
+    "rc": 2,
+    "wall_s": 1,
+    "collected_s": 141,
+    "budget_s": 196,
+    "budget_basis": "ledger: 2 x p95 98 s over 126 gx10-cuda Verdict rows",
+    "brief": {
+      "bytes": 13351,
+      "sent_bytes": 13520,
+      "max_bytes": 196608
+    },
+    "trace": {
+      "input_sha256": "6e029a0a24bbd4f0f2e5cfa39cc4a5856371733337a2dd63eeb89831d2fc9627",
+      "raw": "advisory.json"
+    },
+    "attempts": [
+      {
+        "host": "gx10",
+        "ok": false,
+        "wall_s": 1,
+        "error": "busy: executor yielded (unit inactive; last yield: 2026-10-03T00:47:22Z host=gx10-a5b5 event=stopped gpu-priority lock=/tmp/apr-gpu.priority)",
+        "ts": "2026-10-13T17:31:18.894Z",
+        "wall_ms": 561,
+        "request_id": "01a13651-95eb-736b-8bfb-158eeded39e7",
+        "load1": 3.13,
+        "cold": null
+      }
+    ],
+    "ledger": "/home/noah/.local/state/paiml-implement/advisory-ledger.jsonl",
+    "raw": "advisory.json",
+    "agrees_with_counted": null,
+    "counted": "NOT-AGREED"
+  },
+  "lint": {
+    "ok": true,
+    "output": "receipt complete: kind=artifact lanes=3 author=claude-opus-5-5/claude same_family=2/2"
+  }
+}
