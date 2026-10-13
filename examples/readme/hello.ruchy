@@ -1,0 +1,5 @@
+let name = "Ruchy"
+fun greet(who) {
+    println(f"Hello, {who}!")
+}
+greet(name)
