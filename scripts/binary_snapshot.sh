@@ -21,8 +21,11 @@
 # support not enabled" and lists none, so [] is what that build exposes.
 # `routes` is []: `ruchy serve` serves static files and mounts no route table.
 #
-# The record names the commit it was built from (git_sha), so regenerate it
-# after a change to the CLI surface. Determinism: `--twice` builds once, writes
+# The record names the commit it was built from (git_sha = `git rev-parse HEAD`
+# when the script runs), so regenerate it after a change to the CLI surface.
+# A snapshot is committed ON TOP of the tree it measured, so its git_sha is the
+# parent of the commit that adds it, never that commit itself: a file cannot
+# name the commit that contains it. Determinism: `--twice` builds once, writes
 # two snapshots and compares them byte for byte.
 #
 #   bash scripts/binary_snapshot.sh            # write evidence/binary/snapshot.jsonl
