@@ -92,6 +92,10 @@ pub mod reporting;
 pub mod reproducibility;
 // RHL-1 (spec RHL-001): the RHL intent tree and its LALRPOP-generated parser.
 pub mod rhl;
+
+// SEC-2 (#259): the one YAML reader/writer (serde-saphyr; no unsafe-libyaml).
+pub mod yaml_io;
+
 pub mod runtime;
 pub mod server;
 pub mod stdlib;

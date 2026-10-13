@@ -4021,3 +4021,23 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: PMAT-259
+  github_issue: 259
+  item_type: task
+  title: 'SEC-2: drop serde_yaml/serde_yaml_ng (unsafe-libyaml, RUSTSEC-2024-0449) for serde-saphyr'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-10-13T18:17:53Z
+  updated: 2026-10-13T18:17:56.094385389+00:00
+  spec: null
+  acceptance_criteria:
+  - 'cargo tree -i unsafe-libyaml -e normal,build: no path through a dependency ruchy itself declares (serde_yaml_ng and serde_yaml are gone from [dependencies] and [build-dependencies]; serde_yaml_ng stays only as the dev-only oracle). The paths left are aprender-compute/aprender-core build-dependencies, owned by paiml/aprender#5205.'
+  - 'cargo test --lib yaml_io_tests and cargo test --lib sec2: every committed *.yaml/*.yml reads into the same serde_json::Value under serde-saphyr (src/yaml_io.rs) as under serde_yaml_ng, or both refuse; to_yaml is byte-identical to the serde_yaml_ng+singleton_map_recursive writer over the RHL corpus and generated trees; from_yaml gives the same verdict and tree; each differential has a planted positive control.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  notes: null
+  epic: 238

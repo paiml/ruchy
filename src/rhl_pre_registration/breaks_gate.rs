@@ -119,7 +119,7 @@ fn load_break(dir: &Path) -> BreakYaml {
     let path = dir.join("break.yaml");
     let text = fs::read_to_string(&path)
         .unwrap_or_else(|e| panic!("{}: cannot read: {e}", path.display()));
-    serde_yaml::from_str(&text)
+    crate::yaml_io::from_str(&text)
         .unwrap_or_else(|e| panic!("{}: does not parse as break.yaml: {e}", path.display()))
 }
 
@@ -175,7 +175,7 @@ fn test_rhl_breaks_0_all_six_classes_present_with_at_least_six_each() {
     }
 }
 
-/// (c) Every `break.yaml` parses via `serde_yaml` and declares all of
+/// (c) Every `break.yaml` parses (`crate::yaml_io`) and declares all of
 /// `base`, `class`, `expected_code`, `safe_fix` (a missing required field
 /// fails to parse, per [`BreakYaml`]'s shape, so a successful load already
 /// proves declaration; this test also rejects an empty value in any of
