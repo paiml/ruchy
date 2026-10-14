@@ -149,7 +149,7 @@ version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "40c48f72fd53cd289104fc64099abca73db4166ad86ea0b4341abe65af83dadc"
 dependencies = [
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -160,7 +160,7 @@ checksum = "291e6a250ff86cd4a820112fb8898808a366d8f9f58ce16d1f538353ad55747d"
 dependencies = [
  "anstyle",
  "once_cell_polyfill",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -210,7 +210,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eba7689319da61683de8a2ea5e5ca6985d0a0e4b01f03bc34f7f1580430c9d4d"
 dependencies = [
  "anyhow",
- "aprender-contracts-macros",
+ "aprender-contracts-macros 0.65.2",
  "aprender-gemm-codegen",
  "aprender-quant",
  "chrono",
@@ -222,6 +222,31 @@ dependencies = [
  "serde_yaml_ng",
  "thiserror 2.0.20",
  "toml 0.8.23",
+]
+
+[[package]]
+name = "aprender-contracts"
+version = "0.64.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31fca1e31a6262d16c277d1b2a0c6c682db6db6d3e145c51c2fe7d82f7dff1ef"
+dependencies = [
+ "aprender-contracts-macros 0.64.0",
+ "regex",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "thiserror 2.0.20",
+]
+
+[[package]]
+name = "aprender-contracts-macros"
+version = "0.64.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "814b6c359367ef742ef9f4f019dfc075aa385c8f848268519f8c7d6ad206c883"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]
@@ -244,7 +269,7 @@ dependencies = [
  "apr-format",
  "aprender-common",
  "aprender-compute",
- "aprender-contracts-macros",
+ "aprender-contracts-macros 0.65.2",
  "aprender-quant",
  "bincode",
  "ed25519-dalek",
@@ -279,7 +304,7 @@ version = "0.65.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "75c441f498586b82eab2cb95118c9e23526c6496b98b7f28a689f29a06549e3c"
 dependencies = [
- "aprender-contracts-macros",
+ "aprender-contracts-macros 0.65.2",
  "serde",
  "serde_json",
  "serde_yaml_ng",
@@ -333,7 +358,7 @@ version = "0.65.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd71cbac33ce65d23cbdbf7a63618feed3c3eece05e400994128a302c9cf33c8"
 dependencies = [
- "aprender-contracts-macros",
+ "aprender-contracts-macros 0.65.2",
  "bincode",
  "bitflags 2.13.1",
  "blake3",
@@ -362,7 +387,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "043a38701e45032a10db15e784716ab4c88f7aee451230fdc724b9a0e85c0a9f"
 dependencies = [
  "aprender-compute",
- "aprender-contracts-macros",
+ "aprender-contracts-macros 0.65.2",
  "aprender-core",
  "aprender-present-core",
  "aprender-present-terminal",
@@ -1630,7 +1655,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "faf9468729b8cbcea668e36183cb69d317348c2e08e994829fb56ebfdfbaac34"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -1762,7 +1787,7 @@ dependencies = [
  "bincode",
  "blake3",
  "bytes",
- "provable-contracts-macros 0.1.1",
+ "provable-contracts-macros",
  "rayon",
  "rustc-hash",
  "serde",
@@ -2769,7 +2794,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -4896,7 +4921,7 @@ version = "0.50.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7957b9740744892f114936ab4a57b3f487491bbeafaf8083688b16841a4240e5"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -6197,16 +6222,11 @@ dependencies = [
 
 [[package]]
 name = "provable-contracts"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "49c4074b55824441df3872f57aecaeb69902a568dabffb59da9b15533a91cca4"
+checksum = "9bfed66675f22bc0ab8eed4e3be872aed3a34c17239ae94d5ae3f2c446c4115d"
 dependencies = [
- "provable-contracts-macros 0.3.1",
- "regex",
- "serde",
- "serde_json",
- "serde_yaml",
- "thiserror 2.0.20",
+ "aprender-contracts",
 ]
 
 [[package]]
@@ -6214,17 +6234,6 @@ name = "provable-contracts-macros"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c383d865124fe9fda96af4a04d0c2641bcb93e16eb5e13f7c665f98c15333447"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.119",
-]
-
-[[package]]
-name = "provable-contracts-macros"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a6bb7beb246ab375bc516720bcab5c5c2b93adb63115e785454a5424ba89fc0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -6364,7 +6373,7 @@ dependencies = [
  "once_cell",
  "socket2",
  "tracing",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7033,7 +7042,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.12.1",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7092,7 +7101,7 @@ dependencies = [
  "security-framework",
  "security-framework-sys",
  "webpki-root-certs",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7655,7 +7664,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d1e2c7f27f8d4cb10542a02c49005dbd6e93095799d6f3be745fae9f8fedd4"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7684,7 +7693,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "psm",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7942,7 +7951,7 @@ dependencies = [
  "getrandom 0.4.3",
  "once_cell",
  "rustix 1.1.4",
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -7962,7 +7971,7 @@ version = "1.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d8c27177b12a6399ffc08b98f76f7c9a1f4fe9fc967c784c5a071fa8d93cf7e1"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -9379,7 +9388,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

@@ -169,6 +169,11 @@ fn test_sec2_writer_is_byte_identical_to_the_oracle() {
     let values = [
         json!({"rhl": 1, "decls": []}),
         json!({"a": "plain", "b": "007", "c": "true", "d": "on", "e": "", "f": "x: y", "g": "#x"}),
+        // PMAT-262: the three null spellings, each on its own, as a value and as a sequence
+        // item. Without these rows, dropping any one of them from str_style's reserved list
+        // (yaml_emit.rs) wrote it plain, where a reader takes it as null, and no test saw it.
+        json!({"lc": "null", "tc": "Null", "uc": "NULL"}),
+        json!(["null", "Null", "NULL"]),
         json!({"multi": "one\ntwo\n", "kept": "one\ntwo", "long": "w ".repeat(70)}),
         json!({"n": [1, -2, 3.5], "nested": {"k": [{"x": null}, []], "e": {}}}),
         json!([

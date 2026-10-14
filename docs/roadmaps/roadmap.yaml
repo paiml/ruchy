@@ -4063,3 +4063,25 @@ roadmap:
   - kind:code
   notes: 'quinn-proto is a lock-only surface: no ruchy feature set compiles it (cargo tree -i quinn-proto --all-features --target all is empty); it enters Cargo.lock through reqwest 0.13 (pmcp). See SEC-2 on the lock audit surface being wider than the build.'
   epic: 238
+- id: PMAT-262
+  github_issue: 262
+  item_type: task
+  title: 'SEC-5: provable-contracts dev-dep 0.3.1 -> 0.4 (an unsafe-libyaml path) + null rows in the yaml writer table'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-10-14T00:17:22Z
+  updated: 2026-10-14T00:40:00Z
+  spec: null
+  acceptance_criteria:
+  - 'The provable-contracts dev-dependency is "0.4" and Cargo.lock locks 0.4.0 (adding aprender-contracts 0.64.0 and aprender-contracts-macros 0.64.0, removing provable-contracts-macros 0.3.1); cargo test --test contract_traits passes 9 of 9 with no source change.'
+  - 'Measured, not claimed: the bump does NOT remove a RUSTSEC-2024-0449 path. provable-contracts 0.4.0 is a facade (pub use upstream::*) over aprender-contracts 0.64.0, which keeps serde_yaml 0.9 as a normal and a build dependency (as does every aprender-contracts through 0.71.1), so cargo tree -i unsafe-libyaml -e normal,build,dev --target all shows provable-contracts 0.4.0 -> aprender-contracts 0.64.0 -> serde_yaml 0.9.34 -> unsafe-libyaml 0.2.11 in place of provable-contracts 0.3.1 -> serde_yaml 0.9.34.'
+  - 'On the branch stacked on #261 (yaml_emit.rs exists only there): test_sec2_writer_is_byte_identical_to_the_oracle carries "null", "Null" and "NULL" as map values and as sequence items. Each of the three single-spelling deletions from str_style reserved list in yaml_emit.rs fails that test, and deleting "null" without the new rows passes all 7 yaml_io tests (the surviving mutant this ticket kills).'
+  - 'No advisory ignore is added: no audit.toml, deny.toml or advisory-ignores.yaml change.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  notes: null
+  epic: 238
