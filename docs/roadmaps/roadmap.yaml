@@ -4021,3 +4021,23 @@ roadmap:
   estimated_effort: null
   labels: []
   notes: null
+- id: PMAT-263
+  github_issue: 263
+  item_type: task
+  title: 'SEC-6: remove RUSTSEC-2024-0449 (unsafe-libyaml via serde_yaml ^0.9) — blocked on aprender-contracts, aprender#5205, jugar-probar 1.0.5'
+  status: planned
+  priority: high
+  assigned_to: null
+  created: 2026-10-14T02:35:26Z
+  updated: 2026-10-14T02:35:26Z
+  spec: null
+  acceptance_criteria:
+  - 'cargo deny check advisories passes with no ignore for RUSTSEC-2024-0449: no deny.toml, audit.toml or docs/audits/advisory-ignores.yaml entry for it.'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  - blocked
+  notes: 'Blocked on: aprender-contracts (serde_yaml ^0.9 as a normal and build dependency in every release through 0.71.1); paiml/aprender#5205 (the serde_yaml swap); jugar-probar 1.0.5. Decision receipt (planted quorum, 3/3, control caught): /mnt/nvme-raid0/tmp/infra-38-decide/ruchy-262-a/receipt.md'
+  epic: 238
