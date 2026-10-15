@@ -386,7 +386,7 @@ html5ever = "0.27"
 markup5ever_rcdom = "0.3"
 # Notebook support
 wasmparser = { version = "0.244.0", optional = true }
-wasmtime = { version = "47.0.3", optional = true }
+wasmtime = { version = "48.0.4", optional = true }
 # Markdown parsing - optional for minimal builds
 pulldown-cmark = { version = "0.9", optional = true }
 
@@ -396,9 +396,13 @@ pulldown-cmark = { version = "0.9", optional = true }
 # non-ASCII byte inside a string literal still matches `[^"]` (tested in
 # src/rhl/parse_tests.rs).
 lalrpop-util = { version = "0.23", default-features = false, features = ["lexer"] }
-# RHL-1 (plan P4): the checker reads `vocab/<name>-v<N>.yaml`. serde_yaml_ng is
-# already locked as a build-dependency; serde_yaml is unmaintained.
-serde_yaml_ng = "0.10"
+# RHL-1 (plan P4): the checker reads `vocab/<name>-v<N>.yaml`.
+# SEC-2 (#259): every YAML read and write goes through src/yaml_io.rs on
+# serde-saphyr. serde_yaml and serde_yaml_ng parse through unsafe-libyaml
+# (RUSTSEC-2024-0449, unmaintained, no patched release), which this edge
+# carried into every consumer.
+serde-saphyr = "=1.3.0"
+ryu = "1"
 
 # Platform-specific dependencies for non-WASM targets
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -440,7 +444,10 @@ tracing-subscriber = { workspace = true }
 quickcheck = { workspace = true }
 reqwest = { version = "0.12", features = ["json", "blocking"] }
 serde_json = "1.0"
-serde_yaml = "0.9.34"
+# SEC-2 (#259): the ORACLE of the differential test in src/yaml_io_tests.rs
+# only: it holds that serde-saphyr reads and writes what this crate did. Dev
+# edge only; it never reaches a consumer.
+serde_yaml_ng = "0.10"
 assert_cmd = "2.0"
 predicates = "3.1"
 rexpect = "0.5"
@@ -635,7 +642,7 @@ rustdoc-args = ["--generate-link-to-definition"]
 
 [build-dependencies]
 serde = { version = "1", features = ["derive"] }
-serde_yaml_ng = "0.10"
+serde-saphyr = { version = "=1.3.0", default-features = false, features = ["deserialize"] }
 # RHL-1 (RHL-001 plan D1): build.rs generates the RHL parser from
 # src/rhl/grammar.lalrpop, whose skeleton is gated identical to the
 # pre-registered grammar/rhl.lalrpop — so the conflict-free report covers the

@@ -169,7 +169,7 @@ fn values_of(claims: &Value, key: &str) -> Vec<String> {
 }
 
 /// Grade one `shape.properties[]` row; returns the violations.
-fn grade_property(prop: &serde_yaml::Value, claims: &Value) -> Vec<String> {
+fn grade_property(prop: &Value, claims: &Value) -> Vec<String> {
     let key = prop["path"]
         .as_str()
         .unwrap_or("")
@@ -194,11 +194,8 @@ fn grade_property(prop: &serde_yaml::Value, claims: &Value) -> Vec<String> {
                 .map(|v| format!("{key}: {v:?} !~ /{p}/")),
         );
     }
-    if let Some(allowed) = prop["in"].as_sequence() {
-        let allowed: Vec<&str> = allowed
-            .iter()
-            .filter_map(serde_yaml::Value::as_str)
-            .collect();
+    if let Some(allowed) = prop["in"].as_array() {
+        let allowed: Vec<&str> = allowed.iter().filter_map(Value::as_str).collect();
         bad.extend(
             vals.iter()
                 .filter(|v| !allowed.contains(&v.as_str()))
@@ -210,9 +207,9 @@ fn grade_property(prop: &serde_yaml::Value, claims: &Value) -> Vec<String> {
 
 /// The contract's shape, graded in-process so `cargo test --lib` enforces it
 /// where `pv` is not installed. `pv lint --gate shapes` grades the same block.
-fn grade_shape(contract: &serde_yaml::Value, claims: &Value) -> Vec<String> {
+fn grade_shape(contract: &Value, claims: &Value) -> Vec<String> {
     let props = contract["shape"]["properties"]
-        .as_sequence()
+        .as_array()
         .cloned()
         .unwrap_or_default();
     let declared: Vec<String> = props
@@ -344,10 +341,9 @@ fn test_pmat_254_links_resolve() {
 
 #[test]
 fn test_pmat_254_claims_conform_to_shape() {
-    let contract: serde_yaml::Value =
-        serde_yaml::from_str(&read(CONTRACT)).expect("contract is YAML");
+    let contract: Value = crate::yaml_io::from_str(&read(CONTRACT)).expect("contract is YAML");
     let props = contract["shape"]["properties"]
-        .as_sequence()
+        .as_array()
         .map_or(0, Vec::len);
     assert!(
         props > 0,
@@ -376,8 +372,7 @@ fn test_pmat_254_no_hand_typed_counts() {
 fn test_pmat_254_shape_rejects_planted_claims() {
     // Positive control: the in-process grader must refuse known-bad claims,
     // or a green run above means nothing.
-    let contract: serde_yaml::Value =
-        serde_yaml::from_str(&read(CONTRACT)).expect("contract is YAML");
+    let contract: Value = crate::yaml_io::from_str(&read(CONTRACT)).expect("contract is YAML");
     let mut c = committed_claims();
     c["version"] = json!("five");
     c["sections"] = json!(["Features"]);
