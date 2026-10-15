@@ -1,0 +1,376 @@
+{
+  "ticket": "PMAT-257",
+  "base": "origin/main",
+  "base_resolved": "origin/main",
+  "base_note": "no origin/origin/main exists; judged against the local ref",
+  "head": "bf482149c9ec96cb3c48dc4644c644f8361be724",
+  "diff_sha256": "d0c67b845c7bfa322e6a15f1dd0f692bf491a74e52792349a025e4d0a672c28f",
+  "width": 3,
+  "executor": "agy",
+  "prompt_mode": "inline",
+  "prompt_bytes": 13700,
+  "prompt_sha256": "30fcf80be0d18f59676ca56ba585229c6280871ca8d348c21519524960f13103",
+  "author": {
+    "model": "claude-opus-5-5",
+    "family": "claude",
+    "source": "flag"
+  },
+  "agreed": false,
+  "lanes": [
+    {
+      "lane": 1,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "Verified PMAT-257 diff against all ticket acceptance criteria and commit receipts. scripts/binary_snapshot.sh is clean under bash -n, shellcheck -S error, and bashrs lint (0 errors), includes anti-vacuity and --twice determinism verification, and evidence/binary/snapshot.jsonl satisfies pv lint contracts --gate shapes (verdict: Pass, violations: 0, findings: [], by_entity_type.binary: 1). No refuting findings.",
+      "findings": [
+        {
+          "claim": "docs/roadmaps/roadmap.yaml adds ticket PMAT-257 with all four acceptance criteria matching the commit receipt and parent commit f9ff17497e4c12555cf1312eb7412ea4fc62295a.",
+          "file": "docs/roadmaps/roadmap.yaml",
+          "grounding": "cited",
+          "line": 4024
+        },
+        {
+          "claim": "evidence/binary/snapshot.jsonl contains exactly 1 binary-snapshot/v1 record for cargo bin target ruchy/ruchy (src/bin/ruchy.rs) built from f9ff17497e4c12555cf1312eb7412ea4fc62295a, with sha256 8e3aa40b392bd480c312702ab98dbd37aa875d12d2a8a61b709fcf9e285c6f13 matching the receipt, valid version_sha256 dc549b2dcdf83622af2e26cc5aa540231c1eb836d3256d3238ebdf189ded642c for 'ruchy 5.0.0-beta.2', schema-ordered keys, and sorted/unique commands, options, and positionals arrays.",
+          "file": "evidence/binary/snapshot.jsonl",
+          "grounding": "measured",
+          "line": 1
+        },
+        {
+          "claim": "scripts/binary_snapshot.sh implements deterministic binary surface extraction (bash + jq, LC_ALL=C, anti-vacuity check on bin target count, and --twice byte-identical comparison), passes bash -n, shellcheck -S error, and bashrs lint with 0 errors, and pv lint contracts --gate shapes exits 0 with Pass verdict, 1 binary entity extracted, 0 violations, and empty findings [].",
+          "file": "scripts/binary_snapshot.sh",
+          "grounding": "measured",
+          "line": 166
+        }
+      ],
+      "raw_bytes": 4707,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "grounding_check": "parity",
+      "role": "independent",
+      "model": "gemini-4-argon-high",
+      "model_measured": "gemini-4-argon-high",
+      "model_source": "measured",
+      "family": "gemini",
+      "executor": "agy",
+      "brief_sha256": "30fcf80be0d18f59676ca56ba585229c6280871ca8d348c21519524960f13103",
+      "trace": {
+        "input_sha256": "8ba1ff807c3aee7744d4ddc9911c8c94a915e64f6470a758b1fcacea66d53f78",
+        "output_sha256": "6240238783780e9e8e573d8ab4f6f2ffc39a88b5db7d4e5cc8663f44b05e57ef",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "gemini-4-argon-high",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "gemini-4-argon-high",
+            "family": "gemini",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 2,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "The diff does what PMAT-257 asks: it adds scripts/binary_snapshot.sh, a one-line evidence/binary/snapshot.jsonl in binary-snapshot/v1 format, and the roadmap row. It touches no gate and weakens none. I could not run Bash in this lane, so I did not check the recorded gate results (pv lint contracts --gate shapes, --twice DETERMINISTIC, bashrs lint) or the git_sha parentage. The checks I could do, by reading, found nothing that refutes it. The snapshot's version \"ruchy 5.0.0-beta.2\" matches Cargo.toml:170. The single bin target, ruchy at src/bin/ruchy.rs, matches the [[bin]] entry at Cargo.toml:265-267. The script has a vacuity guard that fails when it finds zero bin targets, and a line-count check after writing. The git_sha f9ff1749 is the parent of the snapshot-adding commit, which the script header documents as intended.",
+      "findings": [],
+      "raw_bytes": 2605,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "executor": "claude-code",
+      "grounding_check": "parity",
+      "role": "counted",
+      "model": "claude-sonnet-5-5",
+      "model_measured": "claude-sonnet-5-5",
+      "model_source": "flag",
+      "family": "claude",
+      "brief_sha256": "30fcf80be0d18f59676ca56ba585229c6280871ca8d348c21519524960f13103",
+      "trace": {
+        "input_sha256": "90e444d1cd0a4e7e1cbe469140673bebdb4ab4565482f6d1f18b2fdb97046174",
+        "output_sha256": "0eeb1feb4dab1844954e8b9812da2c5e125e6c033b7d812a25be26db5929a3c0",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "claude-sonnet-5-5",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "claude-sonnet-5-5",
+            "family": "claude",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 3,
+      "status": "SUCCESS",
+      "verdict": "FAIL",
+      "summary": "Acceptance criteria require verification of --twice determinism, bashrs lint, and pv lint gate, but no evidence is provided in the diff. Code implementation is sound; verification steps are unverified.",
+      "findings": [
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 172,
+          "claim": "Acceptance criterion #3 requires 'bash scripts/binary_snapshot.sh --twice prints DETERMINISTIC' but no receipt shows this verification was executed",
+          "grounding": "asserted"
+        },
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 1,
+          "claim": "Acceptance criterion #3 requires 'bashrs lint scripts/binary_snapshot.sh reports 0 errors' but no receipt shows bashrs lint was run",
+          "grounding": "asserted"
+        },
+        {
+          "file": "evidence/binary/snapshot.jsonl",
+          "line": 1,
+          "claim": "Acceptance criterion #4 requires 'pv lint contracts --gate shapes exits 0' but no receipt shows the gate was verified after snapshot was added",
+          "grounding": "asserted"
+        }
+      ],
+      "raw_bytes": 2720,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "executor": "claude-code",
+      "grounding_check": "parity",
+      "role": "counted",
+      "model": "claude-haiku-4-5",
+      "model_measured": "claude-haiku-4-5",
+      "model_source": "flag",
+      "family": "claude",
+      "brief_sha256": "30fcf80be0d18f59676ca56ba585229c6280871ca8d348c21519524960f13103",
+      "trace": {
+        "input_sha256": "c89f706b7da93dba1f0e7b4c71172911a2d37e3803b5037777c7ee41fdedd564",
+        "output_sha256": "040848159b203aa1e8e1a57111adbf56802331ee70ce0607ea7e71d1db7ea849",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "claude-haiku-4-5",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "claude-haiku-4-5",
+            "family": "claude",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    }
+  ],
+  "dissent": [
+    {
+      "lane": 3,
+      "verdict": "FAIL",
+      "summary": "Acceptance criteria require verification of --twice determinism, bashrs lint, and pv lint gate, but no evidence is provided in the diff. Code implementation is sound; verification steps are unverified.",
+      "findings": [
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 172,
+          "claim": "Acceptance criterion #3 requires 'bash scripts/binary_snapshot.sh --twice prints DETERMINISTIC' but no receipt shows this verification was executed",
+          "grounding": "asserted"
+        },
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 1,
+          "claim": "Acceptance criterion #3 requires 'bashrs lint scripts/binary_snapshot.sh reports 0 errors' but no receipt shows bashrs lint was run",
+          "grounding": "asserted"
+        },
+        {
+          "file": "evidence/binary/snapshot.jsonl",
+          "line": 1,
+          "claim": "Acceptance criterion #4 requires 'pv lint contracts --gate shapes exits 0' but no receipt shows the gate was verified after snapshot was added",
+          "grounding": "asserted"
+        }
+      ]
+    }
+  ],
+  "dedup": [
+    {
+      "file": "docs/roadmaps/roadmap.yaml",
+      "line": 4024,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "docs/roadmaps/roadmap.yaml adds ticket PMAT-257 with all four acceptance criteria matching the commit receipt and parent commit f9ff17497e4c12555cf1312eb7412ea4fc62295a."
+      ]
+    },
+    {
+      "file": "evidence/binary/snapshot.jsonl",
+      "line": 1,
+      "lanes_agreeing": [
+        1,
+        3
+      ],
+      "claims": [
+        "Acceptance criterion #4 requires 'pv lint contracts --gate shapes exits 0' but no receipt shows the gate was verified after snapshot was added",
+        "evidence/binary/snapshot.jsonl contains exactly 1 binary-snapshot/v1 record for cargo bin target ruchy/ruchy (src/bin/ruchy.rs) built from f9ff17497e4c12555cf1312eb7412ea4fc62295a, with sha256 8e3aa40b392bd480c312702ab98dbd37aa875d12d2a8a61b709fcf9e285c6f13 matching the receipt, valid version_sha256 dc549b2dcdf83622af2e26cc5aa540231c1eb836d3256d3238ebdf189ded642c for 'ruchy 5.0.0-beta.2', schema-ordered keys, and sorted/unique commands, options, and positionals arrays."
+      ]
+    },
+    {
+      "file": "scripts/binary_snapshot.sh",
+      "line": 1,
+      "lanes_agreeing": [
+        3
+      ],
+      "claims": [
+        "Acceptance criterion #3 requires 'bashrs lint scripts/binary_snapshot.sh reports 0 errors' but no receipt shows bashrs lint was run"
+      ]
+    },
+    {
+      "file": "scripts/binary_snapshot.sh",
+      "line": 166,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "scripts/binary_snapshot.sh implements deterministic binary surface extraction (bash + jq, LC_ALL=C, anti-vacuity check on bin target count, and --twice byte-identical comparison), passes bash -n, shellcheck -S error, and bashrs lint with 0 errors, and pv lint contracts --gate shapes exits 0 with Pass verdict, 1 binary entity extracted, 0 violations, and empty findings []."
+      ]
+    },
+    {
+      "file": "scripts/binary_snapshot.sh",
+      "line": 172,
+      "lanes_agreeing": [
+        3
+      ],
+      "claims": [
+        "Acceptance criterion #3 requires 'bash scripts/binary_snapshot.sh --twice prints DETERMINISTIC' but no receipt shows this verification was executed"
+      ]
+    }
+  ],
+  "uncovered": [],
+  "coverage_source": "lanes",
+  "partial": false,
+  "partial_reasons": [],
+  "fallback": {
+    "same_family_width": 2,
+    "chain": [
+      {
+        "model": "gemini-4-argon-high",
+        "family": "gemini",
+        "disposition": "configured"
+      },
+      {
+        "model": "claude-sonnet-5-5",
+        "family": "claude",
+        "disposition": "claude-code",
+        "why": "run by Claude Code on its own budget: a configured seat runs every round, a fallback step only when every non-Claude family is measured out (PMAT-360, operator standing rule)"
+      },
+      {
+        "model": "claude-haiku-4-5",
+        "family": "claude",
+        "disposition": "claude-code",
+        "why": "run by Claude Code on its own budget: a configured seat runs every round, a fallback step only when every non-Claude family is measured out (PMAT-360, operator standing rule)"
+      },
+      {
+        "model": "claude-opus-5-5",
+        "family": "claude",
+        "disposition": "excluded-self-review",
+        "why": "the author's own model id (claude-opus-5-5) — a model never reviews its own diff, at any width (R-15a identity bar)"
+      },
+      {
+        "model": "qwen3.5",
+        "family": "qwen",
+        "disposition": "not-run",
+        "why": "no quorum.local_lane in the config — the aprender lane has no model to load"
+      }
+    ],
+    "precheck": [
+      {
+        "family": "gemini",
+        "model": "gemini-4-argon-high",
+        "probe": 1,
+        "outcome": "live"
+      }
+    ],
+    "degraded": null,
+    "prah": {
+      "source": "none",
+      "path": null,
+      "why": "no --prah, none on PATH, and no install receipt at /mnt/nvme-raid0/tmp/infra-38-snap/qcfg/install-receipt.json"
+    },
+    "bucket": {
+      "ledger": "/home/noah/.local/state/paiml-implement/agy-bucket.jsonl",
+      "window_s": 18000,
+      "pace": "off",
+      "buckets": {
+        "gemini": {
+          "bucket": "gemini",
+          "state": "unmeasured",
+          "reason": "agy-bucket.sh could not read the ledger; the bucket is not consulted this round"
+        }
+      },
+      "closed": []
+    }
+  },
+  "auto_merge": {
+    "checked": true,
+    "was_armed": false,
+    "disarmed": false,
+    "note": "auto-merge not armed"
+  },
+  "cheap_seat": "claude-haiku-4-5",
+  "advisory_lane": {
+    "state": "unavailable",
+    "counts": false,
+    "row": {
+      "NotRun": "Busy"
+    },
+    "verdict": "unavailable",
+    "why": "no host answered inside the budget",
+    "served_by": null,
+    "gpu_proof": null,
+    "apr": null,
+    "apr_binary_sha256": null,
+    "apr_tag": null,
+    "apr_commit": null,
+    "apr_build_why": null,
+    "model": null,
+    "model_sha256": null,
+    "rc": 2,
+    "wall_s": 0,
+    "collected_s": 281,
+    "budget_s": 196,
+    "budget_basis": "ledger: 2 x p95 98 s over 126 gx10-cuda Verdict rows",
+    "brief": {
+      "bytes": 13700,
+      "sent_bytes": 13869,
+      "max_bytes": 196608
+    },
+    "trace": {
+      "input_sha256": "76931139702e4ae842387736bd245e723bf6ace4596afbe688f1e933e1076e84",
+      "raw": "advisory.json"
+    },
+    "attempts": [
+      {
+        "host": "gx10",
+        "ok": false,
+        "wall_s": 0,
+        "error": "busy: executor yielded (unit inactive; last yield: 2026-10-03T00:47:22Z host=gx10-a5b5 event=stopped gpu-priority lock=/tmp/apr-gpu.priority)",
+        "ts": "2026-10-13T17:35:32.562Z",
+        "wall_ms": 345,
+        "request_id": "01a13655-74cf-796b-8201-fcc6acb1a3a8",
+        "load1": 2.94,
+        "cold": null
+      }
+    ],
+    "ledger": "/home/noah/.local/state/paiml-implement/advisory-ledger.jsonl",
+    "raw": "advisory.json",
+    "agrees_with_counted": null,
+    "counted": "NOT-AGREED"
+  },
+  "lint": {
+    "ok": true,
+    "output": "receipt complete: kind=artifact lanes=3 author=claude-opus-5-5/claude same_family=2/2"
+  }
+}
