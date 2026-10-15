@@ -1,0 +1,45 @@
+{
+  "commands": [
+    "run",
+    "repl",
+    "check",
+    "transpile",
+    "compile",
+    "lint",
+    "test",
+    "wasm"
+  ],
+  "examples": [
+    "examples/readme/hello.ruchy",
+    "examples/readme/match.ruchy",
+    "examples/readme/loops.ruchy",
+    "examples/readme/collections.ruchy"
+  ],
+  "links": [
+    "LICENSE",
+    "contracts/ruchy-readme-v1.yaml",
+    "docs/SPECIFICATION.md",
+    "docs/roadmaps/roadmap.yaml",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    ".github/ruchy-hero.svg"
+  ],
+  "msrv": "1.91",
+  "sections": [
+    "Install",
+    "Quick start",
+    "Examples",
+    "Commands",
+    "Documentation",
+    "MSRV",
+    "License"
+  ],
+  "shell_commands": [
+    "ruchy examples/readme/hello.ruchy",
+    "ruchy -e \"println(1 + 2)\"",
+    "ruchy check examples/readme/match.ruchy",
+    "ruchy transpile examples/readme/collections.ruchy",
+    "ruchy compile examples/readme/collections.ruchy -o collections"
+  ],
+  "version": "5.0.0-beta.2"
+}

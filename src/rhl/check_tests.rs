@@ -91,7 +91,7 @@ fn dirs(path: &Path) -> Vec<PathBuf> {
 
 fn load_break(dir: &Path) -> Break {
     let spec: BreakSpec =
-        serde_yaml_ng::from_str(&read(&dir.join("break.yaml"))).expect("break.yaml parses");
+        crate::yaml_io::from_str(&read(&dir.join("break.yaml"))).expect("break.yaml parses");
     let name = dir
         .strip_prefix(root())
         .expect("under root")
@@ -873,8 +873,8 @@ fn test_rhl4c_v2_lowers_to_is_unbound_or_resolves_through_the_runtime() {
     use crate::rhl::runtime::{binding_function, UNBOUND};
     for name in ["fleet", "tickets"] {
         let path = root().join(format!("vocab/{name}-v2.yaml"));
-        let yaml: serde_yaml_ng::Value =
-            serde_yaml_ng::from_str(&read(&path)).expect("v2 vocabulary is YAML");
+        let yaml: serde_json::Value =
+            crate::yaml_io::from_str(&read(&path)).expect("v2 vocabulary is YAML");
         assert_eq!(yaml["sigma_entity"].as_str(), Some("[U]"), "{name} v2");
         for t in v2_vocab(name).terms {
             let want = V2_BINDINGS

@@ -8,7 +8,7 @@
 //! prerelease); the operator is the publisher, from their machine, with a scoped
 //! token. Consequence: no token in the repo, no crate publishing in any workflow.
 
-use serde_yaml::Value;
+use serde_json::Value;
 use std::fs;
 use std::path::PathBuf;
 
@@ -40,13 +40,13 @@ fn release_yml_text() -> String {
 }
 
 fn release_yml() -> Value {
-    serde_yaml::from_str(&release_yml_text()).expect("release.yml parses as YAML")
+    ruchy::yaml_io::from_str(&release_yml_text()).expect("release.yml parses as YAML")
 }
 
 /// Every `run:` script in a job, concatenated.
 fn job_run_scripts(job: &Value) -> String {
     job["steps"]
-        .as_sequence()
+        .as_array()
         .expect("steps")
         .iter()
         .filter_map(|s| s["run"].as_str())
@@ -57,11 +57,11 @@ fn job_run_scripts(job: &Value) -> String {
 /// Every step of every job, as (job id, step index, step).
 fn all_steps() -> Vec<(String, usize, Value)> {
     let yml = release_yml();
-    let jobs = yml["jobs"].as_mapping().expect("jobs mapping");
+    let jobs = yml["jobs"].as_object().expect("jobs mapping");
     let mut out = Vec::new();
     for (job_id, job) in jobs {
-        for (i, step) in job["steps"].as_sequence().into_iter().flatten().enumerate() {
-            out.push((job_id.as_str().unwrap().to_string(), i, step.clone()));
+        for (i, step) in job["steps"].as_array().into_iter().flatten().enumerate() {
+            out.push((job_id.clone(), i, step.clone()));
         }
     }
     out
@@ -70,7 +70,7 @@ fn all_steps() -> Vec<(String, usize, Value)> {
 /// The `needs:` list of a job, as job ids.
 fn job_needs(job: &Value) -> Vec<String> {
     job["needs"]
-        .as_sequence()
+        .as_array()
         .expect("job needs is a list")
         .iter()
         .map(|v| v.as_str().expect("needs entry is a string").to_string())
@@ -146,7 +146,7 @@ fn test_pmat_135_release_policy_job_gates_after_the_builds() {
 #[test]
 fn test_pmat_093_prerelease_flag_is_derived_from_the_tag() {
     let steps = release_yml()["jobs"]["create-release"]["steps"].clone();
-    let text = serde_yaml::to_string(&steps).expect("serialize create-release steps");
+    let text = ruchy::yaml_io::to_string(&steps).expect("serialize create-release steps");
     assert!(
         text.contains("contains(github.ref_name, '-')"),
         "create-release must mark tags with a pre-release suffix (v5.0.0-beta.2) as prerelease"

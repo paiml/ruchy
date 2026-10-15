@@ -1,0 +1,5 @@
+let value = Some(42)
+match value {
+    Some(x) => println(f"Got {x}"),
+    None => println("Nothing"),
+}

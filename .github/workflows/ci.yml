@@ -52,11 +52,27 @@ jobs:
   # This job re-exports the reusable workflow's verdict under the org's
   # expected name. It does not weaken the gate: it fails whenever the called
   # workflow does not succeed. Modelled on paiml/infra's ci.yml gate job.
+  # PMAT-254: README contract, binary half. sovereign-ci runs `cargo test --lib`
+  # only, which covers src/readme_contract.rs (claims fresh, shape, links,
+  # examples evaluate) but never builds the ruchy binary. This job runs every
+  # README example and Quick start command against the binary built from this
+  # commit (contracts/ruchy-readme-v1.yaml, FALSIFY-RUCHY-README-007/008).
+  readme-contract:
+    name: readme-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: README contract against the built binary
+        run: cargo test --test readme_contract
+
   gate:
     name: gate
     runs-on: ubuntu-latest
     if: always()
-    needs: [ci]
+    needs: [ci, readme-contract]
     steps:
       - name: Check called workflow result
         run: |
@@ -64,4 +80,8 @@ jobs:
             echo "::error::sovereign-ci did not succeed (result: ${{ needs.ci.result }})"
             exit 1
           fi
-          echo "sovereign-ci succeeded"
+          if [ "${{ needs.readme-contract.result }}" != "success" ]; then
+            echo "::error::readme-contract did not succeed (result: ${{ needs.readme-contract.result }})"
+            exit 1
+          fi
+          echo "sovereign-ci and readme-contract succeeded"

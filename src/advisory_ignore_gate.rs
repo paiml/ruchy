@@ -102,7 +102,8 @@ fn advisory_ids(text: &str) -> Vec<String> {
 fn ledger() -> Ledger {
     let text = read(LEDGER);
     assert!(!text.is_empty(), "SEC-1: {LEDGER} is missing or empty");
-    serde_yaml::from_str(&text).unwrap_or_else(|e| panic!("SEC-1: {LEDGER} is not valid YAML: {e}"))
+    crate::yaml_io::from_str(&text)
+        .unwrap_or_else(|e| panic!("SEC-1: {LEDGER} is not valid YAML: {e}"))
 }
 
 /// `deny.toml`, parsed. CLAUDE.md rule 2: no simple heuristics.

@@ -92,6 +92,10 @@ pub mod reporting;
 pub mod reproducibility;
 // RHL-1 (spec RHL-001): the RHL intent tree and its LALRPOP-generated parser.
 pub mod rhl;
+
+// SEC-2 (#259): the one YAML reader/writer (serde-saphyr; no unsafe-libyaml).
+pub mod yaml_io;
+
 pub mod runtime;
 pub mod server;
 pub mod stdlib;
@@ -194,6 +198,13 @@ mod rhl_pre_registration;
 // docs for why it lives in src/ rather than tests/.
 #[cfg(test)]
 mod advisory_ignore_gate;
+// SEC-4: the RUSTSEC-2024-0449 exemption is bounded in reach, not only in time.
+#[cfg(test)]
+mod advisory_ignore_bound;
+// PMAT-254: README claims extractor + contract gate (contracts/ruchy-readme-v1.yaml).
+// Test-only; lives in src/ because CI runs `cargo test --lib`.
+#[cfg(test)]
+mod readme_contract;
 #[cfg(test)]
 mod test_config {
     use std::sync::Once;

@@ -17,9 +17,8 @@ use super::codes;
 use super::diag::{self, Diagnostic, LineSpan};
 use super::fmt::format;
 use super::tree::{Decl, Program, Span};
+use crate::yaml_io;
 use serde::{Deserialize, Serialize};
-use serde_yaml_ng::with::singleton_map_recursive;
-use serde_yaml_ng::Value;
 use std::path::Path;
 
 /// The schema version a `.rhl.yaml` file declares in its `rhl:` key.
@@ -49,8 +48,8 @@ impl YamlError {
         }
     }
 
-    fn from_serde(e: &serde_yaml_ng::Error) -> Self {
-        let (line, col) = e.location().map_or((0, 0), |l| (l.line(), l.column()));
+    fn from_serde(e: &yaml_io::Error) -> Self {
+        let (line, col) = yaml_io::line_col(e);
         Self {
             message: format!("not an RHL tree: {e}"),
             line,
@@ -60,10 +59,12 @@ impl YamlError {
 }
 
 /// The document as written: the schema marker, then the tree's own field.
+/// An enum is a one-key map (`use: …`, `when: …`): serde-saphyr's default
+/// externally-tagged form, which is what `singleton_map_recursive` made of
+/// serde_yaml_ng's default `!Variant` tags.
 #[derive(Serialize)]
 struct DocOut<'a> {
     rhl: u32,
-    #[serde(with = "singleton_map_recursive")]
     decls: &'a Vec<Decl>,
 }
 
@@ -73,7 +74,6 @@ struct DocOut<'a> {
 #[serde(deny_unknown_fields)]
 struct DocIn {
     rhl: u32,
-    #[serde(with = "singleton_map_recursive")]
     decls: Vec<Decl>,
 }
 
@@ -92,7 +92,7 @@ pub fn to_yaml(program: &Program) -> String {
         rhl: SCHEMA,
         decls: &program.decls,
     };
-    serde_yaml_ng::to_string(&doc)
+    yaml_io::to_string(&doc)
         .unwrap_or_else(|e| format!("# RHL-3: the tree does not serialize: {e}\n"))
 }
 
@@ -105,7 +105,8 @@ pub fn to_yaml(program: &Program) -> String {
 /// declares another schema version, or holds a tree the RHL grammar could
 /// not have produced.
 pub fn from_yaml(source: &str) -> Result<Program, YamlError> {
-    let doc: DocIn = serde_yaml_ng::from_str(source).map_err(|e| YamlError::from_serde(&e))?;
+    // Enums are one-key maps (`singleton_map_recursive`, as before).
+    let doc: DocIn = yaml_io::from_str_singleton(source).map_err(|e| YamlError::from_serde(&e))?;
     untagged(source)?;
     if doc.rhl != SCHEMA {
         return Err(YamlError::unplaced(format!(
@@ -118,28 +119,20 @@ pub fn from_yaml(source: &str) -> Result<Program, YamlError> {
     Ok(program)
 }
 
-/// Refuse a local YAML tag (`!x`) anywhere. The shape has none, and serde
-/// would otherwise read a tagged scalar as its plain value, dropping the tag
-/// without a word. A `!!` tag is resolved by the YAML library itself (to a
-/// core-schema scalar), before any value is built, so it is not visible here.
+/// Refuse a local YAML tag (`!x`) anywhere, and a repeated key. The shape has
+/// no tags, and serde would otherwise read a tagged scalar as its plain value,
+/// dropping the tag without a word. A `!!` tag is a core-schema scalar,
+/// resolved before any value is built, so it is not refused.
 fn untagged(source: &str) -> Result<(), YamlError> {
-    let value: Value = serde_yaml_ng::from_str(source).map_err(|e| YamlError::from_serde(&e))?;
-    match find_tag(&value) {
-        Some(tag) => Err(YamlError::unplaced(format!(
+    match yaml_io::untagged(source) {
+        Ok(()) => Ok(()),
+        Err(yaml_io::Untagged::Unreadable(e)) => Err(YamlError::from_serde(&e)),
+        Err(yaml_io::Untagged::Tag(tag)) => Err(YamlError::unplaced(format!(
             "not an RHL tree: YAML tags are not part of the shape, found `{tag}`"
         ))),
-        None => Ok(()),
-    }
-}
-
-fn find_tag(value: &Value) -> Option<String> {
-    match value {
-        Value::Tagged(t) => Some(t.tag.to_string()),
-        Value::Sequence(items) => items.iter().find_map(find_tag),
-        Value::Mapping(map) => map
-            .iter()
-            .find_map(|(k, v)| find_tag(k).or_else(|| find_tag(v))),
-        _ => None,
+        Err(yaml_io::Untagged::DuplicateKey) => Err(YamlError::unplaced(
+            "not an RHL tree: duplicate entry in YAML map".to_string(),
+        )),
     }
 }
 
