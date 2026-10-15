@@ -60,7 +60,7 @@ fn read_required(dir: &Path, name: &str) -> String {
 
 fn parse_task_yaml(dir: &Path) -> TaskYaml {
     let content = read_required(dir, "task.yaml");
-    serde_yaml::from_str(&content)
+    crate::yaml_io::from_str(&content)
         .unwrap_or_else(|e| panic!("{}/task.yaml does not parse: {e}", dir.display()))
 }
 

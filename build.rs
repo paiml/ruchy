@@ -119,7 +119,14 @@ fn enforce_contract_bindings() {
     let Ok(yaml) = std::fs::read_to_string(&binding_path) else {
         return;
     };
-    let Ok(bf) = serde_yaml_ng::from_str::<BindingFile>(&yaml) else {
+    // SEC-2 (#259): serde-saphyr, read as `src/yaml_io.rs` reads (YAML 1.2
+    // booleans, `<<` an ordinary key), so the build reads what the crate reads.
+    let opts = serde_saphyr::options! {
+        strict_booleans: true,
+        merge_keys: serde_saphyr::MergeKeyPolicy::AsOrdinary,
+        with_snippet: false,
+    };
+    let Ok(bf) = serde_saphyr::from_str_with_options::<BindingFile>(&yaml, opts) else {
         return;
     };
     let (implemented, gaps) = export_bindings(&bf.bindings);

@@ -206,6 +206,20 @@ Behaviour changes a program can observe are marked **(behaviour)**.
   - `ruchy serve` tests stop through a shutdown seam instead of serving forever;
   - `release_hygiene` names a dirty tree;
   - pmat-written files are gitignored.
+### Changed — PMAT-254: README claims are derived and enforced (paiml/ruchy#254)
+
+- README.md rewritten short. Every example is a file under `examples/readme/`
+  with a `.expected` output; version and MSRV come from `Cargo.toml`.
+- Removed wrong claims: `ruchy wasm compile` / `ruchy wasm run` (the command is
+  `ruchy wasm <FILE> -o`), the hand-typed 16,102-test count and badge, the
+  async/http example that does not run, and `cargo install ruchy` as the way
+  to get 5.0.0-beta.2 (it installs the latest stable).
+- `contracts/ruchy-readme-v1.yaml`: pv contract whose SHACL shape grades
+  `contracts/ruchy-readme-claims.json`, extracted from the README by
+  `src/readme_contract.rs` (lib test, runs in CI) and run against the built
+  binary by `tests/readme_contract.rs` (new `readme-contract` CI job).
+- The `ruchy` package now inherits `rust-version` (1.91); before, only
+  `[workspace.package]` declared it.
 
 ### Added — RHL-4, RHL-5, RHL-6, RHL-9: RHL compiles, tests, contracts and talks MCP (RHL-001, experimental)
 

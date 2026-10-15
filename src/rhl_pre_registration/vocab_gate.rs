@@ -59,7 +59,7 @@ fn vocab_relative_paths() -> [&'static str; 2] {
 fn load_vocab(path: &Path) -> VocabFile {
     let text = fs::read_to_string(path)
         .unwrap_or_else(|e| panic!("RHL-0 vocab gate: cannot read {path:?}: {e}"));
-    serde_yaml::from_str(&text)
+    crate::yaml_io::from_str(&text)
         .unwrap_or_else(|e| panic!("RHL-0 vocab gate: {path:?} is not valid vocabulary YAML: {e}"))
 }
 
@@ -201,7 +201,7 @@ fn test_rhl_vocab_0_contract_files_parse_with_metadata() {
                     term.term, term.contract
                 )
             });
-            let value: serde_yaml::Value = serde_yaml::from_str(&text).unwrap_or_else(|e| {
+            let value: serde_json::Value = crate::yaml_io::from_str(&text).unwrap_or_else(|e| {
                 panic!(
                     "{path:?}: term `{}`: contract `{}` is not valid YAML: {e}",
                     term.term, term.contract

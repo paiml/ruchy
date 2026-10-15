@@ -1,0 +1,111 @@
+metadata:
+  version: "1.0.0"
+  kind: pattern
+  author: "Sovereign AI Stack"
+  description: >-
+    README.md contract (PMAT-254, paiml/ruchy#254). The README's claims are
+    extracted into contracts/ruchy-readme-claims.json and graded by the SHACL
+    shape below (`pv lint contracts --gate shapes`); the extractor resolves
+    each claim against the tree, Cargo.toml and the built ruchy binary.
+  crate: "ruchy"
+  references:
+    - "ONT-001 v4.12 §3.6 (SHACL Core subset) and §3.7 (json extractor)"
+    - "aprender crates/aprender-core/tests/readme_contract.rs (README contract model)"
+    - "https://github.com/paiml/ruchy/issues/254"
+
+entity:
+  type: json
+  ref: contracts/ruchy-readme-claims.json
+
+vocabulary:
+  prefix: readme
+  root_class: readme:Readme
+  nested: {}
+
+shape:
+  targetClass: readme:Readme
+  closed: true
+  properties:
+    - {path: readme:version, minCount: 1, maxCount: 1, pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z]+\\.[0-9]+)?$"}
+    - {path: readme:msrv, minCount: 1, maxCount: 1, pattern: "^1\\.[0-9]+$"}
+    - {path: readme:sections, minCount: 7, maxCount: 7, in: [Install, Quick start, Examples, Commands, Documentation, MSRV, License]}
+    - {path: readme:examples, minCount: 1, pattern: "^examples/readme/[a-z_]+\\.ruchy$"}
+    - {path: readme:commands, minCount: 1, pattern: "^[a-z][a-z0-9-]*$"}
+    - {path: readme:shell_commands, minCount: 1, pattern: "^ruchy "}
+    - {path: readme:links, minCount: 1, pattern: "^(\\.github/|[A-Za-z0-9_])[A-Za-z0-9_./-]*$"}
+
+equations:
+  readme_claims_resolve:
+    formula: "∀ c ∈ extract(README.md): resolves(c) ∧ shape(extract(README.md)) = conforms"
+    domain: "c ∈ {version, msrv, sections, examples, commands, shell_commands, links}"
+    invariants:
+      - "contracts/ruchy-readme-claims.json equals a fresh extraction of README.md"
+      - "version equals the workspace package version; msrv equals rust-version"
+      - "every example fence is byte-identical to its examples/readme/ file, and every file there is cited"
+      - "every example's stdout under the built ruchy equals its .expected file"
+      - "every shell command in the Quick start exits 0 under the built ruchy"
+      - "every command in the Commands table is a subcommand in `ruchy --help`"
+      - "every relative link resolves to a tracked path"
+      - "no hand-typed test/feature counts appear in the README"
+
+proof_obligations:
+  - type: invariant
+    property: "README claims resolve against HEAD"
+    formal: "∀ c ∈ claims: resolves(c)"
+    applies_to: all
+  - type: invariant
+    property: "README claims conform to the SHACL shape"
+    formal: "shape(claims) = conforms"
+    applies_to: all
+
+falsification_tests:
+  - id: FALSIFY-RUCHY-README-001
+    rule: "Claims file is a fresh extraction"
+    test: "readme_contract::test_pmat_254_claims_json_is_fresh"
+    prediction: "verified"
+    if_fails: "README.md changed without regenerating contracts/ruchy-readme-claims.json (RUCHY_README_BLESS=1)"
+  - id: FALSIFY-RUCHY-README-002
+    rule: "Version and MSRV derive from Cargo.toml"
+    test: "readme_contract::test_pmat_254_version_and_msrv_match_cargo"
+    prediction: "verified"
+    if_fails: "README quotes a version or MSRV that Cargo.toml does not declare"
+  - id: FALSIFY-RUCHY-README-003
+    rule: "Examples are the checked-in files and evaluate"
+    test: "readme_contract::test_pmat_254_examples_match_files_and_evaluate"
+    prediction: "verified"
+    if_fails: "a README example drifted from examples/readme/ or no longer evaluates"
+  - id: FALSIFY-RUCHY-README-004
+    rule: "Links resolve"
+    test: "readme_contract::test_pmat_254_links_resolve"
+    prediction: "verified"
+    if_fails: "README links a path that does not exist"
+  - id: FALSIFY-RUCHY-README-005
+    rule: "Claims conform to the shape"
+    test: "readme_contract::test_pmat_254_claims_conform_to_shape"
+    prediction: "verified"
+    if_fails: "a claim violates the SHACL shape in this contract"
+  - id: FALSIFY-RUCHY-README-006
+    rule: "No hand-typed counts"
+    test: "readme_contract::test_pmat_254_no_hand_typed_counts"
+    prediction: "verified"
+    if_fails: "README quotes a count no derivation produces"
+  - id: FALSIFY-RUCHY-README-007
+    rule: "Examples print their expected output under the built binary"
+    test: "test_pmat_254_examples_stdout_matches_expected"
+    prediction: "verified"
+    if_fails: "an example's output under the built ruchy differs from its .expected file"
+  - id: FALSIFY-RUCHY-README-008
+    rule: "Quick start commands run and Commands table entries exist"
+    test: "test_pmat_254_quick_start_and_commands_run"
+    prediction: "verified"
+    if_fails: "a README command fails or names a subcommand ruchy does not have"
+
+qa_gate:
+  id: QA-RUCHY-README
+  name: "README contract"
+  min_coverage: 1.00
+  max_complexity: 10
+  required_tests:
+    - "test_pmat_254_claims_json_is_fresh"
+    - "test_pmat_254_claims_conform_to_shape"
+    - "test_pmat_254_examples_stdout_matches_expected"
