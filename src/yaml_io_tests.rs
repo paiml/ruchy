@@ -179,6 +179,22 @@ const EDGES: &[&str] = &[
     "a:\n  b: 'x\n---y'\n",
     "a:\r\n  b: 'x\r\ny'\r\n",
     "a:\n  b: 'x\ny'\nc: 1\n",
+    // #261: every continuation line of the refused scalar is widened in one
+    // read, so the shapes that read finds the scalar and its lines through
+    "a:\n  b: 'x\ny\n z\n  w\n   v'\n",
+    "a:\n  b: &k 'x\ny\nz'\n",
+    "a:\n  b: !!str 'x\ny\nz'\n",
+    "a:\n  b: # c\n   'x\ny\nz'\n",
+    "a:\n  b: 'x\n''y\nz'\n",
+    "a:\n  b: 'x\ny''\nz'\n",
+    "a:\n  b: 'x\n\n\ny\n\nz'\n",
+    "a:\n  b: \"x\ny\\\"\nz\"\n",
+    "a:\n  b: \"x\\\ny\nz\"\n",
+    "a:\n  b: 'x\ny\n'\n",
+    "a:\n  b: 'x\ny'\n  c: 'x\ny'\n  d: \"x\ny\"\n",
+    "- - 'x\ny\nz'\n",
+    "a:\n  b: 'x\ny\n---\nz'\n",
+    "a:\n  b: 'x\ny' junk\n  c: 1\n",
     // and the ones libyaml still refuses: a document indicator at column 0,
     // trailing content after the quote, an unclosed quote
     "a:\n  b: 'x\n---\ny'\n",
@@ -215,6 +231,48 @@ fn test_sec2_an_error_on_a_reindented_line_keeps_its_column() {
         (1..="y' junk".len()).contains(&col),
         "PMAT-264: column {col} is not on the line as written: {e}"
     );
+}
+
+/// PMAT-264, the HOLD on #261: one quoted scalar with K under-indented
+/// continuation lines cost K re-reads of a text that grew by the widest line
+/// above at each one, O(K³) (3200 lines, 6.4 KB: 32 s). The work counted is
+/// the bytes handed to the parser over every pass, so this is deterministic:
+/// it must stay a small multiple of the input at N and at 2N lines, and the
+/// input must still read as the oracle reads it.
+#[test]
+fn test_sec2_under_indented_continuations_are_reread_in_linear_work() {
+    let doc = |k: usize| format!("a:\n  b: 'x\n{}'\n", "y\n".repeat(k));
+    for k in [256, 512] {
+        let text = doc(k);
+        let work = super::read::reread_bytes(&text);
+        assert!(
+            work <= 8 * text.len(),
+            "PMAT-264: {k} under-indented lines ({} bytes) cost {work} bytes of reading",
+            text.len()
+        );
+    }
+    let text = doc(512);
+    assert_eq!(disagreement("512 lines", &text), None);
+    let v: Value = from_str(&text).expect("PMAT-264: libyaml reads it");
+    let want = format!("x{} ", " y".repeat(512));
+    assert_eq!(v["a"]["b"], json!(want));
+}
+
+/// PMAT-264: the same over many quoted scalars, one under-indented line each.
+/// Each scalar is a re-read of the whole text; the passes are bounded by a
+/// work budget linear in the input (past it the text is refused, as the
+/// reader before PMAT-264 refused it), and 256 of them fit inside it.
+#[test]
+fn test_sec2_reread_work_is_bounded_over_many_quoted_scalars() {
+    let body: String = (0..256).map(|i| format!("  k{i}: 'x\ny'\n")).collect();
+    let text = format!("a:\n{body}");
+    let work = super::read::reread_bytes(&text);
+    assert!(
+        work <= (16 * text.len()).max(4 << 20),
+        "PMAT-264: 256 scalars ({} bytes) cost {work} bytes of reading",
+        text.len()
+    );
+    assert_eq!(disagreement("256 scalars", &text), None);
 }
 
 /// The writer, on the typeless values the call sites write.

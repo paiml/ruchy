@@ -396,42 +396,174 @@ fn line_ranges(text: &str) -> Vec<std::ops::Range<usize>> {
     lines
 }
 
-/// `text` with the leading spaces of line `line` (1-based) widened past every
-/// indent a block opened above it, and how many spaces that added; `None`
-/// when the line is not one libyaml would have folded: its indent is not
-/// spaces up to `col` (1-based, where granit-parser stopped), or it is a
-/// document indicator at column 0, which libyaml refuses in a quoted scalar.
-fn reindent(text: &str, line: usize, col: usize) -> Option<(String, usize)> {
-    let lines = line_ranges(text);
-    let range = lines.get(line.checked_sub(1)?)?.clone();
-    let row = &text[range.clone()];
-    let lead = row.len() - row.trim_start_matches(' ').len();
-    if lead + 1 != col {
-        return None;
-    }
-    let rest = &row[lead..];
-    let indicator = (rest.starts_with("---") || rest.starts_with("..."))
+/// `rest` starts with the document indicator `---` or `...`.
+fn is_indicator(rest: &str) -> bool {
+    (rest.starts_with("---") || rest.starts_with("..."))
         && rest[3..]
             .chars()
             .next()
-            .is_none_or(|c| c == ' ' || c == '\t');
-    if lead == 0 && indicator {
-        return None;
+            .is_none_or(|c| c == ' ' || c == '\t')
+}
+
+/// The leading spaces of `row` when its content is one libyaml folds into a
+/// quoted scalar: `None` for a blank line, a tab in the indent, or a
+/// document indicator at column 0, which libyaml refuses in a quoted scalar.
+fn foldable_lead(row: &str) -> Option<usize> {
+    let lead = row.len() - row.trim_start_matches(' ').len();
+    let rest = &row[lead..];
+    match rest.chars().next() {
+        None | Some('\t') => None,
+        Some(_) if lead == 0 && is_indicator(rest) => None,
+        Some(_) => Some(lead),
     }
-    // A block's indent is a column on some line above, so it is less than
-    // that line's length: one more than the longest is past all of them.
-    let width = lines[..line - 1]
+}
+
+/// A column past every indent granit-parser holds in `text`. A block
+/// collection starts at the first token of a line, or after the `-`, `?`
+/// and `:` indicators of a compact one, so it opens within the run of
+/// blanks and those indicators a line starts with; after its `-` or `:` the
+/// parser holds one column more (`roll_one_col_indent`), so two past the
+/// longest run is past every indent the scalar can be checked against.
+/// Measured once, on the text as written, so a widened line never widens the
+/// next one (#261: when each line was widened past the longest line above
+/// it, the widened lines compounded and K of them cost O(K³)).
+fn fold_width(text: &str) -> usize {
+    line_ranges(text)
         .iter()
-        .map(|r| text[r.clone()].chars().count())
+        .map(|r| {
+            text[r.clone()]
+                .bytes()
+                .take_while(|b| matches!(b, b' ' | b'\t' | b'-' | b'?' | b':'))
+                .count()
+        })
         .max()
         .unwrap_or(0)
-        + 1;
-    let added = width.checked_sub(lead).filter(|n| *n > 0)?;
-    let mut out = String::with_capacity(text.len() + added);
-    out.push_str(&text[..range.start]);
-    out.push_str(&" ".repeat(width));
-    out.push_str(&text[range.start + lead..]);
-    Some((out, added))
+        + 2
+}
+
+/// Where the quoted scalar granit-parser refused at line `line` (1-based)
+/// opens: the byte of its quote, and whether it is single-quoted. Read with
+/// granit-parser's own scanner, which emits every token before the scalar
+/// before it scans the scalar: the quote is the first character after the
+/// last token but its indicator, blanks, comments and an anchor or tag.
+/// `None` when that is not what the text shows.
+fn opening_quote(text: &str, line: usize) -> Option<(usize, bool)> {
+    let mut from = 0;
+    let mut refused = false;
+    for token in Scanner::new(StrInput::new(text)) {
+        match token {
+            Ok(token) => from = from.max(token.into_parts().0.end.byte_offset()?),
+            Err(e) => {
+                refused =
+                    *e.kind() == ErrorKind::InvalidQuotedScalarIndent && e.marker().line() == line;
+                break;
+            }
+        }
+    }
+    if !refused {
+        return None;
+    }
+    let bytes = text.as_bytes();
+    let mut i = from;
+    loop {
+        match *bytes.get(i)? {
+            // blanks, and the last token's own indicator: a `:` or `-` token
+            // spans no bytes
+            b' ' | b'\t' | b'\r' | b'\n' | b':' | b'-' | b'?' => i += 1,
+            b'#' => {
+                while bytes.get(i).is_some_and(|b| !matches!(b, b'\r' | b'\n')) {
+                    i += 1;
+                }
+            }
+            b'&' | b'!' => {
+                while bytes.get(i).is_some_and(|b| !b.is_ascii_whitespace()) {
+                    i += 1;
+                }
+            }
+            b'\'' => return Some((i, true)),
+            b'"' => return Some((i, false)),
+            _ => return None,
+        }
+    }
+}
+
+/// The continuation lines granit-parser can refuse for their indent in the
+/// quoted scalar whose quote is at byte `open`, from line `first` (1-based)
+/// on, each with its leading spaces: the first line after an unescaped break
+/// and any blank lines, unless it starts with the quote that closes the
+/// scalar (the parser's own exemption). It stops at the closing quote and at
+/// a document indicator at column 0. A line it cannot widen (a tab in its
+/// indent, a line after an escaped break) is left as written; if the parser
+/// refuses it, the next read sees that.
+fn continuation_lines(
+    text: &str,
+    lines: &[std::ops::Range<usize>],
+    (open, single): (usize, bool),
+    first: usize,
+    width: usize,
+) -> Vec<(usize, usize)> {
+    let quote = if single { b'\'' } else { b'"' };
+    let bytes = text.as_bytes();
+    let at = lines.partition_point(|r| r.end < open);
+    let mut rows = Vec::new();
+    let mut from = open + 1;
+    let mut escaped = false;
+    for (index, range) in lines.iter().enumerate().skip(at) {
+        if index > at {
+            let row = &text[range.clone()];
+            if row.bytes().all(|b| b == b' ' || b == b'\t') {
+                continue;
+            }
+            let lead = row.len() - row.trim_start_matches(' ').len();
+            if lead == 0 && is_indicator(row) {
+                break;
+            }
+            let folded = !std::mem::take(&mut escaped);
+            if folded
+                && index + 1 >= first
+                && lead < width
+                && foldable_lead(row) == Some(lead)
+                && bytes[range.start + lead] != quote
+            {
+                rows.push((index + 1, lead));
+            }
+            from = range.start + lead;
+        }
+        let mut i = from;
+        while i < range.end {
+            match bytes[i] {
+                b'\'' if single && i + 1 < range.end && bytes[i + 1] == b'\'' => i += 1,
+                b'\\' if !single => {
+                    escaped = i + 1 == range.end;
+                    i += 1;
+                }
+                b if b == quote => return rows,
+                _ => {}
+            }
+            i += 1;
+        }
+    }
+    rows
+}
+
+/// `text` with each of `rows` (1-based line, its leading spaces; ascending)
+/// given `width` leading spaces instead.
+fn widen(
+    text: &str,
+    lines: &[std::ops::Range<usize>],
+    rows: &[(usize, usize)],
+    width: usize,
+) -> String {
+    let mut out = String::with_capacity(text.len() + rows.len() * width);
+    let mut at = 0;
+    for &(line, lead) in rows {
+        let start = lines[line - 1].start;
+        out.push_str(&text[at..start]);
+        out.push_str(&" ".repeat(width));
+        at = start + lead;
+    }
+    out.push_str(&text[at..]);
+    out
 }
 
 /// Put every mark on a re-indented line back on the column it has in the
@@ -454,23 +586,65 @@ fn unshift(mut loaded: Loaded, added: &BTreeMap<usize, usize>) -> Loaded {
 /// `a:\n  b: 'x\ny'` is `{a: {b: x y}}` to it. granit-parser follows YAML 1.2
 /// and refuses a continuation line at or left of the block's indent ("invalid
 /// indentation in multiline quoted scalar"; PMAT-264, found by
-/// `test_sec2_prop_damaged_yaml_reads_as_the_oracle_reads_it`). Each such
-/// line is given enough leading spaces to pass, which the folding then strips,
-/// and the text is read again; one line per pass, each line at most once.
+/// `test_sec2_prop_damaged_yaml_reads_as_the_oracle_reads_it`). Such a line is
+/// given enough leading spaces to pass, which the folding then strips, and the
+/// text is read again. One read widens every continuation line of the refused
+/// scalar at once, each to the same width, so a scalar costs one more read
+/// whatever its length (#261: one line per read was O(K³) in K lines).
 fn load(text: &str) -> Loaded {
+    load_counted(text, &mut 0)
+}
+
+/// How many bytes [`load`] hands to granit-parser over every read of `text`
+/// (PMAT-264: the work the re-indent passes cost, for the scaling test).
+#[cfg(test)]
+pub(super) fn reread_bytes(text: &str) -> usize {
+    let mut work = 0;
+    load_counted(text, &mut work);
+    work
+}
+
+/// Re-reads cost a bounded multiple of the text: one per refused quoted
+/// scalar. Past this budget the text is refused, as it was before PMAT-264,
+/// rather than read in time quadratic in the number of such scalars.
+const REREAD_WORK_PER_BYTE: usize = 16;
+const REREAD_WORK_FLOOR: usize = 4 << 20;
+
+fn load_counted(text: &str, work: &mut usize) -> Loaded {
+    let width = fold_width(text);
+    let budget = (REREAD_WORK_PER_BYTE * text.len()).max(REREAD_WORK_FLOOR);
     let mut current = std::borrow::Cow::Borrowed(text);
     let mut added = BTreeMap::new();
     loop {
+        *work += current.len();
         let loaded = load_once(&current);
-        let next = loaded
+        let Some(m) = loaded
             .document
             .quoted_indent
-            .filter(|m| !added.contains_key(&m.line))
-            .and_then(|m| reindent(&current, m.line, m.col).map(|r| (m.line, r)));
-        let Some((line, (wider, n))) = next else {
+            .filter(|m| !added.contains_key(&m.line) && *work + current.len() <= budget)
+        else {
             return unshift(loaded, &added);
         };
-        added.insert(line, n);
+        let lines = line_ranges(&current);
+        let refused = m
+            .line
+            .checked_sub(1)
+            .and_then(|i| lines.get(i))
+            .and_then(|r| foldable_lead(&current[r.clone()]))
+            .filter(|lead| lead + 1 == m.col && *lead < width);
+        let Some((line, lead)) = refused.map(|lead| (m.line, lead)) else {
+            return unshift(loaded, &added);
+        };
+        *work += current.len();
+        let rows = opening_quote(&current, line)
+            .map(|quote| continuation_lines(&current, &lines, quote, line, width))
+            .filter(|rows| rows.first() == Some(&(line, lead)))
+            .unwrap_or_else(|| vec![(line, lead)]);
+        let wider = widen(&current, &lines, &rows, width);
+        if *work + wider.len() > budget {
+            return unshift(loaded, &added);
+        }
+        added.extend(rows.into_iter().map(|(line, lead)| (line, width - lead)));
         current = std::borrow::Cow::Owned(wider);
     }
 }
