@@ -44,7 +44,7 @@ pub fn handle_std_module_import(path: &str, items: &[ImportItem]) -> Option<Toke
         return Some(transpile_std_signal_import());
     }
     if path.starts_with("std::time") {
-        return Some(transpile_std_time_import());
+        return Some(transpile_std_time_import_with_path(path, items));
     }
     if path.starts_with("std::mem") {
         return Some(transpile_std_mem_import());
@@ -238,7 +238,46 @@ pub fn transpile_std_signal_import() -> TokenStream {
     }
 }
 
-/// Handle `std::time` imports
+/// Items of Rust's own `std::time` (TRANSPILER-155).
+const RUST_STD_TIME_ITEMS: &[&str] = &[
+    "Duration",
+    "Instant",
+    "SystemTime",
+    "SystemTimeError",
+    "TryFromFloatSecsError",
+    "UNIX_EPOCH",
+];
+
+fn is_rust_std_time_item(item: &ImportItem) -> bool {
+    match item {
+        ImportItem::Named(name) | ImportItem::Aliased { name, .. } => {
+            RUST_STD_TIME_ITEMS.contains(&name.as_str())
+        }
+        ImportItem::Wildcard => false,
+    }
+}
+
+/// `std::time` imports: a Rust `std::time` item becomes a Rust `use`
+/// (`use std::time::Instant`); anything else gets the ruchy time helpers.
+#[must_use]
+pub fn transpile_std_time_import_with_path(path: &str, items: &[ImportItem]) -> TokenStream {
+    let leaf = path.strip_prefix("std::time::");
+    if leaf.is_some_and(|name| RUST_STD_TIME_ITEMS.contains(&name)) {
+        return handle_generic_import(path, items);
+    }
+    let (rust_items, ruchy_items): (Vec<ImportItem>, Vec<ImportItem>) =
+        items.iter().cloned().partition(is_rust_std_time_item);
+    if path == "std::time" && !rust_items.is_empty() && ruchy_items.is_empty() {
+        return handle_generic_import(path, &rust_items);
+    }
+    let mut tokens = transpile_std_time_import();
+    if path == "std::time" && !rust_items.is_empty() {
+        tokens.extend(handle_generic_import(path, &rust_items));
+    }
+    tokens
+}
+
+/// Handle `std::time` imports: the ruchy time helper module
 #[must_use]
 pub fn transpile_std_time_import() -> TokenStream {
     quote! {
