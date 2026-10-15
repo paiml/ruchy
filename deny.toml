@@ -34,6 +34,12 @@ ignore = [
     # with an owner and a removed_by date; src/advisory_ignore_gate.rs enforces it.
     { id = "RUSTSEC-2024-0384", reason = "instant: transitive via web-time, no replacement available" },
     { id = "RUSTSEC-2025-0141", reason = "bincode: transitive, widely used, no drop-in replacement" },
+    # SEC-4 (PMAT-260): unsafe-libyaml, unmaintained, no fixed release. ruchy has no
+    # runtime edge to it since SEC-2; it stays in the lock through published
+    # build-deps (aprender-compute/aprender-core -> serde_yaml_ng, through 0.71.4)
+    # and provable-contracts -> serde_yaml. Bounded in reach by
+    # src/advisory_ignore_bound.rs and in time by the ledger; removal is PMAT-263.
+    { id = "RUSTSEC-2024-0449", reason = "unsafe-libyaml: unmaintained, no fix; via upstream serde_yaml/serde_yaml_ng only; bounded by src/advisory_ignore_bound.rs; removed by PMAT-263" },
 ]
 
 [licenses]
