@@ -21,8 +21,8 @@ use serde::de::{
     Visitor,
 };
 use serde_saphyr::granit_parser::{
-    Event as YamlEvent, Options as ParserOptions, ParseResult, Parser, ScalarStyle as YamlStyle,
-    ScanError, Scanner, Span, StrInput, Tag, TokenType,
+    ErrorKind, Event as YamlEvent, Options as ParserOptions, ParseResult, Parser,
+    ScalarStyle as YamlStyle, ScanError, Scanner, Span, StrInput, Tag, TokenType,
 };
 use std::collections::BTreeMap;
 use std::fmt;
@@ -133,6 +133,9 @@ struct Document {
     error: Option<Error>,
     /// Anchor id → index of the anchored event.
     aliases: BTreeMap<usize, usize>,
+    /// Where granit-parser refused a quoted scalar's continuation line for
+    /// its indentation (see [`load`]).
+    quoted_indent: Option<Mark>,
 }
 
 /// The first document of `text`, and whether a second one starts.
@@ -214,6 +217,12 @@ fn step(text: &str, doc: &mut Document, event: YamlEvent<'_>, span: &Span) -> St
             anchor_at(doc, anchor);
             let style = style_of(style);
             let mut value = value.into_owned();
+            // PMAT-264: granit spells an empty node `~`; libyaml spells it as
+            // the empty string, and a `String` field reads what is spelled. A
+            // `~` the file spells has a span; an empty node has none.
+            if style == Style::Plain && value == "~" && span.start.index() == span.end.index() {
+                value.clear();
+            }
             eof_block_fix(text, span, style, &mut value);
             Step::Push(Event::Scalar(Scalar {
                 value,
@@ -237,15 +246,16 @@ fn step(text: &str, doc: &mut Document, event: YamlEvent<'_>, span: &Span) -> St
     }
 }
 
-fn scan_error(e: &ScanError) -> Error {
+fn mark_of_scan(e: &ScanError) -> Mark {
     let m = e.marker();
-    Error::at(
-        e.info().to_string(),
-        Mark {
-            line: m.line(),
-            col: m.col() + 1,
-        },
-    )
+    Mark {
+        line: m.line(),
+        col: m.col() + 1,
+    }
+}
+
+fn scan_error(e: &ScanError) -> Error {
+    Error::at(e.info().to_string(), mark_of_scan(e))
 }
 
 /// After the first document ends: does anything but the stream's end
@@ -281,6 +291,11 @@ enum Flow {
 }
 
 fn absorb(text: &str, document: &mut Document, next: ParseResult<'_>) -> Flow {
+    if let Err(e) = &next {
+        if *e.kind() == ErrorKind::InvalidQuotedScalarIndent {
+            document.quoted_indent = Some(mark_of_scan(e));
+        }
+    }
     let outcome = next
         .map_err(|e| scan_error(&e))
         .map(|(event, span)| (step(text, document, event, &span), mark_of(&span)));
@@ -335,7 +350,8 @@ fn libyaml_refuses_a_name(text: &str) -> Option<Error> {
     None
 }
 
-fn load(text: &str) -> Loaded {
+/// The first document of `text` as granit-parser reads it.
+fn load_once(text: &str) -> Loaded {
     let mut options = ParserOptions::default();
     options.emit_comments = false;
     let mut parser = Parser::new_from_str_with_options(text, options);
@@ -351,6 +367,112 @@ fn load(text: &str) -> Loaded {
             .push((Event::Void, Mark { line: 1, col: 1 }));
     }
     Loaded { document, more }
+}
+
+/// The byte range of each line of `text` (1-based line n is index n-1),
+/// without its break; `\r\n`, `\r` and `\n` each end one line, as in YAML.
+fn line_ranges(text: &str) -> Vec<std::ops::Range<usize>> {
+    let bytes = text.as_bytes();
+    let mut lines = Vec::new();
+    let (mut start, mut i) = (0, 0);
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\n' => {
+                lines.push(start..i);
+                start = i + 1;
+            }
+            b'\r' => {
+                lines.push(start..i);
+                if bytes.get(i + 1) == Some(&b'\n') {
+                    i += 1;
+                }
+                start = i + 1;
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    lines.push(start..bytes.len());
+    lines
+}
+
+/// `text` with the leading spaces of line `line` (1-based) widened past every
+/// indent a block opened above it, and how many spaces that added; `None`
+/// when the line is not one libyaml would have folded: its indent is not
+/// spaces up to `col` (1-based, where granit-parser stopped), or it is a
+/// document indicator at column 0, which libyaml refuses in a quoted scalar.
+fn reindent(text: &str, line: usize, col: usize) -> Option<(String, usize)> {
+    let lines = line_ranges(text);
+    let range = lines.get(line.checked_sub(1)?)?.clone();
+    let row = &text[range.clone()];
+    let lead = row.len() - row.trim_start_matches(' ').len();
+    if lead + 1 != col {
+        return None;
+    }
+    let rest = &row[lead..];
+    let indicator = (rest.starts_with("---") || rest.starts_with("..."))
+        && rest[3..]
+            .chars()
+            .next()
+            .is_none_or(|c| c == ' ' || c == '\t');
+    if lead == 0 && indicator {
+        return None;
+    }
+    // A block's indent is a column on some line above, so it is less than
+    // that line's length: one more than the longest is past all of them.
+    let width = lines[..line - 1]
+        .iter()
+        .map(|r| text[r.clone()].chars().count())
+        .max()
+        .unwrap_or(0)
+        + 1;
+    let added = width.checked_sub(lead).filter(|n| *n > 0)?;
+    let mut out = String::with_capacity(text.len() + added);
+    out.push_str(&text[..range.start]);
+    out.push_str(&" ".repeat(width));
+    out.push_str(&text[range.start + lead..]);
+    Some((out, added))
+}
+
+/// Put every mark on a re-indented line back on the column it has in the
+/// text as written.
+fn unshift(mut loaded: Loaded, added: &BTreeMap<usize, usize>) -> Loaded {
+    let back = |m: &mut Mark| {
+        if let Some(n) = added.get(&m.line) {
+            m.col = m.col.saturating_sub(*n).max(1);
+        }
+    };
+    loaded.document.events.iter_mut().for_each(|(_, m)| back(m));
+    if let Some(m) = loaded.document.error.as_mut().and_then(|e| e.mark.as_mut()) {
+        back(m);
+    }
+    loaded
+}
+
+/// libyaml applies no indentation rule to the continuation lines of a quoted
+/// scalar in block context: it strips their leading blanks and folds them, so
+/// `a:\n  b: 'x\ny'` is `{a: {b: x y}}` to it. granit-parser follows YAML 1.2
+/// and refuses a continuation line at or left of the block's indent ("invalid
+/// indentation in multiline quoted scalar"; PMAT-264, found by
+/// `test_sec2_prop_damaged_yaml_reads_as_the_oracle_reads_it`). Each such
+/// line is given enough leading spaces to pass, which the folding then strips,
+/// and the text is read again; one line per pass, each line at most once.
+fn load(text: &str) -> Loaded {
+    let mut current = std::borrow::Cow::Borrowed(text);
+    let mut added = BTreeMap::new();
+    loop {
+        let loaded = load_once(&current);
+        let next = loaded
+            .document
+            .quoted_indent
+            .filter(|m| !added.contains_key(&m.line))
+            .and_then(|m| reindent(&current, m.line, m.col).map(|r| (m.line, r)));
+        let Some((line, (wider, n))) = next else {
+            return unshift(loaded, &added);
+        };
+        added.insert(line, n);
+        current = std::borrow::Cow::Owned(wider);
+    }
 }
 
 // ───────────────────────── the deserializer ─────────────────────────

@@ -158,6 +158,34 @@ const EDGES: &[&str] = &[
     "a: &ok 1\nb: *ok!\n",
     "a: [&x 1, *x]\n",
     "a: {k: &x 1, j: *x}\n",
+    // PMAT-264: libyaml applies no indentation rule to the continuation line
+    // of a quoted scalar in block context; granit-parser refuses one at or
+    // left of the block's indent. Found by
+    // test_sec2_prop_damaged_yaml_reads_as_the_oracle_reads_it (`' v5,*\n1'`).
+    "a:\n  b: 'x\ny'\n",
+    "a:\n  b: 'x\n y'\n",
+    "a:\n  b: 'x\n  y'\n",
+    "a: 'x\ny'\n",
+    "- 'x\ny'\n",
+    "a:\n  - 'x\ny'\n",
+    "- b: 'x\ny'\n",
+    "a:\n  b: \"x\ny\"\n",
+    "a:\n  b: 'x\ny\nz'\n",
+    "a:\n  b: 'x\n\ny'\n",
+    "a:\n  b: '\n0'\n",
+    "a:\n  b: 'x\n#y'\n",
+    "a:\n  b: 'x\n- y'\n",
+    "a:\n  b: 'x\nc: y'\n",
+    "a:\n  b: 'x\n---y'\n",
+    "a:\r\n  b: 'x\r\ny'\r\n",
+    "a:\n  b: 'x\ny'\nc: 1\n",
+    // and the ones libyaml still refuses: a document indicator at column 0,
+    // trailing content after the quote, an unclosed quote
+    "a:\n  b: 'x\n---\ny'\n",
+    "a:\n  b: 'x\n--- y'\n",
+    "a:\n  b: 'x\n...\ny'\n",
+    "a:\n  b: 'x\ny' junk\n",
+    "a:\n  b: 'x\ny\n",
 ];
 
 #[test]
@@ -172,6 +200,20 @@ fn test_sec2_edge_spellings_read_as_the_oracle_reads_them() {
         "SEC-2: {} disagreement(s):\n{}",
         bad.len(),
         bad.join("\n")
+    );
+}
+
+/// PMAT-264: a continuation line the reader re-indents to read it as libyaml
+/// does keeps its own column in an error raised on that line.
+#[test]
+fn test_sec2_an_error_on_a_reindented_line_keeps_its_column() {
+    let text = "a:\n  b: 'x\ny' junk\n";
+    let e = from_str::<Value>(text).expect_err("trailing content is refused");
+    let (line, col) = line_col(&e);
+    assert_eq!(line, 3, "PMAT-264: {e}");
+    assert!(
+        (1..="y' junk".len()).contains(&col),
+        "PMAT-264: column {col} is not on the line as written: {e}"
     );
 }
 
@@ -304,4 +346,25 @@ proptest::proptest! {
             proptest::prop_assert_eq!(to_string(&v).expect("ours writes"), want, "{}", v);
         }
     }
+}
+
+/// PMAT-264: an empty node (`d:` with nothing after it) is the empty string
+/// to libyaml and the scalar `~` to granit. Typeless the two agree (both are
+/// null), so the EDGES differential cannot see it; a `String` field can, and
+/// the RHL `text:` field is one. A `~` the file actually spells stays `~`.
+#[test]
+fn test_sec2_an_empty_node_reads_into_a_string_as_the_oracle_reads_it() {
+    use std::collections::BTreeMap;
+    type Typed = BTreeMap<String, String>;
+    for text in ["d:\n", "d:\ne: x\n", "d: ~\n", "d: ''\n", "d:"] {
+        let theirs = serde_yaml_ng::from_str::<Typed>(text).map_err(|e| e.to_string());
+        let ours = from_str::<Typed>(text).map_err(|e| e.to_string());
+        assert_eq!(ours.ok(), theirs.ok(), "PMAT-264: {text:?}");
+    }
+    let seq = serde_yaml_ng::from_str::<Vec<String>>("- \n- x\n").ok();
+    assert_eq!(
+        from_str::<Vec<String>>("- \n- x\n").ok(),
+        seq,
+        "PMAT-264: sequence"
+    );
 }

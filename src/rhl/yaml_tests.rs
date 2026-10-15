@@ -605,6 +605,42 @@ fn test_sec2_a_read_error_is_placed_where_the_oracle_placed_it() {
     assert!(e.line >= 2 && ol >= 2, "SEC-2: ours {} oracle {ol}", e.line);
 }
 
+/// PMAT-264, pinned on the property's minimal failing input (seed
+/// `cc 7810f2cd…`): a space inside a single-quoted text became a line break,
+/// so the continuation line sits at column 0. libyaml folds it back to the
+/// space; the reader must read the same program, not refuse it.
+#[test]
+fn test_sec2_an_under_indented_quoted_continuation_reads_as_the_oracle_reads_it() {
+    let whole = format!("{ONE}            args:\n            - text: ' 0'\n");
+    let damaged = whole.replace("' 0'", "'\n0'");
+    let theirs = oracle::read(&damaged)
+        .filter(|p| super::grammatical(p).is_ok())
+        .map(|p| to_yaml(&p));
+    assert_eq!(
+        theirs.as_deref(),
+        Some(whole.as_str()),
+        "the oracle folds it"
+    );
+    let ours = from_yaml(&damaged).ok().map(|p| to_yaml(&p));
+    assert_eq!(ours, theirs, "PMAT-264: {damaged}");
+}
+
+#[test]
+fn test_sec2_an_empty_text_node_reads_as_the_oracle_reads_it() {
+    let whole = format!("{ONE}            args:\n            - text: ''\n");
+    let damaged = whole.replace("text: ''", "text: ");
+    let theirs = oracle::read(&damaged)
+        .filter(|p| super::grammatical(p).is_ok())
+        .map(|p| to_yaml(&p));
+    assert_eq!(
+        theirs.as_deref(),
+        Some(whole.as_str()),
+        "the oracle reads \"\""
+    );
+    let ours = from_yaml(&damaged).ok().map(|p| to_yaml(&p));
+    assert_eq!(ours, theirs, "PMAT-264: {damaged}");
+}
+
 /// Positive control: the same document through serde-saphyr's own writer
 /// (which double-quotes every string, the reason the writer is in-tree) must
 /// differ from the oracle's bytes, or the byte comparison above sees nothing.
