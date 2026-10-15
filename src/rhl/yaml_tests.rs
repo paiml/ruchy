@@ -461,3 +461,229 @@ proptest! {
         }
     }
 }
+
+// ───────────── f. SEC-2 (#259): the differential against serde_yaml_ng ─────────────
+//
+// `to_yaml` / `from_yaml` moved from serde_yaml_ng (unsafe-libyaml) to
+// serde-saphyr. `oracle` is the RHL-3 code as it was, verbatim but for names,
+// on serde_yaml_ng (now a dev-only dependency). Writer: byte for byte on every
+// corpus program and on generated trees. Reader: the same accept/refuse
+// verdict, and the same tree, on every YAML the corpus makes, on every refusal
+// fixture above, and on damaged YAML. Error TEXT is the library's own and is
+// not compared; the RHL-P004 code and the line/column placement are.
+
+mod oracle {
+    use crate::rhl::tree::{Decl, Program};
+    use serde::{Deserialize, Serialize};
+    use serde_yaml_ng::with::singleton_map_recursive;
+    use serde_yaml_ng::Value;
+
+    #[derive(Serialize)]
+    struct DocOut<'a> {
+        rhl: u32,
+        #[serde(with = "singleton_map_recursive")]
+        decls: &'a Vec<Decl>,
+    }
+
+    #[derive(Deserialize)]
+    #[serde(deny_unknown_fields)]
+    struct DocIn {
+        rhl: u32,
+        #[serde(with = "singleton_map_recursive")]
+        decls: Vec<Decl>,
+    }
+
+    pub fn to_yaml(program: &Program) -> String {
+        let doc = DocOut {
+            rhl: super::super::SCHEMA,
+            decls: &program.decls,
+        };
+        serde_yaml_ng::to_string(&doc).expect("oracle writes")
+    }
+
+    fn find_tag(value: &Value) -> bool {
+        match value {
+            Value::Tagged(_) => true,
+            Value::Sequence(items) => items.iter().any(find_tag),
+            Value::Mapping(map) => map.iter().any(|(k, v)| find_tag(k) || find_tag(v)),
+            _ => false,
+        }
+    }
+
+    /// The old reader's verdict before the grammar check: the tree, or None.
+    /// The grammar check (`grammatical`) is library-free and shared.
+    pub fn read(source: &str) -> Option<Program> {
+        let doc: DocIn = serde_yaml_ng::from_str(source).ok()?;
+        let value: Value = serde_yaml_ng::from_str(source).ok()?;
+        if find_tag(&value) || doc.rhl != super::super::SCHEMA {
+            return None;
+        }
+        Some(Program { decls: doc.decls })
+    }
+}
+
+/// `from_yaml` and the oracle agree: both refuse, or both accept the same tree.
+/// Where `from_yaml` and the oracle part: both refuse, or both accept the same
+/// tree, else a row naming the input and both verdicts.
+fn verdict_gap(yaml: &str) -> Option<String> {
+    let ours = from_yaml(yaml).ok().map(|p| to_yaml(&p));
+    // the grammar check (`grammatical`) is shared: it is library-free past the read
+    let theirs = oracle::read(yaml)
+        .filter(|p| super::grammatical(p).is_ok())
+        .map(|p| to_yaml(&p));
+    (ours != theirs).then(|| format!("{yaml:?}\n  ours   {ours:?}\n  oracle {theirs:?}"))
+}
+
+fn assert_reads_as_oracle<S: AsRef<str>>(yamls: impl IntoIterator<Item = S>) {
+    let gaps: Vec<String> = yamls
+        .into_iter()
+        .filter_map(|y| verdict_gap(y.as_ref()))
+        .collect();
+    assert!(
+        gaps.is_empty(),
+        "SEC-2: {} verdict(s) differ:\n{}",
+        gaps.len(),
+        gaps.join("\n")
+    );
+}
+
+#[test]
+fn test_sec2_writer_is_byte_identical_to_serde_yaml_ng_over_the_corpus() {
+    let files = parseable_corpus();
+    let mut n = 0;
+    for (path, src) in &files {
+        let p = parse(src).expect("parses");
+        assert_eq!(to_yaml(&p), oracle::to_yaml(&p), "{}", path.display());
+        n += 1;
+    }
+    let ex = parse(&spec_example()).expect("§3.2 parses");
+    assert_eq!(to_yaml(&ex), oracle::to_yaml(&ex), "§3.2");
+    assert!(n > 30, "SEC-2: only {n} corpus programs compared");
+}
+
+#[test]
+fn test_sec2_reader_agrees_with_serde_yaml_ng_over_corpus_and_refusals() {
+    assert_reads_as_oracle(parseable_corpus().iter().map(|(_, src)| yaml_of(src)));
+    let and = "rhl: 1\ndecls:\n- unit:\n    kind: job\n    name: j\n    body:\n    - expect:\n        and:\n        - or:\n          - app:\n              text: a\n          - app:\n              text: b\n        - app:\n            text: c\n";
+    assert_reads_as_oracle([
+        ONE.to_string(),
+        ONE.replacen("rhl: 1", "rhl: 2", 1),
+        ONE.replacen("rhl: 1\n", "", 1),
+        ONE.replacen("    name: j\n", "    name: j\n    nmae: k\n", 1),
+        ONE.replacen("    name: j\n", "    name: j\n    span: 3\n", 1),
+        format!("{ONE}extra: 1\n"),
+        ONE.replacen("phrase: a", "phrase: ''", 1),
+        ONE.replacen("phrase: a", "phrase: end", 1),
+        ONE.replacen("name: j", "name: j\"k", 1),
+        ONE.replacen("phrase: a", "phrase: A", 1),
+        ONE.replacen("phrase: a", "phrase: !custom a", 1),
+        ONE.replacen("    name: j\n", "    name: !python/object j\n", 1),
+        ONE.replacen("        app:\n", "        app: !m\n", 1),
+        ONE.replacen("phrase: a", "phrase: !!str a", 1),
+        ONE.replacen("- unit:\n", "- !unit\n", 1),
+        ONE.replacen("rhl: 1", "rhl: '1'", 1),
+        ONE.replacen("rhl: 1", "rhl: 0x1", 1),
+        ONE.replacen("kind: job", "kind: 'job'", 1),
+        ONE.replacen("kind: job", "kind: \"job\"", 1),
+        ONE.replacen("rhl: 1\n", "rhl: 1\nrhl: 1\n", 1),
+        format!("---\n{ONE}"),
+        format!("{ONE}---\n{ONE}"),
+        and.to_string(),
+        "rhl: [".to_string(),
+        "rhl: 1\ndecls: [\n  - {unit: \n".to_string(),
+        String::new(),
+    ]);
+}
+
+#[test]
+fn test_sec2_a_read_error_is_placed_where_the_oracle_placed_it() {
+    // the line the malformed-YAML test asserts on, measured against the oracle
+    let text = "rhl: 1\ndecls: [\n  - {unit: \n";
+    let e = refused(text);
+    let o = serde_yaml_ng::from_str::<serde_yaml_ng::Value>(text).expect_err("oracle refuses");
+    let ol = o.location().map(|l| l.line()).unwrap_or(0);
+    assert!(e.line >= 2 && ol >= 2, "SEC-2: ours {} oracle {ol}", e.line);
+}
+
+/// PMAT-264, pinned on the property's minimal failing input (seed
+/// `cc 7810f2cd…`): a space inside a single-quoted text became a line break,
+/// so the continuation line sits at column 0. libyaml folds it back to the
+/// space; the reader must read the same program, not refuse it.
+#[test]
+fn test_sec2_an_under_indented_quoted_continuation_reads_as_the_oracle_reads_it() {
+    let whole = format!("{ONE}            args:\n            - text: ' 0'\n");
+    let damaged = whole.replace("' 0'", "'\n0'");
+    let theirs = oracle::read(&damaged)
+        .filter(|p| super::grammatical(p).is_ok())
+        .map(|p| to_yaml(&p));
+    assert_eq!(
+        theirs.as_deref(),
+        Some(whole.as_str()),
+        "the oracle folds it"
+    );
+    let ours = from_yaml(&damaged).ok().map(|p| to_yaml(&p));
+    assert_eq!(ours, theirs, "PMAT-264: {damaged}");
+}
+
+#[test]
+fn test_sec2_an_empty_text_node_reads_as_the_oracle_reads_it() {
+    let whole = format!("{ONE}            args:\n            - text: ''\n");
+    let damaged = whole.replace("text: ''", "text: ");
+    let theirs = oracle::read(&damaged)
+        .filter(|p| super::grammatical(p).is_ok())
+        .map(|p| to_yaml(&p));
+    assert_eq!(
+        theirs.as_deref(),
+        Some(whole.as_str()),
+        "the oracle reads \"\""
+    );
+    let ours = from_yaml(&damaged).ok().map(|p| to_yaml(&p));
+    assert_eq!(ours, theirs, "PMAT-264: {damaged}");
+}
+
+/// Positive control: the same document through serde-saphyr's own writer
+/// (which double-quotes every string, the reason the writer is in-tree) must
+/// differ from the oracle's bytes, or the byte comparison above sees nothing.
+#[test]
+fn test_sec2_control_the_writer_differential_sees_a_planted_difference() {
+    #[derive(serde::Serialize)]
+    struct Doc<'a> {
+        rhl: u32,
+        #[serde(with = "serde_yaml_ng::with::singleton_map_recursive")]
+        decls: &'a Vec<crate::rhl::tree::Decl>,
+    }
+    let p = parse(&spec_example()).expect("§3.2 parses");
+    let planted = serde_saphyr::to_string(&Doc {
+        rhl: 1,
+        decls: &p.decls,
+    })
+    .expect("writes");
+    assert_ne!(
+        planted,
+        oracle::to_yaml(&p),
+        "SEC-2 control: a double-quoting writer must differ"
+    );
+    assert_eq!(oracle::to_yaml(&p), to_yaml(&p));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(cases()))]
+
+    #[test]
+    fn test_sec2_prop_writer_matches_serde_yaml_ng(t in arb_program()) {
+        prop_assert_eq!(to_yaml(&t), oracle::to_yaml(&t));
+    }
+
+    #[test]
+    fn test_sec2_prop_damaged_yaml_reads_as_the_oracle_reads_it(t in arb_program(), at in any::<prop::sample::Index>(), with in "[\\[\\]{}:,'\"! a-z0-9\n&*-]{0,3}") {
+        let yaml = to_yaml(&t);
+        let mut cut = at.index(yaml.len());
+        while !yaml.is_char_boundary(cut) {
+            cut -= 1;
+        }
+        let damaged = format!("{}{with}{}", &yaml[..cut], &yaml[cut..].chars().skip(1).collect::<String>());
+        let ours = from_yaml(&damaged).ok().map(|p| to_yaml(&p));
+        let theirs = oracle::read(&damaged).filter(|p| super::grammatical(p).is_ok()).map(|p| to_yaml(&p));
+        prop_assert_eq!(ours, theirs, "{}", damaged);
+    }
+}

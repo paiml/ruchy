@@ -165,7 +165,7 @@ pub fn vocab_path(root: &Path, name: &str, version: u32) -> PathBuf {
 pub fn parse_file(path: &Path) -> Result<Vocabulary, String> {
     let text = std::fs::read_to_string(path)
         .map_err(|e| format!("cannot read {}: {e}", path.display()))?;
-    serde_yaml_ng::from_str(&text).map_err(|e| format!("cannot parse {}: {e}", path.display()))
+    crate::yaml_io::from_str(&text).map_err(|e| format!("cannot parse {}: {e}", path.display()))
 }
 
 /// The shape rules serde cannot state (`contracts/rhl-vocabulary-shape-v1.yaml`):

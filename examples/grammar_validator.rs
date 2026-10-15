@@ -204,7 +204,7 @@ struct MissingComponent {
 fn load_grammar() -> Result<Grammar, Box<dyn std::error::Error>> {
     let path = PathBuf::from("grammar/ruchy-grammar.yaml");
     let content = fs::read_to_string(&path)?;
-    let grammar: Grammar = serde_yaml::from_str(&content)?;
+    let grammar: Grammar = ruchy::yaml_io::from_str(&content)?;
     Ok(grammar)
 }
 

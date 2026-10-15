@@ -73,3 +73,22 @@ ignores:
     owner: noah
     removed_by: "2026-10-20"
     reason: "transitive, widely used, no drop-in replacement (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
+  # ---------------------------------------------------------------------------
+  # SEC-4 (PMAT-260), 2026-10-15. unsafe-libyaml has no fixed release, and SEC-2
+  # already removed every ruchy runtime edge to it. It stays in Cargo.lock through
+  # published crates: serde_yaml_ng is a NON-optional build-dependency of
+  # aprender-compute and aprender-core through 0.71.4, and serde_yaml arrives via
+  # provable-contracts (0.4.0 keeps it, PMAT-262 measured). Removal is PMAT-263,
+  # blocked on paiml/aprender#5205 and jugar-probar. `unmaintained` gets the 30-day
+  # window. src/advisory_ignore_bound.rs goes red if the crate leaves the lock
+  # with the ignore still here, if a new crate links it, or if ruchy gains a
+  # non-dev edge to serde_yaml / serde_yaml_ng.
+  # ---------------------------------------------------------------------------
+  - id: RUSTSEC-2024-0449
+    crate: unsafe-libyaml
+    class: unmaintained
+    source: deny
+    owner_ticket: PMAT-263
+    owner: noah
+    removed_by: "2026-11-14"
+    reason: "no fixed release; reached only via upstream serde_yaml / serde_yaml_ng (aprender-compute, aprender-core build-deps; provable-contracts, jugar-probar dev); bounded by src/advisory_ignore_bound.rs"
