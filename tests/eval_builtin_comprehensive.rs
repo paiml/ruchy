@@ -345,13 +345,13 @@ fn test_println_multiple_args() {
 
 #[test]
 fn test_print_no_newline() {
-    // print() quotes strings, so output is "A""B" not AB
+    // print() writes a string's text, as the compiled print! does
     ruchy_cmd()
         .arg("-e")
         .arg("print(\"A\"); print(\"B\")")
         .assert()
         .success()
-        .stdout(predicate::str::contains("\"A\"\"B\""));
+        .stdout(predicate::str::contains("AB"));
 }
 
 #[test]

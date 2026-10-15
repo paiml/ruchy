@@ -280,7 +280,7 @@ impl Formatter {
         }
 
         // Format the expression itself
-        let expr_str = self.format_expr_kind(&expr.kind, &indent_str, indent);
+        let expr_str = self.format_expr_node(expr, &indent_str, indent);
 
         // Append the formatted expression
         result.push_str(&expr_str);
@@ -295,6 +295,17 @@ impl Formatter {
     }
 
     // --- Extracted helpers for format_expr (CB-200 reduction) ---
+
+    /// RHLGA-1: a `FieldAccess` the parser marked as written with `::` is a path
+    /// segment; printing it with `.` would reparse as a method call or field.
+    fn format_expr_node(&self, expr: &Expr, indent_str: &str, indent: usize) -> String {
+        match &expr.kind {
+            ExprKind::FieldAccess { object, field } if expr.is_path_access() => {
+                format!("{}::{}", self.format_expr(object, indent), field)
+            }
+            kind => self.format_expr_kind(kind, indent_str, indent),
+        }
+    }
 
     fn format_expr_kind(&self, kind: &ExprKind, indent_str: &str, indent: usize) -> String {
         match kind {

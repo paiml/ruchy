@@ -8,7 +8,12 @@ use quote::{format_ident, quote};
 
 impl Transpiler {
     pub fn transpile_unary(&self, op: UnaryOp, operand: &Expr) -> Result<TokenStream> {
-        let mut operand_tokens = self.transpile_expr(operand)?;
+        // IDXASSIGN-1: `&mut o.items[0]` borrows the element, not a clone
+        let mut operand_tokens = if op == UnaryOp::MutableReference {
+            self.transpile_place(operand)?
+        } else {
+            self.transpile_expr(operand)?
+        };
         // TRANSPILENOT-1: `!(b && x)` must not become `!b && x`
         if Self::unary_operand_needs_parens(operand) {
             operand_tokens = quote! { (#operand_tokens) };

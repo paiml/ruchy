@@ -72,6 +72,22 @@ impl Transpiler {
         )
     }
 
+    /// RAWIDENT-1: A function/method name that collides with a Rust reserved
+    /// word (but not a Ruchy keyword, e.g. `do`, `box`, `typeof`) must be
+    /// emitted as a raw identifier so rustc accepts the definition/call.
+    /// `self`, `Self`, `super`, `crate`, `_` can never be raw identifiers;
+    /// they are returned verbatim (Ruchy never emits them as fn/method names
+    /// anyway, but the check keeps this helper safe to call on any name).
+    /// Complexity: 2 (within Toyota Way limits)
+    pub(crate) fn safe_ident(name: &str) -> proc_macro2::Ident {
+        let cannot_be_raw = matches!(name, "self" | "Self" | "super" | "crate" | "_");
+        if !cannot_be_raw && Self::is_rust_reserved_keyword(name) {
+            proc_macro2::Ident::new_raw(name, proc_macro2::Span::call_site())
+        } else {
+            proc_macro2::Ident::new(name, proc_macro2::Span::call_site())
+        }
+    }
+
     /// Main expression transpilation dispatcher
     ///
     /// Routes expressions to specialized handlers based on ExprKind.

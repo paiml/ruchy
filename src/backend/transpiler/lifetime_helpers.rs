@@ -154,6 +154,11 @@ impl Transpiler {
             return Ok(quote! { -> impl Fn(i32) -> i32 });
         }
 
+        // LENRET-1: a `len()` / `count()` tail is a `usize`
+        if super::return_type_helpers::returns_usize(body) {
+            return Ok(quote! { -> usize });
+        }
+
         if super::function_analysis::looks_like_numeric_function(name) {
             return Ok(quote! { -> i32 });
         }

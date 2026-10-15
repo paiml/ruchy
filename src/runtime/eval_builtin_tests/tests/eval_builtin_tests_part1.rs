@@ -330,14 +330,11 @@ fn test_hash_deterministic() {
     let result1 = compute_hash_of("hello");
     let result2 = compute_hash_of("hello");
     assert_eq!(result1, result2);
-    assert_eq!(
-        result1,
-        "\"2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824\""
-    );
+    assert_eq!(result1, "\"5d41402abc4b2a76b9719d911017c592\"");
 }
 
 /// METHODS-1: `hash(x)` is neither an interpreter nor a transpiler builtin;
-/// `compute_hash(path)` (SHA-256 of a file's bytes) is the existing equivalent.
+/// `compute_hash(path)` (MD5 of a file's bytes, STDLIB-005) is the existing equivalent.
 pub(super) fn compute_hash_of(content: &str) -> String {
     let file = tempfile::NamedTempFile::new().expect("create temp file");
     std::fs::write(file.path(), content).expect("write temp file");

@@ -246,13 +246,17 @@ fn parse_variant_struct_fields(state: &mut ParserState) -> Result<Vec<StructFiel
     let mut fields = Vec::new();
 
     while !matches!(state.tokens.peek(), Some((Token::RightBrace, _))) {
-        // Parse field name
-        let name = if let Some((Token::Identifier(n), _)) = state.tokens.peek() {
-            let name = n.clone();
-            state.tokens.advance();
-            name
-        } else {
-            bail!("Expected field name in struct variant")
+        // ENUMFIELDKW-1: a keyword is a field name too (`enum: i32`), as in structs
+        let name = match state
+            .tokens
+            .peek()
+            .and_then(|(token, _)| crate::frontend::parser::member_names::member_name(token))
+        {
+            Some(name) => {
+                state.tokens.advance();
+                name
+            }
+            None => bail!("Expected field name in struct variant"),
         };
 
         // Expect colon

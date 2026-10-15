@@ -126,13 +126,17 @@ fun main() {
 
     fs::write(&source, code).expect("Failed to write test file");
 
+    let binary = temp.path().join("test_binary");
     ruchy_cmd()
         .arg("compile")
         .arg(&source)
         .arg("-o")
-        .arg(temp.path().join("test_binary"))
+        .arg(&binary)
         .assert()
         .success();
+
+    // RHLGA-1: a range is already an iterator; the binary counts it.
+    Command::new(&binary).assert().success().stdout("10\n");
 }
 
 /// Test 5: Multiple `range()` calls

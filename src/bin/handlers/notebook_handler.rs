@@ -17,7 +17,6 @@ fn validate_notebook_file(path: &Path) -> Result<()> {
         compile_rust_code, parse_source, prepare_compilation, read_file_with_context,
         transpile_for_execution,
     };
-    use std::fs;
 
     println!("📓 Notebook validation mode for: {}", path.display());
 
@@ -28,11 +27,9 @@ fn validate_notebook_file(path: &Path) -> Result<()> {
     let (temp_source, binary_path) = prepare_compilation(&rust_code, false)?;
     compile_rust_code(temp_source.path(), &binary_path)?;
 
-    // Execute the file to validate it runs
+    // Execute the file to validate it runs; the binary drops on every path.
     let result = std::process::Command::new(&binary_path).output()?;
-
-    // Cleanup
-    let _ = fs::remove_file(&binary_path);
+    drop(binary_path);
 
     if result.status.success() {
         println!("✅ Notebook validation: PASSED");

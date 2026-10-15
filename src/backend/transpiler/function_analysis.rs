@@ -68,6 +68,45 @@ pub fn is_void_function_call(expr: &Expr) -> bool {
     }
 }
 
+/// UNITRET-1: methods whose Rust counterpart returns `()` (complexity: 1)
+///
+/// A function whose tail is one of these calls has no value to return, so no
+/// return type is inferred for it. Only methods that return `()` on the
+/// standard collections and `String` are listed; `pop`/`remove` return a
+/// value and are not.
+#[must_use]
+pub fn is_unit_method(method: &str) -> bool {
+    matches!(
+        method,
+        "push"
+            | "push_str"
+            | "push_back"
+            | "push_front"
+            | "insert"
+            | "extend"
+            | "extend_from_slice"
+            | "append"
+            | "clear"
+            | "sort"
+            | "sort_unstable"
+            | "sort_by"
+            | "sort_by_key"
+            | "sort_unstable_by"
+            | "sort_unstable_by_key"
+            | "reverse"
+            | "truncate"
+            | "retain"
+            | "dedup"
+            | "dedup_by_key"
+            | "resize"
+            | "swap"
+            | "fill"
+            | "reserve"
+            | "shrink_to_fit"
+            | "for_each"
+    )
+}
+
 /// Check if an expression is void (returns unit/nothing)
 ///
 /// Recursively analyzes expressions to determine if they produce no value.
@@ -78,6 +117,8 @@ pub fn is_void_expression(expr: &Expr) -> bool {
         ExprKind::Literal(Literal::Unit) => true,
         // Void function calls
         ExprKind::Call { .. } if is_void_function_call(expr) => true,
+        // UNITRET-1: method calls that return unit in Rust (`xs.push(1)`)
+        ExprKind::MethodCall { method, .. } if is_unit_method(method) => true,
         // Macro invocations (println!, etc.)
         ExprKind::MacroInvocation { name, .. }
             if matches!(name.as_str(), "println" | "print" | "eprintln" | "eprint") =>
@@ -342,6 +383,42 @@ mod tests {
     fn test_void_function_call_with_args() {
         let expr = call("println", vec![int_lit(42)]);
         assert!(is_void_function_call(&expr));
+    }
+
+    // ==================== UNITRET-1: unit method tails ====================
+
+    fn method_call(method: &str) -> Expr {
+        make_expr(ExprKind::MethodCall {
+            receiver: Box::new(ident("xs")),
+            method: method.to_string(),
+            args: vec![],
+        })
+    }
+
+    #[test]
+    fn test_unitret_1_unit_method_tail_is_void() {
+        for method in [
+            "push", "insert", "extend", "clear", "sort", "reverse", "truncate",
+        ] {
+            assert!(is_void_expression(&method_call(method)), "{method}");
+            let block = make_expr(ExprKind::Block(vec![method_call(method)]));
+            assert!(!has_non_unit_expression(&block), "{method}");
+        }
+    }
+
+    #[test]
+    fn test_unitret_1_value_method_tail_is_not_void() {
+        for method in [
+            "len",
+            "pop",
+            "remove",
+            "abs",
+            "get",
+            "sum",
+            "unknown_method",
+        ] {
+            assert!(!is_void_expression(&method_call(method)), "{method}");
+        }
     }
 
     // ==================== is_void_expression Tests ====================

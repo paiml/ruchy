@@ -136,3 +136,12 @@ dependency_cleanup_analysis.md
 
 # PMAT-136: dogfood receipts (written by the ruchy-dogfood skill)
 .dogfood/
+
+# G2B-S2: files pmat writes while tests and hooks run. pmat also drops a `*`
+# .gitignore inside each .pmat/ it creates, but that file is untracked and absent
+# in a fresh clone; without these rules `cargo package` sees a dirty tree.
+src/.pmat/
+.pmat/*.db
+.pmat/jidoka.jsonl
+.pmat/clippy-receipt
+.pmat/dead-code-cache-*.json

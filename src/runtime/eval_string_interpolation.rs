@@ -99,27 +99,31 @@ pub fn format_value_with_spec(value: &Value, format_spec: &str) -> String {
 }
 
 /// Format a value for string interpolation (no extra quotes for strings)
-///
-/// # Complexity
-/// Cyclomatic complexity: 8 (within Toyota Way limits)
 pub fn format_value_for_interpolation(value: &Value) -> String {
+    match value {
+        // FLOATDISP-1: `f"{x}"` transpiles to `{}`, Rust's f64 Display.
+        Value::Float(f) => crate::runtime::fmt_spec::display_float(*f),
+        _ => interpolation_text(value),
+    }
+}
+
+/// Interpolation text of a non-float value; compound elements keep the
+/// value's own text.
+fn interpolation_text(value: &Value) -> String {
     match value {
         Value::String(s) => s.to_string(), // No quotes for interpolation
         Value::Array(arr) => {
-            let elements: Vec<String> = arr.iter().map(format_value_for_interpolation).collect();
+            let elements: Vec<String> = arr.iter().map(interpolation_text).collect();
             format!("[{}]", elements.join(", "))
         }
         Value::Tuple(elements) => {
-            let formatted: Vec<String> = elements
-                .iter()
-                .map(format_value_for_interpolation)
-                .collect();
+            let formatted: Vec<String> = elements.iter().map(interpolation_text).collect();
             format!("({})", formatted.join(", "))
         }
         Value::Object(map) => {
             let mut entries = Vec::new();
             for (k, v) in map.iter() {
-                entries.push(format!("{}: {}", k, format_value_for_interpolation(v)));
+                entries.push(format!("{}: {}", k, interpolation_text(v)));
             }
             format!("{{{}}}", entries.join(", "))
         }

@@ -81,16 +81,20 @@ increment();
 println!("{}", counter);
 "#;
 
-    let temp_file = NamedTempFile::new().unwrap();
-    let ruchy_path = temp_file.path().with_extension("ruchy");
+    // RHLGA-1 F8: compile inside a temp dir, so the default `a.out` (and any
+    // other compiler output) lands there and never in the repository.
+    let dir = tempfile::tempdir().unwrap();
+    let ruchy_path = dir.path().join("prog.ruchy");
     fs::write(&ruchy_path, code).unwrap();
 
     // CRITICAL: Must compile successfully
     let mut cmd = assert_cmd::cargo::cargo_bin_cmd!("ruchy");
-    cmd.arg("compile").arg(&ruchy_path).assert().success(); // ❌ This will FAIL until we fix the bug
-
-    // Clean up
-    let _ = fs::remove_file(&ruchy_path);
+    cmd.current_dir(dir.path())
+        .arg("compile")
+        .arg(&ruchy_path)
+        .assert()
+        .success();
+    assert!(dir.path().join("a.out").exists(), "a.out in the temp dir");
 }
 
 /// Test 3: Full execution via ruchy run command

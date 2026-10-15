@@ -73,7 +73,7 @@ trait Summary {
     fn summarize_author(&self) -> String
 
     fn summarize(&self) -> String {
-        f"(Read more from {}...)", self.summarize_author())
+        f"(Read more from {self.summarize_author()}...)"
     }
 }
 "#;
@@ -120,7 +120,7 @@ trait Summary {
     fn summarize_author(&self) -> String
 
     fn summarize(&self) -> String {
-        f"(Read more from {}...)", self.summarize_author())
+        f"(Read more from {self.summarize_author()}...)"
     }
 }
 
@@ -147,7 +147,6 @@ trait From<T> {
 
 // Test 7: Transpile trait with associated type
 #[test]
-#[ignore = "Trait associated types not fully transpiled yet"]
 fn test_parser_010_transpile() {
     let code = r"
 trait Iterator {

@@ -212,24 +212,28 @@ fn eval_import(interp: &mut Interpreter, module: &str) -> Result<Value, Interpre
 // Macro evaluation (deduplicated for Macro and MacroInvocation)
 // ============================================================================
 
-/// Evaluate a macro invocation (vec!, println!, format!)
+/// Evaluate a macro invocation (vec!, println!, print!, eprintln!, eprint!, format!)
 /// Handles both ExprKind::Macro and ExprKind::MacroInvocation identically.
+/// FMTSPEC-1: the output/format macros share the function forms' engine.
 fn eval_macro_invocation(
     interp: &mut Interpreter,
     name: &str,
     args: &[Expr],
 ) -> Result<Value, InterpreterError> {
     if name == "vec" {
-        eval_vec_macro(interp, args)
-    } else if name == "println" {
-        eval_println_macro(interp, args)
-    } else if name == "format" {
-        eval_format_macro(interp, args)
-    } else {
-        Err(InterpreterError::RuntimeError(format!(
+        return eval_vec_macro(interp, args);
+    }
+    match crate::runtime::interpreter_format_calls::FormatSink::for_name(name) {
+        Some(crate::runtime::interpreter_format_calls::FormatSink::Return) if args.is_empty() => {
+            Err(InterpreterError::RuntimeError(
+                "format!() requires at least one argument".to_string(),
+            ))
+        }
+        Some(sink) => interp.eval_format_call(sink, args),
+        None => Err(InterpreterError::RuntimeError(format!(
             "Macro '{}!' not yet implemented",
             name
-        )))
+        ))),
     }
 }
 
@@ -241,118 +245,6 @@ fn eval_vec_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, Inte
         elements.push(value);
     }
     Ok(Value::Array(elements.into()))
-}
-
-/// println!() macro: Evaluate arguments, print with newline
-/// PARSER-085: Supports format strings like println!("x: {}", value)
-fn eval_println_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, InterpreterError> {
-    if args.is_empty() {
-        println!();
-    } else if args.len() == 1 {
-        // Single argument: print directly
-        let value = interp.eval_expr(&args[0])?;
-        println!("{}", value);
-    } else {
-        // Multiple arguments: use format! logic (Issue #82, #83)
-        let format_val = interp.eval_expr(&args[0])?;
-        let format_str = match format_val {
-            Value::String(ref s) => s.as_ref().to_string(),
-            _ => format_val.to_string(),
-        };
-
-        let mut values = Vec::new();
-        for arg in &args[1..] {
-            values.push(interp.eval_expr(arg)?);
-        }
-
-        // Use helper for format string replacement
-        let result = Interpreter::format_string_with_values(&format_str, &values);
-        println!("{}", result);
-    }
-    Ok(Value::Nil)
-}
-
-/// format!() macro: Format string with placeholders (Issue #83)
-fn eval_format_macro(interp: &mut Interpreter, args: &[Expr]) -> Result<Value, InterpreterError> {
-    if args.is_empty() {
-        return Err(InterpreterError::RuntimeError(
-            "format!() requires at least one argument".to_string(),
-        ));
-    }
-
-    // Evaluate format string
-    let format_val = interp.eval_expr(&args[0])?;
-    let format_str = format_val.to_string();
-
-    // Evaluate remaining arguments
-    let mut values = Vec::new();
-    for arg in &args[1..] {
-        values.push(interp.eval_expr(arg)?);
-    }
-
-    // Replace {} and {:?} placeholders with values
-    let result = format_with_placeholders(&format_str, &values);
-    Ok(Value::from_string(result))
-}
-
-/// Replace `{}` and `{:?}` placeholders in a format string with values.
-/// Shared helper used by format!() macro evaluation.
-fn try_consume_debug_placeholder(
-    chars: &mut std::iter::Peekable<std::str::Chars<'_>>,
-    result: &mut String,
-    values: &[Value],
-    value_index: &mut usize,
-) -> bool {
-    if chars.peek() != Some(&':') {
-        return false;
-    }
-    chars.next();
-    if chars.peek() != Some(&'?') {
-        result.push_str("{:");
-        return true;
-    }
-    chars.next();
-    if chars.peek() != Some(&'}') {
-        result.push_str("{:?");
-        return true;
-    }
-    chars.next();
-    if *value_index < values.len() {
-        result.push_str(&format!("{:?}", values[*value_index]));
-        *value_index += 1;
-    } else {
-        result.push_str("{:?}");
-    }
-    true
-}
-
-fn format_with_placeholders(format_str: &str, values: &[Value]) -> String {
-    let mut result = String::new();
-    let mut chars = format_str.chars().peekable();
-    let mut value_index = 0;
-
-    while let Some(ch) = chars.next() {
-        if ch != '{' {
-            result.push(ch);
-            continue;
-        }
-        if try_consume_debug_placeholder(&mut chars, &mut result, values, &mut value_index) {
-            continue;
-        }
-        if chars.peek() == Some(&'}') {
-            chars.next();
-            if value_index < values.len() {
-                result.push_str(&values[value_index].to_string());
-                value_index += 1;
-            } else {
-                result.push_str("{}");
-            }
-        } else {
-            result.push(ch);
-        }
-    }
-
-    result
 }
 
 // ============================================================================

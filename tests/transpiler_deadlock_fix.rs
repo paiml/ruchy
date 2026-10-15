@@ -267,6 +267,13 @@ mod property_tests {
     use super::*;
     use proptest::prelude::*;
 
+    /// A generated name is only a variable name if the lexer reads it as an
+    /// identifier: `[a-z]{3,8}` also yields keywords such as `fun` or `let`.
+    fn is_plain_identifier(name: &str) -> bool {
+        let mut tokens = ruchy::TokenStream::new(name);
+        matches!(tokens.next(), Some((ruchy::Token::Identifier(_), _))) && tokens.next().is_none()
+    }
+
     /// Property: Any global variable assignment should not deadlock
     /// Strategy: Generate random variable names and values
     #[test]
@@ -276,6 +283,7 @@ mod property_tests {
             init_val in 0i32..100,
             op_val in 1i32..50,
         )| {
+            prop_assume!(is_plain_identifier(&var_name));
             let code = format!(
                 r#"
 let mut {var_name} = {init_val}
@@ -341,6 +349,7 @@ println!("{{}}", {var_name})
             var_name in "[a-z]{3,8}",
             init_val in 0i32..100,
         )| {
+            prop_assume!(is_plain_identifier(&var_name));
             // Use fixed value to avoid return type inference bug
             let code = format!(
                 r#"
