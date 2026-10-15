@@ -146,6 +146,18 @@ const EDGES: &[&str] = &[
     "? complex\n: key\n",
     "key with spaces: v\n\"quoted key\": v\n",
     "a: \"\\u00e9\"\nb: é\n",
+    // PMAT-260: libyaml scans an anchor or alias NAME as [0-9A-Za-z_-] only;
+    // granit-parser takes YAML 1.2's wider ns-anchor-char. Found by
+    // test_sec2_prop_damaged_yaml_reads_as_the_oracle_reads_it (`unit: &!our`).
+    "a: &!our\n",
+    "a: &x!y 1\n",
+    "a: &x.y 1\n",
+    "a: &\u{e9} 1\n",
+    "a: &ok 1\nb: *ok\n",
+    "a: &ok-_9 1\nb: *ok-_9\n",
+    "a: &ok 1\nb: *ok!\n",
+    "a: [&x 1, *x]\n",
+    "a: {k: &x 1, j: *x}\n",
 ];
 
 #[test]

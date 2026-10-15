@@ -22,7 +22,7 @@ use serde::de::{
 };
 use serde_saphyr::granit_parser::{
     Event as YamlEvent, Options as ParserOptions, ParseResult, Parser, ScalarStyle as YamlStyle,
-    ScanError, Span, StrInput, Tag,
+    ScanError, Scanner, Span, StrInput, Tag, TokenType,
 };
 use std::collections::BTreeMap;
 use std::fmt;
@@ -299,12 +299,51 @@ fn absorb(text: &str, document: &mut Document, next: ParseResult<'_>) -> Flow {
     }
 }
 
+/// libyaml (the old reader's scanner) reads an anchor or alias NAME as a run of
+/// `[0-9A-Za-z_-]` and refuses any other character after it but a blank, the
+/// end of input or one of `?:,]}%@` and a backtick. granit-parser takes YAML 1.2's
+/// wider `ns-anchor-char` (anything but a blank or a flow indicator), so
+/// `unit: &!our` was a null here and a scan error there (PMAT-260, found by
+/// `test_sec2_prop_damaged_yaml_reads_as_the_oracle_reads_it`). This refuses
+/// every name libyaml refuses, using granit-parser's own scanner for the token
+/// boundaries; it is stricter than libyaml only where a name runs into a
+/// character libyaml would stop at (`&a:b`), which then names a different
+/// anchor in each reader anyway.
+fn libyaml_refuses_a_name(text: &str) -> Option<Error> {
+    for token in Scanner::new(StrInput::new(text)) {
+        let Ok(token) = token else {
+            return None; // the parser reports scan errors itself
+        };
+        let (span, kind) = token.into_parts();
+        let name = match kind {
+            TokenType::Anchor(name) | TokenType::Alias(name) => name,
+            _ => continue,
+        };
+        let word = |c: char| c.is_ascii_alphanumeric() || c == '_' || c == '-';
+        let after = span
+            .end
+            .byte_offset()
+            .and_then(|b| text.get(b..))
+            .and_then(|rest| rest.chars().next());
+        if !name.chars().all(word) || matches!(after, Some('[' | '{')) {
+            return Some(Error::at(
+                "did not find expected alphabetic or numeric character, while scanning an anchor",
+                mark_of(&span),
+            ));
+        }
+    }
+    None
+}
+
 fn load(text: &str) -> Loaded {
     let mut options = ParserOptions::default();
     options.emit_comments = false;
     let mut parser = Parser::new_from_str_with_options(text, options);
     let mut document = Document::default();
     let more = feed(text, &mut parser, &mut document);
+    if document.error.is_none() {
+        document.error = libyaml_refuses_a_name(text);
+    }
     // the stream ended with no node at all: it reads as an empty document
     if document.events.is_empty() && document.error.is_none() {
         document
