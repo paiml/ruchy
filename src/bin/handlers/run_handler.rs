@@ -6,7 +6,7 @@ use anyhow::{Context, Result};
 use ruchy::frontend::ast::Expr;
 use ruchy::{Parser as RuchyParser, Transpiler};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 /// VM execution mode (OPT-004)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, clap::ValueEnum)]
@@ -114,10 +114,13 @@ pub fn transpile_for_execution(ast: &Expr, file: &Path) -> Result<String> {
 }
 
 /// Prepare compilation artifacts (complexity: 4)
+///
+/// TMPLEAK-1: the binary path is a [`tempfile::TempPath`], so the compiled
+/// binary is removed when it drops, on every return path of the caller.
 pub fn prepare_compilation(
     rust_code: &str,
     verbose: bool,
-) -> Result<(tempfile::NamedTempFile, PathBuf)> {
+) -> Result<(tempfile::NamedTempFile, tempfile::TempPath)> {
     let temp_source =
         tempfile::NamedTempFile::new().with_context(|| "Failed to create temporary file")?;
     fs::write(temp_source.path(), rust_code).with_context(|| "Failed to write temporary file")?;
@@ -135,6 +138,8 @@ pub fn prepare_compilation(
         std::process::id(),
         unique_id
     ));
+    let binary_path = tempfile::TempPath::try_from_path(binary_path)
+        .with_context(|| "Failed to register temporary binary path")?;
     Ok((temp_source, binary_path))
 }
 

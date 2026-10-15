@@ -48,18 +48,30 @@ fn test_opt_global_001_02_profile_data_collection() {
 
 /// Test 3: llvm-profdata merge succeeds
 #[test]
+#[ignore = "named environment: llvm-profdata on PATH and the profiles test 02 collects - run in nightly/tier3 only"]
 fn test_opt_global_001_03_profile_merge() {
-    // Create dummy profraw file for testing
-    fs::create_dir_all("/tmp/pgo-merge-test").unwrap();
+    // The profiles test 02 collects; Command does not expand a shell glob.
+    let profiles: Vec<PathBuf> = fs::read_dir("/tmp")
+        .expect("read /tmp")
+        .filter_map(Result::ok)
+        .map(|e| e.path())
+        .filter(|p| {
+            p.file_name()
+                .and_then(|n| n.to_str())
+                .is_some_and(|n| n.starts_with("pgo-test-") && n.ends_with(".profraw"))
+        })
+        .collect();
+    assert!(
+        !profiles.is_empty(),
+        "run test 02 first: no /tmp/pgo-test-*.profraw"
+    );
+    fs::create_dir_all("/tmp/pgo-merge-test").expect("create merge dir");
 
     let mut cmd = Command::new("llvm-profdata");
     cmd.arg("merge")
         .arg("-output=/tmp/pgo-merge-test/merged.profdata")
-        .arg("/tmp/pgo-test-*.profraw");
-
-    // Should succeed or fail gracefully if llvm-profdata not installed
-    let result = cmd.output();
-    assert!(result.is_ok(), "llvm-profdata command should be available");
+        .args(&profiles);
+    cmd.assert().success();
 }
 
 /// Test 4: PGO-optimized build succeeds with merged profile

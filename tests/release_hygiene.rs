@@ -21,6 +21,88 @@ fn git_ls_files() -> Vec<String> {
         .collect()
 }
 
+/// `git status --porcelain` lines (tracked changes and untracked, non-ignored files).
+fn dirty_paths() -> Vec<String> {
+    let output = Command::new("git")
+        .args(["status", "--porcelain"])
+        .output()
+        .expect("failed to run git status");
+    String::from_utf8_lossy(&output.stdout)
+        .lines()
+        .map(std::string::ToString::to_string)
+        .collect()
+}
+
+/// The failure message for a failed `cargo package --list`. `cargo package`
+/// refuses any dirty tree, so a dirty tree is named as the cause explicitly
+/// instead of surfacing only cargo's raw error (G2B-S2). `--allow-dirty` is
+/// deliberately not used: the check is about what a clean release would ship.
+fn package_failure_message(dirty: &[String], cargo_stderr: &str) -> String {
+    if dirty.is_empty() {
+        return format!("cargo package --list failed: {cargo_stderr}");
+    }
+    format!(
+        "working tree is dirty: cargo package refuses to run until these are committed \
+         or ignored:\n{}\ncargo said: {cargo_stderr}",
+        dirty.join("\n")
+    )
+}
+
+/// `cargo package --list -p ruchy` stdout; fails naming a dirty tree when that is the cause.
+fn cargo_package_list() -> String {
+    let output = Command::new(env!("CARGO"))
+        .args(["package", "--list", "-p", "ruchy"])
+        .output()
+        .expect("failed to run cargo package --list");
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(
+        output.status.success(),
+        "{}",
+        package_failure_message(&dirty_paths(), &stderr)
+    );
+    String::from_utf8_lossy(&output.stdout).into_owned()
+}
+
+#[test]
+fn test_g2b_s2_package_failure_names_a_dirty_tree() {
+    let msg = package_failure_message(&["?? src/.pmat/tdg-cold.db".to_string()], "error: x");
+    assert!(msg.starts_with("working tree is dirty"), "{msg}");
+    assert!(msg.contains("src/.pmat/tdg-cold.db"), "{msg}");
+    assert!(msg.contains("error: x"), "{msg}");
+    let clean = package_failure_message(&[], "error: y");
+    assert!(!clean.contains("dirty"), "{clean}");
+}
+
+/// Paths pmat writes while tests and hooks run must be ignored by the ROOT
+/// `.gitignore`, or `cargo package` sees a dirty tree (G2B-S2). pmat also drops
+/// a `*` `.gitignore` inside each `.pmat/` it creates, but that file is itself
+/// untracked and absent in a fresh clone, so it is checked in isolation here: a
+/// scratch repository holding only the root `.gitignore`.
+#[test]
+fn test_g2b_s2_tool_written_paths_are_ignored() {
+    let scratch = tempfile::TempDir::new().expect("tempdir");
+    std::fs::copy(".gitignore", scratch.path().join(".gitignore")).expect("copy .gitignore");
+    let git = |args: &[&str]| {
+        Command::new("git")
+            .current_dir(scratch.path())
+            .args(args)
+            .status()
+            .expect("failed to run git")
+    };
+    assert!(git(&["init", "-q"]).success(), "git init failed");
+    for path in [
+        "src/.pmat/tdg-cold.db",
+        "src/.pmat/tdg-warm.db",
+        ".pmat/tdg-cold.db",
+        ".pmat/jidoka.jsonl",
+        ".pmat/clippy-receipt",
+        ".pmat/dead-code-cache-eb-d8.json",
+    ] {
+        let ignored = git(&["check-ignore", "--no-index", "-q", path]).success();
+        assert!(ignored, "{path} must be ignored by the root .gitignore");
+    }
+}
+
 #[test]
 fn test_pmat_092_git_tracked_paths_no_colon() {
     let files = git_ls_files();
@@ -105,16 +187,7 @@ fn test_pmat_092_pmat_work_colon_dirs_not_tracked() {
 
 #[test]
 fn test_pmat_092_pmat_work_not_in_package_list() {
-    let output = Command::new(env!("CARGO"))
-        .args(["package", "--list", "-p", "ruchy"])
-        .output()
-        .expect("failed to run cargo package --list");
-    assert!(
-        output.status.success(),
-        "cargo package --list failed: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let files = String::from_utf8_lossy(&output.stdout);
+    let files = cargo_package_list();
     let offenders: Vec<&str> = files
         .lines()
         .filter(|l| l.starts_with(".pmat-work/"))
@@ -130,16 +203,7 @@ fn test_pmat_092_pmat_work_not_in_package_list() {
 /// true so `cargo install ruchy` remains reproducible.
 #[test]
 fn test_pmat_092_cargo_lock_present_in_package_list() {
-    let output = Command::new(env!("CARGO"))
-        .args(["package", "--list", "-p", "ruchy"])
-        .output()
-        .expect("failed to run cargo package --list");
-    assert!(
-        output.status.success(),
-        "cargo package --list failed: {}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    let files = String::from_utf8_lossy(&output.stdout);
+    let files = cargo_package_list();
     assert!(
         files.lines().any(|l| l == "Cargo.lock"),
         "Cargo.lock must be present in the packaged file list"

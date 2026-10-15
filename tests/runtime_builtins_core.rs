@@ -136,12 +136,16 @@ fun main() {
 }
 
 // ============================================================================
-// BUG #2: Cryptic error messages for unsupported Rust syntax
-// Bug Report: ../ruchy-cookbook/RUCHY_ISSUE_SYNTAX_ERROR_REPORT.md
+// BUG #2 (superseded): `#[derive(...)]` once failed with a cryptic
+// "Unexpected token: AttributeStart", and this test then demanded an
+// "Attributes are not supported" error. The 5.0 spec (ruchy-5.0-sovereign-platform.md
+// section 3 grammar: attribute ::= '#[' IDENT ( '(' arg_list ')' )? ']') and
+// PARSER-ATTR-001 (tests/parser_attribute_syntax.rs) make Rust-style attributes
+// valid Ruchy, so the correct behaviour is: accepted, and carried to the Rust output.
 // ============================================================================
 
 #[test]
-fn test_bug_syntax_001_attribute_error_message() {
+fn test_bug_syntax_001_rust_style_derive_attribute_accepted() {
     let code = r"
 #[derive(Debug)]
 struct Point {
@@ -150,15 +154,16 @@ struct Point {
 }
 ";
 
-    let output = ruchy_cmd().arg("-e").arg(code).assert().failure();
+    ruchy_cmd().arg("-e").arg(code).assert().success();
 
-    // Should have helpful error message, not cryptic "Unexpected token: AttributeStart"
-    let stderr = String::from_utf8_lossy(&output.get_output().stderr);
+    let dir = tempfile::tempdir().expect("tempdir");
+    let src = dir.path().join("derive.ruchy");
+    std::fs::write(&src, code).expect("write source");
+    let output = ruchy_cmd().arg("transpile").arg(&src).assert().success();
+    let stdout = String::from_utf8_lossy(&output.get_output().stdout);
     assert!(
-        stderr.contains("Attributes are not supported")
-            || stderr.contains("does not support #[derive]")
-            || stderr.contains("Ruchy does not use Rust-style attributes"),
-        "Error message should explain that attributes are not supported. Got: {stderr}"
+        stdout.contains("#[derive(Debug") && stdout.contains("struct Point"),
+        "derive attribute must reach the Rust output. Got: {stdout}"
     );
 }
 

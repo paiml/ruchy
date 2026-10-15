@@ -62,6 +62,9 @@ impl Library {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_008_01_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -205,6 +208,9 @@ impl Calculator {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_008_04_output.rs"])
         .output()
         .expect("Failed to run rustc");

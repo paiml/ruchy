@@ -10,7 +10,6 @@
 
 use assert_cmd::Command;
 use std::fs;
-use std::thread;
 use std::time::Duration;
 use tempfile::TempDir;
 
@@ -36,6 +35,7 @@ fn test_serve_help_shows_watch_flags() {
 }
 
 #[test]
+#[cfg(feature = "notebook")] // `ruchy serve` is compiled only with the notebook feature
 fn test_serve_with_watch_starts_successfully() {
     let temp_dir = TempDir::new().unwrap();
     let test_file = temp_dir.path().join("index.html");
@@ -57,7 +57,7 @@ fn test_serve_with_watch_starts_successfully() {
         .expect("Failed to start server");
 
     // Give server time to start
-    thread::sleep(Duration::from_secs(2));
+    std::thread::sleep(Duration::from_secs(2));
 
     // Server should be running
     assert!(
@@ -117,7 +117,7 @@ fn test_pid_file_replaces_stale_entry() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(all(unix, feature = "notebook"))] // `ruchy serve` needs the notebook feature
 fn test_graceful_shutdown_on_sigterm() {
     use nix::sys::signal::{kill, Signal};
     use nix::unistd::Pid;
@@ -143,7 +143,7 @@ fn test_graceful_shutdown_on_sigterm() {
         .expect("Failed to start server");
 
     // Give server time to start and create PID file
-    thread::sleep(Duration::from_secs(2));
+    std::thread::sleep(Duration::from_secs(2));
 
     // PID file should exist
     assert!(pid_path.exists(), "PID file should be created");
@@ -159,7 +159,7 @@ fn test_graceful_shutdown_on_sigterm() {
         if child.try_wait().unwrap().is_some() {
             break;
         }
-        thread::sleep(Duration::from_millis(100));
+        std::thread::sleep(Duration::from_millis(100));
     }
 
     // Server should have exited gracefully
@@ -170,7 +170,7 @@ fn test_graceful_shutdown_on_sigterm() {
     );
 
     // PID file should be cleaned up
-    thread::sleep(Duration::from_millis(100)); // Give time for cleanup
+    std::thread::sleep(Duration::from_millis(100)); // Give time for cleanup
     assert!(
         !pid_path.exists(),
         "PID file should be removed on graceful shutdown"

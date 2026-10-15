@@ -70,7 +70,7 @@ impl Transpiler {
 
         let mut statements = Vec::new();
         for (i, expr) in exprs.iter().enumerate() {
-            let expr_tokens = self.transpile_expr(expr)?;
+            let expr_tokens = self.transpile_block_statement(expr, &exprs[i + 1..])?;
             let is_let = Self::is_let_expression(expr);
 
             if i < exprs.len() - 1 {

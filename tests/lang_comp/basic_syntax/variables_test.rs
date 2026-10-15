@@ -8,7 +8,7 @@ use std::process::{Command, Stdio};
 
 /// Helper: Run code via REPL stdin and filter output
 fn run_repl_code(code: &str) -> Result<String, String> {
-    let mut child = Command::new("ruchy")
+    let mut child = Command::new(env!("CARGO_BIN_EXE_ruchy"))
         .arg("repl")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -51,7 +51,7 @@ fn run_repl_code(code: &str) -> Result<String, String> {
 /// Property: Let bindings should preserve integer values
 #[test]
 fn test_variable_let_binding_integers() {
-    let output = Command::new("ruchy")
+    let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
         .args([
             "run",
             "examples/lang_comp/01-basic-syntax/01_variables.ruchy",
@@ -67,7 +67,7 @@ fn test_variable_let_binding_integers() {
 /// Property: Let bindings should preserve string values
 #[test]
 fn test_variable_let_binding_strings() {
-    let output = Command::new("ruchy")
+    let output = Command::new(env!("CARGO_BIN_EXE_ruchy"))
         .args([
             "run",
             "examples/lang_comp/01-basic-syntax/02_string_variables.ruchy",

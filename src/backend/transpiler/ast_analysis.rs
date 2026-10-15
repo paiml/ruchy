@@ -219,8 +219,16 @@ impl Transpiler {
     pub fn collect_signatures_from_expr(&mut self, expr: &Expr) {
         match &expr.kind {
             ExprKind::Function {
-                name, params, body, ..
+                name,
+                params,
+                body,
+                return_type,
+                ..
             } => {
+                // MAINUNIT-1: remember functions whose calls yield `()`
+                if return_type.is_none() && super::function_analysis::is_void_expression(body) {
+                    self.unit_functions.insert(name.clone());
+                }
                 let param_types: Vec<String> = params
                     .iter()
                     .map(|param| Self::type_to_string(&param.ty))

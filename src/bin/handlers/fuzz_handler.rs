@@ -258,7 +258,7 @@ fn handle_fuzz_single_file(
     let (successes, crashes, timeouts, crash_details) =
         run_fuzz_iterations(&binary_path, iterations, verbose)?;
 
-    let _ = fs::remove_file(&binary_path);
+    drop(binary_path);
 
     let total = successes + crashes + timeouts;
     let success_rate = (successes as f64 / total as f64) * 100.0;

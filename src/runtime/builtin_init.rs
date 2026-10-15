@@ -123,6 +123,15 @@ fn add_io_functions(global_env: &mut HashMap<String, Value>) {
         "print".to_string(),
         Value::from_string("__builtin_print__".to_string()),
     );
+    // EPRINTLN-1: stderr counterparts of println/print
+    global_env.insert(
+        "eprintln".to_string(),
+        Value::from_string("__builtin_eprintln__".to_string()),
+    );
+    global_env.insert(
+        "eprint".to_string(),
+        Value::from_string("__builtin_eprint__".to_string()),
+    );
     global_env.insert(
         "dbg".to_string(),
         Value::from_string("__builtin_dbg__".to_string()),
@@ -814,7 +823,8 @@ mod tests {
         // parse_json alias: parse_json (Issue #131 - v3.182.0)
         // +1 dir() builtin (object-inspection-consistency spec)
         // +1 assert_ne() builtin (METHODS-1)
-        assert_eq!(env.len(), 118);
+        // +2 eprintln()/eprint() builtins (EPRINTLN-1)
+        assert_eq!(env.len(), 120);
     }
 
     #[test]
@@ -898,7 +908,9 @@ mod tests {
         assert!(env.contains_key("println"));
         assert!(env.contains_key("print"));
         assert!(env.contains_key("dbg"));
-        assert_eq!(env.len(), 3);
+        assert!(env.contains_key("eprintln"));
+        assert!(env.contains_key("eprint"));
+        assert_eq!(env.len(), 5);
     }
 
     #[test]
