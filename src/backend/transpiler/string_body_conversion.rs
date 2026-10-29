@@ -109,6 +109,7 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let name_ident = format_ident!("{}", name);
         let is_mutable_var = self.check_mutability(name, is_mutable, let_body);
+        self.track_string_binding(name, value, type_annotation);
         let value_tokens =
             self.convert_value_for_string_context(name, value, type_annotation, is_mutable_var)?;
         let let_body_tokens = self.transpile_expr(let_body)?;
@@ -197,10 +198,13 @@ impl Transpiler {
 
         for arm in arms {
             let pattern_tokens = self.transpile_pattern(&arm.pattern)?;
-            let body_tokens = self.convert_arm_body_to_string(&arm.body)?;
+            // PRINTSTRSCOPE-1: arm bindings shadow outer string records.
+            let body_tokens = self
+                .with_pattern_scope(&arm.pattern, || self.convert_arm_body_to_string(&arm.body))?;
 
             if let Some(guard_expr) = &arm.guard {
-                let guard_tokens = self.transpile_expr(guard_expr)?;
+                let guard_tokens =
+                    self.with_pattern_scope(&arm.pattern, || self.transpile_expr(guard_expr))?;
                 arm_tokens.push(quote! {
                     #pattern_tokens if #guard_tokens => #body_tokens
                 });

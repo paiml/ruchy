@@ -98,6 +98,7 @@ pub fn is_data_structure_expr(expr_kind: &ExprKind) -> bool {
             | ExprKind::Tuple(_)
             | ExprKind::Range { .. }
             | ExprKind::ArrayInit { .. }
+            | ExprKind::VecRepeat { .. }
             | ExprKind::DataFrame { .. }
     )
 }

@@ -49,8 +49,9 @@ filter = 'test(env_set_current_dir)'
 threads-required = 1
 
 [[profile.default.overrides]]
-# Property tests need more time
-filter = 'test(/property/)'
+# Property tests need more time; a property-test binary's tests count too
+# (cli_unify_003_property_tests spawns ruchy 10K times per property)
+filter = 'test(/property/) | binary(/property/)'
 slow-timeout = { period = "90s", terminate-after = 2 }
 
 [[profile.coverage.overrides]]

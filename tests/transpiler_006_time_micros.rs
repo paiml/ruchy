@@ -42,6 +42,9 @@ pub fn get_time() -> u64 {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_006_01_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -81,6 +84,9 @@ pub fn benchmark() -> u64 {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_006_02_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -128,6 +134,9 @@ fn fib(n: i32) -> i32 {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_006_03_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -172,6 +181,9 @@ pub fn multi_benchmark() -> (u64, u64) {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_006_04_output.rs"])
         .output()
         .expect("Failed to run rustc");

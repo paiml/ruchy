@@ -18,10 +18,9 @@ use tempfile::TempDir;
 // HELPER FUNCTIONS
 // ============================================================================
 
-/// Get path to ruchy binary
+/// Get path to the cargo-built ruchy binary (honours `CARGO_TARGET_DIR`)
 fn ruchy_binary() -> String {
-    let manifest_dir = env!("CARGO_MANIFEST_DIR");
-    format!("{manifest_dir}/target/debug/ruchy")
+    env!("CARGO_BIN_EXE_ruchy").to_string()
 }
 
 /// Create temp directory

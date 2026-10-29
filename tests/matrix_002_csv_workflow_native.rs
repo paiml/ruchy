@@ -14,7 +14,7 @@ use std::process::Command;
 
 /// Helper to create a ruchy REPL session
 fn spawn_ruchy_repl() -> rexpect::session::PtySession {
-    let cmd = Command::new("ruchy");
+    let cmd = Command::new(env!("CARGO_BIN_EXE_ruchy"));
     spawn_command(cmd, Some(10000)).expect("Failed to spawn ruchy REPL")
 }
 

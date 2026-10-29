@@ -51,6 +51,9 @@ pub fn add(a: i32, b: i32) -> i32 {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_001_01_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -168,6 +171,9 @@ pub fn calculate(a: i32, b: i32, c: i32) -> i32 {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_001_05_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -218,6 +224,9 @@ impl Counter {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_001_06_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -251,6 +260,9 @@ pub fn concat(a: String, b: String) -> String {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_001_07_output.rs"])
         .output()
         .expect("Failed to run rustc");
@@ -289,6 +301,9 @@ pub fn increment_by(mut value: i32, amount: i32) -> i32 {
         .expect("Failed to write test file");
 
     let rustc_result = std::process::Command::new("rustc")
+        // COMPILERACE-1: the .rlib goes to the temp dir, never the crate root.
+        .arg("--out-dir")
+        .arg(std::env::temp_dir())
         .args(["--crate-type", "lib", "/tmp/transpiler_001_08_output.rs"])
         .output()
         .expect("Failed to run rustc");

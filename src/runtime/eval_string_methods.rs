@@ -38,7 +38,8 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "len" | "length" => Ok(Value::Integer(s.len() as i64)),
         "to_upper" | "to_uppercase" | "upper" => Ok(Value::from_string(s.to_uppercase())),
         "to_lower" | "to_lowercase" | "lower" => Ok(Value::from_string(s.to_lowercase())),
-        "to_string" => Ok(Value::from_string(s.to_string())),
+        // ARRCLONE-1: `clone`/`to_owned` copy the string, like `to_string`
+        "to_string" | "clone" | "to_owned" => Ok(Value::from_string(s.to_string())),
         "is_empty" => Ok(Value::Bool(s.is_empty())),
         "is_numeric" => Ok(Value::Bool(s.chars().all(char::is_numeric))),
         "is_alphabetic" => Ok(Value::Bool(s.chars().all(char::is_alphabetic))),
@@ -48,10 +49,17 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "trim_end" => Ok(Value::from_string(s.trim_end().to_string())),
         "chars" => eval_string_chars(s),
         "lines" => eval_string_lines(s),
+        // STRRECV-1: whitespace-separated words, as `str::split_whitespace`
+        "split_whitespace" => Ok(Value::from_array(
+            s.split_whitespace()
+                .map(|w| Value::from_string(w.to_string()))
+                .collect(),
+        )),
         "parse" | "to_int" | "to_integer" => eval_string_parse(s),
         "timestamp" => eval_string_timestamp(s),
         "to_rfc3339" => Ok(Value::from_string(s.to_string())),
-        "as_bytes" => eval_string_as_bytes(s),
+        // COUNTITER-1: `bytes()` yields the same UTF-8 bytes as `as_bytes()`
+        "as_bytes" | "bytes" => eval_string_as_bytes(s),
         _ => Err(InterpreterError::RuntimeError(format!(
             "Unknown zero-argument string method: {method}"
         ))),

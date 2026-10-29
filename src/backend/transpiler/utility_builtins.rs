@@ -165,7 +165,8 @@ impl Transpiler {
         base_name: &str,
         args: &[Expr],
     ) -> Result<Option<TokenStream>> {
-        if base_name != "range" {
+        // RHLGA-1: a user-defined `range` function shadows the builtin
+        if base_name != "range" || self.function_signatures.contains_key("range") {
             return Ok(None);
         }
 

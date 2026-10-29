@@ -1,1 +1,535 @@
-{"width":3,"executor":"agy","lanes":[{"lane":1,"status":"SUCCESS","verdict":"PASS","summary":"Review completed. Commit c5871cd8 successfully resolves finding (a) by asserting RHL_REQUIRE_PV when pv is missing in contract_tests.rs, and finding (b) by correcting the CATALOGUE comment in codes.rs. Amendment A5 accurately and honestly records the 2:1 ruling, F6 measurement, and dissent without overclaiming. The manifest change is strictly limited to the updated spec hash. Verdict is PASS.","findings":[{"claim":"RHL_REQUIRE_PV=1 turns a missing pv into a test failure","file":"src/rhl/contract_tests.rs","fix":"Added assert!(ok || std::env::var_os(\"RHL_REQUIRE_PV\").is_none())","grounding":"cited","line":64},{"claim":"CATALOGUE comment no longer falsely claims 'family order'","file":"src/rhl/codes.rs","fix":"Updated comment to state 'in the order it was allocated'","grounding":"cited","line":45},{"claim":"Amendment A5 is an honest record of the 2:1 ruling and the dissent","file":"docs/specifications/ruchy-high-level-language-interface.md","fix":"Added Amendment A5 accurately recording the ruling, F6 measurement, and dissent","grounding":"cited","line":441},{"claim":"manifest changed only the spec's hash line","file":"docs/rhl/PREREGISTRATION.sha256","fix":"Updated hash for docs/specifications/ruchy-high-level-language-interface.md only","grounding":"cited","line":485}],"raw_bytes":3988,"err_bytes":418,"envelope_status":"SUCCESS","verdict_source":"structured_output","grounding_check":"parity","model":"gemini-3.1-pro-high","model_measured":"gemini-3.1-pro-high","model_source":"measured","family":"gemini"},{"lane":2,"status":"SUCCESS","verdict":"PASS","summary":"Review of commit c5871cd8 relative to 49fc058f: (a) pv-dependent tests in src/rhl/contract_tests.rs now assert RHL_REQUIRE_PV, preventing vacuous skips during release runs and notifying on skip when unset; (b) the CATALOGUE comment in src/rhl/codes.rs now accurately describes allocation order; (c) Amendment A5 in docs/specifications/ruchy-high-level-language-interface.md faithfully records how F6 is measured, places C002 under NoContractTemplate, and explicitly records the 2:1 ruling and the dissent without overclaiming; (d) docs/rhl/PREREGISTRATION.sha256 was modified strictly on the spec's hash line, matching its recalculated sha256 checksum. All cited findings from Round 1 are resolved. Verdict: PASS.","findings":[{"claim":"RHL_REQUIRE_PV assert enforces non-vacuous tests: absent pv causes failure when RHL_REQUIRE_PV is set, and prints skip message when unset","file":"src/rhl/contract_tests.rs","grounding":"cited","line":53},{"claim":"CATALOGUE comment corrected from 'in family order' to 'in the order it was allocated (each family\\'s original codes first, later codes appended)'","file":"src/rhl/codes.rs","grounding":"cited","line":64},{"claim":"Amendment A5 honestly records the 2:1 ruling and the dissent, explains the SHACL shapes_n = 0 rationale, defines F6 measurement via pv validate and proof obligations, and classifies C002 under NoContractTemplate without overclaiming","file":"docs/specifications/ruchy-high-level-language-interface.md","grounding":"cited","line":441},{"claim":"PREREGISTRATION.sha256 manifest changes only the hash line for the updated spec and matches its sha256 checksum exactly","file":"docs/rhl/PREREGISTRATION.sha256","grounding":"measured","line":479}],"raw_bytes":4827,"err_bytes":393,"envelope_status":"SUCCESS","verdict_source":"structured_output","grounding_check":"parity","model":"gemini-3.8-flash-high","model_measured":"gemini-3.8-flash-high","model_source":"measured","family":"gemini"},{"lane":3,"status":"SUCCESS","verdict":"PASS","summary":"Re-review of git diff 49fc058f..c5871cd8 on branch RHLGA-P6-rhl6:\n1. Finding (a) is resolved in src/rhl/contract_tests.rs:53-56: RHL_REQUIRE_PV=1 turns a missing pv binary into an explicit assertion failure, preventing silent skips in CI / release gate.\n2. Finding (b) is resolved in src/rhl/codes.rs:64-65: CATALOGUE comment was updated to accurately state that codes are ordered by allocation (family originals first, followed by appends).\n3. Amendment A5 in docs/specifications/ruchy-high-level-language-interface.md:441-450 is an honest record that accurately explains why and how F6 is measured (pv validate exit 0 && pv status Proof obligations >= 1 due to SHACL shapes_n being 0 across the corpus), maps C002 to NoContractTemplate, explicitly records the 2:1 ruling and the dissent, and does not overclaim.\n4. docs/rhl/PREREGISTRATION.sha256 changed only the single hash line for docs/specifications/ruchy-high-level-language-interface.md, matching its updated sha256 checksum.\nVerdict: PASS.","findings":[{"claim":"Missing pv handling: pv_available() now asserts `ok || std::env::var_os(\"RHL_REQUIRE_PV\").is_none()`, failing with an informative message if RHL_REQUIRE_PV is set on a host without pv on PATH, resolving finding (a).","file":"src/rhl/contract_tests.rs","fix":"Added assert! in pv_available() checking RHL_REQUIRE_PV env var.","grounding":"cited","line":53},{"claim":"CATALOGUE doc comment truthfulness: updated from inaccurate 'in family order' to 'in the order it was allocated (each family\\'s original codes first, later codes appended). Append only; never reorder, renumber or reuse.', resolving finding (b).","file":"src/rhl/codes.rs","fix":"Updated doc comment on CATALOGUE.","grounding":"cited","line":64},{"claim":"Spec Amendment A5 honesty: Amendment A5 faithfully records how F6 is measured (pv validate exit 0 and pv status Proof obligations >= 1), maps C002 to NoContractTemplate, states the 2:1 ruling and the dissent, and does not overclaim.","file":"docs/specifications/ruchy-high-level-language-interface.md","fix":"Added Amendment A5 after A4.","grounding":"cited","line":441},{"claim":"PREREGISTRATION.sha256 manifest integrity: exactly one line changed in the manifest, updating the sha256 checksum for docs/specifications/ruchy-high-level-language-interface.md to 8bc4aa71e60e6905923e7bafb5dc8b3a906d951674e7a4c46a898a77144befd5, which matches the spec file hash.","file":"docs/rhl/PREREGISTRATION.sha256","fix":"Regenerated hash for the specification file.","grounding":"measured","line":479}],"raw_bytes":6569,"err_bytes":420,"envelope_status":"SUCCESS","verdict_source":"structured_output","grounding_check":"parity","model":"gemini-3.7-flash-high","model_measured":"gemini-3.7-flash-high","model_source":"measured","family":"gemini"}],"agreed":true,"dissent":[],"dedup":[{"file":"docs/rhl/PREREGISTRATION.sha256","line":479,"lanes_agreeing":[2,3],"claims":["PREREGISTRATION.sha256 manifest changes only the hash line for the updated spec and matches its sha256 checksum exactly","PREREGISTRATION.sha256 manifest integrity: exactly one line changed in the manifest, updating the sha256 checksum for docs/specifications/ruchy-high-level-language-interface.md to 8bc4aa71e60e6905923e7bafb5dc8b3a906d951674e7a4c46a898a77144befd5, which matches the spec file hash."]},{"file":"docs/rhl/PREREGISTRATION.sha256","line":485,"lanes_agreeing":[1],"claims":["manifest changed only the spec's hash line"]},{"file":"docs/specifications/ruchy-high-level-language-interface.md","line":441,"lanes_agreeing":[1,2,3],"claims":["Amendment A5 honestly records the 2:1 ruling and the dissent, explains the SHACL shapes_n = 0 rationale, defines F6 measurement via pv validate and proof obligations, and classifies C002 under NoContractTemplate without overclaiming","Amendment A5 is an honest record of the 2:1 ruling and the dissent","Spec Amendment A5 honesty: Amendment A5 faithfully records how F6 is measured (pv validate exit 0 and pv status Proof obligations >= 1), maps C002 to NoContractTemplate, states the 2:1 ruling and the dissent, and does not overclaim."]},{"file":"src/rhl/codes.rs","line":45,"lanes_agreeing":[1],"claims":["CATALOGUE comment no longer falsely claims 'family order'"]},{"file":"src/rhl/codes.rs","line":64,"lanes_agreeing":[2,3],"claims":["CATALOGUE comment corrected from 'in family order' to 'in the order it was allocated (each family\\'s original codes first, later codes appended)'","CATALOGUE doc comment truthfulness: updated from inaccurate 'in family order' to 'in the order it was allocated (each family\\'s original codes first, later codes appended). Append only; never reorder, renumber or reuse.', resolving finding (b)."]},{"file":"src/rhl/contract_tests.rs","line":53,"lanes_agreeing":[2,3],"claims":["Missing pv handling: pv_available() now asserts `ok || std::env::var_os(\"RHL_REQUIRE_PV\").is_none()`, failing with an informative message if RHL_REQUIRE_PV is set on a host without pv on PATH, resolving finding (a).","RHL_REQUIRE_PV assert enforces non-vacuous tests: absent pv causes failure when RHL_REQUIRE_PV is set, and prints skip message when unset"]},{"file":"src/rhl/contract_tests.rs","line":64,"lanes_agreeing":[1],"claims":["RHL_REQUIRE_PV=1 turns a missing pv into a test failure"]}],"uncovered":[],"coverage_source":"lanes","partial":false,"partial_reasons":[],"extra":{},"author":{"model":"Opus 5.5 (1M context)","family":"claude","source":"flag"}}
+{
+  "ticket": "RHLGA-1",
+  "base": "origin/RHLGA-G2b-test-suite",
+  "base_resolved": "origin/RHLGA-G2b-test-suite",
+  "base_note": "no origin/origin/RHLGA-G2b-test-suite exists; judged against the local ref",
+  "head": "bb8b7ec012d329295f28a65393785e139d6aecb1",
+  "diff_sha256": "4fb24858cd4c0e33e5bf3f0ba66b6e8cdec985fb3e770a0336796e4eaaef9bf4",
+  "width": 3,
+  "executor": "agy",
+  "prompt_mode": "inline",
+  "prompt_bytes": 58333,
+  "author": {
+    "model": "claude-opus-5-5",
+    "family": "claude",
+    "source": "flag"
+  },
+  "agreed": true,
+  "lanes": [
+    {
+      "lane": 1,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "I have thoroughly reviewed the diff against the RHLGA-1 ticket and its sub-tasks (HOSTDEP-1, RAWIDENT-2, GLOBALSHADOW-1, RETUNIT-1, BLOCKFOR-1). The diff perfectly matches the acceptance criteria. It replaces 'ruchy' commands with 'CARGO_BIN_EXE_ruchy', properly ignores named-environment tests, scales back cli_unify_003 spawns, fixes glob expansion in test 03, enforces safe identifiers for bindings and correct `__global_` emission/shadowing logic for mutable globals, correctly restores token position for blocks containing for loops misparsed as set comprehensions, and refines the numeric-name type inference heuristic. All findings align exactly with the receipt and ticket requirements.",
+      "findings": [
+        {
+          "claim": "HOSTDEP-1: Workspace tests spawn env!(\"CARGO_BIN_EXE_ruchy\") and named-environment tests are ignored",
+          "file": "tests/lang_comp/basic_syntax/variables_test.rs",
+          "fix": "Tests replacing Command::new(\"ruchy\") with the built binary were verified in variables_test.rs and other matrix/issue tests. The ignore tags for llvm-profdata and renacer were properly added to opt_global_001_pgo.rs and tooling_002_renacer_integration.rs.",
+          "grounding": "cited",
+          "line": 54
+        },
+        {
+          "claim": "RAWIDENT-2: Parameters and bindings correctly go through safe_ident",
+          "file": "src/backend/transpiler/actors.rs",
+          "fix": "safe_ident was verified to be used across function, method, actor-handler, effect, closure parameters, for variables, patterns and catch bindings.",
+          "grounding": "cited",
+          "line": 78
+        },
+        {
+          "claim": "GLOBALSHADOW-1: Mutable globals are emitted as static __global_<name> and with_globals_shadowed hides names from global_vars for bindings",
+          "file": "src/backend/transpiler/block_categorization.rs",
+          "fix": "Mutable globals correctly use global_static_ident (which translates to __global_{name}), and with_globals_shadowed is correctly used across let bindings, function parameters, and pattern/for loops (via with_string_scope).",
+          "grounding": "cited",
+          "line": 149
+        },
+        {
+          "claim": "RETUNIT-1: The numeric-name heuristic applies only when the body ends in a value",
+          "file": "src/backend/transpiler/function_analysis.rs",
+          "fix": "is_numeric_named_value_function was added and correctly utilized in both standard type inference and the lifetime path (infer_return_type_with_lifetime). tests/g2b_transfix_7.rs includes the appropriate tests.",
+          "grounding": "cited",
+          "line": 154
+        },
+        {
+          "claim": "BLOCKFOR-1: Set-comprehension parser restores token position when failing so the block parser takes it",
+          "file": "src/frontend/parser/collections.rs",
+          "fix": "try_parse_comprehension correctly resets the token position in inspect_err when parsing a set comprehension continuation fails, allowing block parsing to proceed.",
+          "grounding": "cited",
+          "line": 1236
+        }
+      ],
+      "raw_bytes": 6866,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "grounding_check": "parity",
+      "model": "gemini-3.1-pro-high",
+      "model_measured": "gemini-3.1-pro-high",
+      "model_source": "measured",
+      "family": "gemini",
+      "role": "independent",
+      "fallback": {
+        "judged_by": "gemini-3.1-pro-high",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "gemini-3.1-pro-high",
+            "family": "gemini",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 2,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "Lane 2 Review Verdict: PASS. Evaluated PR #248 (gate G2c of RHLGA-1 epic, commits origin/RHLGA-G2b-test-suite...HEAD) against ticket RHLGA-1, the implementation receipt, and refutation criteria. All acceptance criteria for HOSTDEP-1, RAWIDENT-2, GLOBALSHADOW-1, RETUNIT-1, and BLOCKFOR-1 are verified and fully implemented in the diff. Host test isolation properly spawns env!(\\\"CARGO_BIN_EXE_ruchy\\\"); the two named-environment ignores (renacer and llvm-profdata) are explicitly authorized under plan Q3 rulings; opt_global_001 test 03 merges real profile files and asserts success; cli_unify_003 iteration count is safely sized to 1,000 cases; transpiler and parser fixes correctly resolve reserved word bindings, global shadowing, numeric return heuristics (including the lifetime path in lifetime_helpers.rs), and block/for parsing ambiguity; and 21 comprehensive integration tests verify compilation vs interpretation stdout parity. No test asserts the opposite of the ticket, no gate is weakened, receipt claims match the diff exactly, and no unrequested changes exist.",
+      "findings": [
+        {
+          "claim": "HOSTDEP-1: Integration tests spawn the in-tree built binary via env!(\\\"CARGO_BIN_EXE_ruchy\\\") instead of Command::new(\\\"ruchy\\\"), removing host PATH dependencies across matrix_001..004_native, lang_comp_suite, and issue_040.",
+          "file": "tests/matrix_001_simple_arithmetic_native.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 14
+        },
+        {
+          "claim": "HOSTDEP-1: test_opt_global_001_03_profile_merge isolates the host-tool dependency with #[ignore = \\\"named environment: llvm-profdata on PATH and the profiles test 02 collects - run in nightly/tier3 only\\\"] per Q3 plan ruling, passes collected profile files instead of an unexpanded shell glob, and asserts cmd.assert().success().",
+          "file": "tests/opt_global_001_pgo.rs",
+          "fix": "N/A - verified correct per acceptance criteria and Q3 interpretation.",
+          "grounding": "cited",
+          "line": 51
+        },
+        {
+          "claim": "HOSTDEP-1: test_tooling_002_01_renacer_installed isolates external renacer dependency with #[ignore = \\\"named environment: renacer on PATH (cargo install renacer)\\\"], compliant with Q3 named-environment requirements without weakening general test gates.",
+          "file": "tests/tooling_002_renacer_integration.rs",
+          "fix": "N/A - verified correct per acceptance criteria and Q3 interpretation.",
+          "grounding": "cited",
+          "line": 31
+        },
+        {
+          "claim": "HOSTDEP-1: cli_unify_003 property tests reduce determinism iteration count to 1,000 cases (ProptestConfig::with_cases(1000)), matching other spawn-heavy test blocks and preventing timeouts within the 180s test budget.",
+          "file": "tests/cli_unify_003_property_tests.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 49
+        },
+        {
+          "claim": "RAWIDENT-2: Rust reserved keywords (box, do, typeof, extern, etc.) in binding positions (mutable/const globals, fn/method/actor/closure parameters, for variables, patterns) are converted to raw identifiers via Self::safe_ident.",
+          "file": "src/backend/transpiler/actors.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 78
+        },
+        {
+          "claim": "GLOBALSHADOW-1: Mutable globals are emitted with __global_{name} static identifiers and with_globals_shadowed scopes local bindings, preventing rustc E0530 static shadowing rejections and allowing local parameters and let bindings to shadow mutable globals.",
+          "file": "src/backend/transpiler/expr_dispatcher.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 88
+        },
+        {
+          "claim": "RETUNIT-1: is_numeric_named_value_function ensures arithmetic-named functions (add, double, sum) only infer a numeric return type when the body ends in a non-unit value, correctly returning () when the body ends in an assignment or statement.",
+          "file": "src/backend/transpiler/function_signature.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 96
+        },
+        {
+          "claim": "RETUNIT-1: infer_return_type_with_lifetime on the lifetime path applies is_numeric_named_value_function(name, body) identically to the main signature path, verified by unit tests in lifetime_helpers.",
+          "file": "src/backend/transpiler/lifetime_helpers.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 163
+        },
+        {
+          "claim": "BLOCKFOR-1: try_parse_comprehension restores parser token position upon set comprehension continuation failure, allowing block expressions containing an expression followed by a for loop to parse properly as blocks rather than failing with Unexpected token: RightBrace.",
+          "file": "src/frontend/parser/collections.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 1238
+        },
+        {
+          "claim": "End-to-end verification: 21 integration tests in tests/g2b_transfix_7.rs assert compiled (ruchy compile) and interpreted (ruchy run) stdout parity across RAWIDENT-2 (9 tests), GLOBALSHADOW-1 (6 tests), RETUNIT-1 (3 tests), and BLOCKFOR-1 (3 tests).",
+          "file": "tests/g2b_transfix_7.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "measured",
+          "line": 1
+        }
+      ],
+      "raw_bytes": 11632,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "grounding_check": "parity",
+      "model": "gemini-3.8-flash-high",
+      "model_measured": "gemini-3.8-flash-high",
+      "model_source": "measured",
+      "family": "gemini",
+      "role": "independent",
+      "fallback": {
+        "judged_by": "gemini-3.8-flash-high",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "gemini-3.8-flash-high",
+            "family": "gemini",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    },
+    {
+      "lane": 3,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "Lane 3 Audit Verdict: PASS. Evaluated PR #248 (gate G2c of RHLGA-1 epic, commits origin/RHLGA-G2b-test-suite...HEAD) against ticket RHLGA-1, the implementation receipt, and all refutation criteria. All acceptance criteria for HOSTDEP-1, RAWIDENT-2, GLOBALSHADOW-1, RETUNIT-1 (including the lifetime path in lifetime_helpers.rs), and BLOCKFOR-1 are verified and fully implemented in the diff. Host test isolation correctly spawns env!(\"CARGO_BIN_EXE_ruchy\"); named-environment ignores for renacer and llvm-profdata are explicitly required by acceptance criteria; opt_global_001 test 03 merges actual profraw files and asserts success; cli_unify_003 is adjusted to 1,000 cases; transpiler and parser fixes resolve reserved word raw identifiers, global shadowing, numeric return heuristics, and block/for parsing ambiguity; and 21 integration tests in tests/g2b_transfix_7.rs verify compiled vs interpreted parity. No tests assert the opposite of tickets, no gates are weakened, and all receipt claims are backed by the diff.",
+      "findings": [
+        {
+          "claim": "HOSTDEP-1: Integration tests spawn the in-tree built binary using env!(\"CARGO_BIN_EXE_ruchy\") instead of Command::new(\"ruchy\"), removing host PATH dependencies across matrix_001..004_native, lang_comp_suite, and issue_040.",
+          "file": "tests/matrix_001_simple_arithmetic_native.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 14
+        },
+        {
+          "claim": "HOSTDEP-1: test_opt_global_001_03_profile_merge isolates host-tool dependency with #[ignore = \"named environment: llvm-profdata on PATH and the profiles test 02 collects - run in nightly/tier3 only\"], passes actual profile files instead of an unexpanded glob, and asserts cmd.assert().success().",
+          "file": "tests/opt_global_001_pgo.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 51
+        },
+        {
+          "claim": "HOSTDEP-1: test_tooling_002_01_renacer_installed isolates external renacer dependency with #[ignore = \"named environment: renacer on PATH (cargo install renacer)\"] per acceptance criteria.",
+          "file": "tests/tooling_002_renacer_integration.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 31
+        },
+        {
+          "claim": "HOSTDEP-1: cli_unify_003 determinism proptest block is configured with 1,000 cases (ProptestConfig::with_cases(1000)) to prevent timeouts within test budget.",
+          "file": "tests/cli_unify_003_property_tests.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 49
+        },
+        {
+          "claim": "RAWIDENT-2: Rust reserved words (box, do, typeof, extern, etc.) in binding positions (globals, parameters, patterns, for variables) are transpiled as raw identifiers via Self::safe_ident.",
+          "file": "src/backend/transpiler/expr_dispatcher.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 82
+        },
+        {
+          "claim": "GLOBALSHADOW-1: Mutable globals are emitted with __global_{name} static identifiers and with_globals_shadowed scopes local bindings, preventing rustc E0530 static shadowing errors and allowing local variables/parameters to shadow mutable globals.",
+          "file": "src/backend/transpiler/expr_dispatcher.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 94
+        },
+        {
+          "claim": "RETUNIT-1: is_numeric_named_value_function ensures arithmetic-named functions (add, double, sum) only infer a numeric return type when the body ends in a non-unit value, correctly inferring unit return types for functions ending in statements or assignments.",
+          "file": "src/backend/transpiler/function_signature.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 96
+        },
+        {
+          "claim": "RETUNIT-1: infer_return_type_with_lifetime applies is_numeric_named_value_function to ensure consistent return type inference across the lifetime path, accompanied by unit tests.",
+          "file": "src/backend/transpiler/lifetime_helpers.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 163
+        },
+        {
+          "claim": "BLOCKFOR-1: try_parse_comprehension restores token stream position upon set comprehension continuation failure, allowing block expressions containing an expression followed by a for loop to parse properly as blocks.",
+          "file": "src/frontend/parser/collections.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 1238
+        },
+        {
+          "claim": "G2c end-to-end test suite: 21 integration tests in tests/g2b_transfix_7.rs assert compiled (ruchy compile) and interpreted (ruchy run) stdout parity across RAWIDENT-2 (9 tests), GLOBALSHADOW-1 (6 tests), RETUNIT-1 (3 tests), and BLOCKFOR-1 (3 tests).",
+          "file": "tests/g2b_transfix_7.rs",
+          "fix": "N/A - verified correct per acceptance criteria.",
+          "grounding": "cited",
+          "line": 1
+        }
+      ],
+      "raw_bytes": 10975,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "grounding_check": "parity",
+      "model": "gemini-3.7-flash-high",
+      "model_measured": "gemini-3.7-flash-high",
+      "model_source": "measured",
+      "family": "gemini",
+      "role": "independent",
+      "fallback": {
+        "judged_by": "gemini-3.7-flash-high",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "gemini-3.7-flash-high",
+            "family": "gemini",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": []
+      }
+    }
+  ],
+  "dissent": [],
+  "dedup": [
+    {
+      "file": "src/backend/transpiler/actors.rs",
+      "line": 78,
+      "lanes_agreeing": [
+        1,
+        2
+      ],
+      "claims": [
+        "RAWIDENT-2: Parameters and bindings correctly go through safe_ident",
+        "RAWIDENT-2: Rust reserved keywords (box, do, typeof, extern, etc.) in binding positions (mutable/const globals, fn/method/actor/closure parameters, for variables, patterns) are converted to raw identifiers via Self::safe_ident."
+      ]
+    },
+    {
+      "file": "src/backend/transpiler/block_categorization.rs",
+      "line": 149,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "GLOBALSHADOW-1: Mutable globals are emitted as static __global_<name> and with_globals_shadowed hides names from global_vars for bindings"
+      ]
+    },
+    {
+      "file": "src/backend/transpiler/expr_dispatcher.rs",
+      "line": 82,
+      "lanes_agreeing": [
+        3
+      ],
+      "claims": [
+        "RAWIDENT-2: Rust reserved words (box, do, typeof, extern, etc.) in binding positions (globals, parameters, patterns, for variables) are transpiled as raw identifiers via Self::safe_ident."
+      ]
+    },
+    {
+      "file": "src/backend/transpiler/expr_dispatcher.rs",
+      "line": 88,
+      "lanes_agreeing": [
+        2
+      ],
+      "claims": [
+        "GLOBALSHADOW-1: Mutable globals are emitted with __global_{name} static identifiers and with_globals_shadowed scopes local bindings, preventing rustc E0530 static shadowing rejections and allowing local parameters and let bindings to shadow mutable globals."
+      ]
+    },
+    {
+      "file": "src/backend/transpiler/expr_dispatcher.rs",
+      "line": 94,
+      "lanes_agreeing": [
+        3
+      ],
+      "claims": [
+        "GLOBALSHADOW-1: Mutable globals are emitted with __global_{name} static identifiers and with_globals_shadowed scopes local bindings, preventing rustc E0530 static shadowing errors and allowing local variables/parameters to shadow mutable globals."
+      ]
+    },
+    {
+      "file": "src/backend/transpiler/function_analysis.rs",
+      "line": 154,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "RETUNIT-1: The numeric-name heuristic applies only when the body ends in a value"
+      ]
+    },
+    {
+      "file": "src/backend/transpiler/function_signature.rs",
+      "line": 96,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "RETUNIT-1: is_numeric_named_value_function ensures arithmetic-named functions (add, double, sum) only infer a numeric return type when the body ends in a non-unit value, correctly inferring unit return types for functions ending in statements or assignments.",
+        "RETUNIT-1: is_numeric_named_value_function ensures arithmetic-named functions (add, double, sum) only infer a numeric return type when the body ends in a non-unit value, correctly returning () when the body ends in an assignment or statement."
+      ]
+    },
+    {
+      "file": "src/backend/transpiler/lifetime_helpers.rs",
+      "line": 163,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "RETUNIT-1: infer_return_type_with_lifetime applies is_numeric_named_value_function to ensure consistent return type inference across the lifetime path, accompanied by unit tests.",
+        "RETUNIT-1: infer_return_type_with_lifetime on the lifetime path applies is_numeric_named_value_function(name, body) identically to the main signature path, verified by unit tests in lifetime_helpers."
+      ]
+    },
+    {
+      "file": "src/frontend/parser/collections.rs",
+      "line": 1236,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "BLOCKFOR-1: Set-comprehension parser restores token position when failing so the block parser takes it"
+      ]
+    },
+    {
+      "file": "src/frontend/parser/collections.rs",
+      "line": 1238,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "BLOCKFOR-1: try_parse_comprehension restores parser token position upon set comprehension continuation failure, allowing block expressions containing an expression followed by a for loop to parse properly as blocks rather than failing with Unexpected token: RightBrace.",
+        "BLOCKFOR-1: try_parse_comprehension restores token stream position upon set comprehension continuation failure, allowing block expressions containing an expression followed by a for loop to parse properly as blocks."
+      ]
+    },
+    {
+      "file": "tests/cli_unify_003_property_tests.rs",
+      "line": 49,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "HOSTDEP-1: cli_unify_003 determinism proptest block is configured with 1,000 cases (ProptestConfig::with_cases(1000)) to prevent timeouts within test budget.",
+        "HOSTDEP-1: cli_unify_003 property tests reduce determinism iteration count to 1,000 cases (ProptestConfig::with_cases(1000)), matching other spawn-heavy test blocks and preventing timeouts within the 180s test budget."
+      ]
+    },
+    {
+      "file": "tests/g2b_transfix_7.rs",
+      "line": 1,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "End-to-end verification: 21 integration tests in tests/g2b_transfix_7.rs assert compiled (ruchy compile) and interpreted (ruchy run) stdout parity across RAWIDENT-2 (9 tests), GLOBALSHADOW-1 (6 tests), RETUNIT-1 (3 tests), and BLOCKFOR-1 (3 tests).",
+        "G2c end-to-end test suite: 21 integration tests in tests/g2b_transfix_7.rs assert compiled (ruchy compile) and interpreted (ruchy run) stdout parity across RAWIDENT-2 (9 tests), GLOBALSHADOW-1 (6 tests), RETUNIT-1 (3 tests), and BLOCKFOR-1 (3 tests)."
+      ]
+    },
+    {
+      "file": "tests/lang_comp/basic_syntax/variables_test.rs",
+      "line": 54,
+      "lanes_agreeing": [
+        1
+      ],
+      "claims": [
+        "HOSTDEP-1: Workspace tests spawn env!(\"CARGO_BIN_EXE_ruchy\") and named-environment tests are ignored"
+      ]
+    },
+    {
+      "file": "tests/matrix_001_simple_arithmetic_native.rs",
+      "line": 14,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "HOSTDEP-1: Integration tests spawn the in-tree built binary using env!(\"CARGO_BIN_EXE_ruchy\") instead of Command::new(\"ruchy\"), removing host PATH dependencies across matrix_001..004_native, lang_comp_suite, and issue_040.",
+        "HOSTDEP-1: Integration tests spawn the in-tree built binary via env!(\\\"CARGO_BIN_EXE_ruchy\\\") instead of Command::new(\\\"ruchy\\\"), removing host PATH dependencies across matrix_001..004_native, lang_comp_suite, and issue_040."
+      ]
+    },
+    {
+      "file": "tests/opt_global_001_pgo.rs",
+      "line": 51,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "HOSTDEP-1: test_opt_global_001_03_profile_merge isolates host-tool dependency with #[ignore = \"named environment: llvm-profdata on PATH and the profiles test 02 collects - run in nightly/tier3 only\"], passes actual profile files instead of an unexpanded glob, and asserts cmd.assert().success().",
+        "HOSTDEP-1: test_opt_global_001_03_profile_merge isolates the host-tool dependency with #[ignore = \\\"named environment: llvm-profdata on PATH and the profiles test 02 collects - run in nightly/tier3 only\\\"] per Q3 plan ruling, passes collected profile files instead of an unexpanded shell glob, and asserts cmd.assert().success()."
+      ]
+    },
+    {
+      "file": "tests/tooling_002_renacer_integration.rs",
+      "line": 31,
+      "lanes_agreeing": [
+        2,
+        3
+      ],
+      "claims": [
+        "HOSTDEP-1: test_tooling_002_01_renacer_installed isolates external renacer dependency with #[ignore = \"named environment: renacer on PATH (cargo install renacer)\"] per acceptance criteria.",
+        "HOSTDEP-1: test_tooling_002_01_renacer_installed isolates external renacer dependency with #[ignore = \\\"named environment: renacer on PATH (cargo install renacer)\\\"], compliant with Q3 named-environment requirements without weakening general test gates."
+      ]
+    }
+  ],
+  "uncovered": [],
+  "coverage_source": "lanes",
+  "partial": false,
+  "partial_reasons": [],
+  "fallback": {
+    "same_family_width": 1,
+    "chain": [
+      {
+        "model": "gemini-3.1-pro-high",
+        "family": "gemini",
+        "disposition": "configured"
+      },
+      {
+        "model": "gemini-3.8-flash-high",
+        "family": "gemini",
+        "disposition": "configured"
+      },
+      {
+        "model": "gemini-3.7-flash-high",
+        "family": "gemini",
+        "disposition": "configured"
+      },
+      {
+        "model": "gpt-oss-120b-medium",
+        "family": "openai",
+        "disposition": "fallback"
+      },
+      {
+        "model": "qwen3.5",
+        "family": "qwen",
+        "disposition": "not-run",
+        "why": "no quorum.local_lane in the config — the aprender lane has no model to load"
+      },
+      {
+        "model": "claude-opus-4-6-thinking",
+        "family": "claude",
+        "disposition": "width",
+        "why": "same family as the author: at most 1 lane, recorded role width, counted toward no floor (R-15a)"
+      },
+      {
+        "model": "claude-sonnet-4-6",
+        "family": "claude",
+        "disposition": "width",
+        "why": "same family as the author: at most 1 lane, recorded role width, counted toward no floor (R-15a)"
+      }
+    ],
+    "precheck": [
+      {
+        "family": "gemini",
+        "model": "gemini-3.1-pro-high",
+        "probe": 1,
+        "outcome": "live"
+      }
+    ],
+    "prah": {
+      "source": "install-receipt",
+      "path": "/home/noah/.claude/skills/paiml-implement/bin/prah"
+    }
+  },
+  "auto_merge": {
+    "checked": true,
+    "was_armed": false,
+    "disarmed": false,
+    "note": "auto-merge not armed"
+  },
+  "lint": {
+    "ok": true,
+    "output": "receipt complete: kind=artifact lanes=3 author=claude-opus-5-5/claude"
+  }
+}

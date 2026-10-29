@@ -381,7 +381,7 @@ fn test_env_set_mut_updates_parent() {
 // Test format_string_with_values
 #[test]
 fn test_format_string_with_values() {
-    let result = Interpreter::format_string_with_values(
+    let result = crate::runtime::value_format::format_string_with_values(
         "Hello {} and {}!",
         &[Value::from_string("world".to_string()), Value::Integer(42)],
     );
@@ -390,7 +390,7 @@ fn test_format_string_with_values() {
 
 #[test]
 fn test_format_string_with_values_fewer_args() {
-    let result = Interpreter::format_string_with_values(
+    let result = crate::runtime::value_format::format_string_with_values(
         "Hello {} and {}!",
         &[Value::from_string("world".to_string())],
     );
