@@ -461,7 +461,7 @@ axum = { version = "0.8", features = ["macros"] }
 tower = { version = "0.4", features = ["util"] }
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 # Probar: GUI coverage, Playwright-compatible testing, WASM worker harness
-jugar-probar = "1.0.4"
+jugar-probar = { version = "1.0.4", default-features = false, features = ["tui", "media"] }
 
 # WASM QA Framework dependencies (following spec)
 wasm-bindgen-test = "0.3"

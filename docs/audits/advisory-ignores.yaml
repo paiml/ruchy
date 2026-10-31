@@ -57,14 +57,6 @@ ignores:
   # cargo-deny flips to FAILED. Measured on all three survivors: instant LIVE,
   # bincode LIVE, paste exit 0 — suppressing nothing. Two remain.
   # ---------------------------------------------------------------------------
-  - id: RUSTSEC-2024-0384
-    crate: instant
-    class: unmaintained
-    source: deny
-    owner_ticket: SEC-3
-    owner: noah
-    removed_by: "2026-10-20"
-    reason: "transitive via web-time, no replacement available (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
   - id: RUSTSEC-2025-0141
     crate: bincode
     class: unmaintained
