@@ -3,13 +3,13 @@
   "base": "origin/main",
   "base_resolved": "origin/main",
   "base_note": "no origin/origin/main exists; judged against the local ref",
-  "head": "6ab77df427bc8981106367034f813474226b50c1",
-  "diff_sha256": "6b5505e06f0a8f8d723b4472067991a805bc249199199f204faa6230e8a582cd",
+  "head": "063a8ebcf1b5497941663197a40693f85f7b36fe",
+  "diff_sha256": "74feb9502e7ac2504b3516bea2d55165d8f1c601c456c50b9869c794c15556f5",
   "width": 3,
   "executor": "agy",
   "prompt_mode": "inline",
-  "prompt_bytes": 21243,
-  "prompt_sha256": "29d1545cfa5790c9c936dfb8eed362530c2dab03949812a1c9f0e1f2a7b0e717",
+  "prompt_bytes": 93114,
+  "prompt_sha256": "853dad277d85f0386de0e88119c34cd50bb005b2a036111702ad09ee57fc1e4d",
   "author": {
     "model": "claude-opus-5-5",
     "family": "claude",
@@ -21,53 +21,9 @@
       "lane": 1,
       "status": "SUCCESS",
       "verdict": "PASS",
-      "summary": "Verified PMAT-257 diff against ticket acceptance criteria and receipt. scripts/binary_snapshot.sh builds workspace bin targets with required-features, enforces non-vacuity and --twice byte-for-byte determinism, and writes evidence/binary/snapshot.jsonl (sha256 8e3aa40b392bd480c312702ab98dbd37aa875d12d2a8a61b709fcf9e285c6f13) for ruchy/ruchy built at parent commit f9ff17497e4c12555cf1312eb7412ea4fc62295a. No refuting findings.",
+      "summary": "The diff does what PMAT-257 asks. It adds scripts/binary_snapshot.sh, a one-line evidence/binary/snapshot.jsonl for the single bin target, and the roadmap row. It adds nothing the ticket forbids and weakens no gate. The --twice check compares the two different snapshots: line 171 reads `cmp -s \"$work/a\" \"$work/b\"`, which I confirmed in the tree. The committed control JSONs record the planted a/a variant and its 3/3 FAIL, which backs the receipt's claim that the check can fail. The receipt cites the control at line 168 while the committed script has the comparison at line 171. That is only line drift from the header lines added in bf482149, not a defect. I ran no builds, so the pv, bashrs and --twice results rest on the receipt's recorded output.",
       "findings": [],
-      "raw_bytes": 2148,
-      "err_bytes": 0,
-      "envelope_status": "SUCCESS",
-      "verdict_source": "structured_output",
-      "grounding_check": "parity",
-      "role": "independent",
-      "model": "gemini-4-argon-high",
-      "model_measured": "gemini-4-argon-high",
-      "model_source": "measured",
-      "family": "gemini",
-      "executor": "agy",
-      "brief_sha256": "29d1545cfa5790c9c936dfb8eed362530c2dab03949812a1c9f0e1f2a7b0e717",
-      "trace": {
-        "input_sha256": "0cae3ad16d02c475d7d8d54cde5de35090d68072d6293c513e5d5755ae1c6924",
-        "output_sha256": "2bcfc4b1e316b3dc538dcd544a1a38c15ca8cdc2703c1684def771d5f1094c4b",
-        "store": null,
-        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
-      },
-      "fallback": {
-        "judged_by": "gemini-4-argon-high",
-        "exhausted": false,
-        "attempts": [
-          {
-            "model": "gemini-4-argon-high",
-            "family": "gemini",
-            "outcome": "answered"
-          }
-        ],
-        "skipped": []
-      }
-    },
-    {
-      "lane": 2,
-      "status": "SUCCESS",
-      "verdict": "PASS",
-      "summary": "The diff does what PMAT-257 asks and nothing it forbids. It adds scripts/binary_snapshot.sh and a one-line evidence/binary/snapshot.jsonl with git_sha f9ff1749, plus the roadmap row and the receipt. No gate is weakened. I did not re-run any build, pv or bashrs command, so the 'pv lint contracts --gate shapes' and bashrs results rest on the receipt's recorded output.",
-      "findings": [
-        {
-          "file": "scripts/binary_snapshot.sh",
-          "line": 171,
-          "claim": "The receipt cites the planted control at line 168, but the committed script has `cmp -s \"$work/a\" \"$work/b\"` at line 171. The comparison it describes is intact, and the three-line difference matches the header lines added in bf482149 after the control ran on 0e2d5b2a.",
-          "grounding": "measured"
-        }
-      ],
-      "raw_bytes": 2396,
+      "raw_bytes": 2445,
       "err_bytes": 0,
       "envelope_status": "SUCCESS",
       "verdict_source": "structured_output",
@@ -78,10 +34,10 @@
       "model_measured": "claude-sonnet-5-5",
       "model_source": "flag",
       "family": "claude",
-      "brief_sha256": "29d1545cfa5790c9c936dfb8eed362530c2dab03949812a1c9f0e1f2a7b0e717",
+      "brief_sha256": "853dad277d85f0386de0e88119c34cd50bb005b2a036111702ad09ee57fc1e4d",
       "trace": {
-        "input_sha256": "6c68a6c1d69a998814dc00a4634636c7c6f7cae09531ba7139d341a3da9b4162",
-        "output_sha256": "612107e3e9e456b0438e1a0778acf503dc1ccb269ab8bcf03fe7e457e17edcff",
+        "input_sha256": "38239391903ea11d886fc35e14fb083e8bdcd1ac3b2c16ceb15b6acd39b15523",
+        "output_sha256": "25fc8a238c547312163c81d1c239b73d17f0a5f6dcc7123fcdba06615335302e",
         "store": null,
         "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
       },
@@ -99,12 +55,68 @@
       }
     },
     {
+      "lane": 2,
+      "status": "SUCCESS",
+      "verdict": "PASS",
+      "summary": "I found nothing that refutes the diff. The committed script compares the two snapshots (`cmp -s \"$work/a\" \"$work/b\"`) at scripts/binary_snapshot.sh:171. The planted self-comparison control (`\"$work/a\" \"$work/a\"`) appears only in the audit JSON records, not in the script. The diff adds only what PMAT-257 asks for: the script, one snapshot line, the roadmap row, the receipt and the quorum records. It weakens no gate. The script has a guard that fails when it finds zero bin targets, and a line-count check after writing. I ran no build, `pv` or `bashrs` command, so the receipt's recorded results (`pv lint contracts --gate shapes` exit 0, `--twice` DETERMINISTIC, `bashrs` 0 errors) are unverified by me. I could not read a lane witness file, so tree_witness is omitted. Two minor notes. The receipt cites the planted control at line 168, which is where it sat before the header lines were added; it is now at 171. The receipt also does not mention the committed `quorum-PMAT-257-control-final.json`, which records a second planted round (3/3 FAIL).",
+      "findings": [
+        {
+          "file": "scripts/binary_snapshot.sh",
+          "line": 171,
+          "claim": "Measured by grep: the committed script has `if cmp -s \"$work/a\" \"$work/b\"; then`, which compares the two snapshots, so the --twice check can fail.",
+          "grounding": "measured"
+        },
+        {
+          "file": "docs/audits/impl-PMAT-257-receipt.md",
+          "line": 60,
+          "claim": "Receipt cites the planted control at line 168. The corresponding line is now 171, because the header lines added in bf482149 shifted it. This is cosmetic. The receipt also omits the committed quorum-PMAT-257-control-final.json, which records a second planted round.",
+          "grounding": "cited"
+        }
+      ],
+      "raw_bytes": 4275,
+      "err_bytes": 0,
+      "envelope_status": "SUCCESS",
+      "verdict_source": "structured_output",
+      "executor": "claude-code",
+      "grounding_check": "parity",
+      "role": "counted",
+      "model": "claude-sonnet-5-5",
+      "model_measured": "claude-sonnet-5-5",
+      "model_source": "flag",
+      "family": "claude",
+      "brief_sha256": "853dad277d85f0386de0e88119c34cd50bb005b2a036111702ad09ee57fc1e4d",
+      "trace": {
+        "input_sha256": "ee6e2eed4c20e2ab5a8f05cda1950b751d3178e4d36fca34e25b195e00af3579",
+        "output_sha256": "73fd7a55e2c7238d19ff96597ffdb83d458d4f150309dd713a0c295fcbb112dc",
+        "store": null,
+        "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
+      },
+      "fallback": {
+        "judged_by": "claude-sonnet-5-5",
+        "exhausted": false,
+        "attempts": [
+          {
+            "model": "claude-sonnet-5-5",
+            "family": "claude",
+            "outcome": "answered"
+          }
+        ],
+        "skipped": [
+          {
+            "model": "gemini-3.8-flash-high",
+            "why": "family gemini withheld by policy: the diff is not tier-1 (quorum.agy_tier1_only: none of its paths matches quorum.tier1_paths or the built-in policy paths), and agy is reserved for tier-1 diffs — cop ruling of 2026-09-24"
+          }
+        ]
+      },
+      "repeat_of": 1
+    },
+    {
       "lane": 3,
       "status": "SUCCESS",
       "verdict": "PASS",
-      "summary": "PMAT-257 implementation correctly satisfies all four acceptance criteria. The diff adds a working bash script (binary_snapshot.sh) that generates binary snapshots in the correct JSON schema format, a snapshot file with proper git_sha referencing the measured tree (f9ff1749), updated roadmap documentation, and a comprehensive receipt documenting all measurements. The quorum audits (control + rounds 1-2) validated the implementation at commits 0e2d5b2a and bf482149. No contradictions or defects found.",
+      "summary": "The diff correctly implements PMAT-257: scripts/binary_snapshot.sh properly compares two independent snapshots byte-for-byte (line 169: `cmp -s \"$work/a\" \"$work/b\"`), evidence/binary/snapshot.jsonl contains one binary-snapshot/v1 record with correct git_sha, roadmap.yaml documents the ticket, and the receipt provides comprehensive verification. All three quorum lanes agree (3/3 PASS on the final commit 6ab77df427...).",
       "findings": [],
-      "raw_bytes": 1986,
+      "raw_bytes": 1788,
       "err_bytes": 0,
       "envelope_status": "SUCCESS",
       "verdict_source": "structured_output",
@@ -115,10 +127,10 @@
       "model_measured": "claude-haiku-4-5",
       "model_source": "flag",
       "family": "claude",
-      "brief_sha256": "29d1545cfa5790c9c936dfb8eed362530c2dab03949812a1c9f0e1f2a7b0e717",
+      "brief_sha256": "853dad277d85f0386de0e88119c34cd50bb005b2a036111702ad09ee57fc1e4d",
       "trace": {
-        "input_sha256": "28d27a7c9737cedd862d7ebdfa70bb1ebc90129f9573efe8d6aaa4daac646707",
-        "output_sha256": "cf82396a4129d22e0502f82d390f6284c6aa246e78de90c082995cddf60320b4",
+        "input_sha256": "1e0c7e6a17d5b07daf1d0c4e94e697945b9cc431060e87ab69c168168d16b227",
+        "output_sha256": "b15be2aae22d777eecbf8fc0fd9ea01aaeae73cdc8d58d6fcbb3fab1b4147058",
         "store": null,
         "store_why": "almacen not provisioned yet (infra-27): the blobs stay in the round's gitignored .lanes dir"
       },
@@ -139,33 +151,46 @@
   "dissent": [],
   "dedup": [
     {
+      "file": "docs/audits/impl-PMAT-257-receipt.md",
+      "line": 60,
+      "lanes_agreeing": [
+        2
+      ],
+      "claims": [
+        "Receipt cites the planted control at line 168. The corresponding line is now 171, because the header lines added in bf482149 shifted it. This is cosmetic. The receipt also omits the committed quorum-PMAT-257-control-final.json, which records a second planted round."
+      ]
+    },
+    {
       "file": "scripts/binary_snapshot.sh",
       "line": 171,
       "lanes_agreeing": [
         2
       ],
       "claims": [
-        "The receipt cites the planted control at line 168, but the committed script has `cmp -s \"$work/a\" \"$work/b\"` at line 171. The comparison it describes is intact, and the three-line difference matches the header lines added in bf482149 after the control ran on 0e2d5b2a."
+        "Measured by grep: the committed script has `if cmp -s \"$work/a\" \"$work/b\"; then`, which compares the two snapshots, so the --twice check can fail."
       ]
     }
   ],
   "uncovered": [],
   "coverage_source": "lanes",
   "partial": false,
-  "partial_reasons": [],
+  "partial_reasons": [
+    "lane models: only 2 distinct model ids across 3 lanes (claude-haiku-4-5, claude-sonnet-5-5) — lanes sharing an id are resamples, not independent reviewers (PMAT-125)",
+    "lane 2: judged by claude-sonnet-5-5 after falling through gemini-3.8-flash-high (skipped: family gemini withheld by policy: the diff is not tier-1 (quorum.agy_tier1_only: none of its paths matches quorum.tier1_paths or the built-in policy paths), and agy is reserved for tier-1 diffs — cop ruling of 2026-09-24) (PMAT-321)"
+  ],
   "fallback": {
     "same_family_width": 2,
     "chain": [
-      {
-        "model": "gemini-4-argon-high",
-        "family": "gemini",
-        "disposition": "configured"
-      },
       {
         "model": "claude-sonnet-5-5",
         "family": "claude",
         "disposition": "claude-code",
         "why": "run by Claude Code on its own budget: a configured seat runs every round, a fallback step only when every non-Claude family is measured out (PMAT-360, operator standing rule)"
+      },
+      {
+        "model": "gemini-3.8-flash-high",
+        "family": "gemini",
+        "disposition": "configured"
       },
       {
         "model": "claude-haiku-4-5",
@@ -189,28 +214,50 @@
     "precheck": [
       {
         "family": "gemini",
-        "model": "gemini-4-argon-high",
-        "probe": 1,
-        "outcome": "live"
+        "model": "gemini-3.8-flash-high",
+        "probe": 0,
+        "outcome": "policy",
+        "reason": "the diff is not tier-1 (quorum.agy_tier1_only: none of its paths matches quorum.tier1_paths or the built-in policy paths), and agy is reserved for tier-1 diffs — cop ruling of 2026-09-24"
       }
     ],
-    "degraded": null,
+    "degraded": {
+      "reason": "same-family (policy: agy reserved for tier-1 diffs)",
+      "lanes": [
+        2
+      ],
+      "families": [
+        {
+          "family": "gemini",
+          "state": "policy",
+          "evidence": "the diff is not tier-1 (quorum.agy_tier1_only: none of its paths matches quorum.tier1_paths or the built-in policy paths), and agy is reserved for tier-1 diffs — cop ruling of 2026-09-24"
+        }
+      ],
+      "rule": "operator standing rule: if agy quota is ever gone, simply use claude code itself (PMAT-360)"
+    },
     "prah": {
-      "source": "none",
-      "path": null,
-      "why": "no --prah, none on PATH, and no install receipt at /mnt/nvme-raid0/tmp/infra-38-snap/qcfg/install-receipt.json"
+      "source": "install-receipt",
+      "path": "/home/noah/.claude/skills/paiml-implement/bin/prah"
+    },
+    "tier1": {
+      "agy_tier1_only": true,
+      "tier1": false,
+      "matched": [],
+      "paths": 9,
+      "patterns": [
+        "^\\.github/workflows/",
+        "(^|/)release[^/]*\\.(ya?ml|sh|rs|toml)$",
+        "cuda|kernel|\\.cu$|\\.ptx$",
+        "(^|/)[^/]*(gate|guard)[^/]*\\.(sh|rs|py)$|^hooks/",
+        "security|secret|credential|(^|/)deny\\.toml$",
+        "^skills/quorum-review/|(^|/)(receipt-lint|roadmap-lint|release-lint|kind-gate|model-gate)[^/]*$|^crates/prah-lint/"
+      ],
+      "builtin": "^skills/quorum-review/|(^|/)skills/paiml-implement/config\\.json$|(^|/)(modellib|lane-reduce|lane-fallback|lane-group|agy-lane|cc-lane|receipt-lint|route|quota)\\.sh$|^crates/prah-lint/"
     },
     "bucket": {
       "ledger": "/home/noah/.local/state/paiml-implement/agy-bucket.jsonl",
       "window_s": 18000,
       "pace": "off",
-      "buckets": {
-        "gemini": {
-          "bucket": "gemini",
-          "state": "unmeasured",
-          "reason": "agy-bucket.sh could not read the ledger; the bucket is not consulted this round"
-        }
-      },
+      "buckets": {},
       "closed": []
     }
   },
@@ -220,7 +267,24 @@
     "disarmed": false,
     "note": "auto-merge not armed"
   },
+  "degraded": {
+    "reason": "same-family (policy: agy reserved for tier-1 diffs)",
+    "lanes": [
+      2
+    ],
+    "families": [
+      {
+        "family": "gemini",
+        "state": "policy",
+        "evidence": "the diff is not tier-1 (quorum.agy_tier1_only: none of its paths matches quorum.tier1_paths or the built-in policy paths), and agy is reserved for tier-1 diffs — cop ruling of 2026-09-24"
+      }
+    ],
+    "rule": "operator standing rule: if agy quota is ever gone, simply use claude code itself (PMAT-360)"
+  },
   "cheap_seat": "claude-haiku-4-5",
+  "canary": {
+    "skipped": "brief 93114 bytes > 24576"
+  },
   "advisory_lane": {
     "state": "unavailable",
     "counts": false,
@@ -240,16 +304,16 @@
     "model_sha256": null,
     "rc": 2,
     "wall_s": 1,
-    "collected_s": 130,
+    "collected_s": 101,
     "budget_s": 196,
     "budget_basis": "ledger: 2 x p95 98 s over 126 gx10-cuda Verdict rows",
     "brief": {
-      "bytes": 21243,
-      "sent_bytes": 21412,
+      "bytes": 93114,
+      "sent_bytes": 93283,
       "max_bytes": 196608
     },
     "trace": {
-      "input_sha256": "262c0a6a3b5c0de41c9f81dbd4fd6779399188e101420680636709b8850a894c",
+      "input_sha256": "da3872985396d886737b4c3df154ceb8ed1451f4d343bcdf0010db2d0bfef8cb",
       "raw": "advisory.json"
     },
     "attempts": [
@@ -258,10 +322,10 @@
         "ok": false,
         "wall_s": 1,
         "error": "busy: executor yielded (unit inactive; last yield: 2026-10-03T00:47:22Z host=gx10-a5b5 event=stopped gpu-priority lock=/tmp/apr-gpu.priority)",
-        "ts": "2026-10-13T17:41:24.905Z",
-        "wall_ms": 579,
-        "request_id": "01a1365a-d526-78ef-8b68-30006182ecde",
-        "load1": 0.59,
+        "ts": "2026-11-01T16:58:37.586Z",
+        "wall_ms": 585,
+        "request_id": "01a1980c-7c8d-7049-9ed1-da5add21a7d5",
+        "load1": 0.65,
         "cold": null
       }
     ],
@@ -272,6 +336,6 @@
   },
   "lint": {
     "ok": true,
-    "output": "receipt complete: kind=artifact lanes=3 author=claude-opus-5-5/claude same_family=2/2"
+    "output": "receipt complete: kind=artifact lanes=3 author=claude-opus-5-5/claude same_family=3/2 degraded=same-family (policy: agy reserved for tier-1 diffs)"
   }
 }
