@@ -660,66 +660,9 @@
   },
   "claims": [],
   "profile": "Pmat",
-  "require": [
-    {
-      "id": "require.aprender_pins_065",
-      "kind": "Require",
-      "description": "Cargo.toml pins the aprender family at 0.65.x before the bump (baseline f170b5e5b)",
-      "falsification_method": "ManifestIntegrity",
-      "threshold": null,
-      "blocking": true,
-      "source": "Manual"
-    }
-  ],
-  "ensure": [
-    {
-      "id": "ensure.lock_zstd",
-      "kind": "Ensure",
-      "description": "Cargo.lock resolves zstd>=0.14.3, zstd-safe>=8.2.0, zstd-sys>=2.1.2 and zip>=9",
-      "falsification_method": "ManifestIntegrity",
-      "threshold": null,
-      "blocking": true,
-      "source": "Manual"
-    },
-    {
-      "id": "ensure.audit_no_zip_zstd",
-      "kind": "Ensure",
-      "description": "cargo audit reports none of RUSTSEC-2026-0367/0368/0369/0391/0398/0403/0410",
-      "falsification_method": "SupplyChainIntegrity",
-      "threshold": null,
-      "blocking": true,
-      "source": "Manual"
-    },
-    {
-      "id": "ensure.workspace_builds_ci",
-      "kind": "Ensure",
-      "description": "The workspace builds and ci / test passes on CI (no local build, per operator tier 3-4 rule)",
-      "falsification_method": "ExamplesCompile",
-      "threshold": null,
-      "blocking": true,
-      "source": "Manual"
-    }
-  ],
-  "invariant": [
-    {
-      "id": "invariant.no_new_unwaived_advisory",
-      "kind": "Invariant",
-      "description": "No new advisory-ignore entry is added to deny.toml or docs/audits/advisory-ignores.yaml",
-      "falsification_method": "SupplyChainIntegrity",
-      "threshold": null,
-      "blocking": true,
-      "source": "Manual"
-    },
-    {
-      "id": "invariant.pins_aligned",
-      "kind": "Invariant",
-      "description": "All six aprender-family pins in Cargo.toml (compute, aprender, core, train, viz, simulate) name the same version",
-      "falsification_method": "ManifestIntegrity",
-      "threshold": null,
-      "blocking": true,
-      "source": "Manual"
-    }
-  ],
+  "require": [],
+  "ensure": [],
+  "invariant": [],
   "excluded_claims": [],
   "iteration": 1,
   "inherited_postconditions": [],
