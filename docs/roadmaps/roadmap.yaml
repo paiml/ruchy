@@ -4104,5 +4104,5 @@ roadmap:
   estimated_effort: null
   labels:
   - kind:code
-  notes: null
+  notes: 'receipt 2026-11-02T19:54:35Z: cargo deny check advisories -> advisories ok, exit 0'
   epic: 242
