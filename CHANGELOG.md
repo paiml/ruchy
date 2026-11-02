@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — PMAT-269: zstd advisories cleared (paiml/ruchy#269)
+
+- Cargo.lock: zstd 0.13.3 -> 0.13.4, zstd-safe 7.2.4 -> 7.4.0, zstd-sys 2.0.16 -> 2.1.2.
+  Clears RUSTSEC-2026-0391, -0398, -0403, -0410 (`cargo deny check advisories` ok).
+
 ### Changed — PMAT-254: README claims are derived and enforced (paiml/ruchy#254)
 
 - README.md rewritten short. Every example is a file under `examples/readme/`
