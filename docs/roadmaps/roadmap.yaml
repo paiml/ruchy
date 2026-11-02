@@ -4088,15 +4088,17 @@ roadmap:
 - id: PMAT-270
   github_issue: 270
   item_type: task
-  title: 'Nightly Bench red 19d: refresh Cargo.lock past live RustSec advisories'
-  status: planned
+  title: 'PARTIAL fix for Nightly Bench red: Cargo.lock advisory bumps only (tokio, zstd, wasmtime, webpki)'
+  status: inprogress
   priority: high
   assigned_to: null
   created: 2026-11-02T19:13:27Z
   updated: 2026-11-02T19:13:27Z
   spec: null
   acceptance_criteria:
-  - tokio 0386, zstd 0391/0398, wasmtime 48.0.6, webpki
+  - "Bumped in Cargo.lock: tokio 1.54.1, zstd/zstd-safe/zstd-sys, wasmtime 48.0.8, rustls-webpki, webpki-roots, webpki-root-certs."
+  - "Verify: cargo deny check advisories exits 0; grep -A1 'name = \"wasmtime\"' Cargo.lock shows 48.0.8; grep -A1 'name = \"tokio\"' Cargo.lock shows 1.54.1."
+  - "Out of scope, Nightly Bench stays red on: zip 2.x (via forjar), thrift 0.17 (via alimentar/parquet), bincode (via apr-format), instant (#266), expired SEC-1 exemptions, eph-build runner checkout fault."
   phases: []
   subtasks: []
   estimated_effort: null

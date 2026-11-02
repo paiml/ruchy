@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security — PMAT-270: Cargo.lock advisory bumps (partial fix for Nightly Bench red)
+
+- Bumped tokio 1.54.1, zstd/zstd-safe/zstd-sys, wasmtime 48.0.8, rustls-webpki,
+  webpki-roots and webpki-root-certs past live RustSec advisories. No waiver,
+  ignore or exemption added.
+- Not fixed here: zip 2.x (via forjar), thrift 0.17 (via alimentar/parquet),
+  bincode (via apr-format), instant (#266), expired SEC-1 exemptions and the
+  eph-build runner checkout fault.
+
 ### Changed — PMAT-254: README claims are derived and enforced (paiml/ruchy#254)
 
 - README.md rewritten short. Every example is a file under `examples/readme/`
@@ -1017,6 +1026,15 @@ This release implements the ruchy-book-2.0 specification with comprehensive qual
 ---
 
 ## [Unreleased]
+
+### Security — PMAT-270: Cargo.lock advisory bumps (partial fix for Nightly Bench red)
+
+- Bumped tokio 1.54.1, zstd/zstd-safe/zstd-sys, wasmtime 48.0.8, rustls-webpki,
+  webpki-roots and webpki-root-certs past live RustSec advisories. No waiver,
+  ignore or exemption added.
+- Not fixed here: zip 2.x (via forjar), thrift 0.17 (via alimentar/parquet),
+  bincode (via apr-format), instant (#266), expired SEC-1 exemptions and the
+  eph-build runner checkout fault.
 
 ### Security — SEC-1: RUSTSEC-2026-0285, and an expiry on every advisory exemption
 
