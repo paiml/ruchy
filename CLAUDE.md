@@ -658,3 +658,9 @@ Orchestrator model is routed by ticket class, not by habit.
 - One open ticket per Claude session (`goal.sh set` refuses a second ticket while the first is open; `goal.sh release` at the receipt frees the session for the next).
 - Fable is the reserve bucket: while `quota.sh binding` prints `fable_binding=true`, no new Fable session opens here except for an `orch:fable` ticket.
 <!-- /paiml-implement:orch-routing -->
+
+## RAX-INTERIM intake rules (operator, via arbiter-cop, 2026-11-04)
+
+- Workers and seats do NOT run `gh issue create`. Findings go to `docs/findings/<session>.jsonl` or the cop inbox; only cops mint tickets, under an epic with budget.
+- Pull signal: a repo over cap (PRs > 15 or issues > 100) gets no new feature PRs and no new feature workers; only fixes, expedites and triage folds.
+- Every new PR body has `Closes #N` or `no-issue: <reason>`.
