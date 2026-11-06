@@ -330,7 +330,7 @@ entrenar = { package = "aprender-train", version = "0.65", features = ["citl"], 
 trueno-viz = { package = "aprender-viz", version = "0.65", optional = true }  # Pillar 5: Visualization
 presentar = { version = "0.3.4", optional = true }      # Pillar 6: Notebook widgets
 # Ruchy 5.0 Sovereign Platform pillars (optional)
-forjar = { version = "1.25", default-features = false, optional = true }  # Pillar 3: Infrastructure as Code
+forjar = { version = "1.33", default-features = false, optional = true }  # Pillar 3: Infrastructure as Code
 simular = { package = "aprender-simulate", version = "0.65", default-features = false, optional = true } # Pillar 7: Simulation engine
 bashrs = { version = "7.0", default-features = false, optional = true } # Pillar 4: Shell transpilation
 wasm-encoder = "0.207.0"
@@ -352,7 +352,7 @@ regex = "1.11"
 # DataFrame support
 polars = { version = "0.55", default-features = false, features = ["lazy"], optional = true }
 polars-io = { version = "0.55", default-features = false, features = ["csv"], optional = true }
-arrow = { version = "54.0", optional = true }
+arrow = { version = "57.3", optional = true }
 # WebAssembly support
 uuid = { version = "1.18", features = ["v4", "js"] }
 # JIT Compilation (optional for minimal builds) - JIT-001 P0-CRITICAL
@@ -450,7 +450,7 @@ serde_json = "1.0"
 serde_yaml_ng = "0.10"
 assert_cmd = "2.0"
 predicates = "3.1"
-rexpect = "0.5"
+rexpect = "0.7"
 tempfile = "3.21"
 quickcheck_macros = { workspace = true }
 walkdir = "2.5"
