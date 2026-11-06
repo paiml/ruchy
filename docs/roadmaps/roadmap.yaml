@@ -4110,3 +4110,22 @@ roadmap:
   - transpiler
   - milestone:v5.0.0
   notes: 'vec![x, n] from the issue title is already fixed on main (4982960e). The interpreter has no std::time::Instant and use-imported HashMap::new() fails at runtime; filed separately.'
+- id: PMAT-270
+  github_issue: 270
+  item_type: task
+  title: 'ruchy: upgrade vulnerable/unmaintained deps (RUSTSEC wasmtime, zstd-safe, rustls-webpki, webpki-roots, tokio, arrow-data, pin-utils)'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-11-06T17:49:20Z
+  updated: 2026-11-06T17:49:35.553920858+00:00
+  spec: null
+  acceptance_criteria:
+  - Fix red Security Audit / cargo deny on main (seen on PR 271). Lockfile upgrades; arrow 54->57, rexpect 0.5->0.7, forjar 1.33. No ignores added.
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:code
+  notes: null
+  epic: 242
