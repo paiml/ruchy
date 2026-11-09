@@ -4110,3 +4110,80 @@ roadmap:
   - transpiler
   - milestone:v5.0.0
   notes: 'vec![x, n] from the issue title is already fixed on main (4982960e). The interpreter has no std::time::Instant and use-imported HashMap::new() fails at runtime; filed separately.'
+- id: PMAT-275
+  github_issue: 275
+  item_type: epic
+  title: 'MASTER SEC-7: main red — expired SEC-1 exemptions (instant, bincode) + live RustSec advisories (zstd, tokio, pin-utils)'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-11-09T08:30:00Z
+  updated: 2026-11-09T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'cargo test --lib advisory_ignore_gate passes on the PR head (red on main 5db80c83b: instant and bincode past removed_by 2026-10-20)'
+  - 'cargo deny check advisories reports advisories ok on the PR head'
+  - 'Closes #269, #270, #274 in one PR (TPK-001), Cargo.lock change limited to targeted -p bumps'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:maintenance
+  - milestone:v5.0.0
+  notes: 'Supersedes closed #272/#273 (no-PR-open->4h rule). Upstream owners: instant -> forjar#696 (bashrs 7), bincode -> aprender#6592. cargo audit (security.yml) still reports zip (forjar, aprender-train 0.65) and thrift (alimentar -> parquet 57): upstream, not in this PR.'
+- id: PMAT-270
+  github_issue: 270
+  item_type: task
+  title: 'SEC-1: re-review the instant (RUSTSEC-2024-0384) and bincode (RUSTSEC-2025-0141) exemptions that expired 2026-10-20'
+  status: inprogress
+  priority: critical
+  assigned_to: null
+  created: 2026-11-02T20:00:00Z
+  updated: 2026-11-09T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Removal test re-run on the PR lock: deleting either ignore flips cargo deny to FAILED (both LIVE)'
+  - 'Each entry names its current dependency path, an upstream owner_ticket and a removed_by within the 30-day unmaintained window'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:maintenance
+  notes: 'parent: PMAT-275'
+- id: PMAT-269
+  github_issue: 269
+  item_type: task
+  title: 'SEC-5: clear the four zstd advisories (RUSTSEC-2026-0391/0398/0403/0410) reached through aprender-common 0.65.2'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-11-02T16:50:00Z
+  updated: 2026-11-09T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'Cargo.lock: zstd 0.13.4, zstd-safe 7.4.0, zstd-sys 2.1.2 via cargo update -p'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:maintenance
+  notes: 'parent: PMAT-275'
+- id: PMAT-274
+  github_issue: 274
+  item_type: task
+  title: 'SEC-7: tokio RUSTSEC-2026-0386 + pin-utils RUSTSEC-2026-0441 (dev-dep rexpect 0.5 -> nix 0.25)'
+  status: inprogress
+  priority: high
+  assigned_to: null
+  created: 2026-11-09T08:30:00Z
+  updated: 2026-11-09T08:30:00Z
+  spec: null
+  acceptance_criteria:
+  - 'tokio >= 1.53.3 in Cargo.lock via cargo update -p tokio'
+  - 'rexpect 0.7 dev-dependency; pin-utils absent from Cargo.lock; all 9 rexpect test targets compile'
+  phases: []
+  subtasks: []
+  estimated_effort: null
+  labels:
+  - kind:maintenance
+  notes: 'parent: PMAT-275'

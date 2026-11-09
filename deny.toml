@@ -32,8 +32,8 @@ ignore = [
     # live, not that each one is (infra measured that mistake the same day).
     # Every id below must carry an entry in docs/audits/advisory-ignores.yaml
     # with an owner and a removed_by date; src/advisory_ignore_gate.rs enforces it.
-    { id = "RUSTSEC-2024-0384", reason = "instant: transitive via web-time, no replacement available" },
-    { id = "RUSTSEC-2025-0141", reason = "bincode: transitive, widely used, no drop-in replacement" },
+    { id = "RUSTSEC-2024-0384", reason = "instant: forjar 1.25 -> bashrs 6.68 -> notify 7; clears with forjar#696 (ledger: removed_by 2026-12-09)" },
+    { id = "RUSTSEC-2025-0141", reason = "bincode: apr-format/aprender-core 0.65; clears with aprender#6592 (ledger: removed_by 2026-12-09)" },
     # SEC-4 (PMAT-260): unsafe-libyaml, unmaintained, no fixed release. ruchy has no
     # runtime edge to it since SEC-2; it stays in the lock through published
     # build-deps (aprender-compute/aprender-core -> serde_yaml_ng, through 0.71.4)
