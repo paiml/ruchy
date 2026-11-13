@@ -61,18 +61,18 @@ ignores:
     crate: instant
     class: unmaintained
     source: deny
-    owner_ticket: SEC-3
+    owner_ticket: "paiml/ruchy#275 (SEC-7 master; no open upstream ticket exists for notify 7 -> instant)"
     owner: noah
-    removed_by: "2026-10-20"
-    reason: "transitive via web-time, no replacement available (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
+    removed_by: "2026-12-09"
+    reason: "RENEWED 2026-11-13 by quorum Q1 (degraded: same-family), once, no second plain renewal without a fresh quorum. No fixed release: instant 0.1.13 is unmaintained upstream. Path in THIS Cargo.lock (cargo tree -i instant): instant <- notify-types 1.0.1 <- notify 7.0.0 <- jugar-probar 1.0.4 [dev-dependencies of ruchy]. Dev-only edge; blocked on jugar-probar moving to notify 8. Removal test re-run 2026-11-13 on this lock (head dcf6cc8e): ignore removed -> cargo deny check advisories FAILED (exit 1), LIVE."
   - id: RUSTSEC-2025-0141
     crate: bincode
     class: unmaintained
     source: deny
-    owner_ticket: SEC-3
+    owner_ticket: "paiml/ruchy#275 (SEC-7 master; no open upstream ticket exists for bincode 1.x; paiml/aprender#6592 is closed)"
     owner: noah
-    removed_by: "2026-10-20"
-    reason: "transitive, widely used, no drop-in replacement (deny.toml, reviewed 2026-03-26; not re-reviewed since)"
+    removed_by: "2026-12-09"
+    reason: "RENEWED 2026-11-13 by quorum Q1 (degraded: same-family), once, no second plain renewal without a fresh quorum. No fixed release: bincode 1.3.3 is the final 1.x line, unmaintained. Paths in THIS Cargo.lock (cargo tree -i bincode): bincode <- apr-format 0.65.2 <- aprender-core 0.65.2 <- aprender 0.65.2 <- ruchy (normal dep); bincode <- aprender-core 0.65.2 (direct); bincode <- jugar-probar 1.0.4 [dev-dependencies]. The aprender 0.65 -> 0.72 bump was tried and dropped (pulls aprender-contracts -> serde_yaml, failed the sec_4 bound test). Removal test re-run 2026-11-13 on this lock (head dcf6cc8e): ignore removed -> cargo deny check advisories FAILED (exit 1), LIVE."
   # ---------------------------------------------------------------------------
   # SEC-4 (PMAT-260), 2026-10-15. unsafe-libyaml has no fixed release, and SEC-2
   # already removed every ruchy runtime edge to it. It stays in Cargo.lock through
@@ -88,7 +88,7 @@ ignores:
     crate: unsafe-libyaml
     class: unmaintained
     source: deny
-    owner_ticket: PMAT-263
+    owner_ticket: "PMAT-263 = paiml/ruchy#263 (open)"
     owner: noah
-    removed_by: "2026-11-14"
-    reason: "no fixed release; reached only via upstream serde_yaml / serde_yaml_ng (aprender-compute, aprender-core build-deps; provable-contracts, jugar-probar dev); bounded by src/advisory_ignore_bound.rs"
+    removed_by: "2026-12-09"
+    reason: "RE-REVIEWED 2026-11-13 by quorum Q1; renewed once. No fixed release (unsafe-libyaml unmaintained). Paths in THIS Cargo.lock (cargo tree -i unsafe-libyaml): serde_yaml 0.9.34 <- provable-contracts 0.3.1 (dev + build-dep of ruchy); serde_yaml_ng 0.10.0 <- jugar-probar 1.0.4 (dev), aprender-compute 0.65.2 and aprender-core 0.65.2 (build-deps), ruchy (dev). Bounded by src/advisory_ignore_bound.rs. Removal test re-run 2026-11-13 on this lock (head dcf6cc8e): ignore removed -> cargo deny check advisories FAILED (exit 1), LIVE."
