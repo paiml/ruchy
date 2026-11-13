@@ -450,7 +450,7 @@ serde_json = "1.0"
 serde_yaml_ng = "0.10"
 assert_cmd = "2.0"
 predicates = "3.1"
-rexpect = "0.5"
+rexpect = "0.7"
 tempfile = "3.21"
 quickcheck_macros = { workspace = true }
 walkdir = "2.5"
