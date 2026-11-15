@@ -1,5 +1,5 @@
 # LAB lane (cannot block a merge or a release): nightly + manual only, never on push or pull_request.
-# Owner: tail-cop. Standing ticket: #299 (stays open). Refs #290.
+# Owner: the LAB owner. Standing ticket: #299 (stays open). Refs #290.
 # A red comments on #299 once, on the green->red edge of a SCHEDULED run; a manual dispatch never comments.
 # 7-day rule (manual owner duty, nothing here enforces it): red or unmeasured for 7 days -> owner runs
 #   gh run list -R paiml/ruchy --workflow snapshot-lab.yml --event schedule -L 8 --json conclusion,createdAt

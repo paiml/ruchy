@@ -453,6 +453,16 @@ wf_has "snapshot job runs the fresh check" "^        run: bash scripts/binary_sn
 wf_has "edge script comments on #299 only" "gh issue comment 299 " "$EDGE"
 wf_lacks "edge script never closes or edits an issue" "gh issue (close|edit|reopen)" "$EDGE"
 wf_lacks "workflow itself calls no gh (outside comments)" "^[^#]*gh (issue|run|api)"
+wf_has "job key snapshot (report needs it by key)" "^  snapshot:$"
+wf_has "job key report (edge script finds the previous report job by this name)" "^  report:$"
+wf_count "no job-level name: (a name would rename the job in the API and break the report lookup)" "^    name:" 0
+wf_count "exactly one report job key" "^  report[A-Za-z0-9_-]*:$" 1
+wf_has "edge script queries the workflow by this file name" "--workflow snapshot-lab\\.yml " "$EDGE"
+rc=0; [ -f "$HERE/../.github/workflows/snapshot-lab.yml" ] || rc=1; lab_check "workflow text: file .github/workflows/snapshot-lab.yml exists (the edge script queries it by file name)" 0 "" "" "$rc"
+wf_has "edge script looks up the job named report" "select\\(\\.name == \"report\"\\)" "$EDGE"
+wf_lacks "no internal names, paths or tier words in the public files" "tail-cop|arbiter|infra-[0-9]|/mnt/|handoff|inbox|tier:|flow-manifest" "$WF"
+wf_lacks "no internal names, paths or tier words in the fresh script" "tail-cop|arbiter|infra-[0-9]|/mnt/|handoff|inbox|tier:|flow-manifest" "$FRESH"
+wf_lacks "no internal names, paths or tier words in the edge script" "tail-cop|arbiter|infra-[0-9]|/mnt/|handoff|inbox|tier:|flow-manifest" "$EDGE"
 # <<< snapshot-lab rows
 
 printf '%s rows, %s failed\n' "$rows" "$fail"
