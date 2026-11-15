@@ -46,13 +46,16 @@
 #   bash scripts/binary_snapshot.sh FILE       # write FILE instead
 #   bash scripts/binary_snapshot.sh --twice    # determinism check, writes nothing
 #
-# Env: SNAPSHOT_PROFILE (default release), SNAPSHOT_MAX_DEPTH (default 4).
+# Env: SNAPSHOT_PROFILE (default release), SNAPSHOT_MAX_DEPTH (default 4),
+# SNAPSHOT_TIMEOUT (seconds per --help/--version call, default 20),
+# SNAPSHOT_MCP_TIMEOUT (the `mcp` call, default 30).
 set -euo pipefail
 export LC_ALL=C
 
 REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 PROFILE="${SNAPSHOT_PROFILE:-release}"
 MAX_DEPTH="${SNAPSHOT_MAX_DEPTH:-4}"
+TMO="${SNAPSHOT_TIMEOUT:-20}"; MCP_TMO="${SNAPSHOT_MCP_TIMEOUT:-30}"
 
 for tool in cargo jq git sha256sum timeout awk grep sort cut install mktemp basename dirname cmp diff head tail mkdir mv rm; do
     command -v "$tool" > /dev/null || { printf 'FAIL: %s missing\n' "$tool" >&2; exit 1; }
@@ -60,17 +63,20 @@ done
 
 # The record names HEAD: refuse a tree that differs from it. The snapshot file
 # itself is exempt (regenerating it must not need a clean-up first).
-if [ -n "$(git -C "$REPO_ROOT" status --porcelain -- . ':(exclude)evidence/binary/snapshot.jsonl')" ]; then
+if [ -n "$(git -C "$REPO_ROOT" status --porcelain -- ':(exclude)evidence/binary/snapshot.jsonl')" ]; then
     printf 'FAIL: git tree is dirty; commit or stash first (the snapshot names HEAD)\n' >&2; exit 1
 fi
 
+# The helpers below run only inside $(...) or a process substitution, where bash
+# (non-posix mode) clears errexit: a failed probe yields empty output, never an
+# abort, so they carry no `|| true`.
 # One subcommand block of `$@ --help`: "name<TAB>description", clap indent 2.
 subcommands() {
-    timeout 20 "$@" --help 2>/dev/null | awk '
+    timeout "$TMO" "$@" --help 2>/dev/null | awk '
         /^[Cc]ommands:/ { inb=1; next }
         /^[A-Za-z]/     { inb=0 }
         inb && /^  [a-z][a-z0-9._-]*([[:space:]]|$)/ {
-            n=$1; sub(/^  [^ ]+[ ]*/, ""); print n "\t" $0 }' || true
+            n=$1; sub(/^  [^ ]+[ ]*/, ""); print n "\t" $0 }'
 }
 
 # $1 executable, $2 depth, $3.. command path. Prints command paths.
@@ -79,15 +85,14 @@ walk() {
     local sub desc kids usage
     [ "$depth" -gt "$MAX_DEPTH" ] && return 0
     while IFS=$'\t' read -r sub desc; do
-        [ -n "$sub" ] || continue
         if [ "$sub" = help ] && [[ "$desc" == "Print this message or the help"* ]]; then
             continue
         fi
-        kids=$(subcommands "$exe" "$@" "$sub" | grep -c . || true)
+        kids=$(subcommands "$exe" "$@" "$sub" | grep -c .)
         if [ "$kids" -eq 0 ]; then
             printf '%s\n' "${*:+$* }$sub"
         else
-            usage=$(timeout 20 "$exe" "$@" "$sub" --help 2>/dev/null | grep -m1 '^Usage:' || true)
+            usage=$(timeout "$TMO" "$exe" "$@" "$sub" --help 2>/dev/null | grep -m1 '^Usage:')
             if [[ "$usage" == *"[COMMAND]"* ]]; then printf '%s\n' "${*:+$* }$sub"; fi
             walk "$exe" "$((depth + 1))" "$@" "$sub"
         fi
@@ -95,14 +100,14 @@ walk() {
 }
 
 options() {
-    { timeout 20 "$1" --help 2>/dev/null || true; } \
+    { timeout "$TMO" "$1" --help 2>/dev/null; } \
         | grep -oE '^ +(-[A-Za-z0-9], )?--[a-z0-9][a-z0-9-]*' \
-        | grep -oE -- '--[a-z0-9][a-z0-9-]*$' \
-        | grep -vxE -- '--(help|version)' || true
+        | grep -oE -- '--[a-z0-9][a-z0-9-]*' \
+        | grep -vxE -- '--(help|version)'
 }
 
 positionals() {
-    { timeout 20 "$1" --help 2>/dev/null || true; } | awk '
+    { timeout "$TMO" "$1" --help 2>/dev/null; } | awk '
         /^Arguments:/ { inb=1; next }
         /^[A-Za-z]/   { inb=0 }
         inb && /^  [<\[]/ { a=$1; gsub(/[<>\[\]]|\.\.\./, "", a); print a }'
@@ -112,16 +117,16 @@ positionals() {
 # exposes none.
 tools() {
     local exe="$1"
-    walk "$exe" 1 | grep -qx mcp || return 0
+    walk "$exe" 1 | grep -x mcp > /dev/null || return 0   # no -q: grep must read all of walk (SIGPIPE + pipefail)
     printf '%s\n' \
         '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"snapshot","version":"1"}}}' \
         '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
         '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
-        | { timeout 30 "$exe" mcp 2>/dev/null || true; } \
-        | jq -r 'select(.id==2) | .result.tools[].name' 2>/dev/null || true
+        | { timeout "$MCP_TMO" "$exe" mcp 2>/dev/null; } \
+        | jq -r 'select(.id==2) | .result.tools[].name' 2>/dev/null
 }
 
-arr() { sort -u | jq -R . | jq -sc .; }
+arr() { sort -u | jq -R . | jq -s .; }
 
 # sha256 of stdin as 64 hex chars; an empty or short hash is a refusal.
 sha256_of() {
@@ -151,7 +156,7 @@ build_all() {
             # numbered stash dirs: no metadata-derived string becomes a path
             i=$((i + 1)); dest="$stash/$i"
             mkdir -p "$dest"
-            install -m 755 "$exe" "$dest/"
+            install "$exe" "$dest/"
             printf '%s\t%s\t%s\t%s\n' "$pkg" "$tgt" "$src" "$dest/${exe##*/}"
         done
 }
@@ -160,19 +165,19 @@ build_all() {
 write_snapshot() {
     local built="$1" out="$2" sha pkg tgt src exe ver help hrc tmp vs bs hs
     sha=$(git -C "$REPO_ROOT" rev-parse HEAD)
-    tmp="$work/snap.tmp"; : > "$tmp"
+    tmp="$work/snap.tmp"
     while IFS=$'\t' read -r pkg tgt src exe; do
-        ver=$(timeout 20 "$exe" --version 2>/dev/null || true)
-        hrc=0; help=$(timeout 20 "$exe" --help 2>/dev/null) || hrc=$?
+        ver=$(timeout "$TMO" "$exe" --version 2>/dev/null || true)
+        hrc=0; help=$(timeout "$TMO" "$exe" --help 2>/dev/null) || hrc=$?
         [ -n "$ver" ] || { printf 'FAIL: %s/%s printed nothing for --version\n' "$pkg" "$tgt" >&2; exit 1; }
         [ "$hrc" -eq 0 ] || { printf 'FAIL: %s/%s --help exited %s\n' "$pkg" "$tgt" "$hrc" >&2; exit 1; }
         # plain assignments, so a failed or empty hash stops the script (set -e);
         # inside --arg "$(...)" it would be written as "" and exit 0.
         vs=$(printf '%s' "$ver" | sha256_of); bs=$(sha256_of < "$exe"); hs=$(printf '%s' "$help" | sha256_of)
+        # help_exit is always 0: a non-zero --help exit is refused above
         jq -nc --arg package "$pkg" --arg target "$tgt" --arg name "$(basename "$exe")" --arg src "$src" \
             --arg sha "$sha" --arg ver "$ver" \
             --arg vs "$vs" --arg bs "$bs" --arg hs "$hs" \
-            --argjson hrc "$hrc" \
             --argjson commands "$(walk "$exe" 1 | arr)" \
             --argjson options "$(options "$exe" | arr)" \
             --argjson positionals "$(positionals "$exe" | arr)" \
@@ -180,7 +185,7 @@ write_snapshot() {
             --argjson tools "$(tools "$exe" | arr)" \
             '{schema: "binary-snapshot/v1", package: $package, target: $target, name: $name, src_path: $src,
               git_sha: $sha, version: $ver, version_sha256: $vs, binary_sha256: $bs, help_sha256: $hs,
-              help_exit: $hrc, commands: $commands, options: $options, positionals: $positionals,
+              help_exit: 0, commands: $commands, options: $options, positionals: $positionals,
               routes: $routes, tools: $tools}' >> "$tmp"
         printf '  snap  %s/%s\n' "$pkg" "$tgt" >&2
     done < "$built"
