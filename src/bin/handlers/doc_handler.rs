@@ -119,6 +119,39 @@ pub struct DocItem {
 #[derive(Debug)]
 pub enum DocItemKind {
     Function,
+    Struct,
+    Enum,
+}
+
+impl DocItem {
+    fn heading(&self) -> String {
+        match self.kind {
+            DocItemKind::Function => format!("{}({})", self.name, self.params.join(", ")),
+            DocItemKind::Struct => format!("struct {}", self.name),
+            DocItemKind::Enum => format!("enum {}", self.name),
+        }
+    }
+
+    fn kind_name(&self) -> &'static str {
+        match self.kind {
+            DocItemKind::Function => "function",
+            DocItemKind::Struct => "struct",
+            DocItemKind::Enum => "enum",
+        }
+    }
+}
+
+/// Join the leading comments of an expression into one doc string.
+fn leading_doc_comment(expr: &Expr) -> String {
+    expr.leading_comments
+        .iter()
+        .map(|c| match &c.kind {
+            CommentKind::Line(text) | CommentKind::Block(text) | CommentKind::Doc(text) => {
+                text.clone()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// Extract documentation from AST
@@ -130,50 +163,42 @@ pub fn extract_documentation(ast: &Expr, include_private: bool) -> Vec<DocItem> 
 
 /// Recursively extract documentation from AST nodes
 fn extract_docs_recursive(expr: &Expr, docs: &mut Vec<DocItem>, include_private: bool) {
-    match &expr.kind {
+    let (kind, name, params) = match &expr.kind {
         ExprKind::Function { name, params, .. } => {
-            // Extract leading doc comments from Comment structs
-            let doc_comment = expr
-                .leading_comments
+            // Extract parameter names from patterns
+            let param_names: Vec<String> = params
                 .iter()
-                .map(|c| match &c.kind {
-                    CommentKind::Line(text) | CommentKind::Block(text) | CommentKind::Doc(text) => {
-                        text.clone()
-                    }
+                .map(|p| match &p.pattern {
+                    Pattern::Identifier(name) => name.clone(),
+                    _ => "_".to_string(),
                 })
-                .collect::<Vec<_>>()
-                .join("\n");
-            let has_doc = !doc_comment.is_empty() || include_private;
-
-            if has_doc {
-                // Extract parameter names from patterns
-                let param_names: Vec<String> = params
-                    .iter()
-                    .map(|p| match &p.pattern {
-                        Pattern::Identifier(name) => name.clone(),
-                        _ => "_".to_string(),
-                    })
-                    .collect();
-
-                docs.push(DocItem {
-                    kind: DocItemKind::Function,
-                    name: name.clone(),
-                    params: param_names,
-                    doc_comment: if doc_comment.is_empty() {
-                        None
-                    } else {
-                        Some(doc_comment)
-                    },
-                });
-            }
+                .collect();
+            (DocItemKind::Function, name, param_names)
         }
+        ExprKind::Struct { name, .. } => (DocItemKind::Struct, name, Vec::new()),
+        ExprKind::Enum { name, .. } => (DocItemKind::Enum, name, Vec::new()),
         ExprKind::Block(exprs) => {
             for e in exprs {
                 extract_docs_recursive(e, docs, include_private);
             }
+            return;
         }
-        _ => {}
+        _ => return,
+    };
+    let doc_comment = leading_doc_comment(expr);
+    if doc_comment.is_empty() && !include_private {
+        return;
     }
+    docs.push(DocItem {
+        kind,
+        name: name.clone(),
+        params,
+        doc_comment: if doc_comment.is_empty() {
+            None
+        } else {
+            Some(doc_comment)
+        },
+    });
 }
 
 /// Generate Markdown documentation
@@ -185,20 +210,16 @@ pub fn generate_markdown_docs(docs: &[DocItem], source_path: &Path) -> String {
     ));
 
     for doc in docs {
-        match doc.kind {
-            DocItemKind::Function => {
-                output.push_str(&format!("## `{}({})`\n\n", doc.name, doc.params.join(", ")));
-                if let Some(comment) = &doc.doc_comment {
-                    let clean_comment = comment
-                        .lines()
-                        .map(|line| line.trim_start_matches("///").trim())
-                        .collect::<Vec<_>>()
-                        .join("\n");
-                    output.push_str(&format!("{}\n\n", clean_comment));
-                } else {
-                    output.push_str("*No documentation available*\n\n");
-                }
-            }
+        output.push_str(&format!("## `{}`\n\n", doc.heading()));
+        if let Some(comment) = &doc.doc_comment {
+            let clean_comment = comment
+                .lines()
+                .map(|line| line.trim_start_matches("///").trim())
+                .collect::<Vec<_>>()
+                .join("\n");
+            output.push_str(&format!("{}\n\n", clean_comment));
+        } else {
+            output.push_str("*No documentation available*\n\n");
         }
     }
 
@@ -211,7 +232,7 @@ pub fn generate_json_docs(docs: &[DocItem], source_path: &Path) -> Result<String
 
     for doc in docs {
         let mut obj = serde_json::Map::new();
-        obj.insert("kind".to_string(), serde_json::json!("function"));
+        obj.insert("kind".to_string(), serde_json::json!(doc.kind_name()));
         obj.insert("name".to_string(), serde_json::json!(doc.name));
         obj.insert("params".to_string(), serde_json::json!(doc.params));
         if let Some(comment) = &doc.doc_comment {
@@ -253,24 +274,16 @@ pub fn generate_html_docs(docs: &[DocItem], source_path: &Path) -> String {
     ));
 
     for doc in docs {
-        match doc.kind {
-            DocItemKind::Function => {
-                output.push_str(&format!(
-                    "<h2><code>{}({})</code></h2>\n",
-                    doc.name,
-                    doc.params.join(", ")
-                ));
-                if let Some(comment) = &doc.doc_comment {
-                    let clean_comment = comment
-                        .lines()
-                        .map(|line| line.trim_start_matches("///").trim())
-                        .collect::<Vec<_>>()
-                        .join("<br>\n");
-                    output.push_str(&format!("<p>{}</p>\n", clean_comment));
-                } else {
-                    output.push_str("<p><em>No documentation available</em></p>\n");
-                }
-            }
+        output.push_str(&format!("<h2><code>{}</code></h2>\n", doc.heading()));
+        if let Some(comment) = &doc.doc_comment {
+            let clean_comment = comment
+                .lines()
+                .map(|line| line.trim_start_matches("///").trim())
+                .collect::<Vec<_>>()
+                .join("<br>\n");
+            output.push_str(&format!("<p>{}</p>\n", clean_comment));
+        } else {
+            output.push_str("<p><em>No documentation available</em></p>\n");
         }
     }
 
@@ -486,5 +499,55 @@ mod tests {
         assert!(result.contains("<head>"));
         assert!(result.contains("<title>"));
         assert!(result.contains("</head>"));
+    }
+
+    // Issue #110: doc comments on struct and enum items must be extracted.
+    fn docs_of(src: &str) -> Vec<DocItem> {
+        let ast = Parser::new(src).parse().expect("parse");
+        extract_documentation(&ast, false)
+    }
+
+    const TYPES_SRC: &str = "/// A point.\nstruct Point {\n    x: i32,\n}\n\n/// A color.\nenum Color {\n    Red,\n}\n\n/// Adds.\nfun add(a: i32) -> i32 {\n    a\n}\n";
+
+    #[test]
+    fn test_issue_110_markdown_struct_enum_fn() {
+        let md = generate_markdown_docs(&docs_of(TYPES_SRC), Path::new("t.ruchy"));
+        assert!(md.contains("## `struct Point`\n\nA point.\n"), "{md}");
+        assert!(md.contains("## `enum Color`\n\nA color.\n"), "{md}");
+        assert!(md.contains("## `add(a)`\n\nAdds.\n"), "{md}");
+    }
+
+    #[test]
+    fn test_issue_110_json_kinds() {
+        let json = generate_json_docs(&docs_of(TYPES_SRC), Path::new("t.ruchy")).unwrap();
+        let v: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let kinds: Vec<(&str, &str)> = v["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|i| (i["kind"].as_str().unwrap(), i["name"].as_str().unwrap()))
+            .collect();
+        assert_eq!(
+            kinds,
+            vec![("struct", "Point"), ("enum", "Color"), ("function", "add")]
+        );
+    }
+
+    #[test]
+    fn test_issue_110_html_headings() {
+        let html = generate_html_docs(&docs_of(TYPES_SRC), Path::new("t.ruchy"));
+        assert!(
+            html.contains("<h2><code>struct Point</code></h2>"),
+            "{html}"
+        );
+        assert!(html.contains("<h2><code>enum Color</code></h2>"), "{html}");
+    }
+
+    #[test]
+    fn test_issue_110_undocumented_type_skipped_unless_private() {
+        let src = "struct Bare {\n    x: i32,\n}\n";
+        let ast = Parser::new(src).parse().expect("parse");
+        assert!(extract_documentation(&ast, false).is_empty());
+        assert_eq!(extract_documentation(&ast, true).len(), 1);
     }
 }
