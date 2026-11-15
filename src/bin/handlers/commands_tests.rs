@@ -728,3 +728,38 @@ fn test_output_results_verbose() {
     let result = output_results("test content", false, None);
     assert!(result.is_ok());
 }
+
+// ========== BigO: branching recursion (Issue #142) ==========
+fn bigo_report_for(source: &str) -> String {
+    let mut parser = RuchyParser::new(source);
+    let ast = parser.parse().expect("test source must parse");
+    let mut output = String::new();
+    add_bigo_section(&mut output, &ast);
+    output
+}
+
+#[test]
+fn test_bigo_naive_fibonacci_is_exponential() {
+    let report = bigo_report_for(
+        "pub fun fibonacci(n: i32) -> i32 { if n <= 1 { n } else { fibonacci(n - 1) + fibonacci(n - 2) } }",
+    );
+    assert!(
+        report.contains("Algorithmic Complexity: O(2^n)"),
+        "{report}"
+    );
+    assert!(
+        report.contains("Worst-case scenario: Exponential"),
+        "{report}"
+    );
+}
+
+#[test]
+fn test_bigo_single_recursion_is_not_exponential() {
+    let report =
+        bigo_report_for("fun fact(n: i32) -> i32 { if n <= 1 { 1 } else { n * fact(n - 1) } }");
+    assert!(!report.contains("2^n"), "{report}");
+    let report = bigo_report_for(
+        "fun find(n: i32) -> i32 { if n < 5 { find(n + 1) } else { find(n - 1) } }",
+    );
+    assert!(!report.contains("2^n"), "{report}");
+}

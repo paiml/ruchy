@@ -548,7 +548,12 @@ fn add_bigo_section(output: &mut String, ast: &ruchy::frontend::ast::Expr) {
     output.push_str("=== BigO Complexity Analysis ===\n");
     let complexity = analyze_complexity(ast);
     output.push_str(&format!("Algorithmic Complexity: O({})\n", complexity));
-    output.push_str("Worst-case scenario: Linear\n\n");
+    let worst_case = if complexity == "2^n" {
+        "Exponential"
+    } else {
+        "Linear"
+    };
+    output.push_str(&format!("Worst-case scenario: {worst_case}\n\n"));
 }
 /// Add benchmark results section
 fn add_benchmark_section(output: &mut String) {
@@ -1427,7 +1432,46 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
     // Minimum complexity is 1
     complexity.max(1)
 }
+/// Self-calls executed on one path through `expr` (branches count their max).
+fn self_calls_per_path(name: &str, expr: &ruchy::frontend::ast::Expr) -> usize {
+    use ruchy::frontend::ast::ExprKind;
+    let calls = |e: &ruchy::frontend::ast::Expr| self_calls_per_path(name, e);
+    match &expr.kind {
+        ExprKind::Call { func, args } => {
+            let own = usize::from(matches!(&func.kind, ExprKind::Identifier(n) if n == name));
+            own + args.iter().map(calls).sum::<usize>()
+        }
+        ExprKind::Block(exprs) => exprs.iter().map(calls).sum(),
+        ExprKind::Binary { left, right, .. } => calls(left) + calls(right),
+        ExprKind::Let { value, body, .. } => calls(value) + calls(body),
+        ExprKind::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
+            let else_calls = else_branch.as_ref().map_or(0, |e| calls(e));
+            calls(condition) + calls(then_branch).max(else_calls)
+        }
+        ExprKind::Match { arms, .. } => arms.iter().map(|a| calls(&a.body)).max().unwrap_or(0),
+        _ => 0,
+    }
+}
+/// True when some function calls itself twice or more on a single path
+/// (e.g. naive fibonacci), which makes its call tree exponential (Issue #142).
+fn has_branching_recursion(expr: &ruchy::frontend::ast::Expr) -> bool {
+    use ruchy::frontend::ast::ExprKind;
+    match &expr.kind {
+        ExprKind::Function { name, body, .. } => {
+            self_calls_per_path(name, body) >= 2 || has_branching_recursion(body)
+        }
+        ExprKind::Block(exprs) => exprs.iter().any(has_branching_recursion),
+        _ => false,
+    }
+}
 fn analyze_complexity(ast: &ruchy::frontend::ast::Expr) -> String {
+    if has_branching_recursion(ast) {
+        return "2^n".to_string();
+    }
     // Analyze algorithmic complexity based on loop nesting
     let nesting_depth = calculate_max_nesting(ast);
     match nesting_depth {
