@@ -298,6 +298,7 @@ fn test_sec2_writer_is_byte_identical_to_the_oracle() {
             "dash": "-", "dash_x": "-x", "colon": "a:b", "hash": "a #b", "q": "?",
             "dots": "...", "dashes": "---x", "num": "1e3", "neg": "-0x1F", "oct": "0o17",
             "inf": ".inf", "nan": "NaN", "us": "1_000", "plus": "+5", "yes": "yes", "tilde": "~",
+            "null": "null", "Null": "Null", "NULL": "NULL",
             "crlf": "a\r\nb", "ls": "a\u{2028}b",
         }),
         json!({"": 1, "a b": 2, "a: b": 3, "- x": 4, "k\nl": 5, "x".repeat(129): 6, "007": 7}),
