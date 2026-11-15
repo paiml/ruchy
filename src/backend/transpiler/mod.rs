@@ -198,6 +198,9 @@ pub struct Transpiler {
     /// Tracks which variables are static mut globals requiring unsafe blocks.
     /// Uses `RwLock` for thread-safe interior mutability since transpiler is used in async contexts.
     pub global_vars: std::sync::RwLock<std::collections::HashSet<String>>,
+    /// Issue #252: globals whose emitted static type is exactly `i32` (annotated `i32`, or
+    /// inferred i32 from the initialiser). Only these get a `.len()` cast in guard context.
+    pub global_i32_vars: std::sync::RwLock<std::collections::HashSet<String>>,
     /// SPEC-001-B: Const variable names that need module-level const declarations
     ///
     /// Populated during initial analysis (before optimization) to preserve const attributes.
@@ -251,6 +254,12 @@ impl Clone for Transpiler {
                     .expect("rwlock should not be poisoned")
                     .clone(),
             ),
+            global_i32_vars: std::sync::RwLock::new(
+                self.global_i32_vars
+                    .read()
+                    .expect("rwlock should not be poisoned")
+                    .clone(),
+            ),
             const_vars: std::sync::RwLock::new(
                 self.const_vars
                     .read()
@@ -286,6 +295,7 @@ impl Transpiler {
             string_vars: std::cell::RefCell::new(std::collections::HashSet::new()),
             current_function_return_type: std::cell::RefCell::new(None),
             global_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
+            global_i32_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
             const_vars: std::sync::RwLock::new(std::collections::HashSet::new()),
             variable_types: std::cell::RefCell::new(std::collections::HashMap::new()),
             struct_field_types: std::cell::RefCell::new(std::collections::HashMap::new()),
