@@ -848,3 +848,24 @@ fn test_bigo_non_self_calls_are_not_exponential() {
         "{report}"
     );
 }
+
+fn score_of(source: &str) -> f64 {
+    let ast = RuchyParser::new(source).parse().expect("parse");
+    calculate_quality_score(&ast, source)
+}
+
+// Issue #112: `ruchy score` printed "1.05/1.0" for a clean file because the
+// documentation bonus multiplied an already-perfect score past the range.
+#[test]
+fn test_quality_score_never_exceeds_one() {
+    let score = score_of("fun main() {\n    println(1)\n}\nmain()\n");
+    assert!((score - 1.0).abs() < 1e-9, "score was {score}");
+}
+
+// Regression: a penalised file keeps its penalised value (0.70 SATD x 1.05
+// bonus), the clamp must not touch scores below 1.0.
+#[test]
+fn test_quality_score_penalised_file_unchanged() {
+    let score = score_of("// TODO: fix\nfun main() {\n    println(1)\n}\nmain()\n");
+    assert!((score - 0.735).abs() < 1e-9, "score was {score}");
+}
