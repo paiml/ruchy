@@ -954,3 +954,14 @@ fn test_quality_score_one_of_four_documented_is_penalised() {
     let score = score_of(src);
     assert!((score - 0.85).abs() < 1e-9, "score was {score}");
 }
+
+#[test]
+fn test_quality_score_two_of_five_documented_is_penalised() {
+    // ratio 0.4 is still below the 0.5 neutral bound
+    let mut src = String::new();
+    for (i, doc) in ["/// A\n", "/// B\n", "", "", ""].iter().enumerate() {
+        src.push_str(&format!("{doc}fun fn_{i}x() {{\n    1\n}}\n"));
+    }
+    let score = score_of(&src);
+    assert!((score - 0.85).abs() < 1e-9, "score was {score}");
+}
