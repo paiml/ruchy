@@ -858,7 +858,7 @@ fn score_of(source: &str) -> f64 {
 // documentation bonus multiplied an already-perfect score past the range.
 #[test]
 fn test_quality_score_never_exceeds_one() {
-    let score = score_of("fun main() {\n    println(1)\n}\nmain()\n");
+    let score = score_of("/// Entry point\nfun main() {\n    println(1)\n}\nmain()\n");
     assert!((score - 1.0).abs() < 1e-9, "score was {score}");
 }
 
@@ -866,6 +866,84 @@ fn test_quality_score_never_exceeds_one() {
 // bonus), the clamp must not touch scores below 1.0.
 #[test]
 fn test_quality_score_penalised_file_unchanged() {
-    let score = score_of("// TODO: fix\nfun main() {\n    println(1)\n}\nmain()\n");
+    let score = score_of("/// TODO: fix\nfun main() {\n    println(1)\n}\nmain()\n");
     assert!((score - 0.735).abs() < 1e-9, "score was {score}");
+}
+
+// Issue #112 (slice 3): "documented" means a `///` doc comment directly above
+// the function, not a function name longer than one character.
+const TWO_UNDOCUMENTED: &str = "fun alpha() {\n    1\n}\nfun beta() {\n    2\n}\n";
+const TWO_DOCUMENTED: &str =
+    "/// Alpha doc\nfun alpha() {\n    1\n}\n/// Beta doc\nfun beta() {\n    2\n}\n";
+
+fn three_fns(docs: [&str; 3]) -> String {
+    let mut src = String::new();
+    for (name, doc) in ["alpha", "beta", "gamma"].iter().zip(docs) {
+        src.push_str(&format!("{doc}fun {name}() {{\n    1\n}}\n"));
+    }
+    src
+}
+
+#[test]
+fn test_quality_score_undocumented_functions_penalised() {
+    let score = score_of(TWO_UNDOCUMENTED);
+    assert!((score - 0.85).abs() < 1e-9, "score was {score}");
+}
+
+#[test]
+fn test_quality_score_documented_functions_full() {
+    let score = score_of(TWO_DOCUMENTED);
+    assert!((score - 1.0).abs() < 1e-9, "score was {score}");
+}
+
+#[test]
+fn test_quality_score_plain_comments_are_not_documentation() {
+    let score = score_of("// alpha\nfun alpha() {\n    1\n}\n/* beta */\nfun beta() {\n    2\n}\n");
+    assert!((score - 0.85).abs() < 1e-9, "score was {score}");
+}
+
+#[test]
+fn test_quality_score_mixed_documentation_is_proportional() {
+    // 1 of 3 documented: ratio 0.33 < 0.5 -> penalty band
+    let one = score_of(&three_fns(["/// A\n", "", ""]));
+    assert!((one - 0.85).abs() < 1e-9, "score was {one}");
+    // 2 of 3 documented: ratio 0.67 -> neutral band
+    let two = score_of(&three_fns(["/// A\n", "/// B\n", ""]));
+    assert!((two - 1.0).abs() < 1e-9, "score was {two}");
+}
+
+#[test]
+fn test_quality_score_half_documented_is_neutral() {
+    // ratio exactly 0.5 is not below the penalty bound
+    let score = score_of("/// A\nfun alpha() {\n    1\n}\nfun beta() {\n    2\n}\n");
+    assert!((score - 1.0).abs() < 1e-9, "score was {score}");
+}
+
+#[test]
+fn test_quality_score_no_functions_defined() {
+    let score = score_of("let value = 1\n");
+    assert!(
+        score.is_finite() && (score - 1.0).abs() < 1e-9,
+        "score was {score}"
+    );
+}
+
+// A non-doc comment on a function's AST node is still not documentation, even
+// if the parser one day keeps `//` and `/* */` comments there.
+#[test]
+fn test_quality_score_line_and_block_comment_nodes_are_not_documentation() {
+    use ruchy::frontend::ast::{Comment, CommentKind, Span};
+    for kind in [
+        CommentKind::Line(" note".to_string()),
+        CommentKind::Block(" note ".to_string()),
+    ] {
+        let mut ast = RuchyParser::new(TWO_UNDOCUMENTED).parse().expect("parse");
+        if let ExprKind::Block(items) = &mut ast.kind {
+            for item in items.iter_mut() {
+                item.leading_comments = vec![Comment::new(kind.clone(), Span::new(0, 0))];
+            }
+        }
+        let score = calculate_quality_score(&ast, TWO_UNDOCUMENTED);
+        assert!((score - 0.85).abs() < 1e-9, "score was {score}");
+    }
 }

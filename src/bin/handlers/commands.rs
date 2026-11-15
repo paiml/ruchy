@@ -1514,13 +1514,16 @@ fn analyze_function_quality(
     name: &str,
     params: &[ruchy::frontend::ast::Param],
     body: &ruchy::frontend::ast::Expr,
+    has_doc_comment: bool,
     metrics: &mut QualityMetrics,
 ) {
     metrics.function_count += 1;
     metrics.max_parameters = metrics.max_parameters.max(params.len());
     if name.len() > 1 && !name.chars().all(|c| c == '_') {
-        metrics.documented_functions += 1;
         metrics.good_names += 1;
+    }
+    if has_doc_comment {
+        metrics.documented_functions += 1;
     }
     metrics.total_identifiers += 1;
     metrics.total_function_lines += count_lines_in_expr(body);
@@ -1539,7 +1542,15 @@ fn analyze_ast_quality(expr: &ruchy::frontend::ast::Expr, metrics: &mut QualityM
     match &expr.kind {
         ExprKind::Function {
             name, params, body, ..
-        } => analyze_function_quality(name, params, body, metrics),
+        } => {
+            // The parser keeps only `///` doc comments on the AST (`//` and
+            // `/* */` are skipped as trivia), so that is what "documented" means.
+            let has_doc = expr
+                .leading_comments
+                .iter()
+                .any(|c| matches!(c.kind, ruchy::frontend::ast::CommentKind::Doc(_)));
+            analyze_function_quality(name, params, body, has_doc, metrics);
+        }
         ExprKind::Identifier(name) => {
             metrics.total_identifiers += 1;
             if name.len() > 1 && !matches!(name.as_str(), "a" | "b" | "x" | "y" | "i" | "j") {
