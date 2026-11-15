@@ -837,3 +837,14 @@ fn test_bigo_function_in_block_is_exponential() {
         "fun one() -> i32 { 1 }\nfun fib(n: i32) -> i32 { if n <= 1 { n } else { fib(n - 1) + fib(n - 2) } }",
     );
 }
+
+#[test]
+fn test_bigo_non_self_calls_are_not_exponential() {
+    // Two shrinking calls to OTHER functions are not self-calls.
+    let report = bigo_report_for("fun f(n: i32) -> i32 { g(n - 1) + h(n - 2) }");
+    assert_eq!(
+        report,
+        "=== BigO Complexity Analysis ===\nAlgorithmic Complexity: O(1)\nWorst-case scenario: Linear\n\n",
+        "{report}"
+    );
+}
