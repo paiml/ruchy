@@ -16,9 +16,11 @@
 # `commands` is every command path under the binary, space-joined, without the
 # binary name: each leaf, plus each non-leaf whose Usage shows `[COMMAND]`.
 # clap's auto `help` is not a command. An empty surface is [], never omitted.
-# The snapshot is the DEFAULT-FEATURE build. `tools` is asked of the binary over
-# stdio (`ruchy mcp`, tools/list); without `--features mcp` it answers "MCP
-# support not enabled" and lists none, so [] is what that build exposes.
+# Each bin target is built with its own `required-features` (for ruchy: `repl`,
+# via `--features repl`) and otherwise the package defaults; no other feature is
+# added. `tools` is asked of the binary over stdio (`ruchy mcp`, tools/list);
+# without `--features mcp` it answers "MCP support not enabled" and lists none,
+# so [] is what that build exposes.
 # `routes` is []: `ruchy serve` serves static files and mounts no route table.
 #
 # The record names the commit it was built from (git_sha = `git rev-parse HEAD`
@@ -26,7 +28,15 @@
 # A snapshot is committed ON TOP of the tree it measured, so its git_sha is the
 # parent of the commit that adds it, never that commit itself: a file cannot
 # name the commit that contains it. Determinism: `--twice` builds once, writes
-# two snapshots and compares them byte for byte.
+# two snapshots and compares them byte for byte (output determinism of one build,
+# not build reproducibility).
+#
+# REFUSALS (non-zero exit, message on stderr): a missing tool; a tracked or
+# untracked change in the git tree (the record names HEAD, so HEAD must be what
+# was built; the snapshot file itself is exempt); a target that does not build;
+# an empty `--version`; a `--help` that exits non-zero; zero bin targets; a
+# line count that differs from the target count; `--twice` snapshots that
+# differ. scripts/binary_snapshot_test.sh has one row per refusal.
 #
 #   bash scripts/binary_snapshot.sh            # write evidence/binary/snapshot.jsonl
 #   bash scripts/binary_snapshot.sh FILE       # write FILE instead
@@ -43,6 +53,12 @@ MAX_DEPTH="${SNAPSHOT_MAX_DEPTH:-4}"
 for tool in cargo jq git sha256sum timeout; do
     command -v "$tool" > /dev/null || { printf 'FAIL: %s missing\n' "$tool" >&2; exit 1; }
 done
+
+# The record names HEAD: refuse a tree that differs from it. The snapshot file
+# itself is exempt (regenerating it must not need a clean-up first).
+if [ -n "$(git -C "$REPO_ROOT" status --porcelain -- . ':(exclude)evidence/binary/snapshot.jsonl')" ]; then
+    printf 'FAIL: git tree is dirty; commit or stash first (the snapshot names HEAD)\n' >&2; exit 1
+fi
 
 # One subcommand block of `$@ --help`: "name<TAB>description", clap indent 2.
 subcommands() {
@@ -133,10 +149,12 @@ build_all() {
 write_snapshot() {
     local built="$1" out="$2" sha pkg tgt src exe ver help hrc tmp
     sha=$(git -C "$REPO_ROOT" rev-parse HEAD)
-    tmp="$out.tmp"; : > "$tmp"
+    tmp="$work/snap.tmp"; : > "$tmp"
     while IFS=$'\t' read -r pkg tgt src exe; do
         ver=$(timeout 20 "$exe" --version 2>/dev/null || true)
         hrc=0; help=$(timeout 20 "$exe" --help 2>/dev/null) || hrc=$?
+        [ -n "$ver" ] || { printf 'FAIL: %s/%s printed nothing for --version\n' "$pkg" "$tgt" >&2; exit 1; }
+        [ "$hrc" -eq 0 ] || { printf 'FAIL: %s/%s --help exited %s\n' "$pkg" "$tgt" "$hrc" >&2; exit 1; }
         jq -nc --arg package "$pkg" --arg target "$tgt" --arg name "$(basename "$exe")" --arg src "$src" \
             --arg sha "$sha" --arg ver "$ver" \
             --arg vs "$(printf '%s' "$ver" | sha256sum | cut -d' ' -f1)" \
