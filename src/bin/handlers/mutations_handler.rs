@@ -18,8 +18,35 @@ fn transpile_ruchy_file(path: &Path) -> Result<String> {
     Ok(prettyplease::unparse(&syn::parse2(tokens)?))
 }
 
+/// Spawn `cmd`; when the program itself is missing, name it and say how to get it
+/// (a bare "No such file or directory" hid which tool was absent).
+fn spawn_tool(cmd: &mut std::process::Command) -> Result<std::process::Output> {
+    cmd.output().map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            anyhow::anyhow!(
+                "could not run `{}`: not found on PATH. `ruchy mutations` needs cargo and cargo-mutants: \
+                 install Rust from https://rustup.rs, then run `cargo install cargo-mutants`",
+                cmd.get_program().to_string_lossy()
+            )
+        } else {
+            anyhow::Error::from(e)
+        }
+    })
+}
+
+/// True when cargo ran but has no `mutants` subcommand (cargo-mutants not installed).
+fn cargo_mutants_not_installed(output: &std::process::Output) -> bool {
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    !output.status.success() && stderr.contains("no such command") && stderr.contains("mutants")
+}
+
 /// Run cargo mutants on file
-fn run_cargo_mutants(path: &Path, timeout: u32, verbose: bool) -> Result<std::process::Output> {
+fn run_cargo_mutants(
+    program: &str,
+    path: &Path,
+    timeout: u32,
+    verbose: bool,
+) -> Result<std::process::Output> {
     use std::fs;
 
     if path.extension().and_then(|s| s.to_str()) == Some("ruchy") {
@@ -63,7 +90,7 @@ path = "src/lib.rs"
         }
 
         // Step 5: Run cargo mutants in temp project
-        let mut cmd = std::process::Command::new("cargo");
+        let mut cmd = std::process::Command::new(program);
         cmd.current_dir(&temp_dir).args([
             "mutants",
             "--timeout",
@@ -71,16 +98,18 @@ path = "src/lib.rs"
             "--no-times",
         ]);
 
-        let output_result = cmd.output()?;
-        super::log_command_output(&output_result, verbose);
+        let output_result = spawn_tool(&mut cmd);
 
-        // Step 6: Cleanup temp project
+        // Step 6: Cleanup temp project (also when the spawn failed)
         let _ = fs::remove_dir_all(&temp_dir);
+
+        let output_result = output_result?;
+        super::log_command_output(&output_result, verbose);
 
         Ok(output_result)
     } else {
         // For .rs files in workspace: run directly
-        let mut cmd = std::process::Command::new("cargo");
+        let mut cmd = std::process::Command::new(program);
         cmd.args([
             "mutants",
             "--file",
@@ -90,7 +119,7 @@ path = "src/lib.rs"
             "--no-times",
         ]);
 
-        let output_result = cmd.output()?;
+        let output_result = spawn_tool(&mut cmd)?;
         super::log_command_output(&output_result, verbose);
 
         Ok(output_result)
@@ -146,6 +175,27 @@ pub fn handle_mutations_command(
     min_coverage: f64,
     verbose: bool,
 ) -> Result<()> {
+    handle_mutations_with(
+        "cargo",
+        path,
+        timeout,
+        format,
+        output,
+        min_coverage,
+        verbose,
+    )
+}
+
+/// Same as `handle_mutations_command`, with the cargo program injectable (tests).
+fn handle_mutations_with(
+    program: &str,
+    path: &Path,
+    timeout: u32,
+    format: &str,
+    output: Option<&Path>,
+    min_coverage: f64,
+    verbose: bool,
+) -> Result<()> {
     use std::fs;
 
     if verbose {
@@ -175,7 +225,12 @@ pub fn handle_mutations_command(
     }
 
     // Run cargo mutants
-    let output_result = run_cargo_mutants(path, timeout, verbose)?;
+    let output_result = run_cargo_mutants(program, path, timeout, verbose)?;
+    if cargo_mutants_not_installed(&output_result) {
+        anyhow::bail!(
+            "cargo-mutants is not installed: run `cargo install cargo-mutants` (needed by `ruchy mutations`)"
+        );
+    }
     let stdout = String::from_utf8_lossy(&output_result.stdout);
     let cargo_success = output_result.status.success();
 
@@ -331,5 +386,181 @@ mod tests {
         let path = Path::new("/nonexistent/file.ruchy");
         let result = handle_mutations_command(path, 60, "text", None, 1.0, false);
         assert!(result.is_ok());
+    }
+
+    // ===== #112 slice 2: a missing tool is named, not "No such file or directory" =====
+
+    #[test]
+    fn test_spawn_tool_missing_program_names_tool_and_install_hint() {
+        let mut cmd = std::process::Command::new("ruchy-no-such-tool-112");
+        let err = spawn_tool(&mut cmd).unwrap_err().to_string();
+        assert!(err.contains("ruchy-no-such-tool-112"), "{err}");
+        assert!(err.contains("cargo install cargo-mutants"), "{err}");
+        assert!(!err.contains("os error 2"), "{err}");
+    }
+
+    #[test]
+    fn test_spawn_tool_present_program_still_runs() {
+        // Regression: a program that exists returns its Output unchanged.
+        let mut cmd = std::process::Command::new("sh");
+        cmd.args(["-c", "echo hi; exit 3"]);
+        let out = spawn_tool(&mut cmd).unwrap();
+        assert_eq!(out.status.code(), Some(3));
+        assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "hi");
+    }
+
+    #[test]
+    fn test_spawn_tool_other_io_error_passes_through() {
+        // A non-NotFound failure (cwd is a regular file) keeps the OS error text.
+        let file = NamedTempFile::new().unwrap();
+        let mut cmd = std::process::Command::new("sh");
+        cmd.current_dir(file.path());
+        let err = spawn_tool(&mut cmd).unwrap_err().to_string();
+        assert!(
+            !err.contains("not found on PATH") && err.contains("os error"),
+            "{err}"
+        );
+    }
+
+    #[cfg(unix)]
+    fn fake_output(code: i32, stderr: &str) -> std::process::Output {
+        use std::os::unix::process::ExitStatusExt;
+        std::process::Output {
+            status: std::process::ExitStatus::from_raw(code << 8),
+            stdout: Vec::new(),
+            stderr: stderr.as_bytes().to_vec(),
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_cargo_mutants_not_installed_detected() {
+        let out = fake_output(101, "error: no such command: `mutants`\n");
+        assert!(cargo_mutants_not_installed(&out));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_cargo_mutants_not_installed_ignores_success() {
+        let out = fake_output(0, "error: no such command: `mutants`\n");
+        assert!(!cargo_mutants_not_installed(&out));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_cargo_mutants_not_installed_ignores_other_failures() {
+        // Regression: ordinary mutation failures and other missing commands are not this case.
+        assert!(!cargo_mutants_not_installed(&fake_output(
+            2,
+            "mutants failed\n"
+        )));
+        assert!(!cargo_mutants_not_installed(&fake_output(
+            101,
+            "error: no such command: `nextest`\n"
+        )));
+    }
+
+    // ===== #301: call-site wiring and temp-project cleanup (program injectable) =====
+
+    #[cfg(unix)]
+    fn fake_program(dir: &Path, body: &str) -> String {
+        use std::os::unix::fs::PermissionsExt;
+        let p = dir.join("fake-cargo");
+        std::fs::write(&p, format!("#!/bin/sh\n{body}\n")).unwrap();
+        std::fs::set_permissions(&p, std::fs::Permissions::from_mode(0o755)).unwrap();
+        p.to_str().unwrap().to_string()
+    }
+
+    fn ruchy_source(prefix: &str) -> NamedTempFile {
+        let mut f = tempfile::Builder::new()
+            .prefix(prefix)
+            .suffix(".ruchy")
+            .tempfile()
+            .unwrap();
+        writeln!(f, "fun main() {{ println(\"hi\") }}").unwrap();
+        f
+    }
+
+    fn leftover_temp_projects(stem: &str) -> usize {
+        let prefix = format!("ruchy_mutations_{stem}_");
+        std::fs::read_dir(std::env::temp_dir())
+            .unwrap()
+            .flatten()
+            .filter(|e| e.file_name().to_string_lossy().starts_with(&prefix))
+            .count()
+    }
+
+    fn stem_of(f: &NamedTempFile) -> String {
+        f.path().file_stem().unwrap().to_str().unwrap().to_string()
+    }
+
+    #[test]
+    fn test_failed_spawn_removes_temp_project() {
+        let src = ruchy_source("t301spawnfail");
+        let err = run_cargo_mutants("/nonexistent/ruchy-no-cargo-301", src.path(), 5, false)
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("/nonexistent/ruchy-no-cargo-301"), "{err}");
+        assert_eq!(leftover_temp_projects(&stem_of(&src)), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_successful_run_sees_project_then_removes_it() {
+        let dir = tempfile::tempdir().unwrap();
+        let prog = fake_program(
+            dir.path(),
+            "test -f Cargo.toml && test -f src/lib.rs && echo ran",
+        );
+        let src = ruchy_source("t301okrun");
+        let out = run_cargo_mutants(&prog, src.path(), 5, false).unwrap();
+        assert!(out.status.success());
+        assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "ran");
+        assert_eq!(leftover_temp_projects(&stem_of(&src)), 0);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_handler_bails_when_cargo_mutants_missing_and_writes_no_report() {
+        let dir = tempfile::tempdir().unwrap();
+        let prog = fake_program(
+            dir.path(),
+            "echo 'error: no such command: `mutants`' >&2; exit 101",
+        );
+        let report = dir.path().join("report.json");
+        let src = ruchy_source("t301bail");
+        let err = handle_mutations_with(&prog, src.path(), 5, "json", Some(&report), 0.0, false)
+            .unwrap_err()
+            .to_string();
+        assert_eq!(
+            err,
+            "cargo-mutants is not installed: run `cargo install cargo-mutants` (needed by `ruchy mutations`)"
+        );
+        assert!(
+            !report.exists(),
+            "report must not be written after the bail"
+        );
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_handler_ordinary_run_still_writes_report() {
+        // Regression: a tool that runs fine is not mistaken for a missing cargo-mutants.
+        let dir = tempfile::tempdir().unwrap();
+        let prog = fake_program(dir.path(), "echo '1 mutants tested: 1 caught'");
+        let report = dir.path().join("report.json");
+        let src = ruchy_source("t301fine");
+        handle_mutations_with(&prog, src.path(), 5, "json", Some(&report), 0.5, false).unwrap();
+        assert!(std::fs::read_to_string(&report).unwrap().contains("passed"));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn test_rs_file_uses_injected_program() {
+        let dir = tempfile::tempdir().unwrap();
+        let prog = fake_program(dir.path(), "echo rs-branch");
+        let rs = tempfile::Builder::new().suffix(".rs").tempfile().unwrap();
+        let out = run_cargo_mutants(&prog, rs.path(), 5, false).unwrap();
+        assert_eq!(String::from_utf8_lossy(&out.stdout).trim(), "rs-branch");
     }
 }
