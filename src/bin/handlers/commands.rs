@@ -1432,13 +1432,27 @@ fn calculate_complexity(ast: &ruchy::frontend::ast::Expr) -> usize {
     // Minimum complexity is 1
     complexity.max(1)
 }
-/// Self-calls executed on one path through `expr` (branches count their max).
+/// True for `n - <integer literal>`: an argument that shrinks by a constant.
+fn shrinks_by_constant(arg: &ruchy::frontend::ast::Expr) -> bool {
+    use ruchy::frontend::ast::{BinaryOp, ExprKind, Literal};
+    matches!(
+        &arg.kind,
+        ExprKind::Binary { op: BinaryOp::Subtract, right, .. }
+            if matches!(&right.kind, ExprKind::Literal(Literal::Integer(..)))
+    )
+}
+/// Self-calls that shrink an argument by a constant, executed on one path
+/// through `expr` (branches count their max). Halving or slicing recursion
+/// (merge sort) is deliberately not counted: it is not exponential.
 fn self_calls_per_path(name: &str, expr: &ruchy::frontend::ast::Expr) -> usize {
     use ruchy::frontend::ast::ExprKind;
     let calls = |e: &ruchy::frontend::ast::Expr| self_calls_per_path(name, e);
     match &expr.kind {
         ExprKind::Call { func, args } => {
-            let own = usize::from(matches!(&func.kind, ExprKind::Identifier(n) if n == name));
+            let own = usize::from(
+                matches!(&func.kind, ExprKind::Identifier(n) if n == name)
+                    && args.iter().any(shrinks_by_constant),
+            );
             own + args.iter().map(calls).sum::<usize>()
         }
         ExprKind::Block(exprs) => exprs.iter().map(calls).sum(),
@@ -1456,7 +1470,7 @@ fn self_calls_per_path(name: &str, expr: &ruchy::frontend::ast::Expr) -> usize {
         _ => 0,
     }
 }
-/// True when some function calls itself twice or more on a single path
+/// True when some function calls itself twice or more (shrinking an argument by a constant) on a single path
 /// (e.g. naive fibonacci), which makes its call tree exponential (Issue #142).
 fn has_branching_recursion(expr: &ruchy::frontend::ast::Expr) -> bool {
     use ruchy::frontend::ast::ExprKind;

@@ -753,13 +753,87 @@ fn test_bigo_naive_fibonacci_is_exponential() {
     );
 }
 
+fn assert_bigo_exponential(source: &str) {
+    let report = bigo_report_for(source);
+    assert!(report.contains("O(2^n)"), "{source}\n{report}");
+}
+
+fn assert_bigo_not_exponential(source: &str) {
+    let report = bigo_report_for(source);
+    assert!(!report.contains("2^n"), "{source}\n{report}");
+}
+
 #[test]
 fn test_bigo_single_recursion_is_not_exponential() {
-    let report =
-        bigo_report_for("fun fact(n: i32) -> i32 { if n <= 1 { 1 } else { n * fact(n - 1) } }");
-    assert!(!report.contains("2^n"), "{report}");
-    let report = bigo_report_for(
-        "fun find(n: i32) -> i32 { if n < 5 { find(n + 1) } else { find(n - 1) } }",
+    assert_bigo_not_exponential(
+        "fun fact(n: i32) -> i32 { if n <= 1 { 1 } else { n * fact(n - 1) } }",
     );
-    assert!(!report.contains("2^n"), "{report}");
+}
+
+#[test]
+fn test_bigo_separate_branches_are_not_summed() {
+    assert_bigo_not_exponential("fun f(n: i32) -> i32 { if n < 5 { f(n - 1) } else { f(n - 2) } }");
+}
+
+#[test]
+fn test_bigo_match_branches_are_not_summed() {
+    assert_bigo_not_exponential(
+        "fun f(n: i32) -> i32 { match n { 0 => f(n - 1), _ => f(n - 2) } }",
+    );
+}
+
+#[test]
+fn test_bigo_halving_recursion_is_not_exponential() {
+    // merge-sort shape: two self-calls on a halved argument
+    assert_bigo_not_exponential(
+        "fun msort(n: i32) -> i32 { if n <= 1 { n } else { msort(n / 2) + msort(n / 2) } }",
+    );
+    assert_bigo_not_exponential(
+        "fun msort(n: i32) -> i32 { if n <= 1 { n } else { msort(n - n / 2) + msort(n - n / 2) } }",
+    );
+}
+
+#[test]
+fn test_bigo_growing_argument_is_not_exponential() {
+    assert_bigo_not_exponential(
+        "fun f(n: i32) -> i32 { if n > 9 { n } else { f(n + 1) + f(n + 2) } }",
+    );
+}
+
+#[test]
+fn test_bigo_match_fibonacci_is_exponential() {
+    assert_bigo_exponential(
+        "fun fib(n: i32) -> i32 { match n { 0 => 0, 1 => 1, _ => fib(n - 1) + fib(n - 2) } }",
+    );
+}
+
+#[test]
+fn test_bigo_let_bound_self_calls_are_exponential() {
+    assert_bigo_exponential(
+        "fun fib(n: i32) -> i32 { let a = fib(n - 1); let b = fib(n - 2); a + b }",
+    );
+}
+
+#[test]
+fn test_bigo_self_calls_as_call_args_are_exponential() {
+    assert_bigo_exponential("fun f(n: i32) -> i32 { g(f(n - 1), f(n - 2)) }");
+}
+
+#[test]
+fn test_bigo_self_calls_in_condition_are_exponential() {
+    assert_bigo_exponential("fun f(n: i32) -> i32 { if f(n - 1) + f(n - 2) > 0 { 1 } else { 0 } }");
+}
+
+#[test]
+fn test_bigo_nested_function_is_exponential() {
+    assert_bigo_exponential(
+        "fun outer() -> i32 { fun fib(n: i32) -> i32 { if n <= 1 { n } else { fib(n - 1) + fib(n - 2) } } fib(10) }",
+    );
+}
+
+#[test]
+fn test_bigo_function_in_block_is_exponential() {
+    assert_bigo_exponential(
+        "fun one() -> i32 { 1 }\nfun fib(n: i32) -> i32 { if n <= 1 { n } else { fib(n - 1) + fib(n - 2) } }",
+    );
 }
