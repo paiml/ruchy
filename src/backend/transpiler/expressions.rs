@@ -157,6 +157,13 @@ impl Transpiler {
         }
     }
 
+    /// Check if any expression in a slice references a specific variable name
+    fn any_expr_references_var(exprs: &[Expr], var_name: &str) -> bool {
+        exprs
+            .iter()
+            .any(|arg| Self::expr_references_var(arg, var_name))
+    }
+
     /// Check if an expression references a specific variable name
     fn expr_references_var(expr: &Expr, var_name: &str) -> bool {
         match &expr.kind {
@@ -168,15 +175,11 @@ impl Transpiler {
             ExprKind::Unary { operand, .. } => Self::expr_references_var(operand, var_name),
             ExprKind::Call { func, args } => {
                 Self::expr_references_var(func, var_name)
-                    || args
-                        .iter()
-                        .any(|arg| Self::expr_references_var(arg, var_name))
+                    || Self::any_expr_references_var(args, var_name)
             }
             ExprKind::MethodCall { receiver, args, .. } => {
                 Self::expr_references_var(receiver, var_name)
-                    || args
-                        .iter()
-                        .any(|arg| Self::expr_references_var(arg, var_name))
+                    || Self::any_expr_references_var(args, var_name)
             }
             ExprKind::IndexAccess { object, index } => {
                 Self::expr_references_var(object, var_name)
