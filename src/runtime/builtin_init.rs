@@ -223,6 +223,10 @@ fn add_random_time_functions(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_timestamp__".to_string()),
     );
     global_env.insert(
+        "time_micros".to_string(),
+        Value::from_string("__builtin_time_micros__".to_string()),
+    );
+    global_env.insert(
         "get_time_ms".to_string(),
         Value::from_string("__builtin_timestamp__".to_string()),
     );
@@ -675,6 +679,14 @@ fn add_std_namespace(global_env: &mut HashMap<String, Value>) {
         Value::from_string("__builtin_round__".to_string()),
     );
 
+    // Issue #250: Instant::now() for `ruchy run`
+    let mut instant_type = HashMap::new();
+    instant_type.insert(
+        "now".to_string(),
+        Value::from_string("__builtin_instant_now__".to_string()),
+    );
+    global_env.insert("Instant".to_string(), Value::Object(Arc::new(instant_type)));
+
     // Create std namespace object
     let mut std_namespace = HashMap::new();
     std_namespace.insert("time".to_string(), Value::Object(Arc::new(time_module)));
@@ -814,7 +826,8 @@ mod tests {
         // parse_json alias: parse_json (Issue #131 - v3.182.0)
         // +1 dir() builtin (object-inspection-consistency spec)
         // +1 assert_ne() builtin (METHODS-1)
-        assert_eq!(env.len(), 118);
+        // +1 time_micros() builtin, +1 Instant type (Issue #250)
+        assert_eq!(env.len(), 120);
     }
 
     #[test]
@@ -965,7 +978,8 @@ mod tests {
         assert!(env.contains_key("get_time_ms"));
         assert!(env.contains_key("std::time::now_millis"));
         assert!(env.contains_key("sleep"));
-        assert_eq!(env.len(), 6);
+        assert!(env.contains_key("time_micros"));
+        assert_eq!(env.len(), 7);
     }
 
     #[test]

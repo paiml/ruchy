@@ -277,6 +277,7 @@ fn eval_object_method(
         return match &**type_name {
             "Command" => eval_command_method(obj, method, arg_values),
             "ExitStatus" => eval_exit_status_method(obj, method, arg_values),
+            "Instant" | "Duration" => eval_time_object_method(type_name, obj, method, arg_values),
             // Module calls are handled in interpreter.rs eval_method_call
             "Module" => Err(InterpreterError::RuntimeError(
                 "Module method dispatch should be handled in interpreter".to_string(),
@@ -288,6 +289,67 @@ fn eval_object_method(
     }
 
     eval_untyped_object_method(obj, method, arg_values)
+}
+
+/// Nanoseconds since the Unix epoch, as an `i64`.
+fn now_nanos() -> Result<i64, InterpreterError> {
+    let d = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| InterpreterError::RuntimeError(format!("System time error: {e}")))?;
+    Ok(d.as_nanos() as i64)
+}
+
+fn time_object(type_name: &str, nanos: i64) -> Value {
+    let mut map = std::collections::HashMap::new();
+    map.insert(
+        "__type".to_string(),
+        Value::from_string(type_name.to_string()),
+    );
+    map.insert("nanos".to_string(), Value::Integer(nanos));
+    Value::Object(Arc::new(map))
+}
+
+/// `Instant::now()` for the interpreter (Issue #250).
+pub(crate) fn instant_now() -> Result<Value, InterpreterError> {
+    Ok(time_object("Instant", now_nanos()?))
+}
+
+/// `Instant` (`elapsed`, `duration_since`) and `Duration` (`as_*`) methods (Issue #250).
+fn eval_time_object_method(
+    type_name: &str,
+    obj: &std::collections::HashMap<String, Value>,
+    method: &str,
+    arg_values: &[Value],
+) -> Result<Value, InterpreterError> {
+    let nanos = match obj.get("nanos") {
+        Some(Value::Integer(n)) => *n,
+        _ => 0,
+    };
+    match (type_name, method) {
+        ("Instant", "elapsed") => {
+            require_no_args(method, arg_values)?;
+            Ok(time_object("Duration", (now_nanos()? - nanos).max(0)))
+        }
+        ("Instant", "duration_since") => match arg_values {
+            [Value::Object(other)] => match other.get("nanos") {
+                Some(Value::Integer(o)) => Ok(time_object("Duration", (nanos - o).max(0))),
+                _ => Err(InterpreterError::RuntimeError(
+                    "duration_since() expects an Instant".to_string(),
+                )),
+            },
+            _ => Err(InterpreterError::RuntimeError(
+                "duration_since() expects an Instant".to_string(),
+            )),
+        },
+        ("Duration", "as_nanos") => Ok(Value::Integer(nanos)),
+        ("Duration", "as_micros") => Ok(Value::Integer(nanos / 1_000)),
+        ("Duration", "as_millis") => Ok(Value::Integer(nanos / 1_000_000)),
+        ("Duration", "as_secs") => Ok(Value::Integer(nanos / 1_000_000_000)),
+        ("Duration", "as_secs_f64") => Ok(Value::Float(nanos as f64 / 1e9)),
+        _ => Err(InterpreterError::RuntimeError(format!(
+            "Unknown {type_name} method: {method}"
+        ))),
+    }
 }
 
 /// Methods on an object without a `__type` marker: module functions first

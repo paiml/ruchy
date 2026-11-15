@@ -265,6 +265,15 @@ fn try_eval_time_function(name: &str, args: &[Value]) -> Result<Option<Value>, I
     match name {
         "__builtin_sleep__" => Ok(Some(eval_sleep(args)?)),
         "__builtin_timestamp__" => Ok(Some(eval_timestamp(args)?)),
+        "__builtin_time_micros__" => Ok(Some(eval_time_micros(args)?)),
+        "__builtin_instant_now__" => {
+            if !args.is_empty() {
+                return Err(InterpreterError::RuntimeError(
+                    "Instant::now() expects no arguments".to_string(),
+                ));
+            }
+            Ok(Some(crate::runtime::eval_method_dispatch::instant_now()?))
+        }
         "__builtin_chrono_utc_now__" => Ok(Some(eval_chrono_utc_now(args)?)),
         _ => Ok(None),
     }
@@ -943,6 +952,19 @@ fn eval_timestamp(args: &[Value]) -> Result<Value, InterpreterError> {
         .map_err(|e| InterpreterError::RuntimeError(format!("System time error: {e}")))?;
 
     Ok(Value::Integer(now.as_millis() as i64))
+}
+
+/// `time_micros()` - microseconds since the Unix epoch (Issue #250)
+fn eval_time_micros(args: &[Value]) -> Result<Value, InterpreterError> {
+    if !args.is_empty() {
+        return Err(InterpreterError::RuntimeError(
+            "time_micros() expects no arguments".to_string(),
+        ));
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| InterpreterError::RuntimeError(format!("System time error: {e}")))?;
+    Ok(Value::Integer(now.as_micros() as i64))
 }
 
 /// `chrono::Utc::now()` - Get current UTC time
