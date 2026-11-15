@@ -1266,7 +1266,9 @@ fn calculate_score_with_penalties(metrics: &QualityMetrics) -> f64 {
     score *= get_length_penalty(metrics);
     score *= get_satd_penalty(metrics.has_satd);
     score *= get_documentation_penalty(metrics);
-    score
+    // The documentation bonus (x1.05) must not lift the score above the
+    // advertised 0.0..=1.0 range ("Score: 1.05/1.0").
+    score.min(1.0)
 }
 /// Get complexity penalty
 fn get_complexity_penalty(complexity: usize) -> f64 {
