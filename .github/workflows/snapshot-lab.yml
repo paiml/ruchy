@@ -40,15 +40,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Comment on #299 on a new red only
+      - name: Comment on #299 on a new red only (history, edge decision and comment: scripts/snapshot_lab_edge.sh)
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          runs=$(gh run list -R "$GITHUB_REPOSITORY" --workflow snapshot-lab.yml --event schedule --branch main --status completed -L 10 --json databaseId,conclusion) || { echo 'FAIL: cannot read run history'; exit 1; }
-          verdict=$(printf '%s' "$runs" | bash scripts/snapshot_lab_edge.sh "$GITHUB_RUN_ID") || { echo 'FAIL: edge decision failed'; exit 1; }
-          echo "$verdict"
-          case "$verdict" in
-            NEW*) gh issue comment 299 -R "$GITHUB_REPOSITORY" --body "snapshot-lab RED (new, $verdict): $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" ;;
-            CONTINUING*) echo 'silent: red already reported' ;;
-            *) echo 'FAIL: unknown verdict'; exit 1 ;;
-          esac
+        run: bash scripts/snapshot_lab_edge.sh "$GITHUB_RUN_ID"
