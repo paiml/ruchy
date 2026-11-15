@@ -6,6 +6,7 @@
 # without it, lower-case `commands:`, a wrapped description, decoy lines, clap's
 # auto `help`), so the content rows pin every rule that builds the snapshot line.
 # Each refusal and content row goes red when the rule it pins is removed.
+# The snapshot-lab block at the end covers binary_snapshot_fresh.sh and snapshot_lab_edge.sh (stub gh, no build).
 #
 #   bash scripts/binary_snapshot_test.sh
 #   BS_SCRIPT=/path/to/mutant.sh bash scripts/binary_snapshot_test.sh   # test a copy
@@ -271,6 +272,113 @@ mktool() { # $1 = tool left out; prints the PATH dir
 for t in cargo jq git sha256sum timeout awk grep sort cut install mktemp basename dirname cmp diff head tail mkdir mv rm; do
     CHK=nowork row "missing tool refused: $t" refuse "FAIL: $t missing" "PATH=$(mktool "$t")" -- "$T/o.jsonl"
 done
+
+
+# >>> snapshot-lab rows: scripts/binary_snapshot_fresh.sh and scripts/snapshot_lab_edge.sh (no build, no network).
+# `gh` is a stub that answers `run view` from $FAKE_JOBS and logs its calls. BS_FRESH / BS_EDGE test a copy.
+FRESH="${BS_FRESH:-$HERE/binary_snapshot_fresh.sh}"; EDGE="${BS_EDGE:-$HERE/snapshot_lab_edge.sh}"
+mkdir -p "$T/labstub"
+cat > "$T/labstub/gh" <<'STUB'
+#!/usr/bin/env bash
+echo "$*" >> "$LAB_GHLOG"
+[ "${FAKE_GHFAIL:-0}" != 1 ] || exit 1
+prog=""; while [ $# -gt 0 ]; do if [ "$1" = --jq ]; then prog=$2; fi; shift; done
+printf '%s' "$FAKE_JOBS" | jq -r "$prog"
+STUB
+chmod +x "$T/labstub/gh"
+JOBS_OK='{"jobs":[{"name":"snapshot","conclusion":"failure"},{"name":"report","conclusion":"success"}]}'
+# lab_check NAME WANT(0|1|2 = exit code) PATTERN OUT RC [GHLOG_PATTERN]
+lab_check() {
+    rows=$((rows + 1))
+    if [ "$5" -eq "$2" ] && [[ "$4" == *"$3"* ]] && { [ -z "${6:-}" ] || [[ "$(cat "$T/ghlog")" == *"$6"* ]]; } && { [ -z "${NOGH:-}" ] || [ ! -s "$T/ghlog" ]; }; then
+        printf 'ok   %s\n' "$1"
+    else
+        printf 'FAIL %s (want rc=%s /%s/, rc=%s)\n     %s\n' "$1" "$2" "$3" "$5" "$(printf '%s' "$4" | tail -n 3)"; fail=$((fail + 1))
+    fi
+}
+# frow NAME WANT PATTERN COMMITTED_TEXT REGENERATED_TEXT
+frow() {
+    local rc=0 o; printf '%s' "$4" > "$T/la"; printf '%s' "$5" > "$T/lb"
+    o=$("$BASH_BIN" "$FRESH" "$T/la" "$T/lb" 2>&1) || rc=$?
+    lab_check "fresh: $1" "$2" "$3" "$o" "$rc"
+    [ -z "${PAT2:-}" ] || lab_check "fresh: $1 (also prints)" "$2" "$PAT2" "$o" "$rc"
+}
+R1='{"schema":"s","name":"n","git_sha":"aaa","binary_sha256":"bbb","help_sha256":"h1"}'$'\n'
+R1G='{"schema":"s","name":"n","git_sha":"zzz","binary_sha256":"bbb","help_sha256":"h1"}'$'\n'
+R1B='{"schema":"s","name":"n","git_sha":"aaa","binary_sha256":"yyy","help_sha256":"h1"}'$'\n'
+R1H='{"schema":"s","name":"n","git_sha":"aaa","binary_sha256":"bbb","help_sha256":"h2"}'$'\n'
+R2='{"schema":"s","name":"m","git_sha":"aaa","binary_sha256":"bbb","help_sha256":"k1"}'$'\n'
+PAT2='rows: committed=1 regenerated=1' frow "identical rows are fresh" 0 'FRESH: 1 row(s) equal' "$R1" "$R1"
+frow "two identical rows are fresh" 0 'FRESH: 2 row(s) equal' "$R1$R2" "$R1$R2"
+PAT2='"help_sha256":"h2"' frow "edited help_sha256 is STALE and prints the row" 1 'STALE: regenerate' "$R1" "$R1H"
+frow "edit in the second row is STALE" 1 'STALE: regenerate' "$R1$R2" "$R1$R1H"
+frow "git_sha-only change is fresh" 0 'FRESH: 1 row(s) equal' "$R1" "$R1G"
+frow "binary_sha256-only change is fresh" 0 'FRESH: 1 row(s) equal' "$R1" "$R1B"
+frow "extra regenerated row is STALE" 1 'STALE: regenerate' "$R1" "$R1$R2"
+R1N='{"schema":"s","name":"other","git_sha":"aaa","binary_sha256":"bbb","help_sha256":"h1"}'$'\n'
+frow "edit in the name field is STALE" 1 'STALE: regenerate' "$R1" "$R1N"
+PAT2='committed=0 regenerated=1' frow "empty committed refused" 1 'FAIL: 0 rows on a side' '' "$R1"
+PAT2='committed=1 regenerated=0' frow "empty regenerated refused" 1 'FAIL: 0 rows on a side' "$R1" ''
+frow "0 rows equal 0 rows refused" 1 'FAIL: 0 rows on a side' '' ''
+frow "invalid JSON committed refused" 1 'FAIL: jq on committed side' 'not json' "$R1"
+frow "invalid JSON regenerated refused" 1 'FAIL: jq on regenerated side' "$R1" 'not json'
+rc=0; o=$("$BASH_BIN" "$FRESH" "$T/nonexistent" "$T/la" 2>&1) || rc=$?
+lab_check "fresh: missing committed file refused" 1 'FAIL: jq on committed side' "$o" "$rc"
+rc=0; o=$("$BASH_BIN" "$FRESH" "$T/la" 2>&1) || rc=$?
+lab_check "fresh: one argument is a usage error" 2 'usage:' "$o" "$rc"
+
+# erow NAME WANT PATTERN HISTORY_JSON [ENV=VAL...]  (current run id is 999)
+erow() {
+    local name=$1 want=$2 pat=$3 hist=$4; shift 4; local rc=0 o
+    : > "$T/ghlog"
+    o=$(printf '%s' "$hist" | env PATH="$T/labstub:$PATH" GITHUB_REPOSITORY=o/r LAB_GHLOG="$T/ghlog" FAKE_JOBS="$JOBS_OK" "$@" "$BASH_BIN" "$EDGE" 999 2>&1) || rc=$?
+    lab_check "edge: $name" "$want" "$pat" "$o" "$rc" "${GHPAT:-}"
+}
+NOGH=1 erow "previous success -> NEW, no jobs read" 0 'NEW red: previous scheduled run 5 was success' '[{"databaseId":5,"conclusion":"success"}]'
+GHPAT='run view 5 -R o/r --json jobs' erow "previous failure, report ok -> CONTINUING" 0 'CONTINUING red since run 5: silent' '[{"databaseId":5,"conclusion":"failure"}]'
+erow "previous timed_out, report ok -> CONTINUING" 0 'CONTINUING red since run 5: silent' '[{"databaseId":5,"conclusion":"timed_out"}]'
+NOGH=1 erow "empty history -> NEW" 0 'NEW red: no measured previous scheduled run' '[]'
+erow "cancelled then failure -> CONTINUING on the failure" 0 'CONTINUING red since run 5: silent' '[{"databaseId":6,"conclusion":"cancelled"},{"databaseId":5,"conclusion":"failure"}]'
+NOGH=1 erow "only cancelled -> NEW" 0 'NEW red: no measured previous scheduled run' '[{"databaseId":6,"conclusion":"cancelled"},{"databaseId":5,"conclusion":"cancelled"}]'
+NOGH=1 erow "current run (failure) dropped, older success -> NEW" 0 'NEW red: previous scheduled run 5 was success' '[{"databaseId":999,"conclusion":"failure"},{"databaseId":5,"conclusion":"success"}]'
+erow "current run (failure) dropped, older failure -> CONTINUING" 0 'CONTINUING red since run 5: silent' '[{"databaseId":999,"conclusion":"failure"},{"databaseId":5,"conclusion":"failure"}]'
+NOGH=1 erow "newest remaining decides: success newer than failure" 0 'NEW red: previous scheduled run 6 was success' '[{"databaseId":6,"conclusion":"success"},{"databaseId":5,"conclusion":"failure"}]'
+erow "newest remaining decides: failure newer than success" 0 'CONTINUING red since run 6: silent' '[{"databaseId":6,"conclusion":"failure"},{"databaseId":5,"conclusion":"success"}]'
+NOGH=1 erow "skipped is skipped over" 0 'NEW red: previous scheduled run 5 was success' '[{"databaseId":6,"conclusion":"skipped"},{"databaseId":5,"conclusion":"success"}]'
+NOGH=1 erow "startup_failure is skipped over" 0 'NEW red: previous scheduled run 5 was success' '[{"databaseId":6,"conclusion":"startup_failure"},{"databaseId":5,"conclusion":"success"}]'
+NOGH=1 erow "empty conclusion (running) is skipped over" 0 'NEW red: previous scheduled run 5 was success' '[{"databaseId":6,"conclusion":""},{"databaseId":5,"conclusion":"success"}]'
+NOGH=1 erow "null conclusion is skipped over" 0 'NEW red: previous scheduled run 5 was success' '[{"databaseId":6,"conclusion":null},{"databaseId":5,"conclusion":"success"}]'
+erow "previous failure, report job failed -> NEW (lost edge)" 0 "NEW red: previous scheduled run 5 failed and its report job was 'failure'" '[{"databaseId":5,"conclusion":"failure"}]' FAKE_JOBS='{"jobs":[{"name":"snapshot","conclusion":"failure"},{"name":"report","conclusion":"failure"}]}'
+erow "previous failure, report job skipped -> NEW" 0 "its report job was 'skipped'" '[{"databaseId":5,"conclusion":"failure"}]' FAKE_JOBS='{"jobs":[{"name":"report","conclusion":"skipped"}]}'
+erow "previous failure, no report job -> NEW" 0 "its report job was 'absent'" '[{"databaseId":5,"conclusion":"failure"}]' FAKE_JOBS='{"jobs":[{"name":"snapshot","conclusion":"failure"}]}'
+erow "previous timed_out, report job failed -> NEW" 0 "its report job was 'failure'" '[{"databaseId":5,"conclusion":"timed_out"}]' FAKE_JOBS='{"jobs":[{"name":"report","conclusion":"failure"}]}'
+erow "jobs read fails -> exit 1" 1 'FAIL: cannot read jobs of run 5' '[{"databaseId":5,"conclusion":"failure"}]' FAKE_GHFAIL=1
+for c in neutral action_required stale; do
+    erow "unknown conclusion $c -> exit 1" 1 "FAIL: unknown conclusion '$c' on run 5" "[{\"databaseId\":5,\"conclusion\":\"$c\"}]"
+done
+erow "not JSON -> exit 1" 1 'FAIL: history is not a JSON run list' 'not json'
+erow "JSON object, not a list -> exit 1" 1 'FAIL: history is not a JSON run list' '{"databaseId":5}'
+erow "empty stdin -> exit 1" 1 'FAIL: empty history input' ''
+rc=0; o=$(printf '[]' | env PATH="$T/labstub:$PATH" GITHUB_REPOSITORY=o/r "$BASH_BIN" "$EDGE" 2>&1) || rc=$?
+lab_check "edge: no current run id -> exit 1" 1 'usage:' "$o" "$rc"
+rc=0; o=$(printf '[]' | env -u GITHUB_REPOSITORY PATH="$T/labstub:$PATH" "$BASH_BIN" "$EDGE" 999 2>&1) || rc=$?
+lab_check "edge: no GITHUB_REPOSITORY -> exit 1" 1 'GITHUB_REPOSITORY unset' "$o" "$rc"
+# Workflow shape rows (text of .github/workflows/snapshot-lab.yml; actionlint/yq are run by the PR author).
+WF="${BS_WF:-$HERE/../.github/workflows/snapshot-lab.yml}"
+wf_has() { rc=0; grep -Eq -- "$2" "$WF" || rc=1; lab_check "workflow: $1" 0 '' '' "$rc"; }
+wf_lacks() { rc=0; grep -Eq -- "$2" "$WF" && rc=1; lab_check "workflow: $1" 0 '' '' "$rc"; }
+wf_has "report job runs only for schedule, first attempt, on failure" "^    if: \\$\\{\\{ failure\\(\\) && github.run_attempt == 1 && github.event_name == 'schedule' \\}\\}$"
+wf_has "triggers: cron and manual dispatch" "^  schedule:$"
+wf_has "triggers: workflow_dispatch" "^  workflow_dispatch: \\{\\}$"
+wf_lacks "no push / pull_request / merge_group / release trigger" "^  (push|pull_request|pull_request_target|merge_group|release|workflow_run):"
+wf_lacks "no || true, continue-on-error or if: always()" "\\|\\| true|continue-on-error|always\\(\\)"
+wf_has "top-level permissions are contents: read only" "^permissions:$"
+wf_has "report job asks for actions: read" "^      actions: read$"
+wf_has "report job asks for issues: write" "^      issues: write$"
+wf_lacks "no write permission beyond issues: write" "(contents|actions|pull-requests|checks|statuses|packages|id-token): write"
+wf_has "comments on #299 only" "gh issue comment 299 "
+wf_lacks "does not close or edit an issue" "gh issue (close|edit|reopen)"
+# <<< snapshot-lab rows
 
 printf '%s rows, %s failed\n' "$rows" "$fail"
 [ "$fail" -eq 0 ]

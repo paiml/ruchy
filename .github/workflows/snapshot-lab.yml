@@ -1,0 +1,54 @@
+# LAB lane (cannot block a merge or a release): nightly + manual only, never on push or pull_request.
+# Owner: tail-cop. Standing ticket: #299 (stays open). Refs #290.
+# A red comments on #299 once, on the green->red edge of a SCHEDULED run; a manual dispatch never comments.
+# 7-day rule (manual owner duty, nothing here enforces it): red or unmeasured for 7 days -> owner runs
+#   gh run list -R paiml/ruchy --workflow snapshot-lab.yml --event schedule -L 8 --json conclusion,createdAt
+#   and, if there is no success in 7 days or no scheduled run, `gh workflow disable snapshot-lab.yml -R paiml/ruchy`.
+name: snapshot-lab
+
+on:
+  schedule:
+    - cron: '45 4 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: snapshot-release-repl
+      - name: Stub rows (no build)
+        run: bash scripts/binary_snapshot_test.sh
+      - name: Committed snapshot equals a regenerated one
+        run: bash scripts/binary_snapshot_fresh.sh
+
+  report:
+    needs: snapshot
+    if: ${{ failure() && github.run_attempt == 1 && github.event_name == 'schedule' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      issues: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Comment on #299 on a new red only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          runs=$(gh run list -R "$GITHUB_REPOSITORY" --workflow snapshot-lab.yml --event schedule --branch main --status completed -L 10 --json databaseId,conclusion) || { echo 'FAIL: cannot read run history'; exit 1; }
+          verdict=$(printf '%s' "$runs" | bash scripts/snapshot_lab_edge.sh "$GITHUB_RUN_ID") || { echo 'FAIL: edge decision failed'; exit 1; }
+          echo "$verdict"
+          case "$verdict" in
+            NEW*) gh issue comment 299 -R "$GITHUB_REPOSITORY" --body "snapshot-lab RED (new, $verdict): $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" ;;
+            CONTINUING*) echo 'silent: red already reported' ;;
+            *) echo 'FAIL: unknown verdict'; exit 1 ;;
+          esac
