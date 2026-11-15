@@ -9,7 +9,7 @@
 set -uo pipefail
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 SCRIPT="${BS_SCRIPT:-$HERE/binary_snapshot.sh}"
-real_jq=$(command -v jq)
+real_jq=$(command -v jq); real_sha=$(command -v sha256sum); BASH_BIN=$(command -v bash)
 T=$(mktemp -d)
 trap 'rm -rf "${T:?}"' EXIT
 fail=0 rows=0
@@ -19,12 +19,14 @@ fail=0 rows=0
 mkdir -p "$T/stub"
 cat > "$T/stub/cargo" <<'STUB'
 #!/usr/bin/env bash
-if [ "$1" = metadata ]; then
+if [ "$1" = metadata ] && [ "${FAKE_METAFAIL:-0}" = 1 ]; then exit 2
+elif [ "$1" = metadata ]; then
     jq -nc --arg r "$FAKE_ROOT" --argjson n "${FAKE_BINS:-1}" \
         '{packages: [{name: "p", targets: [range($n) as $i | {name: "t\($i)", kind: ["bin"], src_path: "\($r)/src/t\($i).rs"}]}]}'
 elif [ "${FAKE_NOBUILD:-0}" != 1 ]; then
     t=""; while [ $# -gt 0 ]; do [ "$1" = --bin ] && t=$2; shift; done
-    jq -nc --arg t "$t" --arg e "$FAKE_ROOT/fakebin/$t" '{reason: "compiler-artifact", target: {name: $t}, executable: $e}'
+    e="$FAKE_ROOT/fakebin/$t"; [ "${FAKE_NOEXEC:-0}" != 1 ] || e="$FAKE_ROOT/noexec"
+    jq -nc --arg t "$t" --arg e "$e" '{reason: "compiler-artifact", target: {name: $t}, executable: $e}'
 fi
 STUB
 cat > "$T/stub/fakebin" <<'STUB'
@@ -33,7 +35,7 @@ case "$1" in
 --version) [ "${FAKE_NOVER:-0}" = 1 ] || echo "fake 1.0" ;;
 --help)
     if [ "${FAKE_NONDET:-0}" = 1 ]; then
-        n=$(($(cat "$FAKE_ROOT/counter" 2> /dev/null || echo 0) + 1)); echo "$n" > "$FAKE_ROOT/counter"
+        n=$(($(cat "$FAKE_ROOT.counter" 2> /dev/null || echo 0) + 1)); echo "$n" > "$FAKE_ROOT.counter"
         extra="      --opt-$n  moves every call"
     fi
     printf 'Usage: fake [OPTIONS]\n\nOptions:\n      --eval <E>  x\n%s\n  -h, --help  h\n' "${extra:-}"
@@ -46,16 +48,22 @@ cat > "$T/stub/jq" <<STUB
 if [ "\${FAKE_JQDUP:-0}" = 1 ] && [[ "\$*" == *binary-snapshot/v1* ]]; then "$real_jq" "\$@"; fi
 exec "$real_jq" "\$@"
 STUB
+# Stub sha256sum: FAKE_SHAEMPTY=1 prints nothing (a hash that came back empty).
+cat > "$T/stub/sha256sum" <<STUB
+#!/usr/bin/env bash
+[ "\${FAKE_SHAEMPTY:-0}" = 1 ] && exit 0
+exec "$real_sha" "\$@"
+STUB
 chmod +x "$T/stub/"*
 
 # newrepo: fresh committed throwaway repo holding a copy of the script under test.
 newrepo() {
     R="$T/r$rows"; mkdir -p "$R/scripts" "$R/fakebin" "$R/src"
-    cp "$SCRIPT" "$R/scripts/binary_snapshot.sh"; : > "$R/Cargo.toml"
+    cp "$SCRIPT" "$R/scripts/binary_snapshot.sh"; : > "$R/Cargo.toml"; : > "$R/noexec"; chmod 644 "$R/noexec"
     for i in 0 1; do cp "$T/stub/fakebin" "$R/fakebin/t$i"; done
     git -C "$R" init -q
     git -C "$R" add -A
-    git -C "$R" -c user.name=t -c user.email=t@t -c core.hooksPath=/dev/null commit -qm init
+    git -C "$R" -c user.name=t -c user.email=t@t -c core.hooksPath=/dev/null -c commit.gpgsign=false commit -qm init
 }
 
 # row NAME EXPECT(ok|refuse) PATTERN [ENV=VAL...] -- ARGS...
@@ -65,8 +73,10 @@ row() {
     rows=$((rows + 1)); newrepo
     [ -z "${PRE:-}" ] || (cd "$R" && eval "$PRE")
     local out rc=0
-    out=$(env PATH="$T/stub:$PATH" FAKE_ROOT="$R" "${envs[@]}" bash "$R/scripts/binary_snapshot.sh" "$@" 2>&1) || rc=$?
+    out=$(cd "$R" && env PATH="$T/stub:$PATH" FAKE_ROOT="$R" "${envs[@]}" "$BASH_BIN" "$R/scripts/binary_snapshot.sh" "$@" 2>&1) || rc=$?
+    local post_ok=1; [ -z "${POST:-}" ] || (cd "$R" && eval "$POST") || post_ok=0
     local good=0; if [ "$want" = ok ]; then [ "$rc" -eq 0 ] && good=1; else [ "$rc" -ne 0 ] && good=1; fi
+    [ "$post_ok" -eq 1 ] || good=0
     if [ "$good" -eq 1 ] && [[ "$out" == *"$pat"* ]]; then
         printf 'ok   %s\n' "$name"
     else
@@ -85,6 +95,27 @@ PRE= row "failing --help refused"            refuse "--help exited 3"    FAKE_HE
 PRE='echo x >> Cargo.toml' row "dirty tracked file refused" refuse "git tree is dirty" -- "$T/o.jsonl"
 PRE='echo x > stray' row "untracked file refused"       refuse "git tree is dirty" -- "$T/o.jsonl"
 PRE='mkdir -p evidence/binary; echo x > evidence/binary/snapshot.jsonl' row "snapshot file itself exempt" ok "snapshot: 1 bin target(s)" -- "$T/o.jsonl"
+
+PRE= row "non-executable build output refused" refuse "did not build" FAKE_NOEXEC=1 -- "$T/o.jsonl"
+PRE= row "empty sha256 refused"              refuse "sha256 empty or malformed" FAKE_SHAEMPTY=1 -- "$T/o.jsonl"
+PRE= row "cargo metadata failure refused"    refuse "" FAKE_METAFAIL=1 -- "$T/o.jsonl"
+PRE= POST='test -z "$(git status --porcelain)" && ! printf "%s\n" "$out" | grep -qE "dirname|mv:|unrecognized"' row "twice: exits at the refusal (no fall-through, nothing written)" refuse "NON-DETERMINISTIC" FAKE_NONDET=1 -- --twice
+
+# Missing-tool rows: one per tool the script requires. The PATH of the run holds
+# the stubs and every other tool, but not this one; the refusal must name it.
+# (the list below is fixed here, not read from the script, so dropping a tool from the guard goes red.)
+mktool() { # $1 = tool left out; prints the PATH dir
+    local d="$T/path-$1" t p
+    mkdir -p "$d"
+    for t in cargo jq git sha256sum timeout awk grep sort cut install mktemp basename dirname cmp diff head tail mkdir mv rm env bash cat; do
+        [ "$t" = "$1" ] && continue
+        case $t in cargo|jq|sha256sum) cp "$T/stub/$t" "$d/$t" ;; *) p=$(command -v "$t") && ln -sf "$p" "$d/$t" ;; esac
+    done
+    printf '%s' "$d"
+}
+for t in cargo jq git sha256sum timeout awk grep sort cut install mktemp basename dirname cmp diff head tail mkdir mv rm; do
+    PRE= row "missing tool refused: $t" refuse "FAIL: $t missing" "PATH=$(mktool "$t")" -- "$T/o.jsonl"
+done
 
 printf '%s rows, %s failed\n' "$rows" "$fail"
 [ "$fail" -eq 0 ]

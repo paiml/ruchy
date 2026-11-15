@@ -21,7 +21,9 @@
 # added. `tools` is asked of the binary over stdio (`ruchy mcp`, tools/list);
 # without `--features mcp` it answers "MCP support not enabled" and lists none,
 # so [] is what that build exposes.
-# `routes` is []: `ruchy serve` serves static files and mounts no route table.
+# `routes` is [] and NOT MEASURED: it is declared, never asked of the binary. By
+# reading the code `ruchy serve` serves static files and mounts no route table,
+# but a bin target that gains one would still get [] until this is measured.
 #
 # The record names the commit it was built from (git_sha = `git rev-parse HEAD`
 # when the script runs), so regenerate it after a change to the CLI surface.
@@ -31,9 +33,11 @@
 # two snapshots and compares them byte for byte (output determinism of one build,
 # not build reproducibility).
 #
-# REFUSALS (non-zero exit, message on stderr): a missing tool; a tracked or
+# REFUSALS (non-zero exit, message on stderr): a missing tool (any of the
+# external commands the script runs); an empty sha256; a tracked or
 # untracked change in the git tree (the record names HEAD, so HEAD must be what
-# was built; the snapshot file itself is exempt); a target that does not build;
+# was built; the snapshot file itself is exempt); a target that does not build
+# or whose executable path is not executable;
 # an empty `--version`; a `--help` that exits non-zero; zero bin targets; a
 # line count that differs from the target count; `--twice` snapshots that
 # differ. scripts/binary_snapshot_test.sh has one row per refusal.
@@ -50,7 +54,7 @@ REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 PROFILE="${SNAPSHOT_PROFILE:-release}"
 MAX_DEPTH="${SNAPSHOT_MAX_DEPTH:-4}"
 
-for tool in cargo jq git sha256sum timeout; do
+for tool in cargo jq git sha256sum timeout awk grep sort cut install mktemp basename dirname cmp diff head tail mkdir mv rm; do
     command -v "$tool" > /dev/null || { printf 'FAIL: %s missing\n' "$tool" >&2; exit 1; }
 done
 
@@ -119,6 +123,13 @@ tools() {
 
 arr() { sort -u | jq -R . | jq -sc .; }
 
+# sha256 of stdin as 64 hex chars; an empty or short hash is a refusal.
+sha256_of() {
+    local h; h=$(sha256sum | cut -d' ' -f1)
+    [ "${#h}" -eq 64 ] || { printf 'FAIL: sha256 empty or malformed\n' >&2; exit 1; }
+    printf '%s' "$h"
+}
+
 # build_all: builds every bin target and prints "pkg<TAB>tgt<TAB>src<TAB>exe".
 # Each target is copied out BEFORE the next build, so two targets sharing an
 # executable name can never be hashed as one file.
@@ -134,7 +145,7 @@ build_all() {
                     --manifest-path "$REPO_ROOT/Cargo.toml" --message-format=json \
                 | jq -r --arg t "$tgt" 'select(.reason=="compiler-artifact" and .target.name==$t and .executable) | .executable' \
                 | tail -1)
-            if [ -z "$exe" ] || [ ! -x "$exe" ]; then
+            if [ ! -x "$exe" ]; then
                 printf 'FAIL: %s/%s did not build\n' "$pkg" "$tgt" >&2; exit 1
             fi
             # numbered stash dirs: no metadata-derived string becomes a path
@@ -147,7 +158,7 @@ build_all() {
 
 # write_snapshot BUILT OUT: one line per built target.
 write_snapshot() {
-    local built="$1" out="$2" sha pkg tgt src exe ver help hrc tmp
+    local built="$1" out="$2" sha pkg tgt src exe ver help hrc tmp vs bs hs
     sha=$(git -C "$REPO_ROOT" rev-parse HEAD)
     tmp="$work/snap.tmp"; : > "$tmp"
     while IFS=$'\t' read -r pkg tgt src exe; do
@@ -155,11 +166,12 @@ write_snapshot() {
         hrc=0; help=$(timeout 20 "$exe" --help 2>/dev/null) || hrc=$?
         [ -n "$ver" ] || { printf 'FAIL: %s/%s printed nothing for --version\n' "$pkg" "$tgt" >&2; exit 1; }
         [ "$hrc" -eq 0 ] || { printf 'FAIL: %s/%s --help exited %s\n' "$pkg" "$tgt" "$hrc" >&2; exit 1; }
+        # plain assignments, so a failed or empty hash stops the script (set -e);
+        # inside --arg "$(...)" it would be written as "" and exit 0.
+        vs=$(printf '%s' "$ver" | sha256_of); bs=$(sha256_of < "$exe"); hs=$(printf '%s' "$help" | sha256_of)
         jq -nc --arg package "$pkg" --arg target "$tgt" --arg name "$(basename "$exe")" --arg src "$src" \
             --arg sha "$sha" --arg ver "$ver" \
-            --arg vs "$(printf '%s' "$ver" | sha256sum | cut -d' ' -f1)" \
-            --arg bs "$(sha256sum "$exe" | cut -d' ' -f1)" \
-            --arg hs "$(printf '%s' "$help" | sha256sum | cut -d' ' -f1)" \
+            --arg vs "$vs" --arg bs "$bs" --arg hs "$hs" \
             --argjson hrc "$hrc" \
             --argjson commands "$(walk "$exe" 1 | arr)" \
             --argjson options "$(options "$exe" | arr)" \
