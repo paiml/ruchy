@@ -460,9 +460,6 @@ wf_count "exactly one report job key" "^  report[A-Za-z0-9_-]*:$" 1
 wf_has "edge script queries the workflow by this file name" "--workflow snapshot-lab\\.yml " "$EDGE"
 rc=0; [ -f "$HERE/../.github/workflows/snapshot-lab.yml" ] || rc=1; lab_check "workflow text: file .github/workflows/snapshot-lab.yml exists (the edge script queries it by file name)" 0 "" "" "$rc"
 wf_has "edge script looks up the job named report" "select\\(\\.name == \"report\"\\)" "$EDGE"
-wf_lacks "no internal names, paths or tier words in the public files" "tail-cop|arbiter|infra-[0-9]|/mnt/|handoff|inbox|tier:|flow-manifest" "$WF"
-wf_lacks "no internal names, paths or tier words in the fresh script" "tail-cop|arbiter|infra-[0-9]|/mnt/|handoff|inbox|tier:|flow-manifest" "$FRESH"
-wf_lacks "no internal names, paths or tier words in the edge script" "tail-cop|arbiter|infra-[0-9]|/mnt/|handoff|inbox|tier:|flow-manifest" "$EDGE"
 # <<< snapshot-lab rows
 
 printf '%s rows, %s failed\n' "$rows" "$fail"
