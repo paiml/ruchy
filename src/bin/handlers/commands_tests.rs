@@ -947,3 +947,10 @@ fn test_quality_score_line_and_block_comment_nodes_are_not_documentation() {
         assert!((score - 0.85).abs() < 1e-9, "score was {score}");
     }
 }
+
+#[test]
+fn test_quality_score_one_of_four_documented_is_penalised() {
+    let src = "/// A\nfun alpha() {\n    1\n}\nfun beta() {\n    2\n}\nfun gamma() {\n    3\n}\nfun delta() {\n    4\n}\n";
+    let score = score_of(src);
+    assert!((score - 0.85).abs() < 1e-9, "score was {score}");
+}
