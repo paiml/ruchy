@@ -32,7 +32,7 @@ fn dispatch_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, 
         "to_upper" => eval_string_to_upper(s),
         "to_lower" => eval_string_to_lower(s),
         "trim" => eval_string_trim(s),
-        "to_string" => eval_string_to_string(s),
+        "to_string" | "clone" => eval_string_to_string(s),
         "trim_start" => eval_string_trim_start(s),
         "trim_end" => eval_string_trim_end(s),
         "is_empty" => eval_string_is_empty(s),
@@ -249,6 +249,14 @@ fn eval_string_substring(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_253_string_clone_returns_same_string() {
+        // GitHub #253: "abc".clone() failed with "Unknown zero-argument string method: clone"
+        let s: Arc<str> = Arc::from("abc");
+        let result = eval_string_method(&s, "clone", &[]).expect("clone must succeed");
+        assert_eq!(result, Value::from_string("abc".to_string()));
+    }
 
     #[test]
     fn test_string_len() {

@@ -38,7 +38,7 @@ fn eval_zero_arg_string_method(s: &Arc<str>, method: &str) -> Result<Value, Inte
         "len" | "length" => Ok(Value::Integer(s.len() as i64)),
         "to_upper" | "to_uppercase" | "upper" => Ok(Value::from_string(s.to_uppercase())),
         "to_lower" | "to_lowercase" | "lower" => Ok(Value::from_string(s.to_lowercase())),
-        "to_string" => Ok(Value::from_string(s.to_string())),
+        "to_string" | "clone" => Ok(Value::from_string(s.to_string())),
         "is_empty" => Ok(Value::Bool(s.is_empty())),
         "is_numeric" => Ok(Value::Bool(s.chars().all(char::is_numeric))),
         "is_alphabetic" => Ok(Value::Bool(s.chars().all(char::is_alphabetic))),
@@ -478,6 +478,14 @@ fn eval_string_timestamp(s: &str) -> Result<Value, InterpreterError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_253_string_clone_returns_same_string() {
+        // GitHub #253: "abc".clone() failed with "Unknown zero-argument string method: clone"
+        let s: Arc<str> = Arc::from("abc");
+        let result = eval_string_method(&s, "clone", &[]).expect("clone must succeed");
+        assert_eq!(result, Value::from_string("abc".to_string()));
+    }
 
     #[test]
     fn test_string_length() {
