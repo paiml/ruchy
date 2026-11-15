@@ -410,10 +410,22 @@ fn try_handle_postfix_call(state: &mut ParserState, left: Expr) -> Result<Option
     Ok(Some(functions::parse_call(state, left)?))
 }
 
+/// Look past comments for a postfix operator (PARSER-053). When none follows,
+/// the comments are restored so they stay available as the next item's
+/// leading doc comments (issue #110).
 fn try_handle_single_postfix(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
+    let saved = state.tokens.position();
+    let result = dispatch_postfix_after_comments(state, left)?;
+    if result.is_none() {
+        state.tokens.set_position(saved);
+    }
+    Ok(result)
+}
+
+fn dispatch_postfix_after_comments(state: &mut ParserState, left: Expr) -> Result<Option<Expr>> {
     // PARSER-053 FIX: Skip comments before checking for postfix operators
     // This allows: "hello" # comment\n .to_uppercase()
-    // Comments are consumed (not restored) so method chains work properly
+    // Comments are consumed when an operator follows so method chains work properly
     while matches!(
         state.tokens.peek(),
         Some((
