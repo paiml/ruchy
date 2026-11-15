@@ -283,10 +283,19 @@ impl Transpiler {
                 };
                 Ok(quote! { #op_token #operand_tokens })
             }
-            _ => {
-                // For other expressions, use standard transpilation
-                self.transpile_expr(expr)
+            _ => self.transpile_guard_leaf(expr),
+        }
+    }
+
+    /// Leaf of guard-context transpilation. Issue #252: globals are inferred as
+    /// i32, so a zero-arg `.len()` (usize) is cast to i32.
+    fn transpile_guard_leaf(&self, expr: &Expr) -> Result<TokenStream> {
+        let tokens = self.transpile_expr(expr)?;
+        match &expr.kind {
+            ExprKind::MethodCall { method, args, .. } if method == "len" && args.is_empty() => {
+                Ok(quote! { (#tokens as i32) })
             }
+            _ => Ok(tokens),
         }
     }
 
@@ -1969,5 +1978,63 @@ mod tests {
         let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
         let code = result.to_string();
         assert!(code.contains("42"), "Literal should pass through unchanged");
+    }
+
+    // Issue #252: `.len()` (usize) assigned into an i32-inferred global must be cast.
+    #[test]
+    fn test_guard_global_self_ref_len_is_cast_to_i32() {
+        let src =
+            "let mut total = 0\nfun main() {\n  let s = \"abc\"\n  total = total + s.len()\n}\n";
+        let ast = crate::frontend::parser::Parser::new(src)
+            .parse()
+            .expect("source should parse");
+        let mut transpiler = Transpiler::new();
+        let code = transpiler
+            .transpile_to_program(&ast)
+            .expect("source should transpile")
+            .to_string();
+        assert!(
+            code.contains("s . len () as i32"),
+            "global i32 += .len() must cast usize to i32, got: {code}"
+        );
+    }
+
+    // Issue #252: only a zero-arg `.len()` is cast; a call with arguments is not,
+    // and a non-guard `.len()` stays a bare usize.
+    #[test]
+    fn test_guard_global_self_ref_len_only_zero_arg_cast() {
+        let transpiler = Transpiler::new();
+        let recv = Expr::new(ExprKind::Identifier("s".to_string()), Span::default());
+        let arg = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let with_args = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(recv),
+                method: "len".to_string(),
+                args: vec![arg],
+            },
+            Span::default(),
+        );
+        let code = transpiler
+            .transpile_expr_for_guard(&with_args, "x")
+            .unwrap()
+            .to_string();
+        assert!(
+            !code.contains("as i32"),
+            ".len(arg) must not be cast: {code}"
+        );
+
+        let src = "fun main() {\n  let s = \"abc\"\n  let n = s.len()\n}\n";
+        let ast = crate::frontend::parser::Parser::new(src).parse().unwrap();
+        let code = Transpiler::new()
+            .transpile_to_program(&ast)
+            .unwrap()
+            .to_string();
+        assert!(
+            !code.contains("as i32"),
+            "non-guard .len() unchanged: {code}"
+        );
     }
 }
