@@ -283,10 +283,29 @@ impl Transpiler {
                 };
                 Ok(quote! { #op_token #operand_tokens })
             }
-            _ => {
-                // For other expressions, use standard transpilation
-                self.transpile_expr(expr)
+            _ => self.transpile_guard_leaf(expr, var_name),
+        }
+    }
+
+    /// Issue #252: true when the global `var_name` is emitted as an `i32` static.
+    fn is_i32_global(&self, var_name: &str) -> bool {
+        self.global_i32_vars
+            .read()
+            .expect("rwlock should not be poisoned")
+            .contains(var_name)
+    }
+
+    /// Leaf of guard-context transpilation. Issue #252: when the assigned global is an
+    /// `i32` static, a zero-arg `.len()` (usize) is cast to i32; other globals are untouched.
+    fn transpile_guard_leaf(&self, expr: &Expr, var_name: &str) -> Result<TokenStream> {
+        let tokens = self.transpile_expr(expr)?;
+        match &expr.kind {
+            ExprKind::MethodCall { method, args, .. }
+                if method == "len" && args.is_empty() && self.is_i32_global(var_name) =>
+            {
+                Ok(quote! { (#tokens as i32) })
             }
+            _ => Ok(tokens),
         }
     }
 
@@ -1969,5 +1988,121 @@ mod tests {
         let result = transpiler.transpile_expr_for_guard(&expr, "x").unwrap();
         let code = result.to_string();
         assert!(code.contains("42"), "Literal should pass through unchanged");
+    }
+
+    // Issue #252 helpers and rows.
+    fn transpile_src_252(src: &str) -> String {
+        let ast = crate::frontend::parser::Parser::new(src)
+            .parse()
+            .expect("source should parse");
+        Transpiler::new()
+            .transpile_to_program(&ast)
+            .expect("source should transpile")
+            .to_string()
+    }
+
+    /// `x = x <method>(args)` leaf in guard context against a transpiler whose
+    /// global `x` is registered as an i32 static.
+    fn guard_leaf_252(method: &str, args: Vec<Expr>) -> String {
+        let transpiler = Transpiler::new();
+        transpiler
+            .global_i32_vars
+            .write()
+            .unwrap()
+            .insert("x".to_string());
+        let recv = Expr::new(ExprKind::Identifier("s".to_string()), Span::default());
+        let call = Expr::new(
+            ExprKind::MethodCall {
+                receiver: Box::new(recv),
+                method: method.to_string(),
+                args,
+            },
+            Span::default(),
+        );
+        transpiler
+            .transpile_expr_for_guard(&call, "x")
+            .unwrap()
+            .to_string()
+    }
+
+    // Row 1: i32 (inferred) global + `.len()` in a guard is cast.
+    #[test]
+    fn test_guard_global_self_ref_len_is_cast_to_i32() {
+        let code = transpile_src_252(
+            "let mut total = 0\nfun main() {\n  let s = \"abc\"\n  total = total + s.len()\n}\n",
+        );
+        assert!(
+            code.contains("s . len () as i32"),
+            "i32 global must cast .len(), got: {code}"
+        );
+    }
+
+    // Row 1b: an explicit `: i32` annotation is also an i32 global.
+    #[test]
+    fn test_guard_global_annotated_i32_len_is_cast() {
+        let code = transpile_src_252(
+            "let mut total: i32 = 0\nfun main() {\n  let s = \"abc\"\n  total = total + s.len()\n}\n",
+        );
+        assert!(code.contains("s . len () as i32"), "got: {code}");
+    }
+
+    // Row 2 (regression, review of 4c010a0): usize / i64 globals are NOT cast.
+    #[test]
+    fn test_guard_global_usize_len_is_not_cast() {
+        let code = transpile_src_252(
+            "let mut total: usize = 0\nfun main() {\n  let s = \"abc\"\n  total = total + s.len()\n}\n",
+        );
+        assert!(
+            code.contains("s . len ()") && !code.contains("as i32"),
+            "usize global must not cast, got: {code}"
+        );
+        let code = transpile_src_252(
+            "let mut total: i64 = 0\nfun main() {\n  let s = \"abc\"\n  total = total + s.len()\n}\n",
+        );
+        assert!(!code.contains("as i32"), "i64 global must not cast: {code}");
+    }
+
+    // Row 2b: an immutable same-named Let is not a global and must not mark it i32.
+    #[test]
+    fn test_guard_immutable_let_does_not_mark_global_i32() {
+        let code = transpile_src_252(
+            "let mut total: usize = 0\nlet total = 1\nfun main() {\n  let s = \"abc\"\n  total = total + s.len()\n}\n",
+        );
+        assert!(!code.contains("as i32"), "got: {code}");
+    }
+
+    // Row 3: `.len(arg)` is not cast even for an i32 global.
+    #[test]
+    fn test_guard_len_with_args_not_cast() {
+        let arg = Expr::new(
+            ExprKind::Literal(Literal::Integer(1, None)),
+            Span::default(),
+        );
+        let code = guard_leaf_252("len", vec![arg]);
+        assert!(
+            !code.contains("as i32"),
+            ".len(arg) must not be cast: {code}"
+        );
+    }
+
+    // Row 4: another zero-arg method is not cast; `.len()` on the same
+    // harness is (so the harness itself cannot hide a missing cast).
+    #[test]
+    fn test_guard_other_zero_arg_method_not_cast() {
+        for m in ["count", "trim", "is_empty"] {
+            let code = guard_leaf_252(m, vec![]);
+            assert!(!code.contains("as i32"), ".{m}() must not be cast: {code}");
+        }
+        assert!(guard_leaf_252("len", vec![]).contains("as i32"));
+    }
+
+    // Row 5: a non-guard `.len()` is unchanged.
+    #[test]
+    fn test_non_guard_len_unchanged() {
+        let code = transpile_src_252("fun main() {\n  let s = \"abc\"\n  let n = s.len()\n}\n");
+        assert!(
+            !code.contains("as i32"),
+            "non-guard .len() unchanged: {code}"
+        );
     }
 }

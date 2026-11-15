@@ -18,6 +18,36 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
+    /// Issue #252: record which top-level mutable `let`s are emitted as `i32` statics, so
+    /// the guard-context `.len()` cast applies only to those. Only consulted for names
+    /// that are promoted globals, so non-global lets in the set are inert.
+    fn record_global_i32_vars(&self, exprs: &[Expr]) {
+        let mut names = std::collections::HashSet::new();
+        for expr in exprs {
+            if let ExprKind::Let {
+                name,
+                value,
+                type_annotation,
+                is_mutable: true,
+                ..
+            } = &expr.kind
+            {
+                let type_token = match type_annotation {
+                    Some(ann) => self.transpile_type(ann),
+                    None => Ok(Self::infer_type_from_value(value)),
+                };
+                if type_token.is_ok_and(|t| t.to_string() == "i32") {
+                    names.insert(name.clone());
+                }
+            }
+        }
+        (*self
+            .global_i32_vars
+            .write()
+            .expect("rwlock should not be poisoned"))
+        .clone_from(&names);
+    }
+
     /// Centralized result printing logic - ONE PLACE FOR ALL RESULT PRINTING
     /// This eliminates code duplication and ensures consistent Unit type handling
     /// FIX-001: Use {:?} for all types to avoid Display trait requirement on ()
@@ -198,6 +228,7 @@ impl Transpiler {
         needs_polars: bool,
         needs_hashmap: bool,
     ) -> Result<TokenStream> {
+        self.record_global_i32_vars(exprs);
         let (functions, statements, modules, has_main, main_expr, imports, globals) =
             self.categorize_block_expressions(exprs)?;
 
