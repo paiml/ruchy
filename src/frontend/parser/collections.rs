@@ -181,6 +181,7 @@ fn parse_next_block_expression(state: &mut ParserState, start_span: Span) -> Res
 }
 /// Handle potential let statement with lookahead (complexity: 10)
 fn parse_potential_let_statement(state: &mut ParserState, start_span: Span) -> Result<Expr> {
+    let let_span = state.tokens.peek().map_or(start_span, |(_, s)| *s);
     let saved_pos = state.tokens.position();
     state.tokens.advance(); // consume let
     if let Some(let_info) = try_parse_let_binding(state)? {
@@ -190,7 +191,7 @@ fn parse_potential_let_statement(state: &mut ParserState, start_span: Span) -> R
             super::parse_expr_recursive(state)
         } else {
             // Let statement - convert to let expression
-            create_let_statement_expression(state, let_info, start_span)
+            create_let_statement_expression(state, let_info, start_span, let_span)
         }
     } else {
         // Not a valid let - restore and parse as expression
@@ -220,6 +221,7 @@ fn create_let_statement_expression(
     state: &mut ParserState,
     let_info: LetBindingInfo,
     start_span: Span,
+    let_span: Span,
 ) -> Result<Expr> {
     consume_optional_semicolon(state);
     let body = parse_remaining_block_body(state, start_span)?;
@@ -232,7 +234,7 @@ fn create_let_statement_expression(
             is_mutable: false,
             else_block: None, // Block-level let doesn't support let-else
         },
-        start_span,
+        let_span,
     ))
 }
 /// Parse remaining expressions as block body (complexity: 8)

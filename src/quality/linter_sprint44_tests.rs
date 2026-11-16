@@ -64,7 +64,7 @@ fn test_sprint_44_02_recursive_pattern_extraction() {
         Pattern::Identifier("c".to_string()),
     ]);
 
-    Linter::extract_pattern_bindings(&nested_tuple, &mut scope);
+    Linter::extract_pattern_bindings(&nested_tuple, 0, &mut scope);
     assert!(scope.is_defined("a"));
     assert!(scope.is_defined("b"));
     assert!(scope.is_defined("c"));
@@ -465,7 +465,7 @@ fn test_sprint_44_12_concurrent_scope_modification() {
     // Test multiple rapid modifications to scope
     for i in 0..100 {
         let var_name = format!("var_{i}");
-        scope.define(var_name.clone(), i, i, VarType::Local);
+        scope.define(var_name.clone(), i, VarType::Local);
         scope.mark_used(&var_name);
         assert!(scope.is_defined(&var_name));
     }
@@ -510,13 +510,13 @@ fn test_sprint_44_13_lint_issue_field_completeness() {
 #[test]
 fn test_sprint_44_14_scope_hierarchy_lookup() {
     let mut grandparent = Scope::new();
-    grandparent.define("global".to_string(), 1, 1, VarType::Local);
+    grandparent.define("global".to_string(), 1, VarType::Local);
 
     let mut parent = Scope::with_parent(grandparent);
-    parent.define("parent_var".to_string(), 2, 1, VarType::Local);
+    parent.define("parent_var".to_string(), 1, VarType::Local);
 
     let mut child = Scope::with_parent(parent);
-    child.define("child_var".to_string(), 3, 1, VarType::Local);
+    child.define("child_var".to_string(), 1, VarType::Local);
 
     // Test lookup through hierarchy
     assert!(child.is_defined("child_var"));
@@ -631,10 +631,10 @@ fn test_sprint_44_18_variable_type_usage_patterns() {
     // Test all VarType variants have correct behavior
     let mut scope = Scope::new();
 
-    scope.define("local".to_string(), 1, 1, VarType::Local);
-    scope.define("param".to_string(), 1, 1, VarType::Parameter);
-    scope.define("loop_var".to_string(), 1, 1, VarType::LoopVariable);
-    scope.define("match_bind".to_string(), 1, 1, VarType::MatchBinding);
+    scope.define("local".to_string(), 1, VarType::Local);
+    scope.define("param".to_string(), 1, VarType::Parameter);
+    scope.define("loop_var".to_string(), 1, VarType::LoopVariable);
+    scope.define("match_bind".to_string(), 1, VarType::MatchBinding);
 
     // Initially all should be unused
     for info in scope.variables.values() {

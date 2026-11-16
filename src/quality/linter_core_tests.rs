@@ -253,14 +253,14 @@ fn test_scope_with_parent() {
 #[test]
 fn test_scope_define_variable() {
     let mut scope = Scope::new();
-    scope.define("x".to_string(), 1, 1, VarType::Local);
+    scope.define("x".to_string(), 1, VarType::Local);
     assert!(scope.variables.contains_key("x"));
     assert!(!scope.variables["x"].used);
 }
 #[test]
 fn test_scope_mark_used() {
     let mut scope = Scope::new();
-    scope.define("x".to_string(), 1, 1, VarType::Local);
+    scope.define("x".to_string(), 1, VarType::Local);
     assert!(scope.mark_used("x"));
     assert!(scope.variables["x"].used);
 }
@@ -272,28 +272,28 @@ fn test_scope_mark_used_undefined() {
 #[test]
 fn test_scope_mark_used_in_parent() {
     let mut parent_scope = Scope::new();
-    parent_scope.define("x".to_string(), 1, 1, VarType::Local);
+    parent_scope.define("x".to_string(), 1, VarType::Local);
     let mut child_scope = Scope::with_parent(parent_scope);
     assert!(child_scope.mark_used("x"));
 }
 #[test]
 fn test_scope_is_defined() {
     let mut scope = Scope::new();
-    scope.define("x".to_string(), 1, 1, VarType::Local);
+    scope.define("x".to_string(), 1, VarType::Local);
     assert!(scope.is_defined("x"));
     assert!(!scope.is_defined("y"));
 }
 #[test]
 fn test_scope_is_defined_in_parent() {
     let mut parent_scope = Scope::new();
-    parent_scope.define("x".to_string(), 1, 1, VarType::Local);
+    parent_scope.define("x".to_string(), 1, VarType::Local);
     let child_scope = Scope::with_parent(parent_scope);
     assert!(child_scope.is_defined("x"));
 }
 #[test]
 fn test_scope_is_shadowing() {
     let mut parent_scope = Scope::new();
-    parent_scope.define("x".to_string(), 1, 1, VarType::Local);
+    parent_scope.define("x".to_string(), 1, VarType::Local);
     let child_scope = Scope::with_parent(parent_scope);
     assert!(child_scope.is_shadowing("x"));
     assert!(!child_scope.is_shadowing("y"));
@@ -402,7 +402,7 @@ fn test_lint_variable_shadowing() {
     let linter = create_test_linter_with_rules("shadowing");
     // Direct scope test - this should trigger shadowing
     let mut parent_scope = Scope::new();
-    parent_scope.define("x".to_string(), 1, 1, VarType::Local);
+    parent_scope.define("x".to_string(), 1, VarType::Local);
     let child_scope = Scope::with_parent(parent_scope);
     assert!(child_scope.is_shadowing("x"));
     // Direct test without function wrapper
@@ -660,7 +660,7 @@ fn test_extract_loop_bindings_tuple() {
         Pattern::Identifier("x".to_string()),
         Pattern::Identifier("y".to_string()),
     ]);
-    Linter::extract_loop_bindings(&pattern, &mut scope);
+    Linter::extract_loop_bindings(&pattern, 0, &mut scope);
     assert!(scope.is_defined("x"));
     assert!(scope.is_defined("y"));
 }
@@ -672,7 +672,7 @@ fn test_extract_loop_bindings_list() {
         Pattern::Identifier("first".to_string()),
         Pattern::Identifier("second".to_string()),
     ]);
-    Linter::extract_loop_bindings(&pattern, &mut scope);
+    Linter::extract_loop_bindings(&pattern, 0, &mut scope);
     assert!(scope.is_defined("first"));
     assert!(scope.is_defined("second"));
 }
@@ -694,7 +694,7 @@ fn test_extract_loop_bindings_struct() {
         ],
         has_rest: false,
     };
-    Linter::extract_loop_bindings(&pattern, &mut scope);
+    Linter::extract_loop_bindings(&pattern, 0, &mut scope);
     assert!(scope.is_defined("x_val"));
     assert!(scope.is_defined("y"));
 }
@@ -703,7 +703,7 @@ fn test_extract_param_bindings_underscore() {
     let linter = create_test_linter();
     let mut scope = Scope::new();
     let pattern = Pattern::Identifier("_".to_string());
-    Linter::extract_param_bindings(&pattern, &mut scope);
+    Linter::extract_param_bindings(&pattern, 0, &mut scope);
     assert!(!scope.is_defined("_"));
 }
 #[test]
@@ -711,7 +711,7 @@ fn test_extract_pattern_bindings_nested_option() {
     let linter = create_test_linter();
     let mut scope = Scope::new();
     let pattern = Pattern::Some(Box::new(Pattern::Identifier("value".to_string())));
-    Linter::extract_pattern_bindings(&pattern, &mut scope);
+    Linter::extract_pattern_bindings(&pattern, 0, &mut scope);
     assert!(scope.is_defined("value"));
 }
 #[test]
@@ -719,10 +719,10 @@ fn test_extract_pattern_bindings_ok_err() {
     let linter = create_test_linter();
     let mut scope = Scope::new();
     let ok_pattern = Pattern::Ok(Box::new(Pattern::Identifier("success".to_string())));
-    Linter::extract_pattern_bindings(&ok_pattern, &mut scope);
+    Linter::extract_pattern_bindings(&ok_pattern, 0, &mut scope);
     assert!(scope.is_defined("success"));
     let err_pattern = Pattern::Err(Box::new(Pattern::Identifier("error".to_string())));
-    Linter::extract_pattern_bindings(&err_pattern, &mut scope);
+    Linter::extract_pattern_bindings(&err_pattern, 0, &mut scope);
     assert!(scope.is_defined("error"));
 }
 // ========== Expression Analysis Tests ==========
@@ -961,11 +961,11 @@ fn test_comprehensive_linting() {
 #[test]
 fn test_variable_type_classification() {
     let var_info = VariableInfo {
-        defined_at: (1, 1),
+        defined_at: 1,
         used: false,
         var_type: VarType::Parameter,
     };
-    assert_eq!(var_info.defined_at, (1, 1));
+    assert_eq!(var_info.defined_at, 1);
     assert!(!var_info.used);
     assert!(matches!(var_info.var_type, VarType::Parameter));
 }
@@ -1011,11 +1011,11 @@ fn test_var_type_enum_coverage() {
 #[test]
 fn test_variable_info_structure() {
     let var_info = VariableInfo {
-        defined_at: (1, 5),
+        defined_at: 1,
         used: false,
         var_type: VarType::Local,
     };
-    assert_eq!(var_info.defined_at, (1, 5));
+    assert_eq!(var_info.defined_at, 1);
     assert!(!var_info.used);
     assert!(matches!(var_info.var_type, VarType::Local));
 }
@@ -1101,7 +1101,7 @@ fn test_lint_issue_debug_format() {
 #[test]
 fn test_variable_info_debug_format() {
     let var_info = VariableInfo {
-        defined_at: (5, 10),
+        defined_at: 5,
         used: true,
         var_type: VarType::Parameter,
     };

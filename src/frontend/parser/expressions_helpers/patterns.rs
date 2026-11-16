@@ -825,7 +825,7 @@ fn parse_single_match_arm(state: &mut ParserState) -> Result<MatchArm> {
         pattern,
         guard,
         body,
-        span: start_span.merge(end_span),
+        span: Span::new(start_span.start, start_span.end.max(end_span.end)),
     })
 }
 /// Parse match pattern with low complexity
