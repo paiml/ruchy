@@ -37,7 +37,7 @@ struct Scope {
 }
 #[derive(Debug, Clone)]
 struct VariableInfo {
-    defined_at: (usize, usize),
+    defined_at: usize,
     used: bool,
     var_type: VarType,
 }
@@ -63,11 +63,11 @@ impl Scope {
             parent: Some(Box::new(parent)),
         }
     }
-    fn define(&mut self, name: String, line: usize, column: usize, var_type: VarType) {
+    fn define(&mut self, name: String, offset: usize, var_type: VarType) {
         self.variables.insert(
             name,
             VariableInfo {
-                defined_at: (line, column),
+                defined_at: offset,
                 used: false,
                 var_type,
             },
@@ -142,6 +142,14 @@ pub fn is_builtin(name: &str) -> bool {
     )
 }
 
+/// Convert a byte offset into `source` to a 1-based (line, column).
+fn line_and_column(source: &str, offset: usize) -> (usize, usize) {
+    let prefix = source.get(..offset.min(source.len())).unwrap_or("");
+    let line = prefix.matches('\n').count() + 1;
+    let column = prefix.rsplit('\n').next().map_or(0, |l| l.chars().count()) + 1;
+    (line, column)
+}
+
 pub struct Linter {
     rules: Vec<LintRule>,
     strict_mode: bool,
@@ -203,7 +211,7 @@ impl Linter {
     pub fn set_strict_mode(&mut self, strict: bool) {
         self.strict_mode = strict;
     }
-    pub fn lint(&self, ast: &Expr, _source: &str) -> Result<Vec<LintIssue>> {
+    pub fn lint(&self, ast: &Expr, source: &str) -> Result<Vec<LintIssue>> {
         let mut issues = Vec::new();
         let mut scope = Scope::new();
 
@@ -216,6 +224,10 @@ impl Linter {
 
         // Check for unused variables
         self.check_unused_in_scope(&scope, &mut issues);
+        // Issues carry the byte offset of their node in `line` until here.
+        for issue in &mut issues {
+            (issue.line, issue.column) = line_and_column(source, issue.line);
+        }
         // Check complexity
         if self
             .rules
@@ -248,10 +260,10 @@ impl Linter {
     /// Helper: Create shadowing `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 1 (within Toyota Way limits)
     #[inline]
-    fn create_shadowing_issue(name: &str) -> LintIssue {
+    fn create_shadowing_issue(name: &str, offset: usize) -> LintIssue {
         LintIssue {
-            line: 3, // Simplified line tracking
-            column: 1,
+            line: offset,
+            column: 0,
             severity: "warning".to_string(),
             rule: "shadowing".to_string(),
             message: format!("variable shadowing: {name}"),
@@ -264,10 +276,10 @@ impl Linter {
     /// Helper: Create undefined variable `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 1 (within Toyota Way limits)
     #[inline]
-    fn create_undefined_variable_issue(name: &str) -> LintIssue {
+    fn create_undefined_variable_issue(name: &str, offset: usize) -> LintIssue {
         LintIssue {
-            line: 3,
-            column: 1,
+            line: offset,
+            column: 0,
             severity: "error".to_string(),
             rule: "undefined".to_string(),
             message: format!("undefined variable: {name}"),
@@ -280,7 +292,7 @@ impl Linter {
     /// Helper: Create unused variable/parameter/binding `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 3 (within Toyota Way limits)
     #[inline]
-    fn create_unused_issue(name: &str, var_type: VarType, defined_at: (usize, usize)) -> LintIssue {
+    fn create_unused_issue(name: &str, var_type: VarType, defined_at: usize) -> LintIssue {
         let (rule_type, message_prefix, suggestion_suffix) = match var_type {
             VarType::Local => ("unused_variable", "unused variable", "variable"),
             VarType::Parameter => ("unused_parameter", "unused parameter", "parameter"),
@@ -299,8 +311,8 @@ impl Linter {
         };
 
         LintIssue {
-            line: defined_at.0,
-            column: defined_at.1,
+            line: defined_at,
+            column: 0,
             severity: "warning".to_string(),
             rule: rule_type.to_string(),
             message: format!("{message_prefix}: {name}"),
@@ -316,7 +328,7 @@ impl Linter {
         match &expr.kind {
             ExprKind::Function { name, .. } => {
                 // Define function in symbol table (Pass 1)
-                scope.define(name.clone(), 1, 1, VarType::Function);
+                scope.define(name.clone(), expr.span.start, VarType::Function);
             }
             ExprKind::Block(exprs) => {
                 // Recursively collect definitions from block
@@ -337,11 +349,13 @@ impl Linter {
         match &expr.kind {
             ExprKind::Let {
                 name, value, body, ..
-            } => self.analyze_let_expr(name, value, body, scope, issues),
-            ExprKind::Identifier(name) => self.analyze_identifier_expr(name, scope, issues),
+            } => self.analyze_let_expr(name, expr.span.start, value, body, scope, issues),
+            ExprKind::Identifier(name) => {
+                self.analyze_identifier_expr(name, expr.span.start, scope, issues);
+            }
             ExprKind::Function {
                 name, params, body, ..
-            } => self.analyze_function_expr(name, params, body, scope, issues),
+            } => self.analyze_function_expr(name, expr.span.start, params, body, scope, issues),
             ExprKind::For {
                 label: None,
                 var,
@@ -349,7 +363,10 @@ impl Linter {
                 iter,
                 body,
                 ..
-            } => self.analyze_for_expr(var, pattern.as_ref(), iter, body, scope, issues),
+            } => {
+                let binding = (var.as_str(), pattern.as_ref());
+                self.analyze_for_expr(expr.span.start, binding, iter, body, scope, issues);
+            }
             ExprKind::Match { expr, arms, .. } => {
                 self.analyze_match_expr(expr, arms, scope, issues);
             }
@@ -417,10 +434,10 @@ impl Linter {
                 }
             }
             ExprKind::Enum { name, .. } => {
-                scope.define(name.clone(), 1, 1, VarType::TypeName);
+                scope.define(name.clone(), expr.span.start, VarType::TypeName);
             }
             ExprKind::Struct { name, .. } => {
-                scope.define(name.clone(), 1, 1, VarType::TypeName);
+                scope.define(name.clone(), expr.span.start, VarType::TypeName);
             }
             _ => {}
         }
@@ -429,6 +446,7 @@ impl Linter {
     fn analyze_let_expr(
         &self,
         name: &str,
+        offset: usize,
         value: &Expr,
         body: &Expr,
         scope: &mut Scope,
@@ -448,9 +466,9 @@ impl Linter {
                 .any(|r| matches!(r, LintRule::VariableShadowing))
                 && scope.is_shadowing(name)
             {
-                issues.push(Self::create_shadowing_issue(name));
+                issues.push(Self::create_shadowing_issue(name, offset));
             }
-            scope.define(name.to_owned(), 2, 1, VarType::Local);
+            scope.define(name.to_owned(), offset, VarType::Local);
             self.analyze_expr(body, scope, issues);
         } else {
             // Expression-level let: Create new scope for the let binding body
@@ -461,9 +479,9 @@ impl Linter {
                 .any(|r| matches!(r, LintRule::VariableShadowing))
                 && let_scope.is_shadowing(name)
             {
-                issues.push(Self::create_shadowing_issue(name));
+                issues.push(Self::create_shadowing_issue(name, offset));
             }
-            let_scope.define(name.to_owned(), 2, 1, VarType::Local);
+            let_scope.define(name.to_owned(), offset, VarType::Local);
             self.analyze_expr(body, &mut let_scope, issues);
             // LINT-008 FIX: Propagate "used" status from cloned parent back to original scope
             if let Some(parent_scope) = &let_scope.parent {
@@ -477,7 +495,13 @@ impl Linter {
         }
     }
 
-    fn analyze_identifier_expr(&self, name: &str, scope: &mut Scope, issues: &mut Vec<LintIssue>) {
+    fn analyze_identifier_expr(
+        &self,
+        name: &str,
+        offset: usize,
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
         if is_builtin(name) {
             return;
         }
@@ -487,22 +511,23 @@ impl Linter {
                 .iter()
                 .any(|r| matches!(r, LintRule::UndefinedVariable))
         {
-            issues.push(Self::create_undefined_variable_issue(name));
+            issues.push(Self::create_undefined_variable_issue(name, offset));
         }
     }
 
     fn analyze_function_expr(
         &self,
         name: &str,
+        offset: usize,
         params: &[crate::frontend::ast::Param],
         body: &Expr,
         scope: &mut Scope,
         issues: &mut Vec<LintIssue>,
     ) {
-        scope.define(name.to_owned(), 1, 1, VarType::Function);
+        scope.define(name.to_owned(), offset, VarType::Function);
         let mut func_scope = Scope::with_parent(scope.clone());
         for param in params {
-            Self::extract_param_bindings(&param.pattern, &mut func_scope);
+            Self::extract_param_bindings(&param.pattern, param.span.start, &mut func_scope);
         }
         self.analyze_expr(body, &mut func_scope, issues);
         for (n, info) in &func_scope.variables {
@@ -518,8 +543,8 @@ impl Linter {
 
     fn analyze_for_expr(
         &self,
-        var: &str,
-        pattern: Option<&Pattern>,
+        offset: usize,
+        (var, pattern): (&str, Option<&Pattern>),
         iter: &Expr,
         body: &Expr,
         scope: &mut Scope,
@@ -527,9 +552,9 @@ impl Linter {
     ) {
         let mut loop_scope = Scope::with_parent(scope.clone());
         if let Some(pat) = pattern {
-            Self::extract_loop_bindings(pat, &mut loop_scope);
+            Self::extract_loop_bindings(pat, offset, &mut loop_scope);
         } else {
-            loop_scope.define(var.to_owned(), 2, 1, VarType::LoopVariable);
+            loop_scope.define(var.to_owned(), offset, VarType::LoopVariable);
         }
         self.analyze_expr(iter, scope, issues);
         self.analyze_expr(body, &mut loop_scope, issues);
@@ -546,7 +571,7 @@ impl Linter {
         self.analyze_expr(scrutinee, scope, issues);
         for arm in arms {
             let mut branch_scope = Scope::with_parent(scope.clone());
-            Self::extract_pattern_bindings(&arm.pattern, &mut branch_scope);
+            Self::extract_pattern_bindings(&arm.pattern, arm.span.start, &mut branch_scope);
             if let Some(guard) = &arm.guard {
                 self.analyze_expr(guard, &mut branch_scope, issues);
             }
@@ -613,103 +638,103 @@ impl Linter {
     ) {
         let mut lambda_scope = Scope::with_parent(scope.clone());
         for param in params {
-            Self::extract_param_bindings(&param.pattern, &mut lambda_scope);
+            Self::extract_param_bindings(&param.pattern, param.span.start, &mut lambda_scope);
         }
         self.analyze_expr(body, &mut lambda_scope, issues);
         self.check_unused_in_scope(&lambda_scope, issues);
     }
-    fn extract_loop_bindings(pattern: &Pattern, scope: &mut Scope) {
+    fn extract_loop_bindings(pattern: &Pattern, offset: usize, scope: &mut Scope) {
         match pattern {
             Pattern::Identifier(name) => {
                 // Check if it's a special identifier like _
                 if name != "_" {
-                    scope.define(name.clone(), 2, 1, VarType::LoopVariable);
+                    scope.define(name.clone(), offset, VarType::LoopVariable);
                 }
             }
             Pattern::Tuple(patterns) => {
                 for p in patterns {
-                    Self::extract_loop_bindings(p, scope);
+                    Self::extract_loop_bindings(p, offset, scope);
                 }
             }
             Pattern::Struct { fields, .. } => {
                 for field in fields {
                     if let Some(pattern) = &field.pattern {
-                        Self::extract_loop_bindings(pattern, scope);
+                        Self::extract_loop_bindings(pattern, offset, scope);
                     } else {
                         // Shorthand: { x } means { x: x }, bind the name
-                        scope.define(field.name.clone(), 2, 1, VarType::LoopVariable);
+                        scope.define(field.name.clone(), offset, VarType::LoopVariable);
                     }
                 }
             }
             Pattern::List(patterns) => {
                 for p in patterns {
-                    Self::extract_loop_bindings(p, scope);
+                    Self::extract_loop_bindings(p, offset, scope);
                 }
             }
             _ => {}
         }
     }
-    fn extract_param_bindings(pattern: &Pattern, scope: &mut Scope) {
+    fn extract_param_bindings(pattern: &Pattern, offset: usize, scope: &mut Scope) {
         match pattern {
             Pattern::Identifier(name) => {
                 // Check if it's a special identifier like _
                 if name != "_" {
-                    scope.define(name.clone(), 1, 1, VarType::Parameter);
+                    scope.define(name.clone(), offset, VarType::Parameter);
                 }
             }
             Pattern::Tuple(patterns) => {
                 for p in patterns {
-                    Self::extract_param_bindings(p, scope);
+                    Self::extract_param_bindings(p, offset, scope);
                 }
             }
             Pattern::Struct { fields, .. } => {
                 for field in fields {
                     if let Some(pattern) = &field.pattern {
-                        Self::extract_param_bindings(pattern, scope);
+                        Self::extract_param_bindings(pattern, offset, scope);
                     } else {
                         // Shorthand: { x } means { x: x }, bind the name
-                        scope.define(field.name.clone(), 1, 1, VarType::Parameter);
+                        scope.define(field.name.clone(), offset, VarType::Parameter);
                     }
                 }
             }
             Pattern::List(patterns) => {
                 for p in patterns {
-                    Self::extract_param_bindings(p, scope);
+                    Self::extract_param_bindings(p, offset, scope);
                 }
             }
             _ => {}
         }
     }
-    fn extract_pattern_bindings(pattern: &Pattern, scope: &mut Scope) {
+    fn extract_pattern_bindings(pattern: &Pattern, offset: usize, scope: &mut Scope) {
         match pattern {
             Pattern::Identifier(name) => {
                 // Check if it's a special identifier like _
                 if name != "_" {
-                    scope.define(name.clone(), 3, 1, VarType::MatchBinding);
+                    scope.define(name.clone(), offset, VarType::MatchBinding);
                 }
             }
             Pattern::Tuple(patterns) => {
                 for p in patterns {
-                    Self::extract_pattern_bindings(p, scope);
+                    Self::extract_pattern_bindings(p, offset, scope);
                 }
             }
             Pattern::Struct { fields, .. } => {
                 for field in fields {
                     if let Some(pattern) = &field.pattern {
-                        Self::extract_pattern_bindings(pattern, scope);
+                        Self::extract_pattern_bindings(pattern, offset, scope);
                     } else {
                         // Shorthand: { x } means { x: x }, bind the name
-                        scope.define(field.name.clone(), 3, 1, VarType::MatchBinding);
+                        scope.define(field.name.clone(), offset, VarType::MatchBinding);
                     }
                 }
             }
             Pattern::List(patterns) => {
                 for p in patterns {
-                    Self::extract_pattern_bindings(p, scope);
+                    Self::extract_pattern_bindings(p, offset, scope);
                 }
             }
             Pattern::Some(inner) | Pattern::Ok(inner) | Pattern::Err(inner) => {
-                Self::extract_pattern_bindings(inner, scope);
+                Self::extract_pattern_bindings(inner, offset, scope);
             }
             _ => {}
         }
@@ -797,3 +822,7 @@ mod property_tests_linter;
 #[cfg(test)]
 #[path = "linter_sprint44_tests.rs"]
 mod sprint_44_tests;
+
+#[cfg(test)]
+#[path = "linter_line_tests.rs"]
+mod line_number_tests;
