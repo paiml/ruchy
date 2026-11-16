@@ -40,37 +40,16 @@ pub(in crate::frontend::parser) fn parse_literal_token(
     match token {
         Token::Integer(value_str) => {
             state.tokens.advance();
-            // Parse integer value and optional type suffix
-            let (num_part, type_suffix) =
-                if let Some(pos) = value_str.find(|c: char| c.is_alphabetic()) {
-                    (&value_str[..pos], Some(value_str[pos..].to_string()))
-                } else {
-                    (value_str.as_str(), None)
-                };
-            let value = num_part.parse::<i64>().map_err(|_| {
-                ParseError::new(format!("Invalid integer literal: {num_part}"), span)
-            })?;
+            let (value, type_suffix) = parse_decimal_int(value_str, span)?;
             Ok(Expr::new(
                 ExprKind::Literal(Literal::Integer(value, type_suffix)),
                 span,
             ))
         }
-        // Issue #168: Hexadecimal literal support (0xFF, 0x1A2B, etc.)
+        // Issue #168: prefixed literals (0xFF, 0b101, 0o17), `_` separators allowed
         Token::HexInteger(value_str) => {
             state.tokens.advance();
-            // Parse hex value: strip 0x/0X prefix and optional type suffix
-            let without_prefix = &value_str[2..]; // Skip "0x" or "0X"
-            let (hex_part, type_suffix) = if let Some(pos) = without_prefix.find(['i', 'u']) {
-                (
-                    &without_prefix[..pos],
-                    Some(without_prefix[pos..].to_string()),
-                )
-            } else {
-                (without_prefix, None)
-            };
-            let value = i64::from_str_radix(hex_part, 16).map_err(|_| {
-                ParseError::new(format!("Invalid hexadecimal literal: {value_str}"), span)
-            })?;
+            let (value, type_suffix) = parse_prefixed_int(value_str, span)?;
             Ok(Expr::new(
                 ExprKind::Literal(Literal::Integer(value, type_suffix)),
                 span,
@@ -158,6 +137,73 @@ pub(in crate::frontend::parser) fn parse_some_constructor(
         },
         span,
     ))
+}
+
+const INT_SUFFIXES: [&str; 12] = [
+    "i8", "i16", "i32", "i64", "i128", "isize", "u8", "u16", "u32", "u64", "u128", "usize",
+];
+
+fn range_error(text: &str, span: Span) -> ParseError {
+    ParseError::new(
+        format!(
+            "integer literal {text} is out of range for i64 ({}..={})",
+            i64::MIN,
+            i64::MAX
+        ),
+        span,
+    )
+}
+
+/// Parse digits in `radix` (underscores ignored) with a clear error per failure kind.
+fn parse_digits(
+    digits: &str,
+    radix: u32,
+    text: &str,
+    span: Span,
+) -> std::result::Result<i64, ParseError> {
+    use std::num::IntErrorKind;
+    let clean = digits.replace('_', "");
+    i64::from_str_radix(&clean, radix).map_err(|e| match e.kind() {
+        IntErrorKind::PosOverflow | IntErrorKind::NegOverflow => range_error(text, span),
+        IntErrorKind::Empty => {
+            ParseError::new(format!("integer literal {text} has no digits"), span)
+        }
+        _ => ParseError::new(
+            format!("invalid digit for base {radix} in integer literal {text}"),
+            span,
+        ),
+    })
+}
+
+/// Decimal literal with optional type suffix; `_` separators are ignored.
+fn parse_decimal_int(
+    text: &str,
+    span: Span,
+) -> std::result::Result<(i64, Option<String>), ParseError> {
+    let pos = text.find(|c: char| c.is_alphabetic());
+    let (num, suffix) = pos.map_or((text, None), |p| (&text[..p], Some(text[p..].to_string())));
+    Ok((parse_digits(num, 10, text, span)?, suffix))
+}
+
+/// `0x` / `0b` / `0o` literal (either case) with optional type suffix.
+fn parse_prefixed_int(
+    text: &str,
+    span: Span,
+) -> std::result::Result<(i64, Option<String>), ParseError> {
+    let radix = match text.as_bytes()[1].to_ascii_lowercase() {
+        b'x' => 16,
+        b'b' => 2,
+        _ => 8,
+    };
+    let body = &text[2..];
+    let pos = body.find(['i', 'u']).unwrap_or(body.len());
+    let suffix = &body[pos..];
+    if !suffix.is_empty() && !INT_SUFFIXES.contains(&suffix) {
+        let msg = format!("invalid suffix `{suffix}` in integer literal {text}");
+        return Err(ParseError::new(msg, span));
+    }
+    let value = parse_digits(&body[..pos], radix, text, span)?;
+    Ok((value, (!suffix.is_empty()).then(|| suffix.to_string())))
 }
 
 #[cfg(test)]
