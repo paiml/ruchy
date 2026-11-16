@@ -80,3 +80,85 @@ fn linter_stays_send_and_sync() {
     fn assert_send_sync<T: Send + Sync>() {}
     assert_send_sync::<Linter>();
 }
+
+fn params_of(src: &str) -> Vec<(String, usize, usize)> {
+    findings(src)
+        .into_iter()
+        .filter(|i| i.rule == "unused_parameter")
+        .map(|i| (i.name, i.line, i.column))
+        .collect()
+}
+
+#[test]
+fn named_fun_reports_its_unused_parameter() {
+    let src = "fun add(a, b) {\n    a\n}\nadd(1, 2)\n";
+    assert_eq!(params_of(src), vec![("b".to_string(), 1, 12)]);
+}
+
+#[test]
+fn named_fun_unused_parameter_on_a_later_line() {
+    let src = "println(\"x\")\n\nfun add(a, b) {\n    b\n}\nadd(1, 2)\n";
+    assert_eq!(params_of(src), vec![("a".to_string(), 3, 9)]);
+}
+
+#[test]
+fn impl_method_reports_unused_parameter_not_self() {
+    let src = "impl Foo {\n    fun go(self, unused_m, used_m) {\n        used_m\n    }\n}\n";
+    assert_eq!(params_of(src), vec![("unused_m".to_string(), 2, 18)]);
+}
+
+#[test]
+fn destructured_parameter_reports_unused_binding() {
+    let src = "fun d((m, n), k) {\n    m + k\n}\nd((1, 2), 3)\n";
+    assert_eq!(params_of(src), vec![("n".to_string(), 1, 7)]);
+}
+
+#[test]
+fn underscore_prefixed_parameters_stay_silent() {
+    let src =
+        "fun skip(_ignored, _x, used) {\n    used\n}\nskip(1, 2, 3)\nlet g = |_a, b| b\ng(1, 2)\n";
+    assert!(params_of(src).is_empty(), "{:?}", findings(src));
+}
+
+#[test]
+fn parameter_used_only_in_nested_constructs_counts_as_used() {
+    let src = "fun f(p, q, r, s, t) {\n    let h = |z| p + z\n    for i in [1] {\n        println(q + i)\n    }\n    match 1 {\n        n => println(r + n),\n    }\n    if true {\n        println(s)\n    } else {\n        println(t)\n    }\n    h(1)\n}\nf(1, 2, 3, 4, 5)\n";
+    assert!(params_of(src).is_empty(), "{:?}", findings(src));
+}
+
+#[test]
+fn parameter_rule_follows_the_rules_filter() {
+    let src = "fun add(a, b) {\n    a\n}\nadd(1, 2)\n";
+    let ast = Parser::new(src).parse().expect("parse");
+    let mut linter = Linter::new();
+    linter.set_rules("complexity");
+    let all = linter.lint(&ast, src).expect("lint");
+    assert!(all.iter().all(|i| i.rule != "unused_parameter"), "{all:?}");
+    linter.set_rules("unused");
+    let all = linter.lint(&ast, src).expect("lint");
+    assert!(all.iter().any(|i| i.rule == "unused_parameter"), "{all:?}");
+}
+
+#[test]
+fn unused_function_parameter_json_has_rule_line_and_column() {
+    let src = "fun add(a, b) {\n    a\n}\nadd(1, 2)\n";
+    let issue = findings(src)
+        .into_iter()
+        .find(|i| i.rule == "unused_parameter")
+        .expect("finding");
+    let json = serde_json::to_value(&issue).expect("json");
+    assert_eq!(json["rule"], "unused_parameter");
+    assert_eq!(json["line"], 1);
+    assert_eq!(json["column"], 12);
+    assert_eq!(json["name"], "b");
+}
+
+#[test]
+fn outer_variable_used_inside_nested_scopes_is_not_reported() {
+    let src = "let a = 1\nlet b = 2\nfor i in [1] {\n    println(a + i)\n}\nlet h = |z| b + z\nprintln(h(1))\n";
+    assert!(
+        findings(src).iter().all(|i| i.rule != "unused_variable"),
+        "{:?}",
+        findings(src)
+    );
+}

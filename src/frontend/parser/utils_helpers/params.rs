@@ -30,6 +30,7 @@ fn parse_param_list(state: &mut ParserState) -> Result<Vec<Param>> {
 
 /// Parse a single parameter (complexity: 9)
 fn parse_single_param(state: &mut ParserState) -> Result<Param> {
+    let start = next_token_start(state, 0);
     let is_mutable = check_and_consume_mut(state);
     let (pattern, (is_reference, is_ref_mut)) = parse_param_pattern(state)?;
     let mut ty = parse_optional_type_annotation(state)?;
@@ -54,14 +55,20 @@ fn parse_single_param(state: &mut ParserState) -> Result<Param> {
         }
     }
 
+    let end = next_token_start(state, start);
     let default_value = parse_optional_default_value(state)?;
     Ok(Param {
         pattern,
         ty,
-        span: Span { start: 0, end: 0 },
+        span: Span { start, end },
         is_mutable,
         default_value,
     })
+}
+
+/// Byte offset where the next token starts, or `fallback` at end of input (complexity: 1)
+fn next_token_start(state: &mut ParserState, fallback: usize) -> usize {
+    state.tokens.peek().map_or(fallback, |(_, s)| s.start)
 }
 
 /// Check for and consume mut keyword (complexity: 2)
