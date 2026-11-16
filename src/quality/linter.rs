@@ -90,6 +90,19 @@ impl Scope {
     fn is_shadowing(&self, name: &str) -> bool {
         self.parent.as_ref().is_some_and(|p| p.is_defined(name))
     }
+    /// Mark as used, in `self`, every name that a child scope marked used in its
+    /// cloned copy of this scope chain.
+    fn absorb_used(&mut self, child: &Scope) {
+        let mut link = child.parent.as_deref();
+        while let Some(ancestor) = link {
+            for (name, info) in &ancestor.variables {
+                if info.used {
+                    self.mark_used(name);
+                }
+            }
+            link = ancestor.parent.as_deref();
+        }
+    }
 }
 
 /// Check if a name is a built-in function
@@ -356,6 +369,14 @@ impl Linter {
             ExprKind::Function {
                 name, params, body, ..
             } => self.analyze_function_expr(name, expr.span.start, params, body, scope, issues),
+            ExprKind::Impl { methods, .. } => {
+                for method in methods {
+                    let mut method_scope = Scope::with_parent(scope.clone());
+                    method_scope.define("self".to_owned(), expr.span.start, VarType::Function);
+                    self.analyze_callable(&method.params, &method.body, &mut method_scope, issues);
+                    scope.absorb_used(&method_scope);
+                }
+            }
             ExprKind::For {
                 label: None,
                 var,
@@ -484,13 +505,7 @@ impl Linter {
             let_scope.define(name.to_owned(), offset, VarType::Local);
             self.analyze_expr(body, &mut let_scope, issues);
             // LINT-008 FIX: Propagate "used" status from cloned parent back to original scope
-            if let Some(parent_scope) = &let_scope.parent {
-                for (var_name, parent_var_info) in &parent_scope.variables {
-                    if parent_var_info.used {
-                        scope.mark_used(var_name);
-                    }
-                }
-            }
+            scope.absorb_used(&let_scope);
             self.check_unused_in_scope(&let_scope, issues);
         }
     }
@@ -525,13 +540,30 @@ impl Linter {
         issues: &mut Vec<LintIssue>,
     ) {
         scope.define(name.to_owned(), offset, VarType::Function);
+        self.analyze_callable(params, body, scope, issues);
+    }
+
+    /// Analyze the parameters and body of a named function or an impl method.
+    fn analyze_callable(
+        &self,
+        params: &[crate::frontend::ast::Param],
+        body: &Expr,
+        scope: &mut Scope,
+        issues: &mut Vec<LintIssue>,
+    ) {
         let mut func_scope = Scope::with_parent(scope.clone());
         for param in params {
             Self::extract_param_bindings(&param.pattern, param.span.start, &mut func_scope);
         }
         self.analyze_expr(body, &mut func_scope, issues);
+        scope.absorb_used(&func_scope);
         for (n, info) in &func_scope.variables {
-            if !info.used && matches!(info.var_type, VarType::Local) {
+            let reportable = match info.var_type {
+                VarType::Local => true,
+                VarType::Parameter => self.reports_unused_parameter(n),
+                _ => false,
+            };
+            if !info.used && reportable {
                 issues.push(Self::create_unused_issue(
                     n,
                     info.var_type.clone(),
@@ -558,6 +590,7 @@ impl Linter {
         }
         self.analyze_expr(iter, scope, issues);
         self.analyze_expr(body, &mut loop_scope, issues);
+        scope.absorb_used(&loop_scope);
         self.check_unused_in_scope(&loop_scope, issues);
     }
 
@@ -576,6 +609,7 @@ impl Linter {
                 self.analyze_expr(guard, &mut branch_scope, issues);
             }
             self.analyze_expr(&arm.body, &mut branch_scope, issues);
+            scope.absorb_used(&branch_scope);
             self.check_unused_in_scope(&branch_scope, issues);
         }
     }
@@ -591,9 +625,11 @@ impl Linter {
         self.analyze_expr(condition, scope, issues);
         let mut then_scope = Scope::with_parent(scope.clone());
         self.analyze_expr(then_branch, &mut then_scope, issues);
+        scope.absorb_used(&then_scope);
         if let Some(else_expr) = else_branch {
             let mut else_scope = Scope::with_parent(scope.clone());
             self.analyze_expr(else_expr, &mut else_scope, issues);
+            scope.absorb_used(&else_scope);
         }
     }
 
@@ -641,6 +677,7 @@ impl Linter {
             Self::extract_param_bindings(&param.pattern, param.span.start, &mut lambda_scope);
         }
         self.analyze_expr(body, &mut lambda_scope, issues);
+        scope.absorb_used(&lambda_scope);
         self.check_unused_in_scope(&lambda_scope, issues);
     }
     fn extract_loop_bindings(pattern: &Pattern, offset: usize, scope: &mut Scope) {
@@ -739,6 +776,16 @@ impl Linter {
             _ => {}
         }
     }
+    /// An unused parameter is reported when the rule is on and the name does not
+    /// start with `_` (the usual way to mark a parameter as intentionally unused).
+    fn reports_unused_parameter(&self, name: &str) -> bool {
+        !name.starts_with('_')
+            && name != "self"
+            && self
+                .rules
+                .iter()
+                .any(|r| matches!(r, LintRule::UnusedParameter))
+    }
     fn check_unused_in_scope(&self, scope: &Scope, issues: &mut Vec<LintIssue>) {
         for (name, info) in &scope.variables {
             if !info.used {
@@ -748,10 +795,7 @@ impl Linter {
                         .rules
                         .iter()
                         .any(|r| matches!(r, LintRule::UnusedVariable)),
-                    VarType::Parameter => self
-                        .rules
-                        .iter()
-                        .any(|r| matches!(r, LintRule::UnusedParameter)),
+                    VarType::Parameter => self.reports_unused_parameter(name),
                     VarType::Function => false, // QUALITY-015: Functions not checked for unused
                     VarType::LoopVariable => self
                         .rules
