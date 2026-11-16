@@ -80,3 +80,43 @@ fn linter_stays_send_and_sync() {
     fn assert_send_sync<T: Send + Sync>() {}
     assert_send_sync::<Linter>();
 }
+
+fn finding_at(offset: usize) -> Finding {
+    Finding {
+        offset,
+        severity: "warning".to_string(),
+        rule: "r".to_string(),
+        message: "m".to_string(),
+        suggestion: "s".to_string(),
+        issue_type: "t".to_string(),
+        name: "n".to_string(),
+    }
+}
+
+#[test]
+fn resolve_turns_a_byte_offset_into_line_and_column() {
+    let src = "ab\ncd\n  ef";
+    let issue = finding_at(src.find("ef").unwrap()).resolve(src);
+    assert_eq!((issue.line, issue.column), (3, 3));
+    assert_eq!(issue.rule, "r");
+    assert_eq!(issue.message, "m");
+    assert_eq!(issue.suggestion, "s");
+    assert_eq!(issue.issue_type, "t");
+    assert_eq!(issue.name, "n");
+    assert_eq!(issue.severity, "warning");
+}
+
+#[test]
+fn every_finding_kind_reports_a_column_of_at_least_one() {
+    // unused variable, undefined, shadowing, unused loop var, match binding, lambda param
+    let src = "let a = 1\nlet outer = 1\n\n\n\nfun f() {\n    let outer = 2\n    outer\n}\nf()\nprintln(missing)\nfor i in [1] { println(\"x\") }\nmatch a {\n    n => println(\"m\"),\n}\nlet g = |p| 1\ng(1)\n";
+    let all = findings(src);
+    assert!(all.len() >= 5, "{all:?}");
+    for i in &all {
+        assert!(i.line >= 1 && i.column >= 1, "{i:?}");
+        assert!(
+            i.line <= src.lines().count(),
+            "offset leaked into line: {i:?}"
+        );
+    }
+}
