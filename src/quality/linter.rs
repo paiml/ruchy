@@ -155,6 +155,28 @@ pub fn is_builtin(name: &str) -> bool {
     )
 }
 
+/// Every string anywhere in the serialized expression tree (identifier names,
+/// field names, call targets, ...). Over-approximates "names read in `expr`":
+/// it can hide an unused parameter, never invent one, and it cannot go stale
+/// when an expression kind is added.
+fn mentioned_names(expr: &Expr) -> std::collections::HashSet<String> {
+    fn collect(v: &serde_json::Value, out: &mut std::collections::HashSet<String>) {
+        match v {
+            serde_json::Value::String(s) => {
+                out.insert(s.clone());
+            }
+            serde_json::Value::Array(items) => items.iter().for_each(|i| collect(i, out)),
+            serde_json::Value::Object(map) => map.values().for_each(|i| collect(i, out)),
+            _ => {}
+        }
+    }
+    let mut out = std::collections::HashSet::new();
+    if let Ok(v) = serde_json::to_value(expr) {
+        collect(&v, &mut out);
+    }
+    out
+}
+
 /// Convert a byte offset into `source` to a 1-based (line, column).
 fn line_and_column(source: &str, offset: usize) -> (usize, usize) {
     let prefix = source.get(..offset.min(source.len())).unwrap_or("");
@@ -373,7 +395,20 @@ impl Linter {
                 for method in methods {
                     let mut method_scope = Scope::with_parent(scope.clone());
                     method_scope.define("self".to_owned(), expr.span.start, VarType::Function);
-                    self.analyze_callable(&method.params, &method.body, &mut method_scope, issues);
+                    // Method bodies are only checked for unused parameters: the rest of
+                    // the walk has no model of `use` imports or struct fields yet.
+                    let mut method_issues = Vec::new();
+                    self.analyze_callable(
+                        &method.params,
+                        &method.body,
+                        &mut method_scope,
+                        &mut method_issues,
+                    );
+                    issues.extend(
+                        method_issues
+                            .into_iter()
+                            .filter(|i| i.rule == "unused_parameter"),
+                    );
                     scope.absorb_used(&method_scope);
                 }
             }
@@ -557,6 +592,14 @@ impl Linter {
         }
         self.analyze_expr(body, &mut func_scope, issues);
         scope.absorb_used(&func_scope);
+        // The walk above does not visit every expression kind, so a parameter it
+        // never saw may still be read; never report a name the body mentions.
+        let mentioned = mentioned_names(body);
+        for (n, info) in &mut func_scope.variables {
+            if matches!(info.var_type, VarType::Parameter) && mentioned.contains(n) {
+                info.used = true;
+            }
+        }
         for (n, info) in &func_scope.variables {
             let reportable = match info.var_type {
                 VarType::Local => true,

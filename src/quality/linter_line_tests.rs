@@ -162,3 +162,21 @@ fn outer_variable_used_inside_nested_scopes_is_not_reported() {
         findings(src)
     );
 }
+
+#[test]
+fn parameter_used_in_object_literal_or_try_is_not_reported() {
+    let src = "fun mk(x, y) {\n    { x: x, y: y }\n}\nfun conv(s) {\n    try {\n        Ok(s.to_int())\n    } catch e {\n        Err(e)\n    }\n}\nmk(1, 2)\nconv(\"1\")\n";
+    assert!(params_of(src).is_empty(), "{:?}", findings(src));
+}
+
+#[test]
+fn method_bodies_only_contribute_unused_parameter_findings() {
+    let src = "impl Foo {\n    fun go(self, a) {\n        let dy = 1\n        missing_name + self.x\n    }\n}\n";
+    let all = findings(src);
+    assert_eq!(all.len(), 1, "{all:?}");
+    assert_eq!(
+        (all[0].rule.as_str(), all[0].name.as_str()),
+        ("unused_parameter", "a")
+    );
+    assert_eq!((all[0].line, all[0].column), (2, 18));
+}
