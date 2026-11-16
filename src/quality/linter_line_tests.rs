@@ -66,12 +66,17 @@ fn json_carries_real_line_and_column() {
 
 #[test]
 fn position_counts_columns_in_chars_not_bytes() {
-    let linter = Linter::new();
-    *linter.source.borrow_mut() = "é\nxé = 1\nab".to_string();
+    let source = "é\nxé = 1\nab";
     // offset of "=": line 2, after "xé " (3 chars, 4 bytes)
-    assert_eq!(linter.position("é\nxé ".len() + 1), (2, 5));
-    assert_eq!(linter.position(0), (1, 1));
-    assert_eq!(linter.position("é\n".len()), (2, 1));
+    assert_eq!(line_and_column(source, "é\nxé ".len() + 1), (2, 5));
+    assert_eq!(line_and_column(source, 0), (1, 1));
+    assert_eq!(line_and_column(source, "é\n".len()), (2, 1));
     // out-of-range offsets clamp to end of source instead of panicking
-    assert_eq!(linter.position(10_000), (3, 3));
+    assert_eq!(line_and_column(source, 10_000), (3, 3));
+}
+
+#[test]
+fn linter_stays_send_and_sync() {
+    fn assert_send_sync<T: Send + Sync>() {}
+    assert_send_sync::<Linter>();
 }

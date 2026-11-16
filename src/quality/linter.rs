@@ -142,8 +142,15 @@ pub fn is_builtin(name: &str) -> bool {
     )
 }
 
+/// Convert a byte offset into `source` to a 1-based (line, column).
+fn line_and_column(source: &str, offset: usize) -> (usize, usize) {
+    let prefix = source.get(..offset.min(source.len())).unwrap_or("");
+    let line = prefix.matches('\n').count() + 1;
+    let column = prefix.rsplit('\n').next().map_or(0, |l| l.chars().count()) + 1;
+    (line, column)
+}
+
 pub struct Linter {
-    source: std::cell::RefCell<String>,
     rules: Vec<LintRule>,
     strict_mode: bool,
     max_complexity: usize,
@@ -159,7 +166,6 @@ impl Linter {
     /// ```
     pub fn new() -> Self {
         Self {
-            source: std::cell::RefCell::new(String::new()),
             rules: vec![
                 LintRule::UnusedVariable,
                 LintRule::UndefinedVariable,
@@ -173,14 +179,6 @@ impl Linter {
             strict_mode: false,
             max_complexity: 10,
         }
-    }
-    /// Convert a byte offset into the linted source to a 1-based (line, column).
-    fn position(&self, offset: usize) -> (usize, usize) {
-        let source = self.source.borrow();
-        let prefix = source.get(..offset.min(source.len())).unwrap_or("");
-        let line = prefix.matches('\n').count() + 1;
-        let column = prefix.rsplit('\n').next().map_or(0, |l| l.chars().count()) + 1;
-        (line, column)
     }
     pub fn set_rules(&mut self, rule_filter: &str) {
         self.rules.clear();
@@ -214,7 +212,6 @@ impl Linter {
         self.strict_mode = strict;
     }
     pub fn lint(&self, ast: &Expr, source: &str) -> Result<Vec<LintIssue>> {
-        source.clone_into(&mut self.source.borrow_mut());
         let mut issues = Vec::new();
         let mut scope = Scope::new();
 
@@ -227,6 +224,10 @@ impl Linter {
 
         // Check for unused variables
         self.check_unused_in_scope(&scope, &mut issues);
+        // Issues carry the byte offset of their node in `line` until here.
+        for issue in &mut issues {
+            (issue.line, issue.column) = line_and_column(source, issue.line);
+        }
         // Check complexity
         if self
             .rules
@@ -259,11 +260,10 @@ impl Linter {
     /// Helper: Create shadowing `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 1 (within Toyota Way limits)
     #[inline]
-    fn create_shadowing_issue(&self, name: &str, offset: usize) -> LintIssue {
-        let (line, column) = self.position(offset);
+    fn create_shadowing_issue(name: &str, offset: usize) -> LintIssue {
         LintIssue {
-            line,
-            column,
+            line: offset,
+            column: 0,
             severity: "warning".to_string(),
             rule: "shadowing".to_string(),
             message: format!("variable shadowing: {name}"),
@@ -276,11 +276,10 @@ impl Linter {
     /// Helper: Create undefined variable `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 1 (within Toyota Way limits)
     #[inline]
-    fn create_undefined_variable_issue(&self, name: &str, offset: usize) -> LintIssue {
-        let (line, column) = self.position(offset);
+    fn create_undefined_variable_issue(name: &str, offset: usize) -> LintIssue {
         LintIssue {
-            line,
-            column,
+            line: offset,
+            column: 0,
             severity: "error".to_string(),
             rule: "undefined".to_string(),
             message: format!("undefined variable: {name}"),
@@ -293,8 +292,7 @@ impl Linter {
     /// Helper: Create unused variable/parameter/binding `LintIssue` (CERTEZA-001: Reduce duplication)
     /// Complexity: 3 (within Toyota Way limits)
     #[inline]
-    fn create_unused_issue(&self, name: &str, var_type: VarType, defined_at: usize) -> LintIssue {
-        let (line, column) = self.position(defined_at);
+    fn create_unused_issue(name: &str, var_type: VarType, defined_at: usize) -> LintIssue {
         let (rule_type, message_prefix, suggestion_suffix) = match var_type {
             VarType::Local => ("unused_variable", "unused variable", "variable"),
             VarType::Parameter => ("unused_parameter", "unused parameter", "parameter"),
@@ -313,8 +311,8 @@ impl Linter {
         };
 
         LintIssue {
-            line,
-            column,
+            line: defined_at,
+            column: 0,
             severity: "warning".to_string(),
             rule: rule_type.to_string(),
             message: format!("{message_prefix}: {name}"),
@@ -468,7 +466,7 @@ impl Linter {
                 .any(|r| matches!(r, LintRule::VariableShadowing))
                 && scope.is_shadowing(name)
             {
-                issues.push(self.create_shadowing_issue(name, offset));
+                issues.push(Self::create_shadowing_issue(name, offset));
             }
             scope.define(name.to_owned(), offset, VarType::Local);
             self.analyze_expr(body, scope, issues);
@@ -481,7 +479,7 @@ impl Linter {
                 .any(|r| matches!(r, LintRule::VariableShadowing))
                 && let_scope.is_shadowing(name)
             {
-                issues.push(self.create_shadowing_issue(name, offset));
+                issues.push(Self::create_shadowing_issue(name, offset));
             }
             let_scope.define(name.to_owned(), offset, VarType::Local);
             self.analyze_expr(body, &mut let_scope, issues);
@@ -513,7 +511,7 @@ impl Linter {
                 .iter()
                 .any(|r| matches!(r, LintRule::UndefinedVariable))
         {
-            issues.push(self.create_undefined_variable_issue(name, offset));
+            issues.push(Self::create_undefined_variable_issue(name, offset));
         }
     }
 
@@ -534,7 +532,11 @@ impl Linter {
         self.analyze_expr(body, &mut func_scope, issues);
         for (n, info) in &func_scope.variables {
             if !info.used && matches!(info.var_type, VarType::Local) {
-                issues.push(self.create_unused_issue(n, info.var_type.clone(), info.defined_at));
+                issues.push(Self::create_unused_issue(
+                    n,
+                    info.var_type.clone(),
+                    info.defined_at,
+                ));
             }
         }
     }
@@ -763,7 +765,7 @@ impl Linter {
                 };
 
                 if should_check {
-                    issues.push(self.create_unused_issue(
+                    issues.push(Self::create_unused_issue(
                         name,
                         info.var_type.clone(),
                         info.defined_at,
