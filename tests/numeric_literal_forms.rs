@@ -53,6 +53,8 @@ const ACCEPTED: &[(&str, &str)] = &[
     ("1_0.0_1", "10.01"),
     ("1e1_0", "10000000000.0"),
     ("0b101u8", "5"),
+    ("0o17i64", "15"),
+    ("0xFFi32", "255"),
     ("100i64", "100"),
     ("1_000i64", "1000"),
 ];
@@ -124,4 +126,16 @@ fn rejected_forms_fail_transpile() {
 fn leading_underscore_is_an_identifier() {
     let (ok, _, err) = eval("println(_1)");
     assert!(!ok && err.contains("_1"), "{err}");
+}
+
+#[test]
+fn type_suffix_survives_transpile() {
+    for (src, want) in [
+        ("0b101u8", "5u8"),
+        ("0xFFi32", "255i32"),
+        ("1_000i64", "1000i64"),
+    ] {
+        let rs = transpile(src);
+        assert!(rs.contains(&format!("\"{{}}\", {want}")), "{src}: {rs}");
+    }
 }
