@@ -139,18 +139,17 @@ pub enum Token {
 
     // Literals
     // Issue #168: Hexadecimal literals (0x or 0X prefix)
-    #[regex(r"0[xX][0-9a-fA-F]+(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
-        let slice = lex.slice();
-        slice.to_string()
-    })]
+    // Also 0b/0o prefixes and `_` separators; the lexer takes the whole alphanumeric run so the
+    // parser can name an invalid digit or suffix.
+    #[regex(r"0[xXbBoO][0-9a-zA-Z_]*", |lex| lex.slice().to_string())]
     HexInteger(String),
-    #[regex(r"[0-9]+(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
+    #[regex(r"[0-9][0-9_]*(?:i8|i16|i32|i64|i128|isize|u8|u16|u32|u64|u128|usize)?", |lex| {
         let slice = lex.slice();
         // Parse type suffix and numeric value separately - store as string to preserve suffix
         slice.to_string()
     })]
     Integer(String),
-    #[regex(r"[0-9]+\.[0-9]+([eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+", |lex| lex.slice().parse::<f64>().ok())]
+    #[regex(r"[0-9][0-9_]*\.[0-9][0-9_]*([eE][+-]?[0-9][0-9_]*)?|[0-9][0-9_]*[eE][+-]?[0-9][0-9_]*", |lex| lex.slice().replace('_', "").parse::<f64>().ok())]
     Float(f64),
     // Double-quoted strings
     #[regex(r#""([^"\\]|\\.)*""#, |lex| {
