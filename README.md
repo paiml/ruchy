@@ -115,3 +115,7 @@ Minimum supported Rust version: **1.91**.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+<!-- FUNNEL-001 footer: replace ruchy with the repo name -->
+---
+📚 **Learn this hands-on:** [Pragmatic AI Labs courses on Coursera](https://www.coursera.org/partners/pragmatic-ai-labs?utm_source=github&utm_medium=readme&utm_campaign=funnel_2026q4&utm_content=ruchy) · ✉ [Free newsletter](https://ds500.paiml.com/mailing?utm_source=github&utm_medium=readme&utm_campaign=funnel_2026q4&utm_content=ruchy)
