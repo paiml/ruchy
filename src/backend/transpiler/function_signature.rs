@@ -301,8 +301,6 @@ impl Transpiler {
 
         for attr in attributes {
             match attr.name.as_str() {
-                // SAFETY: no actual unsafe code -- transpiling the unsafe modifier token
-                "unsafe" => modifiers.push(quote! { unsafe }),
                 "const" => modifiers.push(quote! { const }),
                 _ => {
                     regular_attrs.push(self.format_regular_attribute_impl(attr));
@@ -360,6 +358,12 @@ impl Transpiler {
     ) -> Result<TokenStream> {
         let final_return_type = self.compute_final_return_type_impl(fn_name, return_type_tokens);
         let visibility = self.generate_visibility_token_impl(is_pub);
+        // UNSAFEFN-1 (#244): zero-unsafe policy (#132) forbids emitting `unsafe fn`.
+        if attributes.iter().any(|a| a.name == "unsafe") {
+            anyhow::bail!(
+                "the `unsafe` modifier on `fun {fn_name}` is not supported: Ruchy transpiles to safe Rust only (zero-unsafe policy, #132)"
+            );
+        }
         let (regular_attrs, modifiers_tokens) = self.process_attributes_impl(attributes);
 
         self.generate_function_declaration_impl(
@@ -638,16 +642,28 @@ mod tests {
     }
 
     #[test]
-    fn test_process_attrs_unsafe() {
+    fn test_signature_refuses_unsafe() {
         let transpiler = make_transpiler();
         let attr = Attribute {
             name: "unsafe".to_string(),
             args: vec![],
             span: Span::default(),
         };
-        let (attrs, modifiers) = transpiler.process_attributes_impl(&[attr]);
-        assert!(attrs.is_empty());
-        assert!(modifiers.to_string().contains("unsafe"));
+        let name = format_ident!("f");
+        let err = transpiler
+            .generate_function_signature_impl(
+                false,
+                false,
+                &name,
+                &[],
+                &[],
+                &quote! {},
+                &quote! {},
+                &[attr],
+            )
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("zero-unsafe"));
     }
 
     #[test]
