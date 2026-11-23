@@ -34,19 +34,19 @@ echo ""
 
 # Run matrix tests with coverage tracking
 echo "Running Matrix 001: Simple Arithmetic..."
-cargo llvm-cov --no-report test --test matrix_001_simple_arithmetic_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-001-output.txt
+cargo llvm-cov --no-report test --test it matrix_001_simple_arithmetic_native:: -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-001-output.txt
 
 echo ""
 echo "Running Matrix 002: CSV Processing Workflow..."
-cargo llvm-cov --no-report test --test matrix_002_csv_workflow_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-002-output.txt
+cargo llvm-cov --no-report test --test it matrix_002_csv_workflow_native:: -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-002-output.txt
 
 echo ""
 echo "Running Matrix 003: Statistical Analysis..."
-cargo llvm-cov --no-report test --test matrix_003_statistical_analysis_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-003-output.txt
+cargo llvm-cov --no-report test --test it matrix_003_statistical_analysis_native:: -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-003-output.txt
 
 echo ""
 echo "Running Matrix 004: Time Series Analysis..."
-cargo llvm-cov --no-report test --test matrix_004_time_series_native -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-004-output.txt
+cargo llvm-cov --no-report test --test it matrix_004_time_series_native:: -- --test-threads=1 2>&1 | tee target/coverage/matrix/test-004-output.txt
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

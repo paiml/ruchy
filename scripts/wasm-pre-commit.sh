@@ -38,7 +38,7 @@ FAILED=0
 
 # 1. Memory Model Tests (Quick - ~1s)
 echo "💾 Running memory model tests..."
-if cargo test --test wasm_memory_model --quiet 2>&1 | grep -q "test result: ok"; then
+if cargo test --test it wasm_memory_model:: --quiet 2>&1 | grep -q "test result: ok"; then
     echo -e "${GREEN}✅ Memory model tests passed${NC}"
 else
     echo -e "${RED}❌ Memory model tests failed${NC}"
@@ -47,7 +47,7 @@ fi
 
 # 2. Property Invariant Tests (Quick - ~1s)
 echo "🔬 Running property invariant tests..."
-if cargo test --test wasm_memory_property_tests invariant_tests --quiet 2>&1 | grep -q "test result: ok"; then
+if cargo test --test it wasm_memory_property_tests::invariant_tests --quiet 2>&1 | grep -q "test result: ok"; then
     echo -e "${GREEN}✅ Property invariant tests passed${NC}"
 else
     echo -e "${RED}❌ Property invariant tests failed${NC}"

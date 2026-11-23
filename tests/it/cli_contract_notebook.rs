@@ -23,8 +23,7 @@ use predicates::prelude::*;
 use std::fs;
 use tempfile::TempDir;
 
-mod support;
-use support::assert_args_accepted;
+use crate::support::assert_args_accepted;
 
 /// Helper: Create ruchy command
 fn ruchy_cmd() -> Command {

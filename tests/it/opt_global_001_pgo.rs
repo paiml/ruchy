@@ -127,7 +127,7 @@ fn test_opt_global_001_05_benchmark_baseline() {
 fn test_opt_global_001_06_statistical_validation_baseline() {
     use std::time::Instant;
 
-    let code = include_str!("../examples/01_basics.ruchy");
+    let code = include_str!("../../examples/01_basics.ruchy");
     let mut timings = Vec::with_capacity(30);
 
     // Collect 30 runs for statistical significance
@@ -182,7 +182,7 @@ fn test_opt_global_001_07_pgo_speedup_validation() {
     let parts: Vec<&str> = baseline_data.trim().split(',').collect();
     let baseline_mean: f64 = parts[0].parse().unwrap();
 
-    let code = include_str!("../examples/01_basics.ruchy");
+    let code = include_str!("../../examples/01_basics.ruchy");
     let mut timings = Vec::with_capacity(30);
 
     // Collect 30 runs for PGO-optimized binary

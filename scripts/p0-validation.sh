@@ -21,7 +21,7 @@ NC='\033[0m' # No Color
 
 # Run P0 critical tests
 echo "📋 Running P0 Critical Features Test Suite..."
-if cargo test --test p0_critical_features 2>&1 | tee /tmp/p0_test_output.log | grep -q "test result: ok"; then
+if cargo test --test it p0_critical_features:: 2>&1 | tee /tmp/p0_test_output.log | grep -q "test result: ok"; then
     echo -e "${GREEN}✅ P0 Critical Features: PASSED${NC}"
 else
     echo -e "${RED}❌ P0 CRITICAL FAILURE DETECTED!${NC}"
@@ -38,7 +38,7 @@ fi
 # Run transpiler regression tests
 echo ""
 echo "📋 Running Transpiler Regression Tests..."
-if cargo test --test critical_transpiler_regression_test 2>&1 | grep -q "test result: ok"; then
+if cargo test --test it critical_transpiler_regression_test:: 2>&1 | grep -q "test result: ok"; then
     echo -e "${GREEN}✅ Transpiler Regression Tests: PASSED${NC}"
 else
     echo -e "${RED}❌ TRANSPILER REGRESSION DETECTED!${NC}"

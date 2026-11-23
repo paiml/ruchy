@@ -59,7 +59,7 @@ FAILED=0
 # 1. Full Memory Model Test Suite (~1s)
 echo "💾 Running memory model E2E tests..."
 START=$(date +%s)
-if cargo test --test wasm_memory_model 2>&1 | grep -q "17 passed"; then
+if cargo test --test it wasm_memory_model:: 2>&1 | grep -q "17 passed"; then
     END=$(date +%s)
     DURATION=$((END - START))
     echo -e "${GREEN}✅ Memory model tests: 17/17 passed (${DURATION}s)${NC}"
@@ -71,7 +71,7 @@ fi
 # 2. Full Property Test Suite (~8s)
 echo "🔬 Running property tests..."
 START=$(date +%s)
-if cargo test --test wasm_memory_property_tests 2>&1 | tee /tmp/property_test_output.txt | grep -q "test result: ok"; then
+if cargo test --test it wasm_memory_property_tests:: 2>&1 | tee /tmp/property_test_output.txt | grep -q "test result: ok"; then
     END=$(date +%s)
     DURATION=$((END - START))
     PASSED=$(grep -oE '[0-9]+ passed' /tmp/property_test_output.txt | head -1 | grep -oE '[0-9]+')
@@ -164,7 +164,7 @@ fi
 # 6. Test Coverage Report (optional, if llvm-cov available)
 if command -v cargo-llvm-cov &> /dev/null; then
     echo "📊 Generating coverage report..."
-    COVERAGE=$(cargo llvm-cov --test wasm_memory_model --test wasm_memory_property_tests --summary-only 2>&1 | grep -oE '[0-9]+\.[0-9]+%' | head -1 || echo "N/A")
+    COVERAGE=$(cargo llvm-cov --test it --summary-only 2>&1 | grep -oE '[0-9]+\.[0-9]+%' | head -1 || echo "N/A")
     echo -e "${BLUE}ℹ️  Coverage: $COVERAGE${NC}"
 fi
 

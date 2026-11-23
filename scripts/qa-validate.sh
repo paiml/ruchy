@@ -72,7 +72,7 @@ else
     run_check "Frontend Syntax (fallback)" 10 "cargo test frontend --lib --quiet"
 fi
 
-run_check "Complex enum matches (#87)" 5 "cargo test --test regression_087_complex_enum_matches --quiet"
+run_check "Complex enum matches (#87)" 5 "cargo test --test it regression_087_complex_enum_matches:: --quiet"
 
 # --- Section 2: Type System (10 pts) ---
 section_header 2 "Type System"
@@ -83,8 +83,8 @@ run_check "Basic Type Check CLI" 5 "cargo run --bin ruchy -- check examples/01_b
 
 # --- Section 3: Module System (10 pts) ---
 section_header 3 "Module System"
-run_check "Module Imports (#103)" 5 "cargo test --test issue_103_compile_macros_modules --quiet"
-run_check "External Modules (#106)" 5 "cargo test --test issue_106_mod_declarations --quiet"
+run_check "Module Imports (#103)" 5 "cargo test --test it issue_103_compile_macros_modules:: --quiet"
+run_check "External Modules (#106)" 5 "cargo test --test it issue_106_mod_declarations:: --quiet"
 
 # --- Section 4: Transpiler (15 pts) ---
 section_header 4 "Transpiler"

@@ -261,6 +261,8 @@ include = [
 ]
 
 autobins = false
+# DIET-001 (#317): one integration-test binary (tests/it) instead of ~470.
+autotests = false
 
 [[bin]]
 name = "ruchy"
@@ -270,6 +272,15 @@ required-features = ["repl"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[[test]]
+name = "it"
+path = "tests/it/main.rs"
+
+# Kept separate: CI (.github/workflows/ci.yml) runs it by name (--test readme_contract).
+[[test]]
+name = "readme_contract"
+path = "tests/readme_contract.rs"
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false
@@ -518,6 +529,7 @@ harness = false
 # ⚡ [BUILD-TIME-002] Dev Profile Optimization (same strategy as test profile)
 # CRITICAL: Reduces cargo build from slow to fast with parallel compilation
 [profile.dev]
+debug = "line-tables-only"
 opt-level = 0              # No optimization for dev builds (faster compile)
 lto = false                # Disable link-time optimization (faster linking)
 codegen-units = 256        # ← CRITICAL: Maximum parallelization!
@@ -527,10 +539,14 @@ incremental = true         # ← CRITICAL: Reuse previous builds!
 # CRITICAL: Reduces test compilation from 10+ minutes to ~1-2 minutes
 # Strategy: Maximum parallelization + incremental compilation
 [profile.test]
+debug = "line-tables-only"
 opt-level = 0              # No optimization for test code (faster compile)
 lto = false                # Disable link-time optimization (faster linking)
 codegen-units = 256        # ← CRITICAL: Maximum parallelization!
 incremental = true         # ← CRITICAL: Reuse previous builds!
+
+[profile.dev.package."*"]
+debug = false
 
 [profile.test.package."*"]
 opt-level = 0              # No optimization for dependencies in tests

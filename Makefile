@@ -1387,16 +1387,16 @@ test-lang-comp:
 	@echo ""
 	@echo "Key validations: REPL via 'ruchy -e', WASM with simple code"
 	@echo ""
-	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test lang_comp_suite
+	@env PROPTEST_CASES=25 QUICKCHECK_TESTS=25 cargo test --test it lang_comp_suite::
 	@echo ""
 	@echo "=========================================="
 	@echo "✅ All 15-tool validation tests passed!"
 	@echo ""
 	@echo "📊 To run individual LANG-COMP modules:"
-	@echo "  • cargo test --test lang_comp_suite data_structures"
-	@echo "  • cargo test --test lang_comp_suite type_annotations"
-	@echo "  • cargo test --test lang_comp_suite methods"
-	@echo "  • cargo test --test lang_comp_suite pattern_matching"
+	@echo "  • cargo test --test it lang_comp_suite::lang_comp::data_structures"
+	@echo "  • cargo test --test it lang_comp_suite::lang_comp::type_annotations"
+	@echo "  • cargo test --test it lang_comp_suite::lang_comp::methods"
+	@echo "  • cargo test --test it lang_comp_suite::lang_comp::pattern_matching"
 
 # ====================================================================
 # MUTATION TESTING (Sprint 8 - Empirical Test Quality Validation)

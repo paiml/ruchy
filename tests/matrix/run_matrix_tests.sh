@@ -35,7 +35,7 @@ echo ""
 
 # Run all native matrix tests
 echo "Running Matrix Test 001: Simple Arithmetic..."
-if cargo test --test matrix_001_simple_arithmetic_native -- --test-threads=1 2>&1 | tee /tmp/matrix_001_output.txt; then
+if cargo test --test it matrix_001_simple_arithmetic_native:: -- --test-threads=1 2>&1 | tee /tmp/matrix_001_output.txt; then
     echo -e "${GREEN}✅ Matrix 001 PASSED${NC}"
     TEST_001_PASSED=$(grep -o '[0-9]* passed' /tmp/matrix_001_output.txt | awk '{print $1}' || echo "0")
     PASSED_TESTS=$((PASSED_TESTS + TEST_001_PASSED))
@@ -47,7 +47,7 @@ fi
 
 echo ""
 echo "Running Matrix Test 002: CSV Processing Workflow..."
-if cargo test --test matrix_002_csv_workflow_native -- --test-threads=1 2>&1 | tee /tmp/matrix_002_output.txt; then
+if cargo test --test it matrix_002_csv_workflow_native:: -- --test-threads=1 2>&1 | tee /tmp/matrix_002_output.txt; then
     echo -e "${GREEN}✅ Matrix 002 PASSED${NC}"
     TEST_002_PASSED=$(grep -o '[0-9]* passed' /tmp/matrix_002_output.txt | awk '{print $1}' || echo "0")
     PASSED_TESTS=$((PASSED_TESTS + TEST_002_PASSED))
@@ -59,7 +59,7 @@ fi
 
 echo ""
 echo "Running Matrix Test 003: Statistical Analysis..."
-if cargo test --test matrix_003_statistical_analysis_native -- --test-threads=1 2>&1 | tee /tmp/matrix_003_output.txt; then
+if cargo test --test it matrix_003_statistical_analysis_native:: -- --test-threads=1 2>&1 | tee /tmp/matrix_003_output.txt; then
     echo -e "${GREEN}✅ Matrix 003 PASSED${NC}"
     TEST_003_PASSED=$(grep -o '[0-9]* passed' /tmp/matrix_003_output.txt | awk '{print $1}' || echo "0")
     PASSED_TESTS=$((PASSED_TESTS + TEST_003_PASSED))
@@ -71,7 +71,7 @@ fi
 
 echo ""
 echo "Running Matrix Test 004: Time Series Analysis..."
-if cargo test --test matrix_004_time_series_native -- --test-threads=1 2>&1 | tee /tmp/matrix_004_output.txt; then
+if cargo test --test it matrix_004_time_series_native:: -- --test-threads=1 2>&1 | tee /tmp/matrix_004_output.txt; then
     echo -e "${GREEN}✅ Matrix 004 PASSED${NC}"
     TEST_004_PASSED=$(grep -o '[0-9]* passed' /tmp/matrix_004_output.txt | awk '{print $1}' || echo "0")
     PASSED_TESTS=$((PASSED_TESTS + TEST_004_PASSED))
@@ -108,7 +108,7 @@ else
     echo ""
     echo "🔍 Debugging Tips:"
     echo "  1. Check test output above for specific failures"
-    echo "  2. Run individual test: cargo test --test matrix_001_simple_arithmetic_native <test_name>"
+    echo "  2. Run individual test: cargo test --test it matrix_001_simple_arithmetic_native:: <test_name>"
     echo "  3. Use --nocapture for detailed output: cargo test -- --nocapture"
     exit 1
 fi
