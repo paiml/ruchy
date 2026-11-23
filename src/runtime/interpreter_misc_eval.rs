@@ -88,6 +88,10 @@ pub(crate) fn eval_misc_expr(
         ExprKind::ListComprehension { element, clauses } => {
             eval_list_comprehension(interp, element, clauses)
         }
+        // Set comprehension: {expr for x in iter if cond}
+        ExprKind::SetComprehension { element, clauses } => {
+            eval_set_comprehension(interp, element, clauses)
+        }
         // ── Ruchy 5.0 Sovereign Platform expressions ──
         // Yield: coroutine suspension — currently returns value or Nil
         ExprKind::Yield { value } => {
@@ -631,6 +635,26 @@ pub(crate) fn eval_list_comprehension(
     let mut results = Vec::new();
     eval_comprehension_clauses(interp, &mut results, element, clauses, 0)?;
     Ok(Value::Array(Arc::from(results)))
+}
+
+/// Evaluate a set comprehension (SETCOMP-1).
+///
+/// The runtime has no set Value, so a set is a `Value::Array` deduplicated by
+/// `Value` equality, keeping first-occurrence order.
+pub(crate) fn eval_set_comprehension(
+    interp: &mut Interpreter,
+    element: &Expr,
+    clauses: &[ComprehensionClause],
+) -> Result<Value, InterpreterError> {
+    let mut results = Vec::new();
+    eval_comprehension_clauses(interp, &mut results, element, clauses, 0)?;
+    let mut unique: Vec<Value> = Vec::with_capacity(results.len());
+    for v in results {
+        if !unique.contains(&v) {
+            unique.push(v);
+        }
+    }
+    Ok(Value::Array(Arc::from(unique)))
 }
 
 /// Recursively process comprehension clauses
