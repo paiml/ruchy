@@ -1,9 +1,9 @@
 # Rustfmt configuration
 # `ignore` requires nightly — CI must use `cargo +nightly fmt`
 ignore = [
-    "tests/issue_119_property_tests.rs",
-    "tests/issue_128_property_tests.rs",
-    "tests/issue_131_property_tests.rs",
-    "tests/property_enum_cast.rs",
-    "tests/wasm_memory_property_tests.rs",
+    "tests/it/issue_119_property_tests.rs",
+    "tests/it/issue_128_property_tests.rs",
+    "tests/it/issue_131_property_tests.rs",
+    "tests/it/property_enum_cast.rs",
+    "tests/it/wasm_memory_property_tests.rs",
 ]
