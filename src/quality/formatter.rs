@@ -301,8 +301,12 @@ impl Formatter {
             ExprKind::Literal(lit) => self.format_literal_expr(lit),
             ExprKind::Identifier(name) => name.clone(),
             ExprKind::Let {
-                name, value, body, ..
-            } => self.format_let_expr(name, value, body, indent),
+                name,
+                value,
+                body,
+                is_mutable,
+                ..
+            } => self.format_let_expr(name, value, body, *is_mutable, indent),
             ExprKind::Block(exprs) => self.format_block_expr(exprs, indent_str, indent),
             ExprKind::Function {
                 name,
@@ -772,7 +776,15 @@ impl Formatter {
         }
     }
 
-    fn format_let_expr(&self, name: &str, value: &Expr, body: &Expr, indent: usize) -> String {
+    fn format_let_expr(
+        &self,
+        name: &str,
+        value: &Expr,
+        body: &Expr,
+        is_mutable: bool,
+        indent: usize,
+    ) -> String {
+        let kw = if is_mutable { "let mut" } else { "let" };
         // FIX: QUALITY-FORMATTER-002 (GitHub Issue #64)
         let is_sequential_statement = matches!(
             body.kind,
@@ -784,7 +796,7 @@ impl Formatter {
         );
 
         if is_sequential_statement {
-            let mut result = format!("let {} = {}", name, self.format_expr(value, indent));
+            let mut result = format!("{} {} = {}", kw, name, self.format_expr(value, indent));
             if let ExprKind::Block(body_exprs) = &body.kind {
                 let indent_str = if self.config.use_tabs {
                     "\t".repeat(indent)
@@ -813,7 +825,8 @@ impl Formatter {
             result
         } else {
             format!(
-                "let {} = {} in {}",
+                "{} {} = {} in {}",
+                kw,
                 name,
                 self.format_expr(value, indent),
                 self.format_expr(body, indent)
