@@ -17,6 +17,28 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 
 impl Transpiler {
+    /// Rust lifetime token (`'name`) for a loop label; accepts `name` or `'name`.
+    pub(in crate::backend::transpiler) fn label_lifetime(label: &str) -> TokenStream {
+        let name = label.strip_prefix('\'').unwrap_or(label);
+        let lt = syn::Lifetime::new(&format!("'{name}"), proc_macro2::Span::call_site());
+        quote! { #lt }
+    }
+
+    /// Prefix a loop with its label (`'outer: for ...`) when one is present.
+    pub(in crate::backend::transpiler) fn with_loop_label(
+        label: Option<&String>,
+        loop_tokens: Result<TokenStream>,
+    ) -> Result<TokenStream> {
+        let tokens = loop_tokens?;
+        Ok(match label {
+            Some(l) if !l.is_empty() => {
+                let lt = Self::label_lifetime(l);
+                quote! { #lt : #tokens }
+            }
+            _ => tokens,
+        })
+    }
+
     /// Transpiles if expressions with optional else branch
     /// Complexity: 7 (within Toyota Way limits)
     pub fn transpile_if(
@@ -475,5 +497,42 @@ mod tests {
         let _ = transpiler.transpile_while(&cond, &body);
         // Context should be restored after transpilation
         assert!(!transpiler.in_loop_context.get());
+    }
+
+    /// Issue #255: loop labels must survive transpilation (`'outer: for` ... `break 'outer`).
+    #[test]
+    fn test_labeled_loops_keep_label_and_break_lifetime() {
+        use crate::frontend::parser::Parser;
+        let src = "'outer: for i in 0..3 { for j in 0..3 { if j == 1 { break 'outer } } }";
+        let ast = Parser::new(src).parse().expect("parse");
+        let out = Transpiler::new()
+            .transpile_to_string(&ast)
+            .expect("transpile");
+        let flat: String = out.split_whitespace().collect::<Vec<_>>().join(" ");
+        assert!(
+            flat.contains("'outer : for") || flat.contains("'outer: for"),
+            "{flat}"
+        );
+        assert!(flat.contains("break 'outer"), "{flat}");
+    }
+
+    #[test]
+    fn test_labeled_while_and_loop_continue() {
+        use crate::frontend::parser::Parser;
+        let src = "'a: while true { 'b: loop { continue 'a } }";
+        let ast = Parser::new(src).parse().expect("parse");
+        let out = Transpiler::new()
+            .transpile_to_string(&ast)
+            .expect("transpile");
+        let flat: String = out.split_whitespace().collect::<Vec<_>>().join(" ");
+        assert!(
+            flat.contains("'a : while") || flat.contains("'a: while"),
+            "{flat}"
+        );
+        assert!(
+            flat.contains("'b : loop") || flat.contains("'b: loop"),
+            "{flat}"
+        );
+        assert!(flat.contains("continue 'a"), "{flat}");
     }
 }

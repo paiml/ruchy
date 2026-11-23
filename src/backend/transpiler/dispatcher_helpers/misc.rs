@@ -4,7 +4,7 @@ use super::super::Transpiler;
 use crate::frontend::ast::{Expr, ExprKind};
 use anyhow::{bail, Result};
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 
 impl Transpiler {
     pub(in crate::backend::transpiler) fn transpile_type_cast(
@@ -97,8 +97,7 @@ impl Transpiler {
 
         match label {
             Some(l) if !l.is_empty() => {
-                let label_name = l.strip_prefix('\'').unwrap_or(l);
-                let label_ident = format_ident!("{}", label_name);
+                let label_ident = Self::label_lifetime(l);
                 quote! { #keyword #label_ident }
             }
             _ => keyword,
@@ -118,13 +117,11 @@ impl Transpiler {
 
         match (label, value) {
             (Some(l), Some(v)) if !l.is_empty() => {
-                let label_name = l.strip_prefix('\'').unwrap_or(l);
-                let label_ident = format_ident!("{}", label_name);
+                let label_ident = Self::label_lifetime(l);
                 quote! { #keyword #label_ident #v }
             }
             (Some(l), None) if !l.is_empty() => {
-                let label_name = l.strip_prefix('\'').unwrap_or(l);
-                let label_ident = format_ident!("{}", label_name);
+                let label_ident = Self::label_lifetime(l);
                 quote! { #keyword #label_ident }
             }
             (_, Some(v)) => quote! { #keyword #v },
@@ -664,7 +661,9 @@ mod tests {
         let result_str = result.to_string();
         assert!(result_str.contains("break"));
         assert!(result_str.contains("loop"));
-        assert!(!result_str.contains("'loop")); // Apostrophe should be stripped
+        // Rust requires the lifetime form: exactly one apostrophe (#255)
+        assert!(result_str.contains("loop") && !result_str.contains("''loop"));
+        assert!(result_str.contains("'loop") || result_str.contains("' loop"));
     }
 
     // Test 39: make_break_continue - label without apostrophe prefix

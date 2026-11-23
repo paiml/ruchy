@@ -89,15 +89,20 @@ impl Transpiler {
             } => self.transpile_if(condition, then_branch, else_branch.as_deref()),
             ExprKind::Match { expr, arms } => self.transpile_match(expr, arms),
             ExprKind::For {
+                label,
                 var,
                 pattern,
                 iter,
                 body,
-                ..
-            } => self.transpile_for(var, pattern.as_ref(), iter, body),
+            } => Self::with_loop_label(
+                label.as_ref(),
+                self.transpile_for(var, pattern.as_ref(), iter, body),
+            ),
             ExprKind::While {
-                condition, body, ..
-            } => self.transpile_while(condition, body),
+                condition,
+                body,
+                label,
+            } => Self::with_loop_label(label.as_ref(), self.transpile_while(condition, body)),
             ExprKind::IfLet {
                 pattern,
                 expr,
@@ -105,12 +110,17 @@ impl Transpiler {
                 else_branch,
             } => self.transpile_if_let(pattern, expr, then_branch, else_branch.as_deref()),
             ExprKind::WhileLet {
+                label,
                 pattern,
                 expr,
                 body,
-                ..
-            } => self.transpile_while_let(pattern, expr, body),
-            ExprKind::Loop { body, .. } => self.transpile_loop(body),
+            } => Self::with_loop_label(
+                label.as_ref(),
+                self.transpile_while_let(pattern, expr, body),
+            ),
+            ExprKind::Loop { body, label } => {
+                Self::with_loop_label(label.as_ref(), self.transpile_loop(body))
+            }
             ExprKind::TryCatch {
                 try_block,
                 catch_clauses,
