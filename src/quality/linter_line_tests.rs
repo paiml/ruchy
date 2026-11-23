@@ -80,3 +80,48 @@ fn linter_stays_send_and_sync() {
     fn assert_send_sync<T: Send + Sync>() {}
     assert_send_sync::<Linter>();
 }
+
+// Unused parameters of named functions and impl methods (#311).
+fn unused_params(src: &str) -> Vec<String> {
+    let mut v: Vec<String> = findings(src)
+        .into_iter()
+        .filter(|i| i.rule == "unused_parameter")
+        .map(|i| i.name)
+        .collect();
+    v.sort();
+    v
+}
+
+#[test]
+fn unused_param_of_named_fun_is_reported() {
+    let src = "fun add(a, b) {\n    a\n}\nprintln(add(1, 2))\n";
+    assert_eq!(unused_params(src), vec!["b".to_string()]);
+}
+
+#[test]
+fn unused_param_of_impl_method_is_reported() {
+    let src = "struct Foo { v: i32 }\nimpl Foo {\n    fun go(self, unused_m, used_m) {\n        used_m\n    }\n}\n";
+    assert_eq!(unused_params(src), vec!["unused_m".to_string()]);
+}
+
+#[test]
+fn underscore_and_self_params_stay_silent() {
+    let src = "fun f(_skip, _other) {\n    1\n}\nprintln(f(1, 2))\n";
+    assert!(unused_params(src).is_empty());
+}
+
+#[test]
+fn param_used_only_in_nested_closure_counts_as_used() {
+    let src = "fun f(x) {\n    let g = |y| x + y\n    g(1)\n}\nprintln(f(1))\n";
+    assert!(unused_params(src).is_empty());
+}
+
+#[test]
+fn unused_params_respect_rule_selection() {
+    let src = "fun add(a, b) {\n    a\n}\nprintln(add(1, 2))\n";
+    let ast = Parser::new(src).parse().expect("parse");
+    let mut linter = Linter::new();
+    linter.set_rules("unused_variable");
+    let all = linter.lint(&ast, src).expect("lint");
+    assert!(all.iter().all(|i| i.rule != "unused_parameter"), "{all:?}");
+}
