@@ -1121,21 +1121,43 @@ fn check_complexity_gate(ast: &ruchy::frontend::ast::Expr) -> (bool, String) {
 }
 /// Check for SATD comments
 fn check_satd_gate(source: &str) -> (bool, String) {
-    let has_satd = source.lines().any(contains_satd_comment);
-    if has_satd {
-        (false, "❌ Contains SATD comments".to_string())
+    let hit = source
+        .lines()
+        .enumerate()
+        .find(|(_, l)| contains_satd_comment(l));
+    if let Some((idx, _)) = hit {
+        (
+            false,
+            format!("❌ Contains SATD comments (first at line {})", idx + 1),
+        )
     } else {
         (true, "✅ No SATD comments".to_string())
     }
 }
-/// Check if line contains SATD comment
-fn contains_satd_comment(line: &str) -> bool {
-    if let Some(comment_pos) = line.find("//") {
-        let comment = &line[comment_pos..];
-        comment.contains("TODO") || comment.contains("FIXME") || comment.contains("HACK")
-    } else {
-        false
+/// Byte offset of the first `//` that is outside a string literal
+fn line_comment_start(line: &str) -> Option<usize> {
+    let bytes = line.as_bytes();
+    let mut in_str = false;
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\\' if in_str => i += 1,
+            b'"' => in_str = !in_str,
+            b'/' if !in_str && bytes.get(i + 1) == Some(&b'/') => return Some(i),
+            _ => {}
+        }
+        i += 1;
     }
+    None
+}
+/// Check if line contains SATD comment (whole-word marker in a real `//` comment)
+fn contains_satd_comment(line: &str) -> bool {
+    let Some(pos) = line_comment_start(line) else {
+        return false;
+    };
+    line[pos..]
+        .split(|c: char| !c.is_alphanumeric() && c != '_')
+        .any(|w| matches!(w, "TODO" | "FIXME" | "HACK"))
 }
 /// Format gate results as JSON or text
 fn format_gate_results(passed: bool, results: &[String], json: bool) -> Result<String> {
