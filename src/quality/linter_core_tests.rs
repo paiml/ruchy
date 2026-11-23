@@ -435,8 +435,10 @@ fn test_lint_function_definition() {
     let issues = linter
         .lint(&expr, "fn test_func(x) { 42 }")
         .expect("operation should succeed in test");
-    // Parameters are not flagged as unused in function scope analysis
-    assert!(!issues.iter().any(|i| i.rule == "unused_parameter"));
+    // #311: an unused parameter of a named function is reported
+    assert!(issues
+        .iter()
+        .any(|i| i.rule == "unused_parameter" && i.name == "x"));
 }
 #[test]
 fn test_lint_function_unused_local_variable() {

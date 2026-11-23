@@ -73,6 +73,21 @@ impl Scope {
             },
         );
     }
+    /// Copy `used` flags set in a child scope's parent chain back into this scope.
+    fn absorb_used(&mut self, child_parent: &Scope) {
+        for (n, info) in &child_parent.variables {
+            if info.used {
+                if let Some(mine) = self.variables.get_mut(n) {
+                    mine.used = true;
+                }
+            }
+        }
+        if let (Some(mine), Some(theirs)) =
+            (self.parent.as_deref_mut(), child_parent.parent.as_deref())
+        {
+            mine.absorb_used(theirs);
+        }
+    }
     fn mark_used(&mut self, name: &str) -> bool {
         if let Some(info) = self.variables.get_mut(name) {
             info.used = true;
@@ -398,6 +413,19 @@ impl Linter {
             ExprKind::StringInterpolation { parts } => {
                 self.analyze_string_interpolation(parts, scope, issues);
             }
+            ExprKind::Impl { methods, .. } => {
+                for m in methods {
+                    let mut ms = Scope::with_parent(scope.clone());
+                    for param in &m.params {
+                        Self::extract_param_bindings(&param.pattern, param.span.start, &mut ms);
+                    }
+                    self.analyze_expr(&m.body, &mut ms, issues);
+                    if let Some(p) = ms.parent.as_deref() {
+                        scope.absorb_used(p);
+                    }
+                    self.check_unused_in_scope(&ms, issues);
+                }
+            }
             ExprKind::Lambda { params, body, .. } => {
                 self.analyze_lambda_expr(params, body, scope, issues);
             }
@@ -530,15 +558,10 @@ impl Linter {
             Self::extract_param_bindings(&param.pattern, param.span.start, &mut func_scope);
         }
         self.analyze_expr(body, &mut func_scope, issues);
-        for (n, info) in &func_scope.variables {
-            if !info.used && matches!(info.var_type, VarType::Local) {
-                issues.push(Self::create_unused_issue(
-                    n,
-                    info.var_type.clone(),
-                    info.defined_at,
-                ));
-            }
+        if let Some(p) = func_scope.parent.as_deref() {
+            scope.absorb_used(p);
         }
+        self.check_unused_in_scope(&func_scope, issues);
     }
 
     fn analyze_for_expr(
@@ -641,6 +664,9 @@ impl Linter {
             Self::extract_param_bindings(&param.pattern, param.span.start, &mut lambda_scope);
         }
         self.analyze_expr(body, &mut lambda_scope, issues);
+        if let Some(p) = lambda_scope.parent.as_deref() {
+            scope.absorb_used(p);
+        }
         self.check_unused_in_scope(&lambda_scope, issues);
     }
     fn extract_loop_bindings(pattern: &Pattern, offset: usize, scope: &mut Scope) {
@@ -764,7 +790,10 @@ impl Linter {
                     VarType::TypeName => false, // Issue #107: Type names not checked
                 };
 
-                if should_check {
+                if should_check
+                    && !(matches!(info.var_type, VarType::Parameter)
+                        && (name == "self" || name.starts_with('_')))
+                {
                     issues.push(Self::create_unused_issue(
                         name,
                         info.var_type.clone(),
