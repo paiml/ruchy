@@ -965,3 +965,25 @@ fn test_quality_score_two_of_five_documented_is_penalised() {
     let score = score_of(&src);
     assert!((score - 0.85).abs() < 1e-9, "score was {score}");
 }
+
+// Refs #109: SATD gate must not flag "//" inside strings or marker substrings, and must name the line.
+#[test]
+fn test_satd_ignores_marker_inside_string_literal() {
+    assert!(!contains_satd_comment(r#"let u = "http://x/TODO";"#));
+    assert!(!contains_satd_comment(r#"let s = "// FIXME"; // fine"#));
+}
+
+#[test]
+fn test_satd_requires_word_boundary() {
+    assert!(!contains_satd_comment("// see AUTODOC and TODOS list"));
+    assert!(!contains_satd_comment("// HACKATHON notes"));
+    assert!(contains_satd_comment(r#"let s = "x"; // TODO: later"#));
+}
+
+#[test]
+fn test_satd_gate_reports_line_number() {
+    let (passed, message) = check_satd_gate("let a = 1;\nlet b = 2; // FIXME: x\n");
+    assert!(!passed);
+    assert!(message.contains("Contains SATD comments"));
+    assert!(message.contains("line 2"), "message: {message}");
+}
