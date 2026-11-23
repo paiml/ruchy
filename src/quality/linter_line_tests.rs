@@ -125,3 +125,24 @@ fn unused_params_respect_rule_selection() {
     let all = linter.lint(&ast, src).expect("lint");
     assert!(all.iter().all(|i| i.rule != "unused_parameter"), "{all:?}");
 }
+
+#[test]
+fn finding_resolves_offset_to_line_and_column() {
+    // #312: byte offsets live on a private Finding, never in LintIssue.line.
+    let src = "a\nbcd\n";
+    let issue = Finding::unused("x", VarType::Local, 4).resolve(src);
+    assert_eq!((issue.line, issue.column), (2, 3));
+    assert_eq!(issue.rule, "unused_variable");
+}
+
+#[test]
+fn finding_offset_past_end_resolves_to_real_position() {
+    let issue = Finding::undefined("y", 9999).resolve("one\ntwo");
+    assert_eq!((issue.line, issue.column), (2, 4));
+}
+
+#[test]
+fn linter_is_send_and_sync() {
+    fn assert_ss<T: Send + Sync>() {}
+    assert_ss::<Linter>();
+}

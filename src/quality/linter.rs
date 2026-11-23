@@ -165,6 +165,88 @@ fn line_and_column(source: &str, offset: usize) -> (usize, usize) {
     (line, column)
 }
 
+/// A finding as built during analysis: it carries the byte offset of its
+/// node. Private on purpose (#312): the public LintIssue is only ever
+/// constructed with a real line and column, by Finding::resolve.
+struct Finding {
+    offset: usize,
+    severity: &'static str,
+    rule: &'static str,
+    message: String,
+    suggestion: String,
+    issue_type: &'static str,
+    name: String,
+}
+
+impl Finding {
+    fn shadowing(name: &str, offset: usize) -> Self {
+        Self {
+            offset,
+            severity: "warning",
+            rule: "shadowing",
+            message: format!("variable shadowing: {name}"),
+            suggestion: format!("Consider renaming variable '{name}'"),
+            issue_type: "variable_shadowing",
+            name: name.to_string(),
+        }
+    }
+
+    fn undefined(name: &str, offset: usize) -> Self {
+        Self {
+            offset,
+            severity: "error",
+            rule: "undefined",
+            message: format!("undefined variable: {name}"),
+            suggestion: format!("Define '{name}' before using it"),
+            issue_type: "undefined_variable",
+            name: name.to_string(),
+        }
+    }
+
+    fn unused(name: &str, var_type: VarType, offset: usize) -> Self {
+        let (rule_type, message_prefix, suggestion_suffix) = match var_type {
+            VarType::Local => ("unused_variable", "unused variable", "variable"),
+            VarType::Parameter => ("unused_parameter", "unused parameter", "parameter"),
+            VarType::LoopVariable => (
+                "unused_loop_variable",
+                "unused loop variable",
+                "loop variable",
+            ),
+            VarType::MatchBinding => (
+                "unused_match_binding",
+                "unused match binding",
+                "match binding",
+            ),
+            VarType::Function => ("unused_function", "unused function", "function"),
+            VarType::TypeName => ("unused_type", "unused type", "type"),
+        };
+        Self {
+            offset,
+            severity: "warning",
+            rule: rule_type,
+            message: format!("{message_prefix}: {name}"),
+            suggestion: format!("Remove unused {suggestion_suffix}"),
+            issue_type: rule_type,
+            name: name.to_string(),
+        }
+    }
+
+    /// Convert the byte offset to a 1-based line and column.
+    fn resolve(self, source: &str) -> LintIssue {
+        let (line, column) = line_and_column(source, self.offset);
+        LintIssue {
+            line,
+            column,
+            severity: self.severity.to_string(),
+            rule: self.rule.to_string(),
+            message: self.message,
+            suggestion: self.suggestion,
+            issue_type: self.issue_type.to_string(),
+            name: self.name,
+        }
+    }
+}
+
 pub struct Linter {
     rules: Vec<LintRule>,
     strict_mode: bool,
@@ -227,7 +309,7 @@ impl Linter {
         self.strict_mode = strict;
     }
     pub fn lint(&self, ast: &Expr, source: &str) -> Result<Vec<LintIssue>> {
-        let mut issues = Vec::new();
+        let mut findings = Vec::new();
         let mut scope = Scope::new();
 
         // LINTER-086: Two-pass analysis for forward reference resolution (GitHub Issue #69)
@@ -235,14 +317,11 @@ impl Linter {
         Self::collect_definitions(ast, &mut scope);
 
         // Pass 2: Analyze the AST with variable tracking (now with complete symbol table)
-        self.analyze_expr(ast, &mut scope, &mut issues);
+        self.analyze_expr(ast, &mut scope, &mut findings);
 
         // Check for unused variables
-        self.check_unused_in_scope(&scope, &mut issues);
-        // Issues carry the byte offset of their node in `line` until here.
-        for issue in &mut issues {
-            (issue.line, issue.column) = line_and_column(source, issue.line);
-        }
+        self.check_unused_in_scope(&scope, &mut findings);
+        let mut issues: Vec<LintIssue> = findings.into_iter().map(|f| f.resolve(source)).collect();
         // Check complexity
         if self
             .rules
@@ -272,71 +351,6 @@ impl Linter {
         Ok(issues)
     }
 
-    /// Helper: Create shadowing `LintIssue` (CERTEZA-001: Reduce duplication)
-    /// Complexity: 1 (within Toyota Way limits)
-    #[inline]
-    fn create_shadowing_issue(name: &str, offset: usize) -> LintIssue {
-        LintIssue {
-            line: offset,
-            column: 0,
-            severity: "warning".to_string(),
-            rule: "shadowing".to_string(),
-            message: format!("variable shadowing: {name}"),
-            suggestion: format!("Consider renaming variable '{name}'"),
-            issue_type: "variable_shadowing".to_string(),
-            name: name.to_string(),
-        }
-    }
-
-    /// Helper: Create undefined variable `LintIssue` (CERTEZA-001: Reduce duplication)
-    /// Complexity: 1 (within Toyota Way limits)
-    #[inline]
-    fn create_undefined_variable_issue(name: &str, offset: usize) -> LintIssue {
-        LintIssue {
-            line: offset,
-            column: 0,
-            severity: "error".to_string(),
-            rule: "undefined".to_string(),
-            message: format!("undefined variable: {name}"),
-            suggestion: format!("Define '{name}' before using it"),
-            issue_type: "undefined_variable".to_string(),
-            name: name.to_string(),
-        }
-    }
-
-    /// Helper: Create unused variable/parameter/binding `LintIssue` (CERTEZA-001: Reduce duplication)
-    /// Complexity: 3 (within Toyota Way limits)
-    #[inline]
-    fn create_unused_issue(name: &str, var_type: VarType, defined_at: usize) -> LintIssue {
-        let (rule_type, message_prefix, suggestion_suffix) = match var_type {
-            VarType::Local => ("unused_variable", "unused variable", "variable"),
-            VarType::Parameter => ("unused_parameter", "unused parameter", "parameter"),
-            VarType::LoopVariable => (
-                "unused_loop_variable",
-                "unused loop variable",
-                "loop variable",
-            ),
-            VarType::MatchBinding => (
-                "unused_match_binding",
-                "unused match binding",
-                "match binding",
-            ),
-            VarType::Function => ("unused_function", "unused function", "function"),
-            VarType::TypeName => ("unused_type", "unused type", "type"),
-        };
-
-        LintIssue {
-            line: defined_at,
-            column: 0,
-            severity: "warning".to_string(),
-            rule: rule_type.to_string(),
-            message: format!("{message_prefix}: {name}"),
-            suggestion: format!("Remove unused {suggestion_suffix}"),
-            issue_type: rule_type.to_string(),
-            name: name.to_string(),
-        }
-    }
-
     /// LINTER-086: Pass 1 - Collect all function definitions for forward reference resolution
     /// Complexity: 4 (≤10 target)
     fn collect_definitions(expr: &Expr, scope: &mut Scope) {
@@ -360,7 +374,7 @@ impl Linter {
             }
         }
     }
-    fn analyze_expr(&self, expr: &Expr, scope: &mut Scope, issues: &mut Vec<LintIssue>) {
+    fn analyze_expr(&self, expr: &Expr, scope: &mut Scope, issues: &mut Vec<Finding>) {
         match &expr.kind {
             ExprKind::Let {
                 name, value, body, ..
@@ -478,7 +492,7 @@ impl Linter {
         value: &Expr,
         body: &Expr,
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         // Analyze the value first (with current scope)
         self.analyze_expr(value, scope, issues);
@@ -494,7 +508,7 @@ impl Linter {
                 .any(|r| matches!(r, LintRule::VariableShadowing))
                 && scope.is_shadowing(name)
             {
-                issues.push(Self::create_shadowing_issue(name, offset));
+                issues.push(Finding::shadowing(name, offset));
             }
             scope.define(name.to_owned(), offset, VarType::Local);
             self.analyze_expr(body, scope, issues);
@@ -507,7 +521,7 @@ impl Linter {
                 .any(|r| matches!(r, LintRule::VariableShadowing))
                 && let_scope.is_shadowing(name)
             {
-                issues.push(Self::create_shadowing_issue(name, offset));
+                issues.push(Finding::shadowing(name, offset));
             }
             let_scope.define(name.to_owned(), offset, VarType::Local);
             self.analyze_expr(body, &mut let_scope, issues);
@@ -528,7 +542,7 @@ impl Linter {
         name: &str,
         offset: usize,
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         if is_builtin(name) {
             return;
@@ -539,7 +553,7 @@ impl Linter {
                 .iter()
                 .any(|r| matches!(r, LintRule::UndefinedVariable))
         {
-            issues.push(Self::create_undefined_variable_issue(name, offset));
+            issues.push(Finding::undefined(name, offset));
         }
     }
 
@@ -550,7 +564,7 @@ impl Linter {
         params: &[crate::frontend::ast::Param],
         body: &Expr,
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         scope.define(name.to_owned(), offset, VarType::Function);
         let mut func_scope = Scope::with_parent(scope.clone());
@@ -571,7 +585,7 @@ impl Linter {
         iter: &Expr,
         body: &Expr,
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         let mut loop_scope = Scope::with_parent(scope.clone());
         if let Some(pat) = pattern {
@@ -589,7 +603,7 @@ impl Linter {
         scrutinee: &Expr,
         arms: &[crate::frontend::ast::MatchArm],
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         self.analyze_expr(scrutinee, scope, issues);
         for arm in arms {
@@ -609,7 +623,7 @@ impl Linter {
         then_branch: &Expr,
         else_branch: Option<&Expr>,
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         self.analyze_expr(condition, scope, issues);
         let mut then_scope = Scope::with_parent(scope.clone());
@@ -625,7 +639,7 @@ impl Linter {
         callee: &Expr,
         args: &[Expr],
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         self.analyze_expr(callee, scope, issues);
         for arg in args {
@@ -637,7 +651,7 @@ impl Linter {
         &self,
         parts: &[crate::frontend::ast::StringPart],
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         for part in parts {
             match part {
@@ -657,7 +671,7 @@ impl Linter {
         params: &[crate::frontend::ast::Param],
         body: &Expr,
         scope: &mut Scope,
-        issues: &mut Vec<LintIssue>,
+        issues: &mut Vec<Finding>,
     ) {
         let mut lambda_scope = Scope::with_parent(scope.clone());
         for param in params {
@@ -765,7 +779,7 @@ impl Linter {
             _ => {}
         }
     }
-    fn check_unused_in_scope(&self, scope: &Scope, issues: &mut Vec<LintIssue>) {
+    fn check_unused_in_scope(&self, scope: &Scope, issues: &mut Vec<Finding>) {
         for (name, info) in &scope.variables {
             if !info.used {
                 // Check if rule is enabled for this variable type
@@ -794,7 +808,7 @@ impl Linter {
                     && !(matches!(info.var_type, VarType::Parameter)
                         && (name == "self" || name.starts_with('_')))
                 {
-                    issues.push(Self::create_unused_issue(
+                    issues.push(Finding::unused(
                         name,
                         info.var_type.clone(),
                         info.defined_at,
