@@ -1,6 +1,6 @@
 // Code linter for Ruchy with comprehensive variable tracking
 // Toyota Way: Catch issues early through static analysis
-use crate::frontend::ast::{Expr, ExprKind, Literal, Pattern};
+use crate::frontend::ast::{Expr, ExprKind, ImplMethod, Literal, Pattern};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -411,15 +411,6 @@ impl Linter {
                 scope,
                 issues,
             ),
-            ExprKind::Block(exprs) => {
-                for e in exprs {
-                    self.analyze_expr(e, scope, issues);
-                }
-            }
-            ExprKind::Binary { left, right, .. } => {
-                self.analyze_expr(left, scope, issues);
-                self.analyze_expr(right, scope, issues);
-            }
             ExprKind::Call { func, args, .. } => self.analyze_call_expr(func, args, scope, issues),
             ExprKind::MethodCall { receiver, args, .. } => {
                 self.analyze_call_expr(receiver, args, scope, issues);
@@ -427,61 +418,56 @@ impl Linter {
             ExprKind::StringInterpolation { parts } => {
                 self.analyze_string_interpolation(parts, scope, issues);
             }
-            ExprKind::Impl { methods, .. } => {
-                for m in methods {
-                    let mut ms = Scope::with_parent(scope.clone());
-                    for param in &m.params {
-                        Self::extract_param_bindings(&param.pattern, param.span.start, &mut ms);
-                    }
-                    self.analyze_expr(&m.body, &mut ms, issues);
-                    if let Some(p) = ms.parent.as_deref() {
-                        scope.absorb_used(p);
-                    }
-                    self.check_unused_in_scope(&ms, issues);
-                }
-            }
+            ExprKind::Impl { methods, .. } => self.analyze_impl_methods(methods, scope, issues),
             ExprKind::Lambda { params, body, .. } => {
                 self.analyze_lambda_expr(params, body, scope, issues);
             }
-            ExprKind::Return { value } => {
-                if let Some(e) = value {
-                    self.analyze_expr(e, scope, issues);
-                }
+            ExprKind::Enum { name, .. } | ExprKind::Struct { name, .. } => {
+                scope.define(name.clone(), expr.span.start, VarType::TypeName);
             }
-            ExprKind::List(exprs) | ExprKind::Tuple(exprs) => {
-                for e in exprs {
-                    self.analyze_expr(e, scope, issues);
-                }
+            _ => self.analyze_children(&expr.kind, scope, issues),
+        }
+    }
+
+    /// Analyze each method of an impl block in its own child scope.
+    fn analyze_impl_methods(
+        &self,
+        methods: &[ImplMethod],
+        scope: &mut Scope,
+        issues: &mut Vec<Finding>,
+    ) {
+        for m in methods {
+            let mut ms = Scope::with_parent(scope.clone());
+            for param in &m.params {
+                Self::extract_param_bindings(&param.pattern, param.span.start, &mut ms);
             }
-            ExprKind::FieldAccess { object, .. } => {
-                self.analyze_expr(object, scope, issues);
+            self.analyze_expr(&m.body, &mut ms, issues);
+            if let Some(p) = ms.parent.as_deref() {
+                scope.absorb_used(p);
             }
-            ExprKind::IndexAccess { object, index } => {
-                self.analyze_expr(object, scope, issues);
-                self.analyze_expr(index, scope, issues);
+            self.check_unused_in_scope(&ms, issues);
+        }
+    }
+
+    /// Analyze the sub-expressions of node kinds that only recurse, in source order.
+    fn analyze_children(&self, kind: &ExprKind, scope: &mut Scope, issues: &mut Vec<Finding>) {
+        let children: Vec<&Expr> = match kind {
+            ExprKind::Block(exprs) | ExprKind::List(exprs) | ExprKind::Tuple(exprs) => {
+                exprs.iter().collect()
             }
+            ExprKind::MacroInvocation { args, .. } => args.iter().collect(),
+            ExprKind::Binary { left, right, .. } => vec![left, right],
+            ExprKind::Return { value } => value.iter().map(|e| e.as_ref()).collect(),
+            ExprKind::FieldAccess { object, .. } => vec![object],
+            ExprKind::IndexAccess { object, index } => vec![object, index],
             ExprKind::While {
                 condition, body, ..
-            } => {
-                self.analyze_expr(condition, scope, issues);
-                self.analyze_expr(body, scope, issues);
-            }
-            ExprKind::Assign { target, value, .. } => {
-                self.analyze_expr(target, scope, issues);
-                self.analyze_expr(value, scope, issues);
-            }
-            ExprKind::MacroInvocation { args, .. } => {
-                for arg in args {
-                    self.analyze_expr(arg, scope, issues);
-                }
-            }
-            ExprKind::Enum { name, .. } => {
-                scope.define(name.clone(), expr.span.start, VarType::TypeName);
-            }
-            ExprKind::Struct { name, .. } => {
-                scope.define(name.clone(), expr.span.start, VarType::TypeName);
-            }
-            _ => {}
+            } => vec![condition, body],
+            ExprKind::Assign { target, value, .. } => vec![target, value],
+            _ => Vec::new(),
+        };
+        for child in children {
+            self.analyze_expr(child, scope, issues);
         }
     }
 
