@@ -363,7 +363,7 @@ regex = "1.11"
 # DataFrame support
 polars = { version = "0.55", default-features = false, features = ["lazy"], optional = true }
 polars-io = { version = "0.55", default-features = false, features = ["csv"], optional = true }
-arrow = { version = "54.0", optional = true }
+arrow = { version = "57.3", optional = true }
 # WebAssembly support
 uuid = { version = "1.18", features = ["v4", "js"] }
 # JIT Compilation (optional for minimal builds) - JIT-001 P0-CRITICAL
