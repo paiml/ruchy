@@ -17,12 +17,19 @@ use std::sync::Arc;
 // Recursion Depth Tracking ([RUNTIME-001] Fix)
 // ============================================================================
 
+/// Native stack budget for nested calls (BUG-004, #123): 87% of a 2MB test-thread
+/// stack, so deep recursion returns an error instead of aborting with SIGSEGV.
+const MAX_NATIVE_STACK_BYTES: usize = 7 * 256 * 1024;
+
 thread_local! {
     /// Current recursion depth for this thread
     static CALL_DEPTH: Cell<usize> = const { Cell::new(0) };
 
     /// Maximum allowed recursion depth for this thread
     static MAX_DEPTH: Cell<usize> = const { Cell::new(1000) };
+
+    /// Address of a local at depth 0, to measure native stack use (0 = unset)
+    static STACK_BASE: Cell<usize> = const { Cell::new(0) };
 }
 
 /// Set the maximum recursion depth limit
@@ -54,6 +61,18 @@ pub fn get_current_depth() -> usize {
 pub fn check_recursion_depth() -> Result<(), InterpreterError> {
     CALL_DEPTH.with(|depth| {
         let current = depth.get();
+        let marker = 0u8;
+        let here = std::ptr::addr_of!(marker) as usize;
+        if current == 0 {
+            STACK_BASE.with(|b| b.set(here));
+        }
+        let used = STACK_BASE.with(|b| b.get()).saturating_sub(here);
+        if used > MAX_NATIVE_STACK_BYTES {
+            return Err(InterpreterError::RecursionLimitExceeded(
+                current,
+                MAX_DEPTH.with(Cell::get),
+            ));
+        }
         MAX_DEPTH.with(|max| {
             let max_val = max.get();
             if current >= max_val {

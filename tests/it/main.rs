@@ -4,6 +4,7 @@
 mod array_each_method;
 mod book_compat_001_lifetime_annotations;
 mod bug_003_array_index_assignment;
+mod bug_004_recursion_depth_50;
 mod bug_031_fmt_corruption;
 mod bug_032_range_function_not_transpiled;
 mod bug_033_test_attribute_invalid_rust;
