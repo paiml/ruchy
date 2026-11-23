@@ -388,6 +388,10 @@ impl Interpreter {
                         drop(obj); // Release borrow before recursive call
                         return self.eval_file_method_mut(cell_rc, base_method, arg_values);
                     }
+                    if type_name.as_ref() == "HashMap" {
+                        drop(obj);
+                        return Self::eval_hashmap_method_mut(cell_rc, base_method, arg_values);
+                    }
                     drop(obj); // Release borrow before recursive call
                     self.eval_object_method_mut(cell_rc, base_method, arg_values, args_empty)
                 } else {

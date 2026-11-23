@@ -226,6 +226,11 @@ impl Interpreter {
                 // DataFrame field access (df.column_name returns column as array)
                 Self::index_dataframe_column(columns, field)
             }
+            // Issue #251: `HashMap::new` parses as a field access on the builtin
+            // `HashMap` constructor value; resolve it like the qualified name.
+            Value::String(ref s) if field == "new" && s.as_ref() == "__builtin_hashmap__" => {
+                self.eval_qualified_name("HashMap", "new")
+            }
             _ => Err(InterpreterError::RuntimeError(format!(
                 "Cannot access field '{}' on type {}",
                 field,

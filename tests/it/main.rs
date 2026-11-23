@@ -168,6 +168,7 @@ mod issue_155_vec_syntax;
 mod issue_163_windows_line_endings;
 mod issue_168_hexadecimal;
 mod issue_250_interp_instant;
+mod issue_251_interp_hashmap_new;
 mod jit_002_control_flow;
 mod jit_003_operators;
 mod jit_004_logical_operators;
