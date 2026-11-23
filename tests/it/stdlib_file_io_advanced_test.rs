@@ -10,8 +10,8 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-use std::io::Write;
 use crate::support::assert_args_accepted;
+use std::io::Write;
 use tempfile::{NamedTempFile, TempDir};
 
 fn ruchy_cmd() -> Command {

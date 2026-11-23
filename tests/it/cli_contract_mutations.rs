@@ -20,8 +20,8 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-use std::fs;
 use crate::support::assert_args_accepted;
+use std::fs;
 use tempfile::TempDir;
 
 /// Helper: Create ruchy command
