@@ -276,6 +276,23 @@ pub(crate) fn eval_command_new(args: &[Value]) -> Result<Value, InterpreterError
 // String Functions (REGRESSION-077, Issue #77)
 // ============================================================================
 
+/// `HashMap::new()` for the interpreter (Issue #251): a mutable, typed map object.
+pub(crate) fn try_eval_hashmap_function(
+    name: &str,
+    args: &[Value],
+) -> Result<Option<Value>, InterpreterError> {
+    if name != "__builtin_hashmap__" {
+        return Ok(None);
+    }
+    validate_arg_count("HashMap::new", args, 0)?;
+    let mut map = HashMap::new();
+    map.insert(
+        "__type".to_string(),
+        Value::from_string("HashMap".to_string()),
+    );
+    Ok(Some(Value::ObjectMut(Arc::new(std::sync::Mutex::new(map)))))
+}
+
 /// String function dispatcher
 pub(crate) fn try_eval_string_function(
     name: &str,

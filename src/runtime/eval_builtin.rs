@@ -47,6 +47,7 @@ pub fn eval_builtin_function(
         try_eval_json_function,
         try_eval_file_function,
         try_eval_string_function,
+        try_eval_hashmap_function,
     ];
 
     for handler in handlers {

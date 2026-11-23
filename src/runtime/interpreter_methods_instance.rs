@@ -442,6 +442,50 @@ impl Interpreter {
         }
     }
 
+    /// Methods of the interpreter `HashMap` (Issue #251); keys are stringified.
+    pub(crate) fn eval_hashmap_method_mut(
+        cell_rc: &Arc<std::sync::Mutex<HashMap<String, Value>>>,
+        method: &str,
+        arg_values: &[Value],
+    ) -> Result<Value, InterpreterError> {
+        let mut map = cell_rc
+            .lock()
+            .expect("Mutex poisoned: hashmap lock is corrupted");
+        let key = |v: &Value| match v {
+            Value::String(s) => s.to_string(),
+            other => format!("{other}"),
+        };
+        let sorted_keys = |m: &HashMap<String, Value>| {
+            let mut ks: Vec<String> = m.keys().filter(|k| *k != "__type").cloned().collect();
+            ks.sort();
+            ks
+        };
+        match (method, arg_values) {
+            ("insert", [k, v]) => Ok(map.insert(key(k), v.clone()).unwrap_or(Value::Nil)),
+            ("get", [k]) => Ok(map.get(&key(k)).cloned().unwrap_or(Value::Nil)),
+            ("contains_key", [k]) => Ok(Value::Bool(map.contains_key(&key(k)))),
+            ("remove", [k]) => Ok(map.remove(&key(k)).unwrap_or(Value::Nil)),
+            ("len", []) => Ok(Value::Integer((map.len() - 1) as i64)),
+            ("is_empty", []) => Ok(Value::Bool(map.len() == 1)),
+            ("clear", []) => {
+                map.retain(|k, _| k == "__type");
+                Ok(Value::Nil)
+            }
+            ("keys", []) => Ok(Value::from_array(
+                sorted_keys(&map)
+                    .into_iter()
+                    .map(Value::from_string)
+                    .collect(),
+            )),
+            ("values", []) => Ok(Value::from_array(
+                sorted_keys(&map).iter().map(|k| map[k].clone()).collect(),
+            )),
+            _ => Err(InterpreterError::RuntimeError(format!(
+                "Unknown HashMap method or wrong arguments: {method}"
+            ))),
+        }
+    }
+
     pub(crate) fn eval_object_method_mut(
         &mut self,
         cell_rc: &Arc<std::sync::Mutex<std::collections::HashMap<String, Value>>>,
