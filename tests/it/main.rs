@@ -467,6 +467,7 @@ mod transpiler_type_inference_comprehensive;
 mod transpiler_types_comprehensive;
 mod try_catch_syntax_test;
 mod undefcall_1_undefined_function_errors;
+mod unsafefn_1_refuse_unsafe_fun;
 mod vm_coverage_001_005;
 mod wasm_memory_model;
 mod wasm_memory_property_tests;
