@@ -354,6 +354,7 @@ mod runtime_loop_mut_tuple_return;
 mod runtime_main_function_eval;
 mod runtime_string_nth_method;
 mod satd_zero;
+mod setcomp_1_interpreter;
 mod sovereign_binary_size_budget;
 mod sovereign_migrate_4to5_e2e;
 mod sovereign_nine_pillar_acceptance;
