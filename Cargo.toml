@@ -337,7 +337,7 @@ aprender = { version = "0.65", default-features = false }  # Pillar 4: ML
 aprender_core = { package = "aprender-core", version = "0.65", default-features = false, features = ["format-quantize", "format-signing"] }  # quantization + signing (the aprender facade cannot turn these on)
 # Optional sovereign stack extensions (enabled via `sovereign-stack` feature)
 alimentar = { version = "0.4", optional = true }        # Pillar 2: Data loading
-entrenar = { package = "aprender-train", version = "0.65", features = ["citl"], optional = true }  # CITL, training
+entrenar = { package = "aprender-train", version = "0.74", features = ["citl"], optional = true }  # CITL, training
 trueno-viz = { package = "aprender-viz", version = "0.65", optional = true }  # Pillar 5: Visualization
 presentar = { version = "0.3.4", optional = true }      # Pillar 6: Notebook widgets
 # Ruchy 5.0 Sovereign Platform pillars (optional)
