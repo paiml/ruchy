@@ -47,6 +47,7 @@ pub mod actor_concurrent;
 pub mod actor_runtime;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod async_runtime;
+pub mod audit; // REPL audit records (ported off entrenar, #329)
 pub mod bytecode; // OPT-001: Bytecode VM Foundation
 pub mod cache;
 #[cfg(not(target_arch = "wasm32"))]
@@ -180,6 +181,8 @@ pub use transaction::{
 // };
 // Export replay-to-test converter
 pub use replay_converter::{ConversionConfig, GeneratedTest, ReplayConverter, TestCategory};
+// Export REPL audit records (entrenar-free port, #329)
+pub use audit::{EvalType, ReplInputMode, ReplPath};
 
 // EXTREME TDD Round 86: Comprehensive tests extracted to separate files
 #[cfg(test)]
