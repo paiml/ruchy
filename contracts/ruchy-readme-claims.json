@@ -18,6 +18,7 @@
   "links": [
     "LICENSE",
     "contracts/ruchy-readme-v1.yaml",
+    "contracts/ruchy-readme-measured.json",
     "docs/SPECIFICATION.md",
     "docs/roadmaps/roadmap.yaml",
     "CONTRIBUTING.md",
