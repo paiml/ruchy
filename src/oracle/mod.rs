@@ -36,7 +36,6 @@
 //!
 //! # External Dependencies (§3 of spec)
 //! - `aprender`: `RandomForest`, transfer learning, `Code2Vec` embeddings, online learning
-//! - `entrenar`: CITL pattern store, knowledge distillation, Tarantula SBFL
 //!
 //! # Migration Note (Issue #174)
 //! This module now uses `aprender::online` for drift detection, corpus management,
@@ -853,15 +852,6 @@ impl OnlineLearner {
         }
     }
 }
-
-// Re-export from entrenar (§3.1, §3.2, §3.4 of spec)
-#[cfg(feature = "training")]
-pub use entrenar::citl::{
-    CITLConfig, DecisionCITL, DecisionPatternStore, DecisionTrace, ErrorCorrelation,
-    FixPattern as CitlFixPattern, FixSuggestion as CitlFixSuggestion, SuspiciousDecision,
-};
-#[cfg(feature = "training")]
-pub use entrenar::distill::{DistillationLoss, EnsembleDistiller, ProgressiveDistiller};
 
 // Code2Vec embeddings (§3.5 of spec)
 pub use aprender::code::{Code2VecEncoder, PathContext, PathExtractor};
