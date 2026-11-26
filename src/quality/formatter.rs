@@ -5,6 +5,72 @@ use crate::frontend::ast::{Expr, ExprKind};
 use crate::quality::formatter_config::FormatterConfig;
 use anyhow::Result;
 
+/// If a `//` comment starts at `pos`, return the position just past its line.
+fn comment_line_end(bytes: &[u8], pos: usize) -> Option<usize> {
+    if pos + 1 < bytes.len() && bytes[pos] == b'/' && bytes[pos + 1] == b'/' {
+        let mut end = pos;
+        while end < bytes.len() && bytes[end] != b'\n' {
+            end += 1;
+        }
+        Some(if end < bytes.len() { end + 1 } else { end })
+    } else {
+        None
+    }
+}
+
+/// Skip blank space and `//` comment lines starting at `pos`, returning the
+/// position of the first byte of the expression proper.
+fn skip_leading_comment_lines(bytes: &[u8], mut pos: usize) -> usize {
+    loop {
+        while pos < bytes.len() && (bytes[pos] == b' ' || bytes[pos] == b'\t') {
+            pos += 1;
+        }
+        match comment_line_end(bytes, pos) {
+            Some(next) => pos = next,
+            None => break,
+        }
+    }
+    while pos < bytes.len() && matches!(bytes[pos], b' ' | b'\t' | b'\n') {
+        pos += 1;
+    }
+    pos
+}
+
+/// Given `pos` just past an opening `{`, return the offset just past its matching `}`.
+fn matching_brace_end(bytes: &[u8], mut pos: usize) -> Option<usize> {
+    let mut depth = 1;
+    while pos < bytes.len() {
+        match bytes[pos] {
+            b'{' => depth += 1,
+            b'}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(pos + 1);
+                }
+            }
+            _ => {}
+        }
+        pos += 1;
+    }
+    None
+}
+
+/// Advance `end` to the next newline (or end of input).
+fn end_of_line(bytes: &[u8], mut end: usize) -> usize {
+    while end < bytes.len() && bytes[end] != b'\n' {
+        end += 1;
+    }
+    end
+}
+
+/// #255 item 3: a formatted file ends with exactly one newline.
+fn ensure_trailing_newline(mut text: String) -> String {
+    if !text.is_empty() && !text.ends_with('\n') {
+        text.push('\n');
+    }
+    text
+}
+
 pub struct Formatter {
     config: FormatterConfig,
     source: Option<String>,
@@ -73,7 +139,7 @@ impl Formatter {
                 }
                 result.push_str(&self.format_expr(expr, 0));
             }
-            Ok(result)
+            Ok(ensure_trailing_newline(result))
         } else {
             // Single expression at top level
             Ok(self.format_expr(ast, 0))
@@ -142,79 +208,16 @@ impl Formatter {
 
             // Find the true end by recursing through the AST to find the rightmost span
             let mut end = Self::find_rightmost_span_end(expr);
-
-            // WORKAROUND for incomplete parser spans: scan forward to find actual end
-            // For expressions like functions and blocks, the span often doesn't include closing braces
-            // We need to find the TRUE end of the expression by scanning forward
             let bytes = src.as_bytes();
-
-            // Track brace depth to find matching closing brace
-            let mut brace_depth = 0;
-            let mut in_expression = false;
-
-            // Check if this is a block expression (starts with {)
-            // Skip past leading comments first
-            let mut scan_pos = start;
-            // Skip comment lines
-            while scan_pos < bytes.len() {
-                // Skip whitespace
-                while scan_pos < bytes.len()
-                    && (bytes[scan_pos] == b' ' || bytes[scan_pos] == b'\t')
-                {
-                    scan_pos += 1;
-                }
-                // Check for comment
-                if scan_pos + 1 < bytes.len()
-                    && bytes[scan_pos] == b'/'
-                    && bytes[scan_pos + 1] == b'/'
-                {
-                    // Skip to end of line
-                    while scan_pos < bytes.len() && bytes[scan_pos] != b'\n' {
-                        scan_pos += 1;
-                    }
-                    if scan_pos < bytes.len() {
-                        scan_pos += 1; // skip newline
-                    }
-                } else {
-                    break;
-                }
-            }
-            // Now skip final whitespace before the actual expression
-            while scan_pos < bytes.len()
-                && (bytes[scan_pos] == b' ' || bytes[scan_pos] == b'\t' || bytes[scan_pos] == b'\n')
-            {
-                scan_pos += 1;
-            }
-            // Check if we found a block
+            // WORKAROUND for incomplete parser spans: a block's closing brace is often
+            // missing from the span, so scan forward for it.
+            let scan_pos = skip_leading_comment_lines(bytes, start);
             if scan_pos < bytes.len() && bytes[scan_pos] == b'{' {
-                brace_depth = 1;
-                in_expression = true;
-                scan_pos += 1;
-            }
-
-            if in_expression {
-                // Scan forward to find matching closing brace
-                while scan_pos < bytes.len() && brace_depth > 0 {
-                    if bytes[scan_pos] == b'{' {
-                        brace_depth += 1;
-                    } else if bytes[scan_pos] == b'}' {
-                        brace_depth -= 1;
-                        if brace_depth == 0 {
-                            // Found the matching closing brace
-                            end = scan_pos + 1;
-                            break;
-                        }
-                    }
-                    scan_pos += 1;
+                if let Some(block_end) = matching_brace_end(bytes, scan_pos + 1) {
+                    end = block_end;
                 }
             } else {
-                // Not a block - scan to end of line
-                while end < bytes.len() {
-                    if bytes[end] == b'\n' {
-                        break;
-                    }
-                    end += 1;
-                }
+                end = end_of_line(bytes, end);
             }
 
             let start = start.min(src.len());
@@ -1283,7 +1286,9 @@ impl Formatter {
                     format!("{{{}}}", self.format_expr(e, indent))
                 }
                 crate::frontend::ast::StringPart::ExprWithFormat { expr, format_spec } => {
-                    format!("{{{}:{}}}", self.format_expr(expr, indent), format_spec)
+                    // The parser keeps the leading ':' in format_spec; don't add a second one.
+                    let spec = format_spec.strip_prefix(':').unwrap_or(format_spec);
+                    format!("{{{}:{spec}}}", self.format_expr(expr, indent))
                 }
             })
             .collect::<String>();
