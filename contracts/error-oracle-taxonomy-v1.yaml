@@ -1,0 +1,77 @@
+metadata:
+  version: "1.0.0"
+  author: "Sovereign AI Stack"
+  description: "Ruchy error-oracle taxonomy: every Ruchy error class has a stable label, a round-trip id and a non-empty fix suggestion"
+  crate: "ruchy"
+  references:
+    - "paiml/ruchy#164 feat: Add ML-powered error oracle using aprender (Step 3, categories)"
+    - "CLAUDE.md: Contract-First Design"
+
+equations:
+  label_round_trip:
+    formula: "∀ c ∈ Classes : from_label(label(c)) = c"
+    domain: "Classes = every RuchyErrorCategory variant except Unknown"
+    invariants:
+      - "A class label is the stable u8 the ML output layer trains on; it never changes once shipped"
+      - "Labels are unique across Classes"
+
+  unknown_fallback:
+    formula: "∀ l ∈ u8 \\ labels(Classes) : from_label(l) = Unknown"
+    domain: "every u8 value"
+    invariants:
+      - "An unmapped label is Unknown, never a panic and never a neighbouring class"
+
+  class_count:
+    formula: "COUNT = |Classes| = 41"
+    domain: "RuchyErrorCategory"
+    invariants:
+      - "COUNT excludes Unknown: Unknown is the fallback, not a trained output class"
+      - "The ticket's stated COUNT of 40 does not match its own enum (41 classes plus Unknown); the enum wins"
+
+  every_class_has_a_fix:
+    formula: "∀ c ∈ Classes ∪ {Unknown} : fix_suggestion(c) ≠ ∅"
+    domain: "RuchyErrorCategory"
+    invariants:
+      - "A suggestion is never empty, so the oracle always has something to show"
+
+proof_obligations:
+  - type: bijection
+    property: "label is injective and from_label inverts it on Classes"
+    formal: "from_label ∘ label = id on Classes"
+    applies_to: "src/oracle/ruchy_errors.rs"
+
+  - type: totality
+    property: "from_label is total on u8"
+    formal: "∀ l : u8, from_label(l) ∈ RuchyErrorCategory"
+    applies_to: "src/oracle/ruchy_errors.rs"
+
+falsification_tests:
+  - id: FALSIFY-ERRORORACLE-001
+    rule: "Label round trip"
+    test: "test_164_label_round_trip_all_classes"
+    prediction: "verified"
+    if_fails: "Contract violation: a shipped label maps to a different class"
+
+  - id: FALSIFY-ERRORORACLE-002
+    rule: "Labels are unique"
+    test: "test_164_labels_are_unique"
+    prediction: "verified"
+    if_fails: "Contract violation: two classes share a label"
+
+  - id: FALSIFY-ERRORORACLE-003
+    rule: "Unmapped label is Unknown"
+    test: "test_164_unmapped_label_is_unknown"
+    prediction: "verified"
+    if_fails: "Contract violation: an unmapped label does not fall back to Unknown"
+
+  - id: FALSIFY-ERRORORACLE-004
+    rule: "Class count excludes Unknown"
+    test: "test_164_class_count_is_41"
+    prediction: "verified"
+    if_fails: "Contract violation: COUNT disagrees with the enum"
+
+  - id: FALSIFY-ERRORORACLE-005
+    rule: "Every class has a fix suggestion"
+    test: "test_164_every_class_has_non_empty_fix"
+    prediction: "verified"
+    if_fails: "Contract violation: a class has an empty fix suggestion"

@@ -52,6 +52,7 @@ pub mod hansei;
 mod metrics;
 mod patterns;
 pub mod persistence;
+pub mod ruchy_errors;
 mod training_loop;
 pub mod transfer;
 
