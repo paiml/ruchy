@@ -145,6 +145,12 @@ impl Transpiler {
                 ExprKind::MacroInvocation { name, .. } if name == "println" || name == "print"
             )
             || matches!(&expr.kind, ExprKind::Assign { .. })
+            // ruchy#335: loops yield unit here; wrapping them in println! prints "()".
+            // `loop` is excluded because `break value` makes it a value expression.
+            || matches!(
+                &expr.kind,
+                ExprKind::For { .. } | ExprKind::While { .. } | ExprKind::WhileLet { .. }
+            )
             || matches!(&expr.kind, ExprKind::Return { value: None })
             || matches!(&expr.kind, ExprKind::Return { value: Some(_) }) // Return with value is still unit for main
     }
@@ -199,6 +205,30 @@ mod tests {
 
     fn create_transpiler() -> Transpiler {
         Transpiler::new()
+    }
+
+    /// ruchy#335: a loop as the tail of `main` must be a statement, not a println! argument.
+    #[test]
+    fn test_ruchy_335_tail_loops_in_main_are_statements() {
+        let cases = [
+            "fun main() {\n  'outer: for i in 0..3 {\n    for j in 0..3 { if j == 1 { break 'outer } }\n  }\n}\nmain()\n",
+            "fun main() {\n  for i in 0..3 { println(i) }\n}\nmain()\n",
+            "fun main() {\n  let mut n = 0\n  while n < 3 { n = n + 1 }\n}\nmain()\n",
+        ];
+        for src in cases {
+            let mut transpiler = create_transpiler();
+            let mut parser = Parser::new(src);
+            let ast = parser.parse().expect("parse");
+            let tokens = transpiler.transpile(&ast).expect("transpile").to_string();
+            // A loop used as println!'s argument renders as `"{:?}" , <loop>`.
+            // Body-level println! calls (`println!("{:?}", i)`) must not trip this.
+            for loop_start in ["for", "while", "'"] {
+                assert!(
+                    !tokens.contains(&format!("\"{{:?}}\" , {loop_start}")),
+                    "tail loop wrapped in println! for {src:?}: {tokens}"
+                );
+            }
+        }
     }
 
     #[test]
