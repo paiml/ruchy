@@ -26,7 +26,8 @@ The current version is a pre-release, so name it explicitly:
 cargo install ruchy --version 5.0.0-beta.2
 ```
 
-Plain `cargo install ruchy` installs the latest stable release instead.
+Plain `cargo install ruchy` installs the latest stable release instead, which
+measured 4.2.1 on 2026-11-26 (see [`contracts/ruchy-readme-measured.json`](contracts/ruchy-readme-measured.json)).
 
 ## Quick start
 
@@ -98,7 +99,7 @@ println(f"Doubled: {doubled:?}")
 | `ruchy compile` | Compile to a native binary |
 | `ruchy lint` | Lint a file |
 | `ruchy test` | Run `@test` functions |
-| `ruchy wasm` | Compile to a WebAssembly module |
+| `ruchy wasm` | Compile a file to a WebAssembly component: `ruchy wasm <FILE> -o <OUT>` |
 
 ## Documentation
 

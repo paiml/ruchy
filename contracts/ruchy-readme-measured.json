@@ -1,0 +1,95 @@
+{
+  "ticket": "paiml/ruchy#254",
+  "measured_at": "2026-11-26",
+  "binary": "ruchy 4.2.1 (~/.cargo/bin/ruchy, from `cargo install ruchy`)",
+  "note": "Measured against the locally installed binary, not a build of this commit. contracts/ruchy-readme-claims.json is the generated claims file from PMAT-254 (#256) and is not edited here.",
+  "claims": [
+    {
+      "id": "install.pinned_version",
+      "readme": "cargo install ruchy --version 5.0.0-beta.2",
+      "measured": "5.0.0-beta.2",
+      "source": "Cargo.toml [workspace.package] version",
+      "status": "measured",
+      "crates_io": "unverified (crates.io API unreachable 2026-11-26)"
+    },
+    {
+      "id": "install.plain_version",
+      "readme": "Plain `cargo install ruchy` installs the latest stable release instead, which measured 4.2.1 on 2026-11-26.",
+      "measured": "4.2.1",
+      "source": "`ruchy --version` of the locally installed binary",
+      "status": "measured",
+      "caveat": "fresh install not run"
+    },
+    {
+      "id": "wasm.form",
+      "readme": "ruchy wasm <FILE> -o <OUT>",
+      "measured": "Usage: ruchy wasm [OPTIONS] <FILE>; -o, --output <OUTPUT>",
+      "source": "`ruchy wasm --help`",
+      "status": "measured"
+    },
+    {
+      "id": "wasm.compile_and_run_absent",
+      "readme": "no `ruchy wasm compile` or `ruchy wasm run` in README",
+      "measured": "help lists no subcommands; <FILE> is the only positional argument",
+      "source": "`ruchy wasm --help`",
+      "status": "measured"
+    },
+    {
+      "id": "quick_start.examples_stdout",
+      "readme": "examples/readme/{hello,match,loops,collections}.ruchy",
+      "measured": "stdout equals .expected for all 4",
+      "source": "run of each file under the local binary",
+      "status": "measured",
+      "caveat": "binary is 4.2.1, not 5.0.0-beta.2"
+    },
+    {
+      "id": "quick_start.commands_exit_zero",
+      "readme": "ruchy -e, ruchy check, ruchy transpile, ruchy compile -o",
+      "measured": "all exit 0",
+      "source": "run under the local binary",
+      "status": "measured",
+      "caveat": "binary is 4.2.1, not 5.0.0-beta.2"
+    },
+    {
+      "id": "commands.table_subcommands",
+      "readme": "run, repl, check, transpile, compile, lint, test, wasm",
+      "measured": "all 8 listed by `ruchy --help`",
+      "source": "`ruchy --help`",
+      "status": "measured",
+      "caveat": "binary is 4.2.1"
+    },
+    {
+      "id": "msrv",
+      "readme": "1.91",
+      "measured": "1.91",
+      "source": "Cargo.toml rust-version",
+      "status": "measured"
+    },
+    {
+      "id": "test_count",
+      "readme": "not present on main",
+      "measured": null,
+      "status": "absent",
+      "note": "no hand-typed test count or badge on main; FALSIFY-RUCHY-README-006 covers it"
+    },
+    {
+      "id": "async_http_example",
+      "readme": "not present on main",
+      "measured": null,
+      "status": "absent",
+      "note": "no async/http example on main; nothing to run or mark"
+    },
+    {
+      "id": "mcp_section",
+      "readme": "not present on main",
+      "measured": null,
+      "status": "absent",
+      "note": "no MCP section on main, so no --features mcp note is needed"
+    }
+  ],
+  "enforcement": {
+    "existing": "contracts/ruchy-readme-v1.yaml; ci.yml job readme-contract (PMAT-254, #256)",
+    "added_here": "none (docs-only; no new CI job or test)",
+    "gate_change_pending": "GATE change pending operator yes: pv --gate shapes + CI job for this file"
+  }
+}
