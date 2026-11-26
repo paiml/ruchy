@@ -116,6 +116,7 @@ mod feature_089_string_as_bytes;
 mod feature_gate_lint;
 mod fifteen_tool_validation;
 mod fmt_let_mut_255;
+mod fmt_roundtrip_255;
 mod formatter_088_macro_preservation;
 mod formatter_data_loss_regression;
 mod formatter_issue_60;
