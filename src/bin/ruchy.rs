@@ -117,6 +117,9 @@ enum Commands {
         /// For .rhl/.rhl.yaml files (RHL-4): `ruchy` stops at the lowered ruchy source; `rust` (default) goes on to Rust
         #[arg(long)]
         emit: Option<String>,
+        /// Write CITL export records (one per rustc diagnostic on the output) as JSON (ruchy#165)
+        #[arg(long = "citl-export", value_name = "PATH")]
+        citl_export: Option<PathBuf>,
     },
     /// Compile and run a Ruchy file
     Run {
@@ -1462,13 +1465,27 @@ fn handle_command_dispatch(
             output,
             minimal,
             emit,
-        }) => handlers::rhl_handler::handle_transpile(
-            &file,
-            output.as_deref(),
-            minimal,
-            emit.as_deref(),
-            verbose,
-        ),
+            citl_export,
+        }) => match citl_export {
+            Some(_) if emit.is_some() => Err(anyhow::anyhow!(
+                "--citl-export cannot be combined with --emit (file: {})",
+                file.display()
+            )),
+            Some(export) => handlers::citl_handler::handle_transpile_citl(
+                &file,
+                output.as_deref(),
+                minimal,
+                &export,
+                verbose,
+            ),
+            None => handlers::rhl_handler::handle_transpile(
+                &file,
+                output.as_deref(),
+                minimal,
+                emit.as_deref(),
+                verbose,
+            ),
+        },
         Some(Commands::Compile {
             ref file,
             ref output,

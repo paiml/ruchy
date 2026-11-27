@@ -63,6 +63,7 @@ pub mod api_docs;
 pub mod backend;
 pub mod bench;
 pub mod build_transpiler;
+pub mod citl_export;
 pub mod cli;
 pub mod computebrick;
 pub mod debugger;
