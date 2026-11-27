@@ -490,13 +490,21 @@ fn fstring_contains_param(param_name: &str, arg: &Expr) -> bool {
     let ExprKind::StringInterpolation { parts } = &arg.kind else {
         return false;
     };
-    parts.iter().any(|part| match part {
-        StringPart::Expr(e) => is_identifier(param_name, e),
-        StringPart::ExprWithFormat { expr, format_spec } => {
-            is_identifier(param_name, expr) && !is_numeric_format_spec(format_spec)
+    // A numeric spec on any occurrence of the parameter rules String out.
+    let mut printed_as_text = false;
+    for part in parts {
+        match part {
+            StringPart::Expr(e) if is_identifier(param_name, e) => printed_as_text = true,
+            StringPart::ExprWithFormat { expr, format_spec } if is_identifier(param_name, expr) => {
+                if is_numeric_format_spec(format_spec) {
+                    return false;
+                }
+                printed_as_text = true;
+            }
+            _ => {}
         }
-        StringPart::Text(_) => false,
-    })
+    }
+    printed_as_text
 }
 
 fn is_identifier(param_name: &str, expr: &Expr) -> bool {
