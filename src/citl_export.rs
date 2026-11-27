@@ -189,6 +189,15 @@ mod tests {
     }
 
     #[test]
+    fn test_ruchy_165_rustc_summary_line_is_not_a_record() {
+        let summary = r#"{"$message_type":"diagnostic","message":"aborting due to 1 previous error","code":null,"level":"error","spans":[],"children":[]}"#;
+        let stderr = format!("{E0308_LINE}\n{summary}\n");
+        let recs = records_from_rustc_json(&stderr, "a.rb", 0);
+        assert_eq!(recs.len(), 1, "{recs:?}");
+        assert_eq!(recs[0].error_code.as_deref(), Some("E0308"));
+    }
+
+    #[test]
     fn test_ruchy_165_export_rustc_clean_program_has_no_records() {
         let recs = export_rustc_diagnostics("fn main() { println!(\"ok\"); }\n", "a.rb")
             .expect("rustc runs");

@@ -69,3 +69,29 @@ fn test_ruchy_165_citl_export_keeps_transpiled_output_on_stdout() {
     let (stdout, _json) = transpile_with_citl(dir.path(), CLEAN);
     assert!(stdout.contains("fn main()"), "{stdout}");
 }
+
+#[test]
+fn test_ruchy_165_citl_export_rejects_emit_combination() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::write(dir.path().join("input.rb"), CLEAN).unwrap();
+    let out = Command::cargo_bin("ruchy")
+        .expect("ruchy binary is built")
+        .current_dir(dir.path())
+        .args([
+            "transpile",
+            "input.rb",
+            "--emit",
+            "ruchy",
+            "--citl-export",
+            "diagnostics.json",
+        ])
+        .output()
+        .expect("ruchy runs");
+    assert!(!out.status.success(), "--emit must not be silently ignored");
+    assert!(
+        String::from_utf8_lossy(&out.stderr).contains("--citl-export"),
+        "{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    assert!(!dir.path().join("diagnostics.json").exists());
+}
