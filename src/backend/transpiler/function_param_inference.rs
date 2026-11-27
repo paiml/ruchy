@@ -46,93 +46,96 @@ impl Transpiler {
         func_name: &str,
         param_index: Option<usize>,
     ) -> TokenStream {
-        use super::type_inference::{
-            infer_param_type_from_builtin_usage, is_param_used_as_array, is_param_used_as_bool,
-            is_param_used_as_function, is_param_used_as_index, is_param_used_in_print_macro,
-            is_param_used_in_string_concat, is_param_used_numerically, is_param_used_with_len,
-        };
-
         // BOOK-COMPAT-017: Check call-site types first for more accurate inference
-        if let Some(idx) = param_index {
-            if let Some(call_site_type) = self.get_call_site_param_type(func_name, idx) {
-                if call_site_type != "_" {
-                    match call_site_type.as_str() {
-                        "f64" => return quote! { f64 },
-                        "f32" => return quote! { f32 },
-                        "i64" => return quote! { i64 },
-                        "i32" => return quote! { i32 },
-                        "String" => return quote! { String },
-                        "bool" => return quote! { bool },
-                        t if t.starts_with("Vec<") => {
-                            // Parse Vec<T> and generate proper type
-                            let inner = &t[4..t.len() - 1];
-                            let inner_ident = format_ident!("{}", inner);
-                            return quote! { Vec<#inner_ident> };
-                        }
-                        _ => {} // Fall through to body-based inference
-                    }
-                }
-            }
+        if let Some(ty) = self.call_site_type_tokens(func_name, param_index) {
+            return ty;
         }
-
-        // Check for function parameters first (higher-order functions)
-        if is_param_used_as_function(&param.name(), body) {
-            return quote! { impl Fn(i32) -> i32 };
+        if let Some(ty) = self.structural_usage_type(&param.name(), body) {
+            return ty;
         }
-
-        // ISSUE-114 FIX: Check if parameter is used as boolean condition
-        if is_param_used_as_bool(&param.name(), body) {
-            return quote! { bool };
+        if let Some(ty) = self.scalar_usage_type(&param.name(), body, func_name) {
+            return ty;
         }
-
-        // Check if parameter is used as an array (indexed)
-        if is_param_used_as_array(&param.name(), body) {
-            if self.is_nested_array_param_impl(&param.name(), body) {
-                return quote! { &Vec<Vec<i32>> };
-            }
-            return quote! { &Vec<i32> };
+        // Check if parameter is used in print/format macros (ruchy#343: f-string String)
+        if let Some(ty) = print_usage_type(&param.name(), body) {
+            return ty;
         }
-
-        // Check if parameter is used with len()
-        if is_param_used_with_len(&param.name(), body) {
-            if self.is_nested_array_param_impl(&param.name(), body) {
-                return quote! { &Vec<Vec<i32>> };
-            }
-            return quote! { &Vec<i32> };
-        }
-
-        // Check if parameter is used as an index
-        if is_param_used_as_index(&param.name(), body) {
-            return quote! { i32 };
-        }
-
-        // Check if used numerically - but check call-site first for float inference
-        if is_param_used_numerically(&param.name(), body)
-            || super::function_analysis::looks_like_numeric_function(func_name)
-        {
-            // BOOK-COMPAT-017: If no call-site type, default to i32
-            return quote! { i32 };
-        }
-
-        // Check built-in function signatures for string-specific operations
-        if let Some(type_hint) = infer_param_type_from_builtin_usage(&param.name(), body) {
-            if type_hint == "&str" {
-                return quote! { &str };
-            }
-        }
-
-        // Check if parameter is used in string concatenation
-        if is_param_used_in_string_concat(&param.name(), body) {
-            return quote! { &str };
-        }
-
-        // Check if parameter is used in print/format macros
-        if is_param_used_in_print_macro(&param.name(), body) {
-            return quote! { &str };
-        }
-
         // Default to i32 for unused/untyped parameters
         quote! { i32 }
+    }
+
+    /// Body usage that fixes the shape: a callable, a bool, an array, or an index.
+    fn structural_usage_type(&self, name: &str, body: &Expr) -> Option<TokenStream> {
+        use super::type_inference::{
+            is_param_used_as_array, is_param_used_as_bool, is_param_used_as_function,
+            is_param_used_as_index, is_param_used_with_len,
+        };
+        if is_param_used_as_function(name, body) {
+            return Some(quote! { impl Fn(i32) -> i32 });
+        }
+        if is_param_used_as_bool(name, body) {
+            return Some(quote! { bool });
+        }
+        if is_param_used_as_array(name, body) || is_param_used_with_len(name, body) {
+            return Some(self.array_param_tokens(name, body));
+        }
+        if is_param_used_as_index(name, body) {
+            return Some(quote! { i32 });
+        }
+        None
+    }
+
+    /// Body usage that fixes a scalar or text type.
+    fn scalar_usage_type(&self, name: &str, body: &Expr, func_name: &str) -> Option<TokenStream> {
+        use super::type_inference::{
+            infer_param_type_from_builtin_usage, is_param_used_in_string_concat,
+            is_param_used_numerically,
+        };
+        if is_param_used_numerically(name, body)
+            || super::function_analysis::looks_like_numeric_function(func_name)
+        {
+            return Some(quote! { i32 });
+        }
+        if infer_param_type_from_builtin_usage(name, body).as_deref() == Some("&str") {
+            return Some(quote! { &str });
+        }
+        if is_param_used_in_string_concat(name, body) {
+            return Some(quote! { &str });
+        }
+        None
+    }
+
+    /// BOOK-COMPAT-017: parameter type fixed by the call site, if one is known.
+    fn call_site_type_tokens(
+        &self,
+        func_name: &str,
+        param_index: Option<usize>,
+    ) -> Option<TokenStream> {
+        let idx = param_index?;
+        let call_site_type = self.get_call_site_param_type(func_name, idx)?;
+        match call_site_type.as_str() {
+            "f64" => Some(quote! { f64 }),
+            "f32" => Some(quote! { f32 }),
+            "i64" => Some(quote! { i64 }),
+            "i32" => Some(quote! { i32 }),
+            "String" => Some(quote! { String }),
+            "bool" => Some(quote! { bool }),
+            // Parse Vec<T> and generate proper type
+            t if t.starts_with("Vec<") => {
+                let inner = &t[4..t.len() - 1];
+                let inner_ident = format_ident!("{}", inner);
+                Some(quote! { Vec<#inner_ident> })
+            }
+            _ => None, // Fall through to body-based inference
+        }
+    }
+
+    /// Slice type for an array-like parameter, nested when indexed twice.
+    fn array_param_tokens(&self, param_name: &str, body: &Expr) -> TokenStream {
+        if self.is_nested_array_param_impl(param_name, body) {
+            return quote! { &Vec<Vec<i32>> };
+        }
+        quote! { &Vec<i32> }
     }
 
     /// Helper to detect nested array access (2D arrays)
@@ -157,52 +160,38 @@ impl Transpiler {
         match &expr.kind {
             // Direct nested indexing: param[i][j]
             ExprKind::IndexAccess { object, .. } => {
-                if let ExprKind::IndexAccess { object: inner, .. } = &object.kind {
-                    if let ExprKind::Identifier(name) = &inner.kind {
-                        if name == param_name {
-                            return true;
-                        }
-                    }
-                }
-                Self::find_nested_array_access_impl(param_name, object, visited)
+                is_direct_nested_index(param_name, object)
+                    || Self::find_nested_array_access_impl(param_name, object, visited)
             }
             // Recurse into block expressions
-            ExprKind::Block(exprs) => exprs
-                .iter()
-                .any(|e| Self::find_nested_array_access_impl(param_name, e, visited)),
+            ExprKind::Block(exprs) => any_nested(param_name, exprs, visited),
             // Let bindings
             ExprKind::Let { value, body, .. } | ExprKind::LetPattern { value, body, .. } => {
-                Self::find_nested_array_access_impl(param_name, value, visited)
-                    || Self::find_nested_array_access_impl(param_name, body, visited)
+                any_nested(param_name, [&**value, &**body], visited)
             }
-            // Binary operations
             ExprKind::Binary { left, right, .. } => {
-                Self::find_nested_array_access_impl(param_name, left, visited)
-                    || Self::find_nested_array_access_impl(param_name, right, visited)
+                any_nested(param_name, [&**left, &**right], visited)
             }
-            // While loops
             ExprKind::While {
                 condition, body, ..
-            } => {
-                Self::find_nested_array_access_impl(param_name, condition, visited)
-                    || Self::find_nested_array_access_impl(param_name, body, visited)
-            }
-            // If expressions
+            } => any_nested(param_name, [&**condition, &**body], visited),
             ExprKind::If {
                 condition,
                 then_branch,
                 else_branch,
-            } => {
-                Self::find_nested_array_access_impl(param_name, condition, visited)
-                    || Self::find_nested_array_access_impl(param_name, then_branch, visited)
-                    || else_branch.as_ref().is_some_and(|e| {
-                        Self::find_nested_array_access_impl(param_name, e, visited)
-                    })
-            }
-            // Assignments
+            } => any_nested(
+                param_name,
+                [
+                    Some(&**condition),
+                    Some(&**then_branch),
+                    else_branch.as_deref(),
+                ]
+                .into_iter()
+                .flatten(),
+                visited,
+            ),
             ExprKind::Assign { target, value } | ExprKind::CompoundAssign { target, value, .. } => {
-                Self::find_nested_array_access_impl(param_name, target, visited)
-                    || Self::find_nested_array_access_impl(param_name, value, visited)
+                any_nested(param_name, [&**target, &**value], visited)
             }
             _ => false,
         }
@@ -1111,4 +1100,34 @@ mod tests {
         let result = transpiler.infer_param_type_with_index(&param, &body, "add", Some(1));
         assert_eq!(result.to_string(), "f64");
     }
+}
+
+/// Type forced by a print-call usage, if any. An f-string interpolated into
+/// `println`/`print` is `String` (ruchy#343); other print usage stays `&str`.
+fn print_usage_type(param_name: &str, body: &Expr) -> Option<TokenStream> {
+    use super::type_inference::{is_param_used_in_fstring_print, is_param_used_in_print_macro};
+    if is_param_used_in_fstring_print(param_name, body) {
+        return Some(quote! { String });
+    }
+    is_param_used_in_print_macro(param_name, body).then(|| quote! { &str })
+}
+
+/// True when `object` is itself indexed by the parameter: `param[i]` under `[j]`.
+fn is_direct_nested_index(param_name: &str, object: &Expr) -> bool {
+    matches!(
+        &object.kind,
+        ExprKind::IndexAccess { object: inner, .. }
+            if matches!(&inner.kind, ExprKind::Identifier(name) if name == param_name)
+    )
+}
+
+/// Search each child in order, stopping at the first that contains nested indexing.
+fn any_nested<'a>(
+    param_name: &str,
+    children: impl IntoIterator<Item = &'a Expr>,
+    visited: &mut HashSet<usize>,
+) -> bool {
+    children
+        .into_iter()
+        .any(|child| Transpiler::find_nested_array_access_impl(param_name, child, visited))
 }

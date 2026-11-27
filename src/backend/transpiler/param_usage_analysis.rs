@@ -3,7 +3,7 @@
 //! This module provides functions for analyzing how parameters are used
 //! in function bodies to infer their types.
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, StringPart};
 
 // Re-export from builtin_type_inference for backwards compatibility
 pub use super::builtin_type_inference::{infer_param_type_from_builtin_usage, is_string_literal};
@@ -454,6 +454,43 @@ pub fn is_param_used_in_print_macro(param_name: &str, expr: &Expr) -> bool {
             }
         }
         None // Continue traversal
+    })
+}
+
+/// ruchy#343: a parameter interpolated into an f-string that is passed to a
+/// print call. `println(f"...{who}...")` parses as a plain `Call`, not a
+/// `MacroInvocation`, and the f-string is the first argument, so the macro
+/// check in `is_param_used_in_print_macro` never sees it.
+#[must_use]
+pub fn is_param_used_in_fstring_print(param_name: &str, expr: &Expr) -> bool {
+    traverse_expr_for_check(expr, |e| {
+        let args = match &e.kind {
+            ExprKind::Call { func, args } if is_print_callee(func) => args,
+            ExprKind::MacroInvocation { name, args } if is_print_macro_name(name) => args,
+            _ => return None,
+        };
+        args.iter()
+            .any(|arg| fstring_contains_param(param_name, arg))
+            .then_some(true)
+    })
+}
+
+fn is_print_callee(func: &Expr) -> bool {
+    matches!(&func.kind, ExprKind::Identifier(name) if is_print_macro_name(name))
+}
+
+fn is_print_macro_name(name: &str) -> bool {
+    matches!(name, "println" | "print" | "eprintln" | "eprint")
+}
+
+fn fstring_contains_param(param_name: &str, arg: &Expr) -> bool {
+    let ExprKind::StringInterpolation { parts } = &arg.kind else {
+        return false;
+    };
+    parts.iter().any(|part| match part {
+        StringPart::Expr(e) => contains_param(param_name, e),
+        StringPart::ExprWithFormat { expr, .. } => contains_param(param_name, expr),
+        StringPart::Text(_) => false,
     })
 }
 
