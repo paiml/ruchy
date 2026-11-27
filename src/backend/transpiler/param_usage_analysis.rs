@@ -457,21 +457,35 @@ pub fn is_param_used_in_print_macro(param_name: &str, expr: &Expr) -> bool {
     })
 }
 
-/// ruchy#343: a parameter interpolated into an f-string that is passed to a
-/// print call. `println(f"...{who}...")` parses as a plain `Call`, not a
-/// `MacroInvocation`, and the f-string is the first argument, so the macro
-/// check in `is_param_used_in_print_macro` never sees it.
+/// ruchy#343: a parameter printed as text by a `println`/`print` f-string.
+///
+/// `println(...)` parses as a plain `Call`, not a `MacroInvocation`, and the
+/// f-string is its first argument, so the macro check never sees it. The rule
+/// needs a text use and no numeric use anywhere in the body: a call argument
+/// inside `{f(x)}` is not a text use, and a numeric-only spec (`x`, `X`, `b`,
+/// `o`, `e`, `E`) needs an integer or float wherever it appears.
 #[must_use]
 pub fn is_param_used_in_fstring_print(param_name: &str, expr: &Expr) -> bool {
-    traverse_expr_for_check(expr, |e| {
-        let args = match &e.kind {
-            ExprKind::Call { func, args } if is_print_callee(func) => args,
-            ExprKind::MacroInvocation { name, args } if is_print_macro_name(name) => args,
-            _ => return None,
-        };
-        args.iter()
-            .any(|arg| fstring_contains_param(param_name, arg))
-            .then_some(true)
+    let text = traverse_expr_for_check(expr, |e| {
+        print_fstring_uses(param_name, e).0.then_some(true)
+    });
+    let numeric = traverse_expr_for_check(expr, |e| {
+        print_fstring_uses(param_name, e).1.then_some(true)
+    });
+    text && !numeric
+}
+
+/// For a print call, whether the parameter is a text use and whether it is a
+/// numeric use, across the f-string arguments. `(false, false)` otherwise.
+fn print_fstring_uses(param_name: &str, e: &Expr) -> (bool, bool) {
+    let args = match &e.kind {
+        ExprKind::Call { func, args } if is_print_callee(func) => args,
+        ExprKind::MacroInvocation { name, args } if is_print_macro_name(name) => args,
+        _ => return (false, false),
+    };
+    args.iter().fold((false, false), |(text, numeric), arg| {
+        let (t, n) = fstring_param_uses(param_name, arg);
+        (text || t, numeric || n)
     })
 }
 
@@ -483,28 +497,23 @@ fn is_print_macro_name(name: &str) -> bool {
     matches!(name, "println" | "print" | "eprintln" | "eprint")
 }
 
-/// True when the parameter itself is printed by this f-string. Only a bare
-/// `{param}` or `{param:spec}` counts: `{f(param)}` formats the result of a
-/// call, and numeric-only specs (`x`, `X`, `b`, `o`, `e`, `E`) need a number.
-fn fstring_contains_param(param_name: &str, arg: &Expr) -> bool {
+/// Bare `{param}` or `{param:spec}` with a non-numeric spec is a text use;
+/// `{param:x}` and similar is a numeric use. `{f(param)}` is neither.
+fn fstring_param_uses(param_name: &str, arg: &Expr) -> (bool, bool) {
     let ExprKind::StringInterpolation { parts } = &arg.kind else {
-        return false;
+        return (false, false);
     };
-    // A numeric spec on any occurrence of the parameter rules String out.
-    let mut printed_as_text = false;
-    for part in parts {
-        match part {
-            StringPart::Expr(e) if is_identifier(param_name, e) => printed_as_text = true,
+    parts.iter().fold((false, false), |(text, numeric), part| {
+        let (t, n) = match part {
+            StringPart::Expr(e) if is_identifier(param_name, e) => (true, false),
             StringPart::ExprWithFormat { expr, format_spec } if is_identifier(param_name, expr) => {
-                if is_numeric_format_spec(format_spec) {
-                    return false;
-                }
-                printed_as_text = true;
+                let numeric_spec = is_numeric_format_spec(format_spec);
+                (!numeric_spec, numeric_spec)
             }
-            _ => {}
-        }
-    }
-    printed_as_text
+            _ => (false, false),
+        };
+        (text || t, numeric || n)
+    })
 }
 
 fn is_identifier(param_name: &str, expr: &Expr) -> bool {

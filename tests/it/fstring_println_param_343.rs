@@ -86,3 +86,13 @@ fn test_ruchy_343_plain_and_numeric_use_stays_i32() {
         "a numeric spec on the same parameter must keep i32, got:\n{rust}"
     );
 }
+
+#[test]
+fn test_ruchy_343_numeric_spec_in_another_print_stays_i32() {
+    let src = "fun show(x) {\n    println(f\"{x}\");\n    println(f\"{x:x}\");\n}\n";
+    let rust = transpile(src);
+    assert!(
+        rust.contains("fn show(x: i32)"),
+        "a numeric spec in any print must keep i32, got:\n{rust}"
+    );
+}
