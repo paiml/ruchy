@@ -3,6 +3,111 @@
 //! Converts a recorded REPL session into cells (input + output pairs with
 //! timestamps) and renders it as a literate Markdown document.
 
+use crate::runtime::replay::{EvalResult, Event, ReplSession};
+use chrono::{DateTime, TimeDelta, Utc};
+use std::fmt;
+
+/// One REPL input and the output that followed it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Cell {
+    /// Source text as typed or pasted.
+    pub input: String,
+    /// Rendered result; `None` for unit results and for inputs with no output.
+    pub output: Option<String>,
+    /// Nanoseconds since session start when the input was recorded.
+    pub timestamp_ns: u64,
+}
+
+/// A recorded REPL session in export form.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RuchySession {
+    pub cells: Vec<Cell>,
+    pub started_at: DateTime<Utc>,
+    pub ended_at: Option<DateTime<Utc>>,
+}
+
+/// Why a session could not be exported.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SessionExportError {
+    /// `metadata.created_at` is not an RFC 3339 timestamp.
+    BadTimestamp(String),
+}
+
+impl fmt::Display for SessionExportError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::BadTimestamp(raw) => write!(f, "session created_at is not RFC 3339: {raw:?}"),
+        }
+    }
+}
+
+impl std::error::Error for SessionExportError {}
+
+impl RuchySession {
+    /// Build an export from a recorded session.
+    ///
+    /// Each input starts a cell; the first output after it fills the cell.
+    /// `started_at` comes from `metadata.created_at`.
+    pub fn from_repl_session(session: &ReplSession) -> Result<Self, SessionExportError> {
+        let started_at = DateTime::parse_from_rfc3339(&session.metadata.created_at)
+            .map_err(|_| SessionExportError::BadTimestamp(session.metadata.created_at.clone()))?
+            .with_timezone(&Utc);
+        let mut cells: Vec<Cell> = Vec::new();
+        for event in &session.timeline {
+            match &event.event {
+                Event::Input { text, .. } => cells.push(Cell {
+                    input: text.clone(),
+                    output: None,
+                    timestamp_ns: event.timestamp_ns,
+                }),
+                Event::Output { result, .. } => {
+                    if let Some(cell) = cells.last_mut().filter(|c| c.output.is_none()) {
+                        cell.output = render_output(result);
+                    }
+                }
+                Event::StateChange { .. } | Event::ResourceUsage { .. } => {}
+            }
+        }
+        let ended_at = session
+            .timeline
+            .last()
+            .and_then(|e| i64::try_from(e.timestamp_ns).ok())
+            .map(TimeDelta::nanoseconds)
+            .and_then(|d| started_at.checked_add_signed(d));
+        Ok(Self {
+            cells,
+            started_at,
+            ended_at,
+        })
+    }
+
+    /// Render the session as a literate Markdown document: one `ruchy` code
+    /// block per input, followed by a `text` block for its output.
+    pub fn to_literate_document(&self) -> String {
+        let mut out = String::new();
+        for cell in &self.cells {
+            out.push_str("```ruchy\n");
+            out.push_str(&cell.input);
+            out.push_str("\n```\n");
+            if let Some(output) = &cell.output {
+                out.push_str("\n```text\n");
+                out.push_str(output);
+                out.push_str("\n```\n");
+            }
+            out.push('\n');
+        }
+        out
+    }
+}
+
+fn render_output(result: &EvalResult) -> Option<String> {
+    match result {
+        EvalResult::Success { value } => Some(value.clone()),
+        EvalResult::Error { message } => Some(format!("error: {message}")),
+        EvalResult::Unit => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
