@@ -1,5 +1,7 @@
-//! ruchy#255 item 5: a parameter used only inside an f-string is inferred as
-//! `String`, and the transpiled program builds and prints the interpolation.
+//! ruchy#255 item 5: a parameter used inside an f-string, called with a string
+//! literal (`greet("Ruchy")`), is emitted as `String`, and the transpiled program
+//! builds and prints the interpolation. The call site supplies the type here; the
+//! case with no call site (f-string rule alone) is not covered by these tests.
 
 use assert_cmd::Command;
 use std::process::Command as StdCommand;
@@ -29,7 +31,7 @@ fn test_ruchy_255_item5_fstring_param_emits_string() {
     let (_dir, rust) = transpile_greet();
     assert!(
         rust.contains("fn greet(who: String)"),
-        "expected `who: String` for an f-string-only parameter, got:\n{rust}"
+        "expected `who: String` for an f-string parameter called with a literal, got:\n{rust}"
     );
 }
 
@@ -51,5 +53,10 @@ fn test_ruchy_255_item5_fstring_param_program_builds_and_prints() {
         String::from_utf8_lossy(&build.stderr)
     );
     let run = StdCommand::new(&bin).output().expect("binary runs");
+    assert!(
+        run.status.success(),
+        "generated binary failed: {:?}",
+        run.status
+    );
     assert_eq!(String::from_utf8_lossy(&run.stdout), "Hello, Ruchy!\n");
 }
