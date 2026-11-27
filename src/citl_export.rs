@@ -62,10 +62,8 @@ fn record_from_line(line: &str, source_file: &str, timestamp: i64) -> Option<Cit
         return None;
     }
     let code = v["code"]["code"].as_str().map(str::to_string);
-    // The trailing "aborting due to N previous error" line has no code and no
-    // span: it summarises the others, so it is not a record of its own.
-    let has_spans = v["spans"].as_array().is_some_and(|s| !s.is_empty());
-    if code.is_none() && !has_spans {
+    let message = v["message"].as_str()?;
+    if is_rustc_summary(message, code.is_none(), &v) {
         return None;
     }
     let is_clippy = code.as_deref().is_some_and(|c| c.starts_with("clippy::"));
@@ -74,13 +72,26 @@ fn record_from_line(line: &str, source_file: &str, timestamp: i64) -> Option<Cit
         error_code: code.clone().filter(|_| !is_clippy),
         clippy_lint: code.filter(|_| is_clippy),
         level: level.to_string(),
-        message: v["message"].as_str()?.to_string(),
+        message: message.to_string(),
         oip_category: None,
         confidence: 1.0,
         span: primary_span(&v),
         suggestion: suggestion(&v),
         timestamp,
     })
+}
+
+/// rustc's trailing totals ("aborting due to N previous error(s)", "N warning(s)
+/// emitted") carry no code and no span. They summarise the other diagnostics,
+/// so they are not records. Any other codeless, spanless error is kept.
+fn is_rustc_summary(message: &str, no_code: bool, v: &Value) -> bool {
+    if message.starts_with("aborting due to ") {
+        return true;
+    }
+    let no_spans = v["spans"].as_array().is_none_or(Vec::is_empty);
+    no_code
+        && no_spans
+        && (message.ends_with(" warning emitted") || message.ends_with(" warnings emitted"))
 }
 
 fn primary_span(v: &Value) -> Option<SpanInfo> {
