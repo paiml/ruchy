@@ -231,6 +231,7 @@ fn test_handle_advanced_command_transpile() {
         output: None,
         minimal: false,
         emit: None,
+        citl_export: None,
     };
     let result = handle_advanced_command(command);
     assert!(result.is_ok());
@@ -521,6 +522,7 @@ fn test_handle_command_dispatch_transpile() {
             output: None,
             minimal: false,
             emit: None,
+            citl_export: None,
         }),
         true,
         VmMode::Ast,

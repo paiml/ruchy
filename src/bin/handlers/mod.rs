@@ -15,6 +15,7 @@ pub mod add;
 pub mod bench_handler;
 pub mod build;
 pub mod check_handler;
+pub mod citl_handler;
 pub mod coverage_handler;
 pub mod doc_handler;
 pub mod eval;
