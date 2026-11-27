@@ -56,3 +56,23 @@ fn test_ruchy_343_println_fstring_param_without_call_builds() {
         String::from_utf8_lossy(&build.stderr)
     );
 }
+
+#[test]
+fn test_ruchy_343_call_argument_inside_fstring_stays_i32() {
+    let src = "fun double(n: i32) -> i32 {\n    n * 2\n}\n\nfun show(x) {\n    println(f\"val={double(x)}\");\n}\n";
+    let rust = transpile(src);
+    assert!(
+        rust.contains("fn show(x: i32)"),
+        "a parameter passed to a call inside an f-string must stay i32, got:\n{rust}"
+    );
+}
+
+#[test]
+fn test_ruchy_343_numeric_format_spec_stays_i32() {
+    let src = "fun show_hex(x) {\n    println(f\"{x:x}\");\n}\n";
+    let rust = transpile(src);
+    assert!(
+        rust.contains("fn show_hex(x: i32)"),
+        "a numeric-only format spec must keep i32, got:\n{rust}"
+    );
+}

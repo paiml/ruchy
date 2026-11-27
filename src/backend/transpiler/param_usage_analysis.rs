@@ -483,15 +483,31 @@ fn is_print_macro_name(name: &str) -> bool {
     matches!(name, "println" | "print" | "eprintln" | "eprint")
 }
 
+/// True when the parameter itself is printed by this f-string. Only a bare
+/// `{param}` or `{param:spec}` counts: `{f(param)}` formats the result of a
+/// call, and numeric-only specs (`x`, `X`, `b`, `o`, `e`, `E`) need a number.
 fn fstring_contains_param(param_name: &str, arg: &Expr) -> bool {
     let ExprKind::StringInterpolation { parts } = &arg.kind else {
         return false;
     };
     parts.iter().any(|part| match part {
-        StringPart::Expr(e) => contains_param(param_name, e),
-        StringPart::ExprWithFormat { expr, .. } => contains_param(param_name, expr),
+        StringPart::Expr(e) => is_identifier(param_name, e),
+        StringPart::ExprWithFormat { expr, format_spec } => {
+            is_identifier(param_name, expr) && !is_numeric_format_spec(format_spec)
+        }
         StringPart::Text(_) => false,
     })
+}
+
+fn is_identifier(param_name: &str, expr: &Expr) -> bool {
+    matches!(&expr.kind, ExprKind::Identifier(name) if name == param_name)
+}
+
+fn is_numeric_format_spec(format_spec: &str) -> bool {
+    format_spec
+        .chars()
+        .last()
+        .is_some_and(|c| matches!(c, 'x' | 'X' | 'b' | 'o' | 'e' | 'E'))
 }
 
 /// Detect nested array access like param[i][j]
