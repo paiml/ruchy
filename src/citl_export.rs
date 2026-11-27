@@ -221,6 +221,16 @@ mod tests {
     }
 
     #[test]
+    fn test_ruchy_165_summary_lookalikes_are_kept() {
+        let spanned = r#"{"$message_type":"diagnostic","message":"aborting due to invalid config","code":null,"level":"error","spans":[{"file_name":"citl.rs","line_start":2,"line_end":2,"column_start":5,"column_end":53,"is_primary":true,"suggested_replacement":null}],"children":[]}"#;
+        let unsupported = r#"{"$message_type":"diagnostic","message":"aborting due to unsupported target","code":null,"level":"error","spans":[],"children":[]}"#;
+        let fatal = r#"{"$message_type":"diagnostic","message":"fatal warning emitted","code":null,"level":"error","spans":[],"children":[]}"#;
+        let stderr = format!("{spanned}\n{unsupported}\n{fatal}\n");
+        let recs = records_from_rustc_json(&stderr, "a.rb", 0);
+        assert_eq!(recs.len(), 3, "{recs:?}");
+    }
+
+    #[test]
     fn test_ruchy_165_export_rustc_clean_program_has_no_records() {
         let recs = export_rustc_diagnostics("fn main() { println!(\"ok\"); }\n", "a.rb")
             .expect("rustc runs");
