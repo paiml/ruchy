@@ -18,6 +18,7 @@ mod cargo_002_project_template;
 mod cargo_add_integration;
 mod cargo_build_integration;
 mod cargo_e2e_workflow;
+mod citl_export_cli;
 mod class_property_tests;
 mod classnew_1_class_new_constructor;
 mod cli_contract_actor_observe;
