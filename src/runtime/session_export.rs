@@ -53,19 +53,24 @@ impl RuchySession {
             .map_err(|_| SessionExportError::BadTimestamp(session.metadata.created_at.clone()))?
             .with_timezone(&Utc);
         let mut cells: Vec<Cell> = Vec::new();
+        let mut awaiting_output = false;
         for event in &session.timeline {
             match &event.event {
-                Event::Input { text, .. } => cells.push(Cell {
-                    input: text.clone(),
-                    output: None,
-                    timestamp_ns: event.timestamp_ns,
-                }),
-                Event::Output { result, .. } => {
-                    if let Some(cell) = cells.last_mut().filter(|c| c.output.is_none()) {
+                Event::Input { text, .. } => {
+                    cells.push(Cell {
+                        input: text.clone(),
+                        output: None,
+                        timestamp_ns: event.timestamp_ns,
+                    });
+                    awaiting_output = true;
+                }
+                Event::Output { result, .. } if awaiting_output => {
+                    if let Some(cell) = cells.last_mut() {
                         cell.output = render_output(result);
                     }
+                    awaiting_output = false;
                 }
-                Event::StateChange { .. } | Event::ResourceUsage { .. } => {}
+                Event::Output { .. } | Event::StateChange { .. } | Event::ResourceUsage { .. } => {}
             }
         }
         let ended_at = session
@@ -86,13 +91,10 @@ impl RuchySession {
     pub fn to_literate_document(&self) -> String {
         let mut out = String::new();
         for cell in &self.cells {
-            out.push_str("```ruchy\n");
-            out.push_str(&cell.input);
-            out.push_str("\n```\n");
+            push_block(&mut out, "ruchy", &cell.input);
             if let Some(output) = &cell.output {
-                out.push_str("\n```text\n");
-                out.push_str(output);
-                out.push_str("\n```\n");
+                out.push('\n');
+                push_block(&mut out, "text", output);
             }
             out.push('\n');
         }
@@ -106,6 +108,20 @@ fn render_output(result: &EvalResult) -> Option<String> {
         EvalResult::Error { message } => Some(format!("error: {message}")),
         EvalResult::Unit => None,
     }
+}
+
+/// Append a fenced block. The fence is one backtick longer than the longest
+/// backtick run in `body` (and at least three), so the body cannot close it.
+fn push_block(out: &mut String, lang: &str, body: &str) {
+    let longest = body.split(|c| c != '`').map(str::len).max().unwrap_or(0);
+    let fence = "`".repeat(longest.max(2) + 1);
+    out.push_str(&fence);
+    out.push_str(lang);
+    out.push('\n');
+    out.push_str(body);
+    out.push('\n');
+    out.push_str(&fence);
+    out.push('\n');
 }
 
 #[cfg(test)]
