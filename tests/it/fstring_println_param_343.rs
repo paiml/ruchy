@@ -96,3 +96,23 @@ fn test_ruchy_343_numeric_spec_in_another_print_stays_i32() {
         "a numeric spec in any print must keep i32, got:\n{rust}"
     );
 }
+
+#[test]
+fn test_ruchy_343_print_plus_call_argument_stays_i32() {
+    let src = "fun double(n: i32) -> i32 {\n    n * 2\n}\n\nfun show(x) {\n    println(f\"{x}\");\n    double(x);\n}\n";
+    let rust = transpile(src);
+    assert!(
+        rust.contains("fn show(x: i32)"),
+        "a parameter also passed to a call must stay i32, got:\n{rust}"
+    );
+}
+
+#[test]
+fn test_ruchy_343_numeric_spec_in_non_print_fstring_stays_i32() {
+    let src = "fun show(x) {\n    let s = f\"{x:x}\";\n    println(f\"{x}\");\n}\n";
+    let rust = transpile(src);
+    assert!(
+        rust.contains("fn show(x: i32)"),
+        "a numeric spec in any f-string must keep i32, got:\n{rust}"
+    );
+}
