@@ -134,6 +134,7 @@ pub mod magic;
 pub mod repl_recording;
 pub mod replay;
 pub mod replay_converter;
+pub mod session_export;
 // pub mod arena;  // Disabled - uses unsafe code
 pub mod inspect;
 pub mod safe_arena;
