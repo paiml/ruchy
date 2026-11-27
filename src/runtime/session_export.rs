@@ -191,4 +191,28 @@ mod tests {
         assert!(md.contains("```ruchy\nx + 1\n```"), "{md}");
         assert!(md.contains("```text\nInteger(3)\n```"), "{md}");
     }
+
+    #[test]
+    fn test_ruchy_166_export_ignores_second_output_after_unit() {
+        let mut r = recorder_at("2026-11-27T00:00:00Z");
+        r.record_input("let x = 2".to_string(), InputMode::Interactive);
+        r.record_output(Ok(Value::Nil));
+        r.record_output(Ok(Value::Integer(9)));
+
+        let s = RuchySession::from_repl_session(r.get_session()).expect("export");
+
+        assert_eq!(s.cells[0].output, None);
+    }
+
+    #[test]
+    fn test_ruchy_166_literate_fence_outlasts_backticks_in_input() {
+        let mut r = recorder_at("2026-11-27T00:00:00Z");
+        r.record_input("let s = \"```\"".to_string(), InputMode::Interactive);
+        r.record_output(Ok(Value::Nil));
+
+        let s = RuchySession::from_repl_session(r.get_session()).expect("export");
+        let md = s.to_literate_document();
+
+        assert!(md.contains("````ruchy\nlet s = \"```\"\n````\n"), "{md}");
+    }
 }
