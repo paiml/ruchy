@@ -202,6 +202,14 @@ mod tests {
     }
 
     #[test]
+    fn test_ruchy_165_codeless_real_error_is_kept() {
+        let line = r#"{"$message_type":"diagnostic","message":"unwinding panics are not supported without std","code":null,"level":"error","spans":[],"children":[]}"#;
+        let recs = records_from_rustc_json(line, "a.rb", 0);
+        assert_eq!(recs.len(), 1, "{recs:?}");
+        assert_eq!(recs[0].error_code, None);
+    }
+
+    #[test]
     fn test_ruchy_165_export_rustc_clean_program_has_no_records() {
         let recs = export_rustc_diagnostics("fn main() { println!(\"ok\"); }\n", "a.rb")
             .expect("rustc runs");
