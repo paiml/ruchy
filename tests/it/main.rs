@@ -122,6 +122,7 @@ mod formatter_088_macro_preservation;
 mod formatter_data_loss_regression;
 mod formatter_issue_60;
 mod fstring_param_255;
+mod fstring_println_param_343;
 mod fuzz_pattern_match;
 mod http_002_d_html_methods;
 mod http_server_cli;

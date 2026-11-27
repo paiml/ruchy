@@ -3,7 +3,7 @@
 //! This module provides functions for analyzing how parameters are used
 //! in function bodies to infer their types.
 
-use crate::frontend::ast::{BinaryOp, Expr, ExprKind};
+use crate::frontend::ast::{BinaryOp, Expr, ExprKind, StringPart};
 
 // Re-export from builtin_type_inference for backwards compatibility
 pub use super::builtin_type_inference::{infer_param_type_from_builtin_usage, is_string_literal};
@@ -455,6 +455,83 @@ pub fn is_param_used_in_print_macro(param_name: &str, expr: &Expr) -> bool {
         }
         None // Continue traversal
     })
+}
+
+/// ruchy#343: a parameter whose only uses are as text in `println`/`print`
+/// f-strings, with no other statement in the body.
+///
+/// `println(...)` parses as a plain `Call`, not a `MacroInvocation`, and the
+/// f-string is its first argument, so the macro check never sees it. The rule
+/// is deliberately narrow: every statement must be a print call whose
+/// arguments are f-strings, and the parameter must appear only as `{param}` or
+/// `{param:spec}` with a non-numeric spec. Any other shape keeps the default
+/// (`i32`), which still compiles for text printing.
+#[must_use]
+pub fn is_param_used_in_fstring_print(param_name: &str, expr: &Expr) -> bool {
+    let stmts: &[Expr] = match &expr.kind {
+        ExprKind::Block(stmts) => stmts,
+        _ => std::slice::from_ref(expr),
+    };
+    let uses: Option<Vec<bool>> = stmts
+        .iter()
+        .map(|stmt| print_statement_text_use(param_name, stmt))
+        .collect();
+    uses.is_some_and(|u| u.iter().any(|&text| text))
+}
+
+/// For one statement: `Some(true)` if it prints the parameter as text,
+/// `Some(false)` if it prints other things only, `None` if it is not a print
+/// call with f-string arguments or the parameter is used in any other way.
+fn print_statement_text_use(param_name: &str, stmt: &Expr) -> Option<bool> {
+    let args = match &stmt.kind {
+        ExprKind::Call { func, args } if is_print_callee(func) => args,
+        ExprKind::MacroInvocation { name, args } if is_print_macro_name(name) => args,
+        _ => return None,
+    };
+    let mut text = false;
+    for arg in args {
+        let ExprKind::StringInterpolation { parts } = &arg.kind else {
+            return None;
+        };
+        for part in parts {
+            text |= fstring_part_text_use(param_name, part)?;
+        }
+    }
+    Some(text)
+}
+
+/// One f-string part: `Some(true)` for a text use of the parameter, `Some(false)`
+/// for a part that does not mention it, `None` for any other use.
+fn fstring_part_text_use(param_name: &str, part: &StringPart) -> Option<bool> {
+    match part {
+        StringPart::Text(_) => Some(false),
+        StringPart::Expr(e) if is_identifier(param_name, e) => Some(true),
+        StringPart::ExprWithFormat { expr, format_spec } if is_identifier(param_name, expr) => {
+            (!is_numeric_format_spec(format_spec)).then_some(true)
+        }
+        StringPart::Expr(e) | StringPart::ExprWithFormat { expr: e, .. } => {
+            matches!(e.kind, ExprKind::Identifier(_) | ExprKind::Literal(_)).then_some(false)
+        }
+    }
+}
+
+fn is_print_callee(func: &Expr) -> bool {
+    matches!(&func.kind, ExprKind::Identifier(name) if is_print_macro_name(name))
+}
+
+fn is_print_macro_name(name: &str) -> bool {
+    matches!(name, "println" | "print" | "eprintln" | "eprint")
+}
+
+fn is_identifier(param_name: &str, expr: &Expr) -> bool {
+    matches!(&expr.kind, ExprKind::Identifier(name) if name == param_name)
+}
+
+fn is_numeric_format_spec(format_spec: &str) -> bool {
+    format_spec
+        .chars()
+        .last()
+        .is_some_and(|c| matches!(c, 'x' | 'X' | 'b' | 'o' | 'e' | 'E'))
 }
 
 /// Detect nested array access like param[i][j]

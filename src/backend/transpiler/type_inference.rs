@@ -17,8 +17,9 @@ pub use super::builtin_type_inference::{
 pub use super::param_usage_analysis::{
     contains_param, infer_param_type, is_nested_array_access, is_numeric_operator,
     is_param_used_as_array, is_param_used_as_bool, is_param_used_as_function,
-    is_param_used_as_function_argument, is_param_used_as_index, is_param_used_in_print_macro,
-    is_param_used_in_string_concat, is_param_used_numerically, is_param_used_with_len,
+    is_param_used_as_function_argument, is_param_used_as_index, is_param_used_in_fstring_print,
+    is_param_used_in_print_macro, is_param_used_in_string_concat, is_param_used_numerically,
+    is_param_used_with_len,
 };
 
 #[cfg(test)]
