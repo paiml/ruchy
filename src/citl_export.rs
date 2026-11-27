@@ -36,7 +36,7 @@ pub struct SpanInfo {
     pub column_end: u64,
 }
 
-/// A machine-applicable replacement suggested by the compiler.
+/// A replacement the compiler suggested (first one found, any applicability).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct SuggestionInfo {
     pub message: String,
@@ -62,6 +62,12 @@ fn record_from_line(line: &str, source_file: &str, timestamp: i64) -> Option<Cit
         return None;
     }
     let code = v["code"]["code"].as_str().map(str::to_string);
+    // The trailing "aborting due to N previous error" line has no code and no
+    // span: it summarises the others, so it is not a record of its own.
+    let has_spans = v["spans"].as_array().is_some_and(|s| !s.is_empty());
+    if code.is_none() && !has_spans {
+        return None;
+    }
     let is_clippy = code.as_deref().is_some_and(|c| c.starts_with("clippy::"));
     Some(CitlExport {
         source_file: source_file.to_string(),
@@ -110,11 +116,9 @@ fn suggestion(v: &Value) -> Option<SuggestionInfo> {
 ///
 /// Returns an error when rustc cannot be started or the scratch dir fails.
 pub fn export_rustc_diagnostics(rust_code: &str, source_file: &str) -> Result<Vec<CitlExport>> {
-    let nanos = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_nanos())
-        .unwrap_or(0);
-    let dir = std::env::temp_dir().join(format!("ruchy_citl_{}_{nanos}", std::process::id()));
+    static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let seq = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let dir = std::env::temp_dir().join(format!("ruchy_citl_{}_{seq}", std::process::id()));
     std::fs::create_dir_all(&dir)?;
     let result = run_rustc(&dir, rust_code, source_file);
     let _ = std::fs::remove_dir_all(&dir);

@@ -1467,6 +1467,10 @@ fn handle_command_dispatch(
             emit,
             citl_export,
         }) => match citl_export {
+            Some(_) if emit.is_some() => Err(anyhow::anyhow!(
+                "--citl-export cannot be combined with --emit (file: {})",
+                file.display()
+            )),
             Some(export) => handlers::citl_handler::handle_transpile_citl(
                 &file,
                 output.as_deref(),
